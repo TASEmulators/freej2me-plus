@@ -196,6 +196,9 @@ class LayerIDecoder implements FrameDecoder
 	  (1.0f/512.0f) * (1024.0f/1023.0f), (1.0f/1024.0f) * (2048.0f/2047.0f),
 	  (1.0f/2048.0f) * (4096.0f/4095.0f), (1.0f/4096.0f) * (8192.0f/8191.0f),
 	  (1.0f/8192.0f) * (16384.0f/16383.0f), (1.0f/16384.0f) * (32768.0f/32767.0f)
+	  
+	  // WVB - fix for array out of bound exception
+	  ,0.0f
 	  };
 
 	  public static final float table_offset[] = {
@@ -205,6 +208,9 @@ class LayerIDecoder implements FrameDecoder
 	  ((1.0f/512.0f)-1.0f) * (1024.0f/1023.0f), ((1.0f/1024.0f)-1.0f) * (2048.0f/2047.0f),
 	  ((1.0f/2048.0f)-1.0f) * (4096.0f/4095.0f), ((1.0f/4096.0f)-1.0f) * (8192.0f/8191.0f),
 	  ((1.0f/8192.0f)-1.0f) * (16384.0f/16383.0f), ((1.0f/16384.0f)-1.0f) * (32768.0f/32767.0f)
+	  
+	  // WVB - fix for array out of bound exception
+	  ,0.0f
 	  };
 
 	  protected int			 subbandnumber;
