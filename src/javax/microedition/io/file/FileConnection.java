@@ -16,6 +16,7 @@
 */
 package javax.microedition.io.file;
 
+import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStream;
@@ -26,65 +27,71 @@ import javax.microedition.io.StreamConnection;
 
 public interface FileConnection extends StreamConnection 
 {
-    public long availableSize();
 
-    public boolean canRead();
+    long availableSize() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public boolean canWrite();
+    boolean canRead() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public void create();
+    boolean canWrite() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public void delete();
+    void create() throws IOException, SecurityException, IllegalModeException;
 
-    public long directorySize(boolean includeSubDirs);
+    void delete() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public boolean exists();
+    long directorySize(boolean includeSubDirs) throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public long fileSize();
+    boolean exists() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public String getName();
+    long fileSize() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public String getPath();
+    String getName();
 
-    public String getURL();
+    String getPath();
 
-    public boolean isDirectory();
+    String getURL();
 
-    public boolean isHidden();
+    boolean isDirectory() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public boolean isOpen();
+    boolean isHidden() throws SecurityException, IllegalModeException, ConnectionClosedException;
+
+    boolean isOpen();
     
-    public long lastModified();
+    long lastModified() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public Enumeration list();
+    Enumeration list() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public Enumeration list(String filter, boolean includeHidden);
+    Enumeration list(String filter, boolean includeHidden) throws NullPointerException, IllegalArgumentException, IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public void mkdir();
+    void mkdir() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public DataInputStream openDataInputStream();
+    @Override 
+    DataInputStream openDataInputStream() throws SecurityException, IllegalModeException;
 
-    public DataOutputStream openDataOutputStream();
+    @Override
+    DataOutputStream openDataOutputStream() throws SecurityException, IllegalModeException;
 
-    public InputStream openInputStream();
+    @Override
+    InputStream openInputStream() throws SecurityException, IllegalModeException;
 
-    public OutputStream openOutputStream();
+    @Override
+    OutputStream openOutputStream() throws SecurityException, IllegalModeException;
 
-    public OutputStream openOutputStream(long byteOffset);
+    OutputStream openOutputStream(long byteOffset) throws IOException, SecurityException, IllegalModeException, IllegalArgumentException;
 
-    public void rename();
+    void rename(String newName) throws IOException, SecurityException, IllegalModeException, ConnectionClosedException, NullPointerException, IllegalArgumentException;
 
-    public void setFileConnection(String fileName);
+    void setFileConnection(String fileName) throws IOException, SecurityException, NullPointerException, IllegalArgumentException;
 
-    public void setHidden(boolean hidden);
+    void setHidden(boolean hidden) throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public void setReadable(boolean readable);
+    void setReadable(boolean readable) throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public void setWritable(boolean writable);
+    void setWritable(boolean writable) throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public long totalSize();
+    long totalSize() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
-    public void truncate(long byteOffset);
+    void truncate(long byteOffset) throws IOException, SecurityException, IllegalModeException, ConnectionClosedException, IllegalArgumentException;
 
-    public long usedSize();
+    long usedSize() throws SecurityException, IllegalModeException, ConnectionClosedException;
+
 }

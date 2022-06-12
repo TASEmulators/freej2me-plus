@@ -18,11 +18,17 @@ package javax.microedition.io.file;
 
 import java.util.Enumeration;
 
-public abstract class FileSystemRegistry 
+public class FileSystemRegistry extends Object
 {
-    public abstract boolean addFileSystemListener(FileSystemListener listener);
+	
+	Enumeration roots; /* A zero-length Enumeration to be used below */
 
-    public abstract Enumeration listRoots();
+	/* Returns true if the fileSystemListener was added. */
+    public static boolean addFileSystemListener(FileSystemListener listener) throws SecurityException, NullPointerException { return false; }
 
-    public abstract boolean removeFileSystemListener(FileSystemListener listener);
+    public Enumeration listRoots() { return roots; }; /*If no roots are found, or it's not supported, return a zero-len enum*/
+
+	/* Returns true if the fileSystemListener was removed. */
+    public static boolean removeFileSystemListener(FileSystemListener listener) throws NullPointerException { return false; };
+
 }
