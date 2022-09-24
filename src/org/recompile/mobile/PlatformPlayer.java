@@ -90,7 +90,11 @@ public class PlatformPlayer implements Player
 				{
 					System.out.println("Couldn't read input stream: " + e.getMessage());
 				}
-
+			}
+			else if (type.equalsIgnoreCase("audio/x-tone-seq")) 
+			{
+				// Very early stages of implementation, needs to be fleshed out
+				player = new tonePlayer(stream);
 			}
 			else /* TODO: Implement a player for amr and mpeg audio types */
 			{
@@ -409,6 +413,35 @@ public class PlatformPlayer implements Player
 		public boolean isRunning()
 		{
 			return wavClip.isRunning();
+		}
+	}
+
+	/* Todo: Implement tone playing functionality */
+	private class tonePlayer extends audioplayer 
+	{
+		private InputStream toneStream;
+		private int loops = 0;
+
+		public tonePlayer(InputStream stream) { toneStream = stream; }
+
+		public void start() 
+		{  
+			// Todo implement functionality to play a tone sequence
+			state = Player.STARTED;
+		}
+
+		public void stop() 
+		{ 
+			// Todo implement functionality to stop playing a tone sequence
+			state = Player.PREFETCHED;
+		}
+
+		public void setLoopCount(int count) { if (count > -1) { loops = count; } }
+
+		public boolean isRunning() 
+		{ 
+			// Todo implementation depends on start()
+			return false; 
 		}
 	}
 
