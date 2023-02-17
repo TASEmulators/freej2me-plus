@@ -137,7 +137,10 @@ public class Anbu
 		{
 			try
 			{
-				args[0] = "/usr/local/bin/sdl_interface";
+				// Check if we're receiving the MS Windows separator and set up accordingly
+				if (File.separatorChar == '\\') { args[0] = System.getenv("USERPROFILE") + "\\freej2me\\bin\\sdl_interface.exe"; } 
+				else { args[0] = "/usr/local/bin/sdl_interface"; }
+
 				proc = new ProcessBuilder(args).start();
 
 				keys = proc.getInputStream();
