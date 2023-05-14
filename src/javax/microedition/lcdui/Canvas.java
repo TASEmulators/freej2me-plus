@@ -155,7 +155,7 @@ public abstract class Canvas extends Displayable
 
 	public void pointerReleased(int x, int y) { }
 
-	public void repaint()
+	public synchronized void repaint()
 	{
 		Display.LCDUILock.lock();
 		try {
@@ -180,7 +180,7 @@ public abstract class Canvas extends Displayable
 		}	
 	}
 
-	public void repaint(int x, int y, int width, int height)
+	public synchronized void repaint(int x, int y, int width, int height)
 	{
 		Display.LCDUILock.lock();
 		try {
