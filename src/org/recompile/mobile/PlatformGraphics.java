@@ -24,8 +24,7 @@ import javax.microedition.lcdui.game.Sprite;
 
 import com.nokia.mid.ui.DirectGraphics;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.geom.AffineTransform;
 import java.awt.BasicStroke;
@@ -264,7 +263,10 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 			x = AnchorX(x, gc.getFontMetrics().stringWidth(str), anchor);
 			y = y + gc.getFontMetrics().getAscent() - 1;
 			y = AnchorY(y, gc.getFontMetrics().getHeight(), anchor);
-			gc.drawString(str, x, y);
+			try {
+				gc.drawString(str, x, y);
+			} catch (Exception e) {
+			}
 		}
 	}
 
@@ -362,19 +364,23 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	public void setClip(int x, int y, int width, int height)
 	{
 		gc.setClip(x, y, width, height);
-		clipX = (int)gc.getClipBounds().getX();
-		clipY = (int)gc.getClipBounds().getY();
-		clipWidth = (int)gc.getClipBounds().getWidth();
-		clipHeight = (int)gc.getClipBounds().getHeight();
+		Rectangle rect=new Rectangle();
+		gc.getClipBounds(rect);
+		clipX = (int) rect.getX();
+		clipY = (int) rect.getY();
+		clipWidth = (int)rect.getWidth();
+		clipHeight = (int)rect.getHeight();
 	}
 
 	public void clipRect(int x, int y, int width, int height)
 	{
 		gc.clipRect(x, y, width, height);
-		clipX = (int)gc.getClipBounds().getX();
-		clipY = (int)gc.getClipBounds().getY();
-		clipWidth = (int)gc.getClipBounds().getWidth();
-		clipHeight = (int)gc.getClipBounds().getHeight();
+		Rectangle rect=new Rectangle();
+		gc.getClipBounds(rect);
+		clipX = (int) rect.getX();
+		clipY = (int) rect.getY();
+		clipWidth = (int)rect.getWidth();
+		clipHeight = (int)rect.getHeight();
 	}
 
 	public int getTranslateX() { System.out.println("getTranslateX"); return translateY; }
@@ -386,8 +392,10 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		translateX += x;
 		translateY += y;
 		gc.translate(x, y);
-		clipX -= x;
-		clipY -= y;
+		Rectangle rect=new Rectangle();
+		gc.getClipBounds(rect);
+		clipX = (int) rect.getX();
+        clipY = (int) rect.getY();
 	}
 
 	private int AnchorX(int x, int width, int anchor)
