@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="../_css/compat.css">
+        <script src="../_js/compat.js"></script>
+        <script src="../_js/rpie/rpie.js"></script>
+    </head>
+    
+    <body>
+
+        <div class="main_frame"> <!-- TODO: Finish implementing the compatibility chart.-->
+            <div class="compat_graph">
+                <h1 class="overview">Compatibility Overview</h1>
+                <div class="separator">
+                    <!-- Making those canvas elements dynamically change their resolution would be a good improvement for later -->
+                    <div>
+                        <canvas id="chart_canvas" width="990" height="990"></canvas>
+                        <canvas id="innerchart_canvas" width="450" height="450"></canvas>
+                    </div>
+
+                    <div>
+                        <p id="total_apps">Tested Apps:</p>
+
+                        <!-- TODO: Make those buttons selectable in order to filter apps by compatibility status -->
+                        <button id="b_perfect">Perfect:</button>
+                        <button id="b_minor_issue">Minor issues:</button>
+                        <button id="b_playable">Playable:</button>
+                        <button id="b_ingame">Ingame:</button>
+                        <button id="b_not_booting">Not booting:</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compat_frame">
+                <input type="search" id="appsearch" name="appsearch" placeholder="Search J2ME Application..." onchange="searchApp()"> 
+                <div class="appdata_categories">
+                    <div id="name">App Name</div>
+                    <div id="resolutions">Resolutions</div>
+                    <div id="compat_status">Status</div>
+                    <div id="description">Description/Notes</div>
+                    <div id="updated">Last Updated</div>
+                    <div id="appmd5">MD5 Hash</div>
+                </div>
+
+                <!-- This div receives elements from the csv data parsed by compat.js -->
+                <div id="compat_table">
+                    <!-- Examples of how the csv data is parsed:
+                    <div id="compat_entry0">
+                        <div id="entryname">007 – Top Agent</div>
+                        <div id="entryres">320x240</div>
+                        <div id="entrystat"><div id="statbg">Perfect</div></div>
+                        <div id="entrydesc">Works perfectly</div>
+                        <div id="entryupd">06/04/23</div>
+                        <div id="entrymd5">-</div>
+                    </div>
+                    <div id="compat_entry1">
+                        <div id="entryname">2012-末日传说 (2012 - The Legend of Doomsday)</div>
+                        <div id="entryres">240x320, 320x240, 640x360</div>
+                        <div id="entrystat"><div id="statbg">Perfect</div></div>
+                        <div id="entrydesc">(640x360 is not rotated, instead it’s an actual 640x360 framebuffer)</div>
+                        <div id="entryupd">06/04/23</div>
+                        <div id="entrymd5">-</div>
+                    </div>
+                    -->
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

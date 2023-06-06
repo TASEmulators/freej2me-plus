@@ -1,0 +1,65 @@
+body {
+    transition-duration: 0.15s;
+    width: 60%;
+    margin: 0 auto;
+    padding: 5px 0px;
+    background:rgba(51,51,51,0.6);
+}
+
+body:hover {
+    background:rgba(51,51,51,0.9);
+}
+
+ul {
+    top: 0;
+    width: 100%;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+li {
+    float: left;
+}
+  
+li a {
+    display: block;
+    color: #fff;
+    text-align: center;
+    padding: 10px 10px;
+    font-size: 1.25em;
+    text-decoration: none;
+    animation-duration: 0.2s;
+    transition-duration: 0.2s;
+    border-radius: 7px;
+}
+
+li a:hover {
+    background-color: #fff;
+    color: #e11961;
+}
+
+.navbar-center {
+    transition-duration: 0.5s;
+    width: 60%; /* Matches body's width due to position absolute */
+    margin: 0 auto;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: absolute; /* Hacky way of having this element at the center of the navbar without reserving space */
+    pointer-events: none; /* Prevents the navbar center from stealing clicks from the other buttons */
+}
+
+ul:hover .navbar-center {
+    filter: contrast(3); /* Makes the lotus red when the pointer hovers over the navbar */
+}
+
+.navbar-center img {
+    height: 65px;
+}
+
+li:last-child {
+    border-right: none;
+    float:right
+}

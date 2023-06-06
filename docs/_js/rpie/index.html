@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Simple Pie Chart</title>
+    <script type="application/javascript" src="rpie.js"></script>
+</head>
+<body>
+	<div class="false-For-Bottom-Text">
+		<div class="mypiechart">	
+			<canvas id="myCanvas" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Pie Chart with Doughnuts shape (50%)
+	</div>
+	
+	<div class="false-For-Bottom-Text">
+		<div class="mypiechart">	
+			<canvas id="myCanvas1" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Pie Chart with Doughnuts shape (70%) and text without animation
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas2" width="300" height="300"></canvas>
+		</div>	
+		<hr>
+		Pie Chart with text
+	</div>
+	
+	<div class="false-For-Bottom-Text">
+		<div class="mypiechart">	
+			<canvas id="myCanvas3" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Pie Chart with horizontal text
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas4" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Pie Chart with vertical text
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas5" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Pie Chart with offset between two segments
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas6" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Stroke based Pie Chart with start and end marks
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas7" width="300" height="300"></canvas>			
+		</div>
+		<hr>
+		Stroke based Pie Chart without animation
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas8" width="300" height="300"></canvas>			
+		</div>
+		<hr>
+		Stroke based Pie Chart with overlay filled effect
+	</div>
+	
+	<div class="false-For-Bottom-Text">	
+		<div class="mypiechart">	
+			<canvas id="myCanvas9" width="300" height="300"></canvas>
+		</div>
+		<hr>
+		Stroke based Pie Chart without animation and start and end points with overlay filled effect
+	</div>
+			
+	<script type="text/javascript">
+		
+		var obj = {
+						values: [15, 50, 20, 85, 30],
+						colors: ['#4CAF50', '#00BCD4', '#E91E63', '#FFC107', '#9E9E9E'],
+						animation: true, // Takes boolean value & default behavious is false
+						animationSpeed: 50, // Time in miliisecond & default animation speed is 20ms
+						fillTextData: true, // Takes boolean value & text is not generate by default 
+						fillTextColor: '#fff', // For Text colour & default colour is #fff (White)
+						fillTextAlign: 1.30, // for alignment of inner text position i.e. higher values gives closer view to center & default text alignment is 1.85 i.e closer to center
+						fillTextPosition: 'inner', // 'horizontal' or 'vertical' or 'inner' & default text position is 'horizontal' position i.e. outside the canvas
+						doughnutHoleSize: 50, // Percentage of doughnut size within the canvas & default doughnut size is null
+						doughnutHoleColor: '#fff', // For doughnut colour & default colour is #fff (White)
+						offset: 1, // Offeset between two segments & default value is null
+						pie: 'normal', // if the pie graph is single stroke then we will add the object key as "stroke" & default is normal as simple as pie graph
+						isStrokePie: { 
+							stroke: 20, // Define the stroke of pie graph. It takes number value & default value is 20
+							overlayStroke: true, // Define the background stroke within pie graph. It takes boolean value & default value is false
+							overlayStrokeColor: '#eee', // Define the background stroke colour within pie graph & default value is #eee (Grey)
+							strokeStartEndPoints: 'Yes', // Define the start and end point of pie graph & default value is No
+							strokeAnimation: true, // Used for animation. It takes boolean value & default value is true
+							strokeAnimationSpeed: 40, // Used for animation speed in miliisecond. It takes number & default value is 20ms
+							fontSize: '60px', // Used to define text font size & default value is 60px
+							textAlignement: 'center', // Used for position of text within the pie graph & default value is 'center'
+							fontFamily: 'Arial', // Define the text font family & the default value is 'Arial'
+							fontWeight: 'bold' //  Define the font weight of the text & the default value is 'bold'
+						}
+					  };
+		
+		var obj1 = {
+						values: [15, 50, 20, 85, 30],
+						colors: ['#4CAF50', '#00BCD4', '#E91E63', '#FFC107', '#9E9E9E'],
+						animation: false,
+						fillTextData: true,
+						fillTextColor: '#fff',
+						fillTextAlign: 1.3, 
+						fillTextPosition: 'inner',
+						doughnutHoleSize: 60,
+						doughnutHoleColor: '#fff',
+						offset: 1
+					  };
+		
+		var obj2 = {
+						values: [15, 50, 20, 85, 30],
+						colors: ['#4CAF50', '#00BCD4', '#E91E63', '#FFC107', '#9E9E9E'],
+						animation: true,
+						animationSpeed: 30,
+						fillTextData: true,
+						fillTextColor: '#fff',
+						fillTextAlign: 1.50, 
+						fillTextPosition: 'inner',
+						doughnutHoleSize: null,
+						doughnutHoleColor: '#fff',
+						offset: 1
+					  };
+		
+		var obj3 = {
+						values: [15, 50, 20, 85, 30],
+						colors: ['#4CAF50', '#00BCD4', '#E91E63', '#FFC107', '#9E9E9E'],
+						animation: true,
+						fillTextData: true,
+						fillTextColor: '#fff',
+						fillTextPosition: 'horizontal',
+						doughnutHoleSize: null,
+						doughnutHoleColor: '#fff',
+						offset: null
+					  };
+		
+		var obj4 = {
+						values: [15, 50, 20, 85, 30],
+						colors: ['#4CAF50', '#00BCD4', '#E91E63', '#FFC107', '#9E9E9E'],
+						animation: true,
+						fillTextData: true,
+						fillTextColor: '#fff',
+						fillTextPosition: 'vertical',
+						doughnutHoleSize: null,
+						doughnutHoleColor: '#000',
+						offset: null
+					  };
+		
+		var obj5 = {
+						values: [15, 50, 20, 85, 30],
+						colors: ['#4CAF50', '#00BCD4', '#E91E63', '#FFC107', '#9E9E9E'],
+						animation: true,
+						doughnutHoleSize: 80,
+						doughnutHoleColor: '#fff',
+						offset: 5
+					  };
+		
+		var obj6 = {
+						pie: 'stroke',
+						values: [85],
+						colors: ['#4CAF50'],
+						isStrokePie: {
+							stroke: 20,
+							strokeStartEndPoints: 'Yes',
+							strokeAnimation: true,
+							strokeAnimationSpeed: 30,
+							fontSize: '40px',
+							textAlignement: 'center',
+							fontFamily: 'Arial',
+							fontWeight: 'bold'
+						}
+					  };
+		
+		var obj7 = {
+						pie: 'stroke',
+						values: [65],
+						colors: ['#00BCD4'],
+						isStrokePie: {
+							stroke: 20,
+							strokeStartEndPoints: 'Yes',
+							strokeAnimation: false,
+							strokeAnimationSpeed: 20,
+							fontSize: '60px',
+							textAlignement: 'center',
+							fontFamily: 'Arial',
+							fontWeight: 'bold'
+						}
+					  };
+		
+		var obj8 = {
+						pie: 'stroke',
+						values: [75],
+						colors: ['#E91E63'],
+						isStrokePie: {
+							stroke: 20,
+							overlayStroke: true,
+							overlayStrokeColor: '#eee',
+							strokeStartEndPoints: 'Yes',
+							strokeAnimation: true,
+							strokeAnimationSpeed: 40,
+							fontSize: '60px',
+							textAlignement: 'center',
+							fontFamily: 'Arial',
+							fontWeight: 'bold'
+						}
+					  };
+		
+		var obj9 = {
+						pie: 'stroke',
+						values: [80],
+						colors: ['#FFC107'],
+						isStrokePie: {
+							stroke: 20,
+							overlayStroke: true,
+							overlayStrokeColor: '#eee',
+							strokeStartEndPoints: 'No',
+							strokeAnimation: false,
+							strokeAnimationSpeed: 20,
+							fontSize: '60px',
+							textAlignement: 'center',
+							fontFamily: 'Arial',
+							fontWeight: 'bold'
+						}
+					  };
+		
+		//Generate myCanvas		
+		generatePieGraph('myCanvas', obj);
+		
+		//Generate myCanvas1
+		generatePieGraph('myCanvas1', obj1);
+		
+		//Generate myCanvas2
+		generatePieGraph('myCanvas2', obj2);
+		
+		//Generate myCanvas3
+		generatePieGraph('myCanvas3', obj3);
+		
+		//Generate myCanvas4
+		generatePieGraph('myCanvas4', obj4);
+		
+		//Generate myCanvas5
+		generatePieGraph('myCanvas5', obj5);
+		
+		//Generate myCanvas6
+		generatePieGraph('myCanvas6', obj6);
+		
+		//Generate myCanvas7
+		generatePieGraph('myCanvas7', obj7);
+		
+		//Generate myCanvas8
+		generatePieGraph('myCanvas8', obj8);
+		
+		//Generate myCanvas9
+		generatePieGraph('myCanvas9', obj9);	
+		
+		
+		
+	</script>
+
+</body>
+</html>
+	 
+
+

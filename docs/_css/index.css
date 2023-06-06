@@ -1,0 +1,428 @@
+/* Custom fonts:
+@font-face {
+    font-family: Cookie;
+    src: url("../_fonts/Cookie-Regular.ttf");
+}
+
+@font-face {
+    font-family: Courgette;
+    src: url("../_fonts/Courgette-Regular.ttf");
+} */
+/* Custom fonts end */
+
+/* Main page elements: */
+
+body {
+    width: 100vw;
+    margin: 0;
+    display: block;
+    background-color: #fff;
+}
+
+#init-logo {
+    background-color: #fff;
+    display:block;
+}
+
+#logo {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    margin: 0 auto;
+    animation-name: init-logoanim;
+    animation-duration: 1.5s; /*Default: 1.5s*/
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-in-out;
+}
+
+@keyframes init-logoanim {
+    0%   {opacity: 0;   transform: scale(0.5);}
+    40%  {opacity: 0.7; transform: scale(0.8);}
+    60%  {opacity: 0.7; transform: scale(0.8);}
+    100% {opacity: 0;   transform: scale(0.5);}
+}
+
+/* 
+ * Those overflows are hidden in order to keep the 
+ * 3d-transformed carousel in check, otherwise it
+ * would allow some ludicrous horizontal scrolling due
+ * to its size and perspective. 
+ */
+#mainpage {
+    overflow-y: hidden;
+    overflow-x: hidden;
+}
+
+#firstpane {
+    height: 100vh;
+    min-height: 500px;
+    max-height: 75vh;
+    background-color: white;
+    opacity: 0.75;
+    display: flex;
+}
+
+.pseudocanvas {
+    position: absolute;
+    z-index: 1;
+    width: 100vw;
+    max-width: 100vw;
+    min-height: 500px;
+    height: 100vh;
+    max-height: 75vh;
+    transform: perspective(150px) rotateX(6deg) rotateZ(15deg) rotateY(-2.5deg) translateX(-35vw) translateZ(-1px) translateY(-2vh) scale(1.7);
+    transform-style: preserve-3d;
+}
+
+.canvas_element {
+    max-height: 25vh;
+    height: 33vh;
+    width: 100%;
+    min-height: 167px;
+    opacity: 0.5;
+    filter: blur(1px) opacity(0.6);
+    overflow-x: hidden;
+}
+
+#element1 {
+    background-image: url("../images/Backgrounds/FreeJ2ME_BG2.png");
+    background-repeat: repeat-x;
+    width: 5660px;
+    animation: slidegamebg 90s linear reverse infinite;
+}
+
+#element2 {
+    background-image: url("../images/Backgrounds/FreeJ2ME_BG1.png");
+    background-repeat: repeat-x;
+    width: 5660px;
+    animation: slidegamebg 60s linear infinite;
+}
+
+#element3 {
+    background-image: url("../images/Backgrounds/FreeJ2ME_BG3.png");
+    background-repeat: repeat-x;
+    width: 5660px;
+    animation: slidegamebg 45s linear reverse infinite;
+}
+
+@keyframes slidegamebg {
+    0%   { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-2830px, 0, 0);}
+}
+
+.firstpane-content {
+    width: 70%;
+    margin-left: 15%;
+    z-index: 2;
+    display: flex;
+}
+
+#firstpane-content-left {
+    margin: auto 0;
+    width: 15%;
+}
+
+.titlediv {
+    display: flex;
+}
+
+#innertitletext {
+    color: #00ca31 !important;
+}
+
+#firstpane-content-right {
+    margin: auto 8%;
+    width: 45%;
+}
+
+#firstpane-content-right h1 {
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    margin-top: 0;
+    color: #0064ca;
+    font-size: 4em;
+    font-weight: bolder;
+    transform: rotate(-2deg);
+}
+
+#firstpane-content-right p {
+    font-family:Helvetica, Geneva, Tahoma, sans-serif;
+    color: black;
+    margin-left: 3%;
+    margin-top: 0;
+    font-size: 1.3em;
+    font-weight: 600;
+    transform: rotate(-1deg);
+}
+
+#freej2me_logo {
+    z-index: 5;
+    width: 100%;
+    animation-name: logoanim;
+    animation-duration: 3s;
+    animation-iteration-count: infinite;
+}
+
+@keyframes logoanim {
+    0%   {transform: scale(1) rotate(0deg); animation-timing-function: ease-in-out;}
+    50%  {transform: scale(1.25) rotate(10deg); animation-timing-function: ease-in-out;}
+    100% {transform: scale(1) rotate(0deg); animation-timing-function: ease-in-out;}
+}
+
+#mainpage {
+    width: 100%;
+    display: none;
+    filter: opacity(0);
+    animation-name: mainpageanim;
+    animation-duration: 1.0s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes mainpageanim {
+    0% {filter: opacity(0);}
+    30% {filter:opacity(0);}
+    100% {filter:opacity(1);} /* Can't be set to 1, as that breaks navbar's blur filter in case we find a use for a navbar */
+}
+
+.contentcontainer{
+    width: 100%;
+    padding: 25px 0;
+    background-color: #f52d7722;
+    justify-content: center;
+    align-items: center;
+}
+
+.contentpane {
+    position: relative;
+    margin: 0;
+    display:flex;
+    background-color: #0064ca;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0px 4px 12px #444;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 10px;
+    z-index: 7;
+}
+
+.info-frame {
+    margin-left: 2%;
+    width: 75%;
+    margin-right: 2%;
+}
+
+.info-frame h1 {
+    text-align: center;
+    font-size: 4em;
+    margin: 0 auto;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    color: #00ca31;
+    font-weight: bolder;
+}
+
+.info-frame p {
+    font-size: 1.3em;
+    font-family:Helvetica, Geneva, Tahoma, sans-serif;
+    font-weight: 500;
+    color: white;
+}
+
+footer {
+    position: relative;
+    text-align: center;
+    margin-top: 0;
+    background-color: white;
+    z-index: 4;
+}
+
+
+/* Main page elements end */
+
+
+/* I-frames: */
+
+iframe {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+}
+
+#compat_list_frame {
+    height: 800px;
+    position: relative;
+    z-index: 4;
+}
+
+@media only screen and (max-width: 600px) {
+    #compat_list_frame {
+        height: 1630px;
+    }
+    .info-frame h1 {
+        font-size: 8vw;
+    }
+    .info-frame p {
+        font-size: 3.5vw;
+    }
+    .firstpane-content {
+        width: 90%;
+        margin-left: 5%;
+    }
+    #firstpane-content-left {
+        width: 30%;
+    }
+    #firstpane-content-right {
+        width: 70%;
+        margin: auto 5%;
+    }
+    #firstpane-content-right h1 {
+        font-size: 8vw;
+    }
+    #firstpane-content-right p {
+        font-size: 3vw;
+    }
+}
+
+@media only screen and (min-width: 600px) {
+    #compat_list_frame {
+        height: 1090px;
+    }
+    .info-frame h1 {
+        font-size: 7vw;
+    }
+    .info-frame p {
+        font-size: 2.5vw;
+    }
+    .firstpane-content {
+        width: 85%;
+        margin-left: 7.5%;
+    }
+    #firstpane-content-left {
+        width: 30%;
+    }
+    #firstpane-content-right {
+        width: 70%;
+        margin: auto 5%;
+    }
+    #firstpane-content-right h1 {
+        font-size: 7vw;
+    }
+    #firstpane-content-right p {
+        font-size: 2.5vw;
+    }
+}
+
+/* Additional queries for the compat list iframe */
+@media only screen and (max-width: 510px) {
+    #compat_list_frame {
+        height: 1540px;
+    }
+}
+
+@media only screen and (max-width: 520px) {
+    #compat_list_frame {
+        height: 1580px;
+    }
+}
+
+@media only screen and (min-width: 768px) {
+    #compat_list_frame {
+        height: 1140px;
+    }
+    .info-frame h1 {
+        font-size: 6vw;
+    }
+    .info-frame p {
+        font-size: 2vw;
+    }
+    .firstpane-content {
+        width: 80%;
+        margin-left: 10%;
+    }
+    #firstpane-content-left {
+        width: 30%;
+    }
+    #firstpane-content-right {
+        width: 70%;
+        margin: auto 5%;
+    }
+    #firstpane-content-right h1 {
+        font-size: 6vw;
+    }
+    #firstpane-content-right p {
+        font-size: 2vw;
+    }
+}
+
+/* More additional queries fo the compat list iframe */
+@media only screen and (min-width: 950px) {
+    #compat_list_frame {
+        height: 1165px;
+    }
+}
+
+@media only screen and (min-width: 1100px) {
+    #compat_list_frame {
+        height: 1185px;
+    }
+}
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) {
+    .info-frame h1 {
+        font-size: 5.5vw;
+    }
+    .info-frame p {
+        font-size: 1.75vw;
+    }
+    .firstpane-content {
+        width: 75%;
+        margin-left: 12.5%;
+    }
+    #firstpane-content-left {
+        width: 30%;
+    }
+    #firstpane-content-right {
+        width: 70%;
+        margin: auto 5%;
+    }
+    #firstpane-content-right h1 {
+        font-size: 5.5vw;
+    }
+    #firstpane-content-right p {
+        font-size: 1.75vw;
+    }
+}
+
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+    #compat_list_frame {
+        height: 800px;
+    }
+    .info-frame h1 {
+        font-size: 4em;
+    }
+    .info-frame p {
+        font-size: 1.3em;
+    }
+    .firstpane-content {
+        width: 75%;
+        margin-left: 15%;
+    }
+    #firstpane-content-left {
+        width: 30%;
+    }
+    #firstpane-content-right {
+        width: 70%;
+        margin: auto 5%;
+    }
+    #firstpane-content-right h1 {
+        font-size: 4em;
+    }
+    #firstpane-content-right p {
+        font-size: 1.3em;
+    }
+}
