@@ -22,11 +22,11 @@
                         <p id="total_apps">Tested Apps:</p>
 
                         <!-- TODO: Make those buttons selectable in order to filter apps by compatibility status -->
-                        <button id="b_perfect">Perfect:</button>
-                        <button id="b_minor_issue">Minor issues:</button>
-                        <button id="b_playable">Playable:</button>
-                        <button id="b_ingame">Ingame:</button>
-                        <button id="b_not_booting">Not booting:</button>
+                        <button id="b_perfect"     onclick="toggleStatus('perfect')">Perfect:</button>
+                        <button id="b_minor_issue" onclick="toggleStatus('minor_issue')">Minor issues:</button>
+                        <button id="b_playable"    onclick="toggleStatus('playable')">Playable:</button>
+                        <button id="b_ingame"      onclick="toggleStatus('ingame')">Ingame:</button>
+                        <button id="b_not_booting" onclick="toggleStatus('not_booting')">Not booting:</button>
                     </div>
                 </div>
             </div>
