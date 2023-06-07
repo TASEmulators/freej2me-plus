@@ -29,7 +29,7 @@ American Gangster – The Mobile Game|320x240|Perfect|Works perfectly, needs the
 反恐尖兵 (Anti-terrorist Spike - Counter Striker)|320x240|Perfect|Works perfectly, but spams the console with text during gameplay|06/04/23|68eb4d258a3e91726d09a1afc9952775 (320x240)
 Apotheosize|240x320|Playable|Runs perfectly, but is unable to save and load games (RecordStoreException: Can't Add RMS Record)|06/04/23|190c1d339a45bc80526cb694035b7030 (240x320)
 Arcadius|240x320 (portrait 320x240)|Playable|Some 2D elements do not render, like the background (Tiled Layer pops up in the java console). Most 2D elements in the menus are partially cutoff. Default rotation as 240x320 works fine|06/04/23|aab94b77b9ae7789b067de381db482a1 (portrait 320x240)
-Arkanoid Evolution|320x240|Perfect|Works perfectly, needs the Nokia Control Scheme. Throws “java.lang.IllegalThreadStateException” on "AWT-EventQueue-0" when starting, but it appears to cause no real issues.|06/04/23|a47e72fef5c8a41502d39a38644aa22f (320x240)
+Arkanoid Evolution|320x240|Perfect|Works perfectly, needs the Nokia Control Scheme. Throws “java. Lang. IllegalThreadStateException” on "AWT-EventQueue-0" when starting, but it appears to cause no real issues.|06/04/23|a47e72fef5c8a41502d39a38644aa22f (320x240)
 Armor Hero|240x320|Perfect|Works perfectly|06/04/23|9be3c0441c996a2df9d27f8aa35098b4 (240x320)
 Artic Assault 3D (yes, it’s “Artic”)|320x240 (landscape 240x320)|Perfect|Works perfectly|06/04/23|c38740a34ee33ad3c4a28af44cc1c4c5 (landscape 240x320)
 Art of War|320x240|Perfect|Works perfectly|06/04/23|250357f26b4ff5298ea83638f889a557 (320x240)

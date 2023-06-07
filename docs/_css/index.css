@@ -29,10 +29,8 @@ body {
     height: 100vh;
     display: block;
     margin: 0 auto;
-    animation-name: init-logoanim;
-    animation-duration: 1.5s; /*Default: 1.5s*/
+    animation: init-logoanim 1.5s ease-in-out; /*Default: 1.5s*/
     animation-fill-mode: forwards;
-    animation-timing-function: ease-in-out;
 }
 
 @keyframes init-logoanim {
@@ -106,8 +104,13 @@ body {
 }
 
 @keyframes slidegamebg {
-    0%   { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(-2830px, 0, 0);}
+    0%   { opacity: 1; transform: translate3d(0, 0, 0); }
+    5%   { opacity: 0; } 10% { opacity: 1; } 15%  { opacity: 0; } 20% { opacity: 1; }
+    25%  { opacity: 0; } 30% { opacity: 1; } 35%  { opacity: 0; } 40% { opacity: 1; }
+    45%  { opacity: 0; } 50% { opacity: 1; } 55%  { opacity: 0; } 60% { opacity: 1; }
+    65%  { opacity: 0; } 70% { opacity: 1; } 75%  { opacity: 0; } 80% { opacity: 1; }
+    85%  { opacity: 0; } 90% { opacity: 1; } 95%  { opacity: 0; }
+    100% { opacity: 1; transform: translate3d(-2830px, 0, 0);}
 }
 
 .firstpane-content {
@@ -136,7 +139,7 @@ body {
 }
 
 #firstpane-content-right h1 {
-    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-family:'Times New Roman', Times, serif;
     margin-top: 0;
     color: #0064ca;
     font-size: 4em;
@@ -150,22 +153,20 @@ body {
     margin-left: 3%;
     margin-top: 0;
     font-size: 1.3em;
-    font-weight: 600;
+    font-weight: 900;
     transform: rotate(-1deg);
 }
 
 #freej2me_logo {
     z-index: 5;
     width: 100%;
-    animation-name: logoanim;
-    animation-duration: 3s;
-    animation-iteration-count: infinite;
+    animation: logoanim 3s ease-in-out infinite;
 }
 
 @keyframes logoanim {
-    0%   {transform: scale(1) rotate(0deg); animation-timing-function: ease-in-out;}
-    50%  {transform: scale(1.25) rotate(10deg); animation-timing-function: ease-in-out;}
-    100% {transform: scale(1) rotate(0deg); animation-timing-function: ease-in-out;}
+    0%   {transform: scale(1) rotate(0deg);}
+    50%  {transform: scale(1.2) rotate(10deg);}
+    100% {transform: scale(1) rotate(0deg);}
 }
 
 #mainpage {
@@ -195,14 +196,15 @@ body {
     position: relative;
     margin: 0;
     display:flex;
-    background-color: #0064ca;
+    background-color: white;
     border: none;
-    border-radius: 5px;
-    box-shadow: 0px 4px 12px #444;
+    border: 12px double #5566ff;
+    border-left: none;
+    border-right: none;
+    box-shadow: 0px 0px 16px #444;
     justify-content: center;
     align-items: center;
     width: 100%;
-    padding-bottom: 10px;
     z-index: 7;
 }
 
@@ -216,7 +218,7 @@ body {
     text-align: center;
     font-size: 4em;
     margin: 0 auto;
-    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-family:'Times New Roman', Times, serif;
     color: #00ca31;
     font-weight: bolder;
 }
@@ -224,16 +226,43 @@ body {
 .info-frame p {
     font-size: 1.3em;
     font-family:Helvetica, Geneva, Tahoma, sans-serif;
-    font-weight: 500;
-    color: white;
+    font-weight: 700;
+    color: #555;
 }
 
-footer {
+.footerdiv {
     position: relative;
-    text-align: center;
-    margin-top: 0;
+    border-top: 12px double #5566ff;
     background-color: white;
+    box-shadow: 0px 0px 16px #444;
     z-index: 4;
+    padding: 25px;
+    padding-bottom: 3px;
+}
+
+.footerdiv #footer_top {
+    font-weight: bolder;
+    font-family:'Times New Roman', Times, serif;
+    font-size: 1.85em;
+    color: #5566ff;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.footerdiv a {
+    text-decoration: none;
+}
+
+.footerdiv a:hover {
+    color: #00ca31;
+}
+
+.footerdiv #footer_bottom {
+    font-weight: bold;
+    font-family: cursive,sans-serif;
+    font-size: 1.4em;
+    color: #5566ff;
+    text-align: end;
 }
 
 
@@ -261,10 +290,10 @@ iframe {
         height: 1630px;
     }
     .info-frame h1 {
-        font-size: 8vw;
+        font-size: 9vw;
     }
     .info-frame p {
-        font-size: 3.5vw;
+        font-size: 3vw;
     }
     .firstpane-content {
         width: 90%;
@@ -290,7 +319,7 @@ iframe {
         height: 1090px;
     }
     .info-frame h1 {
-        font-size: 7vw;
+        font-size: 8vw;
     }
     .info-frame p {
         font-size: 2.5vw;
