@@ -188,20 +188,10 @@ public class Libretro
 							code = (din[1]<<24) | (din[2]<<16) | (din[3]<<8) | din[4];
 							switch(din[0])
 							{
-								case 0: // keyboard key up
-									mobikey = getMobileKey(code);
-									if (mobikey != 0)
-									{
-										keyUp(mobikey);
-									}
+								case 0: // keyboard key up (unused)
 								break;
 
-								case 1:	// keyboard key down
-									mobikey = getMobileKey(code);
-									if (mobikey != 0)
-									{
-										keyDown(mobikey);
-									}
+								case 1:	// keyboard key down (unused)
 								break;
 
 								case 2:	// joypad key up
@@ -478,101 +468,6 @@ public class Libretro
 			Mobile.getPlatform().keyReleased(key);
 		}
 		pressedKeys[mobikeyN] = false;
-	}
-
-	private int getMobileKey(int keycode)
-	{
-		if(useNokiaControls)
-		{
-			switch(keycode)
-			{
-				case 273: return Mobile.NOKIA_UP; // Up
-				case 274: return Mobile.NOKIA_DOWN; // Down
-				case 276: return Mobile.NOKIA_LEFT; // Left
-				case 275: return Mobile.NOKIA_RIGHT; // Right
-				case 13: return Mobile.NOKIA_SOFT3; // Middle
-			}
-		}
-		if(useSiemensControls)
-		{
-			switch(keycode)
-			{
-				case 273: return Mobile.SIEMENS_UP;
-				case 274: return Mobile.SIEMENS_DOWN;
-				case 276: return Mobile.SIEMENS_LEFT;
-				case 275: return Mobile.SIEMENS_RIGHT;
-				case 113: return Mobile.SIEMENS_SOFT1;
-				case 119: return Mobile.SIEMENS_SOFT2;
-				case 91: return Mobile.SIEMENS_SOFT1;
-				case 93: return Mobile.SIEMENS_SOFT2;
-				case 13: return Mobile.SIEMENS_FIRE;
-			}
-		}
-		if(useMotorolaControls)
-		{
-			switch(keycode)
-			{
-				case 273: return Mobile.MOTOROLA_UP;
-				case 274: return Mobile.MOTOROLA_DOWN;
-				case 276: return Mobile.MOTOROLA_LEFT;
-				case 275: return Mobile.MOTOROLA_RIGHT;
-				case 113: return Mobile.MOTOROLA_SOFT1;
-				case 119: return Mobile.MOTOROLA_SOFT2;
-				case 91: return Mobile.MOTOROLA_SOFT1;
-				case 93: return Mobile.MOTOROLA_SOFT2;
-				case 13: return Mobile.MOTOROLA_FIRE;
-			}
-		}
-
-		switch(keycode)
-		{
-			case 48: return Mobile.KEY_NUM0;
-			case 49: return Mobile.KEY_NUM1;
-			case 50: return Mobile.KEY_NUM2;
-			case 51: return Mobile.KEY_NUM3;
-			case 52: return Mobile.KEY_NUM4;
-			case 53: return Mobile.KEY_NUM5;
-			case 54: return Mobile.KEY_NUM6;
-			case 55: return Mobile.KEY_NUM7;
-			case 56: return Mobile.KEY_NUM8;
-			case 57: return Mobile.KEY_NUM9;
-			case 42: return Mobile.KEY_STAR;
-			case 35: return Mobile.KEY_POUND;
-
-			// Arrow U,D,L,R
-			case 273: return Mobile.KEY_NUM2;
-			case 274: return Mobile.KEY_NUM8;
-			case 276: return Mobile.KEY_NUM4;
-			case 275: return Mobile.KEY_NUM6;
-
-			// Inverted Numpad
-			case 256: return Mobile.KEY_NUM0;
-			case 257: return Mobile.KEY_NUM7;
-			case 258: return Mobile.KEY_NUM8;
-			case 259: return Mobile.KEY_NUM9;
-			case 260: return Mobile.KEY_NUM4;
-			case 261: return Mobile.KEY_NUM5;
-			case 262: return Mobile.KEY_NUM6;
-			case 263: return Mobile.KEY_NUM1;
-			case 264: return Mobile.KEY_NUM2;
-			case 265: return Mobile.KEY_NUM3;
-
-			// Enter
-			case 13: return Mobile.KEY_NUM5;
-
-			case 113: return Mobile.NOKIA_SOFT1; // q
-			case 119: return Mobile.NOKIA_SOFT2; // w
-			case 101: return Mobile.KEY_STAR;  // e
-			case 114: return Mobile.KEY_POUND; // r
-
-			case 91: return Mobile.NOKIA_SOFT1; // [
-			case 93: return Mobile.NOKIA_SOFT2; // ]
-
-			// ESC - Config Menu
-			//case 27: config.start(); /* This menu won't be available on the Libretro frontend */
-
-		}
-		return 0;
 	}
 
 	private int getMobileKeyJoy(int keycode)
