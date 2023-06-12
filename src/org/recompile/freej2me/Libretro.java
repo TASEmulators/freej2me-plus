@@ -26,6 +26,9 @@ import java.awt.image.BufferedImage;
 
 import java.util.Timer;
 import java.util.TimerTask;
+
+import javax.microedition.midlet.MIDlet;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -74,6 +77,13 @@ public class Libretro
 	{
 		lcdWidth  = 240;
 		lcdHeight = 320;
+
+		/* 
+		 * Notify the MIDlet class that this version of FreeJ2ME is for Libretro, which disables 
+		 * the ability to close the jar when a J2ME app requests an exit as this can cause segmentation
+		 * faults on frontends and also close the unexpectedly.
+		*/
+		MIDlet.isLibretro = true;
 
 		/* 
 		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user

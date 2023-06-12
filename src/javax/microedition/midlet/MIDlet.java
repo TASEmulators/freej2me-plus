@@ -29,6 +29,7 @@ import javax.microedition.rms.*;
 
 public abstract class MIDlet
 {
+	public static boolean isLibretro = false;
 
 	public static HashMap<String, String> properties;
 
@@ -62,7 +63,7 @@ public abstract class MIDlet
 	public final void notifyDestroyed()
 	{ 
 		System.out.println("MIDlet sent Destroyed Notification");
-		System.exit(0);
+		if(!isLibretro) { System.exit(0); }
 	}
 
 	public final void notifyPaused() { }
