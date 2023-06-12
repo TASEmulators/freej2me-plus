@@ -45,10 +45,10 @@ static const struct retro_input_descriptor desc[] =
     { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,                                        "Num 5, Pointer Click" },
     { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,                                        "Num 1" },
     { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,                                        "Num 3" },
-    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,                                       "Key #"},
-    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,                                       "Key *"},
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,                                       "Num #" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,                                       "Num *" },
     { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT,                                   "Left Options Key" },
-    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,                                    "Right Back Key" },
+    { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,                                    "Right Options Key" },
 
     { 0 },
 };
@@ -148,8 +148,8 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_sound",
-        "Virtual Phone Settings > Virtual Phone Sound",
-        "Virtual Phone Sound",
+        "Virtual Phone Settings > Virtual Phone Sound (Core Restart required)",
+        "Virtual Phone Sound (Core Restart required)",
         "Enables or disables the virtual phone's ability to load and play audio samples/tones. Some games require support for codecs not yet implemented, or have issues that can be worked around by disabling audio in FreeJ2ME (ID Software games such as DOOM II RPG having memory leaks with MIDI samples being one example). If a game doesn't run or has issues during longer sessions, try disabling this option.",
         "Enables or disables the virtual phone's ability to load and play audio samples/tones. Some games require support for codecs not yet implemented, or have issues that can be worked around by disabling audio in FreeJ2ME (ID Software games such as DOOM II RPG having memory leaks with MIDI samples being one example). If a game doesn't run or has issues during longer sessions, try disabling this option.",
         "vphone_settings",
@@ -362,7 +362,7 @@ struct retro_core_option_definition core_options_v1 [] =
     },
     {
         "freej2me_sound",
-        "Virtual Phone Sound",
+        "Virtual Phone Sound (Core Restart required)",
         "Enables or disables the virtual phone's ability to load and play audio samples/tones. Some games require support for codecs not yet implemented, or have issues that can be worked around by disabling audio in FreeJ2ME (ID Software games such as DOOM II RPG having memory leaks with MIDI samples being one example). If a game doesn't run or has issues during longer sessions, try disabling this option.",
         {
             { "on",  "On"  },
@@ -498,7 +498,7 @@ static const struct retro_variable vars[] =
     },
     { /* Virtual Phone Sound */
         "freej2me_sound",
-        "Virtual Phone Sound; on|off"
+        "Virtual Phone Sound (Core Restart required); on|off"
     },
     { /* MIDI Soundfont */
         "freej2me_midifont",
