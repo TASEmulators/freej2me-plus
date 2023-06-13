@@ -202,18 +202,7 @@ body {
     margin-left: 1%;
 }
 
-.compat_entry {
-    opacity: 0;
-    animation: show_entry 1s linear;
-    animation-fill-mode: forwards;
-}
-
-@keyframes show_entry {
-    0%   { opacity: 0; }
-    100% { opacity: 1; }
-}
-
-#compat_entry0 {
+.compat_entry:nth-child(even) {
     border: 3px solid;
     background-color: #fafafa;
     display: flex;
@@ -222,7 +211,7 @@ body {
     min-height: 40px;
 }
 
-#compat_entry1 {
+.compat_entry:nth-child(odd) {
     border: 3px solid;
     background-color: #dcdcdc;
     display: flex;
