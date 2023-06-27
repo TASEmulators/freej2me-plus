@@ -1,6 +1,4 @@
 <project name="FreeJ2ME">
-	<echo message="Building FreeJ2ME" />
-
 
 <!--
 ****************************************************
@@ -8,8 +6,20 @@
 ****************************************************
 -->
 
-	<echo message="FreeJ2ME - AWT | Libretro | SDL" />
+	
 	<mkdir dir="build/classes"/>
+    <echo message="Building Objectweb asm libraries" />
+	<javac
+		srcdir="src/org/objectweb/"
+		destdir="build/classes"
+		includeantruntime="false"
+		debug="true"
+		debuglevel="lines,vars,source"
+	>
+	<compilerarg value="-nowarn"/>
+	</javac>
+
+    <echo message="Building FreeJ2ME - AWT | Libretro | SDL" />
 	<javac
 		srcdir="src"
 		destdir="build/classes"
@@ -17,9 +27,12 @@
 		debug="true"
 		debuglevel="lines,vars,source"
 	>
+    <exclude name="src/org/objectweb/**"/>
 	<compilerarg value="-Xlint:unchecked"/>
 	<compilerarg value="-Xlint:deprecation"/>
 	</javac>
+
+    
 
 
 <!--
@@ -61,7 +74,7 @@
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
 		<manifest>
-			<!-- Libretro Version -->
+			<!-- SDL Version -->
 			<attribute name="Main-Class" value="org.recompile.freej2me.Anbu"/>
 			<attribute name="Implementation-Title" value="FreeJ2ME"/>
 		</manifest>
