@@ -281,7 +281,7 @@ public class MIDletLoader extends URLClassLoader
 		try
 		{
 			InputStream is = url.openStream();
-			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			BufferedReader br = new BufferedReader(new InputStreamReader(is,"utf-8"));
 			
 			ArrayList<String> lines = new ArrayList<String>();
 			while ((line = br.readLine()) != null) 
