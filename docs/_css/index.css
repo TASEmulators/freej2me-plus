@@ -141,6 +141,7 @@ body {
 #firstpane-content-right h1 {
     font-family:'Times New Roman', Times, serif;
     margin-top: 0;
+    margin-bottom: 0;
     color: #0064ca;
     font-size: 4em;
     font-weight: bolder;
@@ -155,6 +156,42 @@ body {
     font-size: 1.3em;
     font-weight: 900;
     transform: rotate(-1deg);
+}
+
+#downloadbutton {
+    padding: 5px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2em;
+    border-radius: 15px;
+    border-width: 5px;
+    border-color: transparent;
+    border-style: solid;
+    background-color: #0064ca;
+    color: #00ca31;
+    font-weight: bold;
+    float: right;
+    margin-top: 2.5%;
+    margin-right: 10%;
+    box-shadow: 0px 0px 8px #222;
+    transition-duration: 0.2s;
+    animation: downloadanim 3s ease-in-out infinite;
+}
+
+@keyframes downloadanim {
+    0%   {transform: scale(1)}
+    50%  {transform: scale(1.1); box-shadow: 0px 0px 24px #222;}
+    100% {transform: scale(1)}
+}
+
+#downloadbutton:hover {
+    color: #0064ca;
+    background: #00ca31;
+}
+
+#downloadbutton:active {
+    box-shadow: 0px 0px 0px #fff;
+    border-width: 5px;
+    border-color: white;
 }
 
 #freej2me_logo {
