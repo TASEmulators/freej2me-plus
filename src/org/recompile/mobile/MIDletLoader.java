@@ -449,7 +449,7 @@ public class MIDletLoader extends URLClassLoader
 		ClassReader reader = new ClassReader(stream);
 		ClassWriter writer = new ClassWriter(0);
 		ClassVisitor visitor = new ASMVisitor(writer);
-		reader.accept(visitor, 0);
+		reader.accept(visitor, ClassReader.SKIP_DEBUG);
 		return writer.toByteArray();
 	}
 
