@@ -98,7 +98,19 @@ public class List extends Screen implements Choice
 
 	public int getSelectedIndex() { return currentItem; }
 
-	public String getString(int elementNum) { return ((StringItem)(items.get(elementNum))).getText(); }
+	public String getString(int elementNum)
+	{
+		Item item = items.get(elementNum);
+
+		if (item instanceof StringItem)
+		{
+			return ((StringItem)item).getText();
+		}
+		else
+		{
+			return item.getLabel();
+		}
+	}
 
 	public void insert(int elementNum, String stringPart, Image imagePart)
 	{
