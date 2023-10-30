@@ -105,7 +105,7 @@ public class MIDletLoader extends URLClassLoader
 
 		try
 		{
-			mainClass = loadClass(className, true);
+			mainClass = loadClass(className);
 
 			Constructor constructor;
 			constructor = mainClass.getConstructor();
