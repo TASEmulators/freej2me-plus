@@ -31,6 +31,7 @@ import java.nio.file.Paths;
 import java.nio.file.Path;
 
 import javax.microedition.lcdui.Graphics;
+import javax.microedition.media.Manager;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
@@ -65,7 +66,7 @@ public class Config
 		gc = lcd.getGraphics();
 
 		menu = new ArrayList<String[]>();
-		menu.add(new String[]{"Resume Game", "Display Size", "Sound", "Limit FPS", "Phone", "Rotate", "MIDI", "Exit"}); // 0 - Main Menu
+		menu.add(new String[]{"Resume Game", "Display Size", "Sound", "Limit FPS", "Phone", "Rotate", "MIDI", "Max MIDI Streams", "Exit"}); // 0 - Main Menu
 		menu.add(new String[]{"96x65","96x96","104x80","128x128","132x176","128x160","176x208","176x220", "208x208", "240x320", "320x240", "240x400", "352x416", "360x640", "640x360" ,"480x800", "800x480"}); // 1 - Size
 		menu.add(new String[]{"Quit", "Main Menu"}); // 2 - Restart Notice
 		menu.add(new String[]{"On", "Off"}); // 3 - sound
@@ -73,6 +74,8 @@ public class Config
 		menu.add(new String[]{"On", "Off"}); // 5 - rotate 
 		menu.add(new String[]{"Auto", "60 - Fast", "30 - Slow", "15 - Turtle"}); // 6 - FPS
 		menu.add(new String[]{"Default", "Custom"});  // 7 - MIDI soundfont
+		menu.add(new String[]{"1", "2", "4", "8", "16", "32", "48", "64", "96"}); // 8 - Max amount of MIDI Players
+
 
 		onChange = new Runnable()
 		{
@@ -152,6 +155,7 @@ public class Config
 			if(!settings.containsKey("rotate")) { settings.put("rotate", "off"); }
 			if(!settings.containsKey("fps")) { settings.put("fps", "0"); }
 			if(!settings.containsKey("soundfont")) { settings.put("soundfont", "Default"); }
+			if(!settings.containsKey("maxmidistreams")) { settings.put("maxmidistreams", "32"); }
 
 			int w = Integer.parseInt(settings.get("width"));
 			int h = Integer.parseInt(settings.get("height"));
@@ -313,7 +317,7 @@ public class Config
 		for(int i=start; (i<(start+max))&(i<t.length); i++)
 		{
 			label = t[i];
-			if(menuid==0 && i>1 && i<7)
+			if(menuid==0 && i>1 && i<8)
 			{
 				switch(i)
 				{
@@ -322,6 +326,7 @@ public class Config
 					case 4: label = label+": "+settings.get("phone"); break;
 					case 5: label = label+": "+settings.get("rotate"); break;
 					case 6: label = label+": "+settings.get("soundfont"); break;
+					case 7: label = label+": "+settings.get("maxmidistreams"); break;
 				}
 			}
 			if(i==itemid)
@@ -353,7 +358,8 @@ public class Config
 					case 4: menuid=4; itemid=0; break; // phone
 					case 5: menuid=5; itemid=0; break; // rotate
 					case 6: menuid=7; itemid=0; break; // MIDI soundfont
-					case 7: System.exit(0); break;
+					case 7: menuid=10; itemid=0; break; // max MIDI Players
+					case 8: System.exit(0); break;
 				}
 			break;
 
@@ -404,6 +410,19 @@ public class Config
 			case 7: // Set MIDI Soundfont to System default or custom file
 				if(itemid==0) { updateSoundfont("Default"); }
 				if(itemid==1) { updateSoundfont("Custom"); }
+				menuid=2; itemid=0;
+			break;
+
+			case 8: // Max Midi Streams
+				if(itemid==0)  { updateMIDIStreams("1"); }
+				if(itemid==1)  { updateMIDIStreams("2"); }
+				if(itemid==2)  { updateMIDIStreams("4"); }
+				if(itemid==3)  { updateMIDIStreams("8"); }
+				if(itemid==4)  { updateMIDIStreams("16"); }
+				if(itemid==5)  { updateMIDIStreams("32"); }
+				if(itemid==6)  { updateMIDIStreams("48"); }
+				if(itemid==7)  { updateMIDIStreams("64"); }
+				if(itemid==8)  { updateMIDIStreams("96"); }
 				menuid=2; itemid=0;
 			break;
 
@@ -461,6 +480,14 @@ public class Config
 	{
 		System.out.println("Config: soundfont "+value);
 		settings.put("soundfont", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	private void updateMIDIStreams(String value) 
+	{
+		System.out.println("Config: maxmidistreams "+value);
+		settings.put("maxmidistreams", value);
 		saveConfig();
 		onChange.run();
 	}
