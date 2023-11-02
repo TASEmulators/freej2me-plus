@@ -34,11 +34,8 @@ import javax.microedition.media.Manager;
 
 public class FreeJ2ME
 {
-	public static void main(String args[])
-	{
-		FreeJ2ME app = new FreeJ2ME(args);
-	}
 
+	private static FreeJ2ME app;
 	private Frame main;
 	private int lcdWidth;
 	private int lcdHeight;
@@ -57,13 +54,23 @@ public class FreeJ2ME
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
 	private int limitFPS = 0;
+	private int renderHint = 0;
 	
+	private AWTGUI awtGUI;
+
 	private boolean[] pressedKeys = new boolean[128];
+
+	public static void main(String args[])
+	{
+		FreeJ2ME app = new FreeJ2ME(args);
+	}
 
 	public FreeJ2ME(String args[])
 	{
 		main = new Frame("FreeJ2ME");
 		main.setSize(350,450);
+		/* Set a minimum allowed width and height so the menu bar is visible at all times */
+		main.setMinimumSize(new Dimension(240, 240));
 		main.setBackground(new Color(0,0,64));
 		try
 		{
@@ -100,10 +107,9 @@ public class FreeJ2ME
 		lcdWidth = 240;
 		lcdHeight = 320;
 
-		String jarfile = "";
 		if(args.length>=1)
 		{
-			jarfile = getFormattedLocation(args[0]);
+			awtGUI.setJarPath(getFormattedLocation(args[0]));
 		}
 		if(args.length>=3)
 		{
@@ -119,96 +125,118 @@ public class FreeJ2ME
 
 		lcd = new LCD();
 		lcd.setFocusable(true);
-		main.add(lcd);
 
 		config = new Config();
 		config.onChange = new Runnable() { public void run() { settingsChanged(); } };
+
+		/* Add LCD screen to FreeJ2ME's AWT frame */
+		main.add(lcd);
+
+		awtGUI = new AWTGUI(config);
+		awtGUI.setMainFrame(main);
+		/* Append the awt menu bar into FreeJ2ME's frame */
+		main.setMenuBar(awtGUI.getMenuBar());
 
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
 			public void run()
 			{
+				/* Set menuBar option states based on loaded config */
+				if(awtGUI.hasJustLoaded()) { awtGUI.updateOptions(); }
+
+				/* Only update mem dialog's stats if it is visible */
+				if(awtGUI.memStatDialog.isVisible()) { awtGUI.updateMemStatDialog(); }
+
+				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
+				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
+
 				lcd.paint(lcd.getGraphics());
 			}
 		});
 
+		/* Inputs should only be registered if a jar has been loaded, otherwise AWT will throw NullPointerException */
 		lcd.addKeyListener(new KeyListener()
 		{
 			public void keyPressed(KeyEvent e)
 			{
-				int keycode = e.getKeyCode();
-				int mobikey = getMobileKey(keycode);
-				int mobikeyN = (mobikey + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-				
-				switch(keycode) // Handle emulator control keys
+				if(awtGUI.hasLoadedFile())
 				{
-					case KeyEvent.VK_PLUS:
-					case KeyEvent.VK_ADD:
-						scaleFactor++;
-						main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
-					break;
-					case KeyEvent.VK_MINUS:
-					case KeyEvent.VK_SUBTRACT:
-						if( scaleFactor > 1 )
-						{
-							scaleFactor--;
-							main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
-						}
-					break;
-					case KeyEvent.VK_C:
-						if(e.isControlDown())
-						{
-							ScreenShot.takeScreenshot(false);
-						}
-					break;
-				}
-				
-				if (mobikey == 0) //Ignore events from keys not mapped to a phone keypad key
-				{
-					return; 
-				}
-				
-				if(config.isRunning)
-				{
-					config.keyPressed(mobikey);
-				}
-				else
-				{
-					if (pressedKeys[mobikeyN] == false)
+					int keycode = e.getKeyCode();
+					int mobikey = getMobileKey(keycode);
+					int mobikeyN = (mobikey + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
+					
+					switch(keycode) // Handle emulator control keys
 					{
-						//~ System.out.println("keyPressed:  " + Integer.toString(mobikey));
-						Mobile.getPlatform().keyPressed(mobikey);
+						case KeyEvent.VK_PLUS:
+						case KeyEvent.VK_ADD:
+							scaleFactor++;
+							main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
+						break;
+						case KeyEvent.VK_MINUS:
+						case KeyEvent.VK_SUBTRACT:
+							if( scaleFactor > 1 )
+							{
+								scaleFactor--;
+								main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
+							}
+						break;
+						case KeyEvent.VK_C:
+							if(e.isControlDown())
+							{
+								ScreenShot.takeScreenshot(false);
+							}
+						break;
+					}
+					
+					if (mobikey == 0) //Ignore events from keys not mapped to a phone keypad key
+					{
+						return; 
+					}
+					
+					if(config.isRunning)
+					{
+						config.keyPressed(mobikey);
 					}
 					else
 					{
-						//~ System.out.println("keyRepeated:  " + Integer.toString(mobikey));
-						Mobile.getPlatform().keyRepeated(mobikey);
+						if (pressedKeys[mobikeyN] == false)
+						{
+							//~ System.out.println("keyPressed:  " + Integer.toString(mobikey));
+							Mobile.getPlatform().keyPressed(mobikey);
+						}
+						else
+						{
+							//~ System.out.println("keyRepeated:  " + Integer.toString(mobikey));
+							Mobile.getPlatform().keyRepeated(mobikey);
+						}
 					}
+					pressedKeys[mobikeyN] = true;
 				}
-				pressedKeys[mobikeyN] = true;
-				
 			}
 
 			public void keyReleased(KeyEvent e)
 			{
-				int mobikey = getMobileKey(e.getKeyCode());
-				int mobikeyN = (mobikey + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-				
-				if (mobikey == 0) //Ignore events from keys not mapped to a phone keypad key
+				if(awtGUI.hasLoadedFile()) 
 				{
-					return; 
-				}
-				
-				pressedKeys[mobikeyN] = false;
-				
-				if(config.isRunning)
-				{
-					config.keyReleased(mobikey);
-				}
-				else
-				{
-					//~ System.out.println("keyReleased: " + Integer.toString(mobikey));
-					Mobile.getPlatform().keyReleased(mobikey);
+					int mobikey = getMobileKey(e.getKeyCode());
+					int mobikeyN = (mobikey + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
+					
+					if (mobikey == 0) //Ignore events from keys not mapped to a phone keypad key
+					{
+						return; 
+					}
+					
+					pressedKeys[mobikeyN] = false;
+					
+					if(config.isRunning)
+					{
+						config.keyReleased(mobikey);
+					}
+					else
+					{
+						//~ System.out.println("keyReleased: " + Integer.toString(mobikey));
+						Mobile.getPlatform().keyReleased(mobikey);
+					}
 				}
 			}
 
@@ -218,33 +246,40 @@ public class FreeJ2ME
 
 		lcd.addMouseListener(new MouseListener()
 		{
+
 			public void mousePressed(MouseEvent e)
 			{
-				int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
-				int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
-
-				// Adjust the pointer coords if the screen is rotated, same for mouseReleased
-				if(rotateDisplay)
+				if(awtGUI.hasLoadedFile()) 
 				{
-					x = (int)((lcd.ch-(e.getY()-lcd.cy)) * lcd.scaley);
-					y = (int)((e.getX()-lcd.cx) * lcd.scalex);
-				}
+					int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
 
-				Mobile.getPlatform().pointerPressed(x, y);
+					// Adjust the pointer coords if the screen is rotated, same for mouseReleased
+					if(rotateDisplay)
+					{
+						x = (int)((lcd.ch-(e.getY()-lcd.cy)) * lcd.scaley);
+						y = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					}
+
+					Mobile.getPlatform().pointerPressed(x, y);
+				}
 			}
 
 			public void mouseReleased(MouseEvent e)
 			{
-				int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
-				int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
-
-				if(rotateDisplay)
+				if(awtGUI.hasLoadedFile()) 
 				{
-					x = (int)((lcd.ch-(e.getY()-lcd.cy)) * lcd.scaley);
-					y = (int)((e.getX()-lcd.cx) * lcd.scalex);
-				}
+					int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
 
-				Mobile.getPlatform().pointerReleased(x, y);
+					if(rotateDisplay)
+					{
+						x = (int)((lcd.ch-(e.getY()-lcd.cy)) * lcd.scaley);
+						y = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					}
+
+					Mobile.getPlatform().pointerReleased(x, y);
+				}
 			}
 
 			public void mouseExited(MouseEvent e) { }
@@ -257,16 +292,19 @@ public class FreeJ2ME
 		{
 			public void mouseDragged(MouseEvent e)
 			{
-				int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
-				int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
-
-				if(rotateDisplay)
+				if(awtGUI.hasLoadedFile()) 
 				{
-					x = (int)((lcd.ch-(e.getY()-lcd.cy)) * lcd.scaley);
-					y = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
+
+					if(rotateDisplay)
+					{
+						x = (int)((lcd.ch-(e.getY()-lcd.cy)) * lcd.scaley);
+						y = (int)((e.getX()-lcd.cx) * lcd.scalex);
+					}
+					
+					Mobile.getPlatform().pointerDragged(x, y); 
 				}
-				
-				Mobile.getPlatform().pointerDragged(x, y); 
 			}
 		});
 
@@ -286,18 +324,13 @@ public class FreeJ2ME
 
 		if(args.length<1)
 		{
-			FileDialog t = new FileDialog(main, "Open JAR File", FileDialog.LOAD);
-			t.setFilenameFilter(new FilenameFilter()
+			while(!awtGUI.hasLoadedFile())
 			{
-				public boolean accept(File dir, String name)
-				{
-					return name.toLowerCase().endsWith(".jar");
-				}
-			});
-			t.setVisible(true);
-			jarfile = new File(t.getDirectory()+File.separator+t.getFile()).toURI().toString();
+				try{ Thread.sleep(1000); }
+				catch (InterruptedException e) { }
+			}
 		}
-		if(Mobile.getPlatform().loadJar(jarfile))
+		if(Mobile.getPlatform().loadJar(awtGUI.getJarPath()))
 		{
 			config.init();
 
@@ -388,7 +421,7 @@ public class FreeJ2ME
 			main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
 		}
 
-		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidiplayers")));
+		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
 	}
 
 	private int getMobileKey(int keycode)

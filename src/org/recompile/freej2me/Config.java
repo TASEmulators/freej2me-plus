@@ -431,7 +431,7 @@ public class Config
 		render();
 	}
 
-	private void updateDisplaySize(int w, int h)
+	public void updateDisplaySize(int w, int h)
 	{
 		settings.put("width", ""+w);
 		settings.put("height", ""+h);
@@ -444,7 +444,7 @@ public class Config
 
 	}
 
-	private void updateSound(String value)
+	public void updateSound(String value)
 	{
 		System.out.println("Config: sound "+value);
 		settings.put("sound", value);
@@ -452,7 +452,7 @@ public class Config
 		onChange.run();
 	}
 
-	private void updatePhone(String value)
+	public void updatePhone(String value)
 	{
 		System.out.println("Config: phone "+value);
 		settings.put("phone", value);
@@ -460,7 +460,7 @@ public class Config
 		onChange.run();
 	}
 
-	private void updateRotate(String value)
+	public void updateRotate(String value)
 	{
 		System.out.println("Config: rotate "+value);
 		settings.put("rotate", value);
@@ -468,7 +468,7 @@ public class Config
 		onChange.run();
 	}
 
-	private void updateFPS(String value)
+	public void updateFPS(String value)
 	{
 		System.out.println("Config: fps "+value);
 		settings.put("fps", value);
@@ -476,7 +476,7 @@ public class Config
 		onChange.run();
 	}
 
-	private void updateSoundfont(String value)
+	public void updateSoundfont(String value)
 	{
 		System.out.println("Config: soundfont "+value);
 		settings.put("soundfont", value);
@@ -484,7 +484,7 @@ public class Config
 		onChange.run();
 	}
 
-	private void updateMIDIStreams(String value) 
+	public void updateMIDIStreams(String value) 
 	{
 		System.out.println("Config: maxmidistreams "+value);
 		settings.put("maxmidistreams", value);
