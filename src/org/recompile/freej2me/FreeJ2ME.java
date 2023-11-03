@@ -428,88 +428,58 @@ public class FreeJ2ME
 	{
 		if(useNokiaControls)
 		{
-			switch(keycode)
-			{
-				case KeyEvent.VK_UP: return Mobile.NOKIA_UP;
-				case KeyEvent.VK_DOWN: return Mobile.NOKIA_DOWN;
-				case KeyEvent.VK_LEFT: return Mobile.NOKIA_LEFT;
-				case KeyEvent.VK_RIGHT: return Mobile.NOKIA_RIGHT;
-				case KeyEvent.VK_ENTER: return Mobile.NOKIA_SOFT3;
-			}
+			if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) { return Mobile.NOKIA_UP; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) { return Mobile.NOKIA_DOWN; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) { return Mobile.NOKIA_LEFT; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) { return Mobile.NOKIA_RIGHT; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) { return Mobile.NOKIA_SOFT3; }
 		}
 
 		if(useSiemensControls)
 		{
-			switch(keycode)
-			{
-				case KeyEvent.VK_UP: return Mobile.SIEMENS_UP;
-				case KeyEvent.VK_DOWN: return Mobile.SIEMENS_DOWN;
-				case KeyEvent.VK_LEFT: return Mobile.SIEMENS_LEFT;
-				case KeyEvent.VK_RIGHT: return Mobile.SIEMENS_RIGHT;
-				case KeyEvent.VK_Q: return Mobile.SIEMENS_SOFT1;
-				case KeyEvent.VK_W: return Mobile.SIEMENS_SOFT2;
-				case KeyEvent.VK_ENTER: return Mobile.SIEMENS_FIRE;
-			}
+			if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) { return Mobile.SIEMENS_UP; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) { return Mobile.SIEMENS_DOWN; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) { return Mobile.SIEMENS_LEFT; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) { return Mobile.SIEMENS_RIGHT; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.SIEMENS_SOFT1; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.SIEMENS_SOFT2; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) { return Mobile.SIEMENS_FIRE; }
 		}
 
 		if(useMotorolaControls)
 		{
-			switch(keycode)
-			{
-				case KeyEvent.VK_UP: return Mobile.MOTOROLA_UP;
-				case KeyEvent.VK_DOWN: return Mobile.MOTOROLA_DOWN;
-				case KeyEvent.VK_LEFT: return Mobile.MOTOROLA_LEFT;
-				case KeyEvent.VK_RIGHT: return Mobile.MOTOROLA_RIGHT;
-				case KeyEvent.VK_Q: return Mobile.MOTOROLA_SOFT1;
-				case KeyEvent.VK_W: return Mobile.MOTOROLA_SOFT2;
-				case KeyEvent.VK_ENTER: return Mobile.MOTOROLA_FIRE;
-			}
+			if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) { return Mobile.MOTOROLA_UP; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) { return Mobile.MOTOROLA_DOWN; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) { return Mobile.MOTOROLA_LEFT; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) { return Mobile.MOTOROLA_RIGHT; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.MOTOROLA_SOFT1; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.MOTOROLA_SOFT2; }
+			else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) { return Mobile.MOTOROLA_FIRE; }
 		}
 
-		switch(keycode)
-		{
-			case KeyEvent.VK_0: return Mobile.KEY_NUM0;
-			case KeyEvent.VK_1: return Mobile.KEY_NUM1;
-			case KeyEvent.VK_2: return Mobile.KEY_NUM2;
-			case KeyEvent.VK_3: return Mobile.KEY_NUM3;
-			case KeyEvent.VK_4: return Mobile.KEY_NUM4;
-			case KeyEvent.VK_5: return Mobile.KEY_NUM5;
-			case KeyEvent.VK_6: return Mobile.KEY_NUM6;
-			case KeyEvent.VK_7: return Mobile.KEY_NUM7;
-			case KeyEvent.VK_8: return Mobile.KEY_NUM8;
-			case KeyEvent.VK_9: return Mobile.KEY_NUM9;
-			case KeyEvent.VK_ASTERISK: return Mobile.KEY_STAR;
-			case KeyEvent.VK_NUMBER_SIGN: return Mobile.KEY_POUND;
+		if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD0_KEY]) return Mobile.KEY_NUM0;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD1_KEY]) return Mobile.KEY_NUM1;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD2_KEY]) return Mobile.KEY_NUM2;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD3_KEY]) return Mobile.KEY_NUM3;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD4_KEY]) return Mobile.KEY_NUM4;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD5_KEY]) return Mobile.KEY_NUM5;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD6_KEY]) return Mobile.KEY_NUM6;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD7_KEY]) return Mobile.KEY_NUM7;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD8_KEY]) return Mobile.KEY_NUM8;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD9_KEY]) return Mobile.KEY_NUM9;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD_ASTERISK_KEY]) return Mobile.KEY_STAR;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD_POUND_KEY]) return Mobile.KEY_POUND;
 
-			case KeyEvent.VK_NUMPAD0: return Mobile.KEY_NUM0;
-			case KeyEvent.VK_NUMPAD7: return Mobile.KEY_NUM1;
-			case KeyEvent.VK_NUMPAD8: return Mobile.KEY_NUM2;
-			case KeyEvent.VK_NUMPAD9: return Mobile.KEY_NUM3;
-			case KeyEvent.VK_NUMPAD4: return Mobile.KEY_NUM4;
-			case KeyEvent.VK_NUMPAD5: return Mobile.KEY_NUM5;
-			case KeyEvent.VK_NUMPAD6: return Mobile.KEY_NUM6;
-			case KeyEvent.VK_NUMPAD1: return Mobile.KEY_NUM7;
-			case KeyEvent.VK_NUMPAD2: return Mobile.KEY_NUM8;
-			case KeyEvent.VK_NUMPAD3: return Mobile.KEY_NUM9;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) return Mobile.KEY_NUM2;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) return Mobile.KEY_NUM8;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) return Mobile.KEY_NUM4;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) return Mobile.KEY_NUM6;
 
-			case KeyEvent.VK_UP: return Mobile.KEY_NUM2;
-			case KeyEvent.VK_DOWN: return Mobile.KEY_NUM8;
-			case KeyEvent.VK_LEFT: return Mobile.KEY_NUM4;
-			case KeyEvent.VK_RIGHT: return Mobile.KEY_NUM6;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) return Mobile.KEY_NUM5;
 
-			case KeyEvent.VK_ENTER: return Mobile.KEY_NUM5;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) return Mobile.NOKIA_SOFT1;
+		else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_RIGHT_KEY]) return Mobile.NOKIA_SOFT2;
 
-			case KeyEvent.VK_Q: return Mobile.NOKIA_SOFT1;
-			case KeyEvent.VK_W: return Mobile.NOKIA_SOFT2;
-			case KeyEvent.VK_E: return Mobile.KEY_STAR;
-			case KeyEvent.VK_R: return Mobile.KEY_POUND;
-
-			case KeyEvent.VK_A: return -1;
-			case KeyEvent.VK_Z: return -2;
-
-			// Config //
-			case KeyEvent.VK_ESCAPE: config.start();
-		}
 		return 0;
 	}
 

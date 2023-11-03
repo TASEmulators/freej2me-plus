@@ -59,12 +59,71 @@ public final class AWTGUI
 	final Dialog aboutDialog = new Dialog(main , "About FreeJ2ME", true);
 	final Dialog memStatDialog = new Dialog(main, "FreeJ2ME MemStat", false);
 	final Dialog restartRequiredDialog = new Dialog(main, "Restart Required", true);
+	final Dialog inputMapDialog = new Dialog(main, "Key Mapping", true);
 
 	final Button closeAbout = new Button("Close");
 	final Button applyResChange = new Button("Apply");
 	final Button cancelResChange = new Button("Cancel");
 	final Button closeNow = new Button("Close FreeJ2ME");
 	final Button restartLater = new Button("Restart later");
+
+	/* Input mapping keys */
+	final Button applyInputs = new Button("Apply Inputs");
+	final Button inputButtons[] = new Button[] 
+	{
+		new Button("Q"),
+		new Button("W"),
+		new Button("Up"),
+		new Button("Left"),
+		new Button("Enter"),
+		new Button("Right"),
+		new Button("Down"),
+		new Button("NumPad-7"),
+		new Button("NumPad-8"),
+		new Button("NumPad-9"),
+		new Button("NumPad-4"),
+		new Button("NumPad-5"),
+		new Button("NumPad-6"),
+		new Button("NumPad-1"),
+		new Button("NumPad=2"),
+		new Button("NumPad-3"),
+		new Button("E"),
+		new Button("NumPad-0"),
+		new Button("R"),
+	};
+
+	/* Constant fields for key mapping indices (matches the array above) */
+	static final byte SOFT_LEFT_KEY = 0;
+	static final byte SOFT_RIGHT_KEY = 1;
+	static final byte UP_ARROW_KEY = 2;
+	static final byte LEFT_ARROW_KEY = 3;
+	static final byte OK_KEY = 4;
+	static final byte RIGHT_ARROW_KEY = 5;
+	static final byte DOWN_ARROW_KEY = 6;
+	static final byte NUMPAD1_KEY = 7;
+	static final byte NUMPAD2_KEY = 8;
+	static final byte NUMPAD3_KEY = 9;
+	static final byte NUMPAD4_KEY = 10;
+	static final byte NUMPAD5_KEY = 11;
+	static final byte NUMPAD6_KEY = 12;
+	static final byte NUMPAD7_KEY = 13;
+	static final byte NUMPAD8_KEY = 14;
+	static final byte NUMPAD9_KEY = 15;
+	static final byte NUMPAD_ASTERISK_KEY = 16;
+	static final byte NUMPAD0_KEY = 17;
+	static final byte NUMPAD_POUND_KEY = 18;
+
+	/* Array of inputs in order to support input remapping */
+	int inputKeycodes[] = new int[] { 
+		KeyEvent.VK_Q, KeyEvent.VK_W, 
+		KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_ENTER, KeyEvent.VK_RIGHT, KeyEvent.VK_DOWN, 
+		KeyEvent.VK_NUMPAD7, KeyEvent.VK_NUMPAD8, KeyEvent.VK_NUMPAD9, 
+		KeyEvent.VK_NUMPAD4, KeyEvent.VK_NUMPAD5, KeyEvent.VK_NUMPAD6, 
+		KeyEvent.VK_NUMPAD1, KeyEvent.VK_NUMPAD2, KeyEvent.VK_NUMPAD3, 
+		KeyEvent.VK_E, KeyEvent.VK_NUMPAD0, KeyEvent.VK_R
+	};
+
+	private final int newInputKeycodes[] = Arrays.copyOf(inputKeycodes, inputKeycodes.length);
 
 	final Choice resChoice = new Choice();
 	final String[] supportedRes = new String[] {"96x65","96x96","104x80","128x128","132x176","128x160","176x208","176x220", 
@@ -85,6 +144,7 @@ public final class AWTGUI
 	final MenuItem closeMenuItem = new MenuItem("Close Jar (Stub)");
 	final MenuItem scrShot = new MenuItem("Take Screenshot");
 	final MenuItem exitMenuItem = new MenuItem("Exit FreeJ2ME");
+	final MenuItem mapInputs = new MenuItem("Manage Inputs");
 
 	final CheckboxMenuItem enableAudio = new CheckboxMenuItem("Enable Audio", false);
 	final CheckboxMenuItem enableRotation = new CheckboxMenuItem("Rotate Screen", false);
@@ -127,6 +187,7 @@ public final class AWTGUI
 		cancelResChange.setBackground(Color.yellow);
 		closeNow.setBackground(Color.green);
 		restartLater.setBackground(Color.yellow);
+		applyInputs.setBackground(Color.green);
 
 		aboutDialog.setBackground(Color.white);
 		aboutDialog.setLayout( new FlowLayout(FlowLayout.CENTER, 200, 0));  
@@ -140,6 +201,7 @@ public final class AWTGUI
 		aboutDialog.add(new Label("David Richardson (Recompile)"));
 		aboutDialog.add(new Label("Saket Dandawate (hex007)"));
 		aboutDialog.add(closeAbout);
+
 
 		resDialog.setBackground(Color.white);
 		resDialog.setLayout( new FlowLayout(FlowLayout.CENTER, 60, 5));
@@ -163,6 +225,61 @@ public final class AWTGUI
 		memStatDialog.add(usedMemLabel);
 		memStatDialog.add(maxMemLabel);
 
+		/* Input mapping dialog: It's a grid, so a few tricks had to be employed to align everything up */
+		inputMapDialog.setBackground(Color.white);
+		inputMapDialog.setLayout(new GridLayout(0, 3)); /* Get as many rows as needed, as long it still uses only 3 columns */
+		inputMapDialog.setSize(240, 320);
+		inputMapDialog.setResizable(false);
+
+		inputMapDialog.add(new Label("Map keys by"));
+		inputMapDialog.add(new Label("clicking each"));
+		inputMapDialog.add(new Label("button below"));
+
+		inputMapDialog.add(new Label(""));
+		inputMapDialog.add(applyInputs);
+		inputMapDialog.add(new Label(""));
+
+		inputMapDialog.add(new Label("-----------------------"));
+		inputMapDialog.add(new Label("-----------------------"));
+		inputMapDialog.add(new Label("-----------------------"));
+
+		inputMapDialog.add(inputButtons[0]);
+		inputMapDialog.add(new Label(""));
+		inputMapDialog.add(inputButtons[1]);
+
+		inputMapDialog.add(new Label(""));
+		inputMapDialog.add(inputButtons[2]);
+		inputMapDialog.add(new Label(""));
+
+		inputMapDialog.add(inputButtons[3]);
+		inputMapDialog.add(inputButtons[4]);
+		inputMapDialog.add(inputButtons[5]);
+
+		inputMapDialog.add(new Label(""));
+		inputMapDialog.add(inputButtons[6]);
+		inputMapDialog.add(new Label(""));
+
+		inputMapDialog.add(new Label(""));
+		inputMapDialog.add(new Label(""));
+		inputMapDialog.add(new Label(""));
+		
+		inputMapDialog.add(inputButtons[7]);
+		inputMapDialog.add(inputButtons[8]);
+		inputMapDialog.add(inputButtons[9]);
+		
+		inputMapDialog.add(inputButtons[10]);
+		inputMapDialog.add(inputButtons[11]);
+		inputMapDialog.add(inputButtons[12]);
+
+		inputMapDialog.add(inputButtons[13]);
+		inputMapDialog.add(inputButtons[14]);
+		inputMapDialog.add(inputButtons[15]);
+
+		inputMapDialog.add(inputButtons[16]);
+		inputMapDialog.add(inputButtons[17]);
+		inputMapDialog.add(inputButtons[18]);
+
+
 		restartRequiredDialog.setBackground(Color.white);
 		restartRequiredDialog.setLayout( new FlowLayout(FlowLayout.CENTER, 10, 10));  
 		restartRequiredDialog.setUndecorated(true);
@@ -183,7 +300,9 @@ public final class AWTGUI
 		closeAbout.setActionCommand("CloseAboutMenu");
 		closeNow.setActionCommand("CloseFreeJ2ME");
 		restartLater.setActionCommand("RestartLater");
-
+		mapInputs.setActionCommand("MapInputs");
+		applyInputs.setActionCommand("ApplyInputs");
+		
 		openMenuItem.addActionListener(menuItemListener);
 		closeMenuItem.addActionListener(menuItemListener);
 		scrShot.addActionListener(menuItemListener);
@@ -195,10 +314,56 @@ public final class AWTGUI
 		closeAbout.addActionListener(menuItemListener);
 		closeNow.addActionListener(menuItemListener);
 		restartLater.addActionListener(menuItemListener);
+		mapInputs.addActionListener(menuItemListener);
+		applyInputs.addActionListener(menuItemListener);
+
+		addInputButtonListeners();
 
 		setActionListeners();
 
 		buildMenuBar();
+	}
+
+	private void addInputButtonListeners() 
+	{
+		for(int i = 0; i < inputButtons.length; i++) 
+		{
+			final int buttonIndex = i;
+
+			/* Add a focus listener to each input mapping button */
+            inputButtons[i].addFocusListener(new FocusAdapter() 
+			{
+                Button focusedButton;
+				String lastButtonKey = new String("");
+				boolean keySet = false;
+
+				@Override
+				public void focusGained(FocusEvent e) 
+				{
+					{
+						keySet = false;
+						focusedButton = (Button) e.getComponent();
+						lastButtonKey = focusedButton.getLabel();
+						focusedButton.setLabel("Waiting...");
+
+						focusedButton.addKeyListener(new KeyAdapter() 
+						{
+							public void keyPressed(KeyEvent e) 
+							{
+								focusedButton.setLabel(KeyEvent.getKeyText(e.getKeyCode()));
+								keySet = true;
+								/* Save the new key's code into the expected index of newInputKeycodes */
+								newInputKeycodes[buttonIndex] = e.getKeyCode();
+							}
+						});
+					}
+				}
+
+				/* Only used to restore the last key map if the user doesn't map a new one into the button */
+				@Override
+				public void focusLost(FocusEvent e) { if(!keySet) { focusedButton.setLabel(lastButtonKey); } }
+            });
+		}
 	}
 
 	private void setActionListeners() 
@@ -618,6 +783,7 @@ public final class AWTGUI
 		optionMenu.add(phoneType);
 		optionMenu.add(fpsCap);
 		optionMenu.add(midiStreamNum);
+		optionMenu.add(mapInputs);
 
 		debugMenu.add(dumpAudioData);
 		debugMenu.add(dumpGraphicsData);
@@ -677,10 +843,13 @@ public final class AWTGUI
 		maxMemLabel.setText(new String("Max Mem  : " + (Runtime.getRuntime().maxMemory() / 1024) + " KB"));
 	}
 
-	class UIListener implements ActionListener {
-		public void actionPerformed(ActionEvent a) {            
+	class UIListener implements ActionListener 
+	{
+		public void actionPerformed(ActionEvent a) 
+		{            
 
-			if(a.getActionCommand() == "Open") {
+			if(a.getActionCommand() == "Open") 
+			{
 				FileDialog filePicker = new FileDialog(main, "Open JAR File", FileDialog.LOAD);
 				String filename;
 				filePicker.setFilenameFilter(new FilenameFilter()
@@ -738,6 +907,16 @@ public final class AWTGUI
 			else if(a.getActionCommand() == "CloseFreeJ2ME") { System.exit(0); }
 
 			else if(a.getActionCommand() == "RestartLater") { restartRequiredDialog.setVisible(false); }
+
+			else if(a.getActionCommand() == "MapInputs") { inputMapDialog.setLocation(main.getLocation().x, main.getLocation().y); inputMapDialog.setVisible(true); }
+
+			/* TODO: Flesh out input mappings apply and file saving (preferably per-game, though a global config could also work great) */
+			else if(a.getActionCommand() == "ApplyInputs") 
+			{
+				System.arraycopy(newInputKeycodes, 0, inputKeycodes, 0, inputKeycodes.length);
+				inputMapDialog.setVisible(false); 
+			}
+
 		}
 	}
 
