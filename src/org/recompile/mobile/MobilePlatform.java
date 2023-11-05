@@ -93,33 +93,52 @@ public class MobilePlatform
 	public void keyPressed(int keycode)
 	{
 		updateKeyState(keycode, 1);
-		Mobile.getDisplay().getCurrent().keyPressed(keycode);
+		synchronized (Display.calloutLock)
+		{
+			Mobile.getDisplay().getCurrent().keyPressed(keycode);
+		}
+		
 	}
 
 	public void keyReleased(int keycode)
 	{
 		updateKeyState(keycode, 0);
-		Mobile.getDisplay().getCurrent().keyReleased(keycode);
+		synchronized (Display.calloutLock)
+		{
+			Mobile.getDisplay().getCurrent().keyReleased(keycode);
+		}
 	}
 
 	public void keyRepeated(int keycode)
 	{
-		Mobile.getDisplay().getCurrent().keyRepeated(keycode);
+		synchronized (Display.calloutLock)
+		{
+			Mobile.getDisplay().getCurrent().keyRepeated(keycode);
+		}
 	}
 
 	public void pointerDragged(int x, int y)
 	{
-		Mobile.getDisplay().getCurrent().pointerDragged(x, y);
+		synchronized (Display.calloutLock)
+		{
+			Mobile.getDisplay().getCurrent().pointerDragged(x, y);
+		}
 	}
 
 	public void pointerPressed(int x, int y)
 	{
-		Mobile.getDisplay().getCurrent().pointerPressed(x, y);
+		synchronized (Display.calloutLock)
+		{
+			Mobile.getDisplay().getCurrent().pointerPressed(x, y);
+		}
 	}
 
 	public void pointerReleased(int x, int y)
 	{
-		Mobile.getDisplay().getCurrent().pointerReleased(x, y);
+		synchronized (Display.calloutLock)
+		{
+			Mobile.getDisplay().getCurrent().pointerReleased(x, y);
+		}
 	}
 
 	private void updateKeyState(int key, int val)
