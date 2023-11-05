@@ -389,12 +389,14 @@ public class FreeJ2ME
 		useNokiaControls = false;
 		useSiemensControls = false;
 		useMotorolaControls = false;
+		Mobile.sonyEricsson = false;
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
@@ -427,6 +429,9 @@ public class FreeJ2ME
 		}
 
 		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
+
+		if (Mobile.sonyEricsson) { Mobile.getPlatform().setPlatformProperty("SonyEricssonK750/JAVASDK"); }
+
 	}
 
 	private int getMobileKey(int keycode)

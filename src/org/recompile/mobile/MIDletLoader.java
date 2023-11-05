@@ -416,6 +416,11 @@ public class MIDletLoader extends URLClassLoader
 		}
 	}
 
+	public void setProperty(String key, String value)
+	{
+		properties.put(key, value);
+	}
+
 	private class SiemensInputStream extends InputStream
 	{
 		private ByteArrayInputStream iostream;

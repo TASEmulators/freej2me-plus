@@ -122,10 +122,11 @@ struct retro_core_option_v2_definition core_options[] =
         "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
         "vphone_settings",
         {
-            { "Standard",  NULL },
-            { "Nokia",     NULL },
-            { "Siemens",   NULL },
-            { "Motorola",  NULL },
+            { "Standard",        NULL },
+            { "Nokia",           NULL },
+            { "Siemens",         NULL },
+            { "Motorola",        NULL },
+            { "SonyEricsson",    NULL },
             { NULL, NULL },
         },
         "Standard"
@@ -374,10 +375,11 @@ struct retro_core_option_definition core_options_v1 [] =
         "Phone Key Layout",
         "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
         {
-            { "Standard",  NULL },
-            { "Nokia",     NULL },
-            { "Siemens",   NULL },
-            { "Motorola",  NULL },
+            { "Standard",        NULL },
+            { "Nokia",           NULL },
+            { "Siemens",         NULL },
+            { "Motorola",        NULL },
+            { "SonyEricsson",    NULL },
             { NULL, NULL },
         },
         "Standard"
@@ -554,7 +556,7 @@ static const struct retro_variable vars[] =
     },
     { /* Phone Control Type */
         "freej2me_phone",
-        "Phone Key Layout; Standard|Nokia|Siemens|Motorola" 
+        "Phone Key Layout; Standard|Nokia|Siemens|Motorola|SonyEricsson" 
     },
     { /* Game FPS limit */
         "freej2me_fps",

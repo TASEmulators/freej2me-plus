@@ -202,4 +202,10 @@ public class MobilePlatform
 		//System.gc();
 	}
 
+	public void setPlatformProperty(String value)
+	{
+		loader.setProperty("microedition.platform", value);
+		System.setProperty("microedition.platform", value);
+	}
+
 }

@@ -156,6 +156,7 @@ public final class AWTGUI
 	final CheckboxMenuItem nokiaLayout = new CheckboxMenuItem("Nokia", false);
 	final CheckboxMenuItem siemensLayout = new CheckboxMenuItem("Siemens", false);
 	final CheckboxMenuItem motorolaLayout = new CheckboxMenuItem("Motorola", false);
+	final CheckboxMenuItem SELayout = new CheckboxMenuItem("SonyEricsson", false);
 
 	final CheckboxMenuItem fpsCapNone = new CheckboxMenuItem("No Limit", true);
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
@@ -619,6 +620,7 @@ public final class AWTGUI
 					nokiaLayout.setState(false);
 					siemensLayout.setState(false);
 					motorolaLayout.setState(false);
+					SELayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -667,6 +669,22 @@ public final class AWTGUI
 					stdLayout.setState(false);
 					nokiaLayout.setState(false);
 					siemensLayout.setState(false);
+					hasPendingChange = true;
+				}
+			}
+		});
+
+		SELayout.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!SELayout.getState()){ SELayout.setState(true); }
+				if(SELayout.getState())
+				{ 
+					config.updatePhone("SonyEricsson");
+					stdLayout.setState(false);
+					siemensLayout.setState(false);
+					motorolaLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -927,6 +945,8 @@ public final class AWTGUI
 	public boolean hasChanged() { return hasPendingChange; }
 
 	public void clearChanged() { hasPendingChange = false; }
+
+	public void setLoadedFile() { fileLoaded = true; }
 
 	public boolean hasLoadedFile() { return fileLoaded; }
 

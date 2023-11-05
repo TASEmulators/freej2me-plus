@@ -122,9 +122,10 @@ public class Libretro
 
 		if(Integer.parseInt(args[2]) == 1) { rotateDisplay = true; }
 
-		if(Integer.parseInt(args[3]) == 1)      { useNokiaControls = true;    }
-		else if(Integer.parseInt(args[3]) == 2) { useSiemensControls = true;  }
-		else if(Integer.parseInt(args[3]) == 3) { useMotorolaControls = true; }
+		if(Integer.parseInt(args[3]) == 1)      { useNokiaControls = true; Mobile.nokia = true;        }
+		else if(Integer.parseInt(args[3]) == 2) { useSiemensControls = true; Mobile.siemens = true;    }
+		else if(Integer.parseInt(args[3]) == 3) { useMotorolaControls = true; Mobile.motorola = true;  }
+		else if(Integer.parseInt(args[3]) == 4) { useNokiaControls = true; Mobile.sonyEricsson = true; }
 
 		limitFPS = Integer.parseInt(args[4]);
 
@@ -298,6 +299,7 @@ public class Libretro
 										if(useNokiaControls)         { config.settings.put("phone", "Nokia");    }
 										else if(useSiemensControls)  { config.settings.put("phone", "Siemens");  }
 										else if(useMotorolaControls) { config.settings.put("phone", "Motorola"); }
+										else if(Mobile.sonyEricsson) { config.settings.put("phone", "SonyEricsson"); }
 										else                         { config.settings.put("phone", "Standard"); }
 
 										if(soundEnabled)   { config.settings.put("sound", "on");  }
@@ -465,9 +467,11 @@ public class Libretro
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
+		Mobile.sonyEricsson = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; frameHeader[5] = (byte)1; }
@@ -487,6 +491,8 @@ public class Libretro
 		}
 
 		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
+
+		if (Mobile.sonyEricsson) { Mobile.getPlatform().setPlatformProperty("SonyEricssonK750/JAVASDK"); }
 	}
 
 	private void keyDown(int key)
