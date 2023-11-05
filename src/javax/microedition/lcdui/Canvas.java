@@ -157,32 +157,36 @@ public abstract class Canvas extends Displayable
 
 	public void repaint()
 	{
-		PlatformGraphics graphics;
-		try
-		{
-			graphics = platformImage.getGraphics();
-			graphics.reset();
-			paint(graphics);
-			if(Mobile.getDisplay().getCurrent() == this)
+		synchronized (Display.LCDUILock) {
+			PlatformGraphics graphics;
+			try
 			{
-				Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+				graphics = platformImage.getGraphics();
+				graphics.reset();
+				paint(graphics);
+				if(Mobile.getDisplay().getCurrent() == this)
+				{
+					Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+				}
 			}
-		}
-		catch (Exception e)
-		{
-			System.out.print("Canvas repaint(): "+e.getMessage());
-			e.printStackTrace();
+			catch (Exception e)
+			{
+				System.out.print("Canvas repaint(): "+e.getMessage());
+				e.printStackTrace();
+			}
 		}
 	}
 
 	public void repaint(int x, int y, int width, int height)
 	{
-		PlatformGraphics graphics = platformImage.getGraphics();
-		graphics.reset();
-		paint(graphics);
-		if(Mobile.getDisplay().getCurrent() == this)
-		{
-			Mobile.getPlatform().repaint(platformImage, x, y, width, height);
+		synchronized (Display.LCDUILock) {
+			PlatformGraphics graphics = platformImage.getGraphics();
+			graphics.reset();
+			paint(graphics);
+			if(Mobile.getDisplay().getCurrent() == this)
+			{
+				Mobile.getPlatform().repaint(platformImage, x, y, width, height);
+			}
 		}
 	}
 

@@ -262,7 +262,10 @@ public abstract class Displayable
 		{
 			if(commandlistener!=null)
 			{
-				commandlistener.commandAction(commands.get(index), this);
+				synchronized (Display.calloutLock)
+				{
+                    commandlistener.commandAction(commands.get(index), this);
+                }
 			}
 		}
 	}
