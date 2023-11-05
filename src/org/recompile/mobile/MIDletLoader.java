@@ -250,6 +250,11 @@ public class MIDletLoader extends URLClassLoader
 		if(resource.startsWith("/"))
 		{
 			resource = resource.substring(1);
+
+			if(resource.startsWith("/"))
+			{
+				resource = resource.substring(1);
+			}
 		}
 
 		try
@@ -281,6 +286,10 @@ public class MIDletLoader extends URLClassLoader
 		if(resource.startsWith("/"))
 		{
 			resource = resource.substring(1);
+			if(resource.startsWith("/"))
+			{
+				resource = resource.substring(1);
+			}
 		}
 		try
 		{
@@ -311,7 +320,9 @@ public class MIDletLoader extends URLClassLoader
 		try
 		{
 			InputStream stream = url.openStream();
-
+			
+			// zb3: why not return a stream? or a bufferedinputstream for marks?
+			
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 			int count=0;
 			byte[] data = new byte[4096];
