@@ -34,8 +34,9 @@ public class DirectUtils
 	{
 		//System.out.println("Nokia Create Image B");
 		Image image = Image.createImage(width, height);
-		Graphics gc = image.getGraphics();
-		gc.setColor(ARGBcolor);
+		PlatformGraphics gc = (PlatformGraphics)image.getGraphics();
+		gc.clearRect(0, 0, width, height);
+		gc.setAlphaRGB(ARGBcolor);
 		gc.fillRect(0,0, width, height);
 		return image;
 	}
