@@ -192,7 +192,10 @@ public abstract class Canvas extends Displayable
 
 	public void serviceRepaints()
 	{
-		Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+		if (Mobile.getDisplay().getCurrent() == this)
+		{
+			Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+		}
 	}
 
 	public void setFullScreenMode(boolean mode)

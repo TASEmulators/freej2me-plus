@@ -142,6 +142,10 @@ public class Display
 		{
 			try
 			{
+				if (current != null)
+				{
+					current.hideNotify();
+				}
 				next.showNotify();
 				current = next;
 				current.notifySetCurrent();
