@@ -31,7 +31,6 @@ import org.recompile.mobile.Mobile;
 public class Display
 {
 	public static final Object LCDUILock = new Object();
-	public static final Object calloutLock = new Object();
 
 	public static final int LIST_ELEMENT = 1;
 	public static final int CHOICE_GROUP_ELEMENT = 2;
@@ -81,7 +80,7 @@ public class Display
 			{
 				try
 				{
-					synchronized (calloutLock)
+					synchronized (LCDUILock)
 					{
 						serialCalls.get(0).run();
 						serialCalls.removeElement(0);
@@ -138,8 +137,17 @@ public class Display
 
 	public void setCurrent(Displayable next)
 	{
+		if (next == null){
+			return;
+		}
+		
 		synchronized (LCDUILock)
 		{
+			if (current == next)
+			{
+				return;
+			}
+
 			try
 			{
 				if (current != null)
