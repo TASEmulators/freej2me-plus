@@ -262,10 +262,7 @@ public abstract class Displayable
 		{
 			if(commandlistener!=null)
 			{
-				synchronized (Display.LCDUILock)
-				{
-                    commandlistener.commandAction(commands.get(index), this);
-                }
+                commandlistener.commandAction(commands.get(index), this);
 			}
 		}
 	}

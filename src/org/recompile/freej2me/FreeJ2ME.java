@@ -160,6 +160,9 @@ public class FreeJ2ME
 			}
 		});
 
+		
+		Mobile.getPlatform().startEventQueue();		
+
 		/* Inputs should only be registered if a jar has been loaded, otherwise AWT will throw NullPointerException */
 		lcd.addKeyListener(new KeyListener()
 		{

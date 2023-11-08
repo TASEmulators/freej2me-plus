@@ -26,11 +26,18 @@ import java.util.Vector;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.recompile.mobile.Mobile;
 
 public class Display
 {
-	public static final Object LCDUILock = new Object();
+	// when fps is limited, this needs to be a fair lock
+	// otherwise key events might not get dispatched at proper time
+	public static final ReentrantLock LCDUILock = new ReentrantLock(true);
+
+	// this can only be used from a dedicated thread which MAY NOT hold lcduilock
+	public static final Object calloutLock = new Object();
 
 	public static final int LIST_ELEMENT = 1;
 	public static final int CHOICE_GROUP_ELEMENT = 2;
@@ -67,9 +74,11 @@ public class Display
 
 	public void callSerially(Runnable r)
 	{
-		synchronized (LCDUILock)
-		{
+		LCDUILock.lock();
+		try {
 			serialCalls.add(r);
+		} finally {
+			LCDUILock.unlock();
 		}
 	}
 	private class SerialCallTimerTask extends TimerTask
@@ -80,7 +89,7 @@ public class Display
 			{
 				try
 				{
-					synchronized (LCDUILock)
+					synchronized (calloutLock)
 					{
 						serialCalls.get(0).run();
 						serialCalls.removeElement(0);
@@ -140,9 +149,9 @@ public class Display
 		if (next == null){
 			return;
 		}
-		
-		synchronized (LCDUILock)
-		{
+
+		LCDUILock.lock();
+		try {			
 			if (current == next)
 			{
 				return;
@@ -165,6 +174,8 @@ public class Display
 				System.out.println("Problem with setCurrent(next)");
 				e.printStackTrace();
 			}
+		} finally {
+			LCDUILock.unlock();
 		}
 	}
 

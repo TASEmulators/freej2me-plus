@@ -157,7 +157,8 @@ public abstract class Canvas extends Displayable
 
 	public void repaint()
 	{
-		synchronized (Display.LCDUILock) {
+		Display.LCDUILock.lock();
+		try {
 			PlatformGraphics graphics;
 			try
 			{
@@ -174,12 +175,15 @@ public abstract class Canvas extends Displayable
 				System.out.print("Canvas repaint(): "+e.getMessage());
 				e.printStackTrace();
 			}
-		}
+		} finally {
+			Display.LCDUILock.unlock();
+		}	
 	}
 
 	public void repaint(int x, int y, int width, int height)
 	{
-		synchronized (Display.LCDUILock) {
+		Display.LCDUILock.lock();
+		try {
 			PlatformGraphics graphics = platformImage.getGraphics();
 			graphics.reset();
 			paint(graphics);
@@ -187,6 +191,8 @@ public abstract class Canvas extends Displayable
 			{
 				Mobile.getPlatform().repaint(platformImage, x, y, width, height);
 			}
+		} finally {
+			Display.LCDUILock.unlock();
 		}
 	}
 

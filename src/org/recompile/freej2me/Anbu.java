@@ -115,6 +115,8 @@ public class Anbu
 
 		Mobile.getPlatform().setPainter(painter);
 
+		Mobile.getPlatform().startEventQueue();
+
 		String file = getFormattedLocation(args[0]);
 		System.out.println(file);
 

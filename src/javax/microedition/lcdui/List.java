@@ -209,10 +209,7 @@ public class List extends Screen implements Choice
 	{
 		if(commandlistener!=null)
 		{
-			synchronized (Display.LCDUILock)
-			{
-				commandlistener.commandAction(SELECT_COMMAND, this);
-			}
+			commandlistener.commandAction(SELECT_COMMAND, this);
 		}
 	}
 

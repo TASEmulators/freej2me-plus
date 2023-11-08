@@ -167,6 +167,8 @@ public class Libretro
 		
 		Mobile.getPlatform().setPainter(painter);
 
+		Mobile.getPlatform().startEventQueue();
+
 		System.out.println("+READY");
 		System.out.flush();
 	}
