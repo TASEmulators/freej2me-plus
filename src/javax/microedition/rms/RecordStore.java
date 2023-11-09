@@ -561,7 +561,7 @@ public class RecordStore
 			//System.out.println("> Next Record ID (idx:"+index+" cnt:"+count+")");
 			if(keepupdated) { rebuild(); }
 			if(index>=count) { throw(new InvalidRecordIDException()); }
-			return elements[index];
+			return elements[index++];
 		}
 
 		public int numRecords()
@@ -592,14 +592,15 @@ public class RecordStore
 		{
 			//System.out.println("> Previous Record ID");
 			if(keepupdated) { rebuild(); }
-			if(index==0) { throw(new InvalidRecordIDException()); }
-			return elements[index-1];
+			index--;
+			if(index<0) { throw(new InvalidRecordIDException()); }
+			return elements[index];
 		}
 
 		public void rebuild()
 		{
 			build();
-			if(index >= count) { index = count-1; }
+			if(index > count) { index = count; }
 			if(index < 0) { index = 0; }
 		}
 
