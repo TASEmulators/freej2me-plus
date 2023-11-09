@@ -21,9 +21,10 @@ import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -35,7 +36,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import java.util.HashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.ArrayList;
+import java.util.Enumeration;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -48,7 +52,6 @@ import org.objectweb.asm.Opcodes;
 import javax.microedition.lcdui.*;
 import javax.microedition.midlet.*;
 import javax.microedition.io.*;
-import javax.microedition.midlet.MIDletStateChangeException;
 
 public class MIDletLoader extends URLClassLoader
 {
@@ -303,6 +306,47 @@ public class MIDletLoader extends URLClassLoader
 		}
 	}
 
+	@Override
+    public URL findResource(String name) {
+        // First, try to find the resource with the original, case-sensitive name
+        URL resource = super.findResource(name);
+        if (resource != null) {
+            return resource;
+        }
+
+        // For each URL, check if it is a JAR file and perform a case-insensitive search
+        for (URL url : getURLs()) {
+            resource = findResourceInJar(url, name);
+            if (resource != null) {
+                return resource;
+            }
+        }
+
+        // If not found, return null
+        return null;
+    }
+
+    private URL findResourceInJar(URL jarUrl, String resourceName) {
+        if (jarUrl.getProtocol().equals("file") && jarUrl.getPath().endsWith(".jar")) {
+            try (JarFile jarFile = new JarFile(new File(jarUrl.toURI()))) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    String entryName = entry.getName();
+                    if (entryName.equalsIgnoreCase(resourceName)) {
+                        // Construct the URL for the found resource
+                        String jarEntryUrl = "jar:" + jarUrl.toExternalForm() + "!/" + entryName;
+                        return new URL(jarEntryUrl);
+                    }
+                }
+            } catch (URISyntaxException | IOException e) {
+                // Handle exceptions as needed
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
 	/*
 		********  loadClass Modifies Methods with ObjectWeb ASM  ********
 		Replaces java.lang.Class.getResourceAsStream calls with calls
@@ -371,12 +415,15 @@ public class MIDletLoader extends URLClassLoader
 		String resource;
 		byte[] code;
 
-		//System.out.println("Load Class "+name);
+		// System.out.println("Load Class "+name);
 
+		// zb3: this needs to be improved as this won't transform games
+		// like hypothetical com.nokia.tictactoe
 		if(
 			name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("com.nokia") ||
 			name.startsWith("com.mascotcapsule") || name.startsWith("com.samsung") || name.startsWith("sun.") ||
-			name.startsWith("com.siemens") || name.startsWith("org.recompile") || name.startsWith("jdk.")
+			name.startsWith("com.siemens") || name.startsWith("org.recompile") || name.startsWith("jdk.") ||
+			name.startsWith("com.vodafone.") || name.startsWith("com.jblend.") || name.startsWith("com.motorola.")
 			)
 		{
 			return loadClass(name, true);
@@ -393,6 +440,7 @@ public class MIDletLoader extends URLClassLoader
 		catch (Exception e)
 		{
 			System.out.println("Error Adapting Class "+name);
+			System.out.println(e.toString());
 			return null;
 		}
 
