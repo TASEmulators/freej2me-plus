@@ -56,12 +56,8 @@ public final class Font
 
 	public int charsWidth(char[] ch, int offset, int length)
 	{
-		int len = 0;
-		for(int i=offset; i<ch.length+length; i++)
-		{
-			if(i<ch.length) { len += charWidth(ch[i]); }
-		}
-		return len;
+		String str = new String(ch, offset, length);
+		return stringWidth(str);
 	}
 
 	public int charWidth(char ch) { return stringWidth(String.valueOf(ch)); }
