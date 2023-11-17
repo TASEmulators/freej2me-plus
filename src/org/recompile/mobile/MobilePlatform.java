@@ -203,6 +203,8 @@ public class MobilePlatform
 			case Mobile.NOKIA_LEFT: mask = GameCanvas.LEFT_PRESSED; break;
 			case Mobile.NOKIA_RIGHT: mask = GameCanvas.RIGHT_PRESSED; break;
 			case Mobile.NOKIA_DOWN: mask = GameCanvas.DOWN_PRESSED; break;
+			case Mobile.NOKIA_SOFT3: mask = GameCanvas.FIRE_PRESSED; break;
+
 		}
 		keyState |= mask;
 		keyState ^= mask;
