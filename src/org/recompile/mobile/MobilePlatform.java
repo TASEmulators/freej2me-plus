@@ -54,7 +54,7 @@ public class MobilePlatform
 
 	public String dataPath = "";
 
-	public int keyState = 0;
+	public volatile int keyState = 0;
 
 	public MobilePlatform(int width, int height)
 	{

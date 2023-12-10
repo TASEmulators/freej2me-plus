@@ -163,6 +163,7 @@ public class Display
 				{
 					current.hideNotify();
 				}
+				Mobile.getPlatform().keyState = 0; // reset keystate
 				next.showNotify();
 				current = next;
 				current.notifySetCurrent();
