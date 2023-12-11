@@ -141,7 +141,7 @@ public class Graphics
 	public void setGrayScale(int value)
 	{
 		value = value & 0xFF;
-		color = (value<<16) + (value<<8) + value;
+		setColor((value<<16) + (value<<8) + value);
 	}
 
 	public void setStrokeStyle(int style)
