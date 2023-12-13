@@ -91,8 +91,14 @@ public class Display
 				{
 					synchronized (calloutLock)
 					{
-						serialCalls.get(0).run();
-						serialCalls.removeElement(0);
+						LCDUILock.lock();
+						try {
+							Runnable call = serialCalls.get(0);
+							serialCalls.removeElementAt(0);
+							call.run();
+						} finally {
+							LCDUILock.unlock();
+						}
 					}
 				}
 				catch (Exception e) { }
