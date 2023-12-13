@@ -38,11 +38,11 @@ public final class Font
 	public static final int STYLE_UNDERLINED = 4;
 
 
+	private static Font defaultFont = null;
+
 	private int face;
 	private int style;
 	private int size;
-
-	private static Font defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
 
 	public PlatformFont platformFont;
 
@@ -64,7 +64,11 @@ public final class Font
 
 	public int getBaselinePosition() { return platformFont.getAscent(); }
 
-	public static Font getDefaultFont() { return defaultFont; }
+	public static Font getDefaultFont() 
+	{ 
+		if (defaultFont == null) { defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM); }
+		return defaultFont;
+	}
 
 	public int getFace() { return face; }
 
