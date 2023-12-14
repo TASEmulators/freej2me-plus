@@ -119,7 +119,12 @@ final class FieldWriter implements FieldVisitor {
         }
         cw.lastField = this;
         this.cw = cw;
-        this.access = access;
+        if (Boolean.getBoolean("freej2me.forceVolatileFields")) {
+            this.access = (access&0x10)==0 ? (access | 0x0040) : access;
+
+        } else {
+            this.access = access;
+        }
         this.name = cw.newUTF8(name);
         this.desc = cw.newUTF8(desc);
         if (ClassReader.SIGNATURES && signature != null) {
