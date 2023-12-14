@@ -18,9 +18,9 @@ package com.samsung.util;
 
 public final class LCDLight
 {
-	static boolean isSupported() { return true; }
+	public static boolean isSupported() { return true; }
 
-	static void off() { }
+	public static void off() { }
 
-	static void on(int duration) { }
+	public static void on(int duration) { }
 }
