@@ -227,8 +227,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 	public void setPixel(int x, int y, int color)
 	{
-		int[] rgbData = { color };
-		gc.drawRGB(rgbData, 0, 1, x, y, 1, 1, false);
+		canvas.setRGB(x, y, color);
 	}
 
 	public static BufferedImage transformImage(BufferedImage image, int transform)
