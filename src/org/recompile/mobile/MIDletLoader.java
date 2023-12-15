@@ -115,9 +115,17 @@ public class MIDletLoader extends URLClassLoader
 	public static String findMainClassInJars(URL[] urls) {
 		// we search for a class file containing "startApp" 
 		// note this is just an approximation, but it often works
+		// the class might be abstract though..
+
 
         for (URL url : urls) {
-            try (JarFile jarFile = new JarFile(url.getFile())) {
+			File file;
+			try {
+				file = new File(url.toURI());
+			} catch (URISyntaxException e) {
+				return null;
+			}
+            try (JarFile jarFile = new JarFile(file)) {
                 Enumeration<JarEntry> entries = jarFile.entries();
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
