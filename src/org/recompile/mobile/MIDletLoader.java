@@ -27,7 +27,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.lang.ClassLoader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -71,6 +72,13 @@ public class MIDletLoader extends URLClassLoader
 	{
 		super(urls);
 
+		try {
+			String jarName = Paths.get(urls[0].toURI()).getFileName().toString().replace('.', '_');
+			suitename = jarName;
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+
 		try
 		{
 			System.setProperty("microedition.platform", "j2me");
@@ -87,20 +95,83 @@ public class MIDletLoader extends URLClassLoader
 		try
 		{
 			loadManifest();
-
-			properties.put("microedition.platform", "j2me");
-			properties.put("microedition.profiles", "MIDP-2.0");
-			properties.put("microedition.configuration", "CLDC-1.0");
-			properties.put("microedition.locale", "en-US");
-			properties.put("microedition.encoding", "file.encoding");
 		}
 		catch (Exception e)
 		{
 			System.out.println("Can't Read Manifest!");
-			return;
 		}
 
+		properties.put("microedition.platform", "j2me");
+		properties.put("microedition.profiles", "MIDP-2.0");
+		properties.put("microedition.configuration", "CLDC-1.0");
+		properties.put("microedition.locale", "en-US");
+		properties.put("microedition.encoding", "file.encoding");
+
+		if (className == null) {
+			className = findMainClassInJars(urls);
+		}
 	}
+
+	public static String findMainClassInJars(URL[] urls) {
+		// we search for a class file containing "startApp" 
+		// note this is just an approximation, but it often works
+
+        for (URL url : urls) {
+            try (JarFile jarFile = new JarFile(url.getFile())) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().endsWith(".class")) {
+                        String className = entry.getName().replace('/', '.').replace(".class", "");
+                        if (hasStartApp(className, jarFile.getInputStream(entry))) {
+                            return className;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+	private static boolean hasStartApp(String className, InputStream is) {
+		byte[] pattern = "startApp".getBytes();
+		try {
+			byte[] classBytes = readBytes(is);
+			for (int i = 0; i < classBytes.length - pattern.length; i++) {
+				int j = 0;
+				for (j = 0; j < pattern.length; j++) {
+					if (classBytes[i+j] != pattern[j]) {
+						break;
+					}
+				}
+				if (j == pattern.length) {
+					return true;
+				}
+			}
+		} catch (IOException e) {
+				e.printStackTrace();
+		}
+  		finally {
+			try {
+				is.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} 
+        return false;
+    }
+
+	private static byte[] readBytes(InputStream is) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[1024];
+        while ((nRead = is.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        return buffer.toByteArray();
+    }
 
 	public void start() throws MIDletStateChangeException
 	{
