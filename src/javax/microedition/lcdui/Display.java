@@ -60,6 +60,8 @@ public class Display
 
 	private SerialCallTimerTask timertask;
 
+	private boolean insideSetCurrent = false;
+
 	public Display()
 	{
 		display = this;
@@ -158,19 +160,25 @@ public class Display
 
 		LCDUILock.lock();
 		try {			
-			if (current == next)
+			if (current == next || insideSetCurrent)
 			{
 				return;
 			}
 
 			try
 			{
-				if (current != null)
-				{
-					current.hideNotify();
+				insideSetCurrent = true;
+
+				try {
+					if (current != null) {
+						current.hideNotify();
+					}
+					Mobile.getPlatform().keyState = 0; // reset keystate
+					next.showNotify();
+				} finally {
+					insideSetCurrent = false;
 				}
-				Mobile.getPlatform().keyState = 0; // reset keystate
-				next.showNotify();
+
 				current = next;
 				current.notifySetCurrent();
 				Mobile.getPlatform().flushGraphics(current.platformImage, 0,0, current.width, current.height);
