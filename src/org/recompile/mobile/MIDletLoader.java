@@ -85,7 +85,10 @@ public class MIDletLoader extends URLClassLoader
 			System.setProperty("microedition.profiles", "MIDP-2.0");
 			System.setProperty("microedition.configuration", "CLDC-1.0");
 			System.setProperty("microedition.locale", "en-US");
-			System.setProperty("microedition.encoding", "file.encoding");
+			System.setProperty("microedition.encoding", "ISO-8859-1");
+			System.setProperty("microedition.m3g.version", "1.1");
+			System.setProperty("wireless.messaging.sms.smsc", "+8613800010000");
+			System.setProperty("device.imei", "000000000000000");
 		}
 		catch (Exception e)
 		{
@@ -105,7 +108,11 @@ public class MIDletLoader extends URLClassLoader
 		properties.put("microedition.profiles", "MIDP-2.0");
 		properties.put("microedition.configuration", "CLDC-1.0");
 		properties.put("microedition.locale", "en-US");
-		properties.put("microedition.encoding", "file.encoding");
+		properties.put("microedition.encoding", "ISO-8859-1");
+		properties.put("microedition.m3g.version", "1.1");
+		properties.put("wireless.messaging.sms.smsc", "+8613800010000");
+		properties.put("device.imei", "000000000000000");
+
 
 		if (className == null) {
 			className = findMainClassInJars(urls);

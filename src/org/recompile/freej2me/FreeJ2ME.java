@@ -433,8 +433,16 @@ public class FreeJ2ME
 
 		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
 
-		if (Mobile.sonyEricsson) { Mobile.getPlatform().setPlatformProperty("SonyEricssonK750/JAVASDK"); }
-
+		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
+		else if (Mobile.sonyEricsson) 
+		{
+			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
+			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
+		} else if (Mobile.siemens) 
+		{
+			System.setProperty("com.siemens.OSVersion", "11");
+			System.setProperty("com.siemens.IMEI", "000000000000000");
+		}
 	}
 
 	private int getMobileKey(int keycode)

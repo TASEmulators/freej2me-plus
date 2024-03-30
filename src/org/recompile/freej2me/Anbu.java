@@ -399,14 +399,27 @@ public class Anbu
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
+		Mobile.sonyEricsson = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
 		// We should send this one over to the sdl interface.
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
 		if(rotate.equals("off")) { rotateDisplay = false; }
+
+		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
+		else if (Mobile.sonyEricsson) 
+		{
+			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
+			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
+		} else if (Mobile.siemens) 
+		{
+			System.setProperty("com.siemens.OSVersion", "11");
+			System.setProperty("com.siemens.IMEI", "000000000000000");
+		}
 
 		// Screen width and height won't be updated here, it breaks sdl_interface's frame streaming
 		// as it will be expecting a given size for the frame, and we don't pass the updated size
