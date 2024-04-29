@@ -79,6 +79,9 @@ bool mousepressed = false;
 bool mousedragged = false;
 unsigned int drag_threshold = 2; // threshold in pixels
 
+// ScreenShot boolean
+bool getScreenShot = false;
+
 std::map<SDL_JoystickID, SDL_Joystick*> mJoysticks;
 std::map<SDL_JoystickID, int*> mPrevAxisValues;
 
@@ -257,6 +260,28 @@ void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, in
     SDL_RenderCopyEx(mRenderer, mTexture, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
     SDL_RenderCopyEx(mRenderer, mOverlay, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
     SDL_RenderPresent(mRenderer);
+
+	if(getScreenShot)
+	{
+		time_t currentTime = time(NULL);
+		struct tm* localTime = localtime(&currentTime);
+		int width, height;
+		SDL_GetWindowSize(mWindow, &width, &height);
+
+		// Format the datetime string
+		char datetimeString[20];
+		snprintf(datetimeString, sizeof(datetimeString), "%d-%02d-%02d %02d:%02d:%02d",
+					localTime->tm_year + 1900, localTime->tm_mon + 1, localTime->tm_mday,
+					localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
+
+		// Save ScreenShot
+		SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
+		SDL_RenderReadPixels(mRenderer, NULL, SDL_PIXELFORMAT_ARGB8888, surface->pixels, surface->pitch);
+		SDL_SaveBMP(surface, strcat(datetimeString, ".bmp"));
+		SDL_FreeSurface(surface);
+
+		getScreenShot = false;
+	}
 }
 
 void loadBackground(string image)
@@ -386,6 +411,10 @@ void startCapturing()
 				{
 					key = -1;
 					capturing = false;
+				}
+				else if (key == SDLK_F8)
+				{
+					getScreenShot = true;
 				}
 				sendKey(key, event.key.state == SDL_PRESSED, false, false);
 			}
