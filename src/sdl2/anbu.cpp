@@ -4,7 +4,7 @@ Authors:
 	Anbu        Saket Dandawate (hex @ retropie)
 	FreeJ2ME    D. Richardson (recompile @ retropie)
 	
-To compile : g++ -std=c++11 -lSDL2 -lpthread -lfreeimage -o anbu anbu.cpp
+To compile : g++ -std=c++11 -lSDL2 -lpthread -o anbu anbu.cpp
 
 This file is part of FreeJ2ME.
 
@@ -37,7 +37,6 @@ along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 #endif
 
 #include <SDL2/SDL.h>
-#include <FreeImage.h>
 
 #define DEADZONE 23000
 #define BYTES 3
@@ -234,17 +233,6 @@ bool updateFrame(size_t num_chars, unsigned char* buffer, FILE* input = stdin)
 	return read_count == num_chars;
 }
 
-void saveFrame(unsigned char* frame)
-{
-	int width = source_width;
-	int height = source_height;
-	int scan_width = source_width * sizeof(unsigned char) * 3;
-	FIBITMAP *dst = FreeImage_ConvertFromRawBits(frame, width, height, scan_width, 32, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, FALSE);
-	string name = to_string(image_index) + ".jpg";
-	image_index++;
-	FreeImage_Save(FIF_JPEG, dst, name.c_str(), 0);
-}
-
 void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, int interFrame = 16)
 {
 	// Cutoff rendering at 60fps
@@ -282,27 +270,6 @@ void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, in
 
 		getScreenShot = false;
 	}
-}
-
-void loadBackground(string image)
-{
-	if (image.empty())
-		return;
-
-	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(image.c_str(), 0);
-	FIBITMAP* imagen = FreeImage_Load(format, image.c_str());
-
-	int w = FreeImage_GetWidth(imagen);
-	int h = FreeImage_GetHeight(imagen);
-	int scan_width = FreeImage_GetPitch(imagen);
-
-	unsigned char* buffer = new unsigned char[w * h * BYTES];
-	FreeImage_ConvertToRawBits(buffer, imagen, scan_width, 24, 0, 0, 0, TRUE);
-	FreeImage_Unload(imagen);
-
-	mBackground = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_BGR24, SDL_TEXTUREACCESS_STATIC, w, h);
-	SDL_UpdateTexture(mBackground, NULL, buffer, w * sizeof(char) * BYTES);
-	delete[] buffer;
 }
 
 void loadOverlay(SDL_Rect &rect)
@@ -366,7 +333,6 @@ void *startStreaming(void *args)
 #endif
 	SDL_Rect dest = getDestinationRect();
 
-	loadBackground(bg_image);
 	loadOverlay(dest);
 
 	size_t pitch = source_width * sizeof(char) * BYTES;

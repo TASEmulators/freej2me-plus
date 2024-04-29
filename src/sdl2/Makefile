@@ -3,7 +3,7 @@
 # Make file for Anbu and SDL_interface
 all: anbu.cpp
 	@echo "Building Anbu, sdl_interface for FreeJ2ME ..."
-	@g++ -std=c++11 -o sdl_interface anbu.cpp -lSDL2 -lpthread -lfreeimage 
+	@g++ -std=c++11 -o sdl_interface anbu.cpp -lSDL2 -lpthread 
 
 install:
 	@echo "Installing interface to /usr/local/bin/"
