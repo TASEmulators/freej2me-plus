@@ -171,7 +171,7 @@ public class Anbu
 			private int count = 0;
 			private int code;
 			private int mobikey;
-			private int mobikeyN;
+			int mousex = 0, mousey = 0;
 
 			public void run()
 			{
@@ -179,6 +179,12 @@ public class Anbu
 				{
 					while(true)
 					{
+						if(!proc.isAlive()) 
+						{
+							System.out.println("SDL interface was closed. Cleaning up...");
+							System.exit(0);
+						}
+
 						bin = keys.read();
 						if(bin==-1) { return; }
 						//~ System.out.print(" "+bin);
@@ -189,49 +195,109 @@ public class Anbu
 							count = 0;
 							code = (din[1]<<24) | (din[2]<<16) | (din[3]<<8) | din[4];
 							//~ System.out.println(" ("+code+") <- Key");
-							switch(din[0] >>> 1)
+							//System.out.println(din[0] + "|" + din[1] + "|" + din[2] + "|" + din[3] + "|" + din[4] + "|");
+							switch(din[0])
 							{
-								case 0: mobikey = getMobileKey(code); break;
-								case 1: mobikey = getMobileKeyPad(code); break;
-								case 2: mobikey = getMobileKeyJoy(code); break;
-								default: continue;
+								case 0: // keyboard key up
+									mobikey = getMobileKey(code); 
+									if (mobikey != 0)
+									{
+										keyUp(mobikey);
+									}
+									break;
+
+								case 1:  // keyboard key down
+									mobikey = getMobileKey(code); 
+									if (mobikey != 0)
+									{
+										keyDown(mobikey);
+									}
+									break;
+
+								case 2:	// joypad key up
+									mobikey = getMobileKeyJoy(code);
+									if (mobikey != 0)
+									{
+										keyUp(mobikey);
+									}
+								break;
+
+								case 3: // joypad key down
+									mobikey = getMobileKeyJoy(code);
+									if (mobikey != 0)
+									{
+										keyDown(mobikey);
+									}
+
+								case 4: // mouse up
+									mousex = ((din[1] & 0xFF) << 8) | (din[2] & 0xFF);
+									mousey = ((din[3] & 0xFF) << 8) | (din[4] & 0xFF);
+
+									Mobile.getPlatform().pointerReleased(mousex, mousey);
+								break;
+
+								case 5: // mouse down
+									mousex = ((din[1] & 0xFF) << 8) | (din[2] & 0xFF);
+									mousey = ((din[3] & 0xFF) << 8) | (din[4] & 0xFF);
+
+									Mobile.getPlatform().pointerPressed(mousex, mousey);
+									//System.out.println("press| pointerX:" + mousex + " | PointerY:" + mousey);
+								break;
+
+								case 6: // mouse drag (not implemented yet)
+									mousex = ((din[1] & 0xFF) << 8) | (din[2] & 0xFF);
+									mousey = ((din[3] & 0xFF) << 8) | (din[4] & 0xFF);
+
+									Mobile.getPlatform().pointerDragged(mousex, mousey);
+									//System.out.println("drag | pointerX:" + mousex + " | PointerY:" + mousey);
+								break;
+
+								case 127:
+									// Received boot settings from sdl interface
+
+									// Only rotation is taken into account for now, and mostly for debugging reasons since the entire work is done in sdl.
+									// Anbu.java is mostly acting as the message printer here.
+									if((((din[1] & 0xFF) << 8) | (din[2] & 0xFF)) == 270) { System.out.println("Screen rotated!"); }
+									
+								default: break;
 							}
-							
-							if (mobikey == 0) //Ignore events from keys not mapped to a phone keypad key
-							{
-								return; 
-							}
-							mobikeyN = (mobikey + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-							
-							if (din[0] % 2 == 0)
-							{
-								//Key released
-								//~ System.out.println("keyReleased:  " + Integer.toString(mobikey));
-								Mobile.getPlatform().keyReleased(mobikey);
-								pressedKeys[mobikeyN] = false;
-							}
-							else
-							{
-								//Key pressed or repeated
-								if (pressedKeys[mobikeyN] == false)
-								{
-									//~ System.out.println("keyPressed:  " + Integer.toString(mobikey));
-									Mobile.getPlatform().keyPressed(mobikey);
-								}
-								else
-								{
-									//~ System.out.println("keyRepeated:  " + Integer.toString(mobikey));
-									Mobile.getPlatform().keyRepeated(mobikey);
-								}
-								pressedKeys[mobikeyN] = true;
-							}
-							
-						}
+						} 
 					}
 				}
 				catch (Exception e) { }
 			}
 		} // timer
+
+		private void keyDown(int key)
+		{
+			int mobikeyN = (key + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
+			//if(config.isRunning)
+			//{
+			//	config.keyPressed(key);
+			//}
+			//else
+			//{
+			if (pressedKeys[mobikeyN] == false)
+			{
+				Mobile.getPlatform().keyPressed(key);
+			}
+			else
+			{
+				Mobile.getPlatform().keyRepeated(key);
+			}
+			//}
+			pressedKeys[mobikeyN] = true;
+		}
+
+		private void keyUp(int key)
+		{
+			int mobikeyN = (key + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
+			//if(!config.isRunning)
+			//{
+			Mobile.getPlatform().keyReleased(key);
+			//}
+			pressedKeys[mobikeyN] = false;
+		}
 
 		private int getMobileKey(int keycode)
 		{

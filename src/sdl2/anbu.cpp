@@ -70,6 +70,15 @@ SDL_Texture *mOverlay;
 SDL_Texture *mTexture;
 SDL_Window *mWindow;
 
+// Mouse pointer coordinates
+int mousex = 0;
+int mousey = 0;
+int correctedmousex = 0;
+int correctedmousey = 0;
+bool mousepressed = false;
+bool mousedragged = false;
+unsigned int drag_threshold = 2; // threshold in pixels
+
 std::map<SDL_JoystickID, SDL_Joystick*> mJoysticks;
 std::map<SDL_JoystickID, int*> mPrevAxisValues;
 
@@ -130,14 +139,31 @@ void removeJoystick(SDL_JoystickID joyId)
 	}
 }
 
-void sendKey(int key, bool pressed, bool joystick)
+void sendKey(int key, bool pressed, bool joystick, bool mouse)
 {
-	unsigned char bytes [5];
-	bytes[0] = (char) (joystick << 4) | pressed;
-	bytes[1] = (char) (key >> 24);
-	bytes[2] = (char) (key >> 16);
-	bytes[3] = (char) (key >> 8);
-	bytes[4] = (char) (key);
+	unsigned char bytes[6];
+	if(key == 127) {
+		// We're passing commandline data to anbu.java
+		bytes[0] = (key);
+		bytes[1] = (char) (angle >> 8) & 0xFF;
+		bytes[2] = (char) (angle) & 0xFF;
+	}
+	else if(!mouse) {
+		bytes[0] = (char) (joystick << 4) | pressed;
+		bytes[1] = (char) (key >> 24);
+		bytes[2] = (char) (key >> 16);
+		bytes[3] = (char) (key >> 8);
+		bytes[4] = (char) (key);
+	}
+	else {
+		bytes[0] = (mouse << 2) | pressed;
+		bytes[1] = (char) (correctedmousex >> 8) & 0xFF;
+		bytes[2] = (char) (correctedmousex) & 0xFF;
+		bytes[3] = (char) (correctedmousey >> 8) & 0xFF;
+		bytes[4] = (char) (correctedmousey) & 0xFF;
+
+		if(mousedragged) { bytes[0] = 6; }
+	}
 	fwrite(&bytes, sizeof(char), 5, stdout);
 }
 
@@ -150,12 +176,28 @@ bool sendQuitEvent()
 }
 
 /********************************************************** Utility Functions */
-void loadDisplayDimentions()
+void loadDisplayDimensions()
 {
 	SDL_DisplayMode dispMode;
+	double frame_aspect_ratio;
+
 	SDL_GetDesktopDisplayMode(0, &dispMode);
-	display_width = dispMode.w;
-	display_height = dispMode.h;
+
+	// We need to account for aspect ratio here, since mouse coordinates are in
+	// respect to the window coordinates and not FreeJ2ME's destination rect.
+	if (angle == 270) { frame_aspect_ratio = (double)source_height / source_width; } 
+	else { frame_aspect_ratio = (double)source_width / source_height; }
+
+    if (frame_aspect_ratio > 1.0)
+    {
+        display_width = dispMode.h * frame_aspect_ratio;
+        display_height = dispMode.h;
+    }
+    else
+    {
+        display_width = dispMode.w;
+        display_height = dispMode.w / frame_aspect_ratio;
+    }
 }
 
 SDL_Rect getDestinationRect()
@@ -200,7 +242,7 @@ void saveFrame(unsigned char* frame)
 	FreeImage_Save(FIF_JPEG, dst, name.c_str(), 0);
 }
 
-void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect *dest, int angle, int interFrame = 16)
+void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, int interFrame = 16)
 {
 	// Cutoff rendering at 60fps
 	if (SDL_GetTicks() - last_time < interFrame) {
@@ -210,11 +252,11 @@ void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect *dest, int angle, in
 	last_time = SDL_GetTicks();
 
 	SDL_RenderClear(mRenderer);
-	SDL_UpdateTexture(mTexture, NULL, frame, pitch);
-	SDL_RenderCopy(mRenderer, mBackground, NULL, NULL);
-	SDL_RenderCopyEx(mRenderer, mTexture, NULL, dest, angle, NULL, SDL_FLIP_NONE);
-	SDL_RenderCopyEx(mRenderer, mOverlay, NULL, dest, angle, NULL, SDL_FLIP_NONE);
-	SDL_RenderPresent(mRenderer);
+    SDL_UpdateTexture(mTexture, NULL, frame, pitch);
+    SDL_RenderCopyEx(mRenderer, mBackground, NULL, NULL, 0, NULL, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(mRenderer, mTexture, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(mRenderer, mOverlay, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
+    SDL_RenderPresent(mRenderer);
 }
 
 void loadBackground(string image)
@@ -275,10 +317,12 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 		exit(1);
 	}
 
-	loadDisplayDimentions();
+	loadDisplayDimensions();
 
 	// Clear screen and draw coloured Background
-	SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP, &mWindow, &mRenderer);
+	if(angle == 270) { SDL_CreateWindowAndRenderer(source_height, source_width, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	else { SDL_CreateWindowAndRenderer(source_width, source_height, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	SDL_SetWindowTitle(mWindow, "FreeJ2ME - SDL");
 	SDL_SetRenderDrawColor(mRenderer, r, g, b, 255);
 	SDL_RenderClear(mRenderer);
 	SDL_RenderPresent(mRenderer);
@@ -308,7 +352,7 @@ void *startStreaming(void *args)
 	mTexture = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, source_width, source_height);
 
 	while (capturing && updateFrame(num_chars, frame) || !sendQuitEvent())
-		drawFrame(frame, pitch, &dest, angle);
+		drawFrame(frame, pitch, dest, angle);
 
 	SDL_DestroyTexture(mTexture);
 	delete[] frame;
@@ -330,34 +374,36 @@ void startCapturing()
 		SDL_Event event;
 		if (SDL_WaitEvent(&event))
 		{
-			switch (event.type)
+			if(event.type == SDL_QUIT) 
 			{
-			case SDL_QUIT:
 				capturing = false;
 				continue;
-
-			case SDL_KEYDOWN:
-			case SDL_KEYUP:
+			}
+			else if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) 
+			{
 				key = event.key.keysym.sym;
-				if (key == SDLK_F4) {
+				if (key == SDLK_F4) 
+				{
 					key = -1;
 					capturing = false;
 				}
-				sendKey(key, event.key.state == SDL_PRESSED, false);
-				break;
+				sendKey(key, event.key.state == SDL_PRESSED, false, false);
+			}
 
-			case SDL_JOYBUTTONDOWN:
-			case SDL_JOYBUTTONUP:
+			else if(event.type == SDL_JOYBUTTONDOWN || event.type == SDL_JOYBUTTONUP) 
+			{
 				key = event.jbutton.button;
-				sendKey(key, event.jbutton.state == SDL_PRESSED, true);
-				break;
+				sendKey(key, event.jbutton.state == SDL_PRESSED, true, false);
+			}
 
-			case SDL_JOYHATMOTION:
+			else if(event.type == SDL_JOYHATMOTION) 
+			{
 				key = event.jhat.value;
-				sendKey(key << 16, event.jhat.value != SDL_HAT_CENTERED, true);
-				break;
+				sendKey(key << 16, event.jhat.value != SDL_HAT_CENTERED, true, false);
+			}
 
-			case SDL_JOYAXISMOTION:
+			else if(event.type == SDL_JOYAXISMOTION) 
+			{
 				// jaxis.value => -32768 to 32767
 				int normValue;
 				if(abs(event.jaxis.value) <= DEADZONE)
@@ -371,18 +417,92 @@ void startCapturing()
 				if(abs(normValue) != abs(mPrevAxisValues[event.jaxis.which][event.jaxis.axis]))
 				{
 					key = 3 * event.jaxis.axis + normValue + 1;
-					sendKey(key << 8, normValue != 0, true);
+					sendKey(key << 8, normValue != 0, true, false);
 				}
 				mPrevAxisValues[event.jaxis.which][event.jaxis.axis] = normValue;
-				break;
+			}
 
-			case SDL_JOYDEVICEADDED:
-				addJoystick(event.jdevice.which);
-				break;
+			else if(event.type == SDL_JOYDEVICEADDED) { addJoystick(event.jdevice.which); }
+				
+			else if(event.type == SDL_JOYDEVICEREMOVED) { removeJoystick(event.jdevice.which); }
+				
+			// Mouse keys (any mouse button click is valid)
+			else if(event.type == SDL_MOUSEBUTTONDOWN) 
+			{
+				// Capture mouse button click to send to anbu.java
+                mousex = event.button.x;
+                mousey = event.button.y;
 
-			case SDL_JOYDEVICEREMOVED:
-				removeJoystick(event.jdevice.which);
-				break;
+				// If the screen is rotated, apply a coordinate transformation to keep mouse coords consistent
+				if(angle == 270) 
+				{
+					correctedmousex = source_width - ((source_width * mousey) / display_height); 
+					correctedmousey = (source_height * mousex) / display_width; 
+				}
+				else 
+				{
+					correctedmousex = (source_width * mousex) / display_width;
+					correctedmousey = (source_height * mousey) / display_height;
+				}
+
+				mousepressed = true;
+				sendKey(0, true, false, true);
+				//printf("\npress coords-> X: %d | Y: %d", correctedmousex, correctedmousey);
+			}
+			else if(event.type == SDL_MOUSEBUTTONUP) 
+			{
+				// Capture mouse button release to send to anbu.java
+                mousex = event.button.x;
+                mousey = event.button.y;
+
+				if(angle == 270) 
+				{
+					correctedmousex = source_width - ((source_width * mousey) / display_height); 
+					correctedmousey = (source_height * mousex) / display_width; 
+				}
+				else 
+				{
+					correctedmousex = (source_width * mousex) / display_width;
+					correctedmousey = (source_height * mousey) / display_height;
+				}
+
+				if(mousepressed) 
+				{ 
+					mousepressed = false;
+					mousedragged = false;
+					sendKey(0, false, false, true);
+				}
+			}
+			else if(event.type == SDL_MOUSEMOTION) 
+			{
+				// Check if a drag event is ocurring
+				if(mousepressed && (abs(event.button.x - mousex) * abs(event.button.y - mousey)) > drag_threshold)
+				{ 
+					mousedragged = true;
+					mousex = event.button.x;
+					mousey = event.button.y;
+
+					if(angle == 270) 
+					{
+						correctedmousex = source_width - ((source_width * mousey) / display_height); 
+						correctedmousey = (source_height * mousex) / display_width; 
+					}
+					else 
+					{
+						correctedmousex = (source_width * mousex) / display_width;
+						correctedmousey = (source_height * mousey) / display_height;
+					}
+					
+					//printf("\ndrag coords-> X: %d | Y: %d", correctedmousex, correctedmousey);
+					sendKey(6, false, false, true); 
+				}
+			}
+			
+			else if(event.type == SDL_WINDOWEVENT_SIZE_CHANGED) 
+			{
+				// if the window was resized, get the new size to correct mouse coordinates;
+				display_width = event.window.data1 * source_width / event.window.data2;
+				display_height = event.window.data2 * source_height / event.window.data1;
 			}
 			fflush(stdout);
 		}
@@ -404,7 +524,7 @@ int main(int argc, char* argv[])
 			source_width = atoi(argv[c]);
 			source_height = atoi(argv[++c]);
 		} else if (c > 2 && string("-r") == argv[c] && argc > c + 1) {
-			angle = atoi(argv[++c]) % 360;
+			if(atoi(argv[++c]) == 1) { angle = 270; } // cmd rotation argument
 		} else if (c > 2 && string("-i") == argv[c] && argc > c + 1) {
 			interpol = argv[++c];
 		} else if (c > 2 && string("-b") == argv[c] && argc > c + 1) {
@@ -443,8 +563,7 @@ int main(int argc, char* argv[])
 	CloseHandle(hThreadCapturing);
 #else
 	pthread_join(t_capturing, NULL);
-#endif
-	SDL_ShowCursor(initialCursorState);
+	SDL_ShowCursor(SDL_ENABLE);
 	SDL_Quit();
 	return 0;
 }
