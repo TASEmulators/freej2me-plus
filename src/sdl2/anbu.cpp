@@ -55,7 +55,7 @@ string bg_image = "";
 int angle = 0;
 int source_width = 0, source_height = 0;
 int display_width = 0, display_height = 0;
-double additional_scale = 1;
+double window_scale = 1;
 double overlay_scale = 1;
 int last_time = 0;
 
@@ -92,8 +92,8 @@ Usage: anbu width height [OPTION]...\n\
 \n\
 Options:\n\
   -i type               Interpolation to use {'nearest', 'linear', 'best'}\n\
-  -r angle              Rotate incomming frame by angle in degrees [0-360]\n\
-  -s scale              Additional scaling [0-1.0] of incomming frame\n\
+  -r rotation           Rotate incoming frame if needed [0 = no rotation, 1= 270 degrees]\n\
+  -s scale              Additional scaling [2, 3, etc] of FreeJ2ME's window\n\
   -c R G B              Background color in RGB format [0-255] for each channel\n\
   -b bg.png | bg.jpg    Background image in PNG or JPG format. Should have same\n\
                         aspect ratio as screen to avoid unwanted streching\n\
@@ -224,7 +224,7 @@ SDL_Rect getDestinationRect()
 		break;
 	}
 
-	int w = source_width * scale * additional_scale, h = source_height * scale * additional_scale;
+	int w = source_width * scale, h = source_height * scale;
 	return { (display_width - w )/2, (display_height - h)/2, w, h };
 }
 
@@ -345,8 +345,8 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 	loadDisplayDimensions();
 
 	// Clear screen and draw coloured Background
-	if(angle == 270) { SDL_CreateWindowAndRenderer(source_height, source_width, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
-	else { SDL_CreateWindowAndRenderer(source_width, source_height, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	if(angle == 270) { SDL_CreateWindowAndRenderer(source_height*window_scale, source_width*window_scale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	else { SDL_CreateWindowAndRenderer(source_width*window_scale, source_height*window_scale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
 	SDL_SetWindowTitle(mWindow, "FreeJ2ME - SDL");
 	SDL_SetRenderDrawColor(mRenderer, r, g, b, 255);
 	SDL_RenderClear(mRenderer);
@@ -412,9 +412,42 @@ void startCapturing()
 					key = -1;
 					capturing = false;
 				}
-				else if (key == SDLK_F8)
+				else if (key == SDLK_F8 && event.type == SDL_KEYDOWN)
 				{
 					getScreenShot = true;
+				}
+				else if(key == SDLK_KP_PLUS && event.type == SDL_KEYDOWN) 
+				{
+					window_scale += 1;
+
+					if(angle == 270) 
+					{
+						SDL_SetWindowSize(mWindow, source_height*window_scale,
+                       		source_width*window_scale);
+					}
+					else 
+					{ 
+						SDL_SetWindowSize(mWindow, source_width*window_scale,
+                       		source_height*window_scale);
+					}
+					
+				}
+				else if(key == SDLK_KP_MINUS && event.type == SDL_KEYDOWN) 
+				{
+					if(window_scale > 1) 
+					{
+						window_scale -= 1;
+						if(angle == 270) 
+						{
+							SDL_SetWindowSize(mWindow, source_height*window_scale,
+								source_width*window_scale);
+						}
+						else 
+						{ 
+							SDL_SetWindowSize(mWindow, source_width*window_scale,
+								source_height*window_scale);
+						}
+					}
 				}
 				sendKey(key, event.key.state == SDL_PRESSED, false, false);
 			}
@@ -559,7 +592,7 @@ int main(int argc, char* argv[])
 		} else if (c > 2 && string("-b") == argv[c] && argc > c + 1) {
 			bg_image = argv[++c];
 		} else if (c > 2 && string("-s") == argv[c] && argc > c + 1) {
-			additional_scale = atof(argv[++c]);
+			window_scale = atof(argv[++c]);
 		} else if (c > 2 && string("-c") == argv[c] && argc > c + 3) {
 			r = atoi(argv[++c]);
 			g = atoi(argv[++c]);
