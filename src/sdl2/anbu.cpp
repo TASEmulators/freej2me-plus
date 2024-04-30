@@ -178,6 +178,24 @@ bool sendQuitEvent()
 }
 
 /********************************************************** Utility Functions */
+void calculateCorrectedMousePos(SDL_Event *event) 
+{
+	mousex = event->button.x;
+	mousey = event->button.y;
+
+	// If the screen is rotated, apply a coordinate transformation to keep mouse coords consistent
+	if(angle == 270) 
+	{
+		correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
+		correctedmousey = (sourceHeight * mousex) / display_width; 
+	}
+	else 
+	{
+		correctedmousex = (sourceWidth * mousex) / display_width;
+		correctedmousey = (sourceHeight * mousey) / display_height;
+	}
+}
+
 void calculateDisplaySizeAndAspectRatio(SDL_DisplayMode *dispMode)
 {
 	double frameAspectRatio;
@@ -492,21 +510,8 @@ void startCapturing()
 			// Mouse keys (any mouse button click is valid)
 			else if(event.type == SDL_MOUSEBUTTONDOWN) 
 			{
-				// Capture mouse button click to send to anbu.java
-                mousex = event.button.x;
-                mousey = event.button.y;
-
-				// If the screen is rotated, apply a coordinate transformation to keep mouse coords consistent
-				if(angle == 270) 
-				{
-					correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
-					correctedmousey = (sourceHeight * mousex) / display_width; 
-				}
-				else 
-				{
-					correctedmousex = (sourceWidth * mousex) / display_width;
-					correctedmousey = (sourceHeight * mousey) / display_height;
-				}
+				// Capture mouse button click to send to anbu.java	
+				calculateCorrectedMousePos(&event);
 
 				mousepressed = true;
 				sendKey(0, true, false, true);
@@ -515,19 +520,7 @@ void startCapturing()
 			else if(event.type == SDL_MOUSEBUTTONUP) 
 			{
 				// Capture mouse button release to send to anbu.java
-                mousex = event.button.x;
-                mousey = event.button.y;
-
-				if(angle == 270) 
-				{
-					correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
-					correctedmousey = (sourceHeight * mousex) / display_width; 
-				}
-				else 
-				{
-					correctedmousex = (sourceWidth * mousex) / display_width;
-					correctedmousey = (sourceHeight * mousey) / display_height;
-				}
+				calculateCorrectedMousePos(&event);
 
 				if(mousepressed) 
 				{ 
@@ -542,19 +535,7 @@ void startCapturing()
 				if(mousepressed && (abs(event.button.x - mousex) * abs(event.button.y - mousey)) > drag_threshold)
 				{ 
 					mousedragged = true;
-					mousex = event.button.x;
-					mousey = event.button.y;
-
-					if(angle == 270) 
-					{
-						correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
-						correctedmousey = (sourceHeight * mousex) / display_width; 
-					}
-					else 
-					{
-						correctedmousex = (sourceWidth * mousex) / display_width;
-						correctedmousey = (sourceHeight * mousey) / display_height;
-					}
+					calculateCorrectedMousePos(&event);
 					
 					//printf("\ndrag coords-> X: %d | Y: %d", correctedmousex, correctedmousey);
 					sendKey(6, false, false, true); 
