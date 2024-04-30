@@ -52,9 +52,9 @@ pthread_t t_capturing;
 string bg_image = "";
 
 int angle = 0;
-int source_width = 0, source_height = 0;
+int sourceWidth = 0, sourceHeight = 0;
 int display_width = 0, display_height = 0;
-double window_scale = 1;
+double windowScale = 1;
 double overlay_scale = 1;
 int last_time = 0;
 
@@ -78,8 +78,9 @@ bool mousepressed = false;
 bool mousedragged = false;
 unsigned int drag_threshold = 2; // threshold in pixels
 
-// ScreenShot boolean
+// SDL2-specific settings
 bool getScreenShot = false;
+bool isFullscreen = false;
 
 std::map<SDL_JoystickID, SDL_Joystick*> mJoysticks;
 std::map<SDL_JoystickID, int*> mPrevAxisValues;
@@ -94,8 +95,7 @@ Options:\n\
   -r rotation           Rotate incoming frame if needed [0 = no rotation, 1= 270 degrees]\n\
   -s scale              Additional scaling [2, 3, etc] of FreeJ2ME's window\n\
   -c R G B              Background color in RGB format [0-255] for each channel\n\
-  -b bg.png | bg.jpg    Background image in PNG or JPG format. Should have same\n\
-                        aspect ratio as screen to avoid unwanted streching\n\
+  -f fullscreen         Sets if Anbu should start in fullscreen [1] or not [0]\n\
 \n\
 Authors:\n\
   Anbu:                 Saket Dandawate / hex\n\
@@ -178,28 +178,57 @@ bool sendQuitEvent()
 }
 
 /********************************************************** Utility Functions */
+void calculateDisplaySizeAndAspectRatio(SDL_DisplayMode *dispMode)
+{
+	double frameAspectRatio;
+	if (angle == 270) { frameAspectRatio = (double)sourceHeight / sourceWidth; } 
+	else { frameAspectRatio = (double)sourceWidth / sourceHeight; }
+
+    if (frameAspectRatio > 1.0)
+    {
+        display_width = dispMode->h * frameAspectRatio;
+        display_height = dispMode->h;
+    }
+    else
+    {
+        display_width = dispMode->w;
+        display_height = dispMode->w / frameAspectRatio;
+    }
+}
+
+void toggleFullscreen() 
+{
+	// Get the desktop display mode
+    SDL_DisplayMode dispMode;
+    SDL_GetDesktopDisplayMode(0, &dispMode);
+
+	double frameAspectRatio = (double) sourceWidth/sourceHeight;
+
+    // Calculate the desired width and height based on the frame's aspect ratio
+    calculateDisplaySizeAndAspectRatio(&dispMode);
+
+    // Resize the window to the desired width and height
+    SDL_SetWindowSize(mWindow, dispMode.w, dispMode.h);
+	SDL_SetWindowDisplayMode(mWindow, &dispMode);
+
+	if(isFullscreen){ SDL_SetWindowFullscreen(mWindow, SDL_WINDOW_FULLSCREEN_DESKTOP); }
+	else
+	{ 
+		SDL_SetWindowFullscreen(mWindow, SDL_WINDOW_SHOWN);
+		if(angle != 270) { SDL_SetWindowSize(mWindow, sourceWidth*windowScale, sourceHeight*windowScale); }
+		else { SDL_SetWindowSize(mWindow, sourceHeight*windowScale, sourceWidth*windowScale); }
+	}
+}
+
 void loadDisplayDimensions()
 {
 	SDL_DisplayMode dispMode;
-	double frame_aspect_ratio;
-
+	
 	SDL_GetDesktopDisplayMode(0, &dispMode);
 
 	// We need to account for aspect ratio here, since mouse coordinates are in
 	// respect to the window coordinates and not FreeJ2ME's destination rect.
-	if (angle == 270) { frame_aspect_ratio = (double)source_height / source_width; } 
-	else { frame_aspect_ratio = (double)source_width / source_height; }
-
-    if (frame_aspect_ratio > 1.0)
-    {
-        display_width = dispMode.h * frame_aspect_ratio;
-        display_height = dispMode.h;
-    }
-    else
-    {
-        display_width = dispMode.w;
-        display_height = dispMode.w / frame_aspect_ratio;
-    }
+	calculateDisplaySizeAndAspectRatio(&dispMode);
 }
 
 SDL_Rect getDestinationRect()
@@ -209,21 +238,21 @@ SDL_Rect getDestinationRect()
 	{
 	case 0:
 	case 180:
-		scale = min( (double) display_width/source_width, (double) display_height/source_height );
+		scale = min( (double) display_width/sourceWidth, (double) display_height/sourceHeight );
 		break;
 	case 90:
 	case 270:
-		scale = min( (double) display_width/source_height, (double) display_height/source_width );
+		scale = min( (double) display_width/sourceHeight, (double) display_height/sourceWidth );
 		break;
 	default:
 		double angle_r = std::acos(-1) * angle / 180;
-		double bound_W = fabs(cos(angle_r) * source_width) + fabs(sin(angle_r) * source_height);
-		double bound_H = fabs(sin(angle_r) * source_width) + fabs(cos(angle_r) * source_height);
+		double bound_W = fabs(cos(angle_r) * sourceWidth) + fabs(sin(angle_r) * sourceHeight);
+		double bound_H = fabs(sin(angle_r) * sourceWidth) + fabs(cos(angle_r) * sourceHeight);
 		scale = min(display_width / bound_W, display_height / bound_H);
 		break;
 	}
 
-	int w = source_width * scale, h = source_height * scale;
+	int w = sourceWidth * scale, h = sourceHeight * scale;
 	return { (display_width - w )/2, (display_height - h)/2, w, h };
 }
 
@@ -274,7 +303,7 @@ void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, in
 
 void loadOverlay(SDL_Rect &rect)
 {
-	int psize =  overlay_scale * rect.w / source_width;
+	int psize =  overlay_scale * rect.w / sourceWidth;
 	int size = rect.w * rect.h * 4;
 	unsigned char *bytes = new unsigned char[size];
 
@@ -297,7 +326,7 @@ void loadOverlay(SDL_Rect &rect)
 /******************************************************** Processing Function */
 void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 {
-	if (source_width == 0 || source_height == 0)
+	if (sourceWidth == 0 || sourceHeight == 0)
 	{
 		cerr << "anbu: Neither width nor height parameters can be 0." << endl;
 		exit(1);
@@ -312,8 +341,9 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 	loadDisplayDimensions();
 
 	// Clear screen and draw coloured Background
-	if(angle == 270) { SDL_CreateWindowAndRenderer(source_height*window_scale, source_width*window_scale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
-	else { SDL_CreateWindowAndRenderer(source_width*window_scale, source_height*window_scale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	if(angle == 270) { SDL_CreateWindowAndRenderer(sourceHeight*windowScale, sourceWidth*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	else { SDL_CreateWindowAndRenderer(sourceWidth*windowScale, sourceHeight*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
+	if(isFullscreen) { toggleFullscreen(); }
 	SDL_SetWindowTitle(mWindow, "FreeJ2ME - SDL");
 	SDL_SetRenderDrawColor(mRenderer, r, g, b, 255);
 	SDL_RenderClear(mRenderer);
@@ -335,12 +365,12 @@ void *startStreaming(void *args)
 
 	loadOverlay(dest);
 
-	size_t pitch = source_width * sizeof(char) * BYTES;
-	size_t num_chars = source_width * source_height * BYTES;
+	size_t pitch = sourceWidth * sizeof(char) * BYTES;
+	size_t num_chars = sourceWidth * sourceHeight * BYTES;
 	unsigned char* frame = new unsigned char[num_chars];
 
 	// Create a mTexture where drawing can take place. Streaming for constant updates.
-	mTexture = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, source_width, source_height);
+	mTexture = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, sourceWidth, sourceHeight);
 
 	while (capturing && updateFrame(num_chars, frame) || !sendQuitEvent())
 		drawFrame(frame, pitch, dest, angle);
@@ -382,36 +412,41 @@ void startCapturing()
 				{
 					getScreenShot = true;
 				}
+				else if (key == SDLK_F11 && event.type == SDL_KEYDOWN) 
+				{
+					isFullscreen = !isFullscreen;
+					toggleFullscreen();
+				}
 				else if(key == SDLK_KP_PLUS && event.type == SDL_KEYDOWN) 
 				{
-					window_scale += 1;
+					windowScale += 1;
 
 					if(angle == 270) 
 					{
-						SDL_SetWindowSize(mWindow, source_height*window_scale,
-                       		source_width*window_scale);
+						SDL_SetWindowSize(mWindow, sourceHeight*windowScale,
+                       		sourceWidth*windowScale);
 					}
 					else 
 					{ 
-						SDL_SetWindowSize(mWindow, source_width*window_scale,
-                       		source_height*window_scale);
+						SDL_SetWindowSize(mWindow, sourceWidth*windowScale,
+                       		sourceHeight*windowScale);
 					}
 					
 				}
 				else if(key == SDLK_KP_MINUS && event.type == SDL_KEYDOWN) 
 				{
-					if(window_scale > 1) 
+					if(windowScale > 1) 
 					{
-						window_scale -= 1;
+						windowScale -= 1;
 						if(angle == 270) 
 						{
-							SDL_SetWindowSize(mWindow, source_height*window_scale,
-								source_width*window_scale);
+							SDL_SetWindowSize(mWindow, sourceHeight*windowScale,
+								sourceWidth*windowScale);
 						}
 						else 
 						{ 
-							SDL_SetWindowSize(mWindow, source_width*window_scale,
-								source_height*window_scale);
+							SDL_SetWindowSize(mWindow, sourceWidth*windowScale,
+								sourceHeight*windowScale);
 						}
 					}
 				}
@@ -464,13 +499,13 @@ void startCapturing()
 				// If the screen is rotated, apply a coordinate transformation to keep mouse coords consistent
 				if(angle == 270) 
 				{
-					correctedmousex = source_width - ((source_width * mousey) / display_height); 
-					correctedmousey = (source_height * mousex) / display_width; 
+					correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
+					correctedmousey = (sourceHeight * mousex) / display_width; 
 				}
 				else 
 				{
-					correctedmousex = (source_width * mousex) / display_width;
-					correctedmousey = (source_height * mousey) / display_height;
+					correctedmousex = (sourceWidth * mousex) / display_width;
+					correctedmousey = (sourceHeight * mousey) / display_height;
 				}
 
 				mousepressed = true;
@@ -485,13 +520,13 @@ void startCapturing()
 
 				if(angle == 270) 
 				{
-					correctedmousex = source_width - ((source_width * mousey) / display_height); 
-					correctedmousey = (source_height * mousex) / display_width; 
+					correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
+					correctedmousey = (sourceHeight * mousex) / display_width; 
 				}
 				else 
 				{
-					correctedmousex = (source_width * mousex) / display_width;
-					correctedmousey = (source_height * mousey) / display_height;
+					correctedmousex = (sourceWidth * mousex) / display_width;
+					correctedmousey = (sourceHeight * mousey) / display_height;
 				}
 
 				if(mousepressed) 
@@ -512,13 +547,13 @@ void startCapturing()
 
 					if(angle == 270) 
 					{
-						correctedmousex = source_width - ((source_width * mousey) / display_height); 
-						correctedmousey = (source_height * mousex) / display_width; 
+						correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
+						correctedmousey = (sourceHeight * mousex) / display_width; 
 					}
 					else 
 					{
-						correctedmousex = (source_width * mousex) / display_width;
-						correctedmousey = (source_height * mousey) / display_height;
+						correctedmousex = (sourceWidth * mousex) / display_width;
+						correctedmousey = (sourceHeight * mousey) / display_height;
 					}
 					
 					//printf("\ndrag coords-> X: %d | Y: %d", correctedmousex, correctedmousey);
@@ -529,8 +564,8 @@ void startCapturing()
 			else if(event.type == SDL_WINDOWEVENT_SIZE_CHANGED) 
 			{
 				// if the window was resized, get the new size to correct mouse coordinates;
-				display_width = event.window.data1 * source_width / event.window.data2;
-				display_height = event.window.data2 * source_height / event.window.data1;
+				display_width = event.window.data1 * sourceWidth / event.window.data2;
+				display_height = event.window.data2 * sourceHeight / event.window.data1;
 			}
 			fflush(stdout);
 		}
@@ -549,16 +584,16 @@ int main(int argc, char* argv[])
 			cout << getHelp() << endl;
 			return 0;
 		} else if (c == 1) {
-			source_width = atoi(argv[c]);
-			source_height = atoi(argv[++c]);
+			sourceWidth = atoi(argv[c]);
+			sourceHeight = atoi(argv[++c]);
 		} else if (c > 2 && string("-r") == argv[c] && argc > c + 1) {
 			if(atoi(argv[++c]) == 1) { angle = 270; } // cmd rotation argument
 		} else if (c > 2 && string("-i") == argv[c] && argc > c + 1) {
 			interpol = argv[++c];
-		} else if (c > 2 && string("-b") == argv[c] && argc > c + 1) {
-			bg_image = argv[++c];
+		} else if (c > 2 && string("-f") == argv[c] && argc > c + 1) {
+			isFullscreen = atoi(argv[++c]);
 		} else if (c > 2 && string("-s") == argv[c] && argc > c + 1) {
-			window_scale = atof(argv[++c]);
+			windowScale = atoi(argv[++c]);
 		} else if (c > 2 && string("-c") == argv[c] && argc > c + 3) {
 			r = atoi(argv[++c]);
 			g = atoi(argv[++c]);
