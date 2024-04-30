@@ -25,7 +25,6 @@ along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 
 #include <stdio.h>
 #include <iostream>
-#include <iomanip>
 #include <assert.h>
 #include <map>
 
@@ -47,21 +46,14 @@ using namespace std;
 DWORD t_capturing;
 #else
 pthread_t t_capturing;
-#endif
-
-string bg_image = "";
+bool capturing = true;
 
 int angle = 0;
 int sourceWidth = 0, sourceHeight = 0;
-int display_width = 0, display_height = 0;
+int displayWidth = 0, displayHeight = 0;
 double windowScale = 1;
-double overlay_scale = 1;
-int last_time = 0;
-
-bool capturing = true;
-string interpol = "nearest";
-
-int image_index = 0;
+double overlayScale = 1;
+int lastTime = 0;
 
 SDL_Renderer *mRenderer;
 SDL_Texture *mBackground;
@@ -70,17 +62,18 @@ SDL_Texture *mTexture;
 SDL_Window *mWindow;
 
 // Mouse pointer coordinates
-int mousex = 0;
-int mousey = 0;
-int correctedmousex = 0;
-int correctedmousey = 0;
-bool mousepressed = false;
-bool mousedragged = false;
-unsigned int drag_threshold = 2; // threshold in pixels
+int mouseX = 0;
+int mouseY = 0;
+int correctedMouseX = 0;
+int correctedMouseY = 0;
+bool mousePressed = false;
+bool mouseDragged = false;
+unsigned int dragThreshold = 2; // threshold in pixels
 
 // SDL2-specific settings
 bool getScreenShot = false;
 bool isFullscreen = false;
+string interpol = "nearest";
 
 std::map<SDL_JoystickID, SDL_Joystick*> mJoysticks;
 std::map<SDL_JoystickID, int*> mPrevAxisValues;
@@ -159,12 +152,12 @@ void sendKey(int key, bool pressed, bool joystick, bool mouse)
 	}
 	else {
 		bytes[0] = (mouse << 2) | pressed;
-		bytes[1] = (char) (correctedmousex >> 8) & 0xFF;
-		bytes[2] = (char) (correctedmousex) & 0xFF;
-		bytes[3] = (char) (correctedmousey >> 8) & 0xFF;
-		bytes[4] = (char) (correctedmousey) & 0xFF;
+		bytes[1] = (char) (correctedMouseX >> 8) & 0xFF;
+		bytes[2] = (char) (correctedMouseX) & 0xFF;
+		bytes[3] = (char) (correctedMouseY >> 8) & 0xFF;
+		bytes[4] = (char) (correctedMouseY) & 0xFF;
 
-		if(mousedragged) { bytes[0] = 6; }
+		if(mouseDragged) { bytes[0] = 6; }
 	}
 	fwrite(&bytes, sizeof(char), 5, stdout);
 }
@@ -180,19 +173,19 @@ bool sendQuitEvent()
 /********************************************************** Utility Functions */
 void calculateCorrectedMousePos(SDL_Event *event) 
 {
-	mousex = event->button.x;
-	mousey = event->button.y;
+	mouseX = event->button.x;
+	mouseY = event->button.y;
 
 	// If the screen is rotated, apply a coordinate transformation to keep mouse coords consistent
 	if(angle == 270) 
 	{
-		correctedmousex = sourceWidth - ((sourceWidth * mousey) / display_height); 
-		correctedmousey = (sourceHeight * mousex) / display_width; 
+		correctedMouseX = sourceWidth - ((sourceWidth * mouseY) / displayHeight); 
+		correctedMouseY = (sourceHeight * mouseX) / displayWidth; 
 	}
 	else 
 	{
-		correctedmousex = (sourceWidth * mousex) / display_width;
-		correctedmousey = (sourceHeight * mousey) / display_height;
+		correctedMouseX = (sourceWidth * mouseX) / displayWidth;
+		correctedMouseY = (sourceHeight * mouseY) / displayHeight;
 	}
 }
 
@@ -204,13 +197,13 @@ void calculateDisplaySizeAndAspectRatio(SDL_DisplayMode *dispMode)
 
     if (frameAspectRatio > 1.0)
     {
-        display_width = dispMode->h * frameAspectRatio;
-        display_height = dispMode->h;
+        displayWidth = dispMode->h * frameAspectRatio;
+        displayHeight = dispMode->h;
     }
     else
     {
-        display_width = dispMode->w;
-        display_height = dispMode->w / frameAspectRatio;
+        displayWidth = dispMode->w;
+        displayHeight = dispMode->w / frameAspectRatio;
     }
 }
 
@@ -256,38 +249,38 @@ SDL_Rect getDestinationRect()
 	{
 	case 0:
 	case 180:
-		scale = min( (double) display_width/sourceWidth, (double) display_height/sourceHeight );
+		scale = min( (double) displayWidth/sourceWidth, (double) displayHeight/sourceHeight );
 		break;
 	case 90:
 	case 270:
-		scale = min( (double) display_width/sourceHeight, (double) display_height/sourceWidth );
+		scale = min( (double) displayWidth/sourceHeight, (double) displayHeight/sourceWidth );
 		break;
 	default:
-		double angle_r = std::acos(-1) * angle / 180;
-		double bound_W = fabs(cos(angle_r) * sourceWidth) + fabs(sin(angle_r) * sourceHeight);
-		double bound_H = fabs(sin(angle_r) * sourceWidth) + fabs(cos(angle_r) * sourceHeight);
-		scale = min(display_width / bound_W, display_height / bound_H);
+		double angleR = std::acos(-1) * angle / 180;
+		double boundW = fabs(cos(angleR) * sourceWidth) + fabs(sin(angleR) * sourceHeight);
+		double boundH = fabs(sin(angleR) * sourceWidth) + fabs(cos(angleR) * sourceHeight);
+		scale = min(displayWidth / boundW, displayHeight / boundH);
 		break;
 	}
 
 	int w = sourceWidth * scale, h = sourceHeight * scale;
-	return { (display_width - w )/2, (display_height - h)/2, w, h };
+	return { (displayWidth - w )/2, (displayHeight - h)/2, w, h };
 }
 
-bool updateFrame(size_t num_chars, unsigned char* buffer, FILE* input = stdin)
+bool updateFrame(size_t numChars, unsigned char* buffer, FILE* input = stdin)
 {
-	int read_count = fread(buffer, sizeof(char), num_chars, input);
-	return read_count == num_chars;
+	int read_count = fread(buffer, sizeof(char), numChars, input);
+	return read_count == numChars;
 }
 
 void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, int interFrame = 16)
 {
 	// Cutoff rendering at 60fps
-	if (SDL_GetTicks() - last_time < interFrame) {
+	if (SDL_GetTicks() - lastTime < interFrame) {
 		return;
 	}
 
-	last_time = SDL_GetTicks();
+	lastTime = SDL_GetTicks();
 
 	SDL_RenderClear(mRenderer);
     SDL_UpdateTexture(mTexture, NULL, frame, pitch);
@@ -321,7 +314,7 @@ void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, in
 
 void loadOverlay(SDL_Rect &rect)
 {
-	int psize =  overlay_scale * rect.w / sourceWidth;
+	int psize =  overlayScale * rect.w / sourceWidth;
 	int size = rect.w * rect.h * 4;
 	unsigned char *bytes = new unsigned char[size];
 
@@ -369,14 +362,14 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 
 	// Set scaling properties
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, interpol.c_str());
-	SDL_RenderSetLogicalSize(mRenderer, display_width, display_height);
+	SDL_RenderSetLogicalSize(mRenderer, displayWidth, displayHeight);
 }
 
 #ifdef _WIN32
-DWORD WINAPI startStreaming(LPVOID lpParam)
+DWORD WINAPI startStreaming()
 {
 #else
-void *startStreaming(void *args)
+void startStreaming()
 {
 #endif
 	SDL_Rect dest = getDestinationRect();
@@ -384,13 +377,13 @@ void *startStreaming(void *args)
 	loadOverlay(dest);
 
 	size_t pitch = sourceWidth * sizeof(char) * BYTES;
-	size_t num_chars = sourceWidth * sourceHeight * BYTES;
-	unsigned char* frame = new unsigned char[num_chars];
+	size_t numChars = sourceWidth * sourceHeight * BYTES;
+	unsigned char* frame = new unsigned char[numChars];
 
 	// Create a mTexture where drawing can take place. Streaming for constant updates.
 	mTexture = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, sourceWidth, sourceHeight);
 
-	while (capturing && updateFrame(num_chars, frame) || !sendQuitEvent())
+	while (capturing && updateFrame(numChars, frame) || !sendQuitEvent())
 		drawFrame(frame, pitch, dest, angle);
 
 	SDL_DestroyTexture(mTexture);
@@ -513,31 +506,31 @@ void startCapturing()
 				// Capture mouse button click to send to anbu.java	
 				calculateCorrectedMousePos(&event);
 
-				mousepressed = true;
+				mousePressed = true;
 				sendKey(0, true, false, true);
-				//printf("\npress coords-> X: %d | Y: %d", correctedmousex, correctedmousey);
+				//printf("\npress coords-> X: %d | Y: %d", correctedMouseX, correctedMouseY);
 			}
 			else if(event.type == SDL_MOUSEBUTTONUP) 
 			{
 				// Capture mouse button release to send to anbu.java
 				calculateCorrectedMousePos(&event);
 
-				if(mousepressed) 
+				if(mousePressed) 
 				{ 
-					mousepressed = false;
-					mousedragged = false;
+					mousePressed = false;
+					mouseDragged = false;
 					sendKey(0, false, false, true);
 				}
 			}
 			else if(event.type == SDL_MOUSEMOTION) 
 			{
 				// Check if a drag event is ocurring
-				if(mousepressed && (abs(event.button.x - mousex) * abs(event.button.y - mousey)) > drag_threshold)
+				if(mousePressed && (abs(event.button.x - mouseX) * abs(event.button.y - mouseY)) > dragThreshold)
 				{ 
-					mousedragged = true;
+					mouseDragged = true;
 					calculateCorrectedMousePos(&event);
 					
-					//printf("\ndrag coords-> X: %d | Y: %d", correctedmousex, correctedmousey);
+					//printf("\ndrag coords-> X: %d | Y: %d", correctedMouseX, correctedMouseY);
 					sendKey(6, false, false, true); 
 				}
 			}
@@ -545,8 +538,8 @@ void startCapturing()
 			else if(event.type == SDL_WINDOWEVENT_SIZE_CHANGED) 
 			{
 				// if the window was resized, get the new size to correct mouse coordinates;
-				display_width = event.window.data1 * sourceWidth / event.window.data2;
-				display_height = event.window.data2 * sourceHeight / event.window.data1;
+				displayWidth = event.window.data1 * sourceWidth / event.window.data2;
+				displayHeight = event.window.data2 * sourceHeight / event.window.data1;
 			}
 			fflush(stdout);
 		}
@@ -601,7 +594,7 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	startCapturing();
+	startStreaming();
 #ifdef _WIN32
     WaitForSingleObject(hThreadCapturing, INFINITE);
 	CloseHandle(hThreadCapturing);
