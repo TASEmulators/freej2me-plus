@@ -195,11 +195,11 @@ public class Anbu
 							count = 0;
 							code = (din[1]<<24) | (din[2]<<16) | (din[3]<<8) | din[4];
 							//~ System.out.println(" ("+code+") <- Key");
-							//System.out.println(din[0] + "|" + din[1] + "|" + din[2] + "|" + din[3] + "|" + din[4] + "|");
+							System.out.println(din[0] + "|" + din[1] + "|" + din[2] + "|" + din[3] + "|" + din[4] + "|");
 							switch(din[0])
 							{
 								case 0: // keyboard key up
-									mobikey = getMobileKey(code); 
+									mobikey = getMobileKey(din[1]); 
 									if (mobikey != 0)
 									{
 										keyUp(mobikey);
@@ -207,23 +207,24 @@ public class Anbu
 									break;
 
 								case 1:  // keyboard key down
-									mobikey = getMobileKey(code); 
+									mobikey = getMobileKey(din[1]); 
 									if (mobikey != 0)
 									{
 										keyDown(mobikey);
 									}
 									break;
 
-								case 2:	// joypad key up
-									mobikey = getMobileKeyJoy(code);
+								case 16: // joypad key up
+									mobikey = getMobileKey(din[1]);
 									if (mobikey != 0)
 									{
 										keyUp(mobikey);
 									}
 								break;
 
-								case 3: // joypad key down
-									mobikey = getMobileKeyJoy(code);
+								case 17: // joypad key down
+									mobikey = getMobileKey(din[1]);
+									//System.out.println("JoyKey:" + din[1]);
 									if (mobikey != 0)
 									{
 										keyDown(mobikey);
@@ -303,105 +304,31 @@ public class Anbu
 		{
 			switch(keycode)
 			{
-				case 0x30: return Mobile.KEY_NUM0;
-				case 0x31: return Mobile.KEY_NUM1;
-				case 0x32: return Mobile.KEY_NUM2;
-				case 0x33: return Mobile.KEY_NUM3;
-				case 0x34: return Mobile.KEY_NUM4;
-				case 0x35: return Mobile.KEY_NUM5;
-				case 0x36: return Mobile.KEY_NUM6;
-				case 0x37: return Mobile.KEY_NUM7;
-				case 0x38: return Mobile.KEY_NUM8;
-				case 0x39: return Mobile.KEY_NUM9;
-				case 0x2A: return Mobile.KEY_STAR;
-				case 0x23: return Mobile.KEY_POUND;
+				// Inputs examples based on a Switch Pro Controller,
+				// which is the default setting used by Anbu.cpp
+				// Different controllers have different codes.
+				// LZ and RZ triggers aren't buttons per se
+				// hence, they won't be found here yet.
+				case 0x00: return Mobile.KEY_NUM5; // A
+				case 0x01: return Mobile.KEY_NUM7; // B
+				case 0x02: return Mobile.KEY_NUM9; // X
+				case 0x03: return Mobile.KEY_POUND; // Y
 
-				case 0x40000052: return Mobile.KEY_NUM2;
-				case 0x40000051: return Mobile.KEY_NUM8;
-				case 0x40000050: return Mobile.KEY_NUM4;
-				case 0x4000004F: return Mobile.KEY_NUM6;
+				case 0x04: return Mobile.NOKIA_SOFT1; // -/Select
+				case 0x05: return Mobile.KEY_NUM0; // Home
+				case 0x06: return Mobile.NOKIA_SOFT2; // +/Start
 
-				case 0x0D: return Mobile.KEY_NUM5;
+				case 0x07: return Mobile.GAME_A; // Left Analog press
+				case 0x08: return Mobile.GAME_B; // Right Analog press
 
-				case 0x71: return Mobile.NOKIA_SOFT1;
-				case 0x77: return Mobile.NOKIA_SOFT2;
-				case 0x65: return Mobile.KEY_STAR;
-				case 0x72: return Mobile.KEY_POUND;
+				case 0x09: return Mobile.KEY_NUM1; // L
+				case 0x0A: return Mobile.KEY_NUM3; // R
 
-
-				// Inverted Num Pad
-				case 0x40000059: return Mobile.KEY_NUM7; // SDLK_KP_1
-				case 0x4000005A: return Mobile.KEY_NUM8; // SDLK_KP_2
-				case 0x4000005B: return Mobile.KEY_NUM9; // SDLK_KP_3
-				case 0x4000005C: return Mobile.KEY_NUM4; // SDLK_KP_4
-				case 0x4000005D: return Mobile.KEY_NUM5; // SDLK_KP_5
-				case 0x4000005E: return Mobile.KEY_NUM6; // SDLK_KP_6
-				case 0x4000005F: return Mobile.KEY_NUM1; // SDLK_KP_7
-				case 0x40000060: return Mobile.KEY_NUM2; // SDLK_KP_8
-				case 0x40000061: return Mobile.KEY_NUM3; // SDLK_KP_9
-				case 0x40000062: return Mobile.KEY_NUM0; // SDLK_KP_0
-
-
-				// F4 - Quit
-				case -1: System.exit(0);
-
-				// ESC - Quit
-				case 0x1B: System.exit(0);
-
-				case 112: ScreenShot.takeScreenshot(true);
-
-				/*
-				case : return Mobile.GAME_UP;
-				case : return Mobile.GAME_DOWN;
-				case : return Mobile.GAME_LEFT;
-				case : return Mobile.GAME_RIGHT;
-				case : return Mobile.GAME_FIRE;
-
-				case : return Mobile.GAME_A;
-				case : return Mobile.GAME_B;
-				case : return Mobile.GAME_C;
-				case : return Mobile.GAME_D;
-
-				// Nokia //
-				case : return Mobile.NOKIA_UP;
-				case : return Mobile.NOKIA_DOWN;
-				case : return Mobile.NOKIA_LEFT;
-				case : return Mobile.NOKIA_RIGHT;
-				case : return Mobile.NOKIA_SOFT1;
-				case : return Mobile.NOKIA_SOFT2;
-				case : return Mobile.NOKIA_SOFT3;
-				*/
-			}
-			return 0;
-		}
-
-		private int getMobileKeyPad(int keycode)
-		{
-			switch(keycode)
-			{
-				//  A:1 B:0 X: 3 Y:2 L:4 R:5 St:6 Sl:7
-				case 0x03: return Mobile.KEY_NUM0;
-				case 0x02: return Mobile.KEY_NUM5;
-				case 0x00: return Mobile.KEY_STAR;
-				case 0x01: return Mobile.KEY_POUND;
-
-				case 0x04: return Mobile.KEY_NUM1;
-				case 0x05: return Mobile.KEY_NUM3;
-
-				case 0x06: return Mobile.NOKIA_SOFT1;
-				case 0x07: return Mobile.NOKIA_SOFT2;
-			}
-			return 0;
-		}
-
-		private int getMobileKeyJoy(int keycode)
-		{
-			switch(keycode)
-			{
-				case 0x04: return Mobile.KEY_NUM2;
-				case 0x01: return Mobile.KEY_NUM4;
-				case 0x02: return Mobile.KEY_NUM6;
-				case 0x08: return Mobile.KEY_NUM8;
+				case 0x0B: return Mobile.KEY_NUM2; // D-Pad Up
+				case 0x0C: return Mobile.KEY_NUM8; // D-Pad Down
+				case 0x0D: return Mobile.KEY_NUM4; // D-Pad Left
+				case 0x0E: return Mobile.KEY_NUM6; // D-Pad Right
+				//case 0x0F: return Mobile.GAME_C; // Screenshot, shouldn't really be used here
 			}
 			return 0;
 		}

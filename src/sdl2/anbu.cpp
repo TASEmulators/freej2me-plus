@@ -20,13 +20,13 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-
 */
 
 #include <stdio.h>
 #include <iostream>
 #include <assert.h>
 #include <map>
+#include "anbu.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -78,6 +78,11 @@ string interpol = "nearest";
 std::map<SDL_JoystickID, SDL_Joystick*> mJoysticks;
 std::map<SDL_JoystickID, int*> mPrevAxisValues;
 
+//SDL2 keyboard and joystick mapping abstractions.
+std::map<int, int> mJoyMappings;
+std::map<int, int> mKeyboardMappings;
+bool remappingKeys = false;
+
 string getHelp()
 {
 	string help = "Anbu 0.8.5, an interface between FreeJ2ME emulator and SDL2.\n\
@@ -99,6 +104,24 @@ Licensed under GPL3. Free for Non-Commercial usage.";
 }
 
 /**************************************************** Input / Output Handlers */
+int findJoypadFunction(const int key) {
+    for (const auto& keyFunction : mJoyMappings) {
+        if (keyFunction.second == key) {
+            return keyFunction.first;
+        }
+    }
+    return UNMAPPED;
+}
+
+int findKeyboardFunction(const int key) {
+    for (const auto& keyFunction : mKeyboardMappings) {
+        if (keyFunction.second == key) {
+            return keyFunction.first;
+        }
+    }
+    return UNMAPPED;
+}
+
 void addJoystick(int id)
 {
 	assert(id >= 0 && id < SDL_NumJoysticks());
@@ -134,6 +157,36 @@ void removeJoystick(SDL_JoystickID joyId)
 	}
 }
 
+void initKeys(bool fromConfig) 
+{
+	// There are only 17 emulated functions right now
+	for(int key = 0; key < 17; key++) 
+	{
+		if(fromConfig) 
+		{
+			
+		}
+		else 
+		{
+			mKeyboardMappings.insert({key, defaultKeyboardKeys[key]});
+			mJoyMappings.insert({key, defaultJoyKeys[key]});
+		}
+	}
+}
+
+// Remap joypad and keyboard keys by assigning the pressed key to the current
+// function being displayed.
+void remapJoypadKeys(int joyKeyIdx, int keyFunction)
+{
+	mJoyMappings.find(joyKeyIdx)->second = keyFunction;
+}
+
+void remapKeyboardKeys(int keyIdx, int keyFunction)
+{
+
+	mKeyboardMappings.find(keyIdx)->second = keyFunction;
+}
+
 void sendKey(int key, bool pressed, bool joystick, bool mouse)
 {
 	unsigned char bytes[6];
@@ -143,14 +196,7 @@ void sendKey(int key, bool pressed, bool joystick, bool mouse)
 		bytes[1] = (char) (angle >> 8) & 0xFF;
 		bytes[2] = (char) (angle) & 0xFF;
 	}
-	else if(!mouse) {
-		bytes[0] = (char) (joystick << 4) | pressed;
-		bytes[1] = (char) (key >> 24);
-		bytes[2] = (char) (key >> 16);
-		bytes[3] = (char) (key >> 8);
-		bytes[4] = (char) (key);
-	}
-	else {
+	else if(mouse) {
 		bytes[0] = (mouse << 2) | pressed;
 		bytes[1] = (char) (correctedMouseX >> 8) & 0xFF;
 		bytes[2] = (char) (correctedMouseX) & 0xFF;
@@ -158,6 +204,16 @@ void sendKey(int key, bool pressed, bool joystick, bool mouse)
 		bytes[4] = (char) (correctedMouseY) & 0xFF;
 
 		if(mouseDragged) { bytes[0] = 6; }
+	}
+	else {
+		bytes[0] = (char) (joystick << 4) | pressed;
+
+		if(joystick) { bytes[1] = (char) findJoypadFunction(key); }
+		else { bytes[1] = (char) findKeyboardFunction(key); }
+		
+		bytes[2] = (char) 0;
+		bytes[3] = (char) 0;
+		bytes[4] = (char) 0;
 	}
 	fwrite(&bytes, sizeof(char), 5, stdout);
 }
@@ -351,6 +407,15 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 
 	loadDisplayDimensions();
 
+	if(false) // This will check for the presence of a SDL-specific config file for input mappings and other game-independent stuff
+	{
+		
+	}
+	else // If there's no config, initialize the default keys
+	{
+		initKeys(false);
+	}
+
 	// Clear screen and draw coloured Background
 	if(angle == 270) { SDL_CreateWindowAndRenderer(sourceHeight*windowScale, sourceWidth*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
 	else { SDL_CreateWindowAndRenderer(sourceWidth*windowScale, sourceHeight*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
@@ -461,19 +526,26 @@ void startCapturing()
 						}
 					}
 				}
+
+				//printf("Key:%d. Down:%s | cast:%s\n", key, event.key.state == SDL_PRESSED ? "true" : "false", keynames[findKeyboardFunction(key)]);// findKeyboardFunction(key));
 				sendKey(key, event.key.state == SDL_PRESSED, false, false);
 			}
 
 			else if(event.type == SDL_JOYBUTTONDOWN || event.type == SDL_JOYBUTTONUP) 
 			{
-				key = event.jbutton.button;
-				sendKey(key, event.jbutton.state == SDL_PRESSED, true, false);
-			}
+				if(!remappingKeys) 
+				{
+					key = event.jbutton.button;
+					sendKey(key, event.jbutton.state == SDL_PRESSED, true, false);
+					//printf("JoyKey:%d. Down:%s | cast:%s\n", key, event.type == SDL_JOYBUTTONDOWN ? "true" : "false",  mJoyMappings.find(key)->second);
+				}
+				else 
+				{
+					if(event.type == SDL_JOYBUTTONDOWN) 
+					{
 
-			else if(event.type == SDL_JOYHATMOTION) 
-			{
-				key = event.jhat.value;
-				sendKey(key << 16, event.jhat.value != SDL_HAT_CENTERED, true, false);
+					}
+				}
 			}
 
 			else if(event.type == SDL_JOYAXISMOTION) 
@@ -490,8 +562,20 @@ void startCapturing()
 
 				if(abs(normValue) != abs(mPrevAxisValues[event.jaxis.which][event.jaxis.axis]))
 				{
-					key = 3 * event.jaxis.axis + normValue + 1;
-					sendKey(key << 8, normValue != 0, true, false);
+					if(!remappingKeys) 
+					{
+						key = 3 * event.jaxis.axis + normValue + 1;
+						sendKey(key << 8, normValue != 0, true, false);
+						//printf("JoyAxis:%d. Centered:%s\n", key<<8, normValue == 0 ? "true" : "false");
+					}
+					else 
+					{
+						// TODO: Allow Remapping joy axis
+						if(normValue == 0) 
+						{
+
+						}
+					}
 				}
 				mPrevAxisValues[event.jaxis.which][event.jaxis.axis] = normValue;
 			}
