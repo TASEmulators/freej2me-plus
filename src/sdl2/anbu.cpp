@@ -483,35 +483,44 @@ void startCapturing()
 				{
 					key = -1;
 					capturing = false;
+					continue;
 				}
-				else if (key == SDLK_F8 && event.type == SDL_KEYDOWN)
+				else if (key == SDLK_F8)
 				{
-					getScreenShot = true;
+					if(event.type == SDL_KEYDOWN) { getScreenShot = true; }
+					continue;
 				}
-				else if (key == SDLK_F11 && event.type == SDL_KEYDOWN) 
+				else if (key == SDLK_F11) 
 				{
-					isFullscreen = !isFullscreen;
-					toggleFullscreen();
-				}
-				else if(key == SDLK_KP_PLUS && event.type == SDL_KEYDOWN) 
-				{
-					windowScale += 1;
-
-					if(angle == 270) 
+					if(event.type == SDL_KEYDOWN) 
 					{
-						SDL_SetWindowSize(mWindow, sourceHeight*windowScale,
-                       		sourceWidth*windowScale);
+						isFullscreen = !isFullscreen;
+						toggleFullscreen();
 					}
-					else 
-					{ 
-						SDL_SetWindowSize(mWindow, sourceWidth*windowScale,
-                       		sourceHeight*windowScale);
-					}
-					
+					continue;
 				}
-				else if(key == SDLK_KP_MINUS && event.type == SDL_KEYDOWN) 
+				else if(key == SDLK_KP_PLUS) 
 				{
-					if(windowScale > 1) 
+					if(event.type == SDL_KEYDOWN) 
+					{
+						windowScale += 1;
+
+						if(angle == 270) 
+						{
+							SDL_SetWindowSize(mWindow, sourceHeight*windowScale,
+								sourceWidth*windowScale);
+						}
+						else 
+						{ 
+							SDL_SetWindowSize(mWindow, sourceWidth*windowScale,
+								sourceHeight*windowScale);
+						}
+					}
+					continue;
+				}
+				else if(key == SDLK_KP_MINUS) 
+				{
+					if(windowScale > 1 && event.type == SDL_KEYDOWN)
 					{
 						windowScale -= 1;
 						if(angle == 270) 
@@ -525,6 +534,7 @@ void startCapturing()
 								sourceHeight*windowScale);
 						}
 					}
+					continue;
 				}
 
 				//printf("Key:%d. Down:%s | cast:%s\n", key, event.key.state == SDL_PRESSED ? "true" : "false", keynames[findKeyboardFunction(key)]);// findKeyboardFunction(key));
