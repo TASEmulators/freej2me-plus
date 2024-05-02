@@ -209,6 +209,7 @@ void sendKey(int key, bool pressed, bool joystick, bool mouse)
 		bytes[0] = (char) (joystick << 4) | pressed;
 
 		if(joystick) { bytes[1] = (char) findJoypadFunction(key); }
+		else if(key == SDLK_ESCAPE) {bytes[1] = (char) key; }
 		else { bytes[1] = (char) findKeyboardFunction(key); }
 		
 		bytes[2] = (char) 0;

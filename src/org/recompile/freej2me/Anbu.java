@@ -44,6 +44,13 @@ public class Anbu
 	private int lcdWidth;
 	private int lcdHeight;
 
+	private Config config;
+	private boolean useNokiaControls = false;
+	private boolean useSiemensControls = false;
+	private boolean useMotorolaControls = false;
+	private boolean rotateDisplay = false;
+	private int limitFPS = 0;
+
 	private boolean[] pressedKeys = new boolean[128];
 
 	private Runnable painter;
@@ -63,14 +70,19 @@ public class Anbu
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
+		config = new Config();
+		config.onChange = new Runnable() { public void run() { settingsChanged(); } };
+
 		painter = new Runnable()
 		{
 			public void run()
 			{
 				try
 				{
+					int[] data;
 					// Send Frame to SDL interface
-					int[] data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
+					if(!config.isRunning) { data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth); }
+					else { data = config.getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);}
 					byte[] frame = new byte[data.length * 3];
 					int cb = 0;
 					for(int i = 0; i < data.length; i++)
@@ -94,6 +106,7 @@ public class Anbu
 		if(Mobile.getPlatform().loadJar(file))
 		{
 			// Check config
+			config.init();
 
 			// Start SDL
 			sdl = new SDL();
@@ -272,66 +285,129 @@ public class Anbu
 		private void keyDown(int key)
 		{
 			int mobikeyN = (key + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-			//if(config.isRunning)
-			//{
-			//	config.keyPressed(key);
-			//}
-			//else
-			//{
-			if (pressedKeys[mobikeyN] == false)
+			if(config.isRunning)
 			{
-				Mobile.getPlatform().keyPressed(key);
+				config.keyPressed(key);
 			}
 			else
 			{
-				Mobile.getPlatform().keyRepeated(key);
+				if (pressedKeys[mobikeyN] == false)
+				{
+					Mobile.getPlatform().keyPressed(key);
+				}
+				else
+				{
+					Mobile.getPlatform().keyRepeated(key);
+				}
 			}
-			//}
 			pressedKeys[mobikeyN] = true;
 		}
 
 		private void keyUp(int key)
 		{
 			int mobikeyN = (key + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-			//if(!config.isRunning)
-			//{
-			Mobile.getPlatform().keyReleased(key);
-			//}
+			if(!config.isRunning)
+			{
+				Mobile.getPlatform().keyReleased(key);
+			}
 			pressedKeys[mobikeyN] = false;
 		}
 
 		private int getMobileKey(int keycode)
 		{
-			switch(keycode)
+			// Input examples based on a Switch Pro Controller,
+			// which is the default setting used by Anbu.cpp
+			// Different controllers have different codes.
+			// LZ and RZ triggers aren't buttons per se
+			// hence, they won't be found here yet.
+
+			// Note: Keyboard mappings are also translated to these
+			// if(keycode == 0x00) { return Mobile.KEY_NUM5; } // A - See below
+			if(keycode == 0x01) return Mobile.KEY_NUM7; // B
+			if(keycode == 0x02) return Mobile.KEY_NUM9; // X
+			if(keycode == 0x03) return Mobile.KEY_POUND; // Y
+
+			
+			if(keycode == 0x05) return Mobile.KEY_NUM0; // Home
+			
+
+			if(keycode == 0x07) return Mobile.GAME_A; // Left Analog press
+			if(keycode == 0x08) return Mobile.GAME_B; // Right Analog press
+
+			if(keycode == 0x09) return Mobile.KEY_NUM1; // L
+			if(keycode == 0x0A) return Mobile.KEY_NUM3; // R
+
+			// These keys are overridden by the "useXControls" variables
+			if(useNokiaControls) 
 			{
-				// Inputs examples based on a Switch Pro Controller,
-				// which is the default setting used by Anbu.cpp
-				// Different controllers have different codes.
-				// LZ and RZ triggers aren't buttons per se
-				// hence, they won't be found here yet.
-				case 0x00: return Mobile.KEY_NUM5; // A
-				case 0x01: return Mobile.KEY_NUM7; // B
-				case 0x02: return Mobile.KEY_NUM9; // X
-				case 0x03: return Mobile.KEY_POUND; // Y
-
-				case 0x04: return Mobile.NOKIA_SOFT1; // -/Select
-				case 0x05: return Mobile.KEY_NUM0; // Home
-				case 0x06: return Mobile.NOKIA_SOFT2; // +/Start
-
-				case 0x07: return Mobile.GAME_A; // Left Analog press
-				case 0x08: return Mobile.GAME_B; // Right Analog press
-
-				case 0x09: return Mobile.KEY_NUM1; // L
-				case 0x0A: return Mobile.KEY_NUM3; // R
-
-				case 0x0B: return Mobile.KEY_NUM2; // D-Pad Up
-				case 0x0C: return Mobile.KEY_NUM8; // D-Pad Down
-				case 0x0D: return Mobile.KEY_NUM4; // D-Pad Left
-				case 0x0E: return Mobile.KEY_NUM6; // D-Pad Right
-				//case 0x0F: return Mobile.GAME_C; // Screenshot, shouldn't really be used here
+				if(keycode == 0x00) { return Mobile.KEY_NUM5; } // A
+				if(keycode == 0x04) { return Mobile.NOKIA_SOFT1; } // -/Select
+				if(keycode == 0x06) { return Mobile.NOKIA_SOFT2; } // +/Start
+				if(keycode == 0x0B) { return Mobile.NOKIA_UP; }    // D-Pad Up
+				if(keycode == 0x0C) { return Mobile.NOKIA_DOWN; }  // D-Pad Down
+				if(keycode == 0x0D) { return Mobile.NOKIA_LEFT; }  // D-Pad Left
+				if(keycode == 0x0E) { return Mobile.NOKIA_RIGHT; } // D-Pad Right
 			}
+			else if(useSiemensControls) 
+			{
+				if(keycode == 0x00) { return Mobile.SIEMENS_FIRE; }
+				if(keycode == 0x04) { return Mobile.SIEMENS_SOFT1; }
+				if(keycode == 0x06) { return Mobile.SIEMENS_SOFT2; }
+				if(keycode == 0x0B) { return Mobile.SIEMENS_UP; }
+				if(keycode == 0x0C) { return Mobile.SIEMENS_DOWN; }
+				if(keycode == 0x0D) { return Mobile.SIEMENS_LEFT; }
+				if(keycode == 0x0E) { return Mobile.SIEMENS_RIGHT; }
+			}
+			else if(useMotorolaControls) 
+			{
+				if(keycode == 0x00) { return Mobile.MOTOROLA_FIRE; }
+				if(keycode == 0x04) { return Mobile.MOTOROLA_SOFT1; }
+				if(keycode == 0x06) { return Mobile.MOTOROLA_SOFT2; }
+				if(keycode == 0x0B) { return Mobile.MOTOROLA_UP; }
+				if(keycode == 0x0C) { return Mobile.MOTOROLA_DOWN; }
+				if(keycode == 0x0D) { return Mobile.MOTOROLA_LEFT; }
+				if(keycode == 0x0E) { return Mobile.MOTOROLA_RIGHT; }
+			}
+			else // Standard keycodes
+			{
+				if(keycode == 0x04) { return Mobile.NOKIA_SOFT1; }
+				if(keycode == 0x06) { return Mobile.NOKIA_SOFT2; }
+				if(keycode == 0x0B) { return Mobile.KEY_NUM2; }
+				if(keycode == 0x0C) { return Mobile.KEY_NUM8; }
+				if(keycode == 0x0D) { return Mobile.KEY_NUM4; }
+				if(keycode == 0x0E) { return Mobile.KEY_NUM6; }
+			}
+			
+			//if(keycode == 0x0F) return Mobile.GAME_C; // Screenshot, shouldn't really be used here
+
+			if(keycode == 0x1B) config.start(); // ESC, special key to bring up the config menu
 			return 0;
 		}
 
 	} // sdl
+
+	void settingsChanged() 
+	{
+		limitFPS = Integer.parseInt(config.settings.get("fps"));
+		if(limitFPS>0) { limitFPS = 1000 / limitFPS; }
+
+		String sound = config.settings.get("sound");
+		Mobile.sound = false;
+		if(sound.equals("on")) { Mobile.sound = true; }
+
+		String phone = config.settings.get("phone");
+		useNokiaControls = false;
+		useSiemensControls = false;
+		useMotorolaControls = false;
+		Mobile.nokia = false;
+		Mobile.siemens = false;
+		Mobile.motorola = false;
+		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
+		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
+		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+
+		String rotate = config.settings.get("rotate");
+		if(rotate.equals("on")) { rotateDisplay = true; }
+		if(rotate.equals("off")) { rotateDisplay = false; }
+	}
 }
