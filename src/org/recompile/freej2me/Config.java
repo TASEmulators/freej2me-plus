@@ -234,6 +234,7 @@ public class Config
 						case Mobile.SIEMENS_UP: itemid--; break;
 						case Mobile.SIEMENS_DOWN: itemid++; break;
 						case Mobile.SIEMENS_SOFT1: menuid=0; break;
+						case Mobile.SIEMENS_FIRE: doMenuAction(); break;
 					}
 				}
 				if(settings.get("phone").equals("Motorola"))
