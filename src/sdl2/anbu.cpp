@@ -37,9 +37,6 @@ along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 
 #include <SDL2/SDL.h>
 
-#define DEADZONE 23000
-#define BYTES 3
-
 using namespace std;
 
 #ifdef _WIN32
@@ -80,6 +77,8 @@ std::map<SDL_JoystickID, int*> mPrevAxisValues;
 
 //SDL2 keyboard and joystick mapping abstractions.
 std::map<int, int> mJoyMappings;
+std::map<int, int> mJoyAxisMappings;
+int lastAxisKey;
 std::map<int, int> mKeyboardMappings;
 bool remappingKeys = false;
 
@@ -104,22 +103,33 @@ Licensed under GPL3. Free for Non-Commercial usage.";
 }
 
 /**************************************************** Input / Output Handlers */
-int findJoypadFunction(const int key) {
-    for (const auto& keyFunction : mJoyMappings) {
-        if (keyFunction.second == key) {
-            return keyFunction.first;
-        }
-    }
-    return UNMAPPED;
-}
+int findInputMappedFunction(const int key, const int inputDevice) 
+{
+	if(inputDevice == KEYBOARD_COMMAND) 
+	{
+		for (const auto& keyFunction : mKeyboardMappings) 
+		{
+			if (keyFunction.second == key) { return keyFunction.first; }
+		}
+	}
 
-int findKeyboardFunction(const int key) {
-    for (const auto& keyFunction : mKeyboardMappings) {
-        if (keyFunction.second == key) {
-            return keyFunction.first;
-        }
-    }
-    return UNMAPPED;
+	else if (inputDevice == JOYPAD_COMMAND) 
+	{
+		for (const auto& keyFunction : mJoyMappings) 
+		{ 
+			if (keyFunction.second == key) { return keyFunction.first; } 
+		}
+	}
+
+    else if(inputDevice == JOYPAD_AXIS_COMMAND) 
+	{
+		for (const auto& keyFunction : mJoyAxisMappings) 
+		{
+			if (keyFunction.second == key) { return keyFunction.first; }
+		}
+	}
+
+	return UNMAPPED;
 }
 
 void addJoystick(int id)
@@ -170,6 +180,12 @@ void initKeys(bool fromConfig)
 		{
 			mKeyboardMappings.insert({key, defaultKeyboardKeys[key]});
 			mJoyMappings.insert({key, defaultJoyKeys[key]});
+
+			// If we're on the "movement" keys, map the joypad's analog axes as well
+			if(key >= AXIS_MAPPING_OFFSET && key < (AXIS_MAPPING_OFFSET+AXIS_MAPPING_NUM))
+			{
+				mJoyAxisMappings.insert({key, defaultJoyAxis[key-AXIS_MAPPING_OFFSET]});
+			}
 		}
 	}
 }
@@ -179,6 +195,11 @@ void initKeys(bool fromConfig)
 void remapJoypadKeys(int joyKeyIdx, int keyFunction)
 {
 	mJoyMappings.find(joyKeyIdx)->second = keyFunction;
+}
+
+void remapJoypadAxes(int joyAxisIdx, int keyFunction)
+{
+	mJoyAxisMappings.find(joyAxisIdx)->second = keyFunction;
 }
 
 void remapKeyboardKeys(int keyIdx, int keyFunction)
@@ -208,9 +229,17 @@ void sendKey(int key, bool pressed, bool joystick, bool mouse)
 	else {
 		bytes[0] = (char) (joystick << 4) | pressed;
 
-		if(joystick) { bytes[1] = (char) findJoypadFunction(key); }
+		/*
+		 * We could treat for cases where analog inputs are registered 
+		 * here, but since they're mapped to match the joypad's D-PAD,
+		 * we shouldn't need a separate "find function" for it now,
+		 * instead we pass them to this function as if they were D-PAD
+		 * inputs.
+		 */ 
+
+		if(joystick) { bytes[1] = (char) findInputMappedFunction(key, JOYPAD_COMMAND); }
 		else if(key == SDLK_ESCAPE) {bytes[1] = (char) key; }
-		else { bytes[1] = (char) findKeyboardFunction(key); }
+		else { bytes[1] = (char) findInputMappedFunction(key,  KEYBOARD_COMMAND); }
 		
 		bytes[2] = (char) 0;
 		bytes[3] = (char) 0;
@@ -538,7 +567,7 @@ void startCapturing()
 					continue;
 				}
 
-				//printf("Key:%d. Down:%s | cast:%s\n", key, event.key.state == SDL_PRESSED ? "true" : "false", keynames[findKeyboardFunction(key)]);// findKeyboardFunction(key));
+				//printf("Key:%d. Down:%s | cast:%s\n", key, event.key.state == SDL_PRESSED ? "true" : "false", keynames[findInputMappedFunction(key,  KEYBOARD_COMMAND)]);
 				sendKey(key, event.key.state == SDL_PRESSED, false, false);
 			}
 
@@ -548,7 +577,7 @@ void startCapturing()
 				{
 					key = event.jbutton.button;
 					sendKey(key, event.jbutton.state == SDL_PRESSED, true, false);
-					//printf("JoyKey:%d. Down:%s | cast:%s\n", key, event.type == SDL_JOYBUTTONDOWN ? "true" : "false",  mJoyMappings.find(key)->second);
+					//printf("JoyKey:%d. Down:%s | cast:%s\n", key, event.type == SDL_JOYBUTTONDOWN ? "true" : "false",  keynames[findInputMappedFunction(key, JOYPAD_COMMAND)]);
 				}
 				else 
 				{
@@ -563,21 +592,28 @@ void startCapturing()
 			{
 				// jaxis.value => -32768 to 32767
 				int normValue;
-				if(abs(event.jaxis.value) <= DEADZONE)
-					normValue = 0;
-				else
-					if(event.jaxis.value > 0)
-						normValue = 1;
-					else
-						normValue = -1;
+				if(abs(event.jaxis.value) <= AXIS_DEADZONE) { normValue = 0; }
+				else 
+				{
+					if(event.jaxis.value > 0) { normValue = 1; }
+					else { normValue = -1; }
+				}
 
 				if(abs(normValue) != abs(mPrevAxisValues[event.jaxis.which][event.jaxis.axis]))
 				{
 					if(!remappingKeys) 
 					{
 						key = 3 * event.jaxis.axis + normValue + 1;
-						sendKey(key << 8, normValue != 0, true, false);
-						//printf("JoyAxis:%d. Centered:%s\n", key<<8, normValue == 0 ? "true" : "false");
+						
+						// If the axis is centered, send the last command but in the "keyUp" event to prevent it from being stuck in "keyDown" mode
+						if(normValue == 0) { sendKey(findInputMappedFunction(lastAxisKey<<8,  JOYPAD_AXIS_COMMAND), normValue != 0, true, false); }
+						else 
+						{
+							lastAxisKey = key;
+							sendKey(findInputMappedFunction(key<<8,  JOYPAD_AXIS_COMMAND), normValue != 0, true, false);
+						}
+						
+						//printf("JoyAxis:%d. Centered:%s | cast:%s\n", key<<8, normValue == 0 ? "true" : "false", keynames[findInputMappedFunction(key<<8,  JOYPAD_AXIS_COMMAND)]);
 					}
 					else 
 					{

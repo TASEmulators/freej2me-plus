@@ -22,6 +22,18 @@ You should have received a copy of the GNU General Public License
 along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
 
+// SDL interface definitions
+
+#define BYTES 3
+
+// Input Mapping section
+
+#define KEYBOARD_COMMAND 0
+#define JOYPAD_COMMAND 1
+#define JOYPAD_AXIS_COMMAND 2
+
+#define AXIS_DEADZONE 23000
+
 #define UNMAPPED	17
 
 #define KEY_NUM5	0
@@ -40,6 +52,9 @@ along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 #define	KEY_NUM4	13
 #define	KEY_NUM6	14
 #define KEY_STAR	15
+
+#define AXIS_MAPPING_OFFSET 11
+#define AXIS_MAPPING_NUM sizeof(defaultJoyAxis)/sizeof(int)
 
 const char *keynames[] =
 {
@@ -86,6 +101,14 @@ int defaultKeyboardKeys[] =
 	1073741903, // Arrow Right
 	1073741922, // Num 0
 	1073741909 // Num *
+};
+
+int defaultJoyAxis[] = 
+{
+	768, // Left Stick Up
+	1280, // Left Stick Down
+	0, // Left Stick Left
+	512 // Left Stick Right
 };
 
 int defaultJoyKeys[] = 
