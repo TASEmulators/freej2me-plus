@@ -502,6 +502,19 @@ public class Libretro
 
 	private int getMobileKeyJoy(int keycode)
 	{
+		// Input mappings that are expected to be the same on all control modes
+		switch(keycode)
+		{
+			case 4: return Mobile.KEY_NUM9; // A
+			case 5: return Mobile.KEY_NUM7; // B
+			case 6: return Mobile.KEY_NUM0; // X
+			case 10: return Mobile.KEY_NUM1; // L
+			case 11: return Mobile.KEY_NUM3; // R
+			case 12: return Mobile.KEY_STAR; // L2
+			case 13: return Mobile.KEY_POUND; // R2
+		}
+
+		// These keys are overridden by the "useXControls" variables
 		if(useNokiaControls)
 		{
 			switch(keycode)
@@ -510,6 +523,9 @@ public class Libretro
 				case 1: return Mobile.NOKIA_DOWN; // Down
 				case 2: return Mobile.NOKIA_LEFT; // Left
 				case 3: return Mobile.NOKIA_RIGHT; // Right
+				case 7: return Mobile.NOKIA_SOFT3; // Y
+				case 8: return Mobile.NOKIA_SOFT2; // Start
+				case 9: return Mobile.NOKIA_SOFT1; // Select
 			}
 		}
 		if(useSiemensControls)
@@ -520,6 +536,7 @@ public class Libretro
 				case 1: return Mobile.SIEMENS_DOWN; // Down
 				case 2: return Mobile.SIEMENS_LEFT; // Left
 				case 3: return Mobile.SIEMENS_RIGHT; // Right
+				case 7: return Mobile.SIEMENS_FIRE; // Y
 				case 8: return Mobile.SIEMENS_SOFT2; // Start
 				case 9: return Mobile.SIEMENS_SOFT1; // Select
 			}
@@ -532,28 +549,25 @@ public class Libretro
 				case 1: return Mobile.MOTOROLA_DOWN; // Down
 				case 2: return Mobile.MOTOROLA_LEFT; // Left
 				case 3: return Mobile.MOTOROLA_RIGHT; // Right
+				case 7: return Mobile.MOTOROLA_FIRE; // Y
 				case 8: return Mobile.MOTOROLA_SOFT2; // Start
 				case 9: return Mobile.MOTOROLA_SOFT1; // Select
 			}
 		}
-
-		switch(keycode)
+		else // Standard keycodes
 		{
-			case 0: return Mobile.KEY_NUM2; // Up
-			case 1: return Mobile.KEY_NUM8; // Down
-			case 2: return Mobile.KEY_NUM4; // Left
-			case 3: return Mobile.KEY_NUM6; // Right
-			case 4: return Mobile.KEY_NUM9; // A
-			case 5: return Mobile.KEY_NUM7; // B
-			case 6: return Mobile.KEY_NUM0; // X
-			case 7: return Mobile.KEY_NUM5; // Y
-			case 8: return Mobile.NOKIA_SOFT2; // Start
-			case 9: return Mobile.NOKIA_SOFT1; // Select
-			case 10: return Mobile.KEY_NUM1; // L
-			case 11: return Mobile.KEY_NUM3; // R
-			case 12: return Mobile.KEY_STAR; // L2
-			case 13: return Mobile.KEY_POUND; // R2
+			switch(keycode)
+			{
+				case 0: return Mobile.KEY_NUM2; // Up
+				case 1: return Mobile.KEY_NUM8; // Down
+				case 2: return Mobile.KEY_NUM4; // Left
+				case 3: return Mobile.KEY_NUM6; // Right
+				case 7: return Mobile.KEY_NUM5; // Y
+				case 8: return Mobile.NOKIA_SOFT2; // Start
+				case 9: return Mobile.NOKIA_SOFT1; // Select
+			}
 		}
+
 		return Mobile.KEY_NUM5;
 	}
 }
