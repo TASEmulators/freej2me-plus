@@ -156,7 +156,8 @@ public class FreeJ2ME
 				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
 				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
 
-				lcd.paint(lcd.getGraphics());
+				lcd.repaint();
+				//lcd.paint(lcd.getGraphics());
 			}
 		});
 
@@ -547,12 +548,16 @@ public class FreeJ2ME
 			scaley = (double)lcdHeight/(double)vh;
 		}
 
+		@Override
+        public void update(Graphics g) {
+            // Use paint method directly to avoid flicker
+            paint(g);
+        }
+
 		public void paint(Graphics g)
 		{
 			try
 			{
-				Graphics2D cgc = (Graphics2D)this.getGraphics();
-				
 				if(limitFPS>0)
 				{
 					requiredFrametime = 1000 / limitFPS;
@@ -564,10 +569,7 @@ public class FreeJ2ME
 
 				if (config.isRunning)
 				{
-					if(!rotateDisplay)
-					{
-						g.drawImage(config.getLCD(), cx, cy, cw, ch, null);
-					}
+					if(!rotateDisplay) { g.drawImage(config.getLCD(), cx, cy, cw, ch, null); }
 					else
 					{
 						// If rotated, simply redraw the config menu with different width and height
@@ -576,12 +578,10 @@ public class FreeJ2ME
 				}
 				else
 				{
-					if(!rotateDisplay)
-					{
-						g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null);
-					}
+					if(!rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
 					else
 					{
+						final Graphics2D cgc = (Graphics2D)this.getGraphics();
 						// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
 						cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
 						// Draw the rotated FB with adjusted cy and cx values
@@ -590,10 +590,7 @@ public class FreeJ2ME
 				}
 				lastRenderTime = System.currentTimeMillis();
 			}
-			catch (Exception e)
-			{
-				System.out.println(e.getMessage());
-			}
+			catch (Exception e)	{ System.out.println(e.getMessage()); }
 		}
 	}
 }
