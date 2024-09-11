@@ -43,6 +43,7 @@ using namespace std;
 DWORD t_capturing;
 #else
 pthread_t t_capturing;
+#endif
 bool capturing = true;
 
 int angle = 0;
@@ -491,7 +492,7 @@ void startStreaming()
 #endif
 }
 
-void startCapturing()
+void *startCapturing(void *args)
 {
 	int key;
 	SDL_JoystickEventState(SDL_ENABLE);
@@ -675,6 +676,11 @@ void startCapturing()
 			fflush(stdout);
 		}
 	}
+#ifdef _WIN32
+	return 0;
+#else
+	pthread_exit(NULL);
+#endif
 }
 
 /*********************************************************************** Main */
@@ -711,13 +717,13 @@ int main(int argc, char* argv[])
 
 #ifdef _WIN32
 	HANDLE hThreadCapturing;
-	if ((hThreadCapturing = CreateThread(NULL, 0, &startStreaming, NULL, 0, &t_capturing)) == NULL) {
+	if ((hThreadCapturing = CreateThread(NULL, 0, &startCapturing, NULL, 0, &t_capturing)) == NULL) {
 		std::cerr << "Unable to start thread, exiting ..." << endl;
 		SDL_Quit();
 		return 1;
 	}
 #else
-	if (pthread_create(&t_capturing, 0, &startStreaming, NULL))
+	if (pthread_create(&t_capturing, 0, &startCapturing, NULL))
 	{
 		std::cerr << "Unable to start thread, exiting ..." << endl;
 		SDL_Quit();
@@ -731,6 +737,7 @@ int main(int argc, char* argv[])
 	CloseHandle(hThreadCapturing);
 #else
 	pthread_join(t_capturing, NULL);
+#endif
 	SDL_ShowCursor(SDL_ENABLE);
 	SDL_Quit();
 	return 0;
