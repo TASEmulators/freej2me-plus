@@ -51,7 +51,7 @@ public class WavImaAdpcmDecoder
 		-1, -1, -1, -1, 2, 4, 6, 8
 	};
 	
-	private static final int[] ima_step_size_table = 
+	private static final short[] ima_step_size_table = 
 	{
 		7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
 		19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
@@ -67,11 +67,11 @@ public class WavImaAdpcmDecoder
 	/* 
 	 * This method will decode IMA WAV ADPCM into linear PCM_S16LE.
 	 */
-	public static byte[] decodeADPCM(final byte[] input, int inputSize, final int numChannels, final int frameSize)
+	public static byte[] decodeADPCM(final byte[] input, int inputSize, final short numChannels, final int frameSize)
 	{
 		byte adpcmSample;
 		byte curChannel;
-		int inputIndex = 0, outputIndex = HEADERSIZE; /* Give some space for the header by starting from byte 44. */
+		byte inputIndex = 0, outputIndex = HEADERSIZE; /* Give some space for the header by starting from byte 44. */
 		int decodedSample;
 
 		/* 
@@ -197,7 +197,7 @@ public class WavImaAdpcmDecoder
 	}
 
 	/* This method will decode a single IMA ADPCM sample to linear PCM_S16LE sample. */
-	static short decodeSample(final int channel, byte adpcmSample)
+	static short decodeSample(final byte channel, byte adpcmSample)
 	{
 		/* 
 		 * This decode procedure is based on the following document:
@@ -422,7 +422,7 @@ public class WavImaAdpcmDecoder
 		final byte[] input = new byte[stream.available()];
 		readInputStreamData(stream, input, 0, stream.available());
 
-		byte[] output = decodeADPCM(input, input.length, wavHeaderData[2], wavHeaderData[3]);
+		byte[] output = decodeADPCM(input, input.length, (short) wavHeaderData[2], wavHeaderData[3]);
 		buildHeader(output, (short) wavHeaderData[2], wavHeaderData[1]); /* Builds a new header for the decoded stream. */
 
 		return new ByteArrayInputStream(output);
