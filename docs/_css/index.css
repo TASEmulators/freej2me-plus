@@ -83,21 +83,21 @@ body {
 }
 
 #element1 {
-    background-image: url("../images/Backgrounds/FreeJ2ME_BG2.png");
+    background-image: url("../images/Backgrounds/FreeJ2ME_BG2.webp");
     background-repeat: repeat-x;
     width: 5660px;
     animation: slidegamebg 90s linear reverse infinite;
 }
 
 #element2 {
-    background-image: url("../images/Backgrounds/FreeJ2ME_BG1.png");
+    background-image: url("../images/Backgrounds/FreeJ2ME_BG1.webp");
     background-repeat: repeat-x;
     width: 5660px;
     animation: slidegamebg 60s linear infinite;
 }
 
 #element3 {
-    background-image: url("../images/Backgrounds/FreeJ2ME_BG3.png");
+    background-image: url("../images/Backgrounds/FreeJ2ME_BG3.webp");
     background-repeat: repeat-x;
     width: 5660px;
     animation: slidegamebg 45s linear reverse infinite;
