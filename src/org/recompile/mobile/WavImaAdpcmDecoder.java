@@ -67,11 +67,11 @@ public class WavImaAdpcmDecoder
 	/* 
 	 * This method will decode IMA WAV ADPCM into linear PCM_S16LE.
 	 */
-	public static byte[] decodeADPCM(final byte[] input, int inputSize, final short numChannels, final int frameSize)
+	public static final byte[] decodeADPCM(final byte[] input, int inputSize, final short numChannels, final int frameSize)
 	{
 		byte adpcmSample;
 		byte curChannel;
-		byte inputIndex = 0, outputIndex = HEADERSIZE; /* Give some space for the header by starting from byte 44. */
+		int inputIndex = 0, outputIndex = HEADERSIZE; /* Give some space for the header by starting from byte 44. */
 		int decodedSample;
 
 		/* 
@@ -197,7 +197,7 @@ public class WavImaAdpcmDecoder
 	}
 
 	/* This method will decode a single IMA ADPCM sample to linear PCM_S16LE sample. */
-	static short decodeSample(final byte channel, byte adpcmSample)
+	private static final short decodeSample(final byte channel, final byte adpcmSample)
 	{
 		/* 
 		 * This decode procedure is based on the following document:
@@ -205,10 +205,10 @@ public class WavImaAdpcmDecoder
 		 */
 
 		/* Get the step size to be used when decoding the given sample. */
-		int stepSize = ima_step_size_table[prevStep[channel]] & 0x0000FFFF;
+		final int stepSize = ima_step_size_table[prevStep[channel]] & 0x0000FFFF;
 
 		/* This variable acts as 'difference' and then 'newSample' on columbia's doc */
-		int decodedSample = (stepSize >> 3) & 0x1fff;
+		int decodedSample = 0;
 		
 		/* 
 		 * Similar to cs.columbia doc's first code block on Page 32, multiplication through 
@@ -216,8 +216,11 @@ public class WavImaAdpcmDecoder
 		 * but let's follow the reference implementation for the sake of improving documentation.
 		 */
 		if ((adpcmSample & 4) != 0) { decodedSample += stepSize; }
-		if ((adpcmSample & 2) != 0) { decodedSample += (stepSize >> 1) & 0x7fff; }
-		if ((adpcmSample & 1) != 0) { decodedSample += (stepSize >> 2) & 0x3fff; }
+		if ((adpcmSample & 2) != 0) { decodedSample += stepSize >> 1; }
+		if ((adpcmSample & 1) != 0) { decodedSample += stepSize >> 2; }
+		
+		decodedSample += stepSize >> 3;
+
 		if ((adpcmSample & 8) != 0) { decodedSample  = -decodedSample; }
 		
 		decodedSample += prevSample[channel];
@@ -232,12 +235,12 @@ public class WavImaAdpcmDecoder
 		prevSample[channel] = decodedSample;
 
 		/* Basically columbia doc's "calculate stepsize" snippet */
-		prevStep[channel] += ima_step_index_table[(int)(adpcmSample & 0x0FF)];
+		prevStep[channel] += ima_step_index_table[adpcmSample];
 		if (prevStep[channel] < 0)       { prevStep[channel] = 0; }
 		else if (prevStep[channel] > 88) { prevStep[channel] = 88; }
 
 		/* Return the decoded sample casted to short (16-bit) */
-		return (short) (decodedSample & 0xFFFF);
+		return (short) (decodedSample);
 	}
 	
 	/*
@@ -247,7 +250,7 @@ public class WavImaAdpcmDecoder
 	 * Optionally it also returns some information about the audio format to help build a 
 	 * new header for the decoded stream.
 	*/
-	public int[] readHeader(InputStream input) throws IOException 
+	public final int[] readHeader(InputStream input) throws IOException 
 	{
 		/*
 			The header of a WAV (RIFF) file is 44 bytes long and has the following format:
@@ -313,18 +316,18 @@ public class WavImaAdpcmDecoder
 	}
 
 	/* Read a 16-bit little-endian unsigned integer from input.*/
-	public static int readInputStreamInt16(InputStream input) throws IOException 
+	private static final int readInputStreamInt16(InputStream input) throws IOException 
 	{ return ( input.read() & 0xFF ) | ( ( input.read() & 0xFF ) << 8 ); }
 
 	/* Read a 32-bit little-endian signed integer from input.*/
-	public static int readInputStreamInt32(InputStream input) throws IOException 
+	private static final int readInputStreamInt32(InputStream input) throws IOException 
 	{
 		return ( input.read() & 0xFF ) | ( ( input.read() & 0xFF ) << 8 )
 			| ( ( input.read() & 0xFF ) << 16 ) | ( ( input.read() & 0xFF ) << 24 );
 	}
 
 	/* Return a String containing 'n' Characters of ASCII/ISO-8859-1 text from input. */
-	public static String readInputStreamASCII(InputStream input, int nChars) throws IOException 
+	private static final String readInputStreamASCII(InputStream input, int nChars) throws IOException 
 	{
 		byte[] chars = new byte[nChars];
 		readInputStreamData(input, chars, 0, nChars);
@@ -332,7 +335,7 @@ public class WavImaAdpcmDecoder
 	}
 
 	/* Read 'n' Bytes from the InputStream starting from the specified offset into the output array. */
-	public static void readInputStreamData(InputStream input, byte[] output, int offset, int nBytes) throws IOException 
+	private static final void readInputStreamData(InputStream input, byte[] output, int offset, int nBytes) throws IOException 
 	{
 		int end = offset + nBytes;
 		while(offset < end) 
@@ -347,7 +350,7 @@ public class WavImaAdpcmDecoder
 	 * Builds a WAV header that describes the decoded ADPCM file on the first 44 bytes. 
 	 * Data: little-endian, 16-bit, signed, same sample rate and channels as source IMA ADPCM.
 	 */
-	private void buildHeader(final byte[] buffer, final short numChannels, final int sampleRate) 
+	private final void buildHeader(final byte[] buffer, final short numChannels, final int sampleRate) 
 	{ 
 		final short bitsPerSample = 16;   /* 16-bit PCM */
 		final short audioFormat = 1;      /* WAV linear PCM */
@@ -414,7 +417,7 @@ public class WavImaAdpcmDecoder
 	}
 
 	/* Decode the received IMA WAV ADPCM stream into a signed PCM16LE byte array, then return it to PlatformPlayer. */
-	public ByteArrayInputStream decodeImaAdpcm(InputStream stream, int[] wavHeaderData) throws IOException
+	public final ByteArrayInputStream decodeImaAdpcm(final InputStream stream, final int[] wavHeaderData) throws IOException
 	{
 		/* Remove the header from the stream, we shouldn't "decode" it as if it was a sample */
 		readHeader(stream);
