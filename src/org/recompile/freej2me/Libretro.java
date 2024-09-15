@@ -135,6 +135,9 @@ public class Libretro
 		maxmidistreams = Integer.parseInt(args[7]);
 		Manager.updatePlayerNum((byte) maxmidistreams);
 
+		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
+		if(Integer.parseInt(args[8]) == 1) { Manager.dumpAudioStreams = true; }
+
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
 		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_INT_ARGB); // libretro display
@@ -375,6 +378,9 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[8])==6) { config.settings.put("maxmidistreams", "48");}
 									if(Integer.parseInt(cfgtokens[8])==7) { config.settings.put("maxmidistreams", "64");}
 									if(Integer.parseInt(cfgtokens[8])==8) { config.settings.put("maxmidistreams", "96");}
+
+									if(Integer.parseInt(cfgtokens[9])==1) { Manager.dumpAudioStreams = true;  }
+									if(Integer.parseInt(cfgtokens[9])==0) { Manager.dumpAudioStreams = false; }
 
 									config.saveConfig();
 									settingsChanged();

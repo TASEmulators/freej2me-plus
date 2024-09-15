@@ -71,6 +71,8 @@ public class Anbu
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
+		/* TODO: Anbu has no way of enabling "Dump Audio Streams", a UI rewrite might be in order */
+
 		config = new Config();
 		config.onChange = new Runnable() { public void run() { settingsChanged(); } };
 

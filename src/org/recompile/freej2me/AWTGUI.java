@@ -23,6 +23,8 @@ import java.io.FilenameFilter;
 
 import java.util.Arrays;
 
+import javax.microedition.media.Manager;
+
 public final class AWTGUI 
 {
 	/* This is used to indicate to FreeJ2ME that it has to call "settingsChanged()" to apply changes made here */
@@ -740,8 +742,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(dumpAudioData.getState()){ /* TODO */ }
-				else{ /* TODO */ }
+				if(dumpAudioData.getState()){ Manager.dumpAudioStreams = true; }
+				else{ Manager.dumpAudioStreams = false; }
 			}
 		});
 

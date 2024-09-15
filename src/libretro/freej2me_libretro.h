@@ -196,6 +196,20 @@ struct retro_core_option_v2_definition core_options[] =
         "32"
     },
     {
+        "freej2me_dumpaudiostreams",
+        "Advanced Settings > Dump Audio Streams",
+        "Dump Audio Streams",
+        "This option allows FreeJ2ME to dump incoming Audio Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
+        "This option allows FreeJ2ME to dump incoming Audio Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
+        "advanced_settings",
+        {
+            { "off",  "Disable"            },
+            { "on",  "Enable"              },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_pointertype",
         "Advanced Settings > Pointer Type",
         "Pointer Type",
@@ -422,6 +436,17 @@ struct retro_core_option_definition core_options_v1 [] =
         "32"
     },
     {
+        "freej2me_dumpaudiostreams",
+        "Dump Audio Streams",
+        "This option allows FreeJ2ME to dump incoming Audio Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
+        {
+            { "off",  "Disable"            },
+            { "on",  "Enable"              },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_pointertype",
         "Pointer Type",
         "This option sets the type of pointer used by FreeJ2ME, can be set to use a Mouse, a Touchscreen or neither. Please note that only Mouse supports drag and drop motions",
@@ -547,29 +572,33 @@ static const struct retro_variable vars[] =
         "freej2me_maxmidiplayers",
         "Max MIDI Players: 32|1|2|4|8|16|48|64|96"
     },
+    { /* Dump Audio Streams */
+        "freej2me_dumpaudiostreams",
+        "Dump Audio Streams: off|on"
+    },
     { /* Pointer Type */
         "freej2me_pointertype",
-        "Pointer Type; Mouse|Touch|None",
+        "Pointer Type; Mouse|Touch|None"
     },
     { /* Screen Pointer X Speed */
         "freej2me_pointerxspeed",
-        "Pointer X Speed; 4|1|2|8|16",
+        "Pointer X Speed; 4|1|2|8|16"
     },
     { /* Screen Pointer Y Speed */
         "freej2me_pointeryspeed",
-        "Pointer Y Speed; 4|1|2|8|16",
+        "Pointer Y Speed; 4|1|2|8|16"
     },
     { /* Pointer's inner color */
         "freej2me_pointerinnercolor",
-        "Pointer Inner Color; White|Red|Green|Blue|Yellow|Pink|Cyan|Black",
+        "Pointer Inner Color; White|Red|Green|Blue|Yellow|Pink|Cyan|Black"
     },
     { /* Pointer's outline color */
         "freej2me_pointeroutercolor",
-        "Pointer Outline Color; Black|Red|Green|Blue|Yellow|Pink|Cyan|White",
+        "Pointer Outline Color; Black|Red|Green|Blue|Yellow|Pink|Cyan|White"
     },
     { /* Pointer's click indicator color */
         "freej2me_pointerclickcolor",
-        "Pointer Click Indicator Color; Yellow|Black|Red|Green|Blue|Pink|Cyan|White",
+        "Pointer Click Indicator Color; Yellow|Black|Red|Green|Blue|Pink|Cyan|White"
     },
     { NULL, NULL },
 };

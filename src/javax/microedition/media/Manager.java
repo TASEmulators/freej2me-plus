@@ -16,9 +16,15 @@
 */
 package javax.microedition.media;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
+import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
 
 public final class Manager
@@ -26,9 +32,43 @@ public final class Manager
 	public static final String TONE_DEVICE_LOCATOR = "device://tone";
 	public static Player midiPlayers[] = new Player[32]; /* Default max amount of players in FreeJ2ME's config  */
 	public static byte midiPlayersIndex = 0;
+	public static boolean dumpAudioStreams = false;
+	public static short audioDumpIndex = 0;
 
 	public static Player createPlayer(InputStream stream, String type) throws IOException, MediaException
 	{
+		if(dumpAudioStreams) 
+		{
+			// Copy the stream contents into a temporary stream to be saved as file
+			final ByteArrayOutputStream streamCopy = new ByteArrayOutputStream();
+			final byte[] copyBuffer = new byte[1024];
+			int copyLength;
+			while ((copyLength = stream.read(copyBuffer)) > -1 ) { streamCopy.write(copyBuffer, 0, copyLength); }
+			streamCopy.flush();
+
+			// Make sure the initial strem will still be available for FreeJ2ME
+			stream = new ByteArrayInputStream(streamCopy.toByteArray());
+
+			// And save the copy to the specified dir
+
+			OutputStream outStream;
+			String dumpPath = "." + File.separatorChar + "FreeJ2MEDumps" + File.separatorChar + "Audio" + File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar;
+			File dumpFile = new File(dumpPath);
+
+			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
+
+			if(type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi")) 
+				{ dumpFile = new File(dumpPath + "Stream" + Short.toString(audioDumpIndex) + ".mid");}
+			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav")) { dumpFile = new File(dumpPath + "Stream" + Short.toString(audioDumpIndex) + ".wav");}
+			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3")) { dumpFile = new File(dumpPath + "Stream" + Short.toString(audioDumpIndex) + ".mp3");}
+
+			outStream = new FileOutputStream(dumpFile);
+
+			streamCopy.writeTo(outStream);
+
+			audioDumpIndex++;
+		}
+
 		//System.out.println("Create Player Stream "+type);
 		if(type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi"))
 		{
