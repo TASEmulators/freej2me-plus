@@ -51,7 +51,14 @@ public class Libretro
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
 	private boolean soundEnabled = true;
+
+	// Frame Limit Variables
 	private int limitFPS = 0;
+	private long lastRenderTime = 0;
+	private long requiredFrametime = 0;
+	private long elapsedTime = 0;
+	private long sleepTime = 0;
+
 	private int maxmidistreams = 32;
 
 	private boolean[] pressedKeys = new boolean[128];
@@ -378,6 +385,16 @@ public class Libretro
 									try
 									{
 										int[] data;
+
+										if(limitFPS>0)
+										{
+											requiredFrametime = 1000 / limitFPS;
+											elapsedTime = System.currentTimeMillis() - lastRenderTime;
+											sleepTime = requiredFrametime - elapsedTime;
+
+											if (sleepTime > 0) { Thread.sleep(sleepTime); }
+										}
+
 										if(config.isRunning)
 										{
 											data = config.getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
@@ -385,10 +402,6 @@ public class Libretro
 										else
 										{
 											data = surface.getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
-											if(limitFPS>0)
-											{
-												Thread.sleep(limitFPS);
-											}
 										}
 										int bufferLength = data.length*3;
 										int cb = 0;
@@ -408,6 +421,8 @@ public class Libretro
 										System.out.write(frameHeader, 0, 6);
 										System.out.write(frameBuffer, 0, bufferLength);
 										System.out.flush();
+
+										lastRenderTime = System.currentTimeMillis();
 									}
 									catch (Exception e)
 									{
@@ -432,7 +447,6 @@ public class Libretro
 		int h = Integer.parseInt(config.settings.get("height"));
 
 		limitFPS = Integer.parseInt(config.settings.get("fps"));
-		if(limitFPS>0) { limitFPS = 1000 / limitFPS; }
 
 		String sound = config.settings.get("sound");
 		Mobile.sound = false;

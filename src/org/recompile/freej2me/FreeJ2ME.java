@@ -53,9 +53,15 @@ public class FreeJ2ME
 	private boolean useSiemensControls = false;
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
+
+	// Frame Limit Variables
 	private int limitFPS = 0;
-	private int renderHint = 0;
+	private long lastRenderTime = 0;
+	private long requiredFrametime = 0;
+	private long elapsedTime = 0;
+	private long sleepTime = 0;
 	
+	// AWT GUI
 	private AWTGUI awtGUI;
 
 	private boolean[] pressedKeys = new boolean[128];
@@ -374,7 +380,6 @@ public class FreeJ2ME
 		int h = Integer.parseInt(config.settings.get("height"));
 
 		limitFPS = Integer.parseInt(config.settings.get("fps"));
-		if(limitFPS>0) { limitFPS = 1000 / limitFPS; }
 
 		String sound = config.settings.get("sound");
 		Mobile.sound = false;
@@ -531,6 +536,16 @@ public class FreeJ2ME
 			try
 			{
 				Graphics2D cgc = (Graphics2D)this.getGraphics();
+				
+				if(limitFPS>0)
+				{
+					requiredFrametime = 1000 / limitFPS;
+					elapsedTime = System.currentTimeMillis() - lastRenderTime;
+					sleepTime = requiredFrametime - elapsedTime;
+
+					if (sleepTime > 0) { Thread.sleep(sleepTime); }
+				}
+
 				if (config.isRunning)
 				{
 					if(!rotateDisplay)
@@ -556,12 +571,8 @@ public class FreeJ2ME
 						// Draw the rotated FB with adjusted cy and cx values
 						cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
 					}
-
-					if(limitFPS>0)
-					{
-						Thread.sleep(limitFPS);
-					}
 				}
+				lastRenderTime = System.currentTimeMillis();
 			}
 			catch (Exception e)
 			{
