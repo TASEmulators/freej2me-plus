@@ -3,7 +3,7 @@ var searchready = false;
 /* csv compatibility list lines split as rows */
 var rowdata;
 /* Compatibility chart colors */
-var colors=['#81d41a','#729fcf','#ffff38', '#ff8000', '#ff0000'];
+var colors=['#81d41a','#0066ff','#ffff00', '#ff6600', '#ff0000'];
 /* Amount of apps in each compatibility state */
         /* ['Perfect','Minor issues','Playable','Ingame','Not booting'] */
 var values=[0, 0, 0, 0, 0];
@@ -51,11 +51,11 @@ function readCSV() {
       animation: true, 
       animationSpeed: 10, 
       fillTextData: true,
-      fillTextColor: '#222',
+      fillTextColor: '#fff',
       fillTextAlign: 1.25,
-      fillTextPosition: 'inner', 
+      fillTextPosition: 'inner',
       doughnutHoleSize: 60,
-      doughnutHoleColor: '#fff',
+      doughnutHoleColor: '#1a1a1aff',
       offset: 0, 
       pie: 'normal',
       values:values,
@@ -67,11 +67,11 @@ function readCSV() {
       animation: true, 
       animationSpeed: 15, 
       fillTextData: true,
-      fillTextColor: '#222',
+      fillTextColor: '#fff',
       fillTextAlign: 1.5,
-      fillTextPosition: 'inner', 
+      fillTextPosition: 'inner',
       doughnutHoleSize: 40,
-      doughnutHoleColor: '#fff',
+      doughnutHoleColor: '#1a1a1aff',
       offset: 0, 
       pie: 'normal',
       values:[(values[0]+values[1]+values[2]), values[3], values[4]],

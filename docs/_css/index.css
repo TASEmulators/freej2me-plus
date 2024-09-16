@@ -16,11 +16,11 @@ body {
     width: 100vw;
     margin: 0;
     display: block;
-    background-color: #fff;
+    background-color: black;
 }
 
 #init-logo {
-    background-color: #fff;
+    background-color: black;
     display:block;
 }
 
@@ -35,8 +35,8 @@ body {
 
 @keyframes init-logoanim {
     0%   {opacity: 0;   transform: scale(0.5);}
-    40%  {opacity: 0.7; transform: scale(0.8);}
-    60%  {opacity: 0.7; transform: scale(0.8);}
+    40%  {opacity: 1; transform: scale(0.8);}
+    60%  {opacity: 1; transform: scale(0.8);}
     100% {opacity: 0;   transform: scale(0.5);}
 }
 
@@ -55,8 +55,8 @@ body {
     height: 100vh;
     min-height: 500px;
     max-height: 75vh;
-    background-color: white;
-    opacity: 0.75;
+    background-color: #222222;
+    opacity: 1;
     display: flex;
 }
 
@@ -104,13 +104,13 @@ body {
 }
 
 @keyframes slidegamebg {
-    0%   { opacity: 1; transform: translate3d(0, 0, 0); }
-    5%   { opacity: 0; } 10% { opacity: 1; } 15%  { opacity: 0; } 20% { opacity: 1; }
-    25%  { opacity: 0; } 30% { opacity: 1; } 35%  { opacity: 0; } 40% { opacity: 1; }
-    45%  { opacity: 0; } 50% { opacity: 1; } 55%  { opacity: 0; } 60% { opacity: 1; }
-    65%  { opacity: 0; } 70% { opacity: 1; } 75%  { opacity: 0; } 80% { opacity: 1; }
-    85%  { opacity: 0; } 90% { opacity: 1; } 95%  { opacity: 0; }
-    100% { opacity: 1; transform: translate3d(-2830px, 0, 0);}
+    0%   { opacity: 0.8; transform: translate3d(0, 0, 0); }
+    5%   { opacity: 0; } 10% { opacity: 0.8; } 15%  { opacity: 0; } 20% { opacity: 0.8; }
+    25%  { opacity: 0; } 30% { opacity: 0.8; } 35%  { opacity: 0; } 40% { opacity: 0.8; }
+    45%  { opacity: 0; } 50% { opacity: 0.8; } 55%  { opacity: 0; } 60% { opacity: 0.8; }
+    65%  { opacity: 0; } 70% { opacity: 0.8; } 75%  { opacity: 0; } 80% { opacity: 0.8; }
+    85%  { opacity: 0; } 90% { opacity: 0.8; } 95%  { opacity: 0; }
+    100% { opacity: 0.8; transform: translate3d(-2830px, 0, 0);}
 }
 
 .firstpane-content {
@@ -130,7 +130,7 @@ body {
 }
 
 #innertitletext {
-    color: #00ca31 !important;
+    color: #0066ffff !important;
 }
 
 #firstpane-content-right {
@@ -142,7 +142,7 @@ body {
     font-family:'Times New Roman', Times, serif;
     margin-top: 0;
     margin-bottom: 0;
-    color: #0064ca;
+    color: #ff6600ff;
     font-size: 4em;
     font-weight: bolder;
     transform: rotate(-2deg);
@@ -150,7 +150,7 @@ body {
 
 #firstpane-content-right p {
     font-family:Helvetica, Geneva, Tahoma, sans-serif;
-    color: black;
+    color: white;
     margin-left: 3%;
     margin-top: 0;
     font-size: 1.3em;
@@ -164,10 +164,10 @@ body {
     font-size: 2em;
     border-radius: 15px;
     border-width: 5px;
-    border-color: transparent;
+    border-color: #0066ffff;
     border-style: solid;
-    background-color: #0064ca;
-    color: #00ca31;
+    background-color: black;
+    color: #ff6600ff;
     font-weight: bold;
     float: right;
     margin-top: 2.5%;
@@ -184,8 +184,8 @@ body {
 }
 
 #downloadbutton:hover {
-    color: #0064ca;
-    background: #00ca31;
+    color: #ff6600ff;
+    border-color: #ff6600ff;
 }
 
 #downloadbutton:active {
@@ -195,8 +195,8 @@ body {
 }
 
 #freej2me_logo {
-    z-index: 5;
     width: 100%;
+    filter: saturate(1.5);
     animation: logoanim 3s ease-in-out infinite;
 }
 
@@ -233,9 +233,9 @@ body {
     position: relative;
     margin: 0;
     display:flex;
-    background-color: white;
+    background-color: #1a1a1aff;
     border: none;
-    border: 12px double #5566ff;
+    border: 12px double #0066ffff;
     border-left: none;
     border-right: none;
     box-shadow: 0px 0px 16px #444;
@@ -256,7 +256,7 @@ body {
     font-size: 4em;
     margin: 0 auto;
     font-family:'Times New Roman', Times, serif;
-    color: #00ca31;
+    color: #ff6600ff;
     font-weight: bolder;
 }
 
@@ -264,13 +264,13 @@ body {
     font-size: 1.3em;
     font-family:Helvetica, Geneva, Tahoma, sans-serif;
     font-weight: 700;
-    color: #555;
+    color: white;
 }
 
 .footerdiv {
     position: relative;
-    border-top: 12px double #5566ff;
-    background-color: white;
+    border-top: 12px double #0066ffff;
+    background-color: #1a1a1aff;
     box-shadow: 0px 0px 16px #444;
     z-index: 4;
     padding: 25px;
@@ -281,24 +281,25 @@ body {
     font-weight: bolder;
     font-family:'Times New Roman', Times, serif;
     font-size: 1.85em;
-    color: #5566ff;
+    color: #0066ffff;
     text-align: center;
     margin-bottom: 25px;
 }
 
 .footerdiv a {
     text-decoration: none;
+    color: #ff6600ff;
 }
 
 .footerdiv a:hover {
-    color: #00ca31;
+    color: #0066ffff;
 }
 
 .footerdiv #footer_bottom {
     font-weight: bold;
     font-family: cursive,sans-serif;
     font-size: 1.4em;
-    color: #5566ff;
+    color: #0066ffff;
     text-align: end;
 }
 
