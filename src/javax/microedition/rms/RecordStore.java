@@ -194,31 +194,35 @@ public class RecordStore
 		data[offset+1] = (byte)((val) & 0xFF);
 	}
 
-	public int addRecord(byte[] data, int offset, int numBytes) throws RecordStoreException
+	public int addRecord(byte[] data, int offset, int numBytes) throws RecordStoreNotOpenException, RecordStoreException, RecordStoreFullException
 	{
 		//System.out.println("> Add Record "+nextid+ " to "+name);
 		try
 		{
-			byte[] rec = Arrays.copyOfRange(data, offset, offset+numBytes);
+			
+			byte[] rec = new byte[]{};
+
+			// Only try to copy data if there's data to begin with, as some apps may try to store a record with zero-length data
+			if(data != null && data.length != 0)
+			{
+				if(offset < 0 || numBytes < 0 || offset + numBytes > data.length) { throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
+				rec = Arrays.copyOfRange(data, offset, offset+numBytes);
+			}
+			else { records.addElement(rec); } // offset and numBytes aren't even taken into account in this case, since the data will have zero-length anyway.
+
 			records.addElement(rec);
 
 			lastModified = nextid;
 			nextid++;
 			version++;
-
+			
 			save();
 
-			for(int i=0; i<listeners.size(); i++)
-			{
-				listeners.get(i).recordAdded(this, lastModified);
-			}
+			for(int i=0; i<listeners.size(); i++) { listeners.get(i).recordAdded(this, lastModified); }
+
 			return lastModified;
 		}
-		catch (Exception e)
-		{
-			//System.out.println("> Add Record Failed");
-			throw(new RecordStoreException("Can't Add RMS Record"));
-		}
+		catch (Exception e) { throw(new RecordStoreException("Can't Add RMS Record: " + e.getMessage())); }
 	}
 
 	public void addRecordListener(RecordListener listener)
@@ -407,7 +411,15 @@ public class RecordStore
 		}
 		try
 		{
-			byte[] rec = Arrays.copyOfRange(newData, offset, offset+numBytes);
+			byte[] rec = new byte[]{};
+			// As for addRecord, only try to copy data if there's data to begin with
+			if(newData != null && newData.length != 0)
+			{
+				if(offset < 0 || numBytes < 0 || offset + numBytes > newData.length) { throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
+				
+				rec = Arrays.copyOfRange(newData, offset, offset+numBytes);
+			}
+
 			records.set(recordId, rec);
 		}
 		catch (Exception e)
