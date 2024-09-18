@@ -30,11 +30,9 @@ import org.recompile.mobile.PlatformGraphics;
 public class LayerManager
 {
 
-	protected ArrayList<Layer> layers;
+	private int layers;
 
-	protected Image canvas;
-	protected PlatformGraphics gc;
-	protected Shape clip;
+	private Layer component[] = new Layer[4];
 
 	protected int x;
 	protected int y;
@@ -42,46 +40,89 @@ public class LayerManager
 	protected int height;
 
 
-	public LayerManager()
-	{
-		layers = new ArrayList<Layer>();
+	public LayerManager() { setViewWindow(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE); }
 
-		width = Mobile.getPlatform().lcdWidth;
-		height = Mobile.getPlatform().lcdHeight;
+	// This is just an insert() call, but with the last layer pos as the index.
+	public void append(Layer l) { insert(l, layers); }
 
-		canvas = Image.createImage(width, height);
-		gc = canvas.platformImage.getGraphics();
+	public Layer getLayerAt(int index) 
+	{ 
+		if ((index < 0) || (index >= layers)) { throw new IndexOutOfBoundsException(); }
+
+		return component[index];
 	}
 
-	public void append(Layer l) { layers.add(l); }
+	public int getSize() { return layers; }
 
-	public Layer getLayerAt(int index) { return layers.get(index); }
+	public void insert(Layer l, int index) 
+	{ 
+		if ((index < 0) || (index > layers) || (exist(l) && (index >= layers))) { throw new IndexOutOfBoundsException(); }
+	
+		remove(l);
 
-	public int getSize() { return layers.size(); }
+		if (layers == component.length)
+		{
+			Layer newcomponents[] = new Layer[layers + 4];
+			System.arraycopy(component, 0, newcomponents, 0, layers);
+			System.arraycopy(component, index, newcomponents, index + 1, layers - index);
+			component = newcomponents;
+		}
+		else { System.arraycopy(component, index, component, index + 1, layers - index); }
 
-	public void insert(Layer l, int index) { layers.add(index, l); }
+		component[index] = l;
+		layers++;
+	}
 
 	public void paint(Graphics g, int xdest, int ydest)
 	{
-		for(int i=0; i<layers.size(); i++)
+		int cx = g.getClipX();
+		int cy = g.getClipY();
+		int cw = g.getClipWidth();
+		int ch = g.getClipHeight();
+
+		g.translate(xdest - x, ydest - y);
+		// set the clip to view window
+		g.clipRect(x, y, width, height);
+
+		for (int i = layers-1; i >= 0; i--)
 		{
-			drawLayer(g, xdest, ydest, layers.get(i));
+			Layer comp = component[i];
+			if (component[i].visible) { component[i].paint(g); }
+		}
+
+		g.translate(-xdest + x, -ydest + y);
+		g.setClip(cx, cy, cw, ch);
+	}
+
+	public void remove(Layer l) 
+	{ 
+		if (l == null) { throw new NullPointerException(); }
+
+		for (int i = layers-1; i >= 0; i--)
+		{
+			if (component[i] == l) 
+			{
+				System.arraycopy(component, i + 1, component, i, layers - i - 1);
+				component[--layers] = null;
+			}
 		}
 	}
 
-	private void drawLayer(Graphics g, int dx, int dy, Layer l)
+	private boolean exist(Layer l)
 	{
-		if(l.isVisible())
-		{
-			l.render();
-			g.drawRegion(l.getLayerImage(), 0, 0, l.getLayerImage().getWidth(), l.getLayerImage().getHeight(), 0, dx+x+l.getX(), dy+y+l.getY(), Graphics.TOP|Graphics.LEFT);
-		}
-	}
+		if (l == null) { return false; }
 
-	public void remove(Layer l) { layers.remove(l); }
+		for (int i = layers; --i >= 0; )
+		{
+			if (component[i] == l) { return true; }
+		}
+		return false;
+	}
 
 	public void setViewWindow(int wx, int wy, int wwidth, int wheight)
 	{
+		if (width < 0 || height < 0) { throw new IllegalArgumentException(); }
+
 		x = wx;
 		y = wy;
 		width = wwidth;
