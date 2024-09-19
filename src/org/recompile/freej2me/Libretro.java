@@ -101,10 +101,10 @@ public class Libretro
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.exists()) 
+			if(!PlatformPlayer.soundfontDir.isDirectory()) 
 			{ 
 				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir + "/Put your sf2 bank here");
+				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -481,7 +481,7 @@ public class Libretro
 
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
 
 		if(lcdWidth != w || lcdHeight != h)
 		{

@@ -51,7 +51,7 @@ public class PlatformPlayer implements Player
 
 	public static boolean customMidi = false;
 
-	public static File soundfontDir = new File("freej2me_system/customMIDI/");
+	public static File soundfontDir = new File("freej2me_system" + File.separatorChar + "customMIDI" + File.separatorChar);
 
 	public PlatformPlayer(InputStream stream, String type)
 	{
@@ -269,7 +269,7 @@ public class PlatformPlayer implements Player
 				 * Check if the user wants to run a custom MIDI soundfont. Also, there's no harm 
 				 * in checking if the directory exists again.
 				 */
-				if(customMidi && soundfontDir.exists())
+				if(customMidi)
 				{
 					/* Get the first sf2 soundfont in the directory */
 					String[] fontfile = soundfontDir.list(new FilenameFilter()
@@ -277,7 +277,7 @@ public class PlatformPlayer implements Player
 						@Override
 						public boolean accept(File f, String soundfont ) 
 						{
-							return soundfont.endsWith(".sf2");
+							return soundfont.toLowerCase().endsWith(".sf2");
 						}
 					});
 
@@ -287,22 +287,29 @@ public class PlatformPlayer implements Player
 					 */
 					if(fontfile.length > 0) 
 					{
-						soundfont = MidiSystem.getSoundbank(new File(soundfontDir + "/" + fontfile[0]));
-						midi = MidiSystem.getSequencer(false);
-						synth = MidiSystem.getSynthesizer();
-						synth.open();
-						synth.loadAllInstruments(soundfont);
-						midi.getTransmitter().setReceiver(synth.getReceiver());
-					}
-				}
-
+						for(int i = 0; i < fontfile.length; i++) 
+						{
+							// Load the first .sf2 font, if there's none that's valid, don't set any and use JVM's default
+							if(fontfile[i].toLowerCase().endsWith(".sf2")) 
+							{
+								soundfont = MidiSystem.getSoundbank(new File(soundfontDir.getPath() + File.separatorChar + fontfile[i]));
+								midi = MidiSystem.getSequencer(false);
+								synth = MidiSystem.getSynthesizer();
+								synth.open();
+								synth.loadAllInstruments(soundfont);
+								midi.getTransmitter().setReceiver(synth.getReceiver());
+								break;
+							}
+						}
+					} else { System.out.println("PlatformPlayer: Custom MIDI enabled but there's no soundfont in" + (soundfontDir.getPath() + File.separatorChar)); }
+				} 
 				midi.open();
 				midi.setSequence(stream);
 				state = Player.PREFETCHED;
 			}
 			catch (Exception e) 
 			{ 
-				System.out.println("Couldn't load midi file::" + e.getMessage());
+				System.out.println("Couldn't load midi file:" + e.getMessage());
 				if(customMidi) { synth.close(); }
 				midi.close();
 			}

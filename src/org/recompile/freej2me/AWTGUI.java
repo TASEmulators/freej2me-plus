@@ -393,8 +393,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(useCustomMidi.getState()){ config.updateSoundfont("on"); hasPendingChange = true; }
-				else{ config.updateSoundfont("off"); hasPendingChange = true; }
+				if(useCustomMidi.getState()){ config.updateSoundfont("Custom"); hasPendingChange = true; }
+				else{ config.updateSoundfont("Default"); hasPendingChange = true; }
 
 				restartRequiredDialog.setLocationRelativeTo(main);
 				restartRequiredDialog.setVisible(true);
@@ -833,7 +833,7 @@ public final class AWTGUI
 	{
 			enableAudio.setState(config.settings.get("sound").equals("on"));
 			enableRotation.setState(config.settings.get("rotate").equals("on"));
-			useCustomMidi.setState(config.settings.get("soundfont").equals("on"));
+			useCustomMidi.setState(config.settings.get("soundfont").equals("Custom"));
 			fpsCapNone.setState(config.settings.get("fps").equals("0"));
 			fpsCap15.setState(config.settings.get("fps").equals("15"));
 			fpsCap30.setState(config.settings.get("fps").equals("30"));

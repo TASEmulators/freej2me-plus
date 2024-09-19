@@ -19,6 +19,7 @@ package org.recompile.freej2me;
 import org.recompile.mobile.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -70,6 +71,21 @@ public class Anbu
 		lcdHeight = Integer.parseInt(args[2]);
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
+
+		/* 
+		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user
+		 * is going to use it or not.
+		 */
+		try 
+		{
+			if(!PlatformPlayer.soundfontDir.isDirectory()) 
+			{ 
+				PlatformPlayer.soundfontDir.mkdirs();
+				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				dummyFile.createNewFile();
+			}
+		}
+		catch(IOException e) { System.out.println("Failed to create custom midi info file:" + e.getMessage()); }
 
 		/* TODO: Anbu has no way of enabling "Dump Audio Streams", a UI rewrite might be in order */
 
@@ -409,6 +425,10 @@ public class Anbu
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
 		if(rotate.equals("off")) { rotateDisplay = false; }
+
+		String midiSoundfont = config.settings.get("soundfont");
+		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
+		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
 
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 

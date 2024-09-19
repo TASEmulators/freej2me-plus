@@ -100,10 +100,10 @@ public class FreeJ2ME
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.exists()) 
+			if(!PlatformPlayer.soundfontDir.isDirectory()) 
 			{ 
 				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir + "/Put your sf2 bank here");
+				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -408,7 +408,7 @@ public class FreeJ2ME
 
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
 
 		// Create a standard size LCD if not rotated, else invert window's width and height.
 		if(!rotateDisplay) 
