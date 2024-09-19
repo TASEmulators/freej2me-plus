@@ -344,8 +344,15 @@ public class PlatformPlayer implements Player
 
 		public void setLoopCount(int count)
 		{
-			if(count < 1) {count = 1;} /* Treat cases where an app might set loops as 0 */
-			midi.setLoopCount(count-1);
+			/* 
+			 * Treat cases where an app has already set 
+			 * loops as 0, or wants this stream to loop continuously.
+			 * Here, count = 1 means it should loop one time, whereas in j2me
+			 * it appears that count = 1 means no loop at all, at least based
+			 * on Gameloft games that set effects and some music with count = 1
+			 */
+			if(count == Clip.LOOP_CONTINUOUSLY || count == 0) { midi.setLoopCount(count); }
+			else { midi.setLoopCount(count-1); }
 		}
 		public long setMediaTime(long now)
 		{
@@ -442,8 +449,15 @@ public class PlatformPlayer implements Player
 
 		public void setLoopCount(int count)
 		{
-			if(count < 1) {count = 1;} /* Treat cases where an app might set loops as 0 */
-			wavClip.loop(count-1);
+			/* 
+			 * Treat cases where an app has already set 
+			 * loops as 0, or wants this stream to loop continuously.
+			 * Here, count = 1 means it should loop one time, whereas in j2me
+			 * it appears that count = 1 means no loop at all, at least based
+			 * on Gameloft games that set effects and some music with count = 1
+			 */
+			if(count == Clip.LOOP_CONTINUOUSLY || count == 0) { wavClip.loop(count); }
+			else { wavClip.loop(count-1); }
 		}
 
 		public long setMediaTime(long now)
