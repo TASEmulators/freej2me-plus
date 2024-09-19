@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up OpenJDK 1.8
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v4
       with:
         distribution: 'adopt'
         java-version: '8'
@@ -18,8 +18,13 @@ jobs:
       run: ant -noinput -buildfile build.xml
     - name: Compute commit short SHA
       id: shortsha
-      run: echo "{name}={value}" >> $GITHUB_OUTPUT
+      run: |
+        echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+        echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> "$GITHUB_ENV"
+
+        echo "Branch: ${{ env.branch }}"
+        echo "Sha: ${{ env.sha_short }}"
     - uses: actions/upload-artifact@v4
       with:
-        name: freej2me-${{ steps.shortsha.outputs.value }}
+        name: freej2me-${{ env.branch }}-${{ env.sha_short }}
         path: build/*.jar
