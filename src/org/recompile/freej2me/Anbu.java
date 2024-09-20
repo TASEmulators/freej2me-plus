@@ -100,20 +100,12 @@ public class Anbu
 				{
 					int[] data;
 
-					if(limitFPS>0)
-					{
-						requiredFrametime = 1000 / limitFPS;
-						elapsedTime = System.currentTimeMillis() - lastRenderTime;
-						sleepTime = requiredFrametime - elapsedTime;
-
-						if (sleepTime > 0) { Thread.sleep(sleepTime); }
-					}
-
 					// Send Frame to SDL interface
 					if(!config.isRunning) { data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth); }
 					else { data = config.getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);}
 					byte[] frame = new byte[data.length * 3];
 					int cb = 0;
+
 					for(int i = 0; i < data.length; i++)
 					{
 						frame[cb + 0] = (byte)(data[i] >> 16);
@@ -121,9 +113,19 @@ public class Anbu
 						frame[cb + 2] = (byte)(data[i]);
 						cb += 3;
 					}
-					sdl.frame.write(frame);
 
-					lastRenderTime = System.currentTimeMillis();
+					if(limitFPS>0)
+					{
+						requiredFrametime = 1000 / limitFPS;
+						elapsedTime = System.currentTimeMillis() - lastRenderTime;
+						sleepTime = requiredFrametime - elapsedTime;
+
+						if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+						if(limitFPS>0) { lastRenderTime = System.currentTimeMillis(); }
+
+						sdl.frame.write(frame);
+					} else { sdl.frame.write(frame); }
 				}
 				catch (Exception e) { }
 			}

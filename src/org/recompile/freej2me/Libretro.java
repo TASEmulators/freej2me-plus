@@ -396,15 +396,6 @@ public class Libretro
 									{
 										int[] data;
 
-										if(limitFPS>0)
-										{
-											requiredFrametime = 1000 / limitFPS;
-											elapsedTime = System.currentTimeMillis() - lastRenderTime;
-											sleepTime = requiredFrametime - elapsedTime;
-
-											if (sleepTime > 0) { Thread.sleep(sleepTime); }
-										}
-
 										if(config.isRunning)
 										{
 											data = config.getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
@@ -428,11 +419,27 @@ public class Libretro
 										frameHeader[3] = (byte)((lcdHeight>>8)&0xFF);
 										frameHeader[4] = (byte)((lcdHeight)&0xFF);
 										//frameHeader[5] = rotate - set from config
-										System.out.write(frameHeader, 0, 6);
-										System.out.write(frameBuffer, 0, bufferLength);
-										System.out.flush();
 
-										lastRenderTime = System.currentTimeMillis();
+										if(limitFPS>0)
+										{
+											requiredFrametime = 1000 / limitFPS;
+											elapsedTime = System.currentTimeMillis() - lastRenderTime;
+											sleepTime = requiredFrametime - elapsedTime;
+
+											if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+											System.out.write(frameHeader, 0, 6);
+											System.out.write(frameBuffer, 0, bufferLength);
+											System.out.flush();
+
+											lastRenderTime = System.currentTimeMillis();
+										} 
+										else 
+										{
+											System.out.write(frameHeader, 0, 6);
+											System.out.write(frameBuffer, 0, bufferLength);
+											System.out.flush();
+										}
 									}
 									catch (Exception e)
 									{
