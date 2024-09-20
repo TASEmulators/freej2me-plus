@@ -30,6 +30,7 @@ public class Connector
 	public static final int READ_WRITE = 3;
 	public static final int WRITE = 2;
 
+	private static OutputStream output = null;
 	
 	public static InputStream openInputStream(String name)
 	{
@@ -53,20 +54,15 @@ public class Connector
 		return new DataInputStream(new fakeIS());
 	}
 
-/*
+	public static Connection open(String name) { return null; }
 
-	public static Connection open(String name) {  }
+	public static Connection open(String name, int mode) { return null; }
 
-	public static Connection open(String name, int mode) {  }
+	public static Connection open(String name, int mode, boolean timeouts) { return null; }
 
-	public static Connection open(String name, int mode, boolean timeouts) {  }
+	public static DataOutputStream openDataOutputStream(String name) { return new DataOutputStream(output); }
 
-	public static DataOutputStream openDataOutputStream(String name) { return new DataOutputStream(new OutputStream()); }
-
-	public static OutputStream openOutputStream(String name) { return new OutputStream(); }
-
-*/
-
+	public static OutputStream openOutputStream(String name) { return output; }
 
 	// fake inputstream 
 	private static class fakeIS extends InputStream
