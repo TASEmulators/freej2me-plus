@@ -156,7 +156,24 @@ public class FreeJ2ME
 				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
 				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
 
-				lcd.repaint();
+				try 
+				{
+					if(limitFPS>0)
+					{
+						requiredFrametime = 1000 / limitFPS;
+						elapsedTime = System.currentTimeMillis() - lastRenderTime;
+						sleepTime = requiredFrametime - elapsedTime;
+
+						if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+						lcd.repaint();
+
+						lastRenderTime = System.currentTimeMillis();
+					}
+					else { lcd.repaint(); }
+					
+				} catch (Exception e) { System.out.println(e.getMessage()); }
+				
 				//lcd.paint(lcd.getGraphics());
 			}
 		});
@@ -556,41 +573,27 @@ public class FreeJ2ME
 
 		public void paint(Graphics g)
 		{
-			try
+			if (config.isRunning)
 			{
-				if(limitFPS>0)
-				{
-					requiredFrametime = 1000 / limitFPS;
-					elapsedTime = System.currentTimeMillis() - lastRenderTime;
-					sleepTime = requiredFrametime - elapsedTime;
-
-					if (sleepTime > 0) { Thread.sleep(sleepTime); }
-				}
-
-				if (config.isRunning)
-				{
-					if(!rotateDisplay) { g.drawImage(config.getLCD(), cx, cy, cw, ch, null); }
-					else
-					{
-						// If rotated, simply redraw the config menu with different width and height
-						g.drawImage(config.getLCD(), cy, cx, cw, ch, null);
-					}
-				}
+				if(!rotateDisplay) { g.drawImage(config.getLCD(), cx, cy, cw, ch, null); }
 				else
 				{
-					if(!rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
-					else
-					{
-						final Graphics2D cgc = (Graphics2D)this.getGraphics();
-						// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
-						cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
-						// Draw the rotated FB with adjusted cy and cx values
-						cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
-					}
+					// If rotated, simply redraw the config menu with different width and height
+					g.drawImage(config.getLCD(), cy, cx, cw, ch, null);
 				}
-				lastRenderTime = System.currentTimeMillis();
 			}
-			catch (Exception e)	{ System.out.println(e.getMessage()); }
+			else
+			{
+				if(!rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
+				else
+				{
+					final Graphics2D cgc = (Graphics2D)this.getGraphics();
+					// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
+					cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
+					// Draw the rotated FB with adjusted cy and cx values
+					cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
+				}
+			}
 		}
 	}
 }
