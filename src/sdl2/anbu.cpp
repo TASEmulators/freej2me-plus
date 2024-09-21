@@ -451,7 +451,7 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 	if(angle == 270) { SDL_CreateWindowAndRenderer(sourceHeight*windowScale, sourceWidth*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
 	else { SDL_CreateWindowAndRenderer(sourceWidth*windowScale, sourceHeight*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
 	if(isFullscreen) { toggleFullscreen(); }
-	SDL_SetWindowTitle(mWindow, "FreeJ2ME - SDL");
+	SDL_SetWindowTitle(mWindow, "FreeJ2ME-Plus - SDL");
 	SDL_SetRenderDrawColor(mRenderer, r, g, b, 255);
 	SDL_RenderClear(mRenderer);
 	SDL_RenderPresent(mRenderer);

@@ -523,7 +523,7 @@ void retro_init(void)
 
 	log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
-	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME's Java app (make sure freej2me-lr.jar is inside system/).\n");
+	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app (make sure freej2me-lr.jar is inside system/).\n");
 
 #ifdef __linux__
 	javaProcess = javaOpen(params[0], params);
@@ -955,8 +955,8 @@ unsigned retro_get_region(void)
 void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
-	info->library_name = "FreeJ2ME";
-	info->library_version = "1.2";
+	info->library_name = "FreeJ2ME-Plus";
+	info->library_version = "1.3";
 	info->valid_extensions = "jar";
 	info->need_fullpath = true;
 }

@@ -73,7 +73,7 @@ public class FreeJ2ME
 
 	public FreeJ2ME(String args[])
 	{
-		main = new Frame("FreeJ2ME");
+		main = new Frame("FreeJ2ME-Plus");
 		main.setSize(350,450);
 		/* Set a minimum allowed width and height so the menu bar is visible at all times */
 		main.setMinimumSize(new Dimension(240, 240));
