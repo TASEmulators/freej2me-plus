@@ -20,7 +20,6 @@ import org.recompile.mobile.*;
 
 import java.awt.Image;
 import java.awt.Canvas;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
@@ -159,7 +158,19 @@ public class Libretro
 			{
 				try
 				{
-					gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null);
+					if(limitFPS>0)
+					{
+						requiredFrametime = 1000 / limitFPS;
+						elapsedTime = System.currentTimeMillis() - lastRenderTime;
+						sleepTime = requiredFrametime - elapsedTime;
+
+						if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+						gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null);
+
+						lastRenderTime = System.currentTimeMillis();
+					} 
+					else { gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null); }
 				}
 				catch (Exception e) { }
 			}
@@ -394,7 +405,7 @@ public class Libretro
 									// Send Frame Libretro //
 									try
 									{
-										int[] data;
+										final int[] data;
 
 										if(config.isRunning)
 										{
@@ -404,7 +415,7 @@ public class Libretro
 										{
 											data = surface.getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
 										}
-										int bufferLength = data.length*3;
+										final int bufferLength = data.length*3;
 										int cb = 0;
 										for(int i=0; i<data.length; i++)
 										{
@@ -418,28 +429,10 @@ public class Libretro
 										frameHeader[2] = (byte)((lcdWidth)&0xFF);
 										frameHeader[3] = (byte)((lcdHeight>>8)&0xFF);
 										frameHeader[4] = (byte)((lcdHeight)&0xFF);
-										//frameHeader[5] = rotate - set from config
 
-										if(limitFPS>0)
-										{
-											requiredFrametime = 1000 / limitFPS;
-											elapsedTime = System.currentTimeMillis() - lastRenderTime;
-											sleepTime = requiredFrametime - elapsedTime;
-
-											if (sleepTime > 0) { Thread.sleep(sleepTime); }
-
-											System.out.write(frameHeader, 0, 6);
-											System.out.write(frameBuffer, 0, bufferLength);
-											System.out.flush();
-
-											lastRenderTime = System.currentTimeMillis();
-										} 
-										else 
-										{
-											System.out.write(frameHeader, 0, 6);
-											System.out.write(frameBuffer, 0, bufferLength);
-											System.out.flush();
-										}
+										System.out.write(frameHeader, 0, 6);
+										System.out.write(frameBuffer, 0, bufferLength);
+										System.out.flush();
 									}
 									catch (Exception e)
 									{
