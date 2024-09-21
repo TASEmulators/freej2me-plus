@@ -14,13 +14,13 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.samsung.util;
+package javax.obex; 
 
-public final class LCDLight
+public interface Authenticator
 {
-	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+    PasswordAuthentication onAuthenticationChallenge(String description, boolean isUserIdRequired, boolean isFullAccess);
 
-	public static void on(int duration) { }
+    byte[] onAuthenticationResponse(byte[] userName);
+
 }

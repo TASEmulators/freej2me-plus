@@ -13,14 +13,18 @@
 
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
-package com.samsung.util;
+*/ 
+package javax.bluetooth;
 
-public final class LCDLight
+public class DeviceClass
 {
-	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+    public DeviceClass(int record) { System.out.println("DeviceClass record:" + record); }
 
-	public static void on(int duration) { }
-}
+    public int getMajorDeviceClass() { return 0x200; } 
+
+    public int getMinorDeviceClass() { return 0x04; }
+
+    public int getServiceClasses() { return 0x22000 | 0x100000; }
+
+} 

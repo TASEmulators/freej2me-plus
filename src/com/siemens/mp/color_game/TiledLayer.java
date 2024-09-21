@@ -19,11 +19,7 @@ package com.siemens.mp.color_game;
 
 import javax.microedition.lcdui.Image;
 
-public class TiledLayer extends javax.microedition.lcdui.game.TiledLayer
-{
-
-	public TiledLayer(int colsw, int rowsh, Image baseimage, int tilewidth, int tileheight)
-	{
-		super(colsw, rowsh, baseimage, tilewidth, tileheight);
-	}
+public class TiledLayer extends javax.microedition.lcdui.game.TiledLayer 
+{ 
+	public TiledLayer(int colsw, int rowsh, Image baseimage, int tileWidth, int tileHeight) { super(colsw, rowsh, baseimage, tileWidth, tileHeight); }
 }

@@ -46,6 +46,8 @@ public class Mobile
 
 	public static boolean motorola = false;
 
+	public static boolean sonyEricsson = false;
+
 	public static boolean sound = true;
 
 	//Standard keycodes

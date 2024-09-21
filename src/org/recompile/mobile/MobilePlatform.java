@@ -17,11 +17,14 @@
 package org.recompile.mobile;
 
 import java.net.URL;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.io.InputStream;
 
 import java.awt.event.KeyEvent;
 
 import javax.microedition.lcdui.Display;
+import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.game.GameCanvas;
 import javax.microedition.lcdui.Image;
@@ -45,12 +48,13 @@ public class MobilePlatform
 	public int lcdHeight;
 
 	public MIDletLoader loader;
+	EventQueue eventQueue;
 
 	public Runnable painter;
 
 	public String dataPath = "";
 
-	public int keyState = 0;
+	public volatile int keyState = 0;
 
 	public MobilePlatform(int width, int height)
 	{
@@ -61,6 +65,8 @@ public class MobilePlatform
 		gc = lcd.getGraphics();
 
 		Mobile.setGraphics3D(new Graphics3D());
+		
+		eventQueue = new EventQueue(this);
 
 		painter = new Runnable()
 		{
@@ -69,6 +75,14 @@ public class MobilePlatform
 				// Placeholder //
 			}
 		};
+	}
+
+	public void startEventQueue() {
+		eventQueue.start();
+	}
+
+	public void dropQueuedEvents() {
+		eventQueue.dropEvents();
 	}
 
 	public void resizeLCD(int width, int height)
@@ -92,34 +106,83 @@ public class MobilePlatform
 
 	public void keyPressed(int keycode)
 	{
-		updateKeyState(keycode, 1);
-		Mobile.getDisplay().getCurrent().keyPressed(keycode);
+		eventQueue.submit(new PlatformEvent(PlatformEvent.KEY_PRESSED, keycode));
 	}
 
 	public void keyReleased(int keycode)
 	{
-		updateKeyState(keycode, 0);
-		Mobile.getDisplay().getCurrent().keyReleased(keycode);
+		eventQueue.submit(new PlatformEvent(PlatformEvent.KEY_RELEASED, keycode));
 	}
 
 	public void keyRepeated(int keycode)
 	{
-		Mobile.getDisplay().getCurrent().keyRepeated(keycode);
+		eventQueue.submit(new PlatformEvent(PlatformEvent.KEY_REPEATED, keycode));
 	}
 
 	public void pointerDragged(int x, int y)
 	{
-		Mobile.getDisplay().getCurrent().pointerDragged(x, y);
+		eventQueue.submit(new PlatformEvent(PlatformEvent.POINTER_DRAGGED, x, y));
 	}
 
 	public void pointerPressed(int x, int y)
 	{
-		Mobile.getDisplay().getCurrent().pointerPressed(x, y);
+		eventQueue.submit(new PlatformEvent(PlatformEvent.POINTER_PRESSED, x, y));
 	}
 
 	public void pointerReleased(int x, int y)
 	{
-		Mobile.getDisplay().getCurrent().pointerReleased(x, y);
+		eventQueue.submit(new PlatformEvent(PlatformEvent.POINTER_RELEASED, x, y));
+	}
+
+
+	public void doKeyPressed(int keycode)
+	{
+		updateKeyState(keycode, 1);
+		Displayable d;
+		if ((d = Mobile.getDisplay().getCurrent()) != null) {
+			d.keyPressed(keycode);		
+		}
+	}
+
+	public void doKeyReleased(int keycode)
+	{
+		updateKeyState(keycode, 0);
+		Displayable d;
+		if ((d = Mobile.getDisplay().getCurrent()) != null) {
+			d.keyReleased(keycode);
+		}
+	}
+
+	public void doKeyRepeated(int keycode)
+	{
+		Displayable d;
+		if ((d = Mobile.getDisplay().getCurrent()) != null) {
+			d.keyRepeated(keycode);	
+		}
+	}
+
+	public void doPointerDragged(int x, int y)
+	{
+		Displayable d;
+		if ((d = Mobile.getDisplay().getCurrent()) != null) {
+			d.pointerDragged(x, y);	
+		}
+	}
+
+	public void doPointerPressed(int x, int y)
+	{
+		Displayable d;
+		if ((d = Mobile.getDisplay().getCurrent()) != null) {
+			d.pointerPressed(x, y);	
+		}
+	}
+
+	public void doPointerReleased(int x, int y)
+	{
+		Displayable d;
+		if ((d = Mobile.getDisplay().getCurrent()) != null) {
+			d.pointerReleased(x, y);
+		}
 	}
 
 	private void updateKeyState(int key, int val)
@@ -140,6 +203,8 @@ public class MobilePlatform
 			case Mobile.NOKIA_LEFT: mask = GameCanvas.LEFT_PRESSED; break;
 			case Mobile.NOKIA_RIGHT: mask = GameCanvas.RIGHT_PRESSED; break;
 			case Mobile.NOKIA_DOWN: mask = GameCanvas.DOWN_PRESSED; break;
+			case Mobile.NOKIA_SOFT3: mask = GameCanvas.FIRE_PRESSED; break;
+
 		}
 		keyState |= mask;
 		keyState ^= mask;
@@ -201,5 +266,105 @@ public class MobilePlatform
 
 		//System.gc();
 	}
+
+	public void setPlatformProperty(String value)
+	{
+		loader.setProperty("microedition.platform", value);
+		System.setProperty("microedition.platform", value);
+	}
+
+
+	static class PlatformEvent
+	{
+		static final int KEY_PRESSED = 1;
+		static final int KEY_REPEATED = 2; 
+		static final int KEY_RELEASED = 3;
+		static final int POINTER_PRESSED = 4;
+		static final int POINTER_DRAGGED = 5;
+		static final int POINTER_RELEASED = 6;
+
+		int type;
+		int code;
+		int code2;
+
+		PlatformEvent(int type, int code)
+		{
+			this.type = type;
+			this.code = code;
+		}
+
+		PlatformEvent(int type, int x, int y)
+		{
+			this.type = type;
+			this.code = x;
+			this.code2 = y;
+		}
+	}
+
+	/**
+	 * This class exists so we don't block main AWT EventQueue.
+	 */
+	private static class EventQueue implements Runnable	{
+		BlockingQueue<PlatformEvent> queue = new LinkedBlockingQueue<>();
+		MobilePlatform platform;
+		private volatile Thread thread;
+
+		public EventQueue(MobilePlatform platform) {
+			this.platform = platform;
+		}
+
+		public void start()	{
+			if (thread == null) {
+				thread = new Thread(this, "MobilePlatformEventQueue");
+				thread.start();
+			}
+		}
+
+		public void run() {
+			while (!Thread.currentThread().isInterrupted()) {
+				try {
+					PlatformEvent event = queue.take();
+					handleEvent(event);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				} catch (Exception e) {
+					System.out.println("exception in event handler: "+e.getMessage());
+				}
+			}
+
+			thread = null;
+		}
+
+		public void submit(PlatformEvent event) {
+			queue.offer(event);
+		}
+
+		public void dropEvents() {
+			while (true) {
+				if (queue.poll() == null) {
+					break;
+				}
+			}
+		}
+
+		private void handleEvent(PlatformEvent event) {
+			if (event.type == PlatformEvent.KEY_PRESSED) {
+				platform.doKeyPressed(event.code);
+			} else if (event.type == PlatformEvent.KEY_REPEATED) {
+				platform.doKeyRepeated(event.code);
+			} else if (event.type == PlatformEvent.KEY_RELEASED) {
+				platform.doKeyReleased(event.code);
+			} else if (event.type == PlatformEvent.POINTER_PRESSED) {
+				platform.doPointerPressed(event.code, event.code2);
+			} else if (event.type == PlatformEvent.POINTER_DRAGGED) {
+				platform.doPointerDragged(event.code, event.code2);
+			} else if (event.type == PlatformEvent.POINTER_RELEASED) {
+				platform.doPointerReleased(event.code, event.code2);
+			}
+		}
+
+	}
+
 
 }

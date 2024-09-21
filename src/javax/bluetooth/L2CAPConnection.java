@@ -13,14 +13,29 @@
 
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
-package com.samsung.util;
+*/ 
+package javax.bluetooth;
 
-public final class LCDLight
+import java.io.IOException;
+import java.io.InterruptedIOException;
+
+import javax.microedition.io.Connection;
+
+public interface L2CAPConnection extends Connection 
 {
-	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+	static final int DEFAULT_MTU = 0x02A0;
 
-	public static void on(int duration) { }
+	static final int MINIMUM_MTU = 0x30;
+
+	int getTransmitMTU() throws IOException;
+
+	int getReceiveMTU() throws IOException;
+
+	void send(byte[] data) throws IOException, NullPointerException;
+
+	int receive(byte[] inBuf) throws IOException, NullPointerException, InterruptedIOException;
+
+	boolean ready() throws IOException;
+
 }

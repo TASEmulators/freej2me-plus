@@ -42,7 +42,7 @@ public abstract class GameCanvas extends javax.microedition.lcdui.game.GameCanva
 	{
 		int t = keyStates;
 		keyStates = 0; // clear keyStates on read
-		return keyStates;
+		return t;
 	}
 
 	public void keyPressed(int key)

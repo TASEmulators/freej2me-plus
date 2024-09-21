@@ -14,13 +14,21 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.samsung.util;
+package javax.obex;  
 
-public final class LCDLight
+public class PasswordAuthentication extends Object
 {
-	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+    byte[] name, pass;
 
-	public static void on(int duration) { }
+    public PasswordAuthentication(byte[] userName, byte[] password) throws NullPointerException 
+    { 
+        name = userName; 
+        pass = password; 
+    }
+
+    public byte[] getUserName() { return name; }
+
+    public byte[] getPassword() { return pass; }
+
 }

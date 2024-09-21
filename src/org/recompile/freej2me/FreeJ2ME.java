@@ -73,7 +73,7 @@ public class FreeJ2ME
 
 	public FreeJ2ME(String args[])
 	{
-		main = new Frame("FreeJ2ME");
+		main = new Frame("FreeJ2ME-Plus");
 		main.setSize(350,450);
 		/* Set a minimum allowed width and height so the menu bar is visible at all times */
 		main.setMinimumSize(new Dimension(240, 240));
@@ -100,10 +100,10 @@ public class FreeJ2ME
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.exists()) 
+			if(!PlatformPlayer.soundfontDir.isDirectory()) 
 			{ 
 				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir + "/Put your sf2 bank here");
+				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -156,9 +156,30 @@ public class FreeJ2ME
 				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
 				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
 
-				lcd.paint(lcd.getGraphics());
+				try 
+				{
+					if(limitFPS>0)
+					{
+						requiredFrametime = 1000 / limitFPS;
+						elapsedTime = System.currentTimeMillis() - lastRenderTime;
+						sleepTime = requiredFrametime - elapsedTime;
+
+						if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+						lcd.repaint();
+
+						lastRenderTime = System.currentTimeMillis();
+					}
+					else { lcd.repaint(); }
+					
+				} catch (Exception e) { System.out.println(e.getMessage()); }
+				
+				//lcd.paint(lcd.getGraphics());
 			}
 		});
+
+		
+		Mobile.getPlatform().startEventQueue();		
 
 		/* Inputs should only be registered if a jar has been loaded, otherwise AWT will throw NullPointerException */
 		lcd.addKeyListener(new KeyListener()
@@ -389,12 +410,14 @@ public class FreeJ2ME
 		useNokiaControls = false;
 		useSiemensControls = false;
 		useMotorolaControls = false;
+		Mobile.sonyEricsson = false;
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
@@ -402,7 +425,7 @@ public class FreeJ2ME
 
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
 
 		// Create a standard size LCD if not rotated, else invert window's width and height.
 		if(!rotateDisplay) 
@@ -427,6 +450,17 @@ public class FreeJ2ME
 		}
 
 		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
+
+		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
+		else if (Mobile.sonyEricsson) 
+		{
+			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
+			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
+		} else if (Mobile.siemens) 
+		{
+			System.setProperty("com.siemens.OSVersion", "11");
+			System.setProperty("com.siemens.IMEI", "000000000000000");
+		}
 	}
 
 	private int getMobileKey(int keycode)
@@ -531,52 +565,34 @@ public class FreeJ2ME
 			scaley = (double)lcdHeight/(double)vh;
 		}
 
+		@Override
+        public void update(Graphics g) {
+            // Use paint method directly to avoid flicker
+            paint(g);
+        }
+
 		public void paint(Graphics g)
 		{
-			try
+			if (config.isRunning)
 			{
-				Graphics2D cgc = (Graphics2D)this.getGraphics();
-				
-				if(limitFPS>0)
-				{
-					requiredFrametime = 1000 / limitFPS;
-					elapsedTime = System.currentTimeMillis() - lastRenderTime;
-					sleepTime = requiredFrametime - elapsedTime;
-
-					if (sleepTime > 0) { Thread.sleep(sleepTime); }
-				}
-
-				if (config.isRunning)
-				{
-					if(!rotateDisplay)
-					{
-						g.drawImage(config.getLCD(), cx, cy, cw, ch, null);
-					}
-					else
-					{
-						// If rotated, simply redraw the config menu with different width and height
-						g.drawImage(config.getLCD(), cy, cx, cw, ch, null);
-					}
-				}
+				if(!rotateDisplay) { g.drawImage(config.getLCD(), cx, cy, cw, ch, null); }
 				else
 				{
-					if(!rotateDisplay)
-					{
-						g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null);
-					}
-					else
-					{
-						// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
-						cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
-						// Draw the rotated FB with adjusted cy and cx values
-						cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
-					}
+					// If rotated, simply redraw the config menu with different width and height
+					g.drawImage(config.getLCD(), cy, cx, cw, ch, null);
 				}
-				lastRenderTime = System.currentTimeMillis();
 			}
-			catch (Exception e)
+			else
 			{
-				System.out.println(e.getMessage());
+				if(!rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
+				else
+				{
+					final Graphics2D cgc = (Graphics2D)this.getGraphics();
+					// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
+					cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
+					// Draw the rotated FB with adjusted cy and cx values
+					cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
+				}
 			}
 		}
 	}

@@ -56,4 +56,14 @@ public class PlatformFont
 	{
 		return gc.getFontMetrics().stringWidth(str);
 	}
+
+	public int getHeight()
+	{
+		return gc.getFontMetrics().getHeight();
+	}
+
+	public int getAscent()
+	{
+		return gc.getFontMetrics().getAscent();
+	}
 }

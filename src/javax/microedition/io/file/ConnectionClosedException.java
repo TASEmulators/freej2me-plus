@@ -13,14 +13,14 @@
 
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
-package com.samsung.util;
+*/ 
+package javax.microedition.io.file;
 
-public final class LCDLight
+public class ConnectionClosedException extends RuntimeException 
 {
-	public static boolean isSupported() { return true; }
+	
+	public ConnectionClosedException() { }
 
-	public static void off() { }
-
-	public static void on(int duration) { }
+	public ConnectionClosedException(String detailMessage) { System.out.println("ConnectionClosedException: " + detailMessage); }
+	
 }

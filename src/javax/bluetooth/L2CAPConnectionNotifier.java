@@ -13,14 +13,16 @@
 
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
-package com.samsung.util;
+*/ 
+package javax.bluetooth;
 
-public final class LCDLight
+import java.io.IOException;
+
+import javax.microedition.io.Connection;
+
+public interface L2CAPConnectionNotifier extends Connection 
 {
-	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+	L2CAPConnection acceptAndOpen() throws IOException, ServiceRegistrationException, BluetoothStateException;
 
-	public static void on(int duration) { }
 }

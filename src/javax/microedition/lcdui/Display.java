@@ -26,10 +26,19 @@ import java.util.Vector;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.recompile.mobile.Mobile;
 
 public class Display
 {
+	// when fps is limited, this needs to be a fair lock
+	// otherwise key events might not get dispatched at proper time
+	public static final ReentrantLock LCDUILock = new ReentrantLock(true);
+
+	// this can only be used from a dedicated thread which MAY NOT hold lcduilock
+	public static final Object calloutLock = new Object();
+
 	public static final int LIST_ELEMENT = 1;
 	public static final int CHOICE_GROUP_ELEMENT = 2;
 	public static final int ALERT = 3;
@@ -51,6 +60,8 @@ public class Display
 
 	private SerialCallTimerTask timertask;
 
+	private boolean insideSetCurrent = false;
+
 	public Display()
 	{
 		display = this;
@@ -65,7 +76,12 @@ public class Display
 
 	public void callSerially(Runnable r)
 	{
-		serialCalls.add(r);
+		LCDUILock.lock();
+		try {
+			serialCalls.add(r);
+		} finally {
+			LCDUILock.unlock();
+		}
 	}
 	private class SerialCallTimerTask extends TimerTask
 	{
@@ -75,8 +91,17 @@ public class Display
 			{
 				try
 				{
-					serialCalls.get(0).run();
-					serialCalls.removeElement(0);
+					synchronized (calloutLock)
+					{
+						LCDUILock.lock();
+						try {
+							Runnable call = serialCalls.get(0);
+							serialCalls.removeElementAt(0);
+							call.run();
+						} finally {
+							LCDUILock.unlock();
+						}
+					}
 				}
 				catch (Exception e) { }
 			}
@@ -129,18 +154,43 @@ public class Display
 
 	public void setCurrent(Displayable next)
 	{
-		try
-		{
-			next.showNotify();
-			current = next;
-			current.notifySetCurrent();
-			Mobile.getPlatform().flushGraphics(current.platformImage, 0,0, current.width, current.height);
-			//System.out.println("Set Current "+current.width+", "+current.height);
+		if (next == null){
+			return;
 		}
-		catch (Exception e)
-		{
-			System.out.println("Problem with setCurrent(next)");
-			e.printStackTrace();
+
+		LCDUILock.lock();
+		try {			
+			if (current == next || insideSetCurrent)
+			{
+				return;
+			}
+
+			try
+			{
+				insideSetCurrent = true;
+
+				try {
+					if (current != null) {
+						current.hideNotify();
+					}
+					Mobile.getPlatform().keyState = 0; // reset keystate
+					next.showNotify();
+				} finally {
+					insideSetCurrent = false;
+				}
+
+				current = next;
+				current.notifySetCurrent();
+				Mobile.getPlatform().flushGraphics(current.platformImage, 0,0, current.width, current.height);
+				//System.out.println("Set Current "+current.width+", "+current.height);
+			}
+			catch (Exception e)
+			{
+				System.out.println("Problem with setCurrent(next)");
+				e.printStackTrace();
+			}
+		} finally {
+			LCDUILock.unlock();
 		}
 	}
 

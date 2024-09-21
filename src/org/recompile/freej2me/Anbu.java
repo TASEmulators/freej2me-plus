@@ -19,6 +19,7 @@ package org.recompile.freej2me;
 import org.recompile.mobile.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -71,6 +72,21 @@ public class Anbu
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
+		/* 
+		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user
+		 * is going to use it or not.
+		 */
+		try 
+		{
+			if(!PlatformPlayer.soundfontDir.isDirectory()) 
+			{ 
+				PlatformPlayer.soundfontDir.mkdirs();
+				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				dummyFile.createNewFile();
+			}
+		}
+		catch(IOException e) { System.out.println("Failed to create custom midi info file:" + e.getMessage()); }
+
 		/* TODO: Anbu has no way of enabling "Dump Audio Streams", a UI rewrite might be in order */
 
 		config = new Config();
@@ -84,20 +100,12 @@ public class Anbu
 				{
 					int[] data;
 
-					if(limitFPS>0)
-					{
-						requiredFrametime = 1000 / limitFPS;
-						elapsedTime = System.currentTimeMillis() - lastRenderTime;
-						sleepTime = requiredFrametime - elapsedTime;
-
-						if (sleepTime > 0) { Thread.sleep(sleepTime); }
-					}
-
 					// Send Frame to SDL interface
 					if(!config.isRunning) { data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth); }
 					else { data = config.getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);}
 					byte[] frame = new byte[data.length * 3];
 					int cb = 0;
+
 					for(int i = 0; i < data.length; i++)
 					{
 						frame[cb + 0] = (byte)(data[i] >> 16);
@@ -105,15 +113,27 @@ public class Anbu
 						frame[cb + 2] = (byte)(data[i]);
 						cb += 3;
 					}
-					sdl.frame.write(frame);
 
-					lastRenderTime = System.currentTimeMillis();
+					if(limitFPS>0)
+					{
+						requiredFrametime = 1000 / limitFPS;
+						elapsedTime = System.currentTimeMillis() - lastRenderTime;
+						sleepTime = requiredFrametime - elapsedTime;
+
+						if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+						if(limitFPS>0) { lastRenderTime = System.currentTimeMillis(); }
+
+						sdl.frame.write(frame);
+					} else { sdl.frame.write(frame); }
 				}
 				catch (Exception e) { }
 			}
 		};
 
 		Mobile.getPlatform().setPainter(painter);
+
+		Mobile.getPlatform().startEventQueue();
 
 		String file = getFormattedLocation(args[0]);
 		System.out.println(file);
@@ -397,14 +417,31 @@ public class Anbu
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
+		Mobile.sonyEricsson = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
 		// We should send this one over to the sdl interface.
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
 		if(rotate.equals("off")) { rotateDisplay = false; }
+
+		String midiSoundfont = config.settings.get("soundfont");
+		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
+		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+
+		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
+		else if (Mobile.sonyEricsson) 
+		{
+			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
+			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
+		} else if (Mobile.siemens) 
+		{
+			System.setProperty("com.siemens.OSVersion", "11");
+			System.setProperty("com.siemens.IMEI", "000000000000000");
+		}
 
 		// Screen width and height won't be updated here, it breaks sdl_interface's frame streaming
 		// as it will be expecting a given size for the frame, and we don't pass the updated size

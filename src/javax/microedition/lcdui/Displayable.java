@@ -262,7 +262,7 @@ public abstract class Displayable
 		{
 			if(commandlistener!=null)
 			{
-				commandlistener.commandAction(commands.get(index), this);
+                commandlistener.commandAction(commands.get(index), this);
 			}
 		}
 	}

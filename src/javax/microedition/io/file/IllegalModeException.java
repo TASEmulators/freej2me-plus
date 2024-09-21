@@ -13,14 +13,14 @@
 
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
-package com.samsung.util;
+*/ 
+package javax.microedition.io.file;
 
-public final class LCDLight
+public class IllegalModeException extends RuntimeException 
 {
-	public static boolean isSupported() { return true; }
+	
+	public IllegalModeException() { }
 
-	public static void off() { }
+	public IllegalModeException(String detailMessage) { System.out.println("IllegalModeException: " + detailMessage); }
 
-	public static void on(int duration) { }
 }

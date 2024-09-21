@@ -21,12 +21,14 @@ import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.lang.ClassLoader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -35,7 +37,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import java.util.HashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.ArrayList;
+import java.util.Enumeration;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -48,7 +53,6 @@ import org.objectweb.asm.Opcodes;
 import javax.microedition.lcdui.*;
 import javax.microedition.midlet.*;
 import javax.microedition.io.*;
-import javax.microedition.midlet.MIDletStateChangeException;
 
 public class MIDletLoader extends URLClassLoader
 {
@@ -68,13 +72,23 @@ public class MIDletLoader extends URLClassLoader
 	{
 		super(urls);
 
+		try {
+			String jarName = Paths.get(urls[0].toURI()).getFileName().toString().replace('.', '_');
+			suitename = jarName;
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+
 		try
 		{
 			System.setProperty("microedition.platform", "j2me");
 			System.setProperty("microedition.profiles", "MIDP-2.0");
 			System.setProperty("microedition.configuration", "CLDC-1.0");
 			System.setProperty("microedition.locale", "en-US");
-			System.setProperty("microedition.encoding", "file.encoding");
+			System.setProperty("microedition.encoding", "ISO-8859-1");
+			System.setProperty("microedition.m3g.version", "1.1");
+			System.setProperty("wireless.messaging.sms.smsc", "+8613800010000");
+			System.setProperty("device.imei", "000000000000000");
 		}
 		catch (Exception e)
 		{
@@ -84,20 +98,95 @@ public class MIDletLoader extends URLClassLoader
 		try
 		{
 			loadManifest();
-
-			properties.put("microedition.platform", "j2me");
-			properties.put("microedition.profiles", "MIDP-2.0");
-			properties.put("microedition.configuration", "CLDC-1.0");
-			properties.put("microedition.locale", "en-US");
-			properties.put("microedition.encoding", "file.encoding");
 		}
 		catch (Exception e)
 		{
 			System.out.println("Can't Read Manifest!");
-			return;
 		}
 
+		properties.put("microedition.platform", "j2me");
+		properties.put("microedition.profiles", "MIDP-2.0");
+		properties.put("microedition.configuration", "CLDC-1.0");
+		properties.put("microedition.locale", "en-US");
+		properties.put("microedition.encoding", "ISO-8859-1");
+		properties.put("microedition.m3g.version", "1.1");
+		properties.put("wireless.messaging.sms.smsc", "+8613800010000");
+		properties.put("device.imei", "000000000000000");
+
+
+		if (className == null) {
+			className = findMainClassInJars(urls);
+		}
 	}
+
+	public static String findMainClassInJars(URL[] urls) {
+		// we search for a class file containing "startApp" 
+		// note this is just an approximation, but it often works
+		// the class might be abstract though..
+
+
+        for (URL url : urls) {
+			File file;
+			try {
+				file = new File(url.toURI());
+			} catch (URISyntaxException e) {
+				return null;
+			}
+            try (JarFile jarFile = new JarFile(file)) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().endsWith(".class")) {
+                        String className = entry.getName().replace('/', '.').replace(".class", "");
+                        if (hasStartApp(className, jarFile.getInputStream(entry))) {
+                            return className;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+	private static boolean hasStartApp(String className, InputStream is) {
+		byte[] pattern = "startApp".getBytes();
+		try {
+			byte[] classBytes = readBytes(is);
+			for (int i = 0; i < classBytes.length - pattern.length; i++) {
+				int j = 0;
+				for (j = 0; j < pattern.length; j++) {
+					if (classBytes[i+j] != pattern[j]) {
+						break;
+					}
+				}
+				if (j == pattern.length) {
+					return true;
+				}
+			}
+		} catch (IOException e) {
+				e.printStackTrace();
+		}
+  		finally {
+			try {
+				is.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} 
+        return false;
+    }
+
+	private static byte[] readBytes(InputStream is) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[1024];
+        while ((nRead = is.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        return buffer.toByteArray();
+    }
 
 	public void start() throws MIDletStateChangeException
 	{
@@ -105,7 +194,7 @@ public class MIDletLoader extends URLClassLoader
 
 		try
 		{
-			mainClass = loadClass(className, true);
+			mainClass = loadClass(className);
 
 			Constructor constructor;
 			constructor = mainClass.getConstructor();
@@ -250,6 +339,11 @@ public class MIDletLoader extends URLClassLoader
 		if(resource.startsWith("/"))
 		{
 			resource = resource.substring(1);
+
+			if(resource.startsWith("/"))
+			{
+				resource = resource.substring(1);
+			}
 		}
 
 		try
@@ -281,6 +375,10 @@ public class MIDletLoader extends URLClassLoader
 		if(resource.startsWith("/"))
 		{
 			resource = resource.substring(1);
+			if(resource.startsWith("/"))
+			{
+				resource = resource.substring(1);
+			}
 		}
 		try
 		{
@@ -293,6 +391,47 @@ public class MIDletLoader extends URLClassLoader
 			return super.getResource(resource);
 		}
 	}
+
+	@Override
+    public URL findResource(String name) {
+        // First, try to find the resource with the original, case-sensitive name
+        URL resource = super.findResource(name);
+        if (resource != null) {
+            return resource;
+        }
+
+        // For each URL, check if it is a JAR file and perform a case-insensitive search
+        for (URL url : getURLs()) {
+            resource = findResourceInJar(url, name);
+            if (resource != null) {
+                return resource;
+            }
+        }
+
+        // If not found, return null
+        return null;
+    }
+
+    private URL findResourceInJar(URL jarUrl, String resourceName) {
+        if (jarUrl.getProtocol().equals("file") && jarUrl.getPath().endsWith(".jar")) {
+            try (JarFile jarFile = new JarFile(new File(jarUrl.toURI()))) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    String entryName = entry.getName();
+                    if (entryName.equalsIgnoreCase(resourceName)) {
+                        // Construct the URL for the found resource
+                        String jarEntryUrl = "jar:" + jarUrl.toExternalForm() + "!/" + entryName;
+                        return new URL(jarEntryUrl);
+                    }
+                }
+            } catch (URISyntaxException | IOException e) {
+                // Handle exceptions as needed
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
 
 	/*
 		********  loadClass Modifies Methods with ObjectWeb ASM  ********
@@ -311,7 +450,9 @@ public class MIDletLoader extends URLClassLoader
 		try
 		{
 			InputStream stream = url.openStream();
-
+			
+			// zb3: why not return a stream? or a bufferedinputstream for marks?
+			
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 			int count=0;
 			byte[] data = new byte[4096];
@@ -360,12 +501,15 @@ public class MIDletLoader extends URLClassLoader
 		String resource;
 		byte[] code;
 
-		//System.out.println("Load Class "+name);
+		// System.out.println("Load Class "+name);
 
+		// zb3: this needs to be improved as this won't transform games
+		// like hypothetical com.nokia.tictactoe
 		if(
 			name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("com.nokia") ||
 			name.startsWith("com.mascotcapsule") || name.startsWith("com.samsung") || name.startsWith("sun.") ||
-			name.startsWith("com.siemens") || name.startsWith("org.recompile")
+			name.startsWith("com.siemens") || name.startsWith("org.recompile") || name.startsWith("jdk.") ||
+			name.startsWith("com.vodafone.") || name.startsWith("com.jblend.") || name.startsWith("com.motorola.")
 			)
 		{
 			return loadClass(name, true);
@@ -382,6 +526,7 @@ public class MIDletLoader extends URLClassLoader
 		catch (Exception e)
 		{
 			System.out.println("Error Adapting Class "+name);
+			System.out.println(e.toString());
 			return null;
 		}
 
@@ -414,6 +559,11 @@ public class MIDletLoader extends URLClassLoader
 		{
 			return super.getResourceAsStream(resource);
 		}
+	}
+
+	public void setProperty(String key, String value)
+	{
+		properties.put(key, value);
 	}
 
 	private class SiemensInputStream extends InputStream
@@ -449,7 +599,7 @@ public class MIDletLoader extends URLClassLoader
 		ClassReader reader = new ClassReader(stream);
 		ClassWriter writer = new ClassWriter(0);
 		ClassVisitor visitor = new ASMVisitor(writer);
-		reader.accept(visitor, 0);
+		reader.accept(visitor, ClassReader.SKIP_DEBUG);
 		return writer.toByteArray();
 	}
 

@@ -157,38 +157,51 @@ public abstract class Canvas extends Displayable
 
 	public void repaint()
 	{
-		PlatformGraphics graphics;
-		try
-		{
-			graphics = platformImage.getGraphics();
-			graphics.reset();
-			paint(graphics);
-			if(Mobile.getDisplay().getCurrent() == this)
+		Display.LCDUILock.lock();
+		try {
+			PlatformGraphics graphics;
+			try
 			{
-				Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+				graphics = platformImage.getGraphics();
+				graphics.reset();
+				paint(graphics);
+				if(Mobile.getDisplay().getCurrent() == this)
+				{
+					Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+				}
 			}
-		}
-		catch (Exception e)
-		{
-			System.out.print("Canvas repaint(): "+e.getMessage());
-			e.printStackTrace();
-		}
+			catch (Exception e)
+			{
+				System.out.print("Canvas repaint(): "+e.getMessage());
+				e.printStackTrace();
+			}
+		} finally {
+			Display.LCDUILock.unlock();
+		}	
 	}
 
 	public void repaint(int x, int y, int width, int height)
 	{
-		PlatformGraphics graphics = platformImage.getGraphics();
-		graphics.reset();
-		paint(graphics);
-		if(Mobile.getDisplay().getCurrent() == this)
-		{
-			Mobile.getPlatform().repaint(platformImage, x, y, width, height);
+		Display.LCDUILock.lock();
+		try {
+			PlatformGraphics graphics = platformImage.getGraphics();
+			graphics.reset();
+			paint(graphics);
+			if(Mobile.getDisplay().getCurrent() == this)
+			{
+				Mobile.getPlatform().repaint(platformImage, x, y, width, height);
+			}
+		} finally {
+			Display.LCDUILock.unlock();
 		}
 	}
 
 	public void serviceRepaints()
 	{
-		Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+		if (Mobile.getDisplay().getCurrent() == this)
+		{
+			Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+		}
 	}
 
 	public void setFullScreenMode(boolean mode)

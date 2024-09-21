@@ -14,13 +14,17 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.samsung.util;
+package javax.obex; 
 
-public final class LCDLight
+import java.io.IOException;
+
+import javax.microedition.io.Connection;
+
+public interface SessionNotifier extends Connection
 {
-	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+    Connection acceptAndOpen(ServerRequestHandler handler) throws IOException, NullPointerException;
 
-	public static void on(int duration) { }
+    Connection acceptAndOpen(ServerRequestHandler handler, Authenticator auth) throws IOException, NullPointerException;
+
 }

@@ -157,43 +157,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		gc.drawImage(image, x, y, null);
 	}
 
-	public void drawImage2Test(BufferedImage image, int x, int y)
-	{
-		// This Fixes some transparency issues with some images drawn 
-		// with Nokia drawImage in a few games.  
-		// There's probably a deeper underlying issue.
-		int row=0;
-		int col=0; 
-		int imgWidth = image.getWidth();
-		int imgHeight = image.getHeight();
-		int cwidth = canvas.getWidth();
-		int cheight = canvas.getHeight();
-		int width = imgWidth;
-		int height = imgHeight;
-
-		try
-		{
-			int[] datargb = image.getRGB(0,0, imgWidth,imgHeight, null,0,imgWidth);
-			if(x+width>=cwidth+1) { width -= ((x+width)-cwidth); }
-			if(y+height>=cheight+1) { height-=((y+height)-cheight); }
-			for(row=0; row<height; row++)
-			{
-				for(col=0; col<width; col++)
-				{
-					int c = datargb[col+ row*imgWidth] & 0xFFFFFFFF;
-					if(c!=0xFF000000)
-					{
-						canvas.setRGB(col+x, row+y, c);
-					}
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			System.out.println("drawImage C:"+e.getMessage());
-		}
-	}
-
 	public void flushGraphics(Image image, int x, int y, int width, int height)
 	{
 		// called by MobilePlatform.flushGraphics/repaint
@@ -410,7 +373,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		x = AnchorX(x, image.getWidth(), anchor);
 		y = AnchorY(y, image.getHeight(), anchor);
 		drawImage2(image, x, y);
-		//drawImage2Test(image, x, y);
 	}
 
 	public void drawPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
@@ -688,5 +650,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				System.out.println("manipulateImage "+manipulation+" not defined");
 		}
 		return image;
+		
 	}
 }

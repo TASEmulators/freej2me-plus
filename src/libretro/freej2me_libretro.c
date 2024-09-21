@@ -119,6 +119,7 @@ int mouseLpre = 0; /* old mouse button state */
 bool uses_mouse = true;
 bool uses_pointer = false;
 bool booted = false;
+bool restarting = false;
 
 unsigned int readSize = 16384;
 unsigned char readBuffer[16384];
@@ -138,10 +139,13 @@ int framesDropped = 0;
 /* Libretro exposed config variables START */
 
 char *options_update; /* String containing the options updated in check_variables() */
+char *systemPath; /* Path of FreeJ2ME's jar */
+char *outPath; /* Actual path of FreeJ2ME's jar to start */
+char** params; /* Char matrix containing launch arguments */
 unsigned int optstrlen; /* length of the string above */
 unsigned long int screenRes[2]; /* {width, height} */
 int rotateScreen; /* acts as a boolean */
-int phoneType; /* 0=standard, 1=nokia, 2=siemens, 3=motorola */
+int phoneType; /* 0=standard, 1=nokia, 2=siemens, 3=motorola, 4=sonyEricsson */
 int gameFPS; /* Auto(0), 60, 30, 15 */
 int soundEnabled; /* also acts as a boolean */
 int customMidi; /* Also acts as a boolean */
@@ -310,10 +314,11 @@ static void check_variables(bool first_time_startup)
    var.key = "freej2me_phone";
    if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-		if (!strcmp(var.value, "Standard"))      { phoneType = 0; }
-		else if (!strcmp(var.value, "Nokia"))    { phoneType = 1; }
-		else if (!strcmp(var.value, "Siemens"))  { phoneType = 2; }
-		else if (!strcmp(var.value, "Motorola")) { phoneType = 3; }
+		if (!strcmp(var.value, "Standard"))          { phoneType = 0; }
+		else if (!strcmp(var.value, "Nokia"))        { phoneType = 1; }
+		else if (!strcmp(var.value, "Siemens"))      { phoneType = 2; }
+		else if (!strcmp(var.value, "Motorola"))     { phoneType = 3; }
+		else if (!strcmp(var.value, "SonyEricsson")) { phoneType = 4; }
    }
 
 
@@ -442,6 +447,8 @@ static void check_variables(bool first_time_startup)
 
 
 	/* Prepare a string to pass those core options to the Java app */
+	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
+
 	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, maxMidiPlayers, dumpAudioStreams);
 	optstrlen = strlen(options_update);
 
@@ -455,6 +462,8 @@ static void check_variables(bool first_time_startup)
 		write_to_pipe(pWrite[1], options_update, optstrlen);
 		log_fn(RETRO_LOG_INFO, "Sent updated options to the Java app.\n");
 	}
+
+	free(options_update);
 }
 
 /* Core exit function */
@@ -465,7 +474,6 @@ void quit(int state)
 	{
 		kill(javaProcess, SIGKILL);
 	}
-	/* exit(state); */
 }
 
 #elif _WIN32
@@ -490,8 +498,6 @@ void retro_init(void)
 	/* init buffers, structs */
 	memset(frame, 0, frameSize);
 	memset(frameBuffer, 0, frameBufferSize);
-	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
-
 	/*
 	 * Those below are arguments sent to Java during init. Otherwise, games
 	 * wouldn't get a res setting, rotation, fps, etc. that matched the
@@ -514,15 +520,36 @@ void retro_init(void)
 	sprintf(dumpAudioArg,   "%d",  dumpAudioStreams);
 
 	/* start java process */
-	char *javapath;
-	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &javapath);
-	char *outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
-	fill_pathname_join(outPath, javapath, "freej2me-lr.jar", PATH_MAX_LENGTH);
-	char *params[] = { "java", "-jar", outPath, resArg[0], resArg[1], rotateArg, phoneArg, fpsArg, soundArg, midiArg, maxMidiArg, dumpAudioArg, NULL };
 
-	log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+	
+	if(!restarting) 
+	{
+		log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' Java app.\n");
+		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
+		outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
+		fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
+
+		log_fn(RETRO_LOG_INFO, "Setting up params. \n");
+		params = (char**)malloc(sizeof(char*) * PATH_MAX_LENGTH * 2);
+		params[0] = strdup("java");
+		params[1] = strdup("-jar");
+		params[2] = strdup(outPath);
+		params[3] = strdup(resArg[0]);
+		params[4] = strdup(resArg[1]);
+		params[5] = strdup(rotateArg);
+		params[6] = strdup(phoneArg);
+		params[7] = strdup(fpsArg);
+		params[8] = strdup(soundArg);
+		params[9] = strdup(midiArg);
+		params[10] = strdup(maxMidiArg);
+		params[11] = strdup(dumpAudioArg);
+		params[12] = NULL; // Null-terminate the array
+
+		log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
-	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME's Java app (make sure freej2me-lr.jar is inside system/).\n");
+	}
+
+	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app (make sure freej2me-lr.jar is inside system/).\n");
 
 #ifdef __linux__
 	javaProcess = javaOpen(params[0], params);
@@ -954,8 +981,8 @@ unsigned retro_get_region(void)
 void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
-	info->library_name = "FreeJ2ME";
-	info->library_version = "1.2";
+	info->library_name = "FreeJ2ME-Plus";
+	info->library_version = "1.3";
 	info->valid_extensions = "jar";
 	info->need_fullpath = true;
 }
@@ -982,6 +1009,8 @@ void retro_deinit(void)
 
 void retro_reset(void)
 {
+	restarting = true;
+	booted = false;
 	retro_deinit();
 	retro_init();
 	retro_load_game(&gameinfo);
@@ -1006,15 +1035,17 @@ pid_t javaOpen(char *cmd, char **params)
 {
     pid_t pid;
 
-	char *systemPath;
-	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
-    log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
+	if(!restarting) 
+	{
+		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
 
-	log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
+		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
-	log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
-	log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
+		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+	}
+	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
 
 	int fd_stdin  = 0;
 	int fd_stdout = 1;
@@ -1078,9 +1109,6 @@ void javaOpen(char *cmd, char **params)
 {
 	SECURITY_ATTRIBUTES pipeSec;
 
-	char *systemPath;
-	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
-    log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
 	log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
 	ZeroMemory( &pipeSec, sizeof(pipeSec) );
@@ -1145,13 +1173,21 @@ void javaOpen(char *cmd, char **params)
 	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmd);
 	for (int i = 3; i <= 11; i++) /* There are 10 cmd arguments for now */
 	{
-		log_fn(RETRO_LOG_INFO, "Processing arg %d: %s \n", i, *(params+i));
+		//log_fn(RETRO_LOG_INFO, "Processing arg %d: %s \n", i, *(params+i));
 		sprintf(cmdWin, "%s %s", cmdWin, *(params+i));
 	}
 
-	log_fn(RETRO_LOG_INFO, "Creating proc: %s \n", cmdWin);
-	log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+	if(!restarting) 
+	{
+		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
+
+		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
+
+		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
+		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+	}
+	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
 
 	GetStartupInfo(&startInfo);
 	startInfo.dwFlags = STARTF_USESTDHANDLES;

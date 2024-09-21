@@ -38,11 +38,11 @@ public final class Font
 	public static final int STYLE_UNDERLINED = 4;
 
 
+	private static Font defaultFont = null;
+
 	private int face;
 	private int style;
 	private int size;
-
-	private static Font defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
 
 	public PlatformFont platformFont;
 
@@ -56,19 +56,19 @@ public final class Font
 
 	public int charsWidth(char[] ch, int offset, int length)
 	{
-		int len = 0;
-		for(int i=offset; i<ch.length+length; i++)
-		{
-			if(i<ch.length) { len += charWidth(ch[i]); }
-		}
-		return len;
+		String str = new String(ch, offset, length);
+		return stringWidth(str);
 	}
 
 	public int charWidth(char ch) { return stringWidth(String.valueOf(ch)); }
 
-	public int getBaselinePosition() { return convertSize(size); }
+	public int getBaselinePosition() { return platformFont.getAscent(); }
 
-	public static Font getDefaultFont() { return defaultFont; }
+	public static Font getDefaultFont() 
+	{ 
+		if (defaultFont == null) { defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM); }
+		return defaultFont;
+	}
 
 	public int getFace() { return face; }
 
@@ -76,7 +76,9 @@ public final class Font
 
 	public static Font getFont(int face, int style, int size) { return new Font(face, style, size); }
 
-	public int getHeight() { return convertSize(size); }
+	public int getHeight() {
+		return platformFont.getHeight();
+	}
 
 	public int getSize() { return size; }
 

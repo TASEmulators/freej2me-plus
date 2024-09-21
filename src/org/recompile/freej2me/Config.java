@@ -70,7 +70,7 @@ public class Config
 		menu.add(new String[]{"96x65","96x96","104x80","128x128","132x176","128x160","176x208","176x220", "208x208", "240x320", "320x240", "240x400", "352x416", "360x640", "640x360" ,"480x800", "800x480"}); // 1 - Size
 		menu.add(new String[]{"Quit", "Main Menu"}); // 2 - Restart Notice
 		menu.add(new String[]{"On", "Off"}); // 3 - sound
-		menu.add(new String[]{"Standard", "Nokia", "Siemens","Motorola"}); // 4 - Phone 
+		menu.add(new String[]{"Standard", "Nokia", "Siemens","Motorola", "SonyEricsson"}); // 4 - Phone 
 		menu.add(new String[]{"On", "Off"}); // 5 - rotate 
 		menu.add(new String[]{"Auto", "60 - Fast", "30 - Slow", "15 - Turtle"}); // 6 - FPS
 		menu.add(new String[]{"Default", "Custom"});  // 7 - MIDI soundfont
@@ -217,7 +217,7 @@ public class Config
 			case Mobile.KEY_NUM8: itemid++; break;
 			case Mobile.KEY_NUM5: doMenuAction(); break;
 			default:
-				if(settings.get("phone").equals("Nokia"))
+				if(settings.get("phone").equals("Nokia") || settings.get("phone").equals("SonyEricsson"))
 				{
 					switch(key)
 					{
@@ -391,6 +391,7 @@ public class Config
 				if(itemid==1) { updatePhone("Nokia"); }
 				if(itemid==2) { updatePhone("Siemens"); }
 				if(itemid==3) { updatePhone("Motorola"); }
+				if(itemid==4) { updatePhone("SonyEricsson"); }
 				menuid=0; itemid=0;
 			break;
 

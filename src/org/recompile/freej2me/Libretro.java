@@ -20,7 +20,6 @@ import org.recompile.mobile.*;
 
 import java.awt.Image;
 import java.awt.Canvas;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
@@ -101,10 +100,10 @@ public class Libretro
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.exists()) 
+			if(!PlatformPlayer.soundfontDir.isDirectory()) 
 			{ 
 				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir + "/Put your sf2 bank here");
+				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -122,9 +121,10 @@ public class Libretro
 
 		if(Integer.parseInt(args[2]) == 1) { rotateDisplay = true; }
 
-		if(Integer.parseInt(args[3]) == 1)      { useNokiaControls = true;    }
-		else if(Integer.parseInt(args[3]) == 2) { useSiemensControls = true;  }
-		else if(Integer.parseInt(args[3]) == 3) { useMotorolaControls = true; }
+		if(Integer.parseInt(args[3]) == 1)      { useNokiaControls = true; Mobile.nokia = true;        }
+		else if(Integer.parseInt(args[3]) == 2) { useSiemensControls = true; Mobile.siemens = true;    }
+		else if(Integer.parseInt(args[3]) == 3) { useMotorolaControls = true; Mobile.motorola = true;  }
+		else if(Integer.parseInt(args[3]) == 4) { useNokiaControls = true; Mobile.sonyEricsson = true; }
 
 		limitFPS = Integer.parseInt(args[4]);
 
@@ -158,13 +158,27 @@ public class Libretro
 			{
 				try
 				{
-					gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null);
+					if(limitFPS>0)
+					{
+						requiredFrametime = 1000 / limitFPS;
+						elapsedTime = System.currentTimeMillis() - lastRenderTime;
+						sleepTime = requiredFrametime - elapsedTime;
+
+						if (sleepTime > 0) { Thread.sleep(sleepTime); }
+
+						gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null);
+
+						lastRenderTime = System.currentTimeMillis();
+					} 
+					else { gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null); }
 				}
 				catch (Exception e) { }
 			}
 		};
 		
 		Mobile.getPlatform().setPainter(painter);
+
+		Mobile.getPlatform().startEventQueue();
 
 		System.out.println("+READY");
 		System.out.flush();
@@ -298,6 +312,7 @@ public class Libretro
 										if(useNokiaControls)         { config.settings.put("phone", "Nokia");    }
 										else if(useSiemensControls)  { config.settings.put("phone", "Siemens");  }
 										else if(useMotorolaControls) { config.settings.put("phone", "Motorola"); }
+										else if(Mobile.sonyEricsson) { config.settings.put("phone", "SonyEricsson"); }
 										else                         { config.settings.put("phone", "Standard"); }
 
 										if(soundEnabled)   { config.settings.put("sound", "on");  }
@@ -390,16 +405,7 @@ public class Libretro
 									// Send Frame Libretro //
 									try
 									{
-										int[] data;
-
-										if(limitFPS>0)
-										{
-											requiredFrametime = 1000 / limitFPS;
-											elapsedTime = System.currentTimeMillis() - lastRenderTime;
-											sleepTime = requiredFrametime - elapsedTime;
-
-											if (sleepTime > 0) { Thread.sleep(sleepTime); }
-										}
+										final int[] data;
 
 										if(config.isRunning)
 										{
@@ -409,7 +415,7 @@ public class Libretro
 										{
 											data = surface.getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
 										}
-										int bufferLength = data.length*3;
+										final int bufferLength = data.length*3;
 										int cb = 0;
 										for(int i=0; i<data.length; i++)
 										{
@@ -423,12 +429,10 @@ public class Libretro
 										frameHeader[2] = (byte)((lcdWidth)&0xFF);
 										frameHeader[3] = (byte)((lcdHeight>>8)&0xFF);
 										frameHeader[4] = (byte)((lcdHeight)&0xFF);
-										//frameHeader[5] = rotate - set from config
+
 										System.out.write(frameHeader, 0, 6);
 										System.out.write(frameBuffer, 0, bufferLength);
 										System.out.flush();
-
-										lastRenderTime = System.currentTimeMillis();
 									}
 									catch (Exception e)
 									{
@@ -465,9 +469,11 @@ public class Libretro
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
+		Mobile.sonyEricsson = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
+		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; frameHeader[5] = (byte)1; }
@@ -475,7 +481,7 @@ public class Libretro
 
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
 
 		if(lcdWidth != w || lcdHeight != h)
 		{
@@ -487,6 +493,17 @@ public class Libretro
 		}
 
 		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
+
+		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
+		else if (Mobile.sonyEricsson) 
+		{
+			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
+			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
+		} else if (Mobile.siemens) 
+		{
+			System.setProperty("com.siemens.OSVersion", "11");
+			System.setProperty("com.siemens.IMEI", "000000000000000");
+		}
 	}
 
 	private void keyDown(int key)
