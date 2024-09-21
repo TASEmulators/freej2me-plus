@@ -463,11 +463,10 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 
 #ifdef _WIN32
 DWORD WINAPI startStreaming()
-{
 #else
 void startStreaming()
-{
 #endif
+{
 	SDL_Rect dest = getDestinationRect();
 
 	loadOverlay(dest);
@@ -484,12 +483,6 @@ void startStreaming()
 
 	SDL_DestroyTexture(mTexture);
 	delete[] frame;
-
-#ifdef _WIN32
-	return 0;
-#else
-	pthread_exit(NULL);
-#endif
 }
 
 void *startCapturing(void *args)
@@ -717,7 +710,8 @@ int main(int argc, char* argv[])
 
 #ifdef _WIN32
 	HANDLE hThreadCapturing;
-	if ((hThreadCapturing = CreateThread(NULL, 0, &startCapturing, NULL, 0, &t_capturing)) == NULL) {
+	if ((hThreadCapturing = CreateThread(NULL, 0, &startCapturing, NULL, 0, &t_capturing)) == NULL) 
+	{
 		std::cerr << "Unable to start thread, exiting ..." << endl;
 		SDL_Quit();
 		return 1;
@@ -733,7 +727,7 @@ int main(int argc, char* argv[])
 
 	startStreaming();
 #ifdef _WIN32
-    WaitForSingleObject(hThreadCapturing, INFINITE);
+	WaitForSingleObject(hThreadCapturing, INFINITE);
 	CloseHandle(hThreadCapturing);
 #else
 	pthread_join(t_capturing, NULL);
