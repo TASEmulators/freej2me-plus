@@ -54,7 +54,6 @@ double overlayScale = 1;
 int lastTime = 0;
 
 SDL_Renderer *mRenderer;
-SDL_Texture *mBackground;
 SDL_Texture *mOverlay;
 SDL_Texture *mTexture;
 SDL_Window *mWindow;
@@ -173,7 +172,7 @@ void initKeys(bool fromConfig)
 	// There are only 17 emulated functions right now
 	for(int key = 0; key < 17; key++) 
 	{
-		if(fromConfig) 
+		if(fromConfig) // TODO: This should load keys from a SDL-Specific config file
 		{
 			
 		}
@@ -360,10 +359,14 @@ bool updateFrame(size_t numChars, unsigned char* buffer, FILE* input = stdin)
 	return read_count == numChars;
 }
 
-void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, int interFrame = 16)
+void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle)
 {
-	// Cutoff rendering at 60fps
-	if (SDL_GetTicks() - lastTime < interFrame) {
+	/* 
+	 * Let's refrain from doing unnecessary stuff here, display at maximum of
+	 * 1000 fps (1ms frametime), which is far more than most J2ME apps will 
+	 * reach anyway, aside from certain benchmarks.
+	 */
+	if (SDL_GetTicks() - lastTime < 1) {
 		return;
 	}
 
@@ -371,7 +374,6 @@ void drawFrame(unsigned char *frame, size_t pitch, SDL_Rect& dest, int angle, in
 
 	SDL_RenderClear(mRenderer);
     SDL_UpdateTexture(mTexture, NULL, frame, pitch);
-    SDL_RenderCopyEx(mRenderer, mBackground, NULL, NULL, 0, NULL, SDL_FLIP_NONE);
     SDL_RenderCopyEx(mRenderer, mTexture, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
     SDL_RenderCopyEx(mRenderer, mOverlay, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
     SDL_RenderPresent(mRenderer);
@@ -438,7 +440,7 @@ void init(Uint8 r = 0, Uint8 g = 0, Uint8 b = 0)
 
 	loadDisplayDimensions();
 
-	if(false) // This will check for the presence of a SDL-specific config file for input mappings and other game-independent stuff
+	if(false) // TODO: This will check for the presence of a SDL-specific config file for input mappings and other game-independent stuff
 	{
 		
 	}
