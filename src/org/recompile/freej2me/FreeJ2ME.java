@@ -113,20 +113,6 @@ public class FreeJ2ME
 		lcdWidth = 240;
 		lcdHeight = 320;
 
-		if(args.length>=1)
-		{
-			awtGUI.setJarPath(getFormattedLocation(args[0]));
-		}
-		if(args.length>=3)
-		{
-			lcdWidth = Integer.parseInt(args[1]);
-			lcdHeight = Integer.parseInt(args[2]);
-		}
-		if(args.length>=4)
-		{
-			scaleFactor = Integer.parseInt(args[3]);
-		}
-
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
 		lcd = new LCD();
@@ -142,6 +128,20 @@ public class FreeJ2ME
 		awtGUI.setMainFrame(main);
 		/* Append the awt menu bar into FreeJ2ME's frame */
 		main.setMenuBar(awtGUI.getMenuBar());
+
+		if(args.length>=1)
+		{
+			awtGUI.loadJarFile(getFormattedLocation(args[0]), true);
+		}
+		if(args.length>=3)
+		{
+			lcdWidth = Integer.parseInt(args[1]);
+			lcdHeight = Integer.parseInt(args[2]);
+		}
+		if(args.length>=4)
+		{
+			scaleFactor = Integer.parseInt(args[3]);
+		}
 
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
