@@ -881,12 +881,9 @@ public final class AWTGUI
 
 				filename = filePicker.getFile();
 				jarfile = new File(filePicker.getDirectory()+File.separator+filePicker.getFile()).toURI().toString();
+				
 				if(filename == null) { System.out.println("JAR Loading was cancelled"); }
-				else
-				{
-					fileLoaded = true;
-					firstLoad = true;
-				}
+				else { loadJarFile(jarfile, true); }
 			}
 
 			else if(a.getActionCommand() == "Close") 
@@ -940,19 +937,22 @@ public final class AWTGUI
 		}
 	}
 
+	public void loadJarFile(String jarpath, boolean firstLoad) 
+	{
+		jarfile = jarpath;
+		fileLoaded = true;
+		this.firstLoad = firstLoad;
+	}
+
 	public MenuBar getMenuBar() { return menuBar; }
 
 	public boolean hasChanged() { return hasPendingChange; }
 
 	public void clearChanged() { hasPendingChange = false; }
 
-	public void setLoadedFile() { fileLoaded = true; }
-
 	public boolean hasLoadedFile() { return fileLoaded; }
 
 	public void setMainFrame(Frame main) { this.main = main; }
-
-	public void setJarPath(String path) { jarfile = path;}
 
 	public String getJarPath() { return jarfile; }
 
