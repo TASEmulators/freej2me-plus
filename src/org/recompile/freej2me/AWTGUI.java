@@ -128,8 +128,6 @@ public final class AWTGUI
 	private final int newInputKeycodes[] = Arrays.copyOf(inputKeycodes, inputKeycodes.length);
 
 	final Choice resChoice = new Choice();
-	final String[] supportedRes = new String[] {"96x65","96x96","104x80","128x128","132x176","128x160","176x208","176x220", 
-		"208x208", "240x320", "320x240", "240x400", "352x416", "360x640", "640x360" ,"480x800", "800x480"};
 
 	Label totalMemLabel = new Label("Total Mem: 000000000 KB");
 	Label freeMemLabel = new Label("Free Mem : 000000000 KB");
@@ -809,7 +807,7 @@ public final class AWTGUI
 		debugMenu.add(dumpGraphicsData);
 		debugMenu.add(showMemoryUsage);
 
-		for(int i = 0; i < supportedRes.length; i++) { resChoice.add(supportedRes[i]); }
+		for(int i = 0; i < config.supportedResolutions.length; i++) { resChoice.add(config.supportedResolutions[i]); }
 
 		phoneType.add(stdLayout);
 		phoneType.add(nokiaLayout);
@@ -881,7 +879,7 @@ public final class AWTGUI
 
 				filename = filePicker.getFile();
 				jarfile = new File(filePicker.getDirectory()+File.separator+filePicker.getFile()).toURI().toString();
-				
+
 				if(filename == null) { System.out.println("JAR Loading was cancelled"); }
 				else { loadJarFile(jarfile, true); }
 			}
