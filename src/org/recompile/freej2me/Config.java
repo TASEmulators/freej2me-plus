@@ -53,6 +53,8 @@ public class Config
 	private String configPath = "";
 	private String configFile = "";
 
+	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","128x142","128x160","132x176","176x204","176x208","176x220","220x176","208x208","208x320","240x320","320x240","240x400","240x432","240x480","352x416","360x640","640x360","640x480","480x800","800x480"};
+
 	public Runnable onChange;
 
 	HashMap<String, String> settings = new HashMap<String, String>(4);
@@ -67,7 +69,7 @@ public class Config
 
 		menu = new ArrayList<String[]>();
 		menu.add(new String[]{"Resume Game", "Display Size", "Sound", "Limit FPS", "Phone", "Rotate", "MIDI", "Max MIDI Streams", "Exit"}); // 0 - Main Menu
-		menu.add(new String[]{"96x65","96x96","104x80","128x128","132x176","128x160","176x208","176x220", "208x208", "240x320", "320x240", "240x400", "352x416", "360x640", "640x360" ,"480x800", "800x480"}); // 1 - Size
+		menu.add(supportedResolutions); // 1 - Size
 		menu.add(new String[]{"Quit", "Main Menu"}); // 2 - Restart Notice
 		menu.add(new String[]{"On", "Off"}); // 3 - sound
 		menu.add(new String[]{"Standard", "Nokia", "Siemens","Motorola", "SonyEricsson"}); // 4 - Phone 
