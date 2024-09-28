@@ -220,22 +220,15 @@ public class FreeJ2ME
 						return; 
 					}
 					
-					if(config.isRunning)
+					if (pressedKeys[mobikeyN] == false)
 					{
-						config.keyPressed(mobikey);
+						//~ System.out.println("keyPressed:  " + Integer.toString(mobikey));
+						Mobile.getPlatform().keyPressed(mobikey);
 					}
 					else
 					{
-						if (pressedKeys[mobikeyN] == false)
-						{
-							//~ System.out.println("keyPressed:  " + Integer.toString(mobikey));
-							Mobile.getPlatform().keyPressed(mobikey);
-						}
-						else
-						{
-							//~ System.out.println("keyRepeated:  " + Integer.toString(mobikey));
-							Mobile.getPlatform().keyRepeated(mobikey);
-						}
+						//~ System.out.println("keyRepeated:  " + Integer.toString(mobikey));
+						Mobile.getPlatform().keyRepeated(mobikey);
 					}
 					pressedKeys[mobikeyN] = true;
 				}
@@ -255,15 +248,8 @@ public class FreeJ2ME
 					
 					pressedKeys[mobikeyN] = false;
 					
-					if(config.isRunning)
-					{
-						config.keyReleased(mobikey);
-					}
-					else
-					{
-						//~ System.out.println("keyReleased: " + Integer.toString(mobikey));
-						Mobile.getPlatform().keyReleased(mobikey);
-					}
+					//~ System.out.println("keyReleased: " + Integer.toString(mobikey));
+					Mobile.getPlatform().keyReleased(mobikey);
 				}
 			}
 
@@ -427,6 +413,8 @@ public class FreeJ2ME
 		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
 		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
 
+		if(config.settings.get("halveCanvasRes").equals("on")) { w /= 2; h /= 2; }
+
 		// Create a standard size LCD if not rotated, else invert window's width and height.
 		if(!rotateDisplay) 
 		{
@@ -573,26 +561,14 @@ public class FreeJ2ME
 
 		public void paint(Graphics g)
 		{
-			if (config.isRunning)
-			{
-				if(!rotateDisplay) { g.drawImage(config.getLCD(), cx, cy, cw, ch, null); }
-				else
-				{
-					// If rotated, simply redraw the config menu with different width and height
-					g.drawImage(config.getLCD(), cy, cx, cw, ch, null);
-				}
-			}
+			if(!rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
 			else
 			{
-				if(!rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
-				else
-				{
-					final Graphics2D cgc = (Graphics2D)this.getGraphics();
-					// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
-					cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
-					// Draw the rotated FB with adjusted cy and cx values
-					cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
-				}
+				final Graphics2D cgc = (Graphics2D)this.getGraphics();
+				// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
+				cgc.rotate(Math.toRadians(-90), ch/2, ch/2);
+				// Draw the rotated FB with adjusted cy and cx values
+				cgc.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
 			}
 		}
 	}

@@ -149,6 +149,7 @@ public final class AWTGUI
 	final CheckboxMenuItem enableAudio = new CheckboxMenuItem("Enable Audio", false);
 	final CheckboxMenuItem enableRotation = new CheckboxMenuItem("Rotate Screen", false);
 	final CheckboxMenuItem useCustomMidi = new CheckboxMenuItem("Use custom midi soundfont", false);
+	final CheckboxMenuItem halveCanvasRes = new CheckboxMenuItem("Halve Canvas Resolution", false);
 
 	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("Standard", true);
 	final CheckboxMenuItem nokiaLayout = new CheckboxMenuItem("Nokia", false);
@@ -396,6 +397,15 @@ public final class AWTGUI
 
 				restartRequiredDialog.setLocationRelativeTo(main);
 				restartRequiredDialog.setVisible(true);
+			}
+		});
+
+		halveCanvasRes.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(halveCanvasRes.getState()){ config.updateCanvasScale("on"); hasPendingChange = true; }
+				else{ config.updateCanvasScale("off"); hasPendingChange = true; }
 			}
 		});
 
@@ -798,6 +808,7 @@ public final class AWTGUI
 		optionMenu.add(enableRotation);
 		optionMenu.add(useCustomMidi);
 		optionMenu.add(resChangeMenuItem);
+		optionMenu.add(halveCanvasRes);
 		optionMenu.add(phoneType);
 		optionMenu.add(fpsCap);
 		optionMenu.add(midiStreamNum);
@@ -832,6 +843,7 @@ public final class AWTGUI
 			enableAudio.setState(config.settings.get("sound").equals("on"));
 			enableRotation.setState(config.settings.get("rotate").equals("on"));
 			useCustomMidi.setState(config.settings.get("soundfont").equals("Custom"));
+			halveCanvasRes.setState(config.settings.get("halveCanvasRes").equals("on"));
 			fpsCapNone.setState(config.settings.get("fps").equals("0"));
 			fpsCap15.setState(config.settings.get("fps").equals("15"));
 			fpsCap30.setState(config.settings.get("fps").equals("30"));

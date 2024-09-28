@@ -144,7 +144,8 @@ char *outPath; /* Actual path of FreeJ2ME's jar to start */
 char** params; /* Char matrix containing launch arguments */
 unsigned int optstrlen; /* length of the string above */
 unsigned long int screenRes[2]; /* {width, height} */
-int rotateScreen; /* acts as a boolean */
+int halveCanvasRes; /* acts as a boolean */
+int rotateScreen; /* also acts as a boolean */
 int phoneType; /* 0=standard, 1=nokia, 2=siemens, 3=motorola, 4=sonyEricsson */
 int gameFPS; /* Auto(0), 60, 30, 15 */
 int soundEnabled; /* also acts as a boolean */
@@ -303,6 +304,14 @@ static void check_variables(bool first_time_startup)
    }
 
 
+   var.key = "freej2me_halvecanvasres";
+   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+		if (!strcmp(var.value, "off"))     { halveCanvasRes = 0; }
+		else if (!strcmp(var.value, "on")) { halveCanvasRes = 1; }
+   }
+
+
    var.key = "freej2me_rotate";
    if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
@@ -449,7 +458,7 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, maxMidiPlayers, dumpAudioStreams);
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, maxMidiPlayers, dumpAudioStreams);
 	optstrlen = strlen(options_update);
 
 	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
@@ -508,9 +517,10 @@ void retro_init(void)
 	 */
 	check_variables(true);
 
-	char resArg[2][4], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], maxMidiArg[3], dumpAudioArg[2];
+	char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], maxMidiArg[3], dumpAudioArg[2];
 	sprintf(resArg[0], "%lu", screenRes[0]); /* Libretro config Width  */
 	sprintf(resArg[1], "%lu", screenRes[1]); /* Libretro config Height */
+	sprintf(halveCanvas, "%d",  halveCanvasRes);
 	sprintf(rotateArg, "%d",  rotateScreen);
 	sprintf(phoneArg,  "%d",  phoneType);
 	sprintf(fpsArg,    "%d",  gameFPS);
@@ -536,17 +546,18 @@ void retro_init(void)
 		params[2] = strdup(outPath);
 		params[3] = strdup(resArg[0]);
 		params[4] = strdup(resArg[1]);
-		params[5] = strdup(rotateArg);
-		params[6] = strdup(phoneArg);
-		params[7] = strdup(fpsArg);
-		params[8] = strdup(soundArg);
-		params[9] = strdup(midiArg);
-		params[10] = strdup(maxMidiArg);
-		params[11] = strdup(dumpAudioArg);
-		params[12] = NULL; // Null-terminate the array
+		params[5] = strdup(halveCanvas);
+		params[6] = strdup(rotateArg);
+		params[7] = strdup(phoneArg);
+		params[8] = strdup(fpsArg);
+		params[9] = strdup(soundArg);
+		params[10] = strdup(midiArg);
+		params[11] = strdup(maxMidiArg);
+		params[12] = strdup(dumpAudioArg);
+		params[13] = NULL; // Null-terminate the array
 
-		log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+		log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11), *(params+12));
 	}
 
 	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app (make sure freej2me-lr.jar is inside system/).\n");
@@ -1042,8 +1053,8 @@ pid_t javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
 		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
-		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11), *(params+12));
 	}
 	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
 
@@ -1102,6 +1113,7 @@ bool isRunning(pid_t pid)
 	if(waitpid(pid, &status, WNOHANG) == 0) { return true; }
 
 	log_fn(RETRO_LOG_INFO, "Java app is not running anymore! Last known PID=%d \n", pid);
+	exit(0);
 	return false;
 }
 #elif _WIN32
@@ -1171,7 +1183,7 @@ void javaOpen(char *cmd, char **params)
 	sprintf(cmdWin, "javaw -jar %s", cmd);
 
 	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmd);
-	for (int i = 3; i <= 11; i++) /* There are 10 cmd arguments for now */
+	for (int i = 3; i <= 12; i++) /* There are 10 cmd arguments for now */
 	{
 		//log_fn(RETRO_LOG_INFO, "Processing arg %d: %s \n", i, *(params+i));
 		sprintf(cmdWin, "%s %s", cmdWin, *(params+i));
@@ -1184,8 +1196,8 @@ void javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
 		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
-		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
+		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11), *(params+12));
 	}
 	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
 
