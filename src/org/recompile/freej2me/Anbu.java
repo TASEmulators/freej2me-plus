@@ -101,8 +101,7 @@ public class Anbu
 					int[] data;
 
 					// Send Frame to SDL interface
-					if(!config.isRunning) { data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth); }
-					else { data = config.getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);}
+					data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
 					byte[] frame = new byte[data.length * 3];
 					int cb = 0;
 
@@ -299,20 +298,13 @@ public class Anbu
 		private void keyDown(int key)
 		{
 			int mobikeyN = (key + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-			if(config.isRunning)
+			if (pressedKeys[mobikeyN] == false)
 			{
-				config.keyPressed(key);
+				Mobile.getPlatform().keyPressed(key);
 			}
 			else
 			{
-				if (pressedKeys[mobikeyN] == false)
-				{
-					Mobile.getPlatform().keyPressed(key);
-				}
-				else
-				{
-					Mobile.getPlatform().keyRepeated(key);
-				}
+				Mobile.getPlatform().keyRepeated(key);
 			}
 			pressedKeys[mobikeyN] = true;
 		}
@@ -320,10 +312,8 @@ public class Anbu
 		private void keyUp(int key)
 		{
 			int mobikeyN = (key + 64) & 0x7F; //Normalized value for indexing the pressedKeys array
-			if(!config.isRunning)
-			{
-				Mobile.getPlatform().keyReleased(key);
-			}
+			
+			Mobile.getPlatform().keyReleased(key);
 			pressedKeys[mobikeyN] = false;
 		}
 
@@ -395,7 +385,7 @@ public class Anbu
 			
 			//if(keycode == 0x0F) return Mobile.GAME_C; // Screenshot, shouldn't really be used here
 
-			if(keycode == 0x1B) { config.start(); } // ESC, special key to bring up the config menu
+			//if(keycode == 0x1B) { config.start(); } // ESC, special key to bring up the config menu
 
 			return 0;
 		}
