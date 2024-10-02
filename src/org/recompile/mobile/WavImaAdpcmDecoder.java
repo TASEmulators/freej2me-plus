@@ -31,7 +31,8 @@ public class WavImaAdpcmDecoder
 	/* 
 	 * Variables to hold the previously decoded sample and step used, per channel (if needed) 
 	 * "NOTE: Arrays that won't be reassigned (but its values can still change) and variables 
-	 * that won't be changed are marked as final throughout the code to try and optimize the 
+	 * that won't be changed are marked as final throughout the code to identify that they
+	 * are not meant to be changed at any point, and to also optimize the decoder's
 	 * execution as much as possible since FreeJ2ME has a habit of freezing when adpcm samples 
 	 * are being decoded. So far only seems to happen in Java 8 and on my more limited devices."
 	 *     - @AShiningRay
@@ -41,9 +42,6 @@ public class WavImaAdpcmDecoder
 
 	private static final byte HEADERSIZE = 44;
 	private static final byte PCMPREAMBLESIZE = 16;
-
-	private static final int[] prevSample = {0, 0};
-	private static final int[] prevStep = {0, 0};
 	
 	private static final byte[] ima_step_index_table = 
 	{
@@ -64,51 +62,54 @@ public class WavImaAdpcmDecoder
 		15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 	};
 
+	private static final int[] predictedSample = {0, 0};
+	private static final int[] tableIndex = {ima_step_size_table[0], ima_step_size_table[0]};
+
 	/* 
 	 * This method will decode IMA WAV ADPCM into linear PCM_S16LE.
 	 */
-	public static final byte[] decodeADPCM(final byte[] input, int inputSize, final short numChannels, final int frameSize)
+	public static final byte[] decodeADPCM(final byte[] input, final int inputSize, final short numChannels, final int frameSize)
 	{
 		byte adpcmSample;
 		byte curChannel;
 		int inputIndex = 0, outputIndex = HEADERSIZE; /* Give some space for the header by starting from byte 44. */
-		int decodedSample;
+		short decodedSample;
 
 		/* 
 		 * Make sure that the output size is 4 times as big as input's due to IMA ADPCM being able to pack 4 bytes of standard PCM 
 		 * data into a single one, with 44 additional bytes in place to accomodate for the new header that will be created afterwards.
 		 *
 		 * Also, calculate the final expected output size right here instead of decreasing the output size on each preamble read,
-		 * checking if the final size is doesn't match what was initially expected (if there's at least one preamble, it won't)
+		 * checking if the final size doesn't match what was initially expected (if there's at least one preamble, it won't)
 		 * and then copying everything into a new byte array, which is too costly and can be cut entirely by just passing the 
 		 * correct output size right at the start. This is done because preamble data should not be added into the decoded stream,
-		 * and each preamble is 4 bytes long on IMA ADPCM, which means it would take 16 bytes on the decoded stream for each preamble added.
+		 * and each preamble is 4*numChannels bytes long on IMA ADPCM, which means it would take 16*numChannels bytes on the decoded stream 
+		 * for each preamble added.
 		 */
-		final int outputSize = (inputSize * 4) + HEADERSIZE - (PCMPREAMBLESIZE * (int) java.lang.Math.floor(inputSize / frameSize));
-		final byte[] output = new byte[outputSize];
+		final byte[] output = new byte[(inputSize * 4) + HEADERSIZE - ((PCMPREAMBLESIZE*numChannels) * (int) java.lang.Math.floor(inputSize / frameSize))];
 
 		/* Initialize the predictor's sample and step values. */
-		prevSample[LEFTCHANNEL] = 0;
-		prevStep[LEFTCHANNEL] = ima_step_size_table[2];
+		predictedSample[LEFTCHANNEL] = 0;
+		tableIndex[LEFTCHANNEL] = ima_step_size_table[0];
 
 		if(numChannels == 2) 
 		{
-			prevSample[RIGHTCHANNEL] = 0;
-			prevStep[RIGHTCHANNEL] = ima_step_size_table[2];
+			predictedSample[RIGHTCHANNEL] = 0;
+			tableIndex[RIGHTCHANNEL] = ima_step_size_table[0];
 		}
 
-		while (inputSize > 0) 
+		while ((inputSize - inputIndex) > 0) 
 		{
 			/* Check if the decoder reached the beginning of a new chunk to see if the preamble needs to be read. */
-			if (inputSize % frameSize == 0)
+			if ((inputSize - inputIndex) % frameSize == 0)
 			{
 				/* Bytes 0 and 1 describe the chunk's initial predictor value (little-endian) */
-				prevSample[LEFTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
+				predictedSample[LEFTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
 				/* Byte 2 is the chunk's initial index on the step_size_table */
-				prevStep[LEFTCHANNEL]   = (input[inputIndex+2]);
+				tableIndex[LEFTCHANNEL]   = (input[inputIndex+2]);
 
-				if (prevStep[LEFTCHANNEL] < 0)       { prevStep[LEFTCHANNEL] = 0; }
-				else if (prevStep[LEFTCHANNEL] > 88) { prevStep[LEFTCHANNEL] = 88; }
+				if (tableIndex[LEFTCHANNEL] < 0)       { tableIndex[LEFTCHANNEL] = 0; }
+				else if (tableIndex[LEFTCHANNEL] > 88) { tableIndex[LEFTCHANNEL] = 88; }
 
 				/* 
 				 * For each 4 bits used in IMA ADPCM, 16 must be used for PCM so adjust 
@@ -116,19 +117,17 @@ public class WavImaAdpcmDecoder
 				 * use for us.
 				 */
 				inputIndex += 4;
-				inputSize -= 4;
 
 				if (numChannels == 2) /* If we're dealing with stereo IMA ADPCM: */
 				{
 					/* Bytes 4 and 5 describe the chunk's initial predictor value (little-endian) for the second channel */
-					prevSample[RIGHTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
-					prevStep[RIGHTCHANNEL]   = (input[inputIndex + 2]);
+					predictedSample[RIGHTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
+					tableIndex[RIGHTCHANNEL]   = (input[inputIndex + 2]);
 
-					if (prevStep[RIGHTCHANNEL] < 0)       { prevStep[RIGHTCHANNEL] = 0; }
-					else if (prevStep[RIGHTCHANNEL] > 88) { prevStep[RIGHTCHANNEL] = 88; }
+					if (tableIndex[RIGHTCHANNEL] < 0)       { tableIndex[RIGHTCHANNEL] = 0; }
+					else if (tableIndex[RIGHTCHANNEL] > 88) { tableIndex[RIGHTCHANNEL] = 88; }
 
 					inputIndex += 4;
-					inputSize -= 4;
 				}
 			}
 
@@ -160,17 +159,17 @@ public class WavImaAdpcmDecoder
 
 					adpcmSample = (byte) (input[inputIndex] & 0x0f);
 					decodedSample = decodeSample(curChannel, adpcmSample);
-					output[outputIndex + ((i & 3) << 3) + (curChannel << 1)] = (byte)(decodedSample & 0xff);
-					output[outputIndex + ((i & 3) << 3) + (curChannel << 1) + 1] = (byte)(decodedSample >> 8);
+					output[outputIndex + ((i & 3) << 3) + (curChannel << 1)] = (byte) decodedSample;
+					output[outputIndex + ((i & 3) << 3) + (curChannel << 1) + 1] = (byte) (decodedSample >> 8);
 
 					adpcmSample = (byte) ((input[inputIndex] >> 4) & 0x0f);
 					decodedSample = decodeSample(curChannel, adpcmSample);
-					output[outputIndex + ((i & 3) << 3) + (curChannel << 1) + 4] = (byte)(decodedSample & 0xff);
-					output[outputIndex + ((i & 3) << 3) + (curChannel << 1) + 5] = (byte)(decodedSample >> 8);
+					output[outputIndex + ((i & 3) << 3) + (curChannel << 1) + 4] = (byte) decodedSample;
+					output[outputIndex + ((i & 3) << 3) + (curChannel << 1) + 5] = (byte) (decodedSample >> 8);
 					inputIndex++;
 				}
 				outputIndex += 32;
-				inputSize -= 8;
+				inputIndex += 8;
 			}
 			else
 			{
@@ -180,16 +179,15 @@ public class WavImaAdpcmDecoder
 				 */
 				adpcmSample = (byte)(input[inputIndex] & 0x0f);
 				decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
-				output[outputIndex++] = (byte)(decodedSample & 0xff);
-				output[outputIndex++] = (byte)((decodedSample >> 8) & 0xff);
+				output[outputIndex++] = (byte) decodedSample;
+				output[outputIndex++] = (byte) (decodedSample >> 8);
 
 				adpcmSample = (byte)((input[inputIndex] >> 4) & 0x0f);
 				decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
-				output[outputIndex++] = (byte)(decodedSample & 0xff);
-				output[outputIndex++] = (byte)((decodedSample >> 8) & 0xff);
+				output[outputIndex++] = (byte) decodedSample;
+				output[outputIndex++] = (byte) (decodedSample >> 8);
 
 				inputIndex++;
-				inputSize--;
 			}
 		}
 
@@ -204,8 +202,11 @@ public class WavImaAdpcmDecoder
 		 * https://www.cs.columbia.edu/~hgs/audio/dvi/IMA_ADPCM.pdf
 		 */
 
-		/* Get the step size to be used when decoding the given sample. */
-		final int stepSize = ima_step_size_table[prevStep[channel]] & 0x0000FFFF;
+		/* 
+		 * Get the step size from the last table index saved for this channel, to be used when decoding 
+		 * the new given sample. 
+		 */
+		final int stepSize = ima_step_size_table[tableIndex[channel]];
 
 		/* This variable acts as 'difference' and then 'newSample' on columbia's doc */
 		int decodedSample = 0;
@@ -222,22 +223,23 @@ public class WavImaAdpcmDecoder
 		decodedSample += stepSize >> 3;
 
 		if ((adpcmSample & 8) != 0) { decodedSample  = -decodedSample; }
-		
-		decodedSample += prevSample[channel];
+
+		decodedSample += predictedSample[channel];
 
 		/* 
 		 * Clamps the value of decodedSample to that of a short data type. At this point, the decoded 
-		 * sample already should already fit nicely into a short type value range as per columbia's doc.
+		 * sample should already fit nicely into a short type value range as per columbia's doc.
 		 */
+		
 		if (decodedSample < -32768)     { decodedSample = -32768; }
 		else if (decodedSample > 32767) { decodedSample = 32767; }
 
-		prevSample[channel] = decodedSample;
+		predictedSample[channel] = decodedSample;
 
 		/* Basically columbia doc's "calculate stepsize" snippet */
-		prevStep[channel] += ima_step_index_table[adpcmSample];
-		if (prevStep[channel] < 0)       { prevStep[channel] = 0; }
-		else if (prevStep[channel] > 88) { prevStep[channel] = 88; }
+		tableIndex[channel] += ima_step_index_table[adpcmSample];
+		if (tableIndex[channel] < 0)       { tableIndex[channel] = 0; }
+		else if (tableIndex[channel] > 88) { tableIndex[channel] = 88; }
 
 		/* Return the decoded sample casted to short (16-bit) */
 		return (short) (decodedSample);
