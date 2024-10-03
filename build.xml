@@ -5,7 +5,11 @@
 *    AWT, Libretro, SDL
 ****************************************************
 -->
+    <property name="lib.dir" value="lib"/>
 
+    <path id="classpath">
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
 	
 	<mkdir dir="build/classes"/>
     <echo message="Building Objectweb asm libraries" />
@@ -23,6 +27,7 @@
 	<javac
 		srcdir="src"
 		destdir="build/classes"
+		classpathref="classpath"
 		includeantruntime="false"
 		debug="true"
 		debuglevel="lines,vars,source"
@@ -72,6 +77,7 @@
 		destfile="build/freej2me-sdl.jar"
 		basedir="build/classes">
 		<fileset dir="resources" />
+		<zipgroupfileset dir="lib" excludes="META-INF/**" includes="*.jar"/>
 		<metainf dir="META-INF" />
 		<manifest>
 			<!-- SDL Version -->
