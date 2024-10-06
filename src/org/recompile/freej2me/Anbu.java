@@ -34,15 +34,15 @@ import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderClear;
 import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderPresent;
 import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderCopy;
 import static io.github.libsdl4j.api.render.SdlRender.SDL_UpdateTexture;
-import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderPresent;
 import static io.github.libsdl4j.api.render.SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING;
 import static io.github.libsdl4j.api.render.SdlRender.SDL_CreateTexture;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_DestroyRenderer;
 import static io.github.libsdl4j.api.render.SdlRender.SDL_DestroyTexture;
 
-import static io.github.libsdl4j.api.video.SdlVideo.SDL_SetWindowTitle;
-import static io.github.libsdl4j.api.video.SdlVideo.SDL_CreateWindow;
-import static io.github.libsdl4j.api.video.SdlVideoConst.SDL_WINDOWPOS_CENTERED;
-import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_SHOWN;
+import static io.github.libsdl4j.api.video.SdlVideo.*;
+import static io.github.libsdl4j.api.video.SdlVideo.*;
+import static io.github.libsdl4j.api.video.SdlVideoConst.*;
+import static io.github.libsdl4j.api.video.SDL_WindowFlags.*;
 import static io.github.libsdl4j.api.pixels.SDL_PixelFormatEnum.SDL_PIXELFORMAT_RGB24;
 
 import static io.github.libsdl4j.api.event.SdlEvents.SDL_PollEvent;
@@ -56,16 +56,15 @@ import static io.github.libsdl4j.api.joystick.SdlJoystick.SDL_JoystickOpen;
 import static io.github.libsdl4j.api.joystick.SdlJoystick.SDL_JoystickEventState;
 import static io.github.libsdl4j.api.joystick.SdlJoystickConst.*;
 
+import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+
 import java.util.Timer;
 import java.util.TimerTask;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.ProcessBuilder;
 
-import com.sun.jna.Pointer;
+import javax.microedition.media.Manager;
+
 import com.sun.jna.Memory;
 
 public class Anbu
@@ -80,12 +79,19 @@ public class Anbu
 
 	private int lcdWidth;
 	private int lcdHeight;
+	private int scaleFactor = 1;
+	private boolean isFullscreen = false;
+	private boolean SDLInitialized = false;
 
 	private Config config;
 	private boolean useNokiaControls = false;
 	private boolean useSiemensControls = false;
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
+
+	/* Variables that work around a SDL Canvas bug noted below */
+	private boolean updatedRenderer = false;
+	private long updateRendererTime = 0;
 
 	// Frame Limit Variables
 	private int limitFPS = 0;
@@ -103,27 +109,19 @@ public class Anbu
 		lcdWidth = 240;
 		lcdHeight = 320;
 
-		if (args.length < 3)
-		{
-			System.out.println("Insufficient parameters provided");
-			return;
-		}
-		lcdWidth = Integer.parseInt(args[1]);
-		lcdHeight = Integer.parseInt(args[2]);
+		String file = null;
 
-		// if(args.length>=1)
-		// {
-		// 	awtGUI.setJarPath(getFormattedLocation(args[0]));
-		// }
-		// if(args.length>=3)
-		// {
-		// 	lcdWidth = Integer.parseInt(args[1]);
-		// 	lcdHeight = Integer.parseInt(args[2]);
-		// }
-		// if(args.length>=4)
-		// {
-		// 	scaleFactor = Integer.parseInt(args[3]);
-		// }
+		if(args.length>=1)
+		{
+			file = getFormattedLocation(args[0]);
+			System.out.println(file);
+		}
+		if(args.length>=3)
+		{
+		 	lcdWidth = Integer.parseInt(args[1]);
+			lcdHeight = Integer.parseInt(args[2]);
+		}
+		if(args.length>=4) { scaleFactor = Integer.parseInt(args[3]); }
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
@@ -142,7 +140,7 @@ public class Anbu
 		}
 		catch(IOException e) { System.out.println("Failed to create custom midi info file:" + e.getMessage()); }
 
-		/* TODO: Anbu has no way of enabling "Dump Audio Streams", a UI rewrite might be in order */
+		/* TODO: Anbu/SDL has no way of enabling any settings outside of cmd args yet, a UI and code overhaul might be in order */
 
 		config = new Config();
 		config.onChange = new Runnable() { public void run() { settingsChanged(); } };
@@ -153,6 +151,16 @@ public class Anbu
 			{
 				try
 				{
+					/* 
+					 * For some reason, the SDL window remains at a blank canvas at boot, it appears
+					 * to be due to the renderer and texture being set before the J2ME Images are 
+					 * ready. It shouldn't really be happening... a deeper investigation is needed.
+					 */
+					if(!updatedRenderer && updateRendererTime < System.currentTimeMillis() - 500) 
+					{
+						sdl.resolutionChanged = true;
+						updatedRenderer = true;
+					}
 					if(limitFPS>0)
 					{
 						requiredFrametime = 1000 / limitFPS;
@@ -161,26 +169,37 @@ public class Anbu
 
 						if (sleepTime > 0) { Thread.sleep(sleepTime); }
 
-						if(limitFPS>0) { lastRenderTime = System.currentTimeMillis(); }
-
 						sdl.paint();
+
+						lastRenderTime = System.currentTimeMillis();
+
 					} else { sdl.paint(); }
 				}
 				catch (Exception e) { }
 			}
 		};
+		/* This var should be removed at some point, it's tied to the workaround above */
+		updateRendererTime = System.currentTimeMillis();
 
 		Mobile.getPlatform().setPainter(painter);
 
 		Mobile.getPlatform().startEventQueue();
 
-		String file = getFormattedLocation(args[0]);
-		System.out.println(file);
-
-		if(Mobile.getPlatform().loadJar(file))
+		if(file != null && Mobile.getPlatform().loadJar(file))
 		{
 			// Check config
 			config.init();
+
+			/* Allows FreeJ2ME to set the width and height passed as cmd arguments. */
+			if(args.length>=3)
+			{
+				lcdWidth = Integer.parseInt(args[1]);
+				lcdHeight = Integer.parseInt(args[2]);
+				config.settings.put("width",  ""+lcdWidth);
+				config.settings.put("height", ""+lcdHeight);
+			}
+
+			settingsChanged();
 
 			// Start SDL
 			sdl = new SDL();
@@ -212,25 +231,23 @@ public class Anbu
 	}
 
 	private class SDL
-	{
-		private Timer keytimer;
-		private TimerTask keytask;
+	{	
+		protected SDL_Renderer renderer;
+		protected SDL_Window window;
+		protected SDL_Texture texture;
 
-		private Process proc;
-		private InputStream keys;
-		public OutputStream frame;
-		
-		private SDL_Renderer renderer;
-		private SDL_Window window;
-		private SDL_Texture texture;
-
-		private Pointer pixels;
+		protected Memory pixels;
 
 		private int mouseX;
 		private int mouseY;
 		private boolean mousePressed = false;
 		private boolean mouseDragged = false;
 		private int dragThreshold = 2; // threshold in pixels
+
+		private boolean resolutionChanged = false;
+
+		private Timer keytimer;
+		private TimerTask keytask;
 
 		public void start(String args[])
 		{
@@ -240,29 +257,24 @@ public class Anbu
 				stop();
 			}
 
-			// Clear screen and draw coloured Background
-			// if(angle == 270) { SDL_CreateWindowAndRenderer(sourceHeight*windowScale, sourceWidth*windowScale, SDL_WINDOW_SHOWN, &mWindow, &mRenderer); }
-			// else {
-				// SDL_CreateWindowAndRenderer(sourceWidth*windowScale, sourceHeight*windowScale, SDL_WINDOW_SHOWN, &window, &renderer);
-			window = SDL_CreateWindow("FreeJ2ME-Plus - SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, lcdWidth, lcdHeight, SDL_WINDOW_SHOWN);
-			renderer = SDL_CreateRenderer(window, -1, 0);
-
-			// }
-			// if(isFullscreen) { toggleFullscreen(); }
-			// SDL_SetRenderDrawColor(mRenderer, r, g, b, 255);
-			SDL_RenderClear(renderer);
-			SDL_RenderPresent(renderer);
-
-			// Set scaling properties
-			// SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, interpol.c_str());
-			// SDL_RenderSetLogicalSize(mRenderer, displayWidth, displayHeight);
+			window = SDL_CreateWindow("FreeJ2ME-Plus - SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, lcdWidth*scaleFactor, lcdHeight*scaleFactor, SDL_WINDOW_SHOWN);
 			
-			// Create a mTexture where drawing can take place. Streaming for constant updates.
+			// Create a renderer, and a texture where drawing can take place, streaming for constant updates.
+			renderer = SDL_CreateRenderer(window, -1, 0);
 			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
+			pixels = new Memory(lcdWidth * lcdHeight * 3); 
 
-			pixels = new Memory(lcdWidth * lcdHeight * 3);
+			/* 
+			 * Input reading should not be tied to the render logic, otherwise jars that only send new render data 
+			 * after an input is registered (Ex: JBenchmark 2 and some other jars that use Form UI) will get softlocked.
+			 */
+			keytimer = new Timer();
+			keytask = new TimerTask() {	public void run() { processEvents(); } };
+			keytimer.schedule(keytask, 0, 1);
 
 			SDL_JoystickEventState(SDL_ENABLE);
+
+			SDLInitialized = true;
 		}
 
 		public void stop()
@@ -273,42 +285,39 @@ public class Anbu
 
 		public void paint()
 		{
-			processEvents();
 
-			int[] data;
+			/* 
+			 * Let's make resolution changes and adjust any relevant objects here, as it's right on the render path 
+			 * and it makes sure that the objects will be set correctly before being rendered.
+			 */
+			if(resolutionChanged) 
+			{
+				SDL_SetWindowSize(window, lcdWidth*scaleFactor , lcdHeight*scaleFactor);
+				SDL_DestroyRenderer(renderer);
+				renderer = SDL_CreateRenderer(window, -1, 0);
+				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
+				sdl.pixels = new Memory(lcdWidth * lcdHeight * 3); 
+			}
 
-			data = Mobile.getPlatform().getLCD().getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
-			
-			int cb = 0;
+			/* 
+			 * Like on libretro, access the image's DataBuffer directly instead of using BufferedImage's getRGB() method,
+			 * which is slower. The only difference is that here the data has to be saved as Integers instead of Bytes,
+			 * since the image we copy from is from TYPE_INT_ARGB, and not TYPE_3BYTE_BGR.
+			 */
+			final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
 
 			for(int i = 0; i < data.length; i++)
 			{
-				pixels.setByte(cb + 0, (byte)(data[i] >> 16));
-				pixels.setByte(cb + 1, (byte)(data[i] >> 8));
-				pixels.setByte(cb + 2, (byte)(data[i] >> 0));
-				cb += 3;
+				// TODO: Find out why this results in a white screen, while passing straight values for RGB works fine.
+				pixels.setByte(3 * i + 0, (byte) ((data[i] >> 16) & 0xff)); // R
+				pixels.setByte(3 * i + 1, (byte) ((data[i] >>  8) & 0xff)); // G
+				pixels.setByte(3 * i + 2, (byte) ((data[i]      ) & 0xff)); // B
 			}
-			int pitch = lcdWidth * 3;
-			
-			int ret;
 
-			ret = SDL_RenderClear(renderer);
-			if (ret != 0) {
-				System.out.println("SDL_RenderClear() failed");
-			}
-			SDL_UpdateTexture(texture, null, pixels, pitch);
-			if (ret != 0) {
-				System.out.println("SDL_UpdateTexture() failed");
-			}
+			SDL_RenderClear(renderer);
+			SDL_UpdateTexture(texture, null, pixels, lcdWidth * 3);
 			SDL_RenderCopy(renderer, texture, null, null);
-			if (ret != 0) {
-				System.out.println("SDL_RenderCopy() failed");
-			}
-			// SDL_RenderCopyEx(renderer, texture, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
-			// SDL_RenderCopyEx(renderer, mOverlay, NULL, &dest, angle, NULL, SDL_FLIP_NONE);
 			SDL_RenderPresent(renderer);
-			
-			// System.out.println("end of paint() called");
 		}
 
 		public void processEvents()
@@ -330,57 +339,38 @@ public class Anbu
 					{
 						stop();
 					}
-					// else if (key == SDLK_F8)
-					// {
-					//	 if(event.type == SDL_KEYDOWN) { getScreenShot = true; }
-					//	 continue;
-					// }
-					// else if (key == SDLK_F11) 
-					// {
-					//	 if(event.type == SDL_KEYDOWN) 
-					//	 {
-					//		 isFullscreen = !isFullscreen;
-					//		 toggleFullscreen();
-					//	 }
-					//	 continue;
-					// }
-					// else if(key == SDLK_KP_PLUS) 
-					// {
-					//	 if(event.type == SDL_KEYDOWN) 
-					//	 {
-					//		 windowScale += 1;
-					// 
-					//		 if(angle == 270) 
-					//		 {
-					//			 SDL_SetWindowSize(mWindow, sourceHeight*windowScale,
-					//				 sourceWidth*windowScale);
-					//		 }
-					//		 else 
-					//		 { 
-					//			 SDL_SetWindowSize(mWindow, sourceWidth*windowScale,
-					//				 sourceHeight*windowScale);
-					//		 }
-					//	 }
-					//	 continue;
-					// }
-					// else if(key == SDLK_KP_MINUS) 
-					// {
-					//	 if(windowScale > 1 && event.type == SDL_KEYDOWN)
-					//	 {
-					//		 windowScale -= 1;
-					//		 if(angle == 270) 
-					//		 {
-					//			 SDL_SetWindowSize(mWindow, sourceHeight*windowScale,
-					//				 sourceWidth*windowScale);
-					//		 }
-					//		 else 
-					//		 { 
-					//			 SDL_SetWindowSize(mWindow, sourceWidth*windowScale,
-					//				 sourceHeight*windowScale);
-					//		 }
-					//	 }
-					//	 continue;
-					// }
+					else if (key == SDLK_F8)
+					{
+						//if(event.type == SDL_KEYDOWN) { Screenshot.takeScreenshot = true; }
+						continue;
+					}
+					else if (key == SDLK_F11) 
+					{
+						if(event.type == SDL_KEYDOWN) 
+						{
+							isFullscreen = !isFullscreen;
+							toggleFullscreen();
+						}
+						continue;
+					}
+					else if(key == SDLK_KP_PLUS) 
+					{
+						if(event.type == SDL_KEYDOWN) 
+						{
+							scaleFactor++;
+							resolutionChanged = true;
+						}
+						continue;
+					}
+					else if(key == SDLK_KP_MINUS) 
+					{
+						if(scaleFactor > 1 && event.type == SDL_KEYDOWN)
+						{
+							scaleFactor--;
+							resolutionChanged = true;
+						}
+						continue;
+					}
 
 					//printf("Key:%d. Down:%s | cast:%s\n", key, event.key.state == SDL_PRESSED ? "true" : "false", keynames[findInputMappedFunction(key,  KEYBOARD_COMMAND)]);
 					
@@ -742,10 +732,23 @@ public class Anbu
 			// }
 		}
 
+		void toggleFullscreen() 
+		{
+			if(isFullscreen){ SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP); }
+			else
+			{ 
+				SDL_SetWindowFullscreen(window, SDL_WINDOW_SHOWN);
+				resolutionChanged = true;
+			}
+		}
+
 	} // sdl
 
 	void settingsChanged() 
 	{
+		int w = Integer.parseInt(config.settings.get("width"));
+		int h = Integer.parseInt(config.settings.get("height"));
+
 		limitFPS = Integer.parseInt(config.settings.get("fps"));
 
 		String sound = config.settings.get("sound");
@@ -756,16 +759,15 @@ public class Anbu
 		useNokiaControls = false;
 		useSiemensControls = false;
 		useMotorolaControls = false;
+		Mobile.sonyEricsson = false;
 		Mobile.nokia = false;
 		Mobile.siemens = false;
 		Mobile.motorola = false;
-		Mobile.sonyEricsson = false;
 		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
 		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
 		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
 		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
 
-		// We should send this one over to the sdl interface.
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
 		if(rotate.equals("off")) { rotateDisplay = false; }
@@ -773,6 +775,37 @@ public class Anbu
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
 		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+
+		if(config.settings.get("halveCanvasRes").equals("on")) { w /= 2; h /= 2; }
+
+		// Create a standard size LCD if not rotated, else invert window's width and height.
+		if(w != lcdWidth || h != lcdHeight ) 
+		{
+			if(!rotateDisplay) 
+			{
+				lcdWidth = w;
+				lcdHeight = h;
+
+				Mobile.getPlatform().resizeLCD(w, h);
+				
+				/*
+				* If SDL is not initialized, this will end up in a NullPointerException. If it'll be initialized
+				* at a later date, its start() function will already set itself up similarly to this anyway.
+				*/
+				if(SDLInitialized) { sdl.resolutionChanged = true; }
+			}
+			else 
+			{
+				lcdWidth = h;
+				lcdHeight = w;
+
+				Mobile.getPlatform().resizeLCD(w, h);
+
+				if(SDLInitialized) { sdl.resolutionChanged = true; }
+			}
+		}
+		
+		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
 
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 
@@ -784,9 +817,5 @@ public class Anbu
 			System.setProperty("com.siemens.OSVersion", "11");
 			System.setProperty("com.siemens.IMEI", "000000000000000");
 		}
-
-		// Screen width and height won't be updated here, it breaks sdl_interface's frame streaming
-		// as it will be expecting a given size for the frame, and we don't pass the updated size
-		// to it (yet)
 	}
 }
