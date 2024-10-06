@@ -22,6 +22,7 @@ import java.awt.Image;
 import java.awt.Canvas;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -64,6 +65,7 @@ public class Libretro
 	private boolean[] pressedKeys = new boolean[128];
 
 	private byte[] frameBuffer = new byte[800*800*3];
+	private byte[] RGBframeBuffer = new byte[800*800*3];
 	private byte[] frameHeader = new byte[]{(byte)0xFE, 0, 0, 0, 0, 0};
 
 	private int mousex;
@@ -143,7 +145,7 @@ public class Libretro
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
-		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_INT_ARGB); // libretro display
+		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
 		gc = (Graphics2D)surface.getGraphics();
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
@@ -411,22 +413,29 @@ public class Libretro
 								break;
 								
 								case 15:
-									// Send Frame Libretro //
+									/* Send Frame to Libretro */
 									try
 									{
-										final int[] data;
+										frameBuffer = ((DataBufferByte) surface.getRaster().getDataBuffer()).getData();
 
-										data = surface.getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
+										final int bufferLength = frameBuffer.length;
 
-										final int bufferLength = data.length*3;
-										int cb = 0;
-										for(int i=0; i<data.length; i++)
+										/* 
+										 * Convert BGR into RGB. Has a negligible performance impact compared to not doing this at all
+										 * and sending the BGR array straight to libretro... and is faster than using getRGB().
+										 * 
+										 * Copying from the original BGR array to a separate RGB array uses a bit more memory, but
+										 * works correctly compared to just swapping the channels on the orignal array, where they
+										 * still unknowingly end up incorrect from time to time. Runtime performance is pretty much
+										 * the same for both methods.
+										 */
+										for(int i=0; i<bufferLength; i+=3)
 										{
-											frameBuffer[cb]   = (byte)((data[i]>>16)&0xFF);
-											frameBuffer[cb+1] = (byte)((data[i]>>8)&0xFF);
-											frameBuffer[cb+2] = (byte)((data[i])&0xFF);
-											cb+=3;
+											RGBframeBuffer[i]   = frameBuffer[i+2]; // [R]GB = BG[R]
+											RGBframeBuffer[i+1] = frameBuffer[i+1];
+											RGBframeBuffer[i+2] = frameBuffer[i]; // RG[B] = [B]GR
 										}
+
 										//frameHeader[0] = (byte)0xFE;
 										frameHeader[1] = (byte)((lcdWidth>>8)&0xFF);
 										frameHeader[2] = (byte)((lcdWidth)&0xFF);
@@ -434,7 +443,7 @@ public class Libretro
 										frameHeader[4] = (byte)((lcdHeight)&0xFF);
 
 										System.out.write(frameHeader, 0, 6);
-										System.out.write(frameBuffer, 0, bufferLength);
+										System.out.write(RGBframeBuffer, 0, bufferLength);
 										System.out.flush();
 									}
 									catch (Exception e)
@@ -499,7 +508,7 @@ public class Libretro
 			lcdWidth = w;
 			lcdHeight = h;
 			Mobile.getPlatform().resizeLCD(w, h);
-			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_INT_ARGB); // libretro display
+			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
 			gc = (Graphics2D)surface.getGraphics();
 		}
 
