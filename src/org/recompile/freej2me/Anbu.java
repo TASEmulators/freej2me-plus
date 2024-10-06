@@ -43,7 +43,7 @@ import static io.github.libsdl4j.api.video.SdlVideo.*;
 import static io.github.libsdl4j.api.video.SdlVideo.*;
 import static io.github.libsdl4j.api.video.SdlVideoConst.*;
 import static io.github.libsdl4j.api.video.SDL_WindowFlags.*;
-import static io.github.libsdl4j.api.pixels.SDL_PixelFormatEnum.SDL_PIXELFORMAT_RGB24;
+import static io.github.libsdl4j.api.pixels.SDL_PixelFormatEnum.SDL_PIXELFORMAT_RGB888;
 
 import static io.github.libsdl4j.api.event.SdlEvents.SDL_PollEvent;
 import static io.github.libsdl4j.api.event.SDL_EventType.*;
@@ -261,8 +261,8 @@ public class Anbu
 			
 			// Create a renderer, and a texture where drawing can take place, streaming for constant updates.
 			renderer = SDL_CreateRenderer(window, -1, 0);
-			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
-			pixels = new Memory(lcdWidth * lcdHeight * 3); 
+			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
+			pixels = new Memory(lcdWidth * lcdHeight * 4); 
 
 			/* 
 			 * Input reading should not be tied to the render logic, otherwise jars that only send new render data 
@@ -295,8 +295,8 @@ public class Anbu
 				SDL_SetWindowSize(window, lcdWidth*scaleFactor , lcdHeight*scaleFactor);
 				SDL_DestroyRenderer(renderer);
 				renderer = SDL_CreateRenderer(window, -1, 0);
-				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
-				sdl.pixels = new Memory(lcdWidth * lcdHeight * 3); 
+				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
+				sdl.pixels = new Memory(lcdWidth * lcdHeight * 4); 
 			}
 
 			/* 
@@ -305,17 +305,10 @@ public class Anbu
 			 * since the image we copy from is from TYPE_INT_ARGB, and not TYPE_3BYTE_BGR.
 			 */
 			final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
-
-			for(int i = 0; i < data.length; i++)
-			{
-				// TODO: Find out why this results in a white screen, while passing straight values for RGB works fine.
-				pixels.setByte(3 * i + 0, (byte) ((data[i] >> 16) & 0xff)); // R
-				pixels.setByte(3 * i + 1, (byte) ((data[i] >>  8) & 0xff)); // G
-				pixels.setByte(3 * i + 2, (byte) ((data[i]      ) & 0xff)); // B
-			}
+            pixels.write(0, data, 0, data.length);
 
 			SDL_RenderClear(renderer);
-			SDL_UpdateTexture(texture, null, pixels, lcdWidth * 3);
+			SDL_UpdateTexture(texture, null, pixels, lcdWidth * 4);
 			SDL_RenderCopy(renderer, texture, null, null);
 			SDL_RenderPresent(renderer);
 		}
