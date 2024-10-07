@@ -297,6 +297,7 @@ public class Anbu
 				renderer = SDL_CreateRenderer(window, -1, 0);
 				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
 				sdl.pixels = new Memory(lcdWidth * lcdHeight * 4); 
+				resolutionChanged = false;
 			}
 
 			/* 
@@ -305,7 +306,7 @@ public class Anbu
 			 * since the image we copy from is from TYPE_INT_ARGB, and not TYPE_3BYTE_BGR.
 			 */
 			final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
-            pixels.write(0, data, 0, data.length);
+			pixels.write(0, data, 0, data.length);
 
 			SDL_RenderClear(renderer);
 			SDL_UpdateTexture(texture, null, pixels, lcdWidth * 4);
