@@ -296,7 +296,8 @@ public class Anbu
 				SDL_DestroyRenderer(renderer);
 				renderer = SDL_CreateRenderer(window, -1, 0);
 				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
-				sdl.pixels = new Memory(lcdWidth * lcdHeight * 4); 
+				sdl.pixels = new Memory(lcdWidth * lcdHeight * 4);
+				resolutionChanged = false;
 			}
 
 			/* 
