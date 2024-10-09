@@ -19,6 +19,7 @@ package javax.microedition.lcdui;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.microedition.lcdui.game.Sprite;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
@@ -32,13 +33,13 @@ public class Image
 	public int width;
 	public int height;
 
-	public static Image createImage(byte[] imageData, int imageOffset, int imageLength)
+	public static Image createImage(byte[] imageData, int imageOffset, int imageLength) throws IllegalArgumentException
 	{
 		//System.out.println("Create Image from image data ");
 		if (imageData == null) {throw new NullPointerException();}
 		if (imageOffset + imageLength > imageData.length) {throw new ArrayIndexOutOfBoundsException();}
+		
 		PlatformImage t = new PlatformImage(imageData, imageOffset, imageLength);
-		if(t.isNull) { throw new IllegalArgumentException(); }
 		return t;
 	}
 
@@ -46,6 +47,9 @@ public class Image
 	{
 		//System.out.println("Create Image from Image ");
 		if (source == null) {throw new NullPointerException();}
+		// If the source is immutable, just return it, despite the docs not mentioning it directly
+		if (!source.isMutable()) { return source; }
+
 		return new PlatformImage(source);
 	}
 
@@ -55,15 +59,17 @@ public class Image
 		if (img == null) {throw new NullPointerException();}
 		if (x+width > img.getWidth() || y+height > img.getHeight()) {throw new IllegalArgumentException();}
 		if (width <= 0 || height <= 0) {throw new IllegalArgumentException();}
+
+		if(!img.isMutable() && (x+width == img.getWidth() && y+height == img.getHeight()) && transform == Sprite.TRANS_NONE) { return img; }
+
 		return new PlatformImage(img, x, y, width, height, transform);
 	}
 
-	public static Image createImage(InputStream stream) throws IOException
+	public static Image createImage(InputStream stream) throws IOException, IllegalArgumentException
 	{
 		//System.out.println("Create Image stream");
 		if (stream == null) {throw new NullPointerException();}
 		PlatformImage t = new PlatformImage(stream);
-		if(t.isNull) { throw new IOException(); }
 		return t;
 	}
 
@@ -79,7 +85,6 @@ public class Image
 		//System.out.println("Create Image " + name);
 		if (name == null) {throw new NullPointerException();}
 		PlatformImage t = new PlatformImage(name);
-		if(t.isNull) { throw new IOException(); }
 		return t;
 	}
 
