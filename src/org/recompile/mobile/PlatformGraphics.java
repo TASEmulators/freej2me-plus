@@ -87,6 +87,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void copyArea(int subx, int suby, int subw, int subh, int x, int y, int anchor)
 	{
+		if (subw <= 0 || subh <= 0) { return; }
+
 		x = AnchorX(x, subw, anchor);
 		y = AnchorY(y, subh, anchor);
 
@@ -97,6 +99,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawArc(int x, int y, int width, int height, int startAngle, int arcAngle)
 	{
+		if (width < 0 || height < 0) { return; }
 		gc.drawArc(x, y, width, height, startAngle, arcAngle);
 	}
 
@@ -173,6 +176,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawRegion(Image image, int subx, int suby, int subw, int subh, int transform, int x, int y, int anchor)
 	{
+		if (subw <= 0 || subh <= 0) return;
+
 		try
 		{
 			if(transform == 0)
@@ -198,7 +203,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha)
 	{
-		if(width<1 || height<1) { return; }
+		if(width <= 0 || height <= 0) { return; }
+
 		if(!processAlpha)
 		{
 			for (int i=offset; i<rgbData.length; i++) { rgbData[i] &= 0x00FFFFFF; rgbData[i] |= 0xFF000000; }
@@ -217,16 +223,26 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawLine(int x1, int y1, int x2, int y2)
 	{
+		if (x2 >= x1) { x2++; } 
+		else { x1++; }
+
+		if (y2 >= y1) { y2++; } 
+		else { y1++; }
+
 		gc.drawLine(x1, y1, x2, y2);
 	}
 
 	public void drawRect(int x, int y, int width, int height)
 	{
+		if (width < 0 || height < 0) { return; }
+
 		gc.drawRect(x, y, width, height);
 	}
 
 	public void drawRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight)
 	{
+		if (width < 0 || height < 0) { return; }
+
 		gc.drawRoundRect(x, y, width, height, arcWidth, arcHeight);
 	}
 
@@ -251,16 +267,22 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle)
 	{
+		if (width <= 0 || height <= 0) { return; }
+
 		gc.fillArc(x, y, width, height, startAngle, arcAngle);
 	}
 
 	public void fillRect(int x, int y, int width, int height)
 	{
+		if (width <= 0 || height <= 0) { return; }
+
 		gc.fillRect(x, y, width, height);
 	}
 
 	public void fillRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight)
 	{
+		if (width < 0 || height < 0) { return; }
+
 		gc.fillRoundRect(x, y, width, height, arcWidth, arcHeight);
 		gc.fillRect(x, y, width, height);
 	}
