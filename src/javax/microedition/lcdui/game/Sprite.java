@@ -30,56 +30,32 @@ public class Sprite extends Layer
 	public static final int TRANS_MIRROR_ROT90 = 7;
 	public static final int TRANS_MIRROR_ROT180 = 1;
 	public static final int TRANS_MIRROR_ROT270 = 4;
-
 	private static final int INVERTED_AXES = 0x4;
-
 	private static final int X_FLIP = 0x2;
-
 	private static final int Y_FLIP = 0x1;
-
 	private static final int ALPHA_BITMASK = 0xff000000;
-
 	private static final int FULLY_OPAQUE_ALPHA = 0xff000000;
 
-	Image sourceImage;
-
-	int numberFrames;
-
-	int[] frameCoordsX;
-
-	int[] frameCoordsY;
-
-	int srcFrameWidth;
-
-	int srcFrameHeight;
-
-	int[] sequence;
-
+	private Image sourceImage;
+	private int numberFrames;
+	private int[] frameCoordsX;
+	private int[] frameCoordsY;
+	private int srcFrameWidth;
+	private int srcFrameHeight;
+	private int[] sequence;
 	private int sequenceIndex;
-
 	private boolean customSequenceDefined;
-
-	int dRefX;
-
-	int dRefY;
-
-	int collisionRectX;
-
-	int collisionRectY;
-
-	int collisionRectWidth;
-
-	int collisionRectHeight;
-
-	int t_currentTransformation;
-
-	int t_collisionRectX;
-
-	int t_collisionRectY;
-
-	int t_collisionRectWidth;
-
-	int t_collisionRectHeight;
+	private int dRefX;
+	private int dRefY;
+	private int collisionRectX;
+	private int collisionRectY;
+	private int collisionRectWidth;
+	private int collisionRectHeight;
+	private int t_currentTransformation;
+	private int t_collisionRectX;
+	private int t_collisionRectY;
+	private int t_collisionRectWidth;
+	private int t_collisionRectHeight;
 
 
 	public Sprite(Image image)
@@ -87,9 +63,7 @@ public class Sprite extends Layer
 		super(image.getWidth(), image.getHeight());
 
 		initializeFrames(image, image.getWidth(), image.getHeight(), false);
-
 		initCollisionRectBounds();
-
 		setTransform(TRANS_NONE);
 	}
 
@@ -102,9 +76,7 @@ public class Sprite extends Layer
 			{ throw new IllegalArgumentException(); }
 
 		initializeFrames(image, frameWidth, frameHeight, false);
-
 		initCollisionRectBounds();
-
 		setTransform(TRANS_NONE);
 	}
 
@@ -116,14 +88,11 @@ public class Sprite extends Layer
 		if (s == null) { throw new NullPointerException(); }
 
 		this.sourceImage = Image.createImage(s.sourceImage);
-
 		this.numberFrames = s.numberFrames;
-
 		this.frameCoordsX = new int[this.numberFrames];
 		this.frameCoordsY = new int[this.numberFrames];
 
 		System.arraycopy(s.frameCoordsX, 0, this.frameCoordsX, 0, s.getRawFrameCount());
-
 		System.arraycopy(s.frameCoordsY, 0, this.frameCoordsY, 0, s.getRawFrameCount());
 
 		this.x = s.getX();
@@ -141,20 +110,19 @@ public class Sprite extends Layer
 		this.srcFrameHeight = s.srcFrameHeight;
 
 		setTransform(s.t_currentTransformation);
-
 		this.setVisible(s.isVisible());
 
 		this.sequence = new int[s.getFrameSequenceLength()];
 		this.setFrameSequence(s.sequence);
 		this.setFrame(s.getFrame());
 
-		x = s.getRefPixelX() - getTransformedPtX(dRefX, dRefY, t_currentTransformation);
-		y = s.getRefPixelY() - getTransformedPtY(dRefX, dRefY, t_currentTransformation);
+		x = s.getRefPixelX() - getTransformedPt(dRefX, t_currentTransformation, true);
+		y = s.getRefPixelY() - getTransformedPt(dRefY, t_currentTransformation, false);
 	}
 
-	public int getRefPixelX() { return (this.x + getTransformedPtX(dRefX, dRefY, this.t_currentTransformation)); }
+	public int getRefPixelX() { return (this.x + getTransformedPt(dRefX, this.t_currentTransformation, true)); }
 
-	public int getRefPixelY() { return (this.y + getTransformedPtY(dRefX, dRefY, this.t_currentTransformation)); }
+	public int getRefPixelY() { return (this.y + getTransformedPt(dRefY, this.t_currentTransformation, false)); }
 
 	public void setFrame(int sequenceIndex)
 	{
@@ -238,25 +206,21 @@ public class Sprite extends Layer
 		if (!((srcFrameWidth == frameWidth) && (srcFrameHeight == frameHeight)))
 		{
 
-			int oldX = this.x + getTransformedPtX(dRefX, dRefY, this.t_currentTransformation);
-			int oldY = this.y + getTransformedPtY(dRefX, dRefY, this.t_currentTransformation);
+			int oldX = this.x + getTransformedPt(dRefX, this.t_currentTransformation, true);
+			int oldY = this.y + getTransformedPt(dRefY, this.t_currentTransformation, false);
 
 			setWidth(frameWidth);
 			setHeight(frameHeight);
 
 			initializeFrames(img, frameWidth, frameHeight, maintainCurFrame);
-
 			initCollisionRectBounds();
 
-			this.x = oldX - getTransformedPtX(dRefX, dRefY, this.t_currentTransformation);
-
-			this.y = oldY - getTransformedPtY(dRefX, dRefY, this.t_currentTransformation);
-
+			this.x = oldX - getTransformedPt(dRefX, this.t_currentTransformation, true);
+			this.y = oldY - getTransformedPt(dRefY, this.t_currentTransformation, false);
 			computeTransformedBounds(this.t_currentTransformation);
 
 		}
 		else { initializeFrames(img, frameWidth, frameHeight, maintainCurFrame); }
-
 	}
 
 	public void defineCollisionRectangle(int x, int y, int width, int height)
@@ -275,12 +239,10 @@ public class Sprite extends Layer
 	public void setTransform(int transform)
 	{
 
-		this.x = this.x + getTransformedPtX(dRefX, dRefY, this.t_currentTransformation) - getTransformedPtX(dRefX, dRefY, transform);
-
-		this.y = this.y + getTransformedPtY(dRefX, dRefY, this.t_currentTransformation) - getTransformedPtY(dRefX, dRefY, transform);
+		this.x = this.x + getTransformedPt(dRefX, this.t_currentTransformation, true) - getTransformedPt(dRefX, transform, true);
+		this.y = this.y + getTransformedPt(dRefY, this.t_currentTransformation, false) - getTransformedPt(dRefY, transform, false);
 
 		computeTransformedBounds(transform);
-
 		t_currentTransformation = transform;
 	}
 
@@ -319,32 +281,27 @@ public class Sprite extends Layer
 
 				final int intersectLeft = (left < otherLeft) ? otherLeft : left;
 				final int intersectTop = (top < otherTop) ? otherTop : top;
-
 				final int intersectRight = (right < otherRight) ? right : otherRight;
 				final int intersectBottom = (bottom < otherBottom) ? bottom : otherBottom;
-
 				final int intersectWidth = Math.abs(intersectRight - intersectLeft);
 				final int intersectHeight = Math.abs(intersectBottom - intersectTop);
 
-				final int thisImageXOffset = getImageTopLeftX(intersectLeft,
+				final int thisImageXOffset = getImageTopLeft(intersectLeft,
 						intersectTop,
 						intersectRight,
-						intersectBottom);
-
-				final int thisImageYOffset = getImageTopLeftY(intersectLeft,
+						intersectBottom, true);
+				final int thisImageYOffset = getImageTopLeft(intersectLeft,
 						intersectTop,
 						intersectRight,
-						intersectBottom);
-
-				final int otherImageXOffset = s.getImageTopLeftX(intersectLeft,
+						intersectBottom, false);
+				final int otherImageXOffset = s.getImageTopLeft(intersectLeft,
 						intersectTop,
 						intersectRight,
-						intersectBottom);
-
-				final int otherImageYOffset = s.getImageTopLeftY(intersectLeft,
+						intersectBottom, true);
+				final int otherImageYOffset = s.getImageTopLeft(intersectLeft,
 						intersectTop,
 						intersectRight,
-						intersectBottom);
+						intersectBottom, false);
 
 				return doPixelCollision(thisImageXOffset, thisImageYOffset,
 						otherImageXOffset, otherImageYOffset,
@@ -439,37 +396,30 @@ public class Sprite extends Layer
 					{
 						int intersectLeft = (sx1 < cellLeft) ? cellLeft : sx1;
 						int intersectTop = (sy1 < cellTop) ? cellTop : sy1;
-
 						int intersectRight = (sx2 < cellRight) ? sx2 : cellRight;
 						int intersectBottom = (sy2 < cellBottom) ? sy2 : cellBottom;
-
 						if (intersectLeft > intersectRight)
 						{
 							int temp = intersectRight;
 							intersectRight = intersectLeft;
 							intersectLeft = temp;
 						}
-
 						if (intersectTop > intersectBottom)
 						{
 							int temp = intersectBottom;
 							intersectBottom = intersectTop;
 							intersectTop = temp;
 						}
-
 						int intersectWidth = intersectRight - intersectLeft;
 						int intersectHeight = intersectBottom - intersectTop;
-
-						int image1XOffset = getImageTopLeftX(intersectLeft,
+						int image1XOffset = getImageTopLeft(intersectLeft,
 								intersectTop,
 								intersectRight,
-								intersectBottom);
-
-						int image1YOffset = getImageTopLeftY(intersectLeft,
+								intersectBottom, true);
+						int image1YOffset = getImageTopLeft(intersectLeft,
 								intersectTop,
 								intersectRight,
-								intersectBottom);
-
+								intersectBottom, false);
 						int image2XOffset = t.tileSetX[tileIndex] +
 								(intersectLeft - cellLeft);
 						int image2YOffset = t.tileSetY[tileIndex] +
@@ -525,25 +475,18 @@ public class Sprite extends Layer
 
 				final int intersectLeft = (left < otherLeft) ? otherLeft : left;
 				final int intersectTop = (top < otherTop) ? otherTop : top;
-
-				final int intersectRight = (right < otherRight)
-						? right : otherRight;
-				final int intersectBottom = (bottom < otherBottom)
-						? bottom : otherBottom;
-
+				final int intersectRight = (right < otherRight) ? right : otherRight;
+				final int intersectBottom = (bottom < otherBottom) ? bottom : otherBottom;
 				final int intersectWidth = Math.abs(intersectRight - intersectLeft);
 				final int intersectHeight = Math.abs(intersectBottom - intersectTop);
-
-				final int thisImageXOffset = getImageTopLeftX(intersectLeft,
+				final int thisImageXOffset = getImageTopLeft(intersectLeft,
 						intersectTop,
 						intersectRight,
-						intersectBottom);
-
-				final int thisImageYOffset = getImageTopLeftY(intersectLeft,
+						intersectBottom, true);
+				final int thisImageYOffset = getImageTopLeft(intersectLeft,
 						intersectTop,
 						intersectRight,
-						intersectBottom);
-
+						intersectBottom, false);
 				final int otherImageXOffset = intersectLeft - x;
 				final int otherImageYOffset = intersectTop - y;
 
@@ -582,7 +525,6 @@ public class Sprite extends Layer
 		frameCoordsY = new int[numberFrames];
 
 		if (!maintainCurFrame) { sequenceIndex = 0; }
-
 		if (!customSequenceDefined) { sequence = new int[numberFrames]; }
 
 		int currentFrame = 0;
@@ -595,10 +537,7 @@ public class Sprite extends Layer
 				frameCoordsX[currentFrame] = xx;
 				frameCoordsY[currentFrame] = yy;
 
-				if (!customSequenceDefined)
-				{
-					sequence[currentFrame] = currentFrame;
-				}
+				if (!customSequenceDefined) { sequence[currentFrame] = currentFrame; }
 				currentFrame++;
 			}
 		}
@@ -612,7 +551,6 @@ public class Sprite extends Layer
 
 		collisionRectWidth = this.width;
 		collisionRectHeight = this.height;
-
 	}
 
 	private boolean intersectRect(int r1x1, int r1y1, int r1x2, int r1y2, int r2x1, int r2y1, int r2x2, int r2y2)
@@ -621,13 +559,7 @@ public class Sprite extends Layer
 		else { return true; }
 	}
 
-	private static boolean doPixelCollision(int image1XOffset,
-											int image1YOffset,
-											int image2XOffset,
-											int image2YOffset,
-											Image image1, int transform1,
-											Image image2, int transform2,
-											int width, int height)
+	private static boolean doPixelCollision(int image1XOffset, int image1YOffset, int image2XOffset, int image2YOffset, Image image1, int transform1, Image image2, int transform2, int width, int height)
 	{
 
 		int startY1;
@@ -643,7 +575,6 @@ public class Sprite extends Layer
 
 		if (0x0 != (transform1 & INVERTED_AXES))
 		{
-
 			if (0x0 != (transform1 & Y_FLIP))
 			{
 				xIncr1 = -(height);
@@ -663,7 +594,6 @@ public class Sprite extends Layer
 			else { yIncr1 = +1; }
 
 			image1.getRGB(argbData1, 0, height, image1XOffset, image1YOffset, height, width);
-
 		}
 		else
 		{
@@ -709,11 +639,9 @@ public class Sprite extends Layer
 			else { yIncr2 = +1; }
 
 			image2.getRGB(argbData2, 0, height,image2XOffset, image2YOffset, height, width);
-
 		}
 		else
 		{
-
 			if (0x0 != (transform2 & Y_FLIP))
 			{
 				startY2 = numPixels - width;
@@ -737,204 +665,130 @@ public class Sprite extends Layer
 
 		int x1, x2;
 		int xLocalBegin1, xLocalBegin2;
-
-		int numIterRows;
-		int numIterColumns;
+		int numIterRows, numIterColumns;
 
 		for (numIterRows = 0, xLocalBegin1 = startY1, xLocalBegin2 = startY2; numIterRows < height;
 			 xLocalBegin1 += yIncr1, xLocalBegin2 += yIncr2, numIterRows++)
 		{
-
 			for (numIterColumns = 0, x1 = xLocalBegin1, x2 = xLocalBegin2; numIterColumns < width; x1 += xIncr1, x2 += xIncr2, numIterColumns++)
 			{
-				if (((argbData1[x1] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA) && ((argbData2[x2] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA))
-					{ return true; }
+				if (((argbData1[x1] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA) && ((argbData2[x2] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA)) { return true; }
 			}
 		}
 
 		return false;
 	}
 
-	private int getImageTopLeftX(int x1, int y1, int x2, int y2)
+	private int getImageTopLeft(int x1, int y1, int x2, int y2, boolean isX) 
 	{
-		int retX = 0;
-
-		switch (this.t_currentTransformation)
+		int ret = 0;
+	
+		switch (this.t_currentTransformation) 
 		{
-
 			case TRANS_NONE:
 			case TRANS_MIRROR_ROT180:
-				retX = x1 - this.x;
+				ret = isX ? x1 - this.x : y1 - this.y;
 				break;
-
 			case TRANS_MIRROR:
 			case TRANS_ROT180:
-				retX = (this.x + this.width) - x2;
+				ret = isX ? (this.x + this.width) - x2 : (this.y + this.height) - y2;
 				break;
-
 			case TRANS_ROT90:
 			case TRANS_MIRROR_ROT270:
-				retX = y1 - this.y;
+				ret = isX ? y1 - this.y : (this.x + this.width) - x2;
 				break;
-
 			case TRANS_ROT270:
 			case TRANS_MIRROR_ROT90:
-				retX = (this.y + this.height) - y2;
+				ret = isX ? (this.y + this.height) - y2 : x1 - this.x;
 				break;
-
 			default:
-				return retX;
+				return ret;
 		}
-
-		retX += frameCoordsX[sequence[sequenceIndex]];
-
-		return retX;
-	}
-
-	private int getImageTopLeftY(int x1, int y1, int x2, int y2)
-	{
-		int retY = 0;
-		switch (this.t_currentTransformation)
-		{
-
-			case TRANS_NONE:
-			case TRANS_MIRROR:
-				retY = y1 - this.y;
-				break;
-
-			case TRANS_ROT180:
-			case TRANS_MIRROR_ROT180:
-				retY = (this.y + this.height) - y2;
-				break;
-
-			case TRANS_ROT270:
-			case TRANS_MIRROR_ROT270:
-				retY = x1 - this.x;
-				break;
-
-			case TRANS_ROT90:
-			case TRANS_MIRROR_ROT90:
-				retY = (this.x + this.width) - x2;
-				break;
-
-			default:
-				return retY;
-		}
-
-		retY += frameCoordsY[sequence[sequenceIndex]];
-
-		return retY;
+	
+		ret += isX ? frameCoordsX[sequence[sequenceIndex]] : frameCoordsY[sequence[sequenceIndex]];
+	
+		return ret;
 	}
 
 	private void computeTransformedBounds(int transform)
 	{
 		switch (transform)
 		{
-
 			case TRANS_NONE:
-
 				t_collisionRectX = collisionRectX;
 				t_collisionRectY = collisionRectY;
 				t_collisionRectWidth = collisionRectWidth;
 				t_collisionRectHeight = collisionRectHeight;
 				this.width = srcFrameWidth;
 				this.height = srcFrameHeight;
-
 				break;
 
 			case TRANS_MIRROR:
-
 				t_collisionRectX = srcFrameWidth - (collisionRectX + collisionRectWidth);
-
 				t_collisionRectY = collisionRectY;
 				t_collisionRectWidth = collisionRectWidth;
 				t_collisionRectHeight = collisionRectHeight;
-
 				this.width = srcFrameWidth;
 				this.height = srcFrameHeight;
-
 				break;
 
 			case TRANS_MIRROR_ROT180:
-
 				t_collisionRectY = srcFrameHeight -
 						(collisionRectY + collisionRectHeight);
-
 				t_collisionRectX = collisionRectX;
 				t_collisionRectWidth = collisionRectWidth;
 				t_collisionRectHeight = collisionRectHeight;
-
 				this.width = srcFrameWidth;
 				this.height = srcFrameHeight;
-
 				break;
 
 			case TRANS_ROT90:
-
 				t_collisionRectX = srcFrameHeight -
 						(collisionRectHeight + collisionRectY);
 				t_collisionRectY = collisionRectX;
-
 				t_collisionRectHeight = collisionRectWidth;
 				t_collisionRectWidth = collisionRectHeight;
-
 				this.width = srcFrameHeight;
 				this.height = srcFrameWidth;
-
 				break;
 
 			case TRANS_ROT180:
-
 				t_collisionRectX = srcFrameWidth - (collisionRectWidth +
 						collisionRectX);
 				t_collisionRectY = srcFrameHeight - (collisionRectHeight +
 						collisionRectY);
-
 				t_collisionRectWidth = collisionRectWidth;
 				t_collisionRectHeight = collisionRectHeight;
-
 				this.width = srcFrameWidth;
 				this.height = srcFrameHeight;
-
 				break;
 
 			case TRANS_ROT270:
-
 				t_collisionRectX = collisionRectY;
 				t_collisionRectY = srcFrameWidth - (collisionRectWidth +
 						collisionRectX);
-
 				t_collisionRectHeight = collisionRectWidth;
 				t_collisionRectWidth = collisionRectHeight;
-
 				this.width = srcFrameHeight;
 				this.height = srcFrameWidth;
-
 				break;
 
 			case TRANS_MIRROR_ROT90:
-
 				t_collisionRectX = srcFrameHeight - (collisionRectHeight +
 						collisionRectY);
 				t_collisionRectY = srcFrameWidth - (collisionRectWidth +
 						collisionRectX);
-
 				t_collisionRectHeight = collisionRectWidth;
 				t_collisionRectWidth = collisionRectHeight;
-
 				this.width = srcFrameHeight;
 				this.height = srcFrameWidth;
-
 				break;
 
 			case TRANS_MIRROR_ROT270:
-
 				t_collisionRectY = collisionRectX;
 				t_collisionRectX = collisionRectY;
-
 				t_collisionRectHeight = collisionRectWidth;
 				t_collisionRectWidth = collisionRectHeight;
-
 				this.width = srcFrameHeight;
 				this.height = srcFrameWidth;
 				break;
@@ -943,76 +797,28 @@ public class Sprite extends Layer
 		}
 	}
 
-	private int getTransformedPtX(int x, int y, int transform)
+	private int getTransformedPt(int coord, int transform, boolean isX)
 	{
-		int t_x = 0;
-		switch (transform)
+		switch (transform) 
 		{
-
 			case TRANS_NONE:
-				t_x = x;
-				break;
+				return coord;
 			case TRANS_MIRROR:
-				t_x = srcFrameWidth - x - 1;
-				break;
+				return isX ? srcFrameWidth - coord - 1 : coord;
 			case TRANS_MIRROR_ROT180:
-				t_x = x;
-				break;
+				return isX ? coord : srcFrameHeight - coord - 1;
 			case TRANS_ROT90:
-				t_x = srcFrameHeight - y - 1;
-				break;
+				return isX ? srcFrameHeight - coord - 1 : coord;
 			case TRANS_ROT180:
-				t_x = srcFrameWidth - x - 1;
-				break;
+				return isX ? srcFrameWidth - coord - 1 : srcFrameHeight - coord - 1;
 			case TRANS_ROT270:
-				t_x = y;
-				break;
+				return isX ? coord : srcFrameWidth - coord - 1;
 			case TRANS_MIRROR_ROT90:
-				t_x = srcFrameHeight - y - 1;
-				break;
+				return isX ? srcFrameHeight - coord - 1 : srcFrameWidth - coord - 1;
 			case TRANS_MIRROR_ROT270:
-				t_x = y;
-				break;
+				return isX ? coord : srcFrameWidth - coord - 1;
 			default:
-				break;
+				return 0;
 		}
-		return t_x;
 	}
-
-	private int getTransformedPtY(int x, int y, int transform)
-	{
-		int t_y = 0;
-		switch (transform)
-		{
-
-			case TRANS_NONE:
-				t_y = y;
-				break;
-			case TRANS_MIRROR:
-				t_y = y;
-				break;
-			case TRANS_MIRROR_ROT180:
-				t_y = srcFrameHeight - y - 1;
-				break;
-			case TRANS_ROT90:
-				t_y = x;
-				break;
-			case TRANS_ROT180:
-				t_y = srcFrameHeight - y - 1;
-				break;
-			case TRANS_ROT270:
-				t_y = srcFrameWidth - x - 1;
-				break;
-			case TRANS_MIRROR_ROT90:
-				t_y = srcFrameWidth - x - 1;
-				break;
-			case TRANS_MIRROR_ROT270:
-				t_y = x;
-				break;
-			default:
-				break;
-		}
-		return t_y;
-	}
-
 }
