@@ -49,7 +49,6 @@ public class Display
 	public static final int COLOR_BORDER = 4;
 	public static final int COLOR_HIGHLIGHTED_BORDER = 5;
 
-
 	private Displayable current;
 
 	private static Display display;
@@ -77,11 +76,8 @@ public class Display
 	public void callSerially(Runnable r)
 	{
 		LCDUILock.lock();
-		try {
-			serialCalls.add(r);
-		} finally {
-			LCDUILock.unlock();
-		}
+		try { serialCalls.add(r); } 
+		finally { LCDUILock.unlock(); }
 	}
 	private class SerialCallTimerTask extends TimerTask
 	{
@@ -94,13 +90,12 @@ public class Display
 					synchronized (calloutLock)
 					{
 						LCDUILock.lock();
-						try {
+						try 
+						{
 							Runnable call = serialCalls.get(0);
 							serialCalls.removeElementAt(0);
 							call.run();
-						} finally {
-							LCDUILock.unlock();
-						}
+						} finally { LCDUILock.unlock(); }
 					}
 				}
 				catch (Exception e) { }
@@ -121,10 +116,7 @@ public class Display
 		return Mobile.getPlatform().lcdHeight;
 	}
 
-	public int getBestImageWidth(int imageType)
-	{
-		return Mobile.getPlatform().lcdWidth;
-	}
+	public int getBestImageWidth(int imageType) { return Mobile.getPlatform().lcdWidth; }
 
 	public int getBorderStyle(boolean highlighted) { return 0; }
 
@@ -154,30 +146,20 @@ public class Display
 
 	public void setCurrent(Displayable next)
 	{
-		if (next == null){
-			return;
-		}
+		if (next == null){ return; }
+		if (current == next || insideSetCurrent) { return; }
 
 		LCDUILock.lock();
-		try {			
-			if (current == next || insideSetCurrent)
-			{
-				return;
-			}
-
+		try 
+		{			
 			try
 			{
 				insideSetCurrent = true;
-
-				try {
-					if (current != null) {
-						current.hideNotify();
-					}
+				try 
+				{
 					Mobile.getPlatform().keyState = 0; // reset keystate
 					next.showNotify();
-				} finally {
-					insideSetCurrent = false;
-				}
+				} finally { insideSetCurrent = false; }
 
 				current = next;
 				current.notifySetCurrent();
@@ -189,9 +171,7 @@ public class Display
 				System.out.println("Problem with setCurrent(next)");
 				e.printStackTrace();
 			}
-		} finally {
-			LCDUILock.unlock();
-		}
+		} finally { LCDUILock.unlock(); }
 	}
 
 	public void setCurrent(Alert alert, Displayable next)
