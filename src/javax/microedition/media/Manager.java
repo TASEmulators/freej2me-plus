@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
@@ -30,13 +33,22 @@ import org.recompile.mobile.PlatformPlayer;
 public final class Manager
 {
 	public static final String TONE_DEVICE_LOCATOR = "device://tone";
-	public static Player midiPlayers[] = new Player[32]; /* Default max amount of players in FreeJ2ME's config  */
-	public static byte midiPlayersIndex = 0;
+
+	/* Default max amount of players in FreeJ2ME's config  */
+	public static Player mediaPlayers[] = new Player[32];
+	public static byte mediaPlayersIndex = 0;
+
+	/* Midi Caching for better performance on certain VMs like OpenJDK 8 with jars that constantly load a similar set of streams. */
+	private static Map<String, Byte> mediaCache = new HashMap<>();
+	
 	public static boolean dumpAudioStreams = false;
-	public static short audioDumpIndex = 0;
 
 	public static Player createPlayer(InputStream stream, String type) throws IOException, MediaException
 	{
+		stream.mark(1024);
+		String streamMD5 = generateMD5Hash(stream, 1024);
+		stream.reset();
+
 		if(dumpAudioStreams) 
 		{
 			// Copy the stream contents into a temporary stream to be saved as file
@@ -58,44 +70,49 @@ public final class Manager
 			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
 
 			if(type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi")) 
-				{ dumpFile = new File(dumpPath + "Stream" + Short.toString(audioDumpIndex) + ".mid");}
-			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav")) { dumpFile = new File(dumpPath + "Stream" + Short.toString(audioDumpIndex) + ".wav");}
-			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3")) { dumpFile = new File(dumpPath + "Stream" + Short.toString(audioDumpIndex) + ".mp3");}
+				{ dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid");}
+			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav");}
+			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3");}
 
 			outStream = new FileOutputStream(dumpFile);
 
 			streamCopy.writeTo(outStream);
-
-			audioDumpIndex++;
 		}
 
-		//System.out.println("Create Player Stream "+type);
-		if(type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi"))
+		/* If we currently have this stream's player cached, return it instantly to avoid creating a new player and its overhead */
+		if (mediaCache.containsKey(streamMD5)) { return mediaPlayers[mediaCache.get(streamMD5)]; }
+
+		// Otherwise, let's create and cache a new one.
+
+		// If the index is out of bounds, we reached the end of our cache, go back to the start to find a position to free
+		if(mediaPlayersIndex >= mediaPlayers.length) { mediaPlayersIndex = 0; }
+
+		// Run through the entire cache index to find a suitable position to slot the new player in.
+		for(; mediaPlayersIndex < mediaPlayers.length; mediaPlayersIndex++) 
 		{
-			if(midiPlayersIndex >= midiPlayers.length) { midiPlayersIndex = 0; }
-			for(; midiPlayersIndex < midiPlayers.length; midiPlayersIndex++) 
-			{
-				if(midiPlayers[midiPlayersIndex] == null) { break; } /* A null position means we can use it right away */
-				/* Otherwise, we only deallocate a position if it is not playing (running). */
-				else if(midiPlayers[midiPlayersIndex] != null && midiPlayers[midiPlayersIndex].getState() == Player.PREFETCHED)
-				{ 
-					midiPlayers[midiPlayersIndex].deallocate();
-					break;
-				}
-				/* If we ever reach this one, it's because all the other slots are used, and are playing */
-				else if(midiPlayersIndex == midiPlayers.length-1)
-				{
-					midiPlayers[midiPlayersIndex].deallocate();
-					break;
-				}
+			if(mediaPlayers[mediaPlayersIndex] == null) { break; } /* A null position means we can use it right away */
+
+			/* Otherwise, we prefer deallocating a position if it is not playing (running). */
+			else if(mediaPlayers[mediaPlayersIndex] != null && mediaPlayers[mediaPlayersIndex].getState() == Player.PREFETCHED)
+			{ 
+				mediaPlayers[mediaPlayersIndex].deallocate();
+				mediaCache.values().remove(mediaPlayersIndex);
+				break;
 			}
-			midiPlayers[midiPlayersIndex] = new PlatformPlayer(stream, type);
-			return midiPlayers[midiPlayersIndex++];
+			/* If we ever reach this one, it's because all the other slots are used, and are playing. Deallocate the last cache position as a last resort. */
+			else if(mediaPlayersIndex == mediaPlayers.length-1)
+			{
+				mediaPlayers[mediaPlayersIndex].deallocate();
+				mediaCache.values().remove(mediaPlayersIndex);
+				break;
+			}
 		}
-		else 
-		{
-			return new PlatformPlayer(stream, type);
-		}
+
+		mediaPlayers[mediaPlayersIndex] = new PlatformPlayer(stream, type);
+		mediaCache.put(streamMD5, mediaPlayersIndex);
+		mediaPlayersIndex++;
+
+		return mediaPlayers[mediaCache.get(streamMD5)];
 	}
 
 	public static Player createPlayer(String locator) throws MediaException
@@ -124,6 +141,26 @@ public final class Manager
 
 	public static void updatePlayerNum(byte num) 
 	{
-		midiPlayers = new Player[num];
+		mediaPlayers = new Player[num];
 	}
+
+	private static String generateMD5Hash(InputStream stream, int byteCount) 
+	{
+        try
+		{
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] data = new byte[byteCount];
+            int bytesRead = stream.read(data, 0, byteCount);
+
+            if (bytesRead != -1) { md.update(data, 0, bytesRead); }
+
+            // Convert MD5 hash to hex string
+            StringBuilder md5Sum = new StringBuilder();
+            for (byte b : md.digest()) { md5Sum.append(String.format("%02x", b)); }
+
+            return md5Sum.toString();
+        } catch (Exception e) { System.out.println("Failed to generate stream MD5:" + e.getMessage()); }
+
+		return null;
+    }
 }

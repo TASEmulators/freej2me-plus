@@ -138,7 +138,7 @@ public class Config
 			if(!settings.containsKey("rotate")) { settings.put("rotate", "off"); }
 			if(!settings.containsKey("fps")) { settings.put("fps", "0"); }
 			if(!settings.containsKey("soundfont")) { settings.put("soundfont", "Default"); }
-			if(!settings.containsKey("maxmidistreams")) { settings.put("maxmidistreams", "32"); }
+			if(!settings.containsKey("mediaCacheSize")) { settings.put("mediaCacheSize", "48"); }
 
 		}
 		catch (Exception e)
@@ -229,10 +229,10 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateMIDIStreams(String value) 
+	public void updateMediaCacheSize(String value) 
 	{
-		System.out.println("Config: maxmidistreams "+value);
-		settings.put("maxmidistreams", value);
+		System.out.println("Config: mediaCacheSize "+value);
+		settings.put("mediaCacheSize", value);
 		saveConfig();
 		onChange.run();
 	}

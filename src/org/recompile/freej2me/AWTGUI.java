@@ -54,7 +54,7 @@ public final class AWTGUI
 	/* Sub menus (for now, all of them are located in "Settings") */
 	final Menu fpsCap = new Menu("FPS Limit");
 	final Menu phoneType = new Menu("Phone Key Layout");
-	final Menu midiStreamNum = new Menu("Max MIDI Streams");
+	final Menu midiStreamNum = new Menu("Media Cache Size");
 
 	/* Dialogs for resolution changes, restart notifications, MemStats and info about FreeJ2ME */
 	final Dialog resDialog = new Dialog(main , "Set LCD Resolution", true);
@@ -162,7 +162,7 @@ public final class AWTGUI
 	final CheckboxMenuItem fpsCap30 = new CheckboxMenuItem("30 FPS", false);
 	final CheckboxMenuItem fpsCap15 = new CheckboxMenuItem("15 FPS", false);
 
-	final CheckboxMenuItem midiStreams[] = new CheckboxMenuItem[] {new CheckboxMenuItem("1 Slot", false), new CheckboxMenuItem("2 Slots", false), 
+	final CheckboxMenuItem mediaCacheSize[] = new CheckboxMenuItem[] {new CheckboxMenuItem("1 Slot", false), new CheckboxMenuItem("2 Slots", false), 
 		new CheckboxMenuItem("4 Slots", false), new CheckboxMenuItem("8 Slots", false), new CheckboxMenuItem("16 Slots", false), 
 		new CheckboxMenuItem("32 Slots", false), new CheckboxMenuItem("48 Slots", false), new CheckboxMenuItem("64 Slots", false),
 		new CheckboxMenuItem("96 Slots", false)};
@@ -409,20 +409,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[0].addItemListener(new ItemListener() 
+		mediaCacheSize[0].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[0].getState())
+				if(mediaCacheSize[0].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[0]); 
+					config.updateMediaCacheSize(""+numPlayers[0]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[0])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[0])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -432,20 +432,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[1].addItemListener(new ItemListener() 
+		mediaCacheSize[1].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[1].getState())
+				if(mediaCacheSize[1].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[1]); 
+					config.updateMediaCacheSize(""+numPlayers[1]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[1])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[1])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -455,20 +455,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[2].addItemListener(new ItemListener() 
+		mediaCacheSize[2].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[2].getState())
+				if(mediaCacheSize[2].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[2]); 
+					config.updateMediaCacheSize(""+numPlayers[2]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[2])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[2])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -478,20 +478,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[3].addItemListener(new ItemListener() 
+		mediaCacheSize[3].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[3].getState())
+				if(mediaCacheSize[3].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[3]); 
+					config.updateMediaCacheSize(""+numPlayers[3]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[3])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[3])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -501,20 +501,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[4].addItemListener(new ItemListener() 
+		mediaCacheSize[4].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[4].getState())
+				if(mediaCacheSize[4].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[4]); 
+					config.updateMediaCacheSize(""+numPlayers[4]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[4])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[4])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -524,20 +524,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[5].addItemListener(new ItemListener() 
+		mediaCacheSize[5].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[5].getState())
+				if(mediaCacheSize[5].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[5]); 
+					config.updateMediaCacheSize(""+numPlayers[5]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[5])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[5])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -547,20 +547,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[6].addItemListener(new ItemListener() 
+		mediaCacheSize[6].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[6].getState())
+				if(mediaCacheSize[6].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[6]); 
+					config.updateMediaCacheSize(""+numPlayers[6]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[6])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[6])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -570,20 +570,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[7].addItemListener(new ItemListener() 
+		mediaCacheSize[7].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[7].getState())
+				if(mediaCacheSize[7].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[7]); 
+					config.updateMediaCacheSize(""+numPlayers[7]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[7])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[7])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -593,20 +593,20 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[8].addItemListener(new ItemListener() 
+		mediaCacheSize[8].addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(midiStreams[8].getState())
+				if(mediaCacheSize[8].getState())
 				{
-					config.updateMIDIStreams(""+numPlayers[8]); 
+					config.updateMediaCacheSize(""+numPlayers[8]); 
 					hasPendingChange = true;
 
 					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
+					for(int i = 0; i < mediaCacheSize.length; i++)
 					{
-						if(midiStreams[i].equals(midiStreams[8])) { continue; }
-						midiStreams[i].setState(false);
+						if(mediaCacheSize[i].equals(mediaCacheSize[8])) { continue; }
+						mediaCacheSize[i].setState(false);
 					}
 				
 				}
@@ -830,7 +830,7 @@ public final class AWTGUI
 		fpsCap.add(fpsCap30);
 		fpsCap.add(fpsCap15);
 
-		for(int i = 0; i < midiStreams.length; i++) { midiStreamNum.add(midiStreams[i]); }
+		for(int i = 0; i < mediaCacheSize.length; i++) { midiStreamNum.add(mediaCacheSize[i]); }
 		
 		// add menus to menubar
 		menuBar.add(fileMenu);
@@ -856,9 +856,9 @@ public final class AWTGUI
 
 			resChoice.select(""+ Integer.parseInt(config.settings.get("width")) + "x" + ""+ Integer.parseInt(config.settings.get("height")));
 			
-			for(int i = 0; i < midiStreams.length; i++) 
+			for(int i = 0; i < mediaCacheSize.length; i++) 
 			{
-				midiStreams[i].setState(config.settings.get("maxmidistreams").equals(""+numPlayers[i]));
+				mediaCacheSize[i].setState(config.settings.get("mediaCacheSize").equals(""+numPlayers[i]));
 			}
 
 			/* We only need to do this call once, when the jar first loads */
