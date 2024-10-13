@@ -221,16 +221,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	}
 
 
-	public void drawLine(int x1, int y1, int x2, int y2)
-	{
-		if (x2 >= x1) { x2++; } 
-		else { x1++; }
-
-		if (y2 >= y1) { y2++; } 
-		else { y1++; }
-
-		gc.drawLine(x1, y1, x2, y2);
-	}
+	public void drawLine(int x1, int y1, int x2, int y2) { gc.drawLine(x1, y1, x2, y2); }
 
 	public void drawRect(int x, int y, int width, int height)
 	{
