@@ -150,7 +150,7 @@ int phoneType; /* 0=standard, 1=nokia, 2=siemens, 3=motorola, 4=sonyEricsson */
 int gameFPS; /* Auto(0), 60, 30, 15 */
 int soundEnabled; /* also acts as a boolean */
 int customMidi; /* Also acts as a boolean */
-int maxMidiPlayers; /* Maximum amount of MIDI Players allowed on FreeJ2ME at any given time */
+int midiCacheSize; /* Maximum amount of MIDI Players allowed on FreeJ2ME at any given time */
 int dumpAudioStreams;
 /* Variables used to manage the pointer speed when controlled from an analog stick */
 int pointerXSpeed = 8;
@@ -356,19 +356,18 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "on")) { customMidi = 1; }
    }
 
-	var.key = "freej2me_maxmidiplayers";
+	var.key = "freej2me_mediacachesize";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (!strcmp(var.value, "32"))      { maxMidiPlayers = 32; }
-		else if (!strcmp(var.value, "1"))  { maxMidiPlayers = 1;  }
-		else if (!strcmp(var.value, "2"))  { maxMidiPlayers = 2;  }
-		else if (!strcmp(var.value, "4"))  { maxMidiPlayers = 4;  }
-		else if (!strcmp(var.value, "8"))  { maxMidiPlayers = 8;  }
-		else if (!strcmp(var.value, "16")) { maxMidiPlayers = 16; }
-		else if (!strcmp(var.value, "32")) { maxMidiPlayers = 32; }
-		else if (!strcmp(var.value, "48")) { maxMidiPlayers = 48; }
-		else if (!strcmp(var.value, "64")) { maxMidiPlayers = 64; }
-		else if (!strcmp(var.value, "96")) { maxMidiPlayers = 96; }
+		if (!strcmp(var.value, "48"))      { midiCacheSize = 48; }
+		else if (!strcmp(var.value, "1"))  { midiCacheSize = 1;  }
+		else if (!strcmp(var.value, "2"))  { midiCacheSize = 2;  }
+		else if (!strcmp(var.value, "4"))  { midiCacheSize = 4;  }
+		else if (!strcmp(var.value, "8"))  { midiCacheSize = 8;  }
+		else if (!strcmp(var.value, "16")) { midiCacheSize = 16; }
+		else if (!strcmp(var.value, "32")) { midiCacheSize = 32; }
+		else if (!strcmp(var.value, "64")) { midiCacheSize = 64; }
+		else if (!strcmp(var.value, "96")) { midiCacheSize = 96; }
 	}
 
 	var.key = "freej2me_dumpaudiostreams";
@@ -458,7 +457,7 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, maxMidiPlayers, dumpAudioStreams);
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, midiCacheSize, dumpAudioStreams);
 	optstrlen = strlen(options_update);
 
 	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
@@ -517,7 +516,7 @@ void retro_init(void)
 	 */
 	check_variables(true);
 
-	char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], maxMidiArg[3], dumpAudioArg[2];
+	char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], mediaCacheArg[3], dumpAudioArg[2];
 	sprintf(resArg[0], "%lu", screenRes[0]); /* Libretro config Width  */
 	sprintf(resArg[1], "%lu", screenRes[1]); /* Libretro config Height */
 	sprintf(halveCanvas, "%d",  halveCanvasRes);
@@ -526,7 +525,7 @@ void retro_init(void)
 	sprintf(fpsArg,    "%d",  gameFPS);
 	sprintf(soundArg,  "%d",  soundEnabled);
 	sprintf(midiArg,   "%d",  customMidi);
-	sprintf(maxMidiArg,"%d",  maxMidiPlayers);
+	sprintf(mediaCacheArg,"%d",  midiCacheSize);
 	sprintf(dumpAudioArg,   "%d",  dumpAudioStreams);
 
 	/* start java process */
@@ -552,7 +551,7 @@ void retro_init(void)
 		params[8] = strdup(fpsArg);
 		params[9] = strdup(soundArg);
 		params[10] = strdup(midiArg);
-		params[11] = strdup(maxMidiArg);
+		params[11] = strdup(mediaCacheArg);
 		params[12] = strdup(dumpAudioArg);
 		params[13] = NULL; // Null-terminate the array
 

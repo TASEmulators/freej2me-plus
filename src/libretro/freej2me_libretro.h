@@ -198,11 +198,11 @@ struct retro_core_option_v2_definition core_options[] =
         "Default"
     },
     {
-        "freej2me_maxmidiplayers",
-        "Virtual Phone Settings > Max MIDI Players",
-        "Max MIDI Players",
-        "Sets the maximum amount of MIDI files that a given J2ME app can load up and play at any given time. Lower values may reduce memory usage and improve the VM's performance (especially on ID Software games like DOOM II RPG where setting this to 1 vastly reduces memory usage compared to the default), but some games might need bigger values.",
-        "Sets the maximum amount of MIDI files that a given J2ME app can load up and play at any given time. Lower values may reduce memory usage and improve the VM's performance (especially on ID Software games like DOOM II RPG where setting this to 1 vastly reduces memory usage compared to the default), but some games might need bigger values.",
+        "freej2me_mediacachesize",
+        "Virtual Phone Settings > Media Cache Size",
+        "Media Cache Size",
+        "FreeJ2ME uses a media caching system to improve performance on certain VMs like OpenJDK 8 with apps that constantly allocate a similar set of media streams instead of keeping them allocated all the time (often to save precious memory). Most modern platforms should be able to hold the default of 48 unique streams in memory at once, which is also more than most J2ME apps would realistically load on real hardware. Feel free to adjust if your platform is starved for memory and/or you know the jar you're running only really uses a few slots of media but cycles the data it loads there.",
+        "FreeJ2ME uses a media caching system to improve performance on certain VMs like OpenJDK 8 with apps that constantly allocate a similar set of media streams instead of keeping them allocated all the time (often to save precious memory). Most modern platforms should be able to hold the default of 48 unique streams in memory at once, which is also more than most J2ME apps would realistically load on real hardware. Feel free to adjust if your platform is starved for memory and/or you know the jar you're running only really uses a few slots of media but cycles the data it loads there.",
         "vphone_settings",
         {
             {  "1",  "1" },
@@ -216,7 +216,7 @@ struct retro_core_option_v2_definition core_options[] =
             { "96", "96" },
             { NULL, NULL },
         },
-        "32"
+        "48"
     },
     {
         "freej2me_dumpaudiostreams",
@@ -461,10 +461,9 @@ struct retro_core_option_definition core_options_v1 [] =
         "Default"
     },
     {
-        "freej2me_maxmidiplayers",
-        "Max MIDI Players",
-        "Sets the maximum amount of MIDI files that a given J2ME app can load up and play at any given time. Lower values may reduce memory usage and improve the VM's performance (especially on ID Software games like DOOM II RPG where setting this to 1 vastly reduces memory usage compared to the default), but some games might need bigger values.",
-        {
+        "freej2me_mediacachesize",
+        "Media Cache Size",
+        "FreeJ2ME uses a media caching system to improve performance on certain VMs like OpenJDK 8 with apps that constantly allocate a similar set of media streams instead of keeping them allocated all the time (often to save precious memory). Most modern platforms should be able to hold the default of 48 unique streams in memory at once, which is also more than most J2ME apps would realistically load on real hardware. Feel free to adjust if your platform is starved for memory and/or you know the jar you're running only really uses a few slots of media but cycles the data it loads there.",        {
             {  "1",  "1" },
             {  "2",  "2" },
             {  "4",  "4" },
@@ -476,7 +475,7 @@ struct retro_core_option_definition core_options_v1 [] =
             { "96", "96" },
             { NULL, NULL },
         },
-        "32"
+        "48"
     },
     {
         "freej2me_dumpaudiostreams",
@@ -616,8 +615,8 @@ static const struct retro_variable vars[] =
         "MIDI Soundfont; off|on"
     },
     { /* Max MIDI Players */
-        "freej2me_maxmidiplayers",
-        "Max MIDI Players: 32|1|2|4|8|16|48|64|96"
+        "freej2me_mediacachesize",
+        "Media Cache Size: 48|1|2|4|8|16|32|64|96"
     },
     { /* Dump Audio Streams */
         "freej2me_dumpaudiostreams",
