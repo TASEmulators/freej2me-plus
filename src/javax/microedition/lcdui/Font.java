@@ -37,12 +37,20 @@ public final class Font
 	public static final int STYLE_PLAIN = 0;
 	public static final int STYLE_UNDERLINED = 4;
 
+	private static final int[] fontSizes = 
+	{
+		8,  8, 10, // < 128 minimum px dimension
+		8, 11, 12, // < 176 minimum px dimension
+		9, 12, 14, // < 220 minimum px dimension
+		10, 14, 16, // >= 220 minimum px dimension
+	};
 
-	private static Font defaultFont = null;
-
+	private static int screenType = -4;
 	private int face;
 	private int style;
 	private int size;
+
+	private static Font defaultFont = null;
 
 	public PlatformFont platformFont;
 
@@ -52,6 +60,15 @@ public final class Font
 		style = fontStyle;
 		size = fontSize;
 		platformFont = new PlatformFont(this);
+	}
+
+	public static void setScreenSize(int width, int height)
+	{
+		final int minSize = Math.min(width, height);
+		if (minSize < 128) { screenType = 0; }
+		else if (minSize < 176) { screenType = 1; }
+		else if (minSize < 220) { screenType = 2; }
+		else { screenType = 3; }
 	}
 
 	public int charsWidth(char[] ch, int offset, int length)
@@ -76,9 +93,7 @@ public final class Font
 
 	public static Font getFont(int face, int style, int size) { return new Font(face, style, size); }
 
-	public int getHeight() {
-		return platformFont.getHeight();
-	}
+	public int getHeight() { return platformFont.getHeight(); }
 
 	public int getSize() { return size; }
 
@@ -94,24 +109,18 @@ public final class Font
 
 	public boolean isUnderlined() { return (style & STYLE_UNDERLINED) == STYLE_UNDERLINED; }
 
-	public int stringWidth(String str)
-	{
-		return platformFont.stringWidth(str);
-	}
+	public int stringWidth(String str) { return platformFont.stringWidth(str); }
 
-	public int substringWidth(String str, int offset, int len)
-	{
-		return stringWidth(str.substring(offset, offset+len));
-	}
+	public int substringWidth(String str, int offset, int len) { return stringWidth(str.substring(offset, offset+len)); }
 
 	private int convertSize(int size)
 	{
 		switch(size)
 		{
-			case SIZE_LARGE  : return 14;
-			case SIZE_MEDIUM : return 12;
-			case SIZE_SMALL  : return 10;
-			default          : return 10;
+			case SIZE_LARGE  : return fontSizes[3*screenType + 2];
+			case SIZE_MEDIUM : return fontSizes[3*screenType + 1];
+			case SIZE_SMALL  :
+			default          : return fontSizes[3*screenType];
 		}
 	}
 }
