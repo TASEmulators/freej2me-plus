@@ -23,15 +23,15 @@ import java.io.InputStream;
 
 import java.awt.event.KeyEvent;
 
+import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Canvas;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.game.GameCanvas;
 import javax.microedition.lcdui.Image;
 import javax.microedition.m3g.Graphics3D;
 
 import java.awt.image.BufferedImage;
-
 
 /*
 	Mobile Platform
@@ -57,11 +57,7 @@ public class MobilePlatform
 
 	public MobilePlatform(int width, int height)
 	{
-		lcdWidth = width;
-		lcdHeight = height;
-
-		lcd = new PlatformImage(width, height);
-		gc = lcd.getGraphics();
+		resizeLCD(width, height);
 
 		Mobile.setGraphics3D(new Graphics3D());
 		
@@ -84,6 +80,7 @@ public class MobilePlatform
 	{
 		lcdWidth = width;
 		lcdHeight = height;
+		Font.setScreenSize(width, height);
 
 		lcd = new PlatformImage(width, height);
 		gc = lcd.getGraphics();
