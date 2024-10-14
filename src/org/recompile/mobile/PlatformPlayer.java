@@ -187,7 +187,18 @@ public class PlatformPlayer implements Player
 		}
 	}
 
+	/* Due to the media cache, don't actually deallocate here when a MIDlet requests so */
 	public void deallocate()
+	{
+		stop();
+		//player.deallocate();
+		state = Player.CLOSED;
+	}
+
+	/* 
+	 * This is where we do the actual deallocations, otherwise the cache could break audio in games like Sonic Jump (Nokia 240x320),
+	 * as it would return a deallocated player due to the call above. So in short, only Manager itself should deallocate players. */
+	public void cacheDeallocate() 
 	{
 		stop();
 		player.deallocate();
@@ -482,7 +493,7 @@ public class PlatformPlayer implements Player
 		private InputStream toneStream;
 		private int loops = 0;
 
-		public tonePlayer(InputStream stream) { toneStream = stream; }
+		public tonePlayer(InputStream stream) { System.out.println("Tone Player"); toneStream = stream; }
 
 		public void start() 
 		{  
