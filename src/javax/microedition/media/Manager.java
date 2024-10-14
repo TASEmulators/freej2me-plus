@@ -35,7 +35,7 @@ public final class Manager
 	public static final String TONE_DEVICE_LOCATOR = "device://tone";
 
 	/* Default max amount of players in FreeJ2ME's config  */
-	public static Player mediaPlayers[] = new Player[32];
+	public static PlatformPlayer mediaPlayers[] = new PlatformPlayer[32];
 	public static byte mediaPlayersIndex = 0;
 
 	/* Midi Caching for better performance on certain VMs like OpenJDK 8 with jars that constantly load a similar set of streams. */
@@ -58,7 +58,7 @@ public final class Manager
 			while ((copyLength = stream.read(copyBuffer)) > -1 ) { streamCopy.write(copyBuffer, 0, copyLength); }
 			streamCopy.flush();
 
-			// Make sure the initial strem will still be available for FreeJ2ME
+			// Make sure the initial stream will still be available for FreeJ2ME
 			stream = new ByteArrayInputStream(streamCopy.toByteArray());
 
 			// And save the copy to the specified dir
@@ -80,7 +80,20 @@ public final class Manager
 		}
 
 		/* If we currently have this stream's player cached, return it instantly to avoid creating a new player and its overhead */
-		if (mediaCache.containsKey(streamMD5)) { return mediaPlayers[mediaCache.get(streamMD5)]; }
+		if (mediaCache.containsKey(streamMD5))
+		{
+			/* 
+			 * We're basically "loading up" a new player as far as the MIDlet is concerned, 
+			 * so make it seem as such by doing the following steps before returning it to the MIDlet:
+			 * 1 - Stopping the player if it's not stopped (this will probably be removed once media playback loop is more mature)
+			 * 2 - Setting the media playback time back to the start.
+			 * 3 - Setting its state to PREFETCHED for good measure. 
+			 */
+			mediaPlayers[mediaCache.get(streamMD5)].stop();
+			mediaPlayers[mediaCache.get(streamMD5)].setMediaTime(0);
+			mediaPlayers[mediaCache.get(streamMD5)].prefetch();
+			return mediaPlayers[mediaCache.get(streamMD5)]; 
+		}
 
 		// Otherwise, let's create and cache a new one.
 
@@ -95,14 +108,14 @@ public final class Manager
 			/* Otherwise, we prefer deallocating a position if it is not playing (running). */
 			else if(mediaPlayers[mediaPlayersIndex] != null && mediaPlayers[mediaPlayersIndex].getState() == Player.PREFETCHED)
 			{ 
-				mediaPlayers[mediaPlayersIndex].deallocate();
+				mediaPlayers[mediaPlayersIndex].cacheDeallocate();
 				mediaCache.values().remove(mediaPlayersIndex);
 				break;
 			}
 			/* If we ever reach this one, it's because all the other slots are used, and are playing. Deallocate the last cache position as a last resort. */
 			else if(mediaPlayersIndex == mediaPlayers.length-1)
 			{
-				mediaPlayers[mediaPlayersIndex].deallocate();
+				mediaPlayers[mediaPlayersIndex].cacheDeallocate();
 				mediaCache.values().remove(mediaPlayersIndex);
 				break;
 			}
@@ -141,7 +154,7 @@ public final class Manager
 
 	public static void updatePlayerNum(byte num) 
 	{
-		mediaPlayers = new Player[num];
+		mediaPlayers = new PlatformPlayer[num];
 	}
 
 	private static String generateMD5Hash(InputStream stream, int byteCount) 
