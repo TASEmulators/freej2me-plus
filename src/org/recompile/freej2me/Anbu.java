@@ -27,6 +27,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder;
 
+import javax.microedition.media.Manager;
+
 public class Anbu
 {
 
@@ -78,10 +80,10 @@ public class Anbu
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.isDirectory()) 
+			if(!Manager.soundfontDir.isDirectory()) 
 			{ 
-				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				Manager.soundfontDir.mkdirs();
+				File dummyFile = new File(Manager.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -419,8 +421,8 @@ public class Anbu
 		if(rotate.equals("off")) { rotateDisplay = false; }
 
 		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
+		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 
