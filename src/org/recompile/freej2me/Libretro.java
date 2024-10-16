@@ -27,13 +27,12 @@ import java.awt.image.DataBufferByte;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.microedition.midlet.MIDlet;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
 import javax.microedition.media.Manager;
+import javax.microedition.midlet.MIDlet;
 
 public class Libretro
 {
@@ -103,10 +102,10 @@ public class Libretro
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.isDirectory()) 
+			if(!Manager.soundfontDir.isDirectory()) 
 			{ 
-				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				Manager.soundfontDir.mkdirs();
+				File dummyFile = new File(Manager.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -135,7 +134,7 @@ public class Libretro
 
 		if(Integer.parseInt(args[6]) == 0) { soundEnabled = false; }
 
-		if(Integer.parseInt(args[7]) == 1) { PlatformPlayer.customMidi = true; }
+		if(Integer.parseInt(args[7]) == 1) { Manager.useCustomMidi = true; }
 		
 		maxmidistreams = Integer.parseInt(args[8]);
 		Manager.updatePlayerNum((byte) maxmidistreams);
@@ -328,7 +327,7 @@ public class Libretro
 
 										config.settings.put("fps", ""+limitFPS);
 
-										if(!PlatformPlayer.customMidi) { config.settings.put("soundfont", "Default"); }
+										if(!Manager.useCustomMidi) { config.settings.put("soundfont", "Default"); }
 										else                           { config.settings.put("soundfont", "Custom");  }
 
 										config.settings.put("maxmidistreams", ""+maxmidistreams);
@@ -492,8 +491,8 @@ public class Libretro
 		if(rotate.equals("off")) { rotateDisplay = false; frameHeader[5] = (byte)0; }
 
 		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
+		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
 		halveCanvasRes = false;
 		if(config.settings.get("halveCanvasRes").equals("on")) 

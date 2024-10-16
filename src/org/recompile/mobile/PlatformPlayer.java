@@ -24,8 +24,6 @@ import java.io.FilenameFilter;
 import java.util.Vector;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequencer;
-import javax.sound.midi.Soundbank;
-import javax.sound.midi.Synthesizer;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -35,6 +33,7 @@ import javax.microedition.media.PlayerListener;
 
 import javax.microedition.media.Control;
 import javax.microedition.media.Controllable;
+import javax.microedition.media.Manager;
 
 public class PlatformPlayer implements Player
 {
@@ -48,10 +47,6 @@ public class PlatformPlayer implements Player
 	private Vector<PlayerListener> listeners;
 
 	private Control[] controls;
-
-	public static boolean customMidi = false;
-
-	public static File soundfontDir = new File("freej2me_system" + File.separatorChar + "customMIDI" + File.separatorChar);
 
 	public PlatformPlayer(InputStream stream, String type)
 	{
@@ -265,8 +260,6 @@ public class PlatformPlayer implements Player
 	private class midiPlayer extends audioplayer
 	{
 		private Sequencer midi;
-		private Soundbank soundfont;
-		Synthesizer synth;
 
 		private long tick = 0L;
 
@@ -274,54 +267,25 @@ public class PlatformPlayer implements Player
 		{
 			try
 			{
-				midi = MidiSystem.getSequencer();
-
-				/* 
-				 * Check if the user wants to run a custom MIDI soundfont. Also, there's no harm 
-				 * in checking if the directory exists again.
-				 */
-				if(customMidi)
-				{
-					/* Get the first sf2 soundfont in the directory */
-					String[] fontfile = soundfontDir.list(new FilenameFilter()
-					{
-						@Override
-						public boolean accept(File f, String soundfont ) 
-						{
-							return soundfont.toLowerCase().endsWith(".sf2");
-						}
-					});
-
-					/* 
-					 * Only really set the player to use a custom midi soundfont if there is one 
-					 * inside the directory.
-					 */
-					if(fontfile.length > 0) 
-					{
-						for(int i = 0; i < fontfile.length; i++) 
-						{
-							// Load the first .sf2 font, if there's none that's valid, don't set any and use JVM's default
-							if(fontfile[i].toLowerCase().endsWith(".sf2")) 
-							{
-								soundfont = MidiSystem.getSoundbank(new File(soundfontDir.getPath() + File.separatorChar + fontfile[i]));
-								midi = MidiSystem.getSequencer(false);
-								synth = MidiSystem.getSynthesizer();
-								synth.open();
-								synth.loadAllInstruments(soundfont);
-								midi.getTransmitter().setReceiver(synth.getReceiver());
-								break;
-							}
-						}
-					} else { System.out.println("PlatformPlayer: Custom MIDI enabled but there's no soundfont in" + (soundfontDir.getPath() + File.separatorChar)); }
-				} 
+				/* Open the midi stream without a receiver, so that we can load up the custom soundfont if available */
+				midi = MidiSystem.getSequencer(false);
 				midi.open();
+				
+				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
+				{
+					midi.getTransmitter().setReceiver(Manager.customSynth.getReceiver()); 
+				}
+				else
+				{
+					midi.getTransmitter().setReceiver(MidiSystem.getReceiver());
+				}
+
 				midi.setSequence(stream);
 				state = Player.PREFETCHED;
 			}
 			catch (Exception e) 
 			{ 
 				System.out.println("Couldn't load midi file:" + e.getMessage());
-				if(customMidi) { synth.close(); }
 				midi.close();
 			}
 		}
