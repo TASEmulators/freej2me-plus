@@ -17,26 +17,42 @@
 package org.recompile.mobile;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Vector;
+
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaEventListener;
+import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.SysexMessage;
+import javax.sound.midi.Track;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineListener;
 import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
-
+import javax.microedition.media.control.ToneControl;
 import javax.microedition.media.Control;
 import javax.microedition.media.Controllable;
 import javax.microedition.media.Manager;
 
 public class PlatformPlayer implements Player
 {
+
+	private final byte NUM_CONTROLS = 4;
 
 	private String contentType = "";
 
@@ -51,7 +67,7 @@ public class PlatformPlayer implements Player
 	public PlatformPlayer(InputStream stream, String type)
 	{
 		listeners = new Vector<PlayerListener>();
-		controls = new Control[3];
+		controls = new Control[NUM_CONTROLS];
 
 		contentType = type;
 
@@ -105,9 +121,16 @@ public class PlatformPlayer implements Player
 				player = new audioplayer();
 			}
 		}
-		controls[0] = new volumeControl();
-		controls[1] = new tempoControl();
-		controls[2] = new midiControl();
+		controls[0] = new volumeControl(this.player);
+
+		/* Midi Player has a few additional controls */
+		if(player instanceof midiPlayer) 
+		{
+			controls[1] = new tempoControl((midiPlayer) this.player);
+			controls[2] = new midiControl((midiPlayer) this.player);
+			controls[3] = new toneControl((midiPlayer) this.player);
+		}
+		
 
 		//System.out.println("media type: "+type);
 	}
@@ -120,57 +143,59 @@ public class PlatformPlayer implements Player
 		System.out.println("Player locator: "+locator);
 	}
 
-
 	public void close()
 	{
+		if(getState() == Player.CLOSED) { return; }
+
 		try
 		{
 			player.stop();
+			cacheDeallocate();
 			state = Player.CLOSED;
 			notifyListeners(PlayerListener.CLOSED, null);	
 		}
 		catch (Exception e) { }
-		state = Player.CLOSED;	
 	}
 
-	public int getState()
-	{
-		if(player.isRunning()==false)
-		{
-			state = Player.PREFETCHED;
-		}
-		return state;
-	}
+	public int getState() { return state; }
 
 	public void start()
 	{
 		//System.out.println("Play "+contentType);
-		try
-		{
-			player.start();
-		}
-		catch (Exception e) {  }
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call start() on a CLOSED player."); }
+		
+		if(getState() == Player.REALIZED || getState() == Player.UNREALIZED) { prefetch(); }
+
+		if(getState() == Player.PREFETCHED) { player.start(); }
 	}
 
 	public void stop()
 	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call stop() on a CLOSED player."); }
+		
 		//System.out.println("Stop "+contentType);
-		try
-		{
-			player.stop();
+		if(getState() == Player.STARTED) 
+		{ 
+			try { player.stop(); }
+			catch (Exception e) { }
 		}
-		catch (Exception e) { }
 	}
 
 	public void addPlayerListener(PlayerListener playerListener)
 	{
 		//System.out.println("Add Player Listener");
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot add PlayerListener to a CLOSED player"); }
+		if(playerListener == null) { return; }
+
 		listeners.add(playerListener);
 	}
 
 	public void removePlayerListener(PlayerListener playerListener)
 	{
 		//System.out.println("Remove Player Listener");
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot remove PlayerListener from a CLOSED player"); }
+		if(playerListener == null) { return; }
+
 		listeners.remove(playerListener);
 	}
 
@@ -185,9 +210,11 @@ public class PlatformPlayer implements Player
 	/* Due to the media cache, don't actually deallocate here when a MIDlet requests so */
 	public void deallocate()
 	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot deallocate player, it is already CLOSED."); }
+
 		stop();
 		//player.deallocate();
-		state = Player.CLOSED;
+		state = Player.REALIZED;
 	}
 
 	/* 
@@ -195,41 +222,90 @@ public class PlatformPlayer implements Player
 	 * as it would return a deallocated player due to the call above. So in short, only Manager itself should deallocate players. */
 	public void cacheDeallocate() 
 	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot deallocate player, it is already CLOSED."); }
+
 		stop();
 		player.deallocate();
-		state = Player.CLOSED;
+		state = Player.REALIZED;
 	}
 
-	public String getContentType() { return contentType; }
+	public String getContentType() 
+	{
+		if(getState() == Player.UNREALIZED || getState() == Player.CLOSED) { throw new IllegalStateException("Cannot get content type. Player is either CLOSED or UNREALIZED."); }
+		
+		return contentType; 
+	}
 
-	public long getDuration() { return Player.TIME_UNKNOWN; }
+	public long getDuration() 
+	{ 
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getDuration() on a CLOSED player."); }
 
-	public long getMediaTime() { return player.getMediaTime(); }
+		if(getState() == Player.REALIZED || getState() == Player.UNREALIZED) { return Player.TIME_UNKNOWN; }
+		
+		return player.getDuration(); // Maybe not really needed? We should find a jar that actually uses this for something
+	}
 
-	public void prefetch() { state = Player.PREFETCHED; }
+	public long getMediaTime() 
+	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getMediaTime on a CLOSED player."); }
+		
+		return player.getMediaTime(); 
+	}
 
-	public void realize() { state = Player.REALIZED; }
+	public void prefetch() 
+	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot prefetch player, as it is in the CLOSED state."); }
+		if(getState() == Player.UNREALIZED) { realize(); }
+		
+		if(getState() == Player.REALIZED) { player.prefetch(); }
+	}
 
-	public void setLoopCount(int count) { player.setLoopCount(count); }
+	/* Both midi and wav players do nothing other than just set their state as REALIZED here. */
+	public void realize() 
+	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot realize player, as it is in the CLOSED state"); }
+		
+		if(getState() == Player.UNREALIZED) { player.realize(); }
+	}
 
-	public long setMediaTime(long now) { return player.setMediaTime(now); }
+	public void setLoopCount(int count) 
+	{
+		/* A MIDlet setting 0 explicitly here is illegal */
+		if(count == 0) {throw new IllegalStateException("Jar tried to set loop count as 0. ");}
+		if(getState() == Player.CLOSED || getState() == Player.STARTED) { throw new IllegalStateException("Jar tried to set loop count on a player in an invalid state. "); }
+
+		player.setLoopCount(count); 
+	}
+
+	public long setMediaTime(long now) 
+	{
+		if(getState() == Player.UNREALIZED || getState() == Player.CLOSED) { throw new IllegalStateException("Cannot set Media Time. Player is either UNREALIZED or CLOSED. "); }
+
+		return player.setMediaTime(now);
+	}
 
 	// Controllable interface //
 
 	public Control getControl(String controlType)
 	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getControl(), as the player is CLOSED."); }
+
 		if(controlType.equals("VolumeControl")) { return controls[0]; }
 		if(controlType.equals("TempoControl")) { return controls[1]; }
 		if(controlType.equals("MIDIControl")) { return controls[2]; }
+		if(controlType.equals("ToneControl")) { return controls[3]; }
 		if(controlType.equals("javax.microedition.media.control.VolumeControl")) { return controls[0]; }
 		if(controlType.equals("javax.microedition.media.control.TempoControl")) { return controls[1]; }
 		if(controlType.equals("javax.microedition.media.control.MIDIControl")) { return controls[2]; }
+		if(controlType.equals("javax.microedition.media.control.ToneControl")) { return controls[3]; }
 		return null;
 	}
 
-	public Control[] getControls()
-	{
-		return controls;
+	public Control[] getControls() 
+	{ 
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getControls(), as the player is CLOSED."); }
+
+		return controls; 
 	}
 
 	/* Read 'n' Bytes from the InputStream. Used by IMA ADPCM decoder as well. */
@@ -255,13 +331,34 @@ public class PlatformPlayer implements Player
 		public long getMediaTime() { return 0; }
 		public boolean isRunning() { return false; }
 		public void deallocate() {  }
+		public void realize() { }
+		public void prefetch() { }
+		public long getDuration() { return Player.TIME_UNKNOWN; }
+
+		/* Copy the stream to a local variable, as we need it in order to realize() and prefetch() on midi and wav players */
+		protected byte[] copyMediaData(InputStream stream) 
+		{
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			byte[] buffer = new byte[1024];
+			int bytesRead;
+			try 
+			{
+				while ((bytesRead = stream.read(buffer)) != -1) 
+				{
+					byteArrayOutputStream.write(buffer, 0, bytesRead);
+				}
+			} catch (Exception e) { System.out.println("Failed to copy audio stream data:" + e.getMessage()); }
+			
+
+			return byteArrayOutputStream.toByteArray();
+		}
 	}
 
 	private class midiPlayer extends audioplayer
 	{
+		private byte[] stream;
 		private Sequencer midi;
-
-		private long tick = 0L;
+		private Sequence midiSequence;
 
 		public midiPlayer(InputStream stream)
 		{
@@ -269,8 +366,21 @@ public class PlatformPlayer implements Player
 			{
 				/* Open the midi stream without a receiver, so that we can load up the custom soundfont if available */
 				midi = MidiSystem.getSequencer(false);
-				midi.open();
-				
+				this.stream = copyMediaData(stream);
+			}
+			catch (Exception e) 
+			{ 
+				System.out.println("Couldn't load midi file:" + e.getMessage());
+				midi.close();
+			}
+		}
+
+		public void realize() 
+		{ 
+			try 
+			{ 
+				midi.open(); 
+
 				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
 				{
 					midi.getTransmitter().setReceiver(Manager.customSynth.getReceiver()); 
@@ -280,112 +390,138 @@ public class PlatformPlayer implements Player
 					midi.getTransmitter().setReceiver(MidiSystem.getReceiver());
 				}
 
-				midi.setSequence(stream);
+				state = Player.REALIZED;
+			}
+			catch (MidiUnavailableException e) { System.out.println("Couldn't realize midi player: " + e.getMessage());}
+		}
+
+		public void prefetch() 
+		{
+			try 
+			{	
+				/* Make a new copy of the media stream, as prefetch() can be called more than once during the player's lifecycle */
+				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(stream));
+				midi.setSequence(midiSequence);
 				state = Player.PREFETCHED;
-			}
-			catch (Exception e) 
-			{ 
-				System.out.println("Couldn't load midi file:" + e.getMessage());
-				midi.close();
-			}
+			} catch (Exception e) {System.out.println("Could not prefetch midi stream:" + e.getMessage());}
 		}
 
 		public void start()
 		{
-			if(isRunning()) { return; }
-
-			if(midi.getTickPosition() >= midi.getTickLength())
-			{
-				midi.setTickPosition(0);
-			}
-			tick = midi.getTickPosition();
+			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
 			midi.start();
+
+			/* 
+			 * We have to listen for END_OF_MEDIA events, or else jars that rely on this
+			 * won't work in the expected way.
+			 */
+			midi.addMetaEventListener(new MetaEventListener() 
+			{
+				@Override
+				public void meta(MetaMessage meta) 
+				{
+					if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
+					{
+						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+						state = Player.PREFETCHED;
+					}
+				}
+			});
 			state = Player.STARTED;
-			notifyListeners(PlayerListener.STARTED, tick);
+			notifyListeners(PlayerListener.STARTED, getMediaTime());
 		}
 
 		public void stop()
 		{
-			if(!isRunning()) { return; }
 			midi.stop();
 			state = Player.PREFETCHED;
-			tick = midi.getTickPosition();
-			notifyListeners(PlayerListener.STOPPED, tick);
+			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
-		public void deallocate()
-		{
-			midi.close();
-		}
+
+		public void deallocate() { midi.close(); }
 
 		public void setLoopCount(int count)
 		{
 			/* 
-			 * Treat cases where an app has already set 
-			 * loops as 0, or wants this stream to loop continuously.
+			 * Treat cases where an app wants this stream to loop continuously.
 			 * Here, count = 1 means it should loop one time, whereas in j2me
 			 * it appears that count = 1 means no loop at all, at least based
 			 * on Gameloft games that set effects and some music with count = 1
 			 */
-			if(count == Clip.LOOP_CONTINUOUSLY || count == 0) { midi.setLoopCount(count); }
+			if(count == Clip.LOOP_CONTINUOUSLY) { midi.setLoopCount(count); }
 			else { midi.setLoopCount(count-1); }
 		}
+
 		public long setMediaTime(long now)
 		{
-			try
+			try 
 			{
-				midi.setTickPosition(now);
+				if(now >= getDuration()) { midi.setMicrosecondPosition(getDuration()); }
+				else if(now < 0) { midi.setMicrosecondPosition(0); }
+				else { midi.setMicrosecondPosition(now);  }
 			}
-			catch (Exception e) { }
-			return now;
+			catch (Exception e) { System.out.println("Failed to set MIDI position:" + e.getMessage()); }
+			
+			/* 
+			 * MicrosecondPosition doesn't guarantee perfect precision, so return the new
+			 * effective position according to the stream.
+			 */
+			return getMediaTime();
 		}
-		public long getMediaTime()
-		{
-			return midi.getTickPosition();
-		}
-		public boolean isRunning()
-		{
-			return midi.isRunning();
-		}
+
+		public long getMediaTime() { return midi.getMicrosecondPosition(); }
+
+		public long getDuration() { return midi.getMicrosecondLength(); }
+
+		public boolean isRunning() { return midi.isRunning(); }
 	}
 
 	private class wavPlayer extends audioplayer
 	{
 		/* PCM WAV variables */
+		private byte[] stream;
 		private AudioInputStream wavStream;
 		private Clip wavClip;
 		/* IMA ADPCM WAV variables */
 		private WavImaAdpcmDecoder adpcmDec = new WavImaAdpcmDecoder();
 		InputStream decodedStream;
 		private int[] wavHeaderData = new int[4];
-		
-		/* Player control variables */
-		private long time = 0L;
 
 		public wavPlayer(InputStream stream)
 		{
-			try
+			/*
+			 * A wav header is generally 44-bytes long, and it is what we need to read in order to get
+			 * the stream's format, frame size, bit rate, number of channels, etc. which gives us information
+			 * on the kind of codec needed to play or decode the incoming stream. The stream needs to be reset
+			 * or else PCM files will be loaded without a header and it might cause issues with playback.
+			 */
+			try 
 			{
-				/*
-				 * A wav header is generally 44-bytes long, and it is what we need to read in order to get
-				 * the stream's format, frame size, bit rate, number of channels, etc. which gives us information
-				 * on the kind of codec needed to play or decode the incoming stream. The stream needs to be reset
-				 * or else PCM files will be loaded without a header and it might cause issues with playback.
-				 */
 				stream.mark(48);
 				wavHeaderData = adpcmDec.readHeader(stream);
 				stream.reset();
+				this.stream = copyMediaData(stream);
+			} catch (Exception e) { System.out.println("Could not prepare wav stream:" + e.getMessage());}
+		}
 
+		public void realize() { state = Player.REALIZED; }
+
+		public void prefetch() 
+		{
+			try
+			{
 				/* We only check for IMA ADPCM at the moment. */
 				if(wavHeaderData[0] != 17) /* If it's not IMA ADPCM we don't need to do anything to the stream. */
 				{
-					wavStream = AudioSystem.getAudioInputStream(stream);
+					/* Same idea as midiPlayer, operate on a new copy of the media stream */
+					wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(stream));
 					wavClip = AudioSystem.getClip();
 					wavClip.open(wavStream);
 					state = Player.PREFETCHED;
 				}
 				else /* But if it is IMA ADPCM, we have to decode it manually. */
 				{
-					decodedStream = adpcmDec.decodeImaAdpcm(stream, wavHeaderData);
+					decodedStream = adpcmDec.decodeImaAdpcm(new ByteArrayInputStream(stream), wavHeaderData);
 					wavStream = AudioSystem.getAudioInputStream(decodedStream);
 					wavClip = AudioSystem.getClip();
 					wavClip.open(wavStream);
@@ -400,55 +536,67 @@ public class PlatformPlayer implements Player
 		}
 
 		public void start()
-		{
-			if(isRunning()) { return; }
-			
-			if(wavClip.getFramePosition() >= wavClip.getFrameLength())
-			{
-				wavClip.setFramePosition(0);
-			}
-			time = wavClip.getMicrosecondPosition();
+		{	
+			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
 			wavClip.start();
+
+			/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
+			wavClip.addLineListener(new LineListener() 
+			{
+				@Override
+				public void update(LineEvent event) 
+				{
+					if (event.getType() == LineEvent.Type.STOP) 
+					{
+						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+						state = Player.PREFETCHED;
+					}
+				}
+			});
+
 			state = Player.STARTED;
-			notifyListeners(PlayerListener.STARTED, time);
+			notifyListeners(PlayerListener.STARTED, getMediaTime());
 		}
 
 		public void stop()
 		{
-			if(!isRunning()) { return; }
 			wavClip.stop();
-			time = wavClip.getMicrosecondPosition();
 			state = Player.PREFETCHED;
-			notifyListeners(PlayerListener.STOPPED, time);
+			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
+
+		public void deallocate() { wavClip = null; }
 
 		public void setLoopCount(int count)
 		{
 			/* 
-			 * Treat cases where an app has already set 
-			 * loops as 0, or wants this stream to loop continuously.
+			 * Treat cases where an app wants this stream to loop continuously.
 			 * Here, count = 1 means it should loop one time, whereas in j2me
 			 * it appears that count = 1 means no loop at all, at least based
 			 * on Gameloft games that set effects and some music with count = 1
 			 */
-			if(count == Clip.LOOP_CONTINUOUSLY || count == 0) { wavClip.loop(count); }
+			if(count == Clip.LOOP_CONTINUOUSLY) { wavClip.loop(count); }
 			else { wavClip.loop(count-1); }
 		}
 
 		public long setMediaTime(long now)
 		{
-			wavClip.setMicrosecondPosition(now);
-			return now;
-		}
-		public long getMediaTime()
-		{
-			return wavClip.getMicrosecondPosition();
+			if(now >= getDuration()) { wavClip.setMicrosecondPosition(getDuration()); }
+			else if(now < 0) { wavClip.setMicrosecondPosition(0); }
+			else { wavClip.setMicrosecondPosition(now);  }
+
+			/* 
+			 * MicrosecondPosition doesn't guarantee perfect precision, so return the new
+			 * effective position according to the stream.
+			 */
+			return getMediaTime();
 		}
 
-		public boolean isRunning()
-		{
-			return wavClip.isRunning();
-		}
+		public long getMediaTime() { return wavClip.getMicrosecondPosition(); }
+
+		public long getDuration() { return  wavClip.getMicrosecondLength(); }
+
+		public boolean isRunning() { return wavClip.isRunning(); }
 	}
 
 	/* Todo: Implement tone playing functionality */
@@ -482,61 +630,406 @@ public class PlatformPlayer implements Player
 
 	// Controls //
 
+	/* midiControl is untested */
 	private class midiControl implements javax.microedition.media.control.MIDIControl
 	{
-		public int[] getBankList(boolean custom) { return new int[]{}; }
+		private midiPlayer player;
 
-		public int getChannelVolume(int channel) { return 0; }
+		/* 
+		 * Java, by default, does not directly support any of the query methods
+		 * below, which means we must implement them, and track the state of 
+		 * everything that they change ourselves.
+		 */
+		private int[] channelVolume = new int[16]; // For getChannelVolume
+		//private int[] programs = new int[16]; // For getProgram
 
-		public java.lang.String getKeyName(int bank, int prog, int key) { return ""; }
+		public midiControl(midiPlayer player) 
+		{ 
+			this.player = player;
+			for(int channel = 0; channel < channelVolume.length; channel++) { channelVolume[channel] = 127; }
+		}
 
-		public int[] getProgram(int channel) { return new int[]{}; }
+		public int[] getBankList(boolean custom) 
+		{ 
+			System.out.println("midiControl: getBankList()");
+			return new int[]{}; 
+		}
 
-		public int[] getProgramList(int bank) { return new int[]{}; }
+		public int getChannelVolume(int channel) 
+		{ 
+			System.out.println("midiControl: getChannelVolume()");
+			return channelVolume[channel];
+		}
 
-		public java.lang.String getProgramName(int bank, int prog) { return ""; }
+		public java.lang.String getKeyName(int bank, int prog, int key) 
+		{ 
+			System.out.println("midiControl: getKeyName()");
+			return ""; 
+		}
 
-		public boolean isBankQuerySupported() { return false; }
+		public int[] getProgram(int channel) 
+		{ 
+			System.out.println("midiControl: getProgram()");
+			return new int[]{}; 
+		}
 
-		public int longMidiEvent(byte[] data, int offset, int length) { return 0; }
+		public int[] getProgramList(int bank) 
+		{ 
+			System.out.println("midiControl: getProgramList()");
+			return new int[]{}; 
+		}
 
-		public void setChannelVolume(int channel, int volume) {  }
+		public java.lang.String getProgramName(int bank, int prog) 
+		{ 
+			System.out.println("midiControl: getProgramName()");
+			return ""; 
+		}
 
-		public void setProgram(int channel, int bank, int program) {  }
+		public boolean isBankQuerySupported() 
+		{ 
+			System.out.println("midiControl: isBankQuerySupported()");
+			return false; 
+		}
 
-		public void shortMidiEvent(int type, int data1, int data2) {  }
+		public int longMidiEvent(byte[] data, int offset, int length) 
+		{
+			System.out.println("midiControl: longMidiEvent()");
+
+			if(data == null || offset < 0 || length < 0) { throw new IllegalArgumentException("MmidiControl: Invalid arguments for shortMidiEvent()"); }
+
+			/* longMidiEvent sends System Exclusive messagesm hence the SysexMessage data */
+			Track[] tracks = player.midiSequence.getTracks();
+			try 
+			{
+				if (data.length >= offset + length && length > 0) 
+				{
+					MidiEvent event = new MidiEvent(new SysexMessage(data, length), 0);
+					tracks[0].add(event); // Add to track 0; adjust as necessary
+					return 1; // Return 1 to indicate success
+				}
+			} catch (Exception e) { System.out.println("Failed to send long MIDI event: " + e.getMessage()); }
+
+			return 0; 
+		}
+
+		public void setChannelVolume(int channel, int volume) 
+		{
+			System.out.println("midiControl: setChannelVolume()");
+
+			if(channel < 0 || channel > 15 || volume < 0 || volume > 127) {throw new IllegalArgumentException("midiControl: Tried to call setChannelVolume with invalid args");}
+
+			Track[] track = player.midiSequence.getTracks();
+
+			try 
+			{
+				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, 7, volume), 0));
+				channelVolume[channel] = volume; // Update the stored volume
+			}
+			catch (Exception e) { System.out.println("Midi setLevel failed: " + e.getMessage());}
+		}
+
+		public void setProgram(int channel, int bank, int program) 
+		{  
+			System.out.println("midiControl: setProgram()");
+
+			/* Track[] track = player.midiSequence.getTracks();
+			try 
+			{
+				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, 0, bank), 0));
+				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.PROGRAM_CHANGE, channel, program, 0), 0));
+
+				programs[channel] = program;
+			} catch (Exception e) { System.out.println("Failed to set program: " + e.getMessage()); } */
+		}
+
+		public void shortMidiEvent(int type, int data1, int data2) 
+		{  
+			System.out.println("midiControl: shortMidiEvent()");
+
+			if(type == 0xF0 || type == 0xF7 || data1 < 0 || data1 > 127 || data2 < 0 || data2 > 127) { throw new IllegalArgumentException("MmidiControl: Invalid arguments for shortMidiEvent()"); }
+
+			Track[] tracks = player.midiSequence.getTracks();
+
+			/* 
+			 * This is probably incorrect, but send the shortEvent to the first track of the Sequence,
+			 * as i don't think we can send that to the MIDI device itself.
+			 */
+			try { tracks[0].add(new MidiEvent(new ShortMessage(type, data1, data2), 0)); } 
+			catch (Exception e) { System.out.println("Failed to send short MIDI event: " + e.getMessage()); }
+		}
 	}
 
 	private class volumeControl implements javax.microedition.media.control.VolumeControl
 	{
 		private int level = 100;
 		private boolean muted = false;
+		private audioplayer player; // Reference to the player this is linked to, or else we won't be able to apply changes
 
-		public int getLevel() { return level; }
+		public volumeControl(audioplayer player) { this.player = player; }
+
+		public int getLevel() 
+		{
+			/* 
+			 * We could return -1 here if the player is in REALIZED state, but that would require
+			 * having access to platformPlayer itself, and this seems a bit optional... let's wait
+			 * and see if any jar uses this for flow control of any kind.
+			 */
+			return level; 
+		}
+
+		public int setLevel(int level) 
+		{
+			/* 
+			 * EXPERIMENTAL: Not sure if this is the correct approach, but: 
+			 * 
+			 * Only save the new level value if the stream isn't muted.
+			 * 
+			 * My logic here is that if this check isn't in place, we would
+			 * hit cases where a jar goes into mute (sets level to 0 because of that)
+			 * then goes out of mute but is still silent since setMute() will call this
+			 * method with 0 as its level, which was the one that was saved.
+			*/
+			if(!isMuted()) 
+			{
+				/* Some Digital Chocolate games actually go all the way to level = 120. E.g. Tornado Mania */
+				if(level > 100) { this.level = 100; }
+				else if(level < 0) { this.level = 0; }
+				else { this.level = level; }
+			}
+
+			/* 
+			 * Checking if the current level is the same as the one received isn't particularly useful for us,
+			 * as no exceptions will be thrown, and it's not like we're hurting for cpu cycles here to benefit
+			 * from only making effective changes if needed.
+			 */
+
+			if(player instanceof midiPlayer) 
+			{
+				
+				midiPlayer sequencer = (midiPlayer) player;
+				int midiVolume = isMuted() ? 0: (int) (this.level * 127 / 100);
+
+				/* Set volume for all channels, through Control Change command 7 */
+				for (Track track : sequencer.midiSequence.getTracks())
+				{
+					for (int i = 0; i < 16; i++)
+						{
+							/* 
+							 * This will make it so that volume changes take effect at the start of the midi stream.
+							 * As far as i could test, all jars that have volume adjustment seem to start their streams
+							 * from the very beginning after the volume is changed, so this is probably safe.
+							 */
+							try {track.add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, i, 7, midiVolume), 0)); }
+							catch (Exception e) { System.out.println("Midi setLevel failed: " + e.getMessage());}
+						}
+				}
+			}
+			else if(player instanceof wavPlayer) /* Haven't found a jar that actually makes use of this yet - Scratch that: Shadow Shoot again */
+			{
+				wavPlayer wav = (wavPlayer) player;
+
+				/* We have to map 0 <= value <= 100 to a clip's range of -80dB to 0dB  */
+				float dB = isMuted() ? 0 : -80.0f + ((this.level / 100.0f) * (80.0f));
+
+				FloatControl volumeControl = (FloatControl) wav.wavClip.getControl(FloatControl.Type.MASTER_GAIN);
+				volumeControl.setValue(dB);
+			}
+
+			notifyListeners(PlayerListener.VOLUME_CHANGED, this);
+			
+			if(isMuted()) { return 0; }
+
+			return this.level; 
+		}
+
+		public void setMute(boolean mute) 
+		{
+			if(mute != isMuted()) 
+			{
+				muted = mute;
+
+				if(muted) { setLevel(0); }
+				else { setLevel(level); }
+			}
+		}
 
 		public boolean isMuted() { return muted; }
-
-		public int setLevel(int value) { level = value; return level; }
-
-		public void setMute(boolean mute) { muted = mute; }
 	}
 
+	/* This one hasn't been tested yet, no jar was found at the time it was implemented */
 	private class tempoControl implements javax.microedition.media.control.TempoControl
 	{
-		int tempo = 5000;
-		int rate = 5000;
+		/* MAX_RATE and MIN_RATE follow the JSR-135 docs guaranteed values, no matter if our player has a wider range */
+		private final int MAX_RATE = 300000;
+		private final int MIN_RATE = 10000;
 
-		public int getTempo() { return tempo; }
+		private int tempo = 120000; // Default tempo of 120 BPM in millitempo
+		private int rate = 100000; // Default Rate in RateControl
 
-		public int setTempo(int millitempo) { tempo = millitempo; return tempo; }
+		private midiPlayer player;
+
+		public tempoControl(midiPlayer player) { this.player = player; }
+
+		/* 
+		 * According to the docs, getTempo():
+		 * 
+		 * Gets the current playback tempo. This represents the current state of the sequencer:
+		 *	1 - A sequencer may not be initialized before the Player is prefetched. An uninitialized sequencer in this case returns a default tempo of 120 beats per minute.
+		 *	2 - After prefetching has finished, the tempo is set to the start tempo of the MIDI sequence (if any).
+		 *	3 - During playback, the return value is the current tempo and varies with tempo events in the MIDI file
+		 *	4 - A stopped sequence retains the last tempo it had before it was stopped.
+		 *	5 - A call to setTempo() changes current tempo until a tempo event in the MIDI file is encountered.
+		 *
+		 * Of course, only the very basic, case 3 is considered. If needed, and a jar is found to need it, 
+		 * we can implement the other cases for better player state handling.
+		 */
+
+		public int getTempo() { System.out.println("TempoControl: getTempo()"); return tempo; }
+
+		public int setTempo(int millitempo) 
+		{ 
+			System.out.println("TempoControl: setTempo()");
+			tempo = millitempo; 
+			
+			/* 
+			 * Here the docs say that the midi should START at this tempo, which
+			 * indicates that we probably should add a midiEvent message to its
+			 * tracks in order to change their tempo at tick 0, but first we need
+			 * to find a jar that uses this, otherwise it's a shot in the dark.
+			*/
+			player.midi.setTempoInBPM(getEffectiveBPM());
+
+			return tempo; 
+		}
 
 		// RateControl interface
-		public int getMaxRate() { return rate; }
+		public int getMaxRate() { System.out.println("TempoControl: getMaxRate()"); return MAX_RATE; }
 
-		public int getMinRate() { return rate; }
+		public int getMinRate() { System.out.println("TempoControl: getMinRate()"); return MIN_RATE; }
 
-		public int getRate() { return rate; }
+		public int getRate() { System.out.println("TempoControl: getRate()"); return rate; }
 
-		public int setRate(int millirate) { rate=millirate; return rate; }
+		public int setRate(int millirate) 
+		{ 
+			System.out.println("TempoControl: setRate()");
+			rate = millirate; 
+			
+			/* 
+			 * In order to use setTempoFactor to adjust midiplayer's rate,
+			 * we need to convert the rate value we currently have (expressed as
+			 * integer) to the float range that setTempoFactor accepts.
+			 * 
+			 * In short, 100000 here means 100% playback rate, while 1.0f means
+			 * the same in setTempoFactor, hence the division below.
+			 */
+			float factor = rate / 100000.0f;
+
+			player.midi.setTempoFactor(factor);
+
+			return rate; 
+		}
+
+		/* Used for setTempo, otherwise we won't know which tempo to actually set */
+		public float getEffectiveBPM() { return (float) ( (getTempo() * getRate() / 1000.0f) / 100000.0f); }
+	}
+
+	/* ToneControl is also totally untested right now, couldn't find a jar for it */
+	private class toneControl implements javax.microedition.media.control.ToneControl
+	{
+		private midiPlayer player;
+
+		public toneControl(midiPlayer player) { this.player = player; }
+
+		public void setSequence(byte[] sequence) 
+		{
+			System.out.println("ToneControl: setSequence()"); /* This should show up in the case a jar tries to use it... just so we can find a jar that can test this */
+			try 
+			{
+				if(sequence == null) { throw new IllegalArgumentException("ToneControl: cannot set a null sequence"); }
+				/* TODO: We should check if the player state is PREFETCHED or STARTED here, and throw an IllegalStateException if so. Might not be needed. */
+
+				Sequence toneSequence = new Sequence(Sequence.PPQ, 24);
+				Track track = toneSequence.createTrack();
+
+				setupSequence(sequence, track);
+
+				player.midi.setSequence(toneSequence);
+			} catch (InvalidMidiDataException e) {System.out.println("ToneControl: Can't parse tone sequence: " + e.getMessage());}
+		}
+
+		private void setupSequence(byte[] sequence, Track track) 
+		{
+			if (sequence.length == 0 || sequence[0] != 1) { throw new IllegalArgumentException("ToneControl: Invalid sequence"); }
+
+			/* We start a MIDI sequence setup like this: */
+			int index = 1; // the very first index is just the VERSION number, so skip it
+			int tempo = 120; // Default MIDI tempo in BPM
+			int currentTick = 0; // This is used to keep track of the current tick, used by SetVolume and Tempo events
+			int noteVolume = 127; // Start sending notes at the max volume by default
+
+			while (index < sequence.length) 
+			{
+				byte eventType = sequence[index++];
+				if (eventType >= -1 && eventType <= 127) // We found a note (or SILENCE, -1)
+				{
+					byte note = sequence[index++];
+					byte duration = sequence[index++];
+					try { addNote(track, note, duration, noteVolume, currentTick); currentTick += duration; }
+					catch (InvalidMidiDataException e) {System.out.println("ToneControl: Invalid note: " + e.getMessage());}
+					
+				}
+				else if (eventType == ToneControl.REPEAT) 
+				{
+					byte numRepeats = sequence[index++];
+					byte noteToRepeat = sequence[index++];
+					byte repeatNoteDuration = sequence[index++];
+					for (int i = 0; i < numRepeats; i++) 
+					{ 
+						try {addNote(track, noteToRepeat, repeatNoteDuration, noteVolume, currentTick); }
+						catch (InvalidMidiDataException e) {System.out.println("ToneControl: Invalid repeated note: " + e.getMessage());}
+						currentTick += repeatNoteDuration;
+					}
+				}
+				else if (eventType == ToneControl.SET_VOLUME) 
+				{
+					noteVolume = sequence[index++];
+					try { track.add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, 0, 7, noteVolume), currentTick)); }
+					catch (InvalidMidiDataException e) {System.out.println("ToneControl: Invalid SET_VOLUME event: " + e.getMessage());}
+				}
+				else if(eventType == ToneControl.TEMPO) 
+				{
+					tempo = sequence[index++];
+					int microsecondsPerBeat = 60000000 / (tempo * 4);
+					try 
+					{
+						track.add(new MidiEvent(new MetaMessage(0x51, new byte[]
+						{
+							(byte)(microsecondsPerBeat >> 16),
+							(byte)(microsecondsPerBeat >> 8),
+							(byte)(microsecondsPerBeat)
+						}, 3), currentTick));
+					}
+					catch (InvalidMidiDataException e) {System.out.println("ToneControl: Invalid TEMPO event: " + e.getMessage());}
+				}
+				else if(eventType == ToneControl.RESOLUTION || 
+						eventType == ToneControl.BLOCK_START ||
+						eventType == ToneControl.BLOCK_END) { /* These events don't need to be added to the midi sequence */ } 
+				else { throw new IllegalArgumentException("Unknown event type."); }
+			}
+		}
+		
+		private void addNote(Track track, byte note, byte duration, int volume, int tick) throws InvalidMidiDataException 
+		{
+			int midiNote = note + 60; // Convert to MIDI note (C4 = MIDI 60)
+			int noteDuration = duration; // Use duration directly as tick increment
+		
+			// Note on event with velocity set to currentVolume
+			ShortMessage noteOn = new ShortMessage(ShortMessage.NOTE_ON, 0, midiNote, volume);
+			track.add(new MidiEvent(noteOn, tick)); // Start immediately
+		
+			// Note off event
+			ShortMessage noteOff = new ShortMessage(ShortMessage.NOTE_OFF, 0, midiNote, tick + noteDuration);
+			track.add(new MidiEvent(noteOff, tick + noteDuration)); // End after the duration
+		}
 	}
 }

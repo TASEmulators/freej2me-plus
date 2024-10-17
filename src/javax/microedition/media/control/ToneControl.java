@@ -29,4 +29,6 @@ public interface ToneControl extends javax.microedition.media.Control
 	public static final byte TEMPO  = -3;
 	public static final byte VERSION  = -2;
 
+	public void setSequence(byte[] sequence);
+
 }

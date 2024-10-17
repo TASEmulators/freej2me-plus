@@ -94,6 +94,13 @@ public final class Manager
 			streamCopy.writeTo(outStream);
 		}
 
+		// return checkMediaCache(streamMD5, stream, type);
+
+		return new PlatformPlayer(stream, type);
+	}
+
+	private static Player checkMediaCache(String streamMD5, InputStream stream, String type) 
+	{
 		/* If we currently have this stream's player cached, return it instantly to avoid creating a new player and its overhead */
 		if (mediaCache.containsKey(streamMD5))
 		{
@@ -104,9 +111,8 @@ public final class Manager
 			 * 2 - Setting the media playback time back to the start.
 			 * 3 - Setting its state to PREFETCHED for good measure. 
 			 */
-			mediaPlayers[mediaCache.get(streamMD5)].stop();
+			mediaPlayers[mediaCache.get(streamMD5)].cacheDeallocate();
 			mediaPlayers[mediaCache.get(streamMD5)].setMediaTime(0);
-			mediaPlayers[mediaCache.get(streamMD5)].prefetch();
 			return mediaPlayers[mediaCache.get(streamMD5)]; 
 		}
 
