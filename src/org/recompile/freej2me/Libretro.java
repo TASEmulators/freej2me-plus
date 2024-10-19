@@ -59,8 +59,6 @@ public class Libretro
 	private long elapsedTime = 0;
 	private long sleepTime = 0;
 
-	private int maxmidistreams = 32;
-
 	private boolean[] pressedKeys = new boolean[128];
 
 	private byte[] frameBuffer = new byte[800*800*3];
@@ -135,12 +133,9 @@ public class Libretro
 		if(Integer.parseInt(args[6]) == 0) { soundEnabled = false; }
 
 		if(Integer.parseInt(args[7]) == 1) { Manager.useCustomMidi = true; }
-		
-		maxmidistreams = Integer.parseInt(args[8]);
-		Manager.updatePlayerNum((byte) maxmidistreams);
 
 		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
-		if(Integer.parseInt(args[9]) == 1) { Manager.dumpAudioStreams = true; }
+		if(Integer.parseInt(args[8]) == 1) { Manager.dumpAudioStreams = true; }
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -329,10 +324,7 @@ public class Libretro
 
 										if(!Manager.useCustomMidi) { config.settings.put("soundfont", "Default"); }
 										else                           { config.settings.put("soundfont", "Custom");  }
-
-										config.settings.put("maxmidistreams", ""+maxmidistreams);
 										
-
 										config.saveConfig();
 										settingsChanged();
 
@@ -394,18 +386,8 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[8])==0) { config.settings.put("soundfont", "Default"); }
 									if(Integer.parseInt(cfgtokens[8])==1) { config.settings.put("soundfont", "Custom");  }
 
-									if(Integer.parseInt(cfgtokens[9])==0) { config.settings.put("maxmidistreams", "1");}
-									if(Integer.parseInt(cfgtokens[9])==1) { config.settings.put("maxmidistreams", "2");}
-									if(Integer.parseInt(cfgtokens[9])==2) { config.settings.put("maxmidistreams", "4");}
-									if(Integer.parseInt(cfgtokens[9])==3) { config.settings.put("maxmidistreams", "8");}
-									if(Integer.parseInt(cfgtokens[9])==4) { config.settings.put("maxmidistreams", "16");}
-									if(Integer.parseInt(cfgtokens[9])==5) { config.settings.put("maxmidistreams", "32");}
-									if(Integer.parseInt(cfgtokens[9])==6) { config.settings.put("maxmidistreams", "48");}
-									if(Integer.parseInt(cfgtokens[9])==7) { config.settings.put("maxmidistreams", "64");}
-									if(Integer.parseInt(cfgtokens[9])==8) { config.settings.put("maxmidistreams", "96");}
-
-									if(Integer.parseInt(cfgtokens[10])==1) { Manager.dumpAudioStreams = true;  }
-									if(Integer.parseInt(cfgtokens[10])==0) { Manager.dumpAudioStreams = false; }
+									if(Integer.parseInt(cfgtokens[9])==1) { Manager.dumpAudioStreams = true;  }
+									if(Integer.parseInt(cfgtokens[9])==0) { Manager.dumpAudioStreams = false; }
 
 									config.saveConfig();
 									settingsChanged();
@@ -510,8 +492,6 @@ public class Libretro
 			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
 			gc = (Graphics2D)surface.getGraphics();
 		}
-
-		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
 
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 

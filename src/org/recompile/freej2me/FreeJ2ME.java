@@ -437,8 +437,6 @@ public class FreeJ2ME
 			main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
 		}
 
-		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("mediaCacheSize")));
-
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 
 		{
