@@ -150,11 +150,12 @@ public class PlatformPlayer implements Player
 		try
 		{
 			player.stop();
-			cacheDeallocate();
+			deallocate();
 			state = Player.CLOSED;
+			player = null;
 			notifyListeners(PlayerListener.CLOSED, null);	
 		}
-		catch (Exception e) { }
+		catch (Exception e) { System.out.println("Could not close player: " + e.getMessage()); }
 	}
 
 	public int getState() { return state; }
@@ -207,14 +208,19 @@ public class PlatformPlayer implements Player
 		}
 	}
 
-	/* Due to the media cache, don't actually deallocate here when a MIDlet requests so */
 	public void deallocate()
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot deallocate player, it is already CLOSED."); }
 
 		stop();
-		//player.deallocate();
-		state = Player.REALIZED;
+		player.deallocate();
+
+		/* 
+		 * Only set state to REALIZED if we have effectively moved into REALIZED or higher (PREFETCHED, etc), 
+		 * as deallocate can be called during the transition from UNREALIZED to REALIZED, and if that happens,
+		 * we can't actually set it as REALIZED, it must be kept as UNREALIZED.
+		*/
+		if(state > Player.UNREALIZED) {state = Player.REALIZED;}	
 	}
 
 	/* 
@@ -375,10 +381,12 @@ public class PlatformPlayer implements Player
 			}
 		}
 
-		public void realize() 
-		{ 
+		public void realize() { state = Player.REALIZED; }
+
+		public void prefetch() 
+		{
 			try 
-			{ 
+			{	
 				midi.open(); 
 
 				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
@@ -390,15 +398,6 @@ public class PlatformPlayer implements Player
 					midi.getTransmitter().setReceiver(MidiSystem.getReceiver());
 				}
 
-				state = Player.REALIZED;
-			}
-			catch (MidiUnavailableException e) { System.out.println("Couldn't realize midi player: " + e.getMessage());}
-		}
-
-		public void prefetch() 
-		{
-			try 
-			{	
 				/* Make a new copy of the media stream, as prefetch() can be called more than once during the player's lifecycle */
 				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(stream));
 				midi.setSequence(midiSequence);
