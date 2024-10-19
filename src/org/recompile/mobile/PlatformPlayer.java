@@ -246,6 +246,7 @@ public class PlatformPlayer implements Player
 		return player.getMediaTime(); 
 	}
 
+	/* Both midi and wav players do little more than just set their state as PREFETCHED here. */
 	public void prefetch() 
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot prefetch player, as it is in the CLOSED state."); }
@@ -255,7 +256,6 @@ public class PlatformPlayer implements Player
 		if(getState() == Player.REALIZED) { player.prefetch(); }
 	}
 
-	/* Both midi and wav players do little more than just set their state as REALIZED here. */
 	public void realize() 
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot realize player, as it is in the CLOSED state"); }
@@ -375,6 +375,18 @@ public class PlatformPlayer implements Player
 			try 
 			{ 
 				midi.open();
+				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
+				{
+					midi.getTransmitter().setReceiver(Manager.customSynth.getReceiver()); 
+				}
+				else
+				{
+					midi.getTransmitter().setReceiver(MidiSystem.getReceiver());
+				}
+
+				/* Make a new copy of the media stream, as realize() can be called more than once during the player's lifecycle */
+				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(stream));
+				midi.setSequence(midiSequence);
 				state = Player.REALIZED; 
 			} 
 			catch (Exception e) 
@@ -385,26 +397,7 @@ public class PlatformPlayer implements Player
 			}
 		}
 
-		public void prefetch() 
-		{
-			try 
-			{
-
-				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
-				{
-					midi.getTransmitter().setReceiver(Manager.customSynth.getReceiver()); 
-				}
-				else
-				{
-					midi.getTransmitter().setReceiver(MidiSystem.getReceiver());
-				}
-
-				/* Make a new copy of the media stream, as prefetch() can be called more than once during the player's lifecycle */
-				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(stream));
-				midi.setSequence(midiSequence);
-				state = Player.PREFETCHED;
-			} catch (Exception e) {System.out.println("Could not prefetch midi stream:" + e.getMessage());}
-		}
+		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
 		{
@@ -504,10 +497,8 @@ public class PlatformPlayer implements Player
 			} catch (Exception e) { System.out.println("Could not prepare wav stream:" + e.getMessage());}
 		}
 
-		public void realize() { state = Player.REALIZED; }
-
-		public void prefetch() 
-		{
+		public void realize() 
+		{ 
 			try
 			{
 				/* We only check for IMA ADPCM at the moment. */
@@ -517,7 +508,7 @@ public class PlatformPlayer implements Player
 					wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(stream));
 					wavClip = AudioSystem.getClip();
 					wavClip.open(wavStream);
-					state = Player.PREFETCHED;
+					state = Player.REALIZED;
 				}
 				else /* But if it is IMA ADPCM, we have to decode it manually. */
 				{
@@ -525,15 +516,17 @@ public class PlatformPlayer implements Player
 					wavStream = AudioSystem.getAudioInputStream(decodedStream);
 					wavClip = AudioSystem.getClip();
 					wavClip.open(wavStream);
-					state = Player.PREFETCHED;
+					state = Player.REALIZED;
 				}
 			}
 			catch (Exception e) 
 			{ 
-				System.out.println("Couldn't load wav file: " + e.getMessage());
+				System.out.println("Couldn't realize wav stream: " + e.getMessage());
 				wavClip.close();
 			}
 		}
+
+		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
 		{	
