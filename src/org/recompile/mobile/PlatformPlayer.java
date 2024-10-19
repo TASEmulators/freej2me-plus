@@ -223,18 +223,6 @@ public class PlatformPlayer implements Player
 		if(state > Player.UNREALIZED) {state = Player.REALIZED;}	
 	}
 
-	/* 
-	 * This is where we do the actual deallocations, otherwise the cache could break audio in games like Sonic Jump (Nokia 240x320),
-	 * as it would return a deallocated player due to the call above. So in short, only Manager itself should deallocate players. */
-	public void cacheDeallocate() 
-	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot deallocate player, it is already CLOSED."); }
-
-		stop();
-		player.deallocate();
-		state = Player.REALIZED;
-	}
-
 	public String getContentType() 
 	{
 		if(getState() == Player.UNREALIZED || getState() == Player.CLOSED) { throw new IllegalStateException("Cannot get content type. Player is either CLOSED or UNREALIZED."); }

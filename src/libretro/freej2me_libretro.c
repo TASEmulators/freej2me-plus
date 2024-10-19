@@ -150,7 +150,6 @@ int phoneType; /* 0=standard, 1=nokia, 2=siemens, 3=motorola, 4=sonyEricsson */
 int gameFPS; /* Auto(0), 60, 30, 15 */
 int soundEnabled; /* also acts as a boolean */
 int customMidi; /* Also acts as a boolean */
-int midiCacheSize; /* Maximum amount of MIDI Players allowed on FreeJ2ME at any given time */
 int dumpAudioStreams;
 /* Variables used to manage the pointer speed when controlled from an analog stick */
 int pointerXSpeed = 8;
@@ -287,12 +286,12 @@ int read_from_pipe(void* pipe, void *data, int datasize)
 /* Function to check the core's config states in the libretro frontend */
 static void check_variables(bool first_time_startup)
 {
-   struct retro_variable var = {0};
+	struct retro_variable var = {0};
 
 
-   var.key = "freej2me_resolution";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+	var.key = "freej2me_resolution";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
 		char *resChar;
 		char str[100];
 		snprintf(str, sizeof(str), "%s", var.value);
@@ -301,83 +300,69 @@ static void check_variables(bool first_time_startup)
 		if (resChar) { screenRes[0] = strtoul(resChar, NULL, 0); }
 		resChar = strtok(NULL, "x");
 		if (resChar) { screenRes[1] = strtoul(resChar, NULL, 0); }
-   }
+	}
 
 
-   var.key = "freej2me_halvecanvasres";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+	var.key = "freej2me_halvecanvasres";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
 		if (!strcmp(var.value, "off"))     { halveCanvasRes = 0; }
 		else if (!strcmp(var.value, "on")) { halveCanvasRes = 1; }
-   }
+	}
 
 
-   var.key = "freej2me_rotate";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+	var.key = "freej2me_rotate";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
 		if (!strcmp(var.value, "off"))     { rotateScreen = 0; }
 		else if (!strcmp(var.value, "on")) { rotateScreen = 1; }
-   }
+	}
 
 
-   var.key = "freej2me_phone";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+	var.key = "freej2me_phone";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
 		if (!strcmp(var.value, "Standard"))          { phoneType = 0; }
 		else if (!strcmp(var.value, "Nokia"))        { phoneType = 1; }
 		else if (!strcmp(var.value, "Siemens"))      { phoneType = 2; }
 		else if (!strcmp(var.value, "Motorola"))     { phoneType = 3; }
 		else if (!strcmp(var.value, "SonyEricsson")) { phoneType = 4; }
-   }
+	}
 
 
-   var.key = "freej2me_fps";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+	var.key = "freej2me_fps";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
 		if (!strcmp(var.value, "Auto"))    { gameFPS = 0;  }
 		else if (!strcmp(var.value, "60")) { gameFPS = 60; }
 		else if (!strcmp(var.value, "30")) { gameFPS = 30; }
 		else if (!strcmp(var.value, "15")) { gameFPS = 15; }
-   }
+	}
 
 
-   var.key = "freej2me_sound";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if (!strcmp(var.value, "off"))     { soundEnabled = 0; }
-		else if (!strcmp(var.value, "on")) { soundEnabled = 1; }
-   }
-
-
-   var.key = "freej2me_midifont";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-		if (!strcmp(var.value, "off"))     { customMidi = 0; }
-		else if (!strcmp(var.value, "on")) { customMidi = 1; }
-   }
-
-	var.key = "freej2me_mediacachesize";
+	var.key = "freej2me_sound";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (!strcmp(var.value, "48"))      { midiCacheSize = 48; }
-		else if (!strcmp(var.value, "1"))  { midiCacheSize = 1;  }
-		else if (!strcmp(var.value, "2"))  { midiCacheSize = 2;  }
-		else if (!strcmp(var.value, "4"))  { midiCacheSize = 4;  }
-		else if (!strcmp(var.value, "8"))  { midiCacheSize = 8;  }
-		else if (!strcmp(var.value, "16")) { midiCacheSize = 16; }
-		else if (!strcmp(var.value, "32")) { midiCacheSize = 32; }
-		else if (!strcmp(var.value, "64")) { midiCacheSize = 64; }
-		else if (!strcmp(var.value, "96")) { midiCacheSize = 96; }
+		if (!strcmp(var.value, "off"))     { soundEnabled = 0; }
+		else if (!strcmp(var.value, "on")) { soundEnabled = 1; }
+	}
+
+
+	var.key = "freej2me_midifont";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (!strcmp(var.value, "off"))     { customMidi = 0; }
+		else if (!strcmp(var.value, "on")) { customMidi = 1; }
 	}
 
 	var.key = "freej2me_dumpaudiostreams";
-   if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
 		if (!strcmp(var.value, "off"))     { dumpAudioStreams = 0; }
 		else if (!strcmp(var.value, "on")) { dumpAudioStreams = 1; }
-   }
+	}
 
-   var.key = "freej2me_pointertype";
+	var.key = "freej2me_pointertype";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
 		if (!strcmp(var.value, "Mouse"))
@@ -457,7 +442,7 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, midiCacheSize, dumpAudioStreams);
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams);
 	optstrlen = strlen(options_update);
 
 	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
@@ -516,7 +501,7 @@ void retro_init(void)
 	 */
 	check_variables(true);
 
-	char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], mediaCacheArg[3], dumpAudioArg[2];
+	char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], dumpAudioArg[2];
 	sprintf(resArg[0], "%lu", screenRes[0]); /* Libretro config Width  */
 	sprintf(resArg[1], "%lu", screenRes[1]); /* Libretro config Height */
 	sprintf(halveCanvas, "%d",  halveCanvasRes);
@@ -525,7 +510,6 @@ void retro_init(void)
 	sprintf(fpsArg,    "%d",  gameFPS);
 	sprintf(soundArg,  "%d",  soundEnabled);
 	sprintf(midiArg,   "%d",  customMidi);
-	sprintf(mediaCacheArg,"%d",  midiCacheSize);
 	sprintf(dumpAudioArg,   "%d",  dumpAudioStreams);
 
 	/* start java process */
@@ -551,12 +535,11 @@ void retro_init(void)
 		params[8] = strdup(fpsArg);
 		params[9] = strdup(soundArg);
 		params[10] = strdup(midiArg);
-		params[11] = strdup(mediaCacheArg);
-		params[12] = strdup(dumpAudioArg);
-		params[13] = NULL; // Null-terminate the array
+		params[11] = strdup(dumpAudioArg);
+		params[12] = NULL; // Null-terminate the array
 
 		log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11), *(params+12));
+		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
 
 	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app (make sure freej2me-lr.jar is inside system/).\n");
@@ -1052,8 +1035,8 @@ pid_t javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
 		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
-		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11), *(params+12));
+		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
 	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
 
@@ -1182,7 +1165,7 @@ void javaOpen(char *cmd, char **params)
 	sprintf(cmdWin, "javaw -jar %s", cmd);
 
 	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmd);
-	for (int i = 3; i <= 12; i++) /* There are 10 cmd arguments for now */
+	for (int i = 3; i <= 11; i++)
 	{
 		//log_fn(RETRO_LOG_INFO, "Processing arg %d: %s \n", i, *(params+i));
 		sprintf(cmdWin, "%s %s", cmdWin, *(params+i));
@@ -1195,8 +1178,8 @@ void javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
 		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
-		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11), *(params+12));
+		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
+			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
 	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
 

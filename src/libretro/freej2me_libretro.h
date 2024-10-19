@@ -198,27 +198,6 @@ struct retro_core_option_v2_definition core_options[] =
         "Default"
     },
     {
-        "freej2me_mediacachesize",
-        "Virtual Phone Settings > Media Cache Size",
-        "Media Cache Size",
-        "FreeJ2ME uses a media caching system to improve performance on certain VMs like OpenJDK 8 with apps that constantly allocate a similar set of media streams instead of keeping them allocated all the time (often to save precious memory). Most modern platforms should be able to hold the default of 48 unique streams in memory at once, which is also more than most J2ME apps would realistically load on real hardware. Feel free to adjust if your platform is starved for memory and/or you know the jar you're running only really uses a few slots of media but cycles the data it loads there.",
-        "FreeJ2ME uses a media caching system to improve performance on certain VMs like OpenJDK 8 with apps that constantly allocate a similar set of media streams instead of keeping them allocated all the time (often to save precious memory). Most modern platforms should be able to hold the default of 48 unique streams in memory at once, which is also more than most J2ME apps would realistically load on real hardware. Feel free to adjust if your platform is starved for memory and/or you know the jar you're running only really uses a few slots of media but cycles the data it loads there.",
-        "vphone_settings",
-        {
-            {  "1",  "1" },
-            {  "2",  "2" },
-            {  "4",  "4" },
-            {  "8",  "8" },
-            { "16", "16" },
-            { "32", "32" },
-            { "48", "48" },
-            { "64", "64" },
-            { "96", "96" },
-            { NULL, NULL },
-        },
-        "48"
-    },
-    {
         "freej2me_dumpaudiostreams",
         "Advanced Settings > Dump Audio Streams",
         "Dump Audio Streams",
@@ -461,23 +440,6 @@ struct retro_core_option_definition core_options_v1 [] =
         "Default"
     },
     {
-        "freej2me_mediacachesize",
-        "Media Cache Size",
-        "FreeJ2ME uses a media caching system to improve performance on certain VMs like OpenJDK 8 with apps that constantly allocate a similar set of media streams instead of keeping them allocated all the time (often to save precious memory). Most modern platforms should be able to hold the default of 48 unique streams in memory at once, which is also more than most J2ME apps would realistically load on real hardware. Feel free to adjust if your platform is starved for memory and/or you know the jar you're running only really uses a few slots of media but cycles the data it loads there.",        {
-            {  "1",  "1" },
-            {  "2",  "2" },
-            {  "4",  "4" },
-            {  "8",  "8" },
-            { "16", "16" },
-            { "32", "32" },
-            { "48", "48" },
-            { "64", "64" },
-            { "96", "96" },
-            { NULL, NULL },
-        },
-        "48"
-    },
-    {
         "freej2me_dumpaudiostreams",
         "Dump Audio Streams",
         "This option allows FreeJ2ME to dump incoming Audio Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
@@ -613,10 +575,6 @@ static const struct retro_variable vars[] =
     { /* MIDI Soundfont */
         "freej2me_midifont",
         "MIDI Soundfont; off|on"
-    },
-    { /* Max MIDI Players */
-        "freej2me_mediacachesize",
-        "Media Cache Size: 48|1|2|4|8|16|32|64|96"
     },
     { /* Dump Audio Streams */
         "freej2me_dumpaudiostreams",

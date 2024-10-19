@@ -45,14 +45,6 @@ public final class Manager
 	public static File soundfontDir = new File("freej2me_system" + File.separatorChar + "customMIDI" + File.separatorChar);
 	private static Soundbank customSoundfont;
 	public static Synthesizer customSynth;
-
-
-	/* Default max amount of players in FreeJ2ME's config  */
-	public static PlatformPlayer mediaPlayers[] = new PlatformPlayer[32];
-	public static byte mediaPlayersIndex = 0;
-
-	/* Midi Caching for better performance on certain VMs like OpenJDK 8 with jars that constantly load a similar set of streams. */
-	private static Map<String, Byte> mediaCache = new HashMap<>();
 	
 	public static boolean dumpAudioStreams = false;
 
@@ -60,12 +52,12 @@ public final class Manager
 	{
 		checkCustomMidi();
 
-		stream.mark(1024);
-		String streamMD5 = generateMD5Hash(stream, 1024);
-		stream.reset();
-
 		if(dumpAudioStreams) 
 		{
+			stream.mark(1024);
+			String streamMD5 = generateMD5Hash(stream, 1024);
+			stream.reset();
+
 			// Copy the stream contents into a temporary stream to be saved as file
 			final ByteArrayOutputStream streamCopy = new ByteArrayOutputStream();
 			final byte[] copyBuffer = new byte[1024];
@@ -94,59 +86,7 @@ public final class Manager
 			streamCopy.writeTo(outStream);
 		}
 
-		// return checkMediaCache(streamMD5, stream, type);
-
 		return new PlatformPlayer(stream, type);
-	}
-
-	private static Player checkMediaCache(String streamMD5, InputStream stream, String type) 
-	{
-		/* If we currently have this stream's player cached, return it instantly to avoid creating a new player and its overhead */
-		if (mediaCache.containsKey(streamMD5))
-		{
-			/* 
-			 * We're basically "loading up" a new player as far as the MIDlet is concerned, 
-			 * so make it seem as such by doing the following steps before returning it to the MIDlet:
-			 * 1 - Stopping the player if it's not stopped (this will probably be removed once media playback loop is more mature)
-			 * 2 - Setting the media playback time back to the start.
-			 * 3 - Setting its state to PREFETCHED for good measure. 
-			 */
-			mediaPlayers[mediaCache.get(streamMD5)].cacheDeallocate();
-			mediaPlayers[mediaCache.get(streamMD5)].setMediaTime(0);
-			return mediaPlayers[mediaCache.get(streamMD5)]; 
-		}
-
-		// Otherwise, let's create and cache a new one.
-
-		// If the index is out of bounds, we reached the end of our cache, go back to the start to find a position to free
-		if(mediaPlayersIndex >= mediaPlayers.length) { mediaPlayersIndex = 0; }
-
-		// Run through the entire cache index to find a suitable position to slot the new player in.
-		for(; mediaPlayersIndex < mediaPlayers.length; mediaPlayersIndex++) 
-		{
-			if(mediaPlayers[mediaPlayersIndex] == null) { break; } /* A null position means we can use it right away */
-
-			/* Otherwise, we prefer deallocating a position if it is not playing (running). */
-			else if(mediaPlayers[mediaPlayersIndex] != null && mediaPlayers[mediaPlayersIndex].getState() == Player.PREFETCHED)
-			{ 
-				mediaPlayers[mediaPlayersIndex].cacheDeallocate();
-				mediaCache.values().remove(mediaPlayersIndex);
-				break;
-			}
-			/* If we ever reach this one, it's because all the other slots are used, and are playing. Deallocate the last cache position as a last resort. */
-			else if(mediaPlayersIndex == mediaPlayers.length-1)
-			{
-				mediaPlayers[mediaPlayersIndex].cacheDeallocate();
-				mediaCache.values().remove(mediaPlayersIndex);
-				break;
-			}
-		}
-
-		mediaPlayers[mediaPlayersIndex] = new PlatformPlayer(stream, type);
-		mediaCache.put(streamMD5, mediaPlayersIndex);
-		mediaPlayersIndex++;
-
-		return mediaPlayers[mediaCache.get(streamMD5)];
 	}
 
 	public static Player createPlayer(String locator) throws MediaException
@@ -172,11 +112,6 @@ public final class Manager
 	public static void playTone(int note, int duration, int volume)
 	{
 		System.out.println("Play Tone");
-	}
-
-	public static void updatePlayerNum(byte num) 
-	{
-		mediaPlayers = new PlatformPlayer[num];
 	}
 
 	private static String generateMD5Hash(InputStream stream, int byteCount) 
