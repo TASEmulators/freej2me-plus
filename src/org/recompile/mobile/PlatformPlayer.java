@@ -249,12 +249,13 @@ public class PlatformPlayer implements Player
 	public void prefetch() 
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot prefetch player, as it is in the CLOSED state."); }
+		
 		if(getState() == Player.UNREALIZED) { realize(); }
 		
 		if(getState() == Player.REALIZED) { player.prefetch(); }
 	}
 
-	/* Both midi and wav players do nothing other than just set their state as REALIZED here. */
+	/* Both midi and wav players do little more than just set their state as REALIZED here. */
 	public void realize() 
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot realize player, as it is in the CLOSED state"); }
@@ -282,7 +283,7 @@ public class PlatformPlayer implements Player
 
 	public Control getControl(String controlType)
 	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getControl(), as the player is CLOSED."); }
+		if(getState() == Player.CLOSED || getState() == Player.UNREALIZED) { throw new IllegalStateException("Cannot call getControl(), as the player is either CLOSED or UNREALIZED."); }
 
 		if(controlType.equals("VolumeControl")) { return controls[0]; }
 		if(controlType.equals("TempoControl")) { return controls[1]; }
@@ -292,12 +293,13 @@ public class PlatformPlayer implements Player
 		if(controlType.equals("javax.microedition.media.control.TempoControl")) { return controls[1]; }
 		if(controlType.equals("javax.microedition.media.control.MIDIControl")) { return controls[2]; }
 		if(controlType.equals("javax.microedition.media.control.ToneControl")) { return controls[3]; }
+		
 		return null;
 	}
 
 	public Control[] getControls() 
 	{ 
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getControls(), as the player is CLOSED."); }
+		if(getState() == Player.CLOSED || getState() == Player.UNREALIZED) { throw new IllegalStateException("Cannot call getControls(), as the player is either CLOSED or UNREALIZED."); }
 
 		return controls; 
 	}
@@ -365,17 +367,28 @@ public class PlatformPlayer implements Player
 			catch (Exception e) 
 			{ 
 				System.out.println("Couldn't load midi file:" + e.getMessage());
-				midi.close();
 			}
 		}
 
-		public void realize() { state = Player.REALIZED; }
+		public void realize() 
+		{ 
+			try 
+			{ 
+				midi.open();
+				state = Player.REALIZED; 
+			} 
+			catch (Exception e) 
+			{ 
+				System.out.println("Could not realize midi stream:" + e.getMessage());
+				deallocate();
+				state = Player.UNREALIZED; 
+			}
+		}
 
 		public void prefetch() 
 		{
 			try 
-			{	
-				midi.open(); 
+			{
 
 				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
 				{
