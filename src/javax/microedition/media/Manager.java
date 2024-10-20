@@ -28,7 +28,9 @@ import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Soundbank;
 import javax.sound.midi.Synthesizer;
 
@@ -45,6 +47,8 @@ public final class Manager
 	public static File soundfontDir = new File("freej2me_system" + File.separatorChar + "customMIDI" + File.separatorChar);
 	private static Soundbank customSoundfont;
 	public static Synthesizer customSynth;
+	private static Synthesizer dedicatedTonePlayer = null;
+	private static MidiChannel dedicatedToneChannel;
 	
 	public static boolean dumpAudioStreams = false;
 
@@ -100,7 +104,7 @@ public final class Manager
 	{
 		//System.out.println("Get Supported Media Content Types");
 		return new String[]{"audio/midi", "audio/x-wav", 
-		"audio/amr", "audio/mpeg"};
+		"audio/amr", "audio/mpeg", "audio/x-tone-seq" };
 	}
 	
 	public static String[] getSupportedProtocols(String content_type)
@@ -109,9 +113,44 @@ public final class Manager
 		return new String[]{};
 	}
 	
-	public static void playTone(int note, int duration, int volume)
+	public static void playTone(int note, int duration, int volume) throws MediaException
 	{
-		System.out.println("Play Tone");
+		checkCustomMidi();
+		System.out.println("Play Tone"); // Haven't found a jar that uses this method yet, but manual testing shows this already works
+
+		if (note < 0 || note > 127) { throw new IllegalArgumentException("playTone: Note value must be between 0 and 127."); }
+        if (duration <= 0) { throw new IllegalArgumentException("playTone: Note duration must be positive and non-zero."); }
+        if (volume < 0) { volume = 0; } 
+		else if (volume > 100) { volume = 100; }
+
+		if(dedicatedTonePlayer == null) 
+		{ 
+			try  
+			{ 
+				dedicatedTonePlayer = MidiSystem.getSynthesizer(); 
+				dedicatedTonePlayer.open();
+				if(useCustomMidi && hasLoadedCustomMidi) { dedicatedTonePlayer.loadAllInstruments(customSoundfont); }
+
+				dedicatedToneChannel = dedicatedTonePlayer.getChannels()[0]; 
+			} 
+			catch (MidiUnavailableException e) { System.out.println("playTone: Couldn't open Tone Player: " + e.getMessage()); return;}
+		}
+
+        /* 
+		 * There's no need to calculate the note frequency as per the MIDP Manager docs,
+		 * they are pretty much the note numbers used by Java's Built-in MIDI library. 
+		 * Just play the note straight away, mapping the volume from 0-100 to 0-127.
+		 */ 
+        dedicatedToneChannel.controlChange(7, (volume * 127 / 100) );
+        dedicatedToneChannel.noteOn(note, duration); // Make the decay just long enough for the note not to fade shorter than expected
+
+        /* Since it has to be non-blocking, wait for the specified duration in a separate Thread before stopping the note. */
+        new Thread(() -> 
+		{
+            try { Thread.sleep(duration); } 
+			catch (InterruptedException e) { System.out.println("playTone: Failed to keep playing note for its specified duration: " + e.getMessage()); }
+            dedicatedToneChannel.noteOff(note);
+        }).start();
 	}
 
 	private static String generateMD5Hash(InputStream stream, int byteCount) 
