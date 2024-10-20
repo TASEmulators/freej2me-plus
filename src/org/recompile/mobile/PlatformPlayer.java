@@ -693,7 +693,7 @@ public class PlatformPlayer implements Player
 
 			if(data == null || offset < 0 || length < 0) { throw new IllegalArgumentException("MmidiControl: Invalid arguments for shortMidiEvent()"); }
 
-			/* longMidiEvent sends System Exclusive messagesm hence the SysexMessage data */
+			/* longMidiEvent sends System Exclusive messages hence the SysexMessage data */
 			Track[] tracks = player.midiSequence.getTracks();
 			try 
 			{
@@ -721,7 +721,7 @@ public class PlatformPlayer implements Player
 				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, 7, volume), 0));
 				channelVolume[channel] = volume; // Update the stored volume
 			}
-			catch (Exception e) { System.out.println("Midi setLevel failed: " + e.getMessage());}
+			catch (Exception e) { System.out.println("Midi setChannelVolume failed: " + e.getMessage());}
 		}
 
 		public void setProgram(int channel, int bank, int program) 
