@@ -150,7 +150,7 @@ public class PlatformPlayer implements Player
 		try
 		{
 			player.stop();
-			deallocate();
+			player.deallocate(); /* Call player's deallocate directly, otherwise we'll realize() again */
 			state = Player.CLOSED;
 			player = null;
 			notifyListeners(PlayerListener.CLOSED, null);	
@@ -220,7 +220,11 @@ public class PlatformPlayer implements Player
 		 * as deallocate can be called during the transition from UNREALIZED to REALIZED, and if that happens,
 		 * we can't actually set it as REALIZED, it must be kept as UNREALIZED.
 		*/
-		if(state > Player.UNREALIZED) {state = Player.REALIZED;}	
+		if(state > Player.UNREALIZED) 
+		{
+			player.realize();
+			state = Player.REALIZED;
+		}	
 	}
 
 	public String getContentType() 
