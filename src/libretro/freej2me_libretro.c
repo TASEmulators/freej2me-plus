@@ -442,7 +442,7 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams);
+	snprintf(options_update, PIPE_MAX_LEN, "FreeJ2ME Updated Settings:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams);
 	optstrlen = strlen(options_update);
 
 	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
@@ -463,19 +463,13 @@ static void check_variables(bool first_time_startup)
 #ifdef __linux__
 void quit(int state)
 {
-	if(isRunning(javaProcess))
-	{
-		kill(javaProcess, SIGKILL);
-	}
+	if(isRunning(javaProcess)) { kill(javaProcess, SIGKILL); }
 }
 
 #elif _WIN32
 void quit(int state)
 {
-	if(isRunning())
-	{
-		TerminateProcess(javaProcess.hProcess, state);
-	}
+	if(isRunning()) { TerminateProcess(javaProcess.hProcess, state); }
 }
 #endif
 
@@ -489,65 +483,64 @@ static void Keyboard(bool down, unsigned keycode, uint32_t character, uint16_t k
 void retro_init(void)
 {
 	/* init buffers, structs */
-	memset(frame, 0, frameSize);
-	memset(frameBuffer, 0, frameBufferSize);
-	/*
-	 * Those below are arguments sent to Java during init. Otherwise, games
-	 * wouldn't get a res setting, rotation, fps, etc. that matched the
-	 * frontend's core setting in cases where a game without a matching .conf
-	 * file was loaded, prompting FreeJ2ME to create a new config, but still
-	 * defaulting to the built-in config values, which are 240x320, rotation
-	 * off, etc.
-	 */
-	check_variables(true);
+    memset(frame, 0, frameSize);
+    memset(frameBuffer, 0, frameBufferSize);
 
-	char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], dumpAudioArg[2];
-	sprintf(resArg[0], "%lu", screenRes[0]); /* Libretro config Width  */
-	sprintf(resArg[1], "%lu", screenRes[1]); /* Libretro config Height */
-	sprintf(halveCanvas, "%d",  halveCanvasRes);
-	sprintf(rotateArg, "%d",  rotateScreen);
-	sprintf(phoneArg,  "%d",  phoneType);
-	sprintf(fpsArg,    "%d",  gameFPS);
-	sprintf(soundArg,  "%d",  soundEnabled);
-	sprintf(midiArg,   "%d",  customMidi);
-	sprintf(dumpAudioArg,   "%d",  dumpAudioStreams);
+    /* Check variables and set parameters */
+    check_variables(true);
+    char resArg[2][4], halveCanvas[2], rotateArg[2], phoneArg[2], fpsArg[3], soundArg[2], midiArg[2], dumpAudioArg[2];
+    sprintf(resArg[0], "%lu", screenRes[0]);
+    sprintf(resArg[1], "%lu", screenRes[1]);
+    sprintf(halveCanvas, "%d", halveCanvasRes);
+    sprintf(rotateArg, "%d", rotateScreen);
+    sprintf(phoneArg, "%d", phoneType);
+    sprintf(fpsArg, "%d", gameFPS);
+    sprintf(soundArg, "%d", soundEnabled);
+    sprintf(midiArg, "%d", customMidi);
+    sprintf(dumpAudioArg, "%d", dumpAudioStreams);
 
-	/* start java process */
-
-	
-	if(!restarting) 
+    /* We need to clean up any argument memory from the previous launch arguments in order to load up updated ones */
+    if (restarting) 
 	{
-		log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' Java app.\n");
+        log_fn(RETRO_LOG_INFO, "Restart: Cleaning up previous resources.\n");
+        if (params) 
+		{
+            for (int i = 0; params[i] != NULL; i++) { free(params[i]); }
+            free(params);
+        }
+        if (outPath) { free(outPath); }
+    } 
+	else // System path is not meant to change on restarts
+	{
+		log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' System Path.\n");
 		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
-		outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
-		fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
-
-		log_fn(RETRO_LOG_INFO, "Setting up params. \n");
-		params = (char**)malloc(sizeof(char*) * PATH_MAX_LENGTH * 2);
-		params[0] = strdup("java");
-		params[1] = strdup("-jar");
-		params[2] = strdup(outPath);
-		params[3] = strdup(resArg[0]);
-		params[4] = strdup(resArg[1]);
-		params[5] = strdup(halveCanvas);
-		params[6] = strdup(rotateArg);
-		params[7] = strdup(phoneArg);
-		params[8] = strdup(fpsArg);
-		params[9] = strdup(soundArg);
-		params[10] = strdup(midiArg);
-		params[11] = strdup(dumpAudioArg);
-		params[12] = NULL; // Null-terminate the array
-
-		log_fn(RETRO_LOG_INFO, "Passing params: %s | %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
-		*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
 
-	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app (make sure freej2me-lr.jar is inside system/).\n");
+	outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
+	fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
+    
+    /* Allocate memory for launch arguments */
+    params = (char**)malloc(sizeof(char*) * 13); // At this time, there are 13 launch arguments
+    params[0] = strdup("java");
+    params[1] = strdup("-jar");
+    params[2] = strdup(outPath);
+    params[3] = strdup(resArg[0]);
+    params[4] = strdup(resArg[1]);
+    params[5] = strdup(halveCanvas);
+    params[6] = strdup(rotateArg);
+    params[7] = strdup(phoneArg);
+    params[8] = strdup(fpsArg);
+    params[9] = strdup(soundArg);
+    params[10] = strdup(midiArg);
+    params[11] = strdup(dumpAudioArg);
+    params[12] = NULL; // Null-terminate the array
+
+    log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app.\n");
 
 #ifdef __linux__
-	javaProcess = javaOpen(params[0], params);
+    javaProcess = javaOpen(params[0], params);
 #elif _WIN32
-	javaOpen(params[2], params);
+    javaOpen(params[2], params);
 #endif
 
 	/* wait for java process */
@@ -787,16 +780,6 @@ void retro_run(void)
 				}
 			}
 
-			/*
-			 * With the libretro core's menu settings now working, this isn't as useful,
-			 * and also froze the frontend on a restart. Also just isn't as intuitive to use, at least to me...
-			if(joypad[8]+joypad[10]+joypad[11]==3)
-			{
-				// start+L+R = ESC
-				unsigned char event[5] = { 1, 0,0,0,27 };
-				write_to_pipe(pWrite[1], event, 5);
-			}
-			 */
 		}
 
 		/*
@@ -1038,7 +1021,7 @@ pid_t javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
-	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
+	if(restarting) { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME.\n"); restarting = false; }
 
 	int fd_stdin  = 0;
 	int fd_stdout = 1;
@@ -1181,7 +1164,7 @@ void javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
-	else { log_fn(RETRO_LOG_INFO, "\n\nRESTARTING!!!\n\n"); restarting = false; }
+	else { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME.\n"); restarting = false; }
 
 	GetStartupInfo(&startInfo);
 	startInfo.dwFlags = STARTF_USESTDHANDLES;
