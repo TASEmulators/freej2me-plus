@@ -30,7 +30,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
-#define DefaultFPS 30
+#define DefaultFPS 60
 #define MaxWidth 800
 #define MaxHeight 800
 
@@ -121,13 +121,13 @@ bool uses_pointer = false;
 bool booted = false;
 bool restarting = false;
 
-unsigned int readSize = 16384;
-unsigned char readBuffer[16384];
+unsigned int readSize = 32767;
+unsigned char readBuffer[32767];
 
 unsigned int frameWidth = 800;
 unsigned int frameHeight = 800;
-unsigned int frameSize = 640000;
-unsigned int frameBufferSize = 1920000;
+unsigned int frameSize = MaxWidth * MaxHeight;
+unsigned int frameBufferSize = MaxWidth * MaxHeight * 3;
 unsigned int frame[640000];
 unsigned char frameBuffer[1920000];
 unsigned char frameHeader[5];
@@ -223,10 +223,10 @@ unsigned int joymouseClickedImage[408] =
 
 /*
  * Custom functions to read from, and write to, pipes.
- * Those functions are used to simplify the upcoming port
- * to WIN32, since all ifdefs will only need to be done here
- * instead of all around the core whenever a pipe write/read is
- * requested.
+ * Those functions are used to simplify the pipe communication
+ * code to be platform-independent as all ifdefs will only need 
+ * to be done here instead of all around the core whenever a 
+ * pipe write/read is requested.
  */
 #ifdef __linux__
 void write_to_pipe(int pipe, void *data, int datasize)
@@ -355,12 +355,14 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "on")) { customMidi = 1; }
 	}
 
+
 	var.key = "freej2me_dumpaudiostreams";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
 		if (!strcmp(var.value, "off"))     { dumpAudioStreams = 0; }
 		else if (!strcmp(var.value, "on")) { dumpAudioStreams = 1; }
 	}
+
 
 	var.key = "freej2me_pointertype";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -682,7 +684,8 @@ void retro_run(void)
 		if(joyRx != 0 || joyRy !=0)
 		{
 			joymouseAnalog = true;
-			joymouseTime = DefaultFPS;
+			/* This means that the mouse pointer will be visible for 30 frames (half a second, since 60fps is a second) */
+			joymouseTime = DefaultFPS / 2;
 			joymouseX += joyRx<<1;
 			joymouseY += joyRy<<1;
 
@@ -700,7 +703,7 @@ void retro_run(void)
 			if(mouseX != 0 || mouseY !=0)
 			{
 				joymouseAnalog = false;
-				joymouseTime = DefaultFPS;
+				joymouseTime = DefaultFPS / 2;
 				joymouseX += mouseX;
 				joymouseY += mouseY;
 
@@ -720,7 +723,8 @@ void retro_run(void)
 			/* mouse - down/up */
 			if(mouseLpre != mouseL)
 			{
-				joymouseClickedTime = DefaultFPS *0.1;
+				if(mouseL == 1) { joymouseClickedTime = DefaultFPS * 0.1; }
+				joymouseTime = DefaultFPS / 2;
 				joyevent[0] = 4 + mouseL;
 				joyevent[1] = (joymouseX >> 8) & 0xFF;
 				joyevent[2] = (joymouseX) & 0xFF;
@@ -760,8 +764,8 @@ void retro_run(void)
 				if(i==7 && joymouseTime>0 && joymouseAnalog)
 				{
 					/* when mouse is visible, and using analog stick for mouse, Y / [5] clicks */
-					joymouseClickedTime = DefaultFPS * 0.1;
-					joymouseTime = DefaultFPS;
+					if(joypad[i] == 1) { joymouseClickedTime = DefaultFPS * 0.1; }
+					joymouseTime = DefaultFPS / 2;
 					joyevent[0] = 4+joypad[7];
 					joyevent[1] = (joymouseX >> 8) & 0xFF;
 					joyevent[2] = (joymouseX) & 0xFF;
