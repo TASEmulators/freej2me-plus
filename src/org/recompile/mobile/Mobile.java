@@ -50,6 +50,9 @@ public class Mobile
 
 	public static boolean sound = true;
 
+	// Var to track any changes to current Displayable, otherwise the SDL interface won't render new frames
+	public static boolean displayUpdated;
+
 	//Standard keycodes
 	public static final int KEY_NUM0  = Canvas.KEY_NUM0;  // 48
 	public static final int KEY_NUM1  = Canvas.KEY_NUM1;  // 49

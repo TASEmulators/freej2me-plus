@@ -171,7 +171,12 @@ public class Display
 				System.out.println("Problem with setCurrent(next)");
 				e.printStackTrace();
 			}
-		} finally { LCDUILock.unlock(); }
+		} 
+		finally 
+		{ 
+			LCDUILock.unlock();
+			Mobile.displayUpdated = true;
+		}
 	}
 
 	public void setCurrent(Alert alert, Displayable next)
