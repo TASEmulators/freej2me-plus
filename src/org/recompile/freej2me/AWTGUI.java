@@ -54,7 +54,6 @@ public final class AWTGUI
 	/* Sub menus (for now, all of them are located in "Settings") */
 	final Menu fpsCap = new Menu("FPS Limit");
 	final Menu phoneType = new Menu("Phone Key Layout");
-	final Menu midiStreamNum = new Menu("Max MIDI Streams");
 
 	/* Dialogs for resolution changes, restart notifications, MemStats and info about FreeJ2ME */
 	final Dialog resDialog = new Dialog(main , "Set LCD Resolution", true);
@@ -161,13 +160,6 @@ public final class AWTGUI
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
 	final CheckboxMenuItem fpsCap30 = new CheckboxMenuItem("30 FPS", false);
 	final CheckboxMenuItem fpsCap15 = new CheckboxMenuItem("15 FPS", false);
-
-	final CheckboxMenuItem midiStreams[] = new CheckboxMenuItem[] {new CheckboxMenuItem("1 Slot", false), new CheckboxMenuItem("2 Slots", false), 
-		new CheckboxMenuItem("4 Slots", false), new CheckboxMenuItem("8 Slots", false), new CheckboxMenuItem("16 Slots", false), 
-		new CheckboxMenuItem("32 Slots", false), new CheckboxMenuItem("48 Slots", false), new CheckboxMenuItem("64 Slots", false),
-		new CheckboxMenuItem("96 Slots", false)};
-		
-	final byte[] numPlayers = new byte[] {1, 2, 4 ,8, 16, 32, 48, 64, 96}; /* Used to simplify the UpdateOptions() method below */
 
 	final CheckboxMenuItem dumpAudioData = new CheckboxMenuItem("Dump Audio Streams");
 	final CheckboxMenuItem dumpGraphicsData = new CheckboxMenuItem("Dump Graphics Objects");
@@ -409,214 +401,6 @@ public final class AWTGUI
 			}
 		});
 
-		midiStreams[0].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[0].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[0]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[0])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[1].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[1].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[1]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[1])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[2].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[2].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[2]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[2])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[3].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[3].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[3]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[3])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[4].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[4].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[4]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[4])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[5].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[5].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[5]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[5])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[6].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[6].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[6]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[6])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[7].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[7].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[7]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[7])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		midiStreams[8].addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(midiStreams[8].getState())
-				{
-					config.updateMIDIStreams(""+numPlayers[8]); 
-					hasPendingChange = true;
-
-					// Uncheck all other checkboxes for midi players
-					for(int i = 0; i < midiStreams.length; i++)
-					{
-						if(midiStreams[i].equals(midiStreams[8])) { continue; }
-						midiStreams[i].setState(false);
-					}
-				
-				}
-
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-
 		stdLayout.addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
@@ -811,7 +595,6 @@ public final class AWTGUI
 		optionMenu.add(halveCanvasRes);
 		optionMenu.add(phoneType);
 		optionMenu.add(fpsCap);
-		optionMenu.add(midiStreamNum);
 		optionMenu.add(mapInputs);
 
 		debugMenu.add(dumpAudioData);
@@ -829,8 +612,6 @@ public final class AWTGUI
 		fpsCap.add(fpsCap60);
 		fpsCap.add(fpsCap30);
 		fpsCap.add(fpsCap15);
-
-		for(int i = 0; i < midiStreams.length; i++) { midiStreamNum.add(midiStreams[i]); }
 		
 		// add menus to menubar
 		menuBar.add(fileMenu);
@@ -855,11 +636,6 @@ public final class AWTGUI
 			motorolaLayout.setState(config.settings.get("phone").equals("Motorola"));
 
 			resChoice.select(""+ Integer.parseInt(config.settings.get("width")) + "x" + ""+ Integer.parseInt(config.settings.get("height")));
-			
-			for(int i = 0; i < midiStreams.length; i++) 
-			{
-				midiStreams[i].setState(config.settings.get("maxmidistreams").equals(""+numPlayers[i]));
-			}
 
 			/* We only need to do this call once, when the jar first loads */
 			firstLoad = false;

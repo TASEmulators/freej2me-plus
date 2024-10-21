@@ -198,27 +198,6 @@ struct retro_core_option_v2_definition core_options[] =
         "Default"
     },
     {
-        "freej2me_maxmidiplayers",
-        "Virtual Phone Settings > Max MIDI Players",
-        "Max MIDI Players",
-        "Sets the maximum amount of MIDI files that a given J2ME app can load up and play at any given time. Lower values may reduce memory usage and improve the VM's performance (especially on ID Software games like DOOM II RPG where setting this to 1 vastly reduces memory usage compared to the default), but some games might need bigger values.",
-        "Sets the maximum amount of MIDI files that a given J2ME app can load up and play at any given time. Lower values may reduce memory usage and improve the VM's performance (especially on ID Software games like DOOM II RPG where setting this to 1 vastly reduces memory usage compared to the default), but some games might need bigger values.",
-        "vphone_settings",
-        {
-            {  "1",  "1" },
-            {  "2",  "2" },
-            {  "4",  "4" },
-            {  "8",  "8" },
-            { "16", "16" },
-            { "32", "32" },
-            { "48", "48" },
-            { "64", "64" },
-            { "96", "96" },
-            { NULL, NULL },
-        },
-        "32"
-    },
-    {
         "freej2me_dumpaudiostreams",
         "Advanced Settings > Dump Audio Streams",
         "Dump Audio Streams",
@@ -461,24 +440,6 @@ struct retro_core_option_definition core_options_v1 [] =
         "Default"
     },
     {
-        "freej2me_maxmidiplayers",
-        "Max MIDI Players",
-        "Sets the maximum amount of MIDI files that a given J2ME app can load up and play at any given time. Lower values may reduce memory usage and improve the VM's performance (especially on ID Software games like DOOM II RPG where setting this to 1 vastly reduces memory usage compared to the default), but some games might need bigger values.",
-        {
-            {  "1",  "1" },
-            {  "2",  "2" },
-            {  "4",  "4" },
-            {  "8",  "8" },
-            { "16", "16" },
-            { "32", "32" },
-            { "48", "48" },
-            { "64", "64" },
-            { "96", "96" },
-            { NULL, NULL },
-        },
-        "32"
-    },
-    {
         "freej2me_dumpaudiostreams",
         "Dump Audio Streams",
         "This option allows FreeJ2ME to dump incoming Audio Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
@@ -614,10 +575,6 @@ static const struct retro_variable vars[] =
     { /* MIDI Soundfont */
         "freej2me_midifont",
         "MIDI Soundfont; off|on"
-    },
-    { /* Max MIDI Players */
-        "freej2me_maxmidiplayers",
-        "Max MIDI Players: 32|1|2|4|8|16|48|64|96"
     },
     { /* Dump Audio Streams */
         "freej2me_dumpaudiostreams",

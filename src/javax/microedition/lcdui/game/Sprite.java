@@ -30,56 +30,32 @@ public class Sprite extends Layer
 	public static final int TRANS_MIRROR_ROT90 = 7;
 	public static final int TRANS_MIRROR_ROT180 = 1;
 	public static final int TRANS_MIRROR_ROT270 = 4;
-
 	private static final int INVERTED_AXES = 0x4;
-
 	private static final int X_FLIP = 0x2;
-
 	private static final int Y_FLIP = 0x1;
-
 	private static final int ALPHA_BITMASK = 0xff000000;
-
 	private static final int FULLY_OPAQUE_ALPHA = 0xff000000;
 
-	Image sourceImage;
-
-	int numberFrames;
-
-	int[] frameCoordsX;
-
-	int[] frameCoordsY;
-
-	int srcFrameWidth;
-
-	int srcFrameHeight;
-
-	int[] sequence;
-
+	private Image sourceImage;
+	private int numberFrames;
+	private int[] frameCoordsX;
+	private int[] frameCoordsY;
+	private int srcFrameWidth;
+	private int srcFrameHeight;
+	private int[] sequence;
 	private int sequenceIndex;
-
 	private boolean customSequenceDefined;
-
-	int dRefX;
-
-	int dRefY;
-
-	int collisionRectX;
-
-	int collisionRectY;
-
-	int collisionRectWidth;
-
-	int collisionRectHeight;
-
-	int t_currentTransformation;
-
-	int t_collisionRectX;
-
-	int t_collisionRectY;
-
-	int t_collisionRectWidth;
-
-	int t_collisionRectHeight;
+	private int dRefX;
+	private int dRefY;
+	private int collisionRectX;
+	private int collisionRectY;
+	private int collisionRectWidth;
+	private int collisionRectHeight;
+	private int t_currentTransformation;
+	private int t_collisionRectX;
+	private int t_collisionRectY;
+	private int t_collisionRectWidth;
+	private int t_collisionRectHeight;
 
 
 	public Sprite(Image image)
@@ -87,43 +63,34 @@ public class Sprite extends Layer
 		super(image.getWidth(), image.getHeight());
 
 		initializeFrames(image, image.getWidth(), image.getHeight(), false);
-
 		initCollisionRectBounds();
-
 		setTransform(TRANS_NONE);
 	}
 
 	public Sprite(Image image, int frameWidth, int frameHeight)
 	{
-
 		super(frameWidth, frameHeight);
 
 		if ((frameWidth < 1 || frameHeight < 1) || ((image.getWidth() % frameWidth) != 0) || ((image.getHeight() % frameHeight) != 0))
 			{ throw new IllegalArgumentException(); }
 
 		initializeFrames(image, frameWidth, frameHeight, false);
-
 		initCollisionRectBounds();
-
 		setTransform(TRANS_NONE);
 	}
 
 	public Sprite(Sprite s)
 	{
-
 		super(s != null ? s.getWidth() : 0, s != null ? s.getHeight() : 0);
 
 		if (s == null) { throw new NullPointerException(); }
 
 		this.sourceImage = Image.createImage(s.sourceImage);
-
 		this.numberFrames = s.numberFrames;
-
 		this.frameCoordsX = new int[this.numberFrames];
 		this.frameCoordsY = new int[this.numberFrames];
 
 		System.arraycopy(s.frameCoordsX, 0, this.frameCoordsX, 0, s.getRawFrameCount());
-
 		System.arraycopy(s.frameCoordsY, 0, this.frameCoordsY, 0, s.getRawFrameCount());
 
 		this.x = s.getX();
@@ -141,20 +108,19 @@ public class Sprite extends Layer
 		this.srcFrameHeight = s.srcFrameHeight;
 
 		setTransform(s.t_currentTransformation);
-
 		this.setVisible(s.isVisible());
 
 		this.sequence = new int[s.getFrameSequenceLength()];
 		this.setFrameSequence(s.sequence);
 		this.setFrame(s.getFrame());
 
-		x = s.getRefPixelX() - getTransformedPtX(dRefX, dRefY, t_currentTransformation);
-		y = s.getRefPixelY() - getTransformedPtY(dRefX, dRefY, t_currentTransformation);
+		x = s.getRefPixelX() - getTransformedPos(dRefX, t_currentTransformation, true);
+		y = s.getRefPixelY() - getTransformedPos(dRefY, t_currentTransformation, false);
 	}
 
-	public int getRefPixelX() { return (this.x + getTransformedPtX(dRefX, dRefY, this.t_currentTransformation)); }
+	public int getRefPixelX() { return (this.x + getTransformedPos(dRefX, this.t_currentTransformation, true)); }
 
-	public int getRefPixelY() { return (this.y + getTransformedPtY(dRefX, dRefY, this.t_currentTransformation)); }
+	public int getRefPixelY() { return (this.y + getTransformedPos(dRefY, this.t_currentTransformation, false)); }
 
 	public void setFrame(int sequenceIndex)
 	{
@@ -179,7 +145,6 @@ public class Sprite extends Layer
 	@Override
 	public final void paint(Graphics g)
 	{
-
 		if (g == null) { throw new NullPointerException(); }
 
 		if (visible)
@@ -199,7 +164,6 @@ public class Sprite extends Layer
 
 	public void setFrameSequence(int sequence[])
 	{
-
 		if (sequence == null)
 		{
 			sequenceIndex = 0;
@@ -220,7 +184,6 @@ public class Sprite extends Layer
 
 	public void setImage(Image img, int frameWidth, int frameHeight)
 	{
-
 		// if image is null image.getWidth() will throw NullPointerException
 		if ((frameWidth < 1 || frameHeight < 1) || ((img.getWidth() % frameWidth) != 0) || ((img.getHeight() % frameHeight) != 0))
 			{ throw new IllegalArgumentException();}
@@ -238,30 +201,25 @@ public class Sprite extends Layer
 		if (!((srcFrameWidth == frameWidth) && (srcFrameHeight == frameHeight)))
 		{
 
-			int oldX = this.x + getTransformedPtX(dRefX, dRefY, this.t_currentTransformation);
-			int oldY = this.y + getTransformedPtY(dRefX, dRefY, this.t_currentTransformation);
+			int oldX = this.x + getTransformedPos(dRefX, this.t_currentTransformation, true);
+			int oldY = this.y + getTransformedPos(dRefY, this.t_currentTransformation, false);
 
 			setWidth(frameWidth);
 			setHeight(frameHeight);
 
 			initializeFrames(img, frameWidth, frameHeight, maintainCurFrame);
-
 			initCollisionRectBounds();
 
-			this.x = oldX - getTransformedPtX(dRefX, dRefY, this.t_currentTransformation);
-
-			this.y = oldY - getTransformedPtY(dRefX, dRefY, this.t_currentTransformation);
-
+			this.x = oldX - getTransformedPos(dRefX, this.t_currentTransformation, true);
+			this.y = oldY - getTransformedPos(dRefY, this.t_currentTransformation, false);
 			computeTransformedBounds(this.t_currentTransformation);
 
 		}
 		else { initializeFrames(img, frameWidth, frameHeight, maintainCurFrame); }
-
 	}
 
 	public void defineCollisionRectangle(int x, int y, int width, int height)
 	{
-
 		if (width < 0 || height < 0) { throw new IllegalArgumentException(); }
 
 		collisionRectX = x;
@@ -274,297 +232,134 @@ public class Sprite extends Layer
 
 	public void setTransform(int transform)
 	{
-
-		this.x = this.x + getTransformedPtX(dRefX, dRefY, this.t_currentTransformation) - getTransformedPtX(dRefX, dRefY, transform);
-
-		this.y = this.y + getTransformedPtY(dRefX, dRefY, this.t_currentTransformation) - getTransformedPtY(dRefX, dRefY, transform);
+		this.x = this.x + getTransformedPos(dRefX, this.t_currentTransformation, true) - getTransformedPos(dRefX, transform, true);
+		this.y = this.y + getTransformedPos(dRefY, this.t_currentTransformation, false) - getTransformedPos(dRefY, transform, false);
 
 		computeTransformedBounds(transform);
-
 		t_currentTransformation = transform;
 	}
 
-	public final boolean collidesWith(Sprite s, boolean pixelLevel)
+	/* All CollidesWith methods have been rewritten, but i couldn't find a jar that actually uses them yet, so the debug entry messages will remain in place */
+	public final boolean collidesWith(Sprite s, boolean pixelLevel) 
 	{
-
+		System.out.println("CollidesWith A");
 		if (!(s.visible && this.visible)) { return false; }
-
-		int otherLeft = s.x + s.t_collisionRectX;
-		int otherTop = s.y + s.t_collisionRectY;
-		int otherRight = otherLeft + s.t_collisionRectWidth;
-		int otherBottom = otherTop + s.t_collisionRectHeight;
-
-		int left = this.x + this.t_collisionRectX;
-		int top = this.y + this.t_collisionRectY;
-		int right = left + this.t_collisionRectWidth;
-		int bottom = top + this.t_collisionRectHeight;
-
-		if (intersectRect(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom))
-		{
-
-			if (pixelLevel)
-			{
-
-				if (this.t_collisionRectX < 0) { left = this.x; }
-				if (this.t_collisionRectY < 0) { top = this.y; }
-				if ((this.t_collisionRectX + this.t_collisionRectWidth) > this.width) { right = this.x + this.width; }
-				if ((this.t_collisionRectY + this.t_collisionRectHeight) > this.height) { bottom = this.y + this.height; }
-
-				if (s.t_collisionRectX < 0) { otherLeft = s.x; }
-				if (s.t_collisionRectY < 0) { otherTop = s.y; }
-				if ((s.t_collisionRectX + s.t_collisionRectWidth) > s.width) { otherRight = s.x + s.width; }
-				if ((s.t_collisionRectY + s.t_collisionRectHeight) > s.height) { otherBottom = s.y + s.height; }
-
-				if (!intersectRect(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom)) { return false; }
-
-				final int intersectLeft = (left < otherLeft) ? otherLeft : left;
-				final int intersectTop = (top < otherTop) ? otherTop : top;
-
-				final int intersectRight = (right < otherRight) ? right : otherRight;
-				final int intersectBottom = (bottom < otherBottom) ? bottom : otherBottom;
-
-				final int intersectWidth = Math.abs(intersectRight - intersectLeft);
-				final int intersectHeight = Math.abs(intersectBottom - intersectTop);
-
-				final int thisImageXOffset = getImageTopLeftX(intersectLeft,
-						intersectTop,
-						intersectRight,
-						intersectBottom);
-
-				final int thisImageYOffset = getImageTopLeftY(intersectLeft,
-						intersectTop,
-						intersectRight,
-						intersectBottom);
-
-				final int otherImageXOffset = s.getImageTopLeftX(intersectLeft,
-						intersectTop,
-						intersectRight,
-						intersectBottom);
-
-				final int otherImageYOffset = s.getImageTopLeftY(intersectLeft,
-						intersectTop,
-						intersectRight,
-						intersectBottom);
-
-				return doPixelCollision(thisImageXOffset, thisImageYOffset,
-						otherImageXOffset, otherImageYOffset,
-						this.sourceImage,
-						this.t_currentTransformation,
-						s.sourceImage,
-						s.t_currentTransformation,
-						intersectWidth, intersectHeight);
-
-			}
-			else { return true; }
-		}
+	
+		Rect thisRect = getCollisionRect(this);
+		Rect otherRect = getCollisionRect(s);
+	
+		if (intersectRect(thisRect, otherRect)) 
+			{ return pixelLevel ? pixelCollision(thisRect, otherRect, s.sourceImage, s.t_currentTransformation) : true; }
+		
 		return false;
-
 	}
-
-	public final boolean collidesWith(TiledLayer t, boolean pixelLevel)
+	
+	public final boolean collidesWith(TiledLayer t, boolean pixelLevel) 
 	{
-
+		System.out.println("CollidesWith B");
 		if (!(t.visible && this.visible)) { return false; }
-
-		int tLx1 = t.x;
-		int tLy1 = t.y;
-		int tLx2 = tLx1 + t.width;
-		int tLy2 = tLy1 + t.height;
-
+	
+		Rect thisRect = getCollisionRect(this);
+		Rect layerRect = new Rect(t.x, t.y, t.x + t.width, t.y + t.height);
+	
+		if (!intersectRect(thisRect, layerRect)) { return false; }
+	
 		int tW = t.getCellWidth();
 		int tH = t.getCellHeight();
-
-		int sx1 = this.x + this.t_collisionRectX;
-		int sy1 = this.y + this.t_collisionRectY;
-		int sx2 = sx1 + this.t_collisionRectWidth;
-		int sy2 = sy1 + this.t_collisionRectHeight;
-
-		int tNumCols = t.getColumns();
-		int tNumRows = t.getRows();
-
-		int startCol = 0;
-		int endCol = 0;
-		int startRow = 0;
-		int endRow = 0;
-
-		if (!intersectRect(tLx1, tLy1, tLx2, tLy2, sx1, sy1, sx2, sy2)) { return false; }
-
-		startCol = (sx1 <= tLx1) ? 0 : (sx1 - tLx1) / tW;
-		startRow = (sy1 <= tLy1) ? 0 : (sy1 - tLy1) / tH;
-
-		endCol = (sx2 < tLx2) ? ((sx2 - 1 - tLx1) / tW) : tNumCols - 1;
-		endRow = (sy2 < tLy2) ? ((sy2 - 1 - tLy1) / tH) : tNumRows - 1;
-
-		if (!pixelLevel)
+	
+		int startCol = Math.max(0, (thisRect.left - t.x) / tW);
+		int endCol = Math.min(t.getColumns() - 1, (thisRect.right - 1 - t.x) / tW);
+		int startRow = Math.max(0, (thisRect.top - t.y) / tH);
+		int endRow = Math.min(t.getRows() - 1, (thisRect.bottom - 1 - t.y) / tH);
+	
+		for (int row = startRow; row <= endRow; row++) 
 		{
-			for (int row = startRow; row <= endRow; row++)
+			for (int col = startCol; col <= endCol; col++) 
 			{
-				for (int col = startCol; col <= endCol; col++)
-				{
-					if (t.getCell(col, row) != 0) { return true; }
+				if (t.getCell(col, row) != 0) 
+				{ 
+					if (!pixelLevel || checkTileCollision(thisRect, t, col, row, tW, tH)) { return true; } 
 				}
 			}
-			return false;
-		}
-		else
-		{
-			if (this.t_collisionRectX < 0) { sx1 = this.x; }
-			if (this.t_collisionRectY < 0) { sy1 = this.y; }
-			if ((this.t_collisionRectX + this.t_collisionRectWidth) > this.width) { sx2 = this.x + this.width; }
-			if ((this.t_collisionRectY + this.t_collisionRectHeight) > this.height) { sy2 = this.y + this.height; }
-
-			if (!intersectRect(tLx1, tLy1, tLx2, tLy2, sx1, sy1, sx2, sy2)) { return (false); }
-
-			startCol = (sx1 <= tLx1) ? 0 : (sx1 - tLx1) / tW;
-			startRow = (sy1 <= tLy1) ? 0 : (sy1 - tLy1) / tH;
-
-			endCol = (sx2 < tLx2) ? ((sx2 - 1 - tLx1) / tW) : tNumCols - 1;
-			endRow = (sy2 < tLy2) ? ((sy2 - 1 - tLy1) / tH) : tNumRows - 1;
-
-			int cellTop = startRow * tH + tLy1;
-			int cellBottom = cellTop + tH;
-
-			int tileIndex;;
-
-			for (int row = startRow; row <= endRow; row++, cellTop += tH, cellBottom += tH)
-			{
-				int cellLeft = startCol * tW + tLx1;
-				int cellRight = cellLeft + tW;
-
-				for (int col = startCol; col <= endCol; col++, cellLeft += tW, cellRight += tW)
-				{
-					tileIndex = t.getCell(col, row);
-
-					if (tileIndex != 0)
-					{
-						int intersectLeft = (sx1 < cellLeft) ? cellLeft : sx1;
-						int intersectTop = (sy1 < cellTop) ? cellTop : sy1;
-
-						int intersectRight = (sx2 < cellRight) ? sx2 : cellRight;
-						int intersectBottom = (sy2 < cellBottom) ? sy2 : cellBottom;
-
-						if (intersectLeft > intersectRight)
-						{
-							int temp = intersectRight;
-							intersectRight = intersectLeft;
-							intersectLeft = temp;
-						}
-
-						if (intersectTop > intersectBottom)
-						{
-							int temp = intersectBottom;
-							intersectBottom = intersectTop;
-							intersectTop = temp;
-						}
-
-						int intersectWidth = intersectRight - intersectLeft;
-						int intersectHeight = intersectBottom - intersectTop;
-
-						int image1XOffset = getImageTopLeftX(intersectLeft,
-								intersectTop,
-								intersectRight,
-								intersectBottom);
-
-						int image1YOffset = getImageTopLeftY(intersectLeft,
-								intersectTop,
-								intersectRight,
-								intersectBottom);
-
-						int image2XOffset = t.tileSetX[tileIndex] +
-								(intersectLeft - cellLeft);
-						int image2YOffset = t.tileSetY[tileIndex] +
-								(intersectTop - cellTop);
-
-						if (doPixelCollision(image1XOffset,
-								image1YOffset,
-								image2XOffset,
-								image2YOffset,
-								this.sourceImage,
-								this.t_currentTransformation,
-								t.image,
-								TRANS_NONE,
-								intersectWidth, intersectHeight))
-								{ return true; }
-					}
-				}
-			}
-
-			return false;
-		}
-
-	}
-
-	public final boolean collidesWith(Image image, int x,
-									  int y, boolean pixelLevel)
-	{
-
-		if (!(visible)) { return false; }
-
-		int otherLeft = x;
-		int otherTop = y;
-		int otherRight = x + image.getWidth();
-		int otherBottom = y + image.getHeight();
-
-		int left = x + t_collisionRectX;
-		int top = y + t_collisionRectY;
-		int right = left + t_collisionRectWidth;
-		int bottom = top + t_collisionRectHeight;
-
-		// first check if the collision rectangles of the two sprites intersect
-		if (intersectRect(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom))
-		{
-			if (pixelLevel)
-			{
-				if (this.t_collisionRectX < 0) { left = this.x; }
-				if (this.t_collisionRectY < 0) { top = this.y; }
-				if ((this.t_collisionRectX + this.t_collisionRectWidth) > this.width) { right = this.x + this.width; }
-				if ((this.t_collisionRectY + this.t_collisionRectHeight) > this.height) { bottom = this.y + this.height; }
-
-				if (!intersectRect(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom))
-				{ return false; }
-
-				final int intersectLeft = (left < otherLeft) ? otherLeft : left;
-				final int intersectTop = (top < otherTop) ? otherTop : top;
-
-				final int intersectRight = (right < otherRight)
-						? right : otherRight;
-				final int intersectBottom = (bottom < otherBottom)
-						? bottom : otherBottom;
-
-				final int intersectWidth = Math.abs(intersectRight - intersectLeft);
-				final int intersectHeight = Math.abs(intersectBottom - intersectTop);
-
-				final int thisImageXOffset = getImageTopLeftX(intersectLeft,
-						intersectTop,
-						intersectRight,
-						intersectBottom);
-
-				final int thisImageYOffset = getImageTopLeftY(intersectLeft,
-						intersectTop,
-						intersectRight,
-						intersectBottom);
-
-				final int otherImageXOffset = intersectLeft - x;
-				final int otherImageYOffset = intersectTop - y;
-
-				return doPixelCollision(thisImageXOffset, thisImageYOffset,
-						otherImageXOffset, otherImageYOffset,
-						this.sourceImage,
-						this.t_currentTransformation,
-						image,
-						Sprite.TRANS_NONE,
-						intersectWidth, intersectHeight);
-
-			}
-			else { return true; }
 		}
 		return false;
-
+	}
+	
+	public final boolean collidesWith(Image image, int x, int y, boolean pixelLevel) 
+	{
+		System.out.println("CollidesWith C");
+		if (!visible) { return false; }
+	
+		Rect thisRect = getCollisionRect(this);
+		Rect imageRect = new Rect(x, y, x + image.getWidth(), y + image.getHeight());
+	
+		if (intersectRect(thisRect, imageRect)) 
+			{ return pixelLevel ? pixelCollision(thisRect, imageRect, image, Sprite.TRANS_NONE) : true;}
+		return false;
+	}
+	
+	private Rect getCollisionRect(Sprite s) 
+	{
+		int left = s.x + s.t_collisionRectX;
+		int top = s.y + s.t_collisionRectY;
+		int right = left + s.t_collisionRectWidth;
+		int bottom = top + s.t_collisionRectHeight;
+		return new Rect(left, top, right, bottom);
+	}
+	
+	private boolean intersectRect(Rect r1, Rect r2)
+		{ return !(r2.left >= r1.right || r2.right <= r1.left || r2.top >= r1.bottom || r2.bottom <= r1.top); }
+	
+	private boolean pixelCollision(Rect r1, Rect r2, Image otherImage, int otherTransformation) 
+	{
+		int intersectLeft = Math.max(r1.left, r2.left);
+		int intersectTop = Math.max(r1.top, r2.top);
+		int intersectRight = Math.min(r1.right, r2.right);
+		int intersectBottom = Math.min(r1.bottom, r2.bottom);
+		int intersectWidth = Math.abs(intersectRight - intersectLeft);
+		int intersectHeight = Math.abs(intersectBottom - intersectTop);
+	
+		int thisImageXOffset = getImageTopLeft(intersectLeft, intersectTop, intersectRight, intersectBottom, true);
+		int thisImageYOffset = getImageTopLeft(intersectLeft, intersectTop, intersectRight, intersectBottom, false);
+		int otherImageXOffset = getImageTopLeft(intersectLeft, intersectTop, intersectRight, intersectBottom, true);
+		int otherImageYOffset = getImageTopLeft(intersectLeft, intersectTop, intersectRight, intersectBottom, false);
+	
+		return doPixelCollision(thisImageXOffset, thisImageYOffset, otherImageXOffset, otherImageYOffset,
+				this.sourceImage, this.t_currentTransformation, otherImage, otherTransformation,
+				intersectWidth, intersectHeight);
+	}
+	
+	private boolean checkTileCollision(Rect spriteRect, TiledLayer t, int col, int row, int tW, int tH) 
+	{
+		int cellLeft = col * tW + t.x;
+		int cellTop = row * tH + t.y;
+		int cellRight = cellLeft + tW;
+		int cellBottom = cellTop + tH;
+	
+		int intersectLeft = Math.max(spriteRect.left, cellLeft);
+		int intersectTop = Math.max(spriteRect.top, cellTop);
+		int intersectRight = Math.min(spriteRect.right, cellRight);
+		int intersectBottom = Math.min(spriteRect.bottom, cellBottom);
+	
+		if (intersectLeft < intersectRight && intersectTop < intersectBottom) 
+		{
+			int intersectWidth = intersectRight - intersectLeft;
+			int intersectHeight = intersectBottom - intersectTop;
+			int thisImageXOffset = getImageTopLeft(intersectLeft, intersectTop, intersectRight, intersectBottom, true);
+			int thisImageYOffset = getImageTopLeft(intersectLeft, intersectTop, intersectRight, intersectBottom, false);
+			int tileIndex = t.getCell(col, row);
+			int image2XOffset = t.tileSetX[tileIndex] + (intersectLeft - cellLeft);
+			int image2YOffset = t.tileSetY[tileIndex] + (intersectTop - cellTop);
+	
+			return doPixelCollision(thisImageXOffset, thisImageYOffset, image2XOffset, image2YOffset,
+					this.sourceImage, this.t_currentTransformation, t.image, TRANS_NONE,
+					intersectWidth, intersectHeight);
+		}
+		return false;
 	}
 
 	private void initializeFrames(Image image, int fWidth, int fHeight, boolean maintainCurFrame)
 	{
-
 		final int imageW = image.getWidth();
 		final int imageH = image.getHeight();
 
@@ -582,7 +377,6 @@ public class Sprite extends Layer
 		frameCoordsY = new int[numberFrames];
 
 		if (!maintainCurFrame) { sequenceIndex = 0; }
-
 		if (!customSequenceDefined) { sequence = new int[numberFrames]; }
 
 		int currentFrame = 0;
@@ -595,10 +389,7 @@ public class Sprite extends Layer
 				frameCoordsX[currentFrame] = xx;
 				frameCoordsY[currentFrame] = yy;
 
-				if (!customSequenceDefined)
-				{
-					sequence[currentFrame] = currentFrame;
-				}
+				if (!customSequenceDefined) { sequence[currentFrame] = currentFrame; }
 				currentFrame++;
 			}
 		}
@@ -606,13 +397,11 @@ public class Sprite extends Layer
 
 	private void initCollisionRectBounds()
 	{
-
 		collisionRectX = 0;
 		collisionRectY = 0;
 
 		collisionRectWidth = this.width;
 		collisionRectHeight = this.height;
-
 	}
 
 	private boolean intersectRect(int r1x1, int r1y1, int r1x2, int r1y2, int r2x1, int r2y1, int r2x2, int r2y2)
@@ -621,398 +410,201 @@ public class Sprite extends Layer
 		else { return true; }
 	}
 
-	private static boolean doPixelCollision(int image1XOffset,
-											int image1YOffset,
-											int image2XOffset,
-											int image2YOffset,
-											Image image1, int transform1,
-											Image image2, int transform2,
-											int width, int height)
+	private static boolean doPixelCollision(int image1XOffset, int image1YOffset, int image2XOffset, int image2YOffset,
+		Image image1, int transform1, Image image2, int transform2, int width, int height) 
 	{
+		System.out.println("TiledLayer: Per-Pixel Collision Check!");
 
-		int startY1;
-		int xIncr1, yIncr1;
+		final int[] argbData1 = getARGBData(image1, image1XOffset, image1YOffset, transform1, width, height);
+		final int[] argbData2 = getARGBData(image2, image2XOffset, image2YOffset, transform2, width, height);
 
-		int startY2;
-		int xIncr2, yIncr2;
+		return checkPixelCollision(argbData1, argbData2, width, height);
+	}
 
-		int numPixels = height * width;
+	private static int[] getARGBData(Image image, int xOffset, int yOffset, int transform, int width, int height) 
+	{
+		int startY, xIncr, yIncr, numPixels = height * width;
+		int[] argbData = new int[numPixels];
 
-		final int[] argbData1 = new int[numPixels];
-		final int[] argbData2 = new int[numPixels];
-
-		if (0x0 != (transform1 & INVERTED_AXES))
+		if (0x0 != (transform & INVERTED_AXES)) 
 		{
-
-			if (0x0 != (transform1 & Y_FLIP))
+			if (0x0 != (transform & Y_FLIP)) 
 			{
-				xIncr1 = -(height);
-				startY1 = numPixels - height;
+				xIncr = -(height);
+				startY = numPixels - height;
+			} 
+			else 
+			{
+				xIncr = height;
+				startY = 0;
+			}
+
+			if (0x0 != (transform & X_FLIP)) {
+				yIncr = -1;
+				startY += (height - 1);
+			} else { yIncr = +1; }
+
+			image.getRGB(argbData, 0, height, xOffset, yOffset, height, width);
+		} 
+		else 
+		{
+			if (0x0 != (transform & Y_FLIP))
+			{
+				startY = numPixels - width;
+				yIncr = -(width);
 			}
 			else
 			{
-				xIncr1 = height;
-				startY1 = 0;
+				startY = 0;
+				yIncr = width;
 			}
 
-			if (0x0 != (transform1 & X_FLIP))
+			if (0x0 != (transform & X_FLIP))
 			{
-				yIncr1 = -1;
-				startY1 += (height - 1);
+				xIncr = -1;
+				startY += (width - 1);
 			}
-			else { yIncr1 = +1; }
+			else { xIncr = +1; }
 
-			image1.getRGB(argbData1, 0, height, image1XOffset, image1YOffset, height, width);
-
-		}
-		else
-		{
-			if (0x0 != (transform1 & Y_FLIP))
-			{
-				startY1 = numPixels - width;
-				yIncr1 = -(width);
-			}
-			else
-			{
-				startY1 = 0;
-				yIncr1 = width;
-			}
-
-			if (0x0 != (transform1 & X_FLIP))
-			{
-				xIncr1 = -1;
-				startY1 += (width - 1);
-			}
-			else { xIncr1 = +1; }
-
-			image1.getRGB(argbData1, 0, width, image1XOffset, image1YOffset, width, height);
+			image.getRGB(argbData, 0, width, xOffset, yOffset, width, height);
 		}
 
-		if (0x0 != (transform2 & INVERTED_AXES))
+		return argbData;
+	}
+
+	private static boolean checkPixelCollision(int[] argbData1, int[] argbData2, int width, int height) 
+	{
+		for (int i = 0; i < width * height; i++) 
 		{
-			if (0x0 != (transform2 & Y_FLIP))
-			{
-				xIncr2 = -(height);
-				startY2 = numPixels - height;
-			}
-			else
-			{
-				xIncr2 = height;
-				startY2 = 0;
-			}
-
-			if (0x0 != (transform2 & X_FLIP))
-			{
-				yIncr2 = -1;
-				startY2 += height - 1;
-			}
-			else { yIncr2 = +1; }
-
-			image2.getRGB(argbData2, 0, height,image2XOffset, image2YOffset, height, width);
-
-		}
-		else
-		{
-
-			if (0x0 != (transform2 & Y_FLIP))
-			{
-				startY2 = numPixels - width;
-				yIncr2 = -(width);
-			}
-			else
-			{
-				startY2 = 0;
-				yIncr2 = +width;
-			}
-
-			if (0x0 != (transform2 & X_FLIP))
-			{
-				xIncr2 = -1;
-				startY2 += (width - 1);
-			}
-			else { xIncr2 = +1; }
-
-			image2.getRGB(argbData2, 0, width, image2XOffset, image2YOffset, width, height);
-		}
-
-		int x1, x2;
-		int xLocalBegin1, xLocalBegin2;
-
-		int numIterRows;
-		int numIterColumns;
-
-		for (numIterRows = 0, xLocalBegin1 = startY1, xLocalBegin2 = startY2; numIterRows < height;
-			 xLocalBegin1 += yIncr1, xLocalBegin2 += yIncr2, numIterRows++)
-		{
-
-			for (numIterColumns = 0, x1 = xLocalBegin1, x2 = xLocalBegin2; numIterColumns < width; x1 += xIncr1, x2 += xIncr2, numIterColumns++)
-			{
-				if (((argbData1[x1] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA) && ((argbData2[x2] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA))
-					{ return true; }
-			}
+			if (((argbData1[i] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA) && ((argbData2[i] & ALPHA_BITMASK) == FULLY_OPAQUE_ALPHA)) { return true; }
 		}
 
 		return false;
 	}
 
-	private int getImageTopLeftX(int x1, int y1, int x2, int y2)
+	private int getImageTopLeft(int x1, int y1, int x2, int y2, boolean isX) 
 	{
-		int retX = 0;
-
+		int ret = 0;
+	
 		switch (this.t_currentTransformation)
 		{
-
 			case TRANS_NONE:
 			case TRANS_MIRROR_ROT180:
-				retX = x1 - this.x;
+				ret = isX ? x1 - this.x : y1 - this.y;
 				break;
-
 			case TRANS_MIRROR:
 			case TRANS_ROT180:
-				retX = (this.x + this.width) - x2;
+				ret = isX ? (this.x + this.width) - x2 : (this.y + this.height) - y2;
 				break;
-
 			case TRANS_ROT90:
 			case TRANS_MIRROR_ROT270:
-				retX = y1 - this.y;
+				ret = isX ? y1 - this.y : (this.x + this.width) - x2;
 				break;
-
 			case TRANS_ROT270:
 			case TRANS_MIRROR_ROT90:
-				retX = (this.y + this.height) - y2;
+				ret = isX ? (this.y + this.height) - y2 : x1 - this.x;
 				break;
-
 			default:
-				return retX;
+				return ret;
 		}
-
-		retX += frameCoordsX[sequence[sequenceIndex]];
-
-		return retX;
+	
+		ret += isX ? frameCoordsX[sequence[sequenceIndex]] : frameCoordsY[sequence[sequenceIndex]];
+	
+		return ret;
 	}
 
-	private int getImageTopLeftY(int x1, int y1, int x2, int y2)
+	private void computeTransformedBounds(int transform) 
 	{
-		int retY = 0;
-		switch (this.t_currentTransformation)
+		// Debug not needed anymore, Viper Wars and JBenchmark 2 use this and neither were broken by the rewrite
+		// System.out.println("TiledLayer: ComputeTransBounds!");
+		switch (transform) 
 		{
-
 			case TRANS_NONE:
-			case TRANS_MIRROR:
-				retY = y1 - this.y;
-				break;
-
-			case TRANS_ROT180:
-			case TRANS_MIRROR_ROT180:
-				retY = (this.y + this.height) - y2;
-				break;
-
-			case TRANS_ROT270:
-			case TRANS_MIRROR_ROT270:
-				retY = x1 - this.x;
-				break;
-
-			case TRANS_ROT90:
-			case TRANS_MIRROR_ROT90:
-				retY = (this.x + this.width) - x2;
-				break;
-
-			default:
-				return retY;
-		}
-
-		retY += frameCoordsY[sequence[sequenceIndex]];
-
-		return retY;
-	}
-
-	private void computeTransformedBounds(int transform)
-	{
-		switch (transform)
-		{
-
-			case TRANS_NONE:
-
 				t_collisionRectX = collisionRectX;
 				t_collisionRectY = collisionRectY;
-				t_collisionRectWidth = collisionRectWidth;
-				t_collisionRectHeight = collisionRectHeight;
-				this.width = srcFrameWidth;
-				this.height = srcFrameHeight;
-
 				break;
-
+	
 			case TRANS_MIRROR:
-
 				t_collisionRectX = srcFrameWidth - (collisionRectX + collisionRectWidth);
-
 				t_collisionRectY = collisionRectY;
-				t_collisionRectWidth = collisionRectWidth;
-				t_collisionRectHeight = collisionRectHeight;
-
-				this.width = srcFrameWidth;
-				this.height = srcFrameHeight;
-
 				break;
-
+	
 			case TRANS_MIRROR_ROT180:
-
-				t_collisionRectY = srcFrameHeight -
-						(collisionRectY + collisionRectHeight);
-
 				t_collisionRectX = collisionRectX;
-				t_collisionRectWidth = collisionRectWidth;
-				t_collisionRectHeight = collisionRectHeight;
-
-				this.width = srcFrameWidth;
-				this.height = srcFrameHeight;
-
+				t_collisionRectY = srcFrameHeight - (collisionRectY + collisionRectHeight);
 				break;
-
+	
 			case TRANS_ROT90:
-
-				t_collisionRectX = srcFrameHeight -
-						(collisionRectHeight + collisionRectY);
+				t_collisionRectX = srcFrameHeight - (collisionRectHeight + collisionRectY);
 				t_collisionRectY = collisionRectX;
-
-				t_collisionRectHeight = collisionRectWidth;
-				t_collisionRectWidth = collisionRectHeight;
-
-				this.width = srcFrameHeight;
-				this.height = srcFrameWidth;
-
 				break;
-
+	
 			case TRANS_ROT180:
-
-				t_collisionRectX = srcFrameWidth - (collisionRectWidth +
-						collisionRectX);
-				t_collisionRectY = srcFrameHeight - (collisionRectHeight +
-						collisionRectY);
-
-				t_collisionRectWidth = collisionRectWidth;
-				t_collisionRectHeight = collisionRectHeight;
-
-				this.width = srcFrameWidth;
-				this.height = srcFrameHeight;
-
+				t_collisionRectX = srcFrameWidth - (collisionRectWidth + collisionRectX);
+				t_collisionRectY = srcFrameHeight - (collisionRectHeight + collisionRectY);
 				break;
-
+	
 			case TRANS_ROT270:
-
 				t_collisionRectX = collisionRectY;
-				t_collisionRectY = srcFrameWidth - (collisionRectWidth +
-						collisionRectX);
-
-				t_collisionRectHeight = collisionRectWidth;
-				t_collisionRectWidth = collisionRectHeight;
-
-				this.width = srcFrameHeight;
-				this.height = srcFrameWidth;
-
+				t_collisionRectY = srcFrameWidth - (collisionRectWidth + collisionRectX);
 				break;
-
+	
 			case TRANS_MIRROR_ROT90:
-
-				t_collisionRectX = srcFrameHeight - (collisionRectHeight +
-						collisionRectY);
-				t_collisionRectY = srcFrameWidth - (collisionRectWidth +
-						collisionRectX);
-
-				t_collisionRectHeight = collisionRectWidth;
-				t_collisionRectWidth = collisionRectHeight;
-
-				this.width = srcFrameHeight;
-				this.height = srcFrameWidth;
-
+				t_collisionRectX = srcFrameHeight - (collisionRectHeight + collisionRectY);
+				t_collisionRectY = srcFrameWidth - (collisionRectWidth + collisionRectX);
 				break;
-
+	
 			case TRANS_MIRROR_ROT270:
-
-				t_collisionRectY = collisionRectX;
 				t_collisionRectX = collisionRectY;
-
-				t_collisionRectHeight = collisionRectWidth;
-				t_collisionRectWidth = collisionRectHeight;
-
-				this.width = srcFrameHeight;
-				this.height = srcFrameWidth;
+				t_collisionRectY = collisionRectX;
 				break;
-
-			default: throw new IllegalArgumentException();
+	
+			default:
+				throw new IllegalArgumentException();
 		}
+	
+		t_collisionRectWidth = (transform % 2 == 0) ? collisionRectWidth : collisionRectHeight;
+		t_collisionRectHeight = (transform % 2 == 0) ? collisionRectHeight : collisionRectWidth;
+	
+		this.width = (transform % 2 == 0) ? srcFrameWidth : srcFrameHeight;
+		this.height = (transform % 2 == 0) ? srcFrameHeight : srcFrameWidth;
 	}
 
-	private int getTransformedPtX(int x, int y, int transform)
+	private int getTransformedPos(int coord, int transform, boolean isX)
 	{
-		int t_x = 0;
 		switch (transform)
 		{
-
 			case TRANS_NONE:
-				t_x = x;
-				break;
+				return coord;
 			case TRANS_MIRROR:
-				t_x = srcFrameWidth - x - 1;
-				break;
+				return isX ? srcFrameWidth - coord - 1 : coord;
 			case TRANS_MIRROR_ROT180:
-				t_x = x;
-				break;
+				return isX ? coord : srcFrameHeight - coord - 1;
 			case TRANS_ROT90:
-				t_x = srcFrameHeight - y - 1;
-				break;
+				return isX ? srcFrameHeight - coord - 1 : coord;
 			case TRANS_ROT180:
-				t_x = srcFrameWidth - x - 1;
-				break;
+				return isX ? srcFrameWidth - coord - 1 : srcFrameHeight - coord - 1;
 			case TRANS_ROT270:
-				t_x = y;
-				break;
+				return isX ? coord : srcFrameWidth - coord - 1;
 			case TRANS_MIRROR_ROT90:
-				t_x = srcFrameHeight - y - 1;
-				break;
+				return isX ? srcFrameHeight - coord - 1 : srcFrameWidth - coord - 1;
 			case TRANS_MIRROR_ROT270:
-				t_x = y;
-				break;
+				return isX ? coord : srcFrameWidth - coord - 1;
 			default:
-				break;
+				return 0;
 		}
-		return t_x;
 	}
 
-	private int getTransformedPtY(int x, int y, int transform)
+	private class Rect 
 	{
-		int t_y = 0;
-		switch (transform)
+		int left, top, right, bottom;
+
+		Rect(int left, int top, int right, int bottom) 
 		{
-
-			case TRANS_NONE:
-				t_y = y;
-				break;
-			case TRANS_MIRROR:
-				t_y = y;
-				break;
-			case TRANS_MIRROR_ROT180:
-				t_y = srcFrameHeight - y - 1;
-				break;
-			case TRANS_ROT90:
-				t_y = x;
-				break;
-			case TRANS_ROT180:
-				t_y = srcFrameHeight - y - 1;
-				break;
-			case TRANS_ROT270:
-				t_y = srcFrameWidth - x - 1;
-				break;
-			case TRANS_MIRROR_ROT90:
-				t_y = srcFrameWidth - x - 1;
-				break;
-			case TRANS_MIRROR_ROT270:
-				t_y = x;
-				break;
-			default:
-				break;
+			this.left = left;
+			this.top = top;
+			this.right = right;
+			this.bottom = bottom;
 		}
-		return t_y;
 	}
-
 }

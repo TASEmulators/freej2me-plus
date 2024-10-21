@@ -138,7 +138,6 @@ public class Config
 			if(!settings.containsKey("rotate")) { settings.put("rotate", "off"); }
 			if(!settings.containsKey("fps")) { settings.put("fps", "0"); }
 			if(!settings.containsKey("soundfont")) { settings.put("soundfont", "Default"); }
-			if(!settings.containsKey("maxmidistreams")) { settings.put("maxmidistreams", "32"); }
 
 		}
 		catch (Exception e)
@@ -229,11 +228,4 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateMIDIStreams(String value) 
-	{
-		System.out.println("Config: maxmidistreams "+value);
-		settings.put("maxmidistreams", value);
-		saveConfig();
-		onChange.run();
-	}
 }

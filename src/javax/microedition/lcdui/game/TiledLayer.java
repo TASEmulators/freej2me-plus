@@ -19,6 +19,8 @@ package javax.microedition.lcdui.game;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 
+import java.util.Arrays;
+
 public class TiledLayer extends Layer 
 {
 
@@ -29,8 +31,8 @@ public class TiledLayer extends Layer
 	private int tileWidth;
 	
 	private int numberOfTiles;
-	int[] tileSetX;
-	int[] tileSetY;
+	protected int[] tileSetX;
+	protected int[] tileSetY;
 	private int[] animatedTiles;
 	private int animatedTileCount = 0;
 
@@ -122,10 +124,7 @@ public class TiledLayer extends Layer
 		if (tileIndex > 0) { if (tileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); } } 
 		else if (tileIndex < 0) { if (animatedTiles == null || (-tileIndex) >= animatedTileCount) { throw new IndexOutOfBoundsException(); } }
 
-		for (int rowCount = row; rowCount < row + numRows; rowCount++) 
-		{
-			for (int columnCount = col; columnCount < col + numCols; columnCount++) { tiles[rowCount][columnCount] = tileIndex; }
-		}
+		for (int rowCount = row; rowCount < row + numRows; rowCount++) { Arrays.fill(tiles[rowCount], col, col + numCols, tileIndex); }
 	}
 
 	public final int getCellWidth() { return tileWidth; }
@@ -139,9 +138,8 @@ public class TiledLayer extends Layer
 	public void setStaticTileSet(Image baseimage, int tileWidth, int tileHeight) 
 	{
 		if (tileWidth < 1 || tileHeight < 1 || ((baseimage.getWidth() % tileWidth) != 0) || ((baseimage.getHeight() % tileHeight) != 0)) 
-		{
-			throw new IllegalArgumentException();
-		}
+			{ throw new IllegalArgumentException(); }
+
 		setWidth(cols * tileWidth);
 		setHeight(rows * tileHeight);
 
@@ -190,15 +188,14 @@ public class TiledLayer extends Layer
 
 			// y-coordinate
 			int ty = this.y + (startRow * tileHeight);
+
 			for (int row = startRow; row < endRow; row++, ty += tileHeight) 
 			{
-
 				// reset the x-coordinate at the beginning of every row
 				// x-coordinate to draw tile into
 				int tx = this.x + (startColumn * tileWidth);
 				for (int column = startColumn; column < endColumn; column++, tx += tileWidth) 
 				{
-
 					tileIndex = tiles[row][column];
 					// check the indices
 					// if animated get the corresponding
@@ -214,42 +211,45 @@ public class TiledLayer extends Layer
 		}
 	}
 
-	private void createStaticSet(Image baseimage, int noOfFrames, int tileWidth, int tileHeight, boolean maintainIndices) 
+	private void createStaticSet(Image baseImage, int noOfFrames, int tileWidth, int tileHeight, boolean maintainIndices) 
 	{
+		// JBenchmark 2 uses this, and the rewrite didn't seem to have broken it, still renders as expected
+		//System.out.println("Created StaticTileSet!");
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
-
-		final int imageW = baseimage.getWidth();
-		final int imageH = baseimage.getHeight();
-
-		this.image = baseimage;
-
-		numberOfTiles = noOfFrames;
-		tileSetX = new int[numberOfTiles];
-		tileSetY = new int[numberOfTiles];
-
+	
+		final int imageW = baseImage.getWidth();
+		final int imageH = baseImage.getHeight();
+	
+		this.image = baseImage;
+		this.numberOfTiles = noOfFrames;
+		this.tileSetX = new int[numberOfTiles];
+		this.tileSetY = new int[numberOfTiles];
+	
 		if (!maintainIndices) 
 		{
-			// populate tile matrix, all the indices are 0 to begin with
-			for (rows = 0; rows < tiles.length; rows++) 
-			{
-				int totalCols = tiles[rows].length;
-				for (cols = 0; cols < totalCols; cols++) { tiles[rows][cols] = 0; }
-			}
-			// delete animated tiles
+			/* 
+			 * Since we don't have to maintain Indices, initialize the TileMatrix with where all
+			 * indices will be zero, then delete any animated tiles.
+			 */
+			for (int row = 0; row < tiles.length; row++) { Arrays.fill(tiles[row], 0); }
 			animatedTiles = null;
 		}
-
+	
+		// Now we can start actually adding tiles to the tile matrix.
+		populateTileCoordinates(imageW, imageH);
+	}
+	
+	private void populateTileCoordinates(int imageWidth, int imageHeight) 
+	{
 		int currentTile = 1;
-
-		for (int locY = 0; locY < imageH; locY += tileHeight) 
+	
+		for (int y = 0; y < imageHeight; y += tileHeight) 
 		{
-			for (int locX = 0; locX < imageW; locX += tileWidth) 
+			for (int x = 0; x < imageWidth; x += tileWidth) 
 			{
-
-				tileSetX[currentTile] = locX;
-				tileSetY[currentTile] = locY;
-
+				tileSetX[currentTile] = x;
+				tileSetY[currentTile] = y;
 				currentTile++;
 			}
 		}

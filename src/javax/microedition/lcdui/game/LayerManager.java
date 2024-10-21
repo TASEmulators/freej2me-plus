@@ -30,14 +30,13 @@ import org.recompile.mobile.PlatformGraphics;
 public class LayerManager
 {
 
-	private int layers;
-
 	private Layer component[] = new Layer[4];
 
-	protected int x;
-	protected int y;
-	protected int width;
-	protected int height;
+	private int layers;
+	private int x;
+	private int y;
+	private int width;
+	private int height;
 
 
 	public LayerManager() { setViewWindow(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE); }
@@ -112,10 +111,7 @@ public class LayerManager
 	{
 		if (l == null) { return false; }
 
-		for (int i = layers; --i >= 0; )
-		{
-			if (component[i] == l) { return true; }
-		}
+		for (int i = layers; --i >= 0; ) { if (component[i] == l) { return true; } }
 		return false;
 	}
 

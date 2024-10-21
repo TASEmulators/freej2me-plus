@@ -100,10 +100,10 @@ public class FreeJ2ME
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.isDirectory()) 
+			if(!Manager.soundfontDir.isDirectory()) 
 			{ 
-				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				Manager.soundfontDir.mkdirs();
+				File dummyFile = new File(Manager.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -410,8 +410,8 @@ public class FreeJ2ME
 		if(rotate.equals("off")) { rotateDisplay = false; }
 
 		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
+		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
 		if(config.settings.get("halveCanvasRes").equals("on")) { w /= 2; h /= 2; }
 
@@ -436,8 +436,6 @@ public class FreeJ2ME
 			resize();
 			main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
 		}
-
-		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
 
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 

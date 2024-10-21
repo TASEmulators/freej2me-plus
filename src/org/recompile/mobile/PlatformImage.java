@@ -37,8 +37,6 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	protected BufferedImage canvas;
 	protected PlatformGraphics gc;
 
-	public boolean isNull = false;
-
 	public BufferedImage getCanvas()
 	{
 		return canvas;
@@ -79,30 +77,21 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 		InputStream stream = Mobile.getPlatform().loader.getMIDletResourceAsStream(name);
 
-		if(stream==null)
-		{
-			System.out.println("Couldn't Load Image Stream (can't find "+name+")");
-			isNull = true;
-		}
+		if(stream==null) { throw new NullPointerException("Can't load image from resource, as the returned image is null."); }
 		else
 		{
-			try
-			{
-				temp = ImageIO.read(stream);
-				width = (int)temp.getWidth();
-				height = (int)temp.getHeight();
+			try { temp = ImageIO.read(stream); } 
+			catch (IOException e) { throw new IllegalArgumentException("Failed to read image from resource:" + e.getMessage()); }
+			
+			if(temp == null) { throw new NullPointerException("Couldn't load image from resource: Image is null"); }
+			
+			width = (int)temp.getWidth();
+			height = (int)temp.getHeight();
 
-				canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-				createGraphics();
+			canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+			createGraphics();
 
-				gc.drawImage2(temp, 0, 0);
-			}
-			catch (Exception e)
-			{
-				System.out.println("Couldn't Load Image Stream " + name);
-				e.printStackTrace();
-				isNull = true;
-			}
+			gc.drawImage2(temp, 0, 0);
 		}
 		platformImage = this;
 	}
@@ -112,22 +101,19 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		// Create Image from InputStream
 		// System.out.println("Image From Stream");
 		BufferedImage temp;
-		try
-		{
-			temp = ImageIO.read(stream);
-			width = (int)temp.getWidth();
-			height = (int)temp.getHeight();
+		try { temp = ImageIO.read(stream); } 
+		catch (IOException e) { throw new IllegalArgumentException("Failed to read image from InputStream:" + e.getMessage()); }
+		
+		if(temp == null) { throw new NullPointerException("Couldn't load image from InputStream: Image is null"); }
 
-			canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-			createGraphics();
+		width = (int)temp.getWidth();
+		height = (int)temp.getHeight();
 
-			gc.drawImage2(temp, 0, 0);
-		}
-		catch(Exception e)
-		{
-			System.out.println("Couldn't Load Image Stream");
-			isNull = true;
-		}
+		canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		createGraphics();
+
+		gc.drawImage2(temp, 0, 0);
+
 
 		platformImage = this;
 	}
@@ -135,6 +121,8 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	public PlatformImage(Image source)
 	{
 		// Create Image from Image
+		if(source == null) { throw new NullPointerException("Couldn't load image: Image is null"); }
+
 		width = source.platformImage.width;
 		height = source.platformImage.height;
 
@@ -149,30 +137,22 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	public PlatformImage(byte[] imageData, int imageOffset, int imageLength)
 	{
 		// Create Image from Byte Array Range (Data is PNG, JPG, etc.)
-		try
-		{
-			InputStream stream = new ByteArrayInputStream(imageData, imageOffset, imageLength);
+		InputStream stream = new ByteArrayInputStream(imageData, imageOffset, imageLength);
 
-			BufferedImage temp;
+		BufferedImage temp;
+		
+		try { temp = ImageIO.read(stream); } 
+		catch (IOException e) { throw new IllegalArgumentException("Failed to read image from Byte Array." + e.getMessage()); }
+		
+		if(temp == null) { throw new NullPointerException("Couldn't load image from byte array: Image is null"); }
+		
+		width = temp.getWidth();
+		height = temp.getHeight();
 
-			temp = ImageIO.read(stream);
-			width = (int)temp.getWidth();
-			height = (int)temp.getHeight();
+		canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		createGraphics();
 
-			canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-			createGraphics();
-
-			gc.drawImage2(temp, 0, 0);
-		}
-		catch(Exception e)
-		{
-			System.out.println("Couldn't Load Image Data From Byte Array");
-			canvas = new BufferedImage(Mobile.getPlatform().lcdWidth, Mobile.getPlatform().lcdHeight, BufferedImage.TYPE_INT_ARGB);
-			createGraphics();
-			//System.out.println(e.getMessage());
-			//e.printStackTrace();
-			isNull = true;
-		}
+		gc.drawImage2(temp, 0, 0);
 
 		platformImage = this;
 	}

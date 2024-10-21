@@ -22,17 +22,17 @@ import java.awt.Image;
 import java.awt.Canvas;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 
 import java.util.Timer;
 import java.util.TimerTask;
-
-import javax.microedition.midlet.MIDlet;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
 import javax.microedition.media.Manager;
+import javax.microedition.midlet.MIDlet;
 
 public class Libretro
 {
@@ -59,11 +59,10 @@ public class Libretro
 	private long elapsedTime = 0;
 	private long sleepTime = 0;
 
-	private int maxmidistreams = 32;
-
 	private boolean[] pressedKeys = new boolean[128];
 
 	private byte[] frameBuffer = new byte[800*800*3];
+	private byte[] RGBframeBuffer = new byte[800*800*3];
 	private byte[] frameHeader = new byte[]{(byte)0xFE, 0, 0, 0, 0, 0};
 
 	private int mousex;
@@ -101,10 +100,10 @@ public class Libretro
 		 */
 		try 
 		{
-			if(!PlatformPlayer.soundfontDir.isDirectory()) 
+			if(!Manager.soundfontDir.isDirectory()) 
 			{ 
-				PlatformPlayer.soundfontDir.mkdirs();
-				File dummyFile = new File(PlatformPlayer.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				Manager.soundfontDir.mkdirs();
+				File dummyFile = new File(Manager.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
 				dummyFile.createNewFile();
 			}
 		}
@@ -133,17 +132,14 @@ public class Libretro
 
 		if(Integer.parseInt(args[6]) == 0) { soundEnabled = false; }
 
-		if(Integer.parseInt(args[7]) == 1) { PlatformPlayer.customMidi = true; }
-		
-		maxmidistreams = Integer.parseInt(args[8]);
-		Manager.updatePlayerNum((byte) maxmidistreams);
+		if(Integer.parseInt(args[7]) == 1) { Manager.useCustomMidi = true; }
 
 		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
-		if(Integer.parseInt(args[9]) == 1) { Manager.dumpAudioStreams = true; }
+		if(Integer.parseInt(args[8]) == 1) { Manager.dumpAudioStreams = true; }
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
-		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_INT_ARGB); // libretro display
+		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
 		gc = (Graphics2D)surface.getGraphics();
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
@@ -326,12 +322,9 @@ public class Libretro
 
 										config.settings.put("fps", ""+limitFPS);
 
-										if(!PlatformPlayer.customMidi) { config.settings.put("soundfont", "Default"); }
+										if(!Manager.useCustomMidi) { config.settings.put("soundfont", "Default"); }
 										else                           { config.settings.put("soundfont", "Custom");  }
-
-										config.settings.put("maxmidistreams", ""+maxmidistreams);
 										
-
 										config.saveConfig();
 										settingsChanged();
 
@@ -393,40 +386,37 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[8])==0) { config.settings.put("soundfont", "Default"); }
 									if(Integer.parseInt(cfgtokens[8])==1) { config.settings.put("soundfont", "Custom");  }
 
-									if(Integer.parseInt(cfgtokens[9])==0) { config.settings.put("maxmidistreams", "1");}
-									if(Integer.parseInt(cfgtokens[9])==1) { config.settings.put("maxmidistreams", "2");}
-									if(Integer.parseInt(cfgtokens[9])==2) { config.settings.put("maxmidistreams", "4");}
-									if(Integer.parseInt(cfgtokens[9])==3) { config.settings.put("maxmidistreams", "8");}
-									if(Integer.parseInt(cfgtokens[9])==4) { config.settings.put("maxmidistreams", "16");}
-									if(Integer.parseInt(cfgtokens[9])==5) { config.settings.put("maxmidistreams", "32");}
-									if(Integer.parseInt(cfgtokens[9])==6) { config.settings.put("maxmidistreams", "48");}
-									if(Integer.parseInt(cfgtokens[9])==7) { config.settings.put("maxmidistreams", "64");}
-									if(Integer.parseInt(cfgtokens[9])==8) { config.settings.put("maxmidistreams", "96");}
-
-									if(Integer.parseInt(cfgtokens[10])==1) { Manager.dumpAudioStreams = true;  }
-									if(Integer.parseInt(cfgtokens[10])==0) { Manager.dumpAudioStreams = false; }
+									if(Integer.parseInt(cfgtokens[9])==1) { Manager.dumpAudioStreams = true;  }
+									if(Integer.parseInt(cfgtokens[9])==0) { Manager.dumpAudioStreams = false; }
 
 									config.saveConfig();
 									settingsChanged();
 								break;
 								
 								case 15:
-									// Send Frame Libretro //
+									/* Send Frame to Libretro */
 									try
 									{
-										final int[] data;
+										frameBuffer = ((DataBufferByte) surface.getRaster().getDataBuffer()).getData();
 
-										data = surface.getRGB(0, 0, lcdWidth, lcdHeight, null, 0, lcdWidth);
+										final int bufferLength = frameBuffer.length;
 
-										final int bufferLength = data.length*3;
-										int cb = 0;
-										for(int i=0; i<data.length; i++)
+										/* 
+										 * Convert BGR into RGB. Has a negligible performance impact compared to not doing this at all
+										 * and sending the BGR array straight to libretro... and is faster than using getRGB().
+										 * 
+										 * Copying from the original BGR array to a separate RGB array uses a bit more memory, but
+										 * works correctly compared to just swapping the channels on the orignal array, where they
+										 * still unknowingly end up incorrect from time to time. Runtime performance is pretty much
+										 * the same for both methods.
+										 */
+										for(int i=0; i<bufferLength; i+=3)
 										{
-											frameBuffer[cb]   = (byte)((data[i]>>16)&0xFF);
-											frameBuffer[cb+1] = (byte)((data[i]>>8)&0xFF);
-											frameBuffer[cb+2] = (byte)((data[i])&0xFF);
-											cb+=3;
+											RGBframeBuffer[i]   = frameBuffer[i+2]; // [R]GB = BG[R]
+											RGBframeBuffer[i+1] = frameBuffer[i+1];
+											RGBframeBuffer[i+2] = frameBuffer[i]; // RG[B] = [B]GR
 										}
+
 										//frameHeader[0] = (byte)0xFE;
 										frameHeader[1] = (byte)((lcdWidth>>8)&0xFF);
 										frameHeader[2] = (byte)((lcdWidth)&0xFF);
@@ -434,7 +424,7 @@ public class Libretro
 										frameHeader[4] = (byte)((lcdHeight)&0xFF);
 
 										System.out.write(frameHeader, 0, 6);
-										System.out.write(frameBuffer, 0, bufferLength);
+										System.out.write(RGBframeBuffer, 0, bufferLength);
 										System.out.flush();
 									}
 									catch (Exception e)
@@ -483,8 +473,8 @@ public class Libretro
 		if(rotate.equals("off")) { rotateDisplay = false; frameHeader[5] = (byte)0; }
 
 		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom"))  { PlatformPlayer.customMidi = true; }
-		else if(midiSoundfont.equals("Default")) { PlatformPlayer.customMidi = false; }
+		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
+		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
 		halveCanvasRes = false;
 		if(config.settings.get("halveCanvasRes").equals("on")) 
@@ -499,11 +489,9 @@ public class Libretro
 			lcdWidth = w;
 			lcdHeight = h;
 			Mobile.getPlatform().resizeLCD(w, h);
-			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_INT_ARGB); // libretro display
+			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
 			gc = (Graphics2D)surface.getGraphics();
 		}
-
-		Manager.updatePlayerNum((byte) Integer.parseInt(config.settings.get("maxmidistreams")));
 
 		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
 		else if (Mobile.sonyEricsson) 
