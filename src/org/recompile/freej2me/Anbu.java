@@ -89,10 +89,6 @@ public class Anbu
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
 
-	/* Variables that work around a SDL Canvas bug noted below */
-	private boolean updatedRenderer = false;
-	private long updateRendererTime = 0;
-
 	// Frame Limit Variables
 	private int limitFPS = 0;
 	private long lastRenderTime = 0;
@@ -151,16 +147,6 @@ public class Anbu
 			{
 				try
 				{
-					/* 
-					 * For some reason, the SDL window remains at a blank canvas at boot, it appears
-					 * to be due to the renderer and texture being set before the J2ME Images are 
-					 * ready. It shouldn't really be happening... a deeper investigation is needed.
-					 */
-					if(!updatedRenderer && updateRendererTime < System.currentTimeMillis() - 500) 
-					{
-						sdl.resolutionChanged = true;
-						updatedRenderer = true;
-					}
 					if(limitFPS>0)
 					{
 						requiredFrametime = 1000 / limitFPS;
@@ -178,8 +164,6 @@ public class Anbu
 				catch (Exception e) { }
 			}
 		};
-		/* This var should be removed at some point, it's tied to the workaround above */
-		updateRendererTime = System.currentTimeMillis();
 
 		Mobile.getPlatform().setPainter(painter);
 
@@ -290,6 +274,8 @@ public class Anbu
 			 * Let's make resolution changes and adjust any relevant objects here, as it's right on the render path 
 			 * and it makes sure that the objects will be set correctly before being rendered.
 			 */
+			if(resolutionChanged || Mobile.displayUpdated) { updateScreen(); }
+
 			if(resolutionChanged) 
 			{
 				SDL_SetWindowSize(window, lcdWidth*scaleFactor , lcdHeight*scaleFactor);
@@ -308,7 +294,7 @@ public class Anbu
 			final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
             pixels.write(0, data, 0, data.length);
 
-			SDL_RenderClear(renderer);
+			//SDL_RenderClear(renderer); // We don't need RenderClear since we always repaint the whole screen.
 			SDL_UpdateTexture(texture, null, pixels, lcdWidth * 4);
 			SDL_RenderCopy(renderer, texture, null, null);
 			SDL_RenderPresent(renderer);
@@ -734,6 +720,21 @@ public class Anbu
 				SDL_SetWindowFullscreen(window, SDL_WINDOW_SHOWN);
 				resolutionChanged = true;
 			}
+		}
+
+		/* 
+		 * Whenever FreeJ2ME updates its current displayable, or the user resizes the screen, this must be called to
+		 * to update the renderer and make sure SDL will render to the new window size correctly.
+		 */
+		private void updateScreen() 
+		{
+			SDL_SetWindowSize(window, lcdWidth*scaleFactor , lcdHeight*scaleFactor);
+			SDL_DestroyRenderer(renderer);
+			renderer = SDL_CreateRenderer(window, -1, 0);
+			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
+			pixels = new Memory(lcdWidth * lcdHeight * 4); 
+			resolutionChanged = false;
+			Mobile.displayUpdated = false;
 		}
 
 	} // sdl
