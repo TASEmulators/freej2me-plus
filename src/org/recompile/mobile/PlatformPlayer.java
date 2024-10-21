@@ -125,10 +125,9 @@ public class PlatformPlayer implements Player
 					Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't read input stream: " + e.getMessage());
 				}
 			}
-			else if (type.equalsIgnoreCase("audio/x-tone-seq")) 
+			else if (type.equalsIgnoreCase("audio/x-tone-seq")) // Midi player will also play tones, as these are converted to midi in pretty much all cases at the moment
 			{
-				// Very early stages of implementation, needs to be fleshed out
-				player = new tonePlayer(stream);
+				player = new midiPlayer(stream);
 			}
 			else /* TODO: Implement a player for amr audio types */
 			{
@@ -136,26 +135,39 @@ public class PlatformPlayer implements Player
 				player = new audioplayer();
 			}
 		}
-		controls[0] = new volumeControl(this.player);
+		controls[0] = new volumeControl(this.player); // Midi Player with Tones might not use this
 
 		/* Midi Player has a few additional controls */
 		if(player instanceof midiPlayer) 
 		{
-			controls[1] = new tempoControl((midiPlayer) this.player);
-			controls[2] = new midiControl((midiPlayer) this.player);
-			controls[3] = new toneControl((midiPlayer) this.player);
+			/* If we're using midiPlayer to play tones, only set it up with ToneControl. */
+			if(type.equalsIgnoreCase("audio/x-tone-seq")) { controls[3] = new toneControl((midiPlayer) this.player); }
+			else
+			{
+				controls[1] = new tempoControl((midiPlayer) this.player);
+				controls[2] = new midiControl((midiPlayer) this.player);
+			}
 		}
-		
 
 		Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "media type: "+type);
 	}
 
 	public PlatformPlayer(String locator)
 	{
-		player = new audioplayer();
-		listeners = new Vector<PlayerListener>();
-		controls = new Control[3];
-		Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Player locator: "+locator);
+		if(locator.equals(Manager.TONE_DEVICE_LOCATOR)) 
+		{
+			player = new midiPlayer();
+			listeners = new Vector<PlayerListener>();
+			controls = new Control[NUM_CONTROLS];
+			controls[0] = new volumeControl(this.player); // Midi Player with Tones might not use this
+			controls[3] = new toneControl((midiPlayer) this.player);
+		} else 
+		{
+			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "No player for locator: "+locator);
+			player = new audioplayer();
+			listeners = new Vector<PlayerListener>();
+			controls = new Control[3];
+		}
 	}
 
 	public void close()
@@ -378,6 +390,29 @@ public class PlatformPlayer implements Player
 		private Synthesizer synthesizer;
 		private Receiver receiver;
 
+		public midiPlayer() // For when a Locator call (usually for tones) is issued
+		{
+			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Midi Player [locator] untested");
+			try
+			{
+				midi = MidiSystem.getSequencer(false);
+
+				if (Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
+				{
+					synthesizer = Manager.customSynth; // Use the custom synthesizer
+				} 
+				else 
+				{
+					synthesizer = MidiSystem.getSynthesizer(); // Default synthesizer
+				}
+				
+				synthesizer.open();
+				receiver = synthesizer.getReceiver();
+				midi.getTransmitter().setReceiver(receiver);
+				midiSequence = new Sequence(Sequence.PPQ, 24); // Create an empty sequence, which should be overriden with whatever setSequence() receives.
+			} catch (Exception e) {  Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load midi file:" + e.getMessage()); }
+		}
+
 		public midiPlayer(InputStream stream) 
 		{
 			try 
@@ -505,6 +540,8 @@ public class PlatformPlayer implements Player
 		public Synthesizer getSynthesizer() { return synthesizer; }
 
 		public Sequence getSequence() { return midiSequence; }
+
+		public void setSequence(Sequence sequence) { midiSequence = sequence; }
 
 		public Sequencer getSequencer() { return midi; }
 
@@ -786,35 +823,6 @@ public class PlatformPlayer implements Player
 		}
 	}
 
-	/* Todo: Implement tone playing functionality */
-	private class tonePlayer extends audioplayer 
-	{
-		private InputStream toneStream;
-		private int loops = 0;
-
-		public tonePlayer(InputStream stream) { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Tone Player"); toneStream = stream; }
-
-		public void start() 
-		{  
-			// Todo implement functionality to play a tone sequence
-			state = Player.STARTED;
-		}
-
-		public void stop() 
-		{ 
-			// Todo implement functionality to stop playing a tone sequence
-			state = Player.PREFETCHED;
-		}
-
-		public void setLoopCount(int count) { if (count > -1) { loops = count; } }
-
-		public boolean isRunning() 
-		{ 
-			// Todo implementation depends on start()
-			return false; 
-		}
-	}
-
 	// Controls //
 
 	/* midiControl is untested */
@@ -828,7 +836,6 @@ public class PlatformPlayer implements Player
 		 * everything that they change ourselves.
 		 */
 		private int[] channelVolume = new int[16]; // For getChannelVolume
-		//private int[] programs = new int[16]; // For getProgram
 
 		public midiControl(midiPlayer player) 
 		{ 
@@ -1181,11 +1188,11 @@ public class PlatformPlayer implements Player
 		 * we can implement the other cases for better player state handling.
 		 */
 
-		public int getTempo() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "TempoControl: getTempo()"); return tempo; }
+		public int getTempo() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "getTempo()"); return tempo; }
 
 		public int setTempo(int millitempo) 
 		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "TempoControl: setTempo()");
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setTempo()");
 			tempo = millitempo; 
 			
 			/* 
@@ -1200,15 +1207,15 @@ public class PlatformPlayer implements Player
 		}
 
 		// RateControl interface
-		public int getMaxRate() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "TempoControl: getMaxRate()"); return MAX_RATE; }
+		public int getMaxRate() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "getMaxRate()"); return MAX_RATE; }
 
-		public int getMinRate() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "TempoControl: getMinRate()"); return MIN_RATE; }
+		public int getMinRate() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "getMinRate()"); return MIN_RATE; }
 
-		public int getRate() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "TempoControl: getRate()"); return rate; }
+		public int getRate() { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "getRate()"); return rate; }
 
 		public int setRate(int millirate) 
 		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "TempoControl: setRate()");
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setRate()");
 			rate = millirate; 
 			
 			/* 
@@ -1230,31 +1237,38 @@ public class PlatformPlayer implements Player
 		public float getEffectiveBPM() { return (float) ( (getTempo() * getRate() / 1000.0f) / 100000.0f); }
 	}
 
-	/* ToneControl is also totally untested right now, couldn't find a jar for it */
+	/* ToneControl is also almost entirely untested right now, couldn't find a jar that uses setSequence() */
 	private class toneControl implements javax.microedition.media.control.ToneControl
 	{
 		private midiPlayer player;
 
-		public toneControl(midiPlayer player) { this.player = player; }
+		public toneControl(midiPlayer player) { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Tone Control"); this.player = player; }
 
+		/* 
+		 * As far as i can tell, Nokia's OTT/OTA Tones don't use this, which would leave only jars that directly use J2ME's Augmented BNF format, if there are any. 
+		 * If such a case is found, setupSequence() should be the one to parse that format into a MIDI sequence. 
+		 */
 		public void setSequence(byte[] sequence) 
 		{
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "ToneControl: setSequence()"); /* This should show up in the case a jar tries to use it... just so we can find a jar that can test this */
+			/* This should show up in the case a jar tries to use it... just so we can find a jar that can test this */
+			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setSequence() not implemented");
 			try 
 			{
 				if(sequence == null) { throw new IllegalArgumentException("ToneControl: cannot set a null sequence"); }
-				/* TODO: We should check if the player state is PREFETCHED or STARTED here, and throw an IllegalStateException if so. Might not be needed. */
+
+				if(getState() == Player.PREFETCHED || getState() == Player.STARTED) { throw new IllegalStateException("Cannot call setSequence(), as the player is either PREFETCHED or STARTED."); }
 
 				Sequence toneSequence = new Sequence(Sequence.PPQ, 24);
 				Track track = toneSequence.createTrack();
 
 				setupSequence(sequence, track);
 
+				player.setSequence(toneSequence);
 				player.midi.setSequence(toneSequence);
-			} catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "ToneControl: Can't parse tone sequence: " + e.getMessage());}
+			} catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Can't parse tone sequence: " + e.getMessage());}
 		}
 
-		private void setupSequence(byte[] sequence, Track track) 
+		private void setupSequence(byte[] sequence, Track track) // This tries to parse the default
 		{
 			if (sequence.length == 0 || sequence[0] != 1) { throw new IllegalArgumentException("ToneControl: Invalid sequence"); }
 
@@ -1272,7 +1286,7 @@ public class PlatformPlayer implements Player
 					byte note = sequence[index++];
 					byte duration = sequence[index++];
 					try { addNote(track, note, duration, noteVolume, currentTick); currentTick += duration; }
-					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "ToneControl: Invalid note: " + e.getMessage());}
+					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid note: " + e.getMessage());}
 					
 				}
 				else if (eventType == ToneControl.REPEAT) 
@@ -1283,7 +1297,7 @@ public class PlatformPlayer implements Player
 					for (int i = 0; i < numRepeats; i++) 
 					{ 
 						try {addNote(track, noteToRepeat, repeatNoteDuration, noteVolume, currentTick); }
-						catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "ToneControl: Invalid repeated note: " + e.getMessage());}
+						catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid repeated note: " + e.getMessage());}
 						currentTick += repeatNoteDuration;
 					}
 				}
@@ -1291,7 +1305,7 @@ public class PlatformPlayer implements Player
 				{
 					noteVolume = sequence[index++];
 					try { track.add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, 0, 7, noteVolume), currentTick)); }
-					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "ToneControl: Invalid SET_VOLUME event: " + e.getMessage());}
+					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid SET_VOLUME event: " + e.getMessage());}
 				}
 				else if(eventType == ToneControl.TEMPO) 
 				{
@@ -1306,7 +1320,7 @@ public class PlatformPlayer implements Player
 							(byte)(microsecondsPerBeat)
 						}, 3), currentTick));
 					}
-					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "ToneControl: Invalid TEMPO event: " + e.getMessage());}
+					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid TEMPO event: " + e.getMessage());}
 				}
 				else if(eventType == ToneControl.RESOLUTION || 
 						eventType == ToneControl.BLOCK_START ||
