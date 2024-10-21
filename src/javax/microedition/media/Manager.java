@@ -91,6 +91,7 @@ public class Manager
 				{ dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid");}
 			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav");}
 			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3");}
+			else if(type.equalsIgnoreCase("audio/x-tone-seq")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid");} // Tone Seq should arrive converted to midi
 
 			outStream = new FileOutputStream(dumpFile);
 
@@ -140,8 +141,8 @@ public class Manager
 		Mobile.log(Mobile.LOG_DEBUG, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Play Tone");
 
 		if (note < 0 || note > 127) { throw new IllegalArgumentException("playTone: Note value must be between 0 and 127."); }
-        if (duration <= 0) { throw new IllegalArgumentException("playTone: Note duration must be positive and non-zero."); }
-        if (volume < 0) { volume = 0; } 
+		if (duration <= 0) { throw new IllegalArgumentException("playTone: Note duration must be positive and non-zero."); }
+		if (volume < 0) { volume = 0; } 
 		else if (volume > 100) { volume = 100; }
 
 		if(dedicatedTonePlayer == null) 
@@ -154,22 +155,22 @@ public class Manager
 
 				dedicatedToneChannel = dedicatedTonePlayer.getChannels()[0]; 
 			} 
-			catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "playTone: Couldn't open Tone Player: " + e.getMessage()); return;}
+			catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Couldn't open Tone Player: " + e.getMessage()); return;}
 		}
 
-        /* 
+		/* 
 		 * There's no need to calculate the note frequency as per the MIDP Manager docs,
 		 * they are pretty much the note numbers used by Java's Built-in MIDI library. 
 		 * Just play the note straight away, mapping the volume from 0-100 to 0-127.
 		 */ 
-        dedicatedToneChannel.controlChange(7, (volume * 127 / 100) );
-        dedicatedToneChannel.noteOn(note, duration); // Make the decay just long enough for the note not to fade shorter than expected
+		dedicatedToneChannel.controlChange(7, volume * 127 / 100);
+		dedicatedToneChannel.noteOn(note, duration); // Make the decay just long enough for the note not to fade shorter than expected
 
-        /* Since it has to be non-blocking, wait for the specified duration in a separate Thread before stopping the note. */
-        new Thread(() -> 
+		/* Since it has to be non-blocking, wait for the specified duration in a separate Thread before stopping the note. */
+		new Thread(() -> 
 		{
             try { Thread.sleep(duration); } 
-			catch (InterruptedException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "playTone: Failed to keep playing note for its specified duration: " + e.getMessage()); }
+			catch (InterruptedException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to keep playing note for its specified duration: " + e.getMessage()); }
             dedicatedToneChannel.noteOff(note);
         }).start();
 	}
@@ -225,8 +226,8 @@ public class Manager
 
 				hasLoadedCustomMidi = true; // We have now loaded the custom midi soundfont, mark as such so we don't waste time entering here again
 			} 
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Manager -> Could not load soundfont: " + e.getMessage());}
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Could not load soundfont: " + e.getMessage());}
 		} 
-		else { Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "PlatformPlayer: Custom MIDI enabled but there's no soundfont in" + (soundfontDir.getPath() + File.separatorChar)); }
+		else { Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Custom MIDI enabled but there's no soundfont in" + (soundfontDir.getPath() + File.separatorChar)); }
 	}
 }
