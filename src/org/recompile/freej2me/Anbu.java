@@ -276,16 +276,6 @@ public class Anbu
 			 */
 			if(resolutionChanged || Mobile.displayUpdated) { updateScreen(); }
 
-			if(resolutionChanged) 
-			{
-				SDL_SetWindowSize(window, lcdWidth*scaleFactor , lcdHeight*scaleFactor);
-				SDL_DestroyRenderer(renderer);
-				renderer = SDL_CreateRenderer(window, -1, 0);
-				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
-				sdl.pixels = new Memory(lcdWidth * lcdHeight * 4);
-				resolutionChanged = false;
-			}
-
 			/* 
 			 * Like on libretro, access the image's DataBuffer directly instead of using BufferedImage's getRGB() method,
 			 * which is slower. The only difference is that here the data has to be saved as Integers instead of Bytes,
