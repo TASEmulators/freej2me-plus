@@ -23,6 +23,9 @@ Authors :
 Click [here](KEYMAP.md) for information about more keybindings
 
 ## Links
+Latest build:
+  https://nightly.link/TASEmulators/freej2me-plus/workflows/ant/devel
+
 Screenshots:
   https://imgur.com/a/2vAeC
 
