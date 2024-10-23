@@ -251,10 +251,10 @@ public class Anbu
 			/* 
 			 * Input reading should not be tied to the render logic, otherwise jars that only send new render data 
 			 * after an input is registered (Ex: JBenchmark 2 and some other jars that use Form UI) will get softlocked.
+			 * keytimer = new Timer();
+			 * keytask = new TimerTask() {	public void run() { processEvents(); } };
+			 * keytimer.schedule(keytask, 0, 1);
 			 */
-			keytimer = new Timer();
-			keytask = new TimerTask() {	public void run() { processEvents(); } };
-			keytimer.schedule(keytask, 0, 1);
 
 			SDL_JoystickEventState(SDL_ENABLE);
 
@@ -269,6 +269,7 @@ public class Anbu
 
 		public void paint()
 		{
+			processEvents();
 
 			/* 
 			 * Let's make resolution changes and adjust any relevant objects here, as it's right on the render path 
