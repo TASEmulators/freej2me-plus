@@ -55,6 +55,7 @@ import static io.github.libsdl4j.api.keycode.SDL_Keycode.*;
 import static io.github.libsdl4j.api.joystick.SdlJoystick.SDL_JoystickOpen;
 import static io.github.libsdl4j.api.joystick.SdlJoystick.SDL_JoystickEventState;
 import static io.github.libsdl4j.api.joystick.SdlJoystickConst.*;
+import static io.github.libsdl4j.api.joystick.SdlJoystick.*;
 
 import java.awt.image.DataBufferInt;
 import java.io.File;
@@ -95,6 +96,8 @@ public class Anbu
 	private long requiredFrametime = 0;
 	private long elapsedTime = 0;
 	private long sleepTime = 0;
+
+	SDL_Joystick joy = null;
 
 	private boolean[] pressedKeys = new boolean[128];
 
@@ -147,6 +150,13 @@ public class Anbu
 			{
 				try
 				{
+					/* Check if vibration commands have to be handled */
+					if(Mobile.vibrationDuration != 0) 
+					{
+						int vib = SDL_JoystickRumble(joy, (short) 0xFFFF, (short) 0xFFFF, Mobile.vibrationDuration);
+						Mobile.vibrationDuration = 0;
+					}
+					
 					if(limitFPS>0)
 					{
 						requiredFrametime = 1000 / limitFPS;
@@ -672,7 +682,9 @@ public class Anbu
 			// assert(id >= 0 && id < SDL_NumJoysticks());
 
 			// open joystick & add to our list
-			SDL_Joystick joy = SDL_JoystickOpen(id);
+			//System.out.println("Joystick Detected!" + SDL_JoystickName(joy));
+			joy = SDL_JoystickOpen(id);
+			//System.out.println("Added Joystick:" + SDL_JoystickName(joy));
 			// assert(joy);
 
 			// add it to our list so we can close it again later
@@ -687,6 +699,9 @@ public class Anbu
 
 		private void removeJoystick(int joyId)
 		{
+			//System.out.println("Removing Joystick:" + SDL_JoystickName(joy));
+			SDL_JoystickClose(joy);
+			//System.out.println("Joystick Removed!" + SDL_JoystickName(joy));
 			// assert(joyId != -1);
 			// delete old prevAxisValues
 			// auto axisIt = mPrevAxisValues.find(joyId);

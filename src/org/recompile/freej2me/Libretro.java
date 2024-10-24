@@ -62,8 +62,7 @@ public class Libretro
 	private boolean[] pressedKeys = new boolean[128];
 
 	private byte[] frameBuffer = new byte[800*800*3];
-	private byte[] RGBframeBuffer = new byte[800*800*3];
-	private byte[] frameHeader = new byte[]{(byte)0xFE, 0, 0, 0, 0, 0};
+	private final byte[] frameHeader = new byte[]{(byte)0xFE, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	private int mousex;
 	private int mousey;
@@ -221,6 +220,8 @@ public class Libretro
 						//System.out.print(" "+bin);
 						din[count] = (int)(bin & 0xFF);
 						count++;
+
+						/* Check inputs */
 						if (count==5)
 						{
 							count = 0;
@@ -396,35 +397,24 @@ public class Libretro
 								case 15:
 									/* Send Frame to Libretro */
 									try
-									{
-										frameBuffer = ((DataBufferByte) surface.getRaster().getDataBuffer()).getData();
-
-										final int bufferLength = frameBuffer.length;
-
-										/* 
-										 * Convert BGR into RGB. Has a negligible performance impact compared to not doing this at all
-										 * and sending the BGR array straight to libretro... and is faster than using getRGB().
-										 * 
-										 * Copying from the original BGR array to a separate RGB array uses a bit more memory, but
-										 * works correctly compared to just swapping the channels on the orignal array, where they
-										 * still unknowingly end up incorrect from time to time. Runtime performance is pretty much
-										 * the same for both methods.
-										 */
-										for(int i=0; i<bufferLength; i+=3)
-										{
-											RGBframeBuffer[i]   = frameBuffer[i+2]; // [R]GB = BG[R]
-											RGBframeBuffer[i+1] = frameBuffer[i+1];
-											RGBframeBuffer[i+2] = frameBuffer[i]; // RG[B] = [B]GR
-										}
-
+									{				
 										//frameHeader[0] = (byte)0xFE;
 										frameHeader[1] = (byte)((lcdWidth>>8)&0xFF);
 										frameHeader[2] = (byte)((lcdWidth)&0xFF);
 										frameHeader[3] = (byte)((lcdHeight>>8)&0xFF);
 										frameHeader[4] = (byte)((lcdHeight)&0xFF);
+										//frameHeader[5] = (byte)rotateDysplay; ( seen in settingsChanged() )
+										frameHeader[6] = (byte)((Mobile.vibrationDuration>>24) & 0xFF);
+										frameHeader[7] = (byte)((Mobile.vibrationDuration>>16) & 0xFF);
+										frameHeader[8] = (byte)((Mobile.vibrationDuration>>8) & 0xFF);
+										frameHeader[9] = (byte)((Mobile.vibrationDuration) & 0xFF);
+										System.out.write(frameHeader, 0, 10);
 
-										System.out.write(frameHeader, 0, 6);
-										System.out.write(RGBframeBuffer, 0, bufferLength);
+										/* Vibration duration should be set to zero to prevent constant sends of the same data, so update it here*/
+										Mobile.vibrationDuration = 0;
+
+										frameBuffer = ((DataBufferByte) surface.getRaster().getDataBuffer()).getData();
+										System.out.write(frameBuffer, 0, frameBuffer.length);
 										System.out.flush();
 									}
 									catch (Exception e)

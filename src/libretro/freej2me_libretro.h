@@ -19,14 +19,16 @@
 /* Input mapping variables and descriptions */
 static const struct retro_controller_description port_1[] =
 {
-    { "Joypad Auto",       RETRO_DEVICE_JOYPAD },
-    { "Joypad Port Empty", RETRO_DEVICE_NONE },
+    { "Joypad",    RETRO_DEVICE_JOYPAD },
+    { "Keyboard",  RETRO_DEVICE_KEYBOARD },
+    { "Empty",     RETRO_DEVICE_NONE },
+    { 0 },
 };
 
 /* No use having more than one input port on this core */
 static const struct retro_controller_info ports[] =
 {
-    { port_1, 16 },
+    { port_1, 2 },
     { 0 },
 };
 

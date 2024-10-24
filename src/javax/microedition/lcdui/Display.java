@@ -197,6 +197,7 @@ public class Display
 
 	public boolean vibrate(int duration)
 	{
+		Mobile.vibrationDuration = duration;
 		//System.out.println("Vibrate");
 		return true;
 	}
