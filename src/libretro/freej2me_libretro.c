@@ -43,6 +43,7 @@ retro_audio_sample_t Audio;
 retro_audio_sample_batch_t AudioBatch;
 retro_input_poll_t InputPoll;
 retro_input_state_t InputState;
+static struct retro_rumble_interface rumble;
 
 static struct retro_log_callback logging;
 static retro_log_printf_t log_fn;
@@ -116,6 +117,7 @@ long joymouseTime = 0; /* countdown to show/hide mouse cursor */
 long joymouseClickedTime = 0; /* Countdown to show/hide the cursor in the clicked state */
 bool joymouseAnalog = false; /* flag - using analog stick for mouse movement */
 int mouseLpre = 0; /* old mouse button state */
+int rumbleTime = 100; /* Rumble duration calculated based on data received from FreeJ2ME-lr.jar */
 bool uses_mouse = true;
 bool uses_pointer = false;
 bool booted = false;
@@ -130,7 +132,7 @@ unsigned int frameSize = MaxWidth * MaxHeight;
 unsigned int frameBufferSize = MaxWidth * MaxHeight * 3;
 unsigned int frame[640000];
 unsigned char frameBuffer[1920000];
-unsigned char frameHeader[5];
+unsigned char frameHeader[9];
 struct retro_game_info gameinfo;
 
 bool frameRequested = false;
@@ -161,7 +163,8 @@ unsigned int pointerClickedColor = 0xFFFF00;
 
 /* Libretro exposed config variables END */
 
-unsigned char javaRequestFrame[5] = { 0xF, 0, 0, 0, 0 };
+/* First byte is the identifier, next four are width and height, and next four are vibration */
+unsigned char javaRequestFrame[9] = { 0xF, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* mouse cursor image */
 unsigned int joymouseImage[408] =
@@ -444,7 +447,7 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FreeJ2ME Updated Settings:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams);
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], halveCanvasRes, rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams);
 	optstrlen = strlen(options_update);
 
 	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
@@ -569,6 +572,11 @@ void retro_init(void)
 	/* Setup keyboard input */
 	struct retro_keyboard_callback kb = { Keyboard };
 	Environ(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &kb);
+
+	/* Check if joypad supports rumble */
+	if (Environ(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble)) { log_fn(RETRO_LOG_INFO, "Rumble environment supported.\n"); }
+    else { log_fn(RETRO_LOG_INFO, "Rumble environment not supported.\n"); }
+
 	log_fn(RETRO_LOG_INFO, "All preparations done and java app is ready. Keyboard callback set.\n");
 }
 
@@ -589,12 +597,11 @@ bool retro_load_game(const struct retro_game_info *info)
 		len = strlen(savepath);
 	}
 
-	len += 10;
-
 	unsigned char saveevent[5] = { 0xB, (len>>24)&0xFF, (len>>16)&0xFF, (len>>8)&0xFF, len&0xFF };
 	write_to_pipe(pWrite[1], saveevent, 5);
-	write_to_pipe(pWrite[1], savepath, len-10);
-	write_to_pipe(pWrite[1], "/freej2me/", 10);
+	write_to_pipe(pWrite[1], savepath, len);
+
+	log_fn(RETRO_LOG_INFO, "Savepath: %s.\n", savepath);
 
 	/* Tell java app to load and run game */
 	len = strlen(info->path);
@@ -627,8 +634,7 @@ void retro_run(void)
 	bool mouseChange = false;
 	bool updated_vars = false; /* Used to check if the core's variables were updated */
 
-	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars)
-		check_variables(false);
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars) { check_variables(false); }
 
 	if(isRunning(javaProcess))
 	{
@@ -677,6 +683,18 @@ void retro_run(void)
 		int touchY = InputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
 		int touchP = InputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
 
+		/* Process rumble events */
+		if (rumbleTime > 0 && rumble.set_rumble_state)
+		{
+			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0xFFFF);
+			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 0xFFFF);
+			rumbleTime -= 1000 / DefaultFPS;
+		} 
+		else
+		{
+			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0);
+			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 0);
+		}
 
 		/* analog right - move joymouse. XSpeed and YSpeed are multipliers set through the frontend */
 		joyRx /= 32768 / pointerXSpeed;
@@ -824,17 +842,24 @@ void retro_run(void)
 			 */
 		}
 
+		
+
+
 		/* read frame header */
 		frameRequested = false;
 		framesDropped = 0;
-
-		status = read_from_pipe(pRead[0], frameHeader, 5);
+		status = read_from_pipe(pRead[0], frameHeader, 9);
 
 		if(status>0)
 		{
 			w = (frameHeader[0]<<8) | (frameHeader[1]);
 			h = (frameHeader[2]<<8) | (frameHeader[3]);
 			r = (frameHeader[4]);
+
+			/* Read vibration event */
+			int preRumbleTime = ( (frameHeader[5]<<24) | (frameHeader[6]<<16) | (frameHeader[7]<<8) | (frameHeader[8]));
+			if(preRumbleTime > 0) { log_fn(RETRO_LOG_INFO, "Received Vibration event of %d ms.\n", preRumbleTime); rumbleTime = preRumbleTime; }
+
 			if(r!=0)
 			{
 				t = w;
@@ -875,11 +900,11 @@ void retro_run(void)
 		{
 			if(r==0)
 			{
-				/* copy frameBuffer to frame */
+				/* copy frameBuffer to frame (Received from jar as BGR, and converted to RGB here) */
 				t = 0;
 				for(i=0; i<frameSize; i++)
 				{
-					frame[i] = (frameBuffer[t]<<16) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]);
+					frame[i] = (frameBuffer[t]) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]<<16);
 					t+=3;
 				}
 			}
@@ -891,7 +916,7 @@ void retro_run(void)
 				{
 					for(i=frameHeight-1; i>=0; i--)
 					{
-						frame[(i*frameWidth)+j] = (frameBuffer[t]<<16) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]);
+						frame[(i*frameWidth)+j] = (frameBuffer[t]) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]<<16);
 						t+=3;
 					}
 				}
@@ -947,10 +972,7 @@ void retro_run(void)
 		/* send frame to libretro */
 		Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 	}
-	else
-	{
-		retro_deinit();
-	}
+	else { retro_deinit(); }
 }
 
 unsigned retro_get_region(void)
@@ -962,7 +984,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name = "FreeJ2ME-Plus";
-	info->library_version = "1.3";
+	info->library_version = "1.35";
 	info->valid_extensions = "jar";
 	info->need_fullpath = true;
 }
@@ -1025,7 +1047,7 @@ pid_t javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
-	if(restarting) { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME.\n"); restarting = false; }
+	else { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME.\n"); restarting = false; }
 
 	int fd_stdin  = 0;
 	int fd_stdout = 1;

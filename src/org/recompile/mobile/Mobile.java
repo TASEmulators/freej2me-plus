@@ -53,6 +53,10 @@ public class Mobile
 	// Var to track any changes to current Displayable, otherwise the SDL interface won't render new frames
 	public static boolean displayUpdated;
 
+	// Vibration support for Libretro and SDL
+	public static int vibrationDuration = 0;
+
+
 	//Standard keycodes
 	public static final int KEY_NUM0  = Canvas.KEY_NUM0;  // 48
 	public static final int KEY_NUM1  = Canvas.KEY_NUM1;  // 49
