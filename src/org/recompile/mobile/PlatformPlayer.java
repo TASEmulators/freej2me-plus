@@ -456,6 +456,7 @@ public class PlatformPlayer implements Player
 				if(now >= getDuration()) { midi.setMicrosecondPosition(getDuration()); }
 				else if(now < 0) { midi.setMicrosecondPosition(0); }
 				else { midi.setMicrosecondPosition(now);  }
+				midi.open();
 			}
 			catch (Exception e) { System.out.println("Failed to set MIDI position:" + e.getMessage()); }
 			
