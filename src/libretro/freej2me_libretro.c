@@ -229,8 +229,8 @@ unsigned int joymouseClickedImage[408] =
 /*
  * Custom functions to read from, and write to, pipes.
  * Those functions are used to simplify the pipe communication
- * code to be platform-independent as all ifdefs will only need 
- * to be done here instead of all around the core whenever a 
+ * code to be platform-independent as all ifdefs will only need
+ * to be done here instead of all around the core whenever a
  * pipe write/read is requested.
  */
 #ifdef __linux__
@@ -507,25 +507,25 @@ void retro_init(void)
     sprintf(dumpAudioArg, "%d", dumpAudioStreams);
 
     /* We need to clean up any argument memory from the previous launch arguments in order to load up updated ones */
-    if (restarting) 
+    if (restarting)
 	{
         log_fn(RETRO_LOG_INFO, "Restart: Cleaning up previous resources.\n");
-        if (params) 
+        if (params)
 		{
             for (int i = 0; params[i] != NULL; i++) { free(params[i]); }
             free(params);
         }
         if (outPath) { free(outPath); }
-    } 
-	else // System path is not meant to change on restarts
-	{
-		log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' System Path.\n");
-		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
-	}
+    }
+    else // System path is not meant to change on restarts
+    {
+	log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' System Path.\n");
+	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
+    }
 
-	outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
-	fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
-    
+    outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
+    fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
+
     /* Allocate memory for launch arguments */
     params = (char**)malloc(sizeof(char*) * 13); // At this time, there are 13 launch arguments
     params[0] = strdup("java");
@@ -700,7 +700,7 @@ void retro_run(void)
 			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0xFFFF);
 			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 0xFFFF);
 			rumbleTime -= 1000 / DefaultFPS;
-		} 
+		}
 		else
 		{
 			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0);
@@ -1216,7 +1216,7 @@ void javaOpen(char *cmd, char **params)
 		TRUE,                /* Set handle inheritance to TRUE */
 		0,                   /* No creation flags */
 		NULL,                /* Use parent's environment block */
-		systemPath,		     /* Use libretro's "system" dir as starting directory */
+		systemPath,	     /* Use libretro's "system" dir as starting directory */
 		&startInfo,          /* Pointer to STARTUPINFO structure */
 		&javaProcess ))      /* Pointer to PROCESS_INFORMATION structure */
 	{ /* If it fails, this block is executed */
