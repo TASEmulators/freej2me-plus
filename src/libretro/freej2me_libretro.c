@@ -607,16 +607,13 @@ bool retro_load_game(const struct retro_game_info *info)
 
 	/* Tell java app to load and run game */
 	char romPath[PATH_MAX_LENGTH];
-	
-	if (info->path[0] == '/' || info->path[2] == ':' || (info->path[0] == '\\' && info->path[1] == '\\'))
-	{
-		sprintf(romPath, "%s", info->path);
-	} else {
-		char cwd[PATH_MAX_LENGTH];
-		getcwd(cwd, sizeof(cwd));
-		fill_pathname_join(romPath, cwd, info->path, PATH_MAX_LENGTH);
-	}
-	
+
+	#ifdef __linux__
+	realpath(info->path, romPath);
+	#elif _WIN32
+	_fullpath(romPath, info->path, PATH_MAX_LENGTH);
+	#endif
+
 	len = strlen(romPath);
 	log_fn(RETRO_LOG_INFO, "Loading actual jar game from %s\n", romPath);
 
@@ -1051,7 +1048,7 @@ pid_t javaOpen(char *cmd, char **params)
 {
     pid_t pid;
 
-	if(!restarting) 
+	if(!restarting)
 	{
 		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
 
