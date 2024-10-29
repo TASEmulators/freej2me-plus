@@ -1216,7 +1216,7 @@ void javaOpen(char *cmd, char **params)
 		TRUE,                /* Set handle inheritance to TRUE */
 		0,                   /* No creation flags */
 		NULL,                /* Use parent's environment block */
-		systemPath,	     /* Use libretro's "system" dir as starting directory */
+		systemPath,          /* Use libretro's "system" dir as starting directory */
 		&startInfo,          /* Pointer to STARTUPINFO structure */
 		&javaProcess ))      /* Pointer to PROCESS_INFORMATION structure */
 	{ /* If it fails, this block is executed */
