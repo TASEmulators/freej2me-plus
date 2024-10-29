@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/stat.h>
 #ifdef __linux__
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -29,6 +30,8 @@
 #include "freej2me_libretro.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+
+const char *slash = path_default_slash();
 
 #define DefaultFPS 60
 #define MaxWidth 800
@@ -587,15 +590,15 @@ bool retro_load_game(const struct retro_game_info *info)
 	/* Game info is passed to a global variable to enable restarts */
 	gameinfo = *info;
 	/* Send savepath to java */
-	char *savepath;
-	Environ(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savepath);
-	len = strlen(savepath);
-
-	if(len==0)
-	{
-		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savepath);
-		len = strlen(savepath);
+	char *savedir;
+	Environ(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
+	if (savedir[0] == '\0') {
+		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savedir);
 	}
+
+	char savepath[PATH_MAX_LENGTH];
+	snprintf(savepath, sizeof(savepath), "%s%sfreej2me%s", savedir, slash, slash);
+	len = strlen(savepath);
 
 	unsigned char saveevent[5] = { 0xB, (len>>24)&0xFF, (len>>16)&0xFF, (len>>8)&0xFF, len&0xFF };
 	write_to_pipe(pWrite[1], saveevent, 5);
@@ -604,11 +607,23 @@ bool retro_load_game(const struct retro_game_info *info)
 	log_fn(RETRO_LOG_INFO, "Savepath: %s.\n", savepath);
 
 	/* Tell java app to load and run game */
-	len = strlen(info->path);
+	char romPath[PATH_MAX_LENGTH];
+	
+	if (info->path[0] == '/' || info->path[2] == ':' || (info->path[0] == '\\' && info->path[1] == '\\'))
+	{
+		sprintf(romPath, "%s", info->path);
+	} else {
+		char cwd[PATH_MAX_LENGTH];
+		getcwd(cwd, sizeof(cwd));
+		fill_pathname_join(romPath, cwd, info->path, PATH_MAX_LENGTH);
+	}
+	
+	len = strlen(romPath);
+	log_fn(RETRO_LOG_INFO, "Loading actual jar game from %s\n", romPath);
 
 	unsigned char loadevent[5] = { 0xA, (len>>24)&0xFF, (len>>16)&0xFF, (len>>8)&0xFF, len&0xFF };
 	write_to_pipe(pWrite[1], loadevent, 5);
-	write_to_pipe(pWrite[1], (unsigned char*) info->path, len);
+	write_to_pipe(pWrite[1], (unsigned char*) romPath, len);
 
 	log_fn(RETRO_LOG_INFO, "Sent game file and save paths to Java app.\n");
 
@@ -1173,20 +1188,20 @@ void javaOpen(char *cmd, char **params)
 	/* resArg[0], resArg[1], rotateArg, phoneArg, fpsArg, soundArg, midiArg */
 	sprintf(cmdWin, "javaw -jar %s", cmd);
 
-	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmd);
+	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmdWin);
 	for (int i = 3; i <= 11; i++)
 	{
 		//log_fn(RETRO_LOG_INFO, "Processing arg %d: %s \n", i, *(params+i));
 		sprintf(cmdWin, "%s %s", cmdWin, *(params+i));
 	}
 
-	if(!restarting) 
+	if(!restarting)
 	{
 		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
 
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
-		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
+		log_fn(RETRO_LOG_INFO, "Opening: %s ...\n", cmdWin);
 		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
@@ -1199,15 +1214,15 @@ void javaOpen(char *cmd, char **params)
 	startInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
 	if(!CreateProcess( NULL, /* Module name */
-		cmdWin,              /*Command line args */
+		cmdWin,              /* Command line args */
 		NULL,                /* Process handle not inheritable */
 		NULL,                /* Thread handle not inheritable */
 		TRUE,                /* Set handle inheritance to TRUE */
 		0,                   /* No creation flags */
 		NULL,                /* Use parent's environment block */
-		systemPath,          /* Use libretro's "system" dir as starting directory */
+		systemPath,		     /* Use libretro's "system" dir as starting directory */
 		&startInfo,          /* Pointer to STARTUPINFO structure */
-		&javaProcess ))       /*Pointer to PROCESS_INFORMATION structure */
+		&javaProcess ))      /* Pointer to PROCESS_INFORMATION structure */
 	{ /* If it fails, this block is executed */
 		log_fn(RETRO_LOG_ERROR, "Couldn't create process, error: %lu\n", GetLastError() );
 		retro_deinit();
