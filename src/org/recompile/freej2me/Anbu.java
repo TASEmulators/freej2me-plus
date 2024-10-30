@@ -256,15 +256,7 @@ public class Anbu
 			// Create a renderer, and a texture where drawing can take place, streaming for constant updates.
 			renderer = SDL_CreateRenderer(window, -1, 0);
 			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, lcdWidth, lcdHeight);
-			pixels = new Memory(lcdWidth * lcdHeight * 4); 
-
-			/* 
-			 * Input reading should not be tied to the render logic, otherwise jars that only send new render data 
-			 * after an input is registered (Ex: JBenchmark 2 and some other jars that use Form UI) will get softlocked.
-			 */
-			keytimer = new Timer();
-			keytask = new TimerTask() {	public void run() { processEvents(); } };
-			keytimer.schedule(keytask, 0, 1);
+			pixels = new Memory(lcdWidth * lcdHeight * 4);
 
 			SDL_JoystickEventState(SDL_ENABLE);
 
@@ -279,6 +271,13 @@ public class Anbu
 
 		public void paint()
 		{
+			/* 
+			 * Normally, input reading should not be tied to the render logic, because that would softlock jars that only
+			 * send new render data after an input is registered (Ex: JBenchmark 2 and some other jars that use Form UI).
+			 * But for determinism in libTAS, inputs must be pulled synchronously with rendering, because libTAS processes
+			 * inputs (and a lot of other things) during frame boundaries, which is when the program calls its render function.
+			 */
+			processEvents();
 
 			/* 
 			 * Let's make resolution changes and adjust any relevant objects here, as it's right on the render path 
