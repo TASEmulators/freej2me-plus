@@ -561,6 +561,7 @@ public class Anbu
 			if(keycode == SDLK_KP_1) return Mobile.KEY_NUM7; // B
 			if(keycode == SDLK_KP_3) return Mobile.KEY_NUM9; // X
 			if(keycode == SDLK_X) return Mobile.KEY_POUND; // Y
+			if(keycode == SDLK_Z) return Mobile.KEY_STAR; // ???
 
 			
 			if(keycode == SDLK_C) return Mobile.KEY_NUM0; // Home
