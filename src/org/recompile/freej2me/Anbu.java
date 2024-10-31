@@ -90,13 +90,6 @@ public class Anbu
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
 
-	// Frame Limit Variables
-	private int limitFPS = 0;
-	private long lastRenderTime = 0;
-	private long requiredFrametime = 0;
-	private long elapsedTime = 0;
-	private long sleepTime = 0;
-
 	SDL_Joystick joy = null;
 
 	private boolean[] pressedKeys = new boolean[128];
@@ -157,19 +150,7 @@ public class Anbu
 						Mobile.vibrationDuration = 0;
 					}
 					
-					if(limitFPS>0)
-					{
-						requiredFrametime = 1000 / limitFPS;
-						elapsedTime = System.currentTimeMillis() - lastRenderTime;
-						sleepTime = requiredFrametime - elapsedTime;
-
-						if (sleepTime > 0) { Thread.sleep(sleepTime); }
-
-						sdl.paint();
-
-						lastRenderTime = System.currentTimeMillis();
-
-					} else { sdl.paint(); }
+					sdl.paint();
 				}
 				catch (Exception e) { }
 			}
@@ -746,7 +727,7 @@ public class Anbu
 
 	void settingsChanged() 
 	{
-		limitFPS = Integer.parseInt(config.settings.get("fps"));
+		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
 
 		String sound = config.settings.get("sound");
 		Mobile.sound = false;

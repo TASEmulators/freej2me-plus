@@ -19,6 +19,7 @@ package org.recompile.mobile;
 import java.net.URL;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.LockSupport;
 import java.io.InputStream;
 
 import java.awt.event.KeyEvent;
@@ -44,6 +45,12 @@ public class MobilePlatform
 	private PlatformGraphics gc;
 	public int lcdWidth;
 	public int lcdHeight;
+
+	// Frame Limit Variables
+	private long lastRenderTime = 0;
+	private long requiredFrametime = 0;
+	private long elapsedTime = 0;
+	private long sleepTime = 0;
 
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
@@ -215,6 +222,7 @@ public class MobilePlatform
 
 	public void flushGraphics(Image img, int x, int y, int width, int height)
 	{
+		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
 
 		painter.run();
@@ -224,6 +232,7 @@ public class MobilePlatform
 
 	public void repaint(Image img, int x, int y, int width, int height)
 	{
+		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
 
 		painter.run();
@@ -324,5 +333,22 @@ public class MobilePlatform
 
 	}
 
+	private void limitFps() 
+	{
+		if(Mobile.limitFPS == 0) { return; }
 
+		requiredFrametime = 1_000_000_000 / Mobile.limitFPS;
+		elapsedTime = System.nanoTime() - lastRenderTime;
+		sleepTime = (requiredFrametime - elapsedTime); // Sleep time in nanoseconds
+
+		/* 
+		 * TODO: Framerate still deviates a little from the intended lock 
+		 * 
+		 * Possible solution: Some kind of calibration mechanism to nudge the
+		 * actual lock closer to the user's display refresh rate.
+		 */
+		if (sleepTime > 0) { LockSupport.parkNanos(sleepTime); }
+
+		lastRenderTime = System.nanoTime();
+	}
 }

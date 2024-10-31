@@ -52,13 +52,6 @@ public class Libretro
 	private boolean rotateDisplay = false;
 	private boolean soundEnabled = true;
 
-	// Frame Limit Variables
-	private int limitFPS = 0;
-	private long lastRenderTime = 0;
-	private long requiredFrametime = 0;
-	private long elapsedTime = 0;
-	private long sleepTime = 0;
-
 	private boolean[] pressedKeys = new boolean[128];
 
 	private byte[] frameBuffer = new byte[800*800*3];
@@ -127,7 +120,7 @@ public class Libretro
 		else if(Integer.parseInt(args[4]) == 3) { useMotorolaControls = true; Mobile.motorola = true;  }
 		else if(Integer.parseInt(args[4]) == 4) { useNokiaControls = true; Mobile.sonyEricsson = true; }
 
-		limitFPS = Integer.parseInt(args[5]);
+		Mobile.limitFPS = Integer.parseInt(args[5]);
 
 		if(Integer.parseInt(args[6]) == 0) { soundEnabled = false; }
 
@@ -154,22 +147,7 @@ public class Libretro
 		{
 			public void run()
 			{
-				try
-				{
-					if(limitFPS>0)
-					{
-						requiredFrametime = 1000 / limitFPS;
-						elapsedTime = System.currentTimeMillis() - lastRenderTime;
-						sleepTime = requiredFrametime - elapsedTime;
-
-						if (sleepTime > 0) { Thread.sleep(sleepTime); }
-
-						gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null);
-
-						lastRenderTime = System.currentTimeMillis();
-					} 
-					else { gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null); }
-				}
+				try { gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null); }
 				catch (Exception e) { }
 			}
 		};
@@ -321,7 +299,7 @@ public class Libretro
 										if(soundEnabled)   { config.settings.put("sound", "on");  }
 										if(!soundEnabled)  { config.settings.put("sound", "off"); }
 
-										config.settings.put("fps", ""+limitFPS);
+										config.settings.put("fps", "" + Mobile.limitFPS);
 
 										if(!Manager.useCustomMidi) { config.settings.put("soundfont", "Default"); }
 										else                           { config.settings.put("soundfont", "Custom");  }
@@ -439,7 +417,7 @@ public class Libretro
 		int w = Integer.parseInt(config.settings.get("width"));
 		int h = Integer.parseInt(config.settings.get("height"));
 
-		limitFPS = Integer.parseInt(config.settings.get("fps"));
+		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
 
 		String sound = config.settings.get("sound");
 		Mobile.sound = false;
