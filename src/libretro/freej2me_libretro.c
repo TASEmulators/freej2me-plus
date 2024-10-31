@@ -30,6 +30,8 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
+const char *slash = path_default_slash();
+
 #define DefaultFPS 60
 #define MaxWidth 800
 #define MaxHeight 800
@@ -227,8 +229,8 @@ unsigned int joymouseClickedImage[408] =
 /*
  * Custom functions to read from, and write to, pipes.
  * Those functions are used to simplify the pipe communication
- * code to be platform-independent as all ifdefs will only need 
- * to be done here instead of all around the core whenever a 
+ * code to be platform-independent as all ifdefs will only need
+ * to be done here instead of all around the core whenever a
  * pipe write/read is requested.
  */
 #ifdef __linux__
@@ -505,25 +507,25 @@ void retro_init(void)
     sprintf(dumpAudioArg, "%d", dumpAudioStreams);
 
     /* We need to clean up any argument memory from the previous launch arguments in order to load up updated ones */
-    if (restarting) 
+    if (restarting)
 	{
         log_fn(RETRO_LOG_INFO, "Restart: Cleaning up previous resources.\n");
-        if (params) 
+        if (params)
 		{
             for (int i = 0; params[i] != NULL; i++) { free(params[i]); }
             free(params);
         }
         if (outPath) { free(outPath); }
-    } 
-	else // System path is not meant to change on restarts
-	{
-		log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' System Path.\n");
-		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
-	}
+    }
+    else // System path is not meant to change on restarts
+    {
+	log_fn(RETRO_LOG_INFO, "Setting up FreeJ2ME-Plus' System Path.\n");
+	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
+    }
 
-	outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
-	fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
-    
+    outPath = malloc(sizeof(char) * PATH_MAX_LENGTH);
+    fill_pathname_join(outPath, systemPath, "freej2me-lr.jar", PATH_MAX_LENGTH);
+
     /* Allocate memory for launch arguments */
     params = (char**)malloc(sizeof(char*) * 13); // At this time, there are 13 launch arguments
     params[0] = strdup("java");
@@ -587,15 +589,15 @@ bool retro_load_game(const struct retro_game_info *info)
 	/* Game info is passed to a global variable to enable restarts */
 	gameinfo = *info;
 	/* Send savepath to java */
-	char *savepath;
-	Environ(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savepath);
-	len = strlen(savepath);
-
-	if(len==0)
-	{
-		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savepath);
-		len = strlen(savepath);
+	char *savedir;
+	Environ(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
+	if (savedir[0] == '\0') {
+		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savedir);
 	}
+
+	char savepath[PATH_MAX_LENGTH];
+	snprintf(savepath, sizeof(savepath), "%s%sfreej2me%s", savedir, slash, slash);
+	len = strlen(savepath);
 
 	unsigned char saveevent[5] = { 0xB, (len>>24)&0xFF, (len>>16)&0xFF, (len>>8)&0xFF, len&0xFF };
 	write_to_pipe(pWrite[1], saveevent, 5);
@@ -604,11 +606,20 @@ bool retro_load_game(const struct retro_game_info *info)
 	log_fn(RETRO_LOG_INFO, "Savepath: %s.\n", savepath);
 
 	/* Tell java app to load and run game */
-	len = strlen(info->path);
+	char romPath[PATH_MAX_LENGTH];
+
+	#ifdef __linux__
+	realpath(info->path, romPath);
+	#elif _WIN32
+	_fullpath(romPath, info->path, PATH_MAX_LENGTH);
+	#endif
+
+	len = strlen(romPath);
+	log_fn(RETRO_LOG_INFO, "Loading actual jar game from %s\n", romPath);
 
 	unsigned char loadevent[5] = { 0xA, (len>>24)&0xFF, (len>>16)&0xFF, (len>>8)&0xFF, len&0xFF };
 	write_to_pipe(pWrite[1], loadevent, 5);
-	write_to_pipe(pWrite[1], (unsigned char*) info->path, len);
+	write_to_pipe(pWrite[1], (unsigned char*) romPath, len);
 
 	log_fn(RETRO_LOG_INFO, "Sent game file and save paths to Java app.\n");
 
@@ -689,7 +700,7 @@ void retro_run(void)
 			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0xFFFF);
 			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 0xFFFF);
 			rumbleTime -= 1000 / DefaultFPS;
-		} 
+		}
 		else
 		{
 			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0);
@@ -1037,7 +1048,7 @@ pid_t javaOpen(char *cmd, char **params)
 {
     pid_t pid;
 
-	if(!restarting) 
+	if(!restarting)
 	{
 		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
 
@@ -1173,20 +1184,20 @@ void javaOpen(char *cmd, char **params)
 	/* resArg[0], resArg[1], rotateArg, phoneArg, fpsArg, soundArg, midiArg */
 	sprintf(cmdWin, "javaw -jar %s", cmd);
 
-	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmd);
+	log_fn(RETRO_LOG_INFO, "Opening: %s \n", cmdWin);
 	for (int i = 3; i <= 11; i++)
 	{
 		//log_fn(RETRO_LOG_INFO, "Processing arg %d: %s \n", i, *(params+i));
 		sprintf(cmdWin, "%s %s", cmdWin, *(params+i));
 	}
 
-	if(!restarting) 
+	if(!restarting)
 	{
 		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
 
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 
-		log_fn(RETRO_LOG_INFO, "Opening: %s %s %s ...\n", *(params+0), *(params+1), *(params+2));
+		log_fn(RETRO_LOG_INFO, "Opening: %s ...\n", cmdWin);
 		log_fn(RETRO_LOG_INFO, "Params: %s | %s | %s | %s | %s | %s | %s | %s | %s\n", *(params+3),
 			*(params+4), *(params+5), *(params+6), *(params+7), *(params+8), *(params+9), *(params+10), *(params+11));
 	}
@@ -1199,7 +1210,7 @@ void javaOpen(char *cmd, char **params)
 	startInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
 	if(!CreateProcess( NULL, /* Module name */
-		cmdWin,              /*Command line args */
+		cmdWin,              /* Command line args */
 		NULL,                /* Process handle not inheritable */
 		NULL,                /* Thread handle not inheritable */
 		TRUE,                /* Set handle inheritance to TRUE */
@@ -1207,7 +1218,7 @@ void javaOpen(char *cmd, char **params)
 		NULL,                /* Use parent's environment block */
 		systemPath,          /* Use libretro's "system" dir as starting directory */
 		&startInfo,          /* Pointer to STARTUPINFO structure */
-		&javaProcess ))       /*Pointer to PROCESS_INFORMATION structure */
+		&javaProcess ))      /* Pointer to PROCESS_INFORMATION structure */
 	{ /* If it fails, this block is executed */
 		log_fn(RETRO_LOG_ERROR, "Couldn't create process, error: %lu\n", GetLastError() );
 		retro_deinit();
