@@ -53,13 +53,6 @@ public class FreeJ2ME
 	private boolean useSiemensControls = false;
 	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
-
-	// Frame Limit Variables
-	private int limitFPS = 0;
-	private long lastRenderTime = 0;
-	private long requiredFrametime = 0;
-	private long elapsedTime = 0;
-	private long sleepTime = 0;
 	
 	// AWT GUI
 	private AWTGUI awtGUI;
@@ -156,25 +149,7 @@ public class FreeJ2ME
 				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
 				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
 
-				try 
-				{
-					if(limitFPS>0)
-					{
-						requiredFrametime = 1000 / limitFPS;
-						elapsedTime = System.currentTimeMillis() - lastRenderTime;
-						sleepTime = requiredFrametime - elapsedTime;
-
-						if (sleepTime > 0) { Thread.sleep(sleepTime); }
-
-						lcd.repaint();
-
-						lastRenderTime = System.currentTimeMillis();
-					}
-					else { lcd.repaint(); }
-					
-				} catch (Exception e) { System.out.println(e.getMessage()); }
-				
-				//lcd.paint(lcd.getGraphics());
+				lcd.repaint();
 			}
 		});
 
@@ -386,7 +361,7 @@ public class FreeJ2ME
 		int w = Integer.parseInt(config.settings.get("width"));
 		int h = Integer.parseInt(config.settings.get("height"));
 
-		limitFPS = Integer.parseInt(config.settings.get("fps"));
+		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
 
 		String sound = config.settings.get("sound");
 		Mobile.sound = false;
