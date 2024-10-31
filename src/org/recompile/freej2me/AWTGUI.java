@@ -25,6 +25,8 @@ import java.util.Arrays;
 
 import javax.microedition.media.Manager;
 
+import org.recompile.mobile.Mobile;
+
 public final class AWTGUI 
 {
 	/* This is used to indicate to FreeJ2ME that it has to call "settingsChanged()" to apply changes made here */
@@ -149,6 +151,7 @@ public final class AWTGUI
 	final CheckboxMenuItem enableRotation = new CheckboxMenuItem("Rotate Screen", false);
 	final CheckboxMenuItem useCustomMidi = new CheckboxMenuItem("Use custom midi soundfont", false);
 	final CheckboxMenuItem halveCanvasRes = new CheckboxMenuItem("Halve Canvas Resolution", false);
+	final CheckboxMenuItem showFPS = new CheckboxMenuItem("Show FPS Counter", false);
 
 	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("Standard", true);
 	final CheckboxMenuItem nokiaLayout = new CheckboxMenuItem("Nokia", false);
@@ -401,6 +404,15 @@ public final class AWTGUI
 			}
 		});
 
+		showFPS.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(showFPS.getState()){ Mobile.getPlatform().setShowFPS(true); }
+				else{ Mobile.getPlatform().setShowFPS(false); }
+			}
+		});
+
 		stdLayout.addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
@@ -593,6 +605,7 @@ public final class AWTGUI
 		optionMenu.add(useCustomMidi);
 		optionMenu.add(resChangeMenuItem);
 		optionMenu.add(halveCanvasRes);
+		optionMenu.add(showFPS);
 		optionMenu.add(phoneType);
 		optionMenu.add(fpsCap);
 		optionMenu.add(mapInputs);
