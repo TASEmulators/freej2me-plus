@@ -22,12 +22,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
 import java.io.InputStream;
 
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
+import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.game.GameCanvas;
 import javax.microedition.lcdui.Image;
 import javax.microedition.m3g.Graphics3D;
@@ -47,10 +49,16 @@ public class MobilePlatform
 	public int lcdHeight;
 
 	// Frame Limit Variables
-	private long lastRenderTime = 0;
+	private long lastRenderTime = System.nanoTime();
 	private long requiredFrametime = 0;
 	private long elapsedTime = 0;
 	private long sleepTime = 0;
+
+	// Whether the user has toggled the ShowFPS option
+	private boolean showFPS = false;
+	private int frameCount = 0;
+	private long lastFpsTime = System.nanoTime();
+    private int fps = 0;
 
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
@@ -224,7 +232,8 @@ public class MobilePlatform
 	{
 		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
-
+		
+		if(showFPS) { showFPS();}
 		painter.run();
 
 		//System.gc();
@@ -235,6 +244,7 @@ public class MobilePlatform
 		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
 
+		if(showFPS) { showFPS();}
 		painter.run();
 
 		//System.gc();
@@ -351,4 +361,28 @@ public class MobilePlatform
 
 		lastRenderTime = System.nanoTime();
 	}
+
+	// For now, the logic here works by updating the framerate counter every second
+	private void showFPS() 
+	{
+		frameCount++;
+
+        if (System.nanoTime() - lastFpsTime >= 1_000_000_000) 
+		{ // If 1 second or more has passed in nanoseconds
+            fps = frameCount; // Set fps to frames counted in the last second to then show it in the overlay.
+            frameCount = 0; // begin counting again from this point onwards until the next second passes
+			lastFpsTime = System.nanoTime(); // Reset last FPS time
+        }
+
+		// Set the overlay background
+        gc.getGraphics2D().setColor(new Color(0, 0, 105, 150)); // Semi-transparent dark blue
+        gc.fillRect(2, 2, 80, 20); // Background rectangle
+
+        // Draw the FPS text
+        gc.getGraphics2D().setColor(new Color(255, 175, 0, 255)); // Text color is orange
+        gc.setFont(Font.getDefaultFont());
+        gc.drawString("FPS: " + fps, 5, 4, Graphics.TOP|Graphics.LEFT); // Draw text at position (5, 5, from the top-left corner)
+	}
+
+	public void setShowFPS(boolean show) { showFPS = show; }
 }
