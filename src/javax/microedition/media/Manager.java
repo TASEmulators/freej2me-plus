@@ -56,6 +56,13 @@ public final class Manager
 	{
 		checkCustomMidi();
 
+		if (stream == null) { throw new IllegalArgumentException("Cannot create a player since the received stream is null"); }
+		/* 
+		 * NOTE: If type is null, we can either try to determine the type, or throw a MediaException. Some jars do use exceptions
+		 * here as part of the game logic (Sonic Spinball K800i uses the exception above in order to load its streams properly), so
+		 * only a lot of testing will be able to determine which is preferable, or if we'd need a config toggle to alternate both.
+		 */
+
 		if(dumpAudioStreams) 
 		{
 			stream.mark(1024);
@@ -96,6 +103,9 @@ public final class Manager
 	public static Player createPlayer(String locator) throws MediaException
 	{
 		checkCustomMidi();
+
+		if(locator == null) { throw new IllegalArgumentException("Cannot create a player with a null locator"); }
+
 		System.out.println("Create Player "+locator);
 		return new PlatformPlayer(locator);
 	}
