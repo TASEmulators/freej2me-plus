@@ -275,7 +275,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		if (width < 0 || height < 0) { return; }
 
 		gc.fillRoundRect(x, y, width, height, arcWidth, arcHeight);
-		gc.fillRect(x, y, width, height);
 	}
 
 	//public int getBlueComponent() { }
