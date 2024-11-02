@@ -16,11 +16,18 @@
 */
 package com.samsung.util;
 
+import org.recompile.mobile.Mobile;
+
 public final class Vibration
 {
 	public static boolean isSupported() { return true; }
 
-	public static void start(int duration, int strength) {  }
+	public static void start(int duration, int strength) 
+	{ 
+		if(duration < 0 || strength < 1 || strength > 5) { throw new IllegalArgumentException("Samsung Vibration: Cannot start vibrating due to illegal argument"); }
+		Mobile.vibrationDuration = duration; 
+		//Mobile.vibrationStrength = (byte) strength; // This doesn't seem to be important, and is ignored according to the documentation
+	}
 
-	public static void stop() {  }
+	public static void stop() {  Mobile.vibrationDuration = 0; }
 }
