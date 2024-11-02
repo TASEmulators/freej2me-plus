@@ -49,6 +49,9 @@ import javax.microedition.media.Control;
 import javax.microedition.media.Controllable;
 import javax.microedition.media.Manager;
 
+/* audio/mpeg support */
+import javazoom.jl.player.MPEGPlayer;
+
 public class PlatformPlayer implements Player
 {
 
@@ -84,6 +87,10 @@ public class PlatformPlayer implements Player
 			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav"))
 			{
 				player = new wavPlayer(stream);
+			}
+			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3"))
+			{
+				player = new MP3Player(stream);
 			}
 			else if (type.equalsIgnoreCase("")) /* If the stream doesn't have an accompanying type, try everything we can to try and load it */
 			{
@@ -596,6 +603,112 @@ public class PlatformPlayer implements Player
 		public boolean isRunning() { return wavClip.isRunning(); }
 	}
 
+	private class MP3Player extends audioplayer
+	{
+		private byte[] stream;
+		private MPEGPlayer mp3Player;
+		private Thread playerThread;
+
+		public MP3Player(InputStream stream)
+		{
+			try { this.stream = copyMediaData(stream); }
+			catch (Exception e) { System.out.println("Could not prepare mpeg stream:" + e.getMessage());}
+		}
+
+		public void realize() 
+		{ 
+			try
+			{
+				mp3Player = new MPEGPlayer(new ByteArrayInputStream(stream), false);
+				state = Player.REALIZED;
+			}
+			catch (Exception e) 
+			{ 
+				System.out.println("Couldn't realize mpeg stream: " + e.getMessage());
+				mp3Player.close();
+			}
+		}
+
+		public void prefetch() { state = Player.PREFETCHED; }
+
+		public void start()
+		{	
+			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
+
+			try 
+			{
+				playerThread = new Thread(() -> 
+				{ 
+					try 
+					{ 
+						boolean completed = mp3Player.play();
+					}
+					catch (Exception e) { System.out.println("Couldn't start mpeg player:" + e.getMessage()); }
+				});
+
+				/* TODO: MPEGPlayer needs some way of notifying listeners about END_OF_MEDIA events */
+				/* mp3Player.addLineListener(new LineListener() 
+				{
+					@Override
+					public void update(LineEvent event) 
+					{
+						if (event.getType() == LineEvent.Type.STOP) 
+						{
+							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+							state = Player.PREFETCHED;
+						}
+					}
+				});*/
+
+				playerThread.start();
+
+				state = Player.STARTED;
+				notifyListeners(PlayerListener.STARTED, getMediaTime());
+			} catch (Exception e) { System.out.println("Couldn't start mpeg player:" + e.getMessage()); }
+			
+		}
+
+		public void stop()
+		{
+			mp3Player.stop();
+			state = Player.PREFETCHED;
+			notifyListeners(PlayerListener.STOPPED, getMediaTime());
+		}
+
+		public void deallocate() { mp3Player = null; }
+
+		public void setLoopCount(int count)
+		{
+			/* 
+			 * Treat cases where an app wants this stream to loop continuously.
+			 * Here, count = 1 means it should loop one time, whereas in j2me
+			 * it appears that count = 1 means no loop at all, at least based
+			 * on Gameloft games that set effects and some music with count = 1
+			 */
+			if(count == Clip.LOOP_CONTINUOUSLY) { mp3Player.loop(count); }
+			else { mp3Player.loop(count-1); }
+		}
+
+		public long setMediaTime(long now)
+		{
+			if(now >= getDuration()) { mp3Player.setMicrosecondPosition(getDuration()); }
+			else if(now < 0) { mp3Player.setMicrosecondPosition(0); }
+			else { mp3Player.setMicrosecondPosition(now);  }
+
+			/* 
+			 * IN MP3Player's case, we don't deal with microsecond resolution, so return the new
+			 * effective position according to the stream.
+			 */
+			return getMediaTime();
+		}
+
+		public long getMediaTime() { return mp3Player.getMicrosecondPosition(); }
+
+		public long getDuration() { return  mp3Player.getDuration(); }
+
+		public boolean isRunning() { return mp3Player.isRunning(); }
+	}
+
 	/* Todo: Implement tone playing functionality */
 	private class tonePlayer extends audioplayer 
 	{
@@ -831,6 +944,7 @@ public class PlatformPlayer implements Player
 				FloatControl volumeControl = (FloatControl) wav.wavClip.getControl(FloatControl.Type.MASTER_GAIN);
 				volumeControl.setValue(dB);
 			}
+			else if(player instanceof MP3Player) { ((MP3Player)player).mp3Player.setLevel(level); }
 
 			notifyListeners(PlayerListener.VOLUME_CHANGED, this);
 			

@@ -37,8 +37,6 @@
 	<compilerarg value="-Xlint:deprecation"/>
 	</javac>
 
-    
-
 
 <!--
 ****************************************************
