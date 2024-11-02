@@ -21,7 +21,7 @@ import org.recompile.mobile.Mobile;
 
 public class Vibrator
 {
-	public static void triggerVibrator(int duration) { System.out.println("Dur:" + duration); Mobile.vibrationDuration = duration; }
+	public static void triggerVibrator(int duration) { Mobile.vibrationDuration = duration; }
 
 	public static void startVibrator() { Mobile.vibrationDuration = Integer.MAX_VALUE; }
 
