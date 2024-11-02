@@ -18,20 +18,29 @@ package com.samsung.util;
 
 public class SM
 {
+	private String destAddress;
+	private String callbackAddress;
+	private String data;
+
 	public SM() {  }
 
-	public SM(String dest, String callback, String textMessage) {  }
+	public SM(String dest, String callback, String textMessage) 
+	{  
+		setDestAddress(dest);
+		setCallbackAddress(callback);
+		setData(textMessage);
+	}
 
 
-	public String getCallbackAddress() { return ""; }
+	public String getCallbackAddress() { return callbackAddress; }
 
-	public String getData() { return ""; }
+	public String getData() { return data; }
 
-	public String getDestAddress() { return ""; }
+	public String getDestAddress() { return destAddress; }
 
-	public void setCallbackAddress(java.lang.String address) {  }
+	public void setCallbackAddress(java.lang.String address) { this.callbackAddress = address; }
 
-	public void setData(java.lang.String textMessage) {  }
+	public void setData(java.lang.String textMessage) { this.data = textMessage; }
 
-	public void setDestAddress(java.lang.String address) {  }
+	public void setDestAddress(java.lang.String address) { this.destAddress = address; }
 }
