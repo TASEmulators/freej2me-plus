@@ -23,6 +23,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.io.InputStream;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 
 import javax.microedition.lcdui.Canvas;
@@ -55,10 +56,13 @@ public class MobilePlatform
 	private long sleepTime = 0;
 
 	// Whether the user has toggled the ShowFPS option
+	private final int OVERLAY_WIDTH = 80;
+	private final int OVERLAY_HEIGHT = 20;
 	private boolean showFPS = false;
 	private int frameCount = 0;
 	private long lastFpsTime = System.nanoTime();
     private int fps = 0;
+
 
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
@@ -363,25 +367,46 @@ public class MobilePlatform
 	}
 
 	// For now, the logic here works by updating the framerate counter every second
-	private void showFPS() 
-	{
+	private final void showFPS() {
 		frameCount++;
+	
+		if (System.nanoTime() - lastFpsTime >= 1_000_000_000) { 
+			fps = frameCount; 
+			frameCount = 0; 
+			lastFpsTime = System.nanoTime(); 
+		}
 
-        if (System.nanoTime() - lastFpsTime >= 1_000_000_000) 
-		{ // If 1 second or more has passed in nanoseconds
-            fps = frameCount; // Set fps to frames counted in the last second to then show it in the overlay.
-            frameCount = 0; // begin counting again from this point onwards until the next second passes
-			lastFpsTime = System.nanoTime(); // Reset last FPS time
-        }
-
+		BufferedImage overlayImage = new BufferedImage(OVERLAY_WIDTH, OVERLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D overlayGraphics = overlayImage.createGraphics();
+		
 		// Set the overlay background
-        gc.getGraphics2D().setColor(new Color(0, 0, 105, 150)); // Semi-transparent dark blue
-        gc.fillRect(2, 2, 80, 20); // Background rectangle
+		overlayGraphics.setColor(new Color(0, 0, 105, 150)); // BG is a semi-transparent dark blue
+		overlayGraphics.fillRect(0, 0, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+	
+		// Adjust the font size
+		int fontSize = 21; // Base font size
+		overlayGraphics.setFont(overlayGraphics.getFont().deriveFont((float) fontSize));
+		overlayGraphics.setColor(new Color(255, 175, 0, 255)); // Text color is orange
+	
+		// Draw the FPS text
+		String fpsText = "FPS: " + fps;
+		overlayGraphics.drawString(fpsText, 3, 17);
+	
+		overlayGraphics.dispose(); // Clean up graphics
+	
+		// Scale the overlay image to fit the screen
+		double scale = Math.min(lcdWidth, lcdHeight);
 
-        // Draw the FPS text
-        gc.getGraphics2D().setColor(new Color(255, 175, 0, 255)); // Text color is orange
-        gc.setFont(Font.getDefaultFont());
-        gc.drawString("FPS: " + fps, 5, 4, Graphics.TOP|Graphics.LEFT); // Draw text at position (5, 5, from the top-left corner)
+		int scaledWidth = 0;
+		if(scale < 100) { scaledWidth = (int) (lcdWidth / 2);}
+		if(scale > 100) { scaledWidth = (int) (lcdWidth / 3);}
+		if(scale > 200) { scaledWidth = (int) (lcdWidth / 4);}
+		if(scale > 300) { scaledWidth = (int) (lcdWidth / 5);}
+		if(scale > 400) { scaledWidth = (int) (lcdWidth / 6);}
+		int scaledHeight = (int) (scaledWidth / 4);
+	
+		// Draw the scaled overlay image onto the jar's main screen.
+		gc.getGraphics2D().drawImage(overlayImage, 2, 2, scaledWidth, scaledHeight, null);
 	}
 
 	public void setShowFPS(boolean show) { showFPS = show; }
