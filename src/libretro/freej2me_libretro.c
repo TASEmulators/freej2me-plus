@@ -150,7 +150,7 @@ unsigned int optstrlen; /* length of the string above */
 unsigned long int screenRes[2]; /* {width, height} */
 int halveCanvasRes; /* acts as a boolean */
 int rotateScreen; /* also acts as a boolean */
-int phoneType; /* 0=standard, 1=nokia, 2=siemens, 3=motorola, 4=sonyEricsson */
+int phoneType; /* 0=J2ME Standard, 1=LG, 2=Motorola/SoftBank, 3=Motorola Triplets... refer to freej2me_libretro.h's "Phone Key Layout" */
 int gameFPS; /* Auto(0), 60, 30, 15 */
 int soundEnabled; /* also acts as a boolean */
 int customMidi; /* Also acts as a boolean */
@@ -327,11 +327,15 @@ static void check_variables(bool first_time_startup)
 	var.key = "freej2me_phone";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (!strcmp(var.value, "Standard"))          { phoneType = 0; }
-		else if (!strcmp(var.value, "Nokia"))        { phoneType = 1; }
-		else if (!strcmp(var.value, "Siemens"))      { phoneType = 2; }
-		else if (!strcmp(var.value, "Motorola"))     { phoneType = 3; }
-		else if (!strcmp(var.value, "SonyEricsson")) { phoneType = 4; }
+		if (!strcmp(var.value, "J2ME Standard"))           { phoneType = 0; }
+		else if (!strcmp(var.value, "LG"))                 { phoneType = 1; }
+		else if (!strcmp(var.value, "Motorola/SoftBank"))  { phoneType = 2; }
+		else if (!strcmp(var.value, "Motorola Triplets"))  { phoneType = 3; }
+		else if (!strcmp(var.value, "Motorola V8"))        { phoneType = 4; }
+		else if (!strcmp(var.value, "Nokia/Sony/Samsung")) { phoneType = 5; }
+		else if (!strcmp(var.value, "Nokia Keyboard"))     { phoneType = 6; }
+		else if (!strcmp(var.value, "Sagem"))              { phoneType = 7; }
+		else if (!strcmp(var.value, "Siemens"))            { phoneType = 8; }
 	}
 
 

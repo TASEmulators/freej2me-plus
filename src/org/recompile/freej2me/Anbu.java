@@ -734,17 +734,22 @@ public class Anbu
 		if(sound.equals("on")) { Mobile.sound = true; }
 
 		String phone = config.settings.get("phone");
-		useNokiaControls = false;
-		useSiemensControls = false;
-		useMotorolaControls = false;
-		Mobile.nokia = false;
-		Mobile.siemens = false;
+		Mobile.lg = false;
 		Mobile.motorola = false;
-		Mobile.sonyEricsson = false;
-		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
-		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
-		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
-		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
+		Mobile.motoTriplets = false;
+		Mobile.motoV8 = false;
+		Mobile.nokia = false;
+		Mobile.nokiaKeyboard = false;
+		Mobile.sagem = false;
+		Mobile.siemens = false;
+		if(phone.equals("LG"))            { Mobile.lg = true;}
+		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
+		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
+		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
+		if(phone.equals("Nokia"))         { Mobile.nokia = true;}
+		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
+		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
+		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
 
 		// We should send this one over to the sdl interface.
 		String rotate = config.settings.get("rotate");
@@ -755,15 +760,5 @@ public class Anbu
 		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
 		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
-		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
-		else if (Mobile.sonyEricsson) 
-		{
-			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
-			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
-		} else if (Mobile.siemens) 
-		{
-			System.setProperty("com.siemens.OSVersion", "11");
-			System.setProperty("com.siemens.IMEI", "000000000000000");
-		}
 	}
 }

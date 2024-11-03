@@ -153,11 +153,15 @@ public final class AWTGUI
 	final CheckboxMenuItem halveCanvasRes = new CheckboxMenuItem("Halve Canvas Resolution", false);
 	final CheckboxMenuItem showFPS = new CheckboxMenuItem("Show FPS Counter", false);
 
-	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("Standard", true);
-	final CheckboxMenuItem nokiaLayout = new CheckboxMenuItem("Nokia", false);
+	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("J2ME Standard", true);
+	final CheckboxMenuItem lgLayout = new CheckboxMenuItem("LG", false);
+	final CheckboxMenuItem motorolaLayout = new CheckboxMenuItem("Motorola/SoftBank", false);
+	final CheckboxMenuItem motov8Layout = new CheckboxMenuItem("Motorola V8", false);
+	final CheckboxMenuItem tripletsLayout = new CheckboxMenuItem("Motorola Triplets", false);
+	final CheckboxMenuItem nokiaLayout = new CheckboxMenuItem("Nokia/Sony/Samsung", false);
+	final CheckboxMenuItem nokiaKbLayout = new CheckboxMenuItem("Nokia Keyboard", false);
+	final CheckboxMenuItem sagemLayout = new CheckboxMenuItem("Sagem", false);
 	final CheckboxMenuItem siemensLayout = new CheckboxMenuItem("Siemens", false);
-	final CheckboxMenuItem motorolaLayout = new CheckboxMenuItem("Motorola", false);
-	final CheckboxMenuItem SELayout = new CheckboxMenuItem("SonyEricsson", false);
 
 	final CheckboxMenuItem fpsCapNone = new CheckboxMenuItem("No Limit", true);
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
@@ -421,10 +425,14 @@ public final class AWTGUI
 				if(stdLayout.getState())
 				{ 
 					config.updatePhone("Standard");
-					nokiaLayout.setState(false);
-					siemensLayout.setState(false);
+					lgLayout.setState(false);
 					motorolaLayout.setState(false);
-					SELayout.setState(false);
+					motov8Layout.setState(false);
+					tripletsLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
+					siemensLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -439,8 +447,34 @@ public final class AWTGUI
 				{ 
 					config.updatePhone("Nokia");
 					stdLayout.setState(false);
-					siemensLayout.setState(false);
+					lgLayout.setState(false);
 					motorolaLayout.setState(false);
+					motov8Layout.setState(false);
+					tripletsLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
+					siemensLayout.setState(false);
+					hasPendingChange = true;
+				}
+			}
+		});
+
+		nokiaKbLayout.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!nokiaKbLayout.getState()){ nokiaKbLayout.setState(true); }
+				if(nokiaKbLayout.getState())
+				{ 
+					config.updatePhone("NokiaKeyboard");
+					stdLayout.setState(false);
+					lgLayout.setState(false);
+					motorolaLayout.setState(false);
+					motov8Layout.setState(false);
+					tripletsLayout.setState(false);
+					nokiaLayout.setState(false);
+					sagemLayout.setState(false);
+					siemensLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -455,8 +489,13 @@ public final class AWTGUI
 				{ 
 					config.updatePhone("Siemens");
 					stdLayout.setState(false);
-					nokiaLayout.setState(false);
+					lgLayout.setState(false);
 					motorolaLayout.setState(false);
+					motov8Layout.setState(false);
+					tripletsLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -471,29 +510,101 @@ public final class AWTGUI
 				{ 
 					config.updatePhone("Motorola");
 					stdLayout.setState(false);
+					lgLayout.setState(false);
+					motov8Layout.setState(false);
+					tripletsLayout.setState(false);
 					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
 					siemensLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
 		});
 
-		SELayout.addItemListener(new ItemListener() 
+		lgLayout.addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(!SELayout.getState()){ SELayout.setState(true); }
-				if(SELayout.getState())
+				if(!lgLayout.getState()){ lgLayout.setState(true); }
+				if(lgLayout.getState())
 				{ 
-					config.updatePhone("SonyEricsson");
+					config.updatePhone("LG");
 					stdLayout.setState(false);
-					siemensLayout.setState(false);
 					motorolaLayout.setState(false);
+					motov8Layout.setState(false);
+					tripletsLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
+					siemensLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
 		});
 
+		motov8Layout.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!motov8Layout.getState()){ motov8Layout.setState(true); }
+				if(motov8Layout.getState())
+				{ 
+					config.updatePhone("MotoV8");
+					stdLayout.setState(false);
+					lgLayout.setState(false);
+					motorolaLayout.setState(false);
+					tripletsLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
+					siemensLayout.setState(false);
+					hasPendingChange = true;
+				}
+			}
+		});
+
+		tripletsLayout.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!tripletsLayout.getState()){ tripletsLayout.setState(true); }
+				if(tripletsLayout.getState())
+				{ 
+					config.updatePhone("MotoTriplets");
+					stdLayout.setState(false);
+					lgLayout.setState(false);
+					motov8Layout.setState(false);
+					motorolaLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					sagemLayout.setState(false);
+					siemensLayout.setState(false);
+					hasPendingChange = true;
+				}
+			}
+		});
+
+		sagemLayout.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!sagemLayout.getState()){ sagemLayout.setState(true); }
+				if(sagemLayout.getState())
+				{ 
+					config.updatePhone("Sagem");
+					stdLayout.setState(false);
+					lgLayout.setState(false);
+					motov8Layout.setState(false);
+					motorolaLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					tripletsLayout.setState(false);
+					siemensLayout.setState(false);
+					hasPendingChange = true;
+				}
+			}
+		});
 
 		fpsCapNone.addItemListener(new ItemListener() 
 		{
@@ -617,10 +728,15 @@ public final class AWTGUI
 		for(int i = 0; i < config.supportedResolutions.length; i++) { resChoice.add(config.supportedResolutions[i]); }
 
 		phoneType.add(stdLayout);
-		phoneType.add(nokiaLayout);
-		phoneType.add(siemensLayout);
+		phoneType.add(lgLayout);
 		phoneType.add(motorolaLayout);
-
+		phoneType.add(tripletsLayout);
+		phoneType.add(motov8Layout);
+		phoneType.add(nokiaLayout);
+		phoneType.add(nokiaKbLayout);
+		phoneType.add(sagemLayout);
+		phoneType.add(siemensLayout);
+		
 		fpsCap.add(fpsCapNone);
 		fpsCap.add(fpsCap60);
 		fpsCap.add(fpsCap30);
@@ -646,6 +762,11 @@ public final class AWTGUI
 			stdLayout.setState(config.settings.get("phone").equals("Standard"));
 			nokiaLayout.setState(config.settings.get("phone").equals("Nokia"));
 			siemensLayout.setState(config.settings.get("phone").equals("Siemens"));
+			motov8Layout.setState(config.settings.get("phone").equals("MotoV8"));
+			tripletsLayout.setState(config.settings.get("phone").equals("MotoTriplets"));
+			sagemLayout.setState(config.settings.get("phone").equals("Sagem"));
+			nokiaKbLayout.setState(config.settings.get("phone").equals("NokiaKeyboard"));
+			lgLayout.setState(config.settings.get("phone").equals("LG"));
 			motorolaLayout.setState(config.settings.get("phone").equals("Motorola"));
 
 			resChoice.select(""+ Integer.parseInt(config.settings.get("width")) + "x" + ""+ Integer.parseInt(config.settings.get("height")));
