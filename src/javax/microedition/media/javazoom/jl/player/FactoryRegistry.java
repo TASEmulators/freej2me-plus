@@ -49,9 +49,9 @@ public class FactoryRegistry extends AudioDeviceFactory
 		return instance;
 	}
 
-	
-	protected Hashtable factories = new Hashtable();
-	
+	private Hashtable<Class<? extends AudioDeviceFactory>, AudioDeviceFactory> factories = 
+		new Hashtable<Class<? extends AudioDeviceFactory>, AudioDeviceFactory>();
+		
 	/**
 	 * Registers an <code>AudioDeviceFactory</code> instance
 	 * with this registry. 
