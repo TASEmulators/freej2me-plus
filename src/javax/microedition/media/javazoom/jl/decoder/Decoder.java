@@ -63,10 +63,6 @@ public class Decoder implements DecoderErrors
 	private int						outputFrequency;
 	private int						outputChannels;
 	
-	private Equalizer				equalizer = new Equalizer();
-	
-	private Params					params;
-	
 	private boolean					initialized;
 		
 	
@@ -91,35 +87,6 @@ public class Decoder implements DecoderErrors
 	{
 		if (params0==null)
 			params0 = DEFAULT_PARAMS;
-	
-		params = params0;
-		
-		Equalizer eq = params.getInitialEqualizerSettings();
-		if (eq!=null)
-		{
-			equalizer.setFrom(eq);
-		}
-	}
-	
-	static public Params getDefaultParams()
-	{
-		return (Params)DEFAULT_PARAMS.clone();
-	}
-	
-	public void setEqualizer(Equalizer eq)
-	{
-		if (eq==null)
-			eq = Equalizer.PASS_THRU_EQ;
-		
-		equalizer.setFrom(eq);
-		
-		float[] factors = equalizer.getBandFactors();
-
-		if (filter1!=null)
-			filter1.setEQ(factors);
-		
-		if (filter2!=null)
-			filter2.setEQ(factors);			
 	}
 	
 	/**
@@ -186,24 +153,7 @@ public class Decoder implements DecoderErrors
 	{
 		return outputChannels;	
 	}
-	
-	/**
-	 * Retrieves the maximum number of samples that will be written to
-	 * the output buffer when one frame is decoded. This can be used to
-	 * help calculate the size of other buffers whose size is based upon 
-	 * the number of samples written to the output buffer. NB: this is
-	 * an upper bound and fewer samples may actually be written, depending
-	 * upon the sample rate and number of channels.
-	 * 
-	 * @return The maximum number of samples that are written to the 
-	 *		output buffer when decoding a single frame of MPEG audio.
-	 */
-	public int getOutputBlockSize()
-	{
-		return Obuffer.OBUFFERSIZE;
-	}
-	
-	
+		
 	protected DecoderException newDecoderException(int errorcode)
 	{
 		return new DecoderException(errorcode, null);
@@ -279,12 +229,11 @@ public class Decoder implements DecoderErrors
 		if (output==null)
 			output = new SampleBuffer(header.frequency(), channels);
 		
-		float[] factors = equalizer.getBandFactors();
-		filter1 = new SynthesisFilter(0, scalefactor, factors);
+		filter1 = new SynthesisFilter(0, scalefactor);
    		
 		// REVIEW: allow mono output for stereo
 		if (channels==2) 
-			filter2 = new SynthesisFilter(1, scalefactor, factors);
+			filter2 = new SynthesisFilter(1, scalefactor);
 
 		outputChannels = channels;
 		outputFrequency = header.frequency();
@@ -299,11 +248,7 @@ public class Decoder implements DecoderErrors
 	 * Instances of this class are not thread safe. 
 	 */
 	public static class Params implements Cloneable
-	{
-		private OutputChannels	outputChannels = OutputChannels.BOTH;
-		
-		private Equalizer		equalizer = new Equalizer();
-		
+	{		
 		public Params()
 		{			
 		}
@@ -319,39 +264,6 @@ public class Decoder implements DecoderErrors
 				throw new InternalError(this+": "+ex);
 			}
 		}
-				
-		public void setOutputChannels(OutputChannels out)
-		{
-			if (out==null)
-				throw new NullPointerException("out");
-			
-			outputChannels = out;
-		}
-		
-		public OutputChannels getOutputChannels()
-		{
-			return outputChannels;
-		}
-		
-		/**
-		 * Retrieves the equalizer settings that the decoder's equalizer
-		 * will be initialized from.
-		 * <p>
-		 * The <code>Equalizer</code> instance returned 
-		 * cannot be changed in real time to affect the 
-		 * decoder output as it is used only to initialize the decoders
-		 * EQ settings. To affect the decoder's output in realtime,
-		 * use the Equalizer returned from the getEqualizer() method on
-		 * the decoder. 
-		 * 
-		 * @return	The <code>Equalizer</code> used to initialize the
-		 *			EQ settings of the decoder. 
-		 */
-		public Equalizer getInitialEqualizerSettings()
-		{
-			return equalizer;	
-		}
-				
 	};
 }
 

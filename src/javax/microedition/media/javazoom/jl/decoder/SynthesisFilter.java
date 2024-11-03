@@ -68,7 +68,7 @@ final class SynthesisFilter
    * The scalefactor scales the calculated float pcm samples to short values
    * (raw pcm samples are in [-1.0, 1.0], if no violations occur).
    */
-  public SynthesisFilter(int channelnumber, float factor, float[] eq0)
+  public SynthesisFilter(int channelnumber, float factor)
   {  	 
 	d16 = splitArray(d, 16);
 	  
@@ -77,26 +77,9 @@ final class SynthesisFilter
 	samples = new float[32];
 	channel = channelnumber;
 	scalefactor = factor;
-	setEQ(eq);	 
 	//setQuality(HIGH_QUALITY);
 	
 	reset();
-  }
-  
-  public void setEQ(float[] eq0)
-  {
-	 this.eq = eq0;	 
-	 if (eq==null)
-	 {
-		 eq = new float[32];
-		 for (int i=0; i<32; i++)
-			 eq[i] = 1.0f;
-	 }
-	 if (eq.length<32)
-	 {
-		throw new IllegalArgumentException("eq0");	 
-	 }
-	  
   }
   
 	/*
