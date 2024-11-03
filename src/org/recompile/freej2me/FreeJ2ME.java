@@ -49,9 +49,6 @@ public class FreeJ2ME
 	private PlatformImage img;
 
 	private Config config;
-	private boolean useNokiaControls = false;
-	private boolean useSiemensControls = false;
-	private boolean useMotorolaControls = false;
 	private boolean rotateDisplay = false;
 	
 	// AWT GUI
@@ -368,17 +365,22 @@ public class FreeJ2ME
 		if(sound.equals("on")) { Mobile.sound = true; }
 
 		String phone = config.settings.get("phone");
-		useNokiaControls = false;
-		useSiemensControls = false;
-		useMotorolaControls = false;
-		Mobile.sonyEricsson = false;
-		Mobile.nokia = false;
-		Mobile.siemens = false;
+		Mobile.lg = false;
 		Mobile.motorola = false;
-		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
-		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
-		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
-		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
+		Mobile.motoTriplets = false;
+		Mobile.motoV8 = false;
+		Mobile.nokia = false;
+		Mobile.nokiaKeyboard = false;
+		Mobile.sagem = false;
+		Mobile.siemens = false;
+		if(phone.equals("LG"))            { Mobile.lg = true;}
+		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
+		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
+		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
+		if(phone.equals("Nokia"))         { Mobile.nokia = true;}
+		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
+		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
+		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }
@@ -411,75 +413,14 @@ public class FreeJ2ME
 			resize();
 			main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
 		}
-
-		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
-		else if (Mobile.sonyEricsson) 
-		{
-			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
-			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
-		} else if (Mobile.siemens) 
-		{
-			System.setProperty("com.siemens.OSVersion", "11");
-			System.setProperty("com.siemens.IMEI", "000000000000000");
-		}
 	}
 
 	private int getMobileKey(int keycode)
 	{
-		if(useNokiaControls)
+		for(int i = 0; i < awtGUI.inputKeycodes.length; i++) 
 		{
-			if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) { return Mobile.NOKIA_UP; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) { return Mobile.NOKIA_DOWN; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) { return Mobile.NOKIA_LEFT; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) { return Mobile.NOKIA_RIGHT; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) { return Mobile.NOKIA_SOFT3; }
+			if(keycode == awtGUI.inputKeycodes[i]) { return Mobile.getMobileKey(i, false);}
 		}
-
-		if(useSiemensControls)
-		{
-			if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) { return Mobile.SIEMENS_UP; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) { return Mobile.SIEMENS_DOWN; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) { return Mobile.SIEMENS_LEFT; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) { return Mobile.SIEMENS_RIGHT; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.SIEMENS_SOFT1; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.SIEMENS_SOFT2; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) { return Mobile.SIEMENS_FIRE; }
-		}
-
-		if(useMotorolaControls)
-		{
-			if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) { return Mobile.MOTOROLA_UP; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) { return Mobile.MOTOROLA_DOWN; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) { return Mobile.MOTOROLA_LEFT; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) { return Mobile.MOTOROLA_RIGHT; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.MOTOROLA_SOFT1; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) { return Mobile.MOTOROLA_SOFT2; }
-			else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) { return Mobile.MOTOROLA_FIRE; }
-		}
-
-		if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD0_KEY]) return Mobile.KEY_NUM0;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD1_KEY]) return Mobile.KEY_NUM1;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD2_KEY]) return Mobile.KEY_NUM2;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD3_KEY]) return Mobile.KEY_NUM3;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD4_KEY]) return Mobile.KEY_NUM4;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD5_KEY]) return Mobile.KEY_NUM5;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD6_KEY]) return Mobile.KEY_NUM6;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD7_KEY]) return Mobile.KEY_NUM7;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD8_KEY]) return Mobile.KEY_NUM8;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD9_KEY]) return Mobile.KEY_NUM9;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD_ASTERISK_KEY]) return Mobile.KEY_STAR;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.NUMPAD_POUND_KEY]) return Mobile.KEY_POUND;
-
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.UP_ARROW_KEY]) return Mobile.KEY_NUM2;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.DOWN_ARROW_KEY]) return Mobile.KEY_NUM8;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.LEFT_ARROW_KEY]) return Mobile.KEY_NUM4;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.RIGHT_ARROW_KEY]) return Mobile.KEY_NUM6;
-
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.OK_KEY]) return Mobile.KEY_NUM5;
-
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_LEFT_KEY]) return Mobile.NOKIA_SOFT1;
-		else if(keycode == awtGUI.inputKeycodes[AWTGUI.SOFT_RIGHT_KEY]) return Mobile.NOKIA_SOFT2;
-
 		return 0;
 	}
 

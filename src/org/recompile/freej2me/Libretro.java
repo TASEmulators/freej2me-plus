@@ -45,9 +45,6 @@ public class Libretro
 	private Graphics2D gc;
 
 	private Config config;
-	private boolean useNokiaControls = false;
-	private boolean useSiemensControls = false;
-	private boolean useMotorolaControls = false;
 	private boolean halveCanvasRes = false;
 	private boolean rotateDisplay = false;
 	private boolean soundEnabled = true;
@@ -115,10 +112,23 @@ public class Libretro
 
 		if(Integer.parseInt(args[3]) == 1) { rotateDisplay = true; }
 
-		if(Integer.parseInt(args[4]) == 1)      { useNokiaControls = true; Mobile.nokia = true;        }
-		else if(Integer.parseInt(args[4]) == 2) { useSiemensControls = true; Mobile.siemens = true;    }
-		else if(Integer.parseInt(args[4]) == 3) { useMotorolaControls = true; Mobile.motorola = true;  }
-		else if(Integer.parseInt(args[4]) == 4) { useNokiaControls = true; Mobile.sonyEricsson = true; }
+		if(Integer.parseInt(args[4]) == 1)      { Mobile.lg = true;    }
+		else if(Integer.parseInt(args[4]) == 2) { Mobile.motorola = true;  }
+		else if(Integer.parseInt(args[4]) == 3) { Mobile.motoTriplets = true; }
+		else if(Integer.parseInt(args[4]) == 4) { Mobile.motoV8 = true; }
+		else if(Integer.parseInt(args[4]) == 5) { Mobile.nokia = true; }
+		else if(Integer.parseInt(args[4]) == 6) { Mobile.nokiaKeyboard = true; }
+		else if(Integer.parseInt(args[4]) == 7) { Mobile.sagem = true; }
+		else if(Integer.parseInt(args[4]) == 8) { Mobile.siemens = true; }
+
+		Mobile.lg = false;
+		Mobile.motorola = false;
+		Mobile.motoTriplets = false;
+		Mobile.motoV8 = false;
+		Mobile.nokia = false;
+		Mobile.nokiaKeyboard = false;
+		Mobile.sagem = false;
+		Mobile.siemens = false;
 
 		Mobile.limitFPS = Integer.parseInt(args[5]);
 
@@ -290,10 +300,14 @@ public class Libretro
 										if(rotateDisplay)   { config.settings.put("rotate", "on");  }
 										if(!rotateDisplay)  { config.settings.put("rotate", "off"); }
 
-										if(useNokiaControls)         { config.settings.put("phone", "Nokia");    }
-										else if(useSiemensControls)  { config.settings.put("phone", "Siemens");  }
-										else if(useMotorolaControls) { config.settings.put("phone", "Motorola"); }
-										else if(Mobile.sonyEricsson) { config.settings.put("phone", "SonyEricsson"); }
+										if(Mobile.lg)                { config.settings.put("phone", "LG");    }
+										else if(Mobile.motorola)     { config.settings.put("phone", "Motorola");  }
+										else if(Mobile.motoTriplets) { config.settings.put("phone", "MotoTriplets"); }
+										else if(Mobile.motoV8)       { config.settings.put("phone", "MotoV8"); }
+										else if(Mobile.nokia)        { config.settings.put("phone", "Nokia"); }
+										else if(Mobile.nokiaKeyboard)      { config.settings.put("phone", "NokiaKeyboard"); }
+										else if(Mobile.sagem)        { config.settings.put("phone", "Sagem"); }
+										else if(Mobile.siemens)      { config.settings.put("phone", "Siemens"); }
 										else                         { config.settings.put("phone", "Standard"); }
 
 										if(soundEnabled)   { config.settings.put("sound", "on");  }
@@ -353,9 +367,14 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[4])==0) { config.settings.put("rotate", "off"); }
 
 									if(Integer.parseInt(cfgtokens[5])==0) { config.settings.put("phone", "Standard"); }
-									if(Integer.parseInt(cfgtokens[5])==1) { config.settings.put("phone", "Nokia");    }
-									if(Integer.parseInt(cfgtokens[5])==2) { config.settings.put("phone", "Siemens");  }
-									if(Integer.parseInt(cfgtokens[5])==3) { config.settings.put("phone", "Motorola"); }
+									if(Integer.parseInt(cfgtokens[5])==1) { config.settings.put("phone", "LG");    }
+									if(Integer.parseInt(cfgtokens[5])==2) { config.settings.put("phone", "Motorola");  }
+									if(Integer.parseInt(cfgtokens[5])==3) { config.settings.put("phone", "MotoTriplets"); }
+									if(Integer.parseInt(cfgtokens[5])==4) { config.settings.put("phone", "MotoV8"); }
+									if(Integer.parseInt(cfgtokens[5])==5) { config.settings.put("phone", "Nokia"); }
+									if(Integer.parseInt(cfgtokens[5])==6) { config.settings.put("phone", "NokiaKeyboard"); }
+									if(Integer.parseInt(cfgtokens[5])==7) { config.settings.put("phone", "Sagem"); }
+									if(Integer.parseInt(cfgtokens[5])==8) { config.settings.put("phone", "Siemens"); }
 
 									config.settings.put("fps", ""+cfgtokens[6]);
 
@@ -424,17 +443,22 @@ public class Libretro
 		if(sound.equals("on")) { Mobile.sound = true; }
 
 		String phone = config.settings.get("phone");
-		useNokiaControls = false;
-		useSiemensControls = false;
-		useMotorolaControls = false;
-		Mobile.nokia = false;
-		Mobile.siemens = false;
+		Mobile.lg = false;
 		Mobile.motorola = false;
-		Mobile.sonyEricsson = false;
-		if(phone.equals("Nokia")) { Mobile.nokia = true; useNokiaControls = true; }
-		if(phone.equals("Siemens")) { Mobile.siemens = true; useSiemensControls = true; }
-		if(phone.equals("Motorola")) { Mobile.motorola = true; useMotorolaControls = true; }
-		if(phone.equals("SonyEricsson")) { Mobile.sonyEricsson = true; useNokiaControls = true; }
+		Mobile.motoTriplets = false;
+		Mobile.motoV8 = false;
+		Mobile.nokia = false;
+		Mobile.nokiaKeyboard = false;
+		Mobile.sagem = false;
+		Mobile.siemens = false;
+		if(phone.equals("LG"))            { Mobile.lg = true;}
+		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
+		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
+		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
+		if(phone.equals("Nokia"))         { Mobile.nokia = true;}
+		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
+		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
+		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; frameHeader[5] = (byte)1; }
@@ -459,17 +483,6 @@ public class Libretro
 			Mobile.getPlatform().resizeLCD(w, h);
 			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
 			gc = (Graphics2D)surface.getGraphics();
-		}
-
-		if (Mobile.nokia) { System.setProperty("microedition.platform", "Nokia6233/05.10"); } 
-		else if (Mobile.sonyEricsson) 
-		{
-			System.setProperty("microedition.platform", "SonyEricssonK750/JAVASDK");
-			System.setProperty("com.sonyericsson.imei", "IMEI 00460101-501594-5-00");
-		} else if (Mobile.siemens) 
-		{
-			System.setProperty("com.siemens.OSVersion", "11");
-			System.setProperty("com.siemens.IMEI", "000000000000000");
 		}
 	}
 
@@ -496,74 +509,5 @@ public class Libretro
 		pressedKeys[mobikeyN] = false;
 	}
 
-	private int getMobileKeyJoy(int keycode)
-	{
-		// Input mappings that are expected to be the same on all control modes
-		switch(keycode)
-		{
-			case 4: return Mobile.KEY_NUM9; // A
-			case 5: return Mobile.KEY_NUM7; // B
-			case 6: return Mobile.KEY_NUM0; // X
-			case 10: return Mobile.KEY_NUM1; // L
-			case 11: return Mobile.KEY_NUM3; // R
-			case 12: return Mobile.KEY_STAR; // L2
-			case 13: return Mobile.KEY_POUND; // R2
-		}
-
-		// These keys are overridden by the "useXControls" variables
-		if(useNokiaControls)
-		{
-			switch(keycode)
-			{
-				case 0: return Mobile.NOKIA_UP; // Up
-				case 1: return Mobile.NOKIA_DOWN; // Down
-				case 2: return Mobile.NOKIA_LEFT; // Left
-				case 3: return Mobile.NOKIA_RIGHT; // Right
-				case 7: return Mobile.NOKIA_SOFT3; // Y
-				case 8: return Mobile.NOKIA_SOFT2; // Start
-				case 9: return Mobile.NOKIA_SOFT1; // Select
-			}
-		}
-		if(useSiemensControls)
-		{
-			switch(keycode)
-			{
-				case 0: return Mobile.SIEMENS_UP; // Up
-				case 1: return Mobile.SIEMENS_DOWN; // Down
-				case 2: return Mobile.SIEMENS_LEFT; // Left
-				case 3: return Mobile.SIEMENS_RIGHT; // Right
-				case 7: return Mobile.SIEMENS_FIRE; // Y
-				case 8: return Mobile.SIEMENS_SOFT2; // Start
-				case 9: return Mobile.SIEMENS_SOFT1; // Select
-			}
-		}
-		if(useMotorolaControls)
-		{
-			switch(keycode)
-			{
-				case 0: return Mobile.MOTOROLA_UP; // Up
-				case 1: return Mobile.MOTOROLA_DOWN; // Down
-				case 2: return Mobile.MOTOROLA_LEFT; // Left
-				case 3: return Mobile.MOTOROLA_RIGHT; // Right
-				case 7: return Mobile.MOTOROLA_FIRE; // Y
-				case 8: return Mobile.MOTOROLA_SOFT2; // Start
-				case 9: return Mobile.MOTOROLA_SOFT1; // Select
-			}
-		}
-		else // Standard keycodes
-		{
-			switch(keycode)
-			{
-				case 0: return Mobile.KEY_NUM2; // Up
-				case 1: return Mobile.KEY_NUM8; // Down
-				case 2: return Mobile.KEY_NUM4; // Left
-				case 3: return Mobile.KEY_NUM6; // Right
-				case 7: return Mobile.KEY_NUM5; // Y
-				case 8: return Mobile.NOKIA_SOFT2; // Start
-				case 9: return Mobile.NOKIA_SOFT1; // Select
-			}
-		}
-
-		return Mobile.KEY_NUM5;
-	}
+	private int getMobileKeyJoy(int keycode) { return Mobile.getMobileKey(keycode, true); }
 }
