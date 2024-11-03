@@ -390,8 +390,6 @@ public class FreeJ2ME
 		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
 		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
-		if(config.settings.get("halveCanvasRes").equals("on")) { w /= 2; h /= 2; }
-
 		// Create a standard size LCD if not rotated, else invert window's width and height.
 		if(!rotateDisplay) 
 		{

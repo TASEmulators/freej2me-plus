@@ -45,7 +45,6 @@ public class Libretro
 	private Graphics2D gc;
 
 	private Config config;
-	private boolean halveCanvasRes = false;
 	private boolean rotateDisplay = false;
 	private boolean soundEnabled = true;
 
@@ -108,18 +107,16 @@ public class Libretro
 		lcdWidth =  Integer.parseInt(args[0]);
 		lcdHeight = Integer.parseInt(args[1]);
 
-		if(Integer.parseInt(args[2]) == 1) { halveCanvasRes = true; }
+		if(Integer.parseInt(args[2]) == 1) { rotateDisplay = true; }
 
-		if(Integer.parseInt(args[3]) == 1) { rotateDisplay = true; }
-
-		if(Integer.parseInt(args[4]) == 1)      { Mobile.lg = true;    }
-		else if(Integer.parseInt(args[4]) == 2) { Mobile.motorola = true;  }
-		else if(Integer.parseInt(args[4]) == 3) { Mobile.motoTriplets = true; }
-		else if(Integer.parseInt(args[4]) == 4) { Mobile.motoV8 = true; }
-		else if(Integer.parseInt(args[4]) == 5) { Mobile.nokia = true; }
-		else if(Integer.parseInt(args[4]) == 6) { Mobile.nokiaKeyboard = true; }
-		else if(Integer.parseInt(args[4]) == 7) { Mobile.sagem = true; }
-		else if(Integer.parseInt(args[4]) == 8) { Mobile.siemens = true; }
+		if(Integer.parseInt(args[3]) == 1)      { Mobile.lg = true;    }
+		else if(Integer.parseInt(args[3]) == 2) { Mobile.motorola = true;  }
+		else if(Integer.parseInt(args[3]) == 3) { Mobile.motoTriplets = true; }
+		else if(Integer.parseInt(args[3]) == 4) { Mobile.motoV8 = true; }
+		else if(Integer.parseInt(args[3]) == 5) { Mobile.nokia = true; }
+		else if(Integer.parseInt(args[3]) == 6) { Mobile.nokiaKeyboard = true; }
+		else if(Integer.parseInt(args[3]) == 7) { Mobile.sagem = true; }
+		else if(Integer.parseInt(args[3]) == 8) { Mobile.siemens = true; }
 
 		Mobile.lg = false;
 		Mobile.motorola = false;
@@ -130,14 +127,14 @@ public class Libretro
 		Mobile.sagem = false;
 		Mobile.siemens = false;
 
-		Mobile.limitFPS = Integer.parseInt(args[5]);
+		Mobile.limitFPS = Integer.parseInt(args[4]);
 
-		if(Integer.parseInt(args[6]) == 0) { soundEnabled = false; }
+		if(Integer.parseInt(args[5]) == 0) { soundEnabled = false; }
 
-		if(Integer.parseInt(args[7]) == 1) { Manager.useCustomMidi = true; }
+		if(Integer.parseInt(args[6]) == 1) { Manager.useCustomMidi = true; }
 
 		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
-		if(Integer.parseInt(args[8]) == 1) { Manager.dumpAudioStreams = true; }
+		if(Integer.parseInt(args[7]) == 1) { Manager.dumpAudioStreams = true; }
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -294,9 +291,6 @@ public class Libretro
 										config.settings.put("width",  ""+lcdWidth);
 										config.settings.put("height", ""+lcdHeight);
 
-										if(halveCanvasRes)   { config.settings.put("halveCanvasRes", "on");  }
-										if(!halveCanvasRes)  { config.settings.put("halveCanvasRes", "off"); }
-
 										if(rotateDisplay)   { config.settings.put("rotate", "on");  }
 										if(!rotateDisplay)  { config.settings.put("rotate", "off"); }
 
@@ -360,32 +354,29 @@ public class Libretro
 									config.settings.put("width",  ""+Integer.parseInt(cfgtokens[1]));
 									config.settings.put("height", ""+Integer.parseInt(cfgtokens[2]));
 
-									if(Integer.parseInt(cfgtokens[3])==1) { config.settings.put("halveCanvasRes", "on");  }
-									if(Integer.parseInt(cfgtokens[3])==0) { config.settings.put("halveCanvasRes", "off"); }
+									if(Integer.parseInt(cfgtokens[3])==1) { config.settings.put("rotate", "on");  }
+									if(Integer.parseInt(cfgtokens[3])==0) { config.settings.put("rotate", "off"); }
 
-									if(Integer.parseInt(cfgtokens[4])==1) { config.settings.put("rotate", "on");  }
-									if(Integer.parseInt(cfgtokens[4])==0) { config.settings.put("rotate", "off"); }
+									if(Integer.parseInt(cfgtokens[4])==0) { config.settings.put("phone", "Standard"); }
+									if(Integer.parseInt(cfgtokens[4])==1) { config.settings.put("phone", "LG");    }
+									if(Integer.parseInt(cfgtokens[4])==2) { config.settings.put("phone", "Motorola");  }
+									if(Integer.parseInt(cfgtokens[4])==3) { config.settings.put("phone", "MotoTriplets"); }
+									if(Integer.parseInt(cfgtokens[4])==4) { config.settings.put("phone", "MotoV8"); }
+									if(Integer.parseInt(cfgtokens[4])==5) { config.settings.put("phone", "Nokia"); }
+									if(Integer.parseInt(cfgtokens[4])==6) { config.settings.put("phone", "NokiaKeyboard"); }
+									if(Integer.parseInt(cfgtokens[4])==7) { config.settings.put("phone", "Sagem"); }
+									if(Integer.parseInt(cfgtokens[4])==8) { config.settings.put("phone", "Siemens"); }
 
-									if(Integer.parseInt(cfgtokens[5])==0) { config.settings.put("phone", "Standard"); }
-									if(Integer.parseInt(cfgtokens[5])==1) { config.settings.put("phone", "LG");    }
-									if(Integer.parseInt(cfgtokens[5])==2) { config.settings.put("phone", "Motorola");  }
-									if(Integer.parseInt(cfgtokens[5])==3) { config.settings.put("phone", "MotoTriplets"); }
-									if(Integer.parseInt(cfgtokens[5])==4) { config.settings.put("phone", "MotoV8"); }
-									if(Integer.parseInt(cfgtokens[5])==5) { config.settings.put("phone", "Nokia"); }
-									if(Integer.parseInt(cfgtokens[5])==6) { config.settings.put("phone", "NokiaKeyboard"); }
-									if(Integer.parseInt(cfgtokens[5])==7) { config.settings.put("phone", "Sagem"); }
-									if(Integer.parseInt(cfgtokens[5])==8) { config.settings.put("phone", "Siemens"); }
+									config.settings.put("fps", ""+cfgtokens[5]);
 
-									config.settings.put("fps", ""+cfgtokens[6]);
+									if(Integer.parseInt(cfgtokens[6])==1) { config.settings.put("sound", "on");  }
+									if(Integer.parseInt(cfgtokens[6])==0) { config.settings.put("sound", "off"); }
 
-									if(Integer.parseInt(cfgtokens[7])==1) { config.settings.put("sound", "on");  }
-									if(Integer.parseInt(cfgtokens[7])==0) { config.settings.put("sound", "off"); }
+									if(Integer.parseInt(cfgtokens[7])==0) { config.settings.put("soundfont", "Default"); }
+									if(Integer.parseInt(cfgtokens[7])==1) { config.settings.put("soundfont", "Custom");  }
 
-									if(Integer.parseInt(cfgtokens[8])==0) { config.settings.put("soundfont", "Default"); }
-									if(Integer.parseInt(cfgtokens[8])==1) { config.settings.put("soundfont", "Custom");  }
-
-									if(Integer.parseInt(cfgtokens[9])==1) { Manager.dumpAudioStreams = true;  }
-									if(Integer.parseInt(cfgtokens[9])==0) { Manager.dumpAudioStreams = false; }
+									if(Integer.parseInt(cfgtokens[8])==1) { Manager.dumpAudioStreams = true;  }
+									if(Integer.parseInt(cfgtokens[8])==0) { Manager.dumpAudioStreams = false; }
 
 									config.saveConfig();
 									settingsChanged();
@@ -467,14 +458,6 @@ public class Libretro
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
 		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
-
-		halveCanvasRes = false;
-		if(config.settings.get("halveCanvasRes").equals("on")) 
-		{ 
-			halveCanvasRes = true;
-			w /= 2;
-			h /= 2;
-		}
 
 		if(lcdWidth != w || lcdHeight != h)
 		{
