@@ -31,14 +31,12 @@ import java.lang.reflect.Array;
 
 /**
  * The JavaLayerUtils class is not strictly part of the JavaLayer API.
- * It serves to provide useful methods and system-wide hooks.
+ * It serves to provide useful methods.
  * 
  * @author MDM
  */
 public class JavaLayerUtils
-{
-	static private JavaLayerHook	hook = null;
-	
+{	
 	/**
 	 * Deserializes the object contained in the given input stream.
 	 * @param in	The input stream to deserialize an object from.
@@ -150,19 +148,6 @@ public class JavaLayerUtils
 		ObjectOutputStream objOut = new ObjectOutputStream(out);
 		objOut.writeObject(obj);
 				
-	}
-
-	/**
-	 * Sets the system-wide JavaLayer hook.
-	 */
-	static synchronized public void setHook(JavaLayerHook hook0)		
-	{
-		hook = hook0;
-	}
-	
-	static synchronized public JavaLayerHook getHook()
-	{
-		return hook;	
 	}
 
 }
