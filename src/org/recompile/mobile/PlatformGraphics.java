@@ -28,6 +28,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.geom.AffineTransform;
+import java.awt.BasicStroke;
 
 public class PlatformGraphics extends javax.microedition.lcdui.Graphics implements DirectGraphics
 {
@@ -57,6 +58,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		clipHeight = canvas.getHeight();
 
 		setColor(0,0,0);
+		setStrokeStyle(SOLID);
 		gc.setBackground(new Color(0, 0, 0, 0));
 		gc.setFont(font.platformFont.awtFont);
 	}
@@ -201,25 +203,43 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 	}
 
-	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha)
-	{
-		if(width <= 0 || height <= 0) { return; }
-
-		if(!processAlpha)
+	/* Based on J2ME-Loader */
+	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha) {
+		if (width <= 0 || height <= 0) { return; }
+		
+		if (rgbData == null) { throw new NullPointerException(); }
+		
+		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException(); }
+		
+		if (scanlength > 0) 
 		{
-			for (int i=offset; i<rgbData.length; i++) { rgbData[i] &= 0x00FFFFFF; rgbData[i] |= 0xFF000000; }
+			if (offset + scanlength * (height - 1) + width > rgbData.length) { throw new ArrayIndexOutOfBoundsException(); }
+		} 
+		else 
+		{
+			if (offset + width > rgbData.length || offset + scanlength * (height - 1) < 0) { throw new ArrayIndexOutOfBoundsException(); }
 		}
-		else
-		{	// Fix Alpha //
-			for (int i=offset; i<rgbData.length; i++) { rgbData[i] |= 0x00000000; rgbData[i] &= 0xFFFFFFFF; }
+	
+		final int[] pixels = new int[width * height];
+	
+		for (int i = 0; i < height; i++) {
+			int s = offset + i * scanlength;
+			int d = i * width;
+			for (int j = 0; j < width; j++) {
+				int pixel = rgbData[s++];
+				if (!processAlpha) {
+					// Set fully opaque
+					pixel = (pixel & 0x00FFFFFF) | 0xFF000000; // Set alpha to 255
+				}
+				pixels[d + j] = pixel; // Store the pixel
+			}
 		}
-		// Copy from new image.  This avoids some problems with games that don't
-		// properly adapt to different display sizes.
-		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		temp.setRGB(0, 0, width, height, rgbData, offset, scanlength);	
+	
+		final BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		temp.setRGB(0, 0, width, height, pixels, 0, width);
+
 		gc.drawImage(temp, x, y, null);
 	}
-
 
 	public void drawLine(int x1, int y1, int x2, int y2) { gc.drawLine(x1, y1, x2, y2); }
 
@@ -277,14 +297,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		gc.fillRoundRect(x, y, width, height, arcWidth, arcHeight);
 	}
 
-	//public int getBlueComponent() { }
-	//public Font getFont() { return font; }
-	//public int getColor() { return color; }
-	//public int getGrayScale() { }
-	//public int getGreenComponent() { }
-	//public int getRedComponent() { }
-	//public int getStrokeStyle() { return strokeStyle; }
-
 	public void setColor(int rgb)
 	{
 		setColor((rgb>>16) & 0xFF, (rgb>>8) & 0xFF, rgb & 0xFF);
@@ -297,13 +309,55 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		gc.setColor(awtColor);
 	}
 
+	public void setGrayScale(int value) { System.out.println("PlatformGraphics: setGrayScale()"); setColor(value, value, value); }
+
+	public int getGrayScale() 
+	{
+		System.out.println("PlatformGraphics: getGrayScale()");
+		int r = gc.getColor().getRed();
+		int g = gc.getColor().getGreen();
+		int b = gc.getColor().getBlue();
+
+		return 0x4CB2 * r + 0x9691 * g + 0x1D3E * b >> 16;
+	}
+
+	public int getRedComponent() { System.out.println("PlatformGraphics: getRedComponent()"); return gc.getColor().getRed(); }
+
+	public int getGreenComponent() { System.out.println("PlatformGraphics: getGreenComponent()"); return gc.getColor().getGreen(); }
+
+	public int getBlueComponent() { System.out.println("PlatformGraphics: getBlueComponent()"); return gc.getColor().getBlue(); }
+
+	public int getColor() 
+	{
+		System.out.println("PlatformGraphics: getColor()");
+		return (gc.getColor().getRed() << 16) | (gc.getColor().getGreen() << 8) | gc.getColor().getBlue();
+	}
+
+	public int getDisplayColor(int color) { return color; }
+
+	public void setStrokeStyle(int stroke) 
+	{
+		//System.out.println("PlatformGraphics: setStrokeStyle()"); // Called (a lot) by Asphalt Urban GT 2, and Shadow Shoot also uses this on the loading bars
+
+		if (strokeStyle == DOTTED) 
+		{
+			float[] dotPattern = {2.0f, 2.0f}; // Dot of length 2 px, followed by 2 px of gap
+			BasicStroke dottedStroke = new BasicStroke(2.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dotPattern, 0.0f);
+			
+			gc.setStroke(dottedStroke); 
+		} 
+		else { gc.setStroke(new BasicStroke(1.0f)); } // Solid stroke with width of 2 px
+
+		strokeStyle = stroke;
+	}
+
+	public int getStrokeStyle() { return strokeStyle;}
+
 	public void setFont(Font font)
 	{
 		super.setFont(font);
 		gc.setFont(font.platformFont.awtFont);
 	}
-	//public void setGrayScale(int value)
-	//public void setStrokeStyle(int style)
 
 	public void setClip(int x, int y, int width, int height)
 	{
@@ -323,8 +377,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		clipHeight = (int)gc.getClipBounds().getHeight();
 	}
 
-	//public int getTranslateX() { }
-	//public int getTranslateY() { }
+	public int getTranslateX() { System.out.println("getTranslateX"); return translateY; }
+	
+	public int getTranslateY() { System.out.println("getTranslateY"); return translateY; }
 
 	public void translate(int x, int y)
 	{
