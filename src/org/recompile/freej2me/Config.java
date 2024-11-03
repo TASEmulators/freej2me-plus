@@ -46,7 +46,7 @@ public class Config
 	private String configPath = "";
 	private String configFile = "";
 
-	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","128x142","128x160","132x176","176x204","176x208","176x220","220x176","208x208","208x320","240x320","320x240","240x400","240x432","240x480","352x416","360x640","640x360","640x480","480x800","800x480"};
+	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","128x160","132x176","176x208","176x220","220x176","208x208","180x320","320x180","208x320","240x320","320x240","240x400","240x432","240x480","352x416","360x640","640x360","640x480","480x800","800x480"};
 
 	public Runnable onChange;
 
@@ -91,7 +91,6 @@ public class Config
 				file.createNewFile();
 				settings.put("width", ""+width);
 				settings.put("height", ""+height);
-				settings.put("halveCanvasRes", "off");
 				settings.put("sound", "on");
 				settings.put("phone", "Standard");
 				settings.put("rotate", "off");
@@ -132,7 +131,6 @@ public class Config
 			}
 			if(!settings.containsKey("width")) { settings.put("width", ""+width); }
 			if(!settings.containsKey("height")) { settings.put("height", ""+height); }
-			if(!settings.containsKey("halveCanvasRes")) { settings.put("halveCanvasRes", "off"); }
 			if(!settings.containsKey("sound")) { settings.put("sound", "on"); }
 			if(!settings.containsKey("phone")) { settings.put("phone", "Standard"); }
 			if(!settings.containsKey("rotate")) { settings.put("rotate", "off"); }
@@ -177,15 +175,6 @@ public class Config
 		onChange.run();
 		width = w;
 		height = h;
-	}
-
-	public void updateCanvasScale(String value)
-	{
-		System.out.println("Config: Halve Canvas Resolution "+value);
-		settings.put("halveCanvasRes", value);
-		
-		saveConfig();
-		onChange.run();
 	}
 
 	public void updateSound(String value)

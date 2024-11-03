@@ -86,14 +86,14 @@ struct retro_core_option_v2_definition core_options[] =
             { "101x80",    NULL },
             { "128x128",   NULL },
             { "130x130",   NULL },
-            { "128x142",   NULL },
             { "128x160",   NULL },
             { "132x176",   NULL },
-            { "176x204",   NULL },
             { "176x208",   NULL },
             { "176x220",   NULL },
             { "220x176",   NULL },
             { "208x208",   NULL },
+            { "180x320",   NULL },
+            { "320x180",   NULL },
             { "208x320",   NULL },
             { "240x320",   NULL },
             { "320x240",   NULL },
@@ -109,20 +109,6 @@ struct retro_core_option_v2_definition core_options[] =
             { NULL, NULL },
         },
         "240x320"
-    },
-    {
-        "freej2me_halvecanvasres",
-        "Virtual Phone Settings > Halve Canvas Res",
-        "Halve Canvas Res",
-        "While the 'Phone Resolution' setting follows device screen resolution, some games do, in fact, render at a lower resolution and then upscale to the phone's native res by a factor of 2. A few 352x416 Nokia N80 games do this, as well as Harry Potter and the Deathly Hallows for the Nokia N5800 XpressMusic (360x640). Enabling this will make those games fill the whole screen.",
-        "While the 'Phone Resolution' setting follows device screen resolution, some games do, in fact, render at a lower resolution and then upscale to the phone's native res by a factor of 2. A few 352x416 Nokia N80 games do this, as well as Harry Potter and the Deathly Hallows for the Nokia N5800 XpressMusic (360x640). Enabling this will make those games fill the whole screen.",
-        "vphone_settings",
-        {
-            { "off", "Disabled" },
-            { "on",  "Enabled"  },
-            { NULL, NULL },
-        },
-        "off"
     },
     {
         "freej2me_rotate",
@@ -350,14 +336,14 @@ struct retro_core_option_definition core_options_v1 [] =
             { "101x80",    NULL },
             { "128x128",   NULL },
             { "130x130",   NULL },
-            { "128x142",   NULL },
             { "128x160",   NULL },
             { "132x176",   NULL },
-            { "176x204",   NULL },
             { "176x208",   NULL },
             { "176x220",   NULL },
             { "220x176",   NULL },
             { "208x208",   NULL },
+            { "180x320",   NULL },
+            { "320x180",   NULL },
             { "208x320",   NULL },
             { "240x320",   NULL },
             { "320x240",   NULL },
@@ -373,17 +359,6 @@ struct retro_core_option_definition core_options_v1 [] =
             { NULL, NULL },
         },
         "240x320"
-    },
-    {
-        "freej2me_halvecanvasres",
-        "Halve Canvas Res",
-        "While the 'Phone Resolution' setting follows device screen resolution, some games do, in fact, render at a lower resolution and then upscale to the phone's native res by a factor of 2. A few 352x416 Nokia N80 games do this, as well as Harry Potter and the Deathly Hallows for the Nokia N5800 XpressMusic (360x640). Enabling this will make those games fill the whole screen.",
-        {
-            { "off", "Disabled" },
-            { "on",  "Enabled"  },
-            { NULL, NULL },
-        },
-        "off"
     },
     {
         "freej2me_rotate",
@@ -560,11 +535,7 @@ static const struct retro_variable vars[] =
 {
     { /* Screen Resolution */
         "freej2me_resolution",
-        "Phone Resolution (Core Restart required); 240x320|96x65|101x64|101x80|128x128|130x130|128x142|128x160|132x176|176x204|176x208|176x220|220x176|208x208|208x320|320x240|240x400|240x432|240x480|352x416|360x640|640x360|640x480|480x800|800x480" 
-    },
-    { /* Screen Rotation */
-        "freej2me_halvecanvasres",
-        "Halve Canvas Res; off|on" 
+        "Phone Resolution (Core Restart required); 240x320|96x65|101x64|101x80|128x128|130x130|128x160|132x176|176x208|176x220|220x176|208x208|180x320|320x180|208x320|320x240|240x400|240x432|240x480|352x416|360x640|640x360|640x480|480x800|800x480" 
     },
     { /* Screen Rotation */
         "freej2me_rotate",
