@@ -100,7 +100,7 @@ Development thread:
 >
 >Move it to your libretro frontend's `cores/` folder, with freej2me-lr.jar on `system/` and the frontend should be able to load j2me files afterwards.
 >
->NOTE: The windows core has only been tested on Windows 10 x64.
+>NOTE: The windows core has been tested on Windows 10 & 11 x64.
 
 ----
 **Usage (applies to AWT and SDL):**
@@ -113,6 +113,8 @@ Where _width_, _height_ (dimensions of the simulated screen) and _scale_ (initia
 The SDL2 frontend (freej2me-sdl.jar) accepts the same command-line arguments format, aside from the _scale_ option which is unavailable.
 
 When running under Microsoft Windows please do note paths require an additional `/` prefixed. For example, `C:\path\to\midlet.jar` should be passed as `file:///C:\path\to\midlet.jar`
+
+Special note for Windows: It is recommended to use Adoptium's [OpenJDK JRE](https://adoptium.net/temurin/releases/?os=windows&arch=x64&package=jre), instead of Oracle JRE. Late versions of Oracle introduced a bootstrapper javaw.exe, which will leave the actual javaw.exe process behind once the game is closed in RetroArch. Unfortunately, there is no good way for the core to determine which javaw is the _actual_ one, so you will either need to edit your system env to add the actual javaw.exe's path and delete the `javapath` one, or simply use Adoptium's JRE which does not have this issue.
 
 FreeJ2ME keeps savedata and config at the working directory it is run from. Currently any resolution specified at the config file takes precedence over the values passed via command-line.
 
