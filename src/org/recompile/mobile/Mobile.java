@@ -208,7 +208,7 @@ public class Mobile
 	{
 		if(!isLibretro) { keycode = awtguiKeycodes[keycode]; } // Cast the received awt key to the correct value.
 
-		System.out.println("KeyPress:" + keyArray[keycode]);
+		//System.out.println("KeyPress:" + keyArray[keycode]); // Will be turned into a "Mobile.log()" call
 
 		// These keys are overridden by the modifier variables (comments simulate the Libretro interface with a NS Pro Controller)
 		if(lg)
@@ -294,6 +294,10 @@ public class Mobile
 				case 11: return NOKIAKB_NUM3; // R
 				case 12: return NOKIAKB_STAR; // L2
 				case 13: return NOKIAKB_POUND; // R2
+				case 14: return NOKIAKB_NUM2; // Up 
+				case 15: return NOKIAKB_NUM4; // Left
+				case 16: return NOKIAKB_NUM6; // Right
+				case 17: return NOKIAKB_NUM8; // Down
 			}
 		}
 		if(sagem)
@@ -340,6 +344,10 @@ public class Mobile
 			case 11: return KEY_NUM3; // R
 			case 12: return KEY_STAR; // L2
 			case 13: return KEY_POUND; // R2
+			case 14: return KEY_NUM2; // Up 
+			case 15: return KEY_NUM4; // Left
+			case 16: return KEY_NUM6; // Right
+			case 17: return KEY_NUM8; // Down
 		}
 
 		// If a matching key wasn't found, return 0;
