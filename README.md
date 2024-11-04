@@ -1,10 +1,11 @@
 # freej2me
 
-![Java CI](https://github.com/hex007/freej2me/workflows/Java%20CI/badge.svg)
+![Java CI](https://github.com/TASEmulators/freej2me-plus/actions/workflows/ant.yml/badge.svg)
+![Libretro Cores](https://github.com/TASEmulators/freej2me-plus/actions/workflows/libretro.yml/badge.svg)
 
 A free J2ME emulator with libretro, awt and sdl2 frontends.
 
-Authors :
+Original authors :
 - David Richardson [Recompile@retropie]
 - Saket Dandawate  [Hex@retropie]
 
@@ -125,10 +126,4 @@ FreeJ2ME keeps savedata and config at the working directory it is run from. Curr
   3) Post on the Issue if you have a possible solution
   4) Submit a PR implementing the solution
 
-**If you are not a developer:**
-  1) Post on discussion thread only
-
-**Roadmap:**
-  - Get as many games as possible to work well.
-  - Document games that work well in the wiki
-  - Reduce as many bugs as possible
+**If you are not a developer, just open an issue normally.**
