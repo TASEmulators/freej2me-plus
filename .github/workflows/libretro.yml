@@ -1,0 +1,35 @@
+name: Libretro cores
+
+on:
+  push:
+    paths: 'src/libretro/**'
+  pull_request:
+    paths: 'src/libretro/**'
+
+jobs:
+  libretro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build linux & win32 cores
+        run: |
+          sudo apt-get update && sudo apt-get install -y mingw-w64
+          cd src/libretro && make
+          mv freej2me_libretro.so freej2me_libretro_linux.so
+          make clean
+          platform=win32 CC=x86_64-w64-mingw32-gcc CPP=x86_64-w64-mingw32-g++ CXX=x86_64-w64-mingw32-g++ make
+          mv freej2me_libretro_linux.so freej2me_libretro.so
+      - name: Compute commit short SHA
+        id: shortsha
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "branch=$(echo ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}})" >> "$GITHUB_ENV"
+
+          echo "Branch: ${{ env.branch }}"
+          echo "Sha: ${{ env.sha_short }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freej2me_libretro-${{ env.branch }}-${{ env.sha_short }}
+          path: |
+            src/libretro/freej2me_libretro.so
+            src/libretro/freej2me_libretro.dll
