@@ -15,10 +15,8 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y mingw-w64
           cd src/libretro && make
-          mv freej2me_libretro.so freej2me_libretro_linux.so
-          make clean
+          find . -name "*.o" -delete
           platform=win32 CC=x86_64-w64-mingw32-gcc CPP=x86_64-w64-mingw32-g++ CXX=x86_64-w64-mingw32-g++ make
-          mv freej2me_libretro_linux.so freej2me_libretro.so
       - name: Compute commit short SHA
         id: shortsha
         run: |
