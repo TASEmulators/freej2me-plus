@@ -107,8 +107,10 @@ endif
 LDFLAGS += $(LIBM)
 
 ifeq ($(DEBUG), 1)
+   CFLAGS += -O0 -g
    CXXFLAGS += -O0 -g
 else
+   CFLAGS += -O3
    CXXFLAGS += -O3
 endif
 
