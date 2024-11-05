@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdarg.h>
 #ifdef __linux__
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -51,7 +52,9 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
    (void)level;
    va_list va;
+   va_start(va, fmt);
    vfprintf(stderr, fmt, va);
+   va_end(va);
 }
 
 void retro_set_environment_core_info(retro_environment_t fn)
