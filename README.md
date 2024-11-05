@@ -25,7 +25,8 @@ Click [here](KEYMAP.md) for information about more keybindings
 
 ## Links
 Latest build:
-  https://nightly.link/TASEmulators/freej2me-plus/workflows/ant/devel
+  Java: https://nightly.link/TASEmulators/freej2me-plus/workflows/ant/devel
+  Libretro cores: https://nightly.link/TASEmulators/freej2me-plus/workflows/libretro/devel
 
 Screenshots:
   https://imgur.com/a/2vAeC
