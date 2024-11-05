@@ -16,7 +16,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y mingw-w64
           cd src/libretro && make
           find . -name "*.o" -delete
-          platform=win32 CC=x86_64-w64-mingw32-gcc CPP=x86_64-w64-mingw32-g++ CXX=x86_64-w64-mingw32-g++ make
+          platform=win CC=x86_64-w64-mingw32-gcc CPP=x86_64-w64-mingw32-g++ CXX=x86_64-w64-mingw32-g++ make
       - name: Compute commit short SHA
         id: shortsha
         run: |
