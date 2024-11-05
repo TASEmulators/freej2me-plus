@@ -118,8 +118,8 @@ include Makefile.common
 
 OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 
-CFLAGS   += -Wall -D__LIBRETRO__ $(INCLUDES) $(fpic)
-CXXFLAGS += -Wall -D__LIBRETRO__ $(INCLUDES) $(fpic)
+CFLAGS   += -Wall -Wno-unused-result -D__LIBRETRO__ $(INCLUDES) $(fpic)
+CXXFLAGS += -Wall -Wno-unused-result -D__LIBRETRO__ $(INCLUDES) $(fpic)
 
 all: $(TARGET)
 
