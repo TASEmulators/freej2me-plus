@@ -32,13 +32,6 @@
 
 const char *slash = path_default_slash();
 
-#define DefaultFPS 60
-#define MaxWidth 800
-#define MaxHeight 800
-
-/* Used as a limit to the string of core option updates to be sent to the Java app*/
-#define PIPE_MAX_LEN 255
-
 retro_environment_t Environ;
 retro_video_refresh_t Video;
 retro_audio_sample_t Audio;
@@ -109,8 +102,8 @@ HANDLE pRead[2];
 HANDLE pWrite[2];
 #endif
 
-int joypad[14]; /* joypad state */
-int joypre[14]; /* joypad previous state */
+int joypad[PHONE_KEYS]; /* joypad state */
+int joypre[PHONE_KEYS]; /* joypad previous state */
 unsigned char joyevent[5] = { 0,0,0,0,0 };
 
 int joymouseX = 0;
@@ -125,15 +118,14 @@ bool uses_pointer = false;
 bool booted = false;
 bool restarting = false;
 
-unsigned int readSize = 32767;
-unsigned char readBuffer[32767];
+unsigned char readBuffer[PIPE_READ_BUFFER_SIZE];
 
-unsigned int frameWidth = 800;
-unsigned int frameHeight = 800;
-unsigned int frameSize = MaxWidth * MaxHeight;
-unsigned int frameBufferSize = MaxWidth * MaxHeight * 3;
-unsigned int frame[640000];
-unsigned char frameBuffer[1920000];
+unsigned int frameWidth = MAX_WIDTH;
+unsigned int frameHeight = MAX_HEIGHT;
+unsigned int frameSize = MAX_WIDTH * MAX_HEIGHT;
+unsigned int frameBufferSize = MAX_WIDTH * MAX_HEIGHT * 3;
+unsigned int frame[MAX_WIDTH * MAX_HEIGHT];
+unsigned char frameBuffer[MAX_WIDTH * MAX_HEIGHT * 3];
 unsigned char frameHeader[9];
 struct retro_game_info gameinfo;
 
@@ -650,12 +642,18 @@ void retro_run(void)
 		}
 
 		/* handle joypad */
-		for(i=0; i<14; i++)
+		for(i=0; i<PHONE_KEYS; i++)
 		{
 			joypre[i] = joypad[i];
 		}
 
 		InputPoll();
+
+		/* 
+		 *                            0    1    2     3     4  5  6   7         8          9     10 11 12 13 14 15 16 17
+		 * Input array in libretro: [Up, Down, Left, Right, 9, 7, 0, 5/Fire, RightSoft, LeftSoft, 1, 3. *. #, 2, 4, 6, 8] 
+		 * NOTE: 2,4,6,8 aren't used yet.
+		 */
 
 		joypad[0] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
 		joypad[1] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
@@ -692,7 +690,7 @@ void retro_run(void)
 		{
 			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0xFFFF);
 			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 0xFFFF);
-			rumbleTime -= 1000 / DefaultFPS;
+			rumbleTime -= 1000 / DEFAULT_FPS;
 		}
 		else
 		{
@@ -707,7 +705,7 @@ void retro_run(void)
 		{
 			joymouseAnalog = true;
 			/* This means that the mouse pointer will be visible for 30 frames (half a second, since 60fps is a second) */
-			joymouseTime = DefaultFPS / 2;
+			joymouseTime = DEFAULT_FPS / 2;
 			joymouseX += joyRx<<1;
 			joymouseY += joyRy<<1;
 
@@ -725,7 +723,7 @@ void retro_run(void)
 			if(mouseX != 0 || mouseY !=0)
 			{
 				joymouseAnalog = false;
-				joymouseTime = DefaultFPS / 2;
+				joymouseTime = DEFAULT_FPS / 2;
 				joymouseX += mouseX;
 				joymouseY += mouseY;
 
@@ -745,8 +743,8 @@ void retro_run(void)
 			/* mouse - down/up */
 			if(mouseLpre != mouseL)
 			{
-				if(mouseL == 1) { joymouseClickedTime = DefaultFPS * 0.1; }
-				joymouseTime = DefaultFPS / 2;
+				if(mouseL == 1) { joymouseClickedTime = DEFAULT_FPS * 0.1; }
+				joymouseTime = DEFAULT_FPS / 2;
 				joyevent[0] = 4 + mouseL;
 				joyevent[1] = (joymouseX >> 8) & 0xFF;
 				joyevent[2] = (joymouseX) & 0xFF;
@@ -778,7 +776,7 @@ void retro_run(void)
 		}
 
 
-		for(i=0; i<14; i++)
+		for(i=0; i<PHONE_KEYS; i++)
 		{
 			/* joypad - spot the difference, send corresponding keyup/keydown events */
 			if(joypad[i]!=joypre[i])
@@ -786,8 +784,8 @@ void retro_run(void)
 				if(i==7 && joymouseTime>0 && joymouseAnalog)
 				{
 					/* when mouse is visible, and using analog stick for mouse, Y / [5] clicks */
-					if(joypad[i] == 1) { joymouseClickedTime = DefaultFPS * 0.1; }
-					joymouseTime = DefaultFPS / 2;
+					if(joypad[i] == 1) { joymouseClickedTime = DEFAULT_FPS * 0.1; }
+					joymouseTime = DEFAULT_FPS / 2;
 					joyevent[0] = 4+joypad[7];
 					joyevent[1] = (joymouseX >> 8) & 0xFF;
 					joyevent[2] = (joymouseX) & 0xFF;
@@ -880,8 +878,8 @@ void retro_run(void)
 				/* update geometry */
 				Geometry.base_width = w;
 				Geometry.base_height = h;
-				Geometry.max_width = MaxWidth;
-				Geometry.max_height = MaxHeight;
+				Geometry.max_width = MAX_WIDTH;
+				Geometry.max_height = MAX_HEIGHT;
 				Geometry.aspect_ratio = ((float)w / (float)h);
 				Environ(RETRO_ENVIRONMENT_SET_GEOMETRY, &Geometry);
 			}
@@ -891,7 +889,7 @@ void retro_run(void)
 		status = 0;
 		do
 		{
-			stat = read_from_pipe(pRead[0], readBuffer, readSize);
+			stat = read_from_pipe(pRead[0], readBuffer, PIPE_READ_BUFFER_SIZE);
 			if (stat<=0) break;
 			for(i=0; i<stat; i++)
 			{
@@ -996,13 +994,13 @@ void retro_get_system_info(struct retro_system_info *info)
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
 	memset(info, 0, sizeof(*info));
-	info->geometry.base_width   = MaxWidth;
-	info->geometry.base_height  = MaxHeight;
-	info->geometry.max_width    = MaxWidth;
-	info->geometry.max_height   = MaxHeight;
-	info->geometry.aspect_ratio = ((float)MaxWidth) / ((float)MaxHeight);
+	info->geometry.base_width   = MAX_WIDTH;
+	info->geometry.base_height  = MAX_HEIGHT;
+	info->geometry.max_width    = MAX_WIDTH;
+	info->geometry.max_height   = MAX_HEIGHT;
+	info->geometry.aspect_ratio = ((float)MAX_WIDTH) / ((float)MAX_HEIGHT);
 
-	info->timing.fps = DefaultFPS;
+	info->timing.fps = DEFAULT_FPS;
 	int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
 	Environ(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixelformat);
 }

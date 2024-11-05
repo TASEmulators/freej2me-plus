@@ -16,6 +16,17 @@
 */
 #include "libretro.h"
 
+#define PIPE_READ_BUFFER_SIZE 32767
+#define DEFAULT_FPS 60
+#define MAX_WIDTH 800
+#define MAX_HEIGHT 800
+
+/* Used as a limit to the string of core option updates to be sent to the Java app*/
+#define PIPE_MAX_LEN 255
+
+
+#define PHONE_KEYS 18
+
 /* Input mapping variables and descriptions */
 static const struct retro_controller_description port_1[] =
 {
@@ -32,7 +43,7 @@ static const struct retro_controller_info ports[] =
     { 0 },
 };
 
-/* This is responsible for exposing the input mappings to the frontend */
+/* This is responsible for exposing the joypad input mappings to the frontend */
 static const struct retro_input_descriptor desc[] =
 {
     { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,                                     "Arrow Left, Num 4" },
@@ -54,6 +65,8 @@ static const struct retro_input_descriptor desc[] =
 
     { 0 },
 };
+
+/* TODO: Default keyboard input mappings, likely mirroring FreeJ2ME Standalone's defaults */
 
 /* Categories for frontends that support config version 2 */
 struct retro_core_option_v2_category option_categories[] =
