@@ -14,8 +14,6 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-
-
 package com.siemens.mp.color_game;
 
 public abstract class GameCanvas extends javax.microedition.lcdui.game.GameCanvas

@@ -16,16 +16,7 @@
 */
 package javax.microedition.lcdui.game;
 
-import java.util.ArrayList;
-
-import java.awt.Shape;
-
-import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Graphics;
-
-import org.recompile.mobile.Mobile;
-import org.recompile.mobile.PlatformGraphics;
-
 
 public class LayerManager
 {

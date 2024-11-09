@@ -14,16 +14,81 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-
 package com.siemens.mp.color_game;
 
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.Graphics;
 
-public abstract class Layer extends javax.microedition.lcdui.game.Layer 
-{ 
-	public Layer() { super(); }
+public abstract class Layer
+{
+	
+	protected int x;
 
-	public Layer(int width, int height)  { super(width, height); }
+	protected int y;
+	
+	protected int height;
+	
+	protected int width;
 
-	public Layer(Image i) { super(i); }
+	protected Image image;
+
+	protected boolean visible = true;
+
+	public Layer() { x = 0; y = 0;}
+
+	public Layer(int width, int height) 
+	{
+		x = 0;
+		y = 0;
+		setWidth(width);
+		setHeight(height);
+	}
+
+	public Layer(Image i) { setLayerImage(i); }
+
+	protected void setLayerImage(Image i)
+	{
+		image = i;
+		x = 0;
+		y = 0;
+		width = i.getWidth();
+		height = i.getHeight();
+	}
+
+	public int getHeight() { return height; }
+
+	public int getWidth() { return width; }
+
+	public void setWidth(int width) 
+	{
+		if (width < 0) { throw new IllegalArgumentException(); }
+		this.width = width;
+	}
+
+	public void setHeight(int height)
+	{
+		if (height < 0) { throw new IllegalArgumentException(); }
+		this.height = height;
+	}
+
+	public int getX() { return x; }
+
+	public int getY() { return y; }
+
+	public boolean isVisible() { return visible; }
+
+	public void move(int dx, int dy) { x+=dx; y+=dy; }
+
+	public abstract void paint(Graphics g);
+
+	public void setPosition(int nx, int ny) { x=nx; y=ny; }
+
+	public void setVisible(boolean state) { visible = state; }
+
+	public Image getLayerImage() { return image; }
+
+	public void render() { this.paint(image.platformImage.getGraphics()); }
+
+	protected void copyAllLayerVariables(Layer l) { System.out.println("Siemens: color_game.Layer: copyAllLayerVariables()"); } // TODO
+
 }
