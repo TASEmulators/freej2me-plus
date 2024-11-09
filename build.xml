@@ -17,8 +17,6 @@
 		srcdir="src/org/objectweb/"
 		destdir="build/classes"
 		includeantruntime="false"
-		debug="true"
-		debuglevel="lines,vars,source"
 	>
 	<compilerarg value="-nowarn"/>
 	</javac>
@@ -29,8 +27,6 @@
 		destdir="build/classes"
 		classpathref="classpath"
 		includeantruntime="false"
-		debug="true"
-		debuglevel="lines,vars,source"
 	>
     <exclude name="src/org/objectweb/**"/>
 	<compilerarg value="-Xlint:unchecked"/>
@@ -46,8 +42,8 @@
 
 	<echo message="Building JAR - AWT" />
 	<jar
-		destfile="build/freej2me.jar"
-		basedir="build/classes">
+		destfile="build/freej2me.jar">
+		<fileset dir="build/classes" excludes="**/Libretro*.class, **/Anbu*.class"/> <!-- Exclude Libretro and SDL classes -->
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
 		<manifest>
@@ -59,8 +55,8 @@
 
 	<echo message="Building JAR - Libretro" />
 	<jar
-		destfile="build/freej2me-lr.jar"
-		basedir="build/classes">
+		destfile="build/freej2me-lr.jar">
+		<fileset dir="build/classes" excludes="**/AWTGUI*.class, **/FreeJ2ME*.class, **/Anbu*.class"/> <!-- Exclude AWT and SDL classes (FreeJ2ME.class is part of the AWT standalone) -->
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
 		<manifest>
@@ -72,8 +68,8 @@
 
 	<echo message="Building JAR - SDL" />
 	<jar
-		destfile="build/freej2me-sdl.jar"
-		basedir="build/classes">
+		destfile="build/freej2me-sdl.jar">
+		<fileset dir="build/classes" excludes="**/AWTGUI*.class, **/FreeJ2ME*.class, **/Libretro*.class"/> <!-- Exclude AWT and SDL classes (FreeJ2ME.class is part of the AWT standalone) -->
 		<fileset dir="resources" />
 		<zipgroupfileset dir="lib" excludes="META-INF/**" includes="*.jar"/>
 		<metainf dir="META-INF" />
