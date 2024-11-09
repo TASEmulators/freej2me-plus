@@ -16,11 +16,13 @@
 */ 
 package javax.microedition.io.file;
 
+import org.recompile.mobile.Mobile;
+
 public class ConnectionClosedException extends RuntimeException 
 {
 	
 	public ConnectionClosedException() { }
 
-	public ConnectionClosedException(String detailMessage) { System.out.println("ConnectionClosedException: " + detailMessage); }
+	public ConnectionClosedException(String detailMessage) { Mobile.log(Mobile.LOG_ERROR, ConnectionClosedException.class.getPackage().getName() + "." + ConnectionClosedException.class.getSimpleName() + ": " + "ConnectionClosedException: " + detailMessage); }
 	
 }

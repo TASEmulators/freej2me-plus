@@ -63,7 +63,7 @@ public abstract class Displayable
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Adding Command: "+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Displayable.class.getPackage().getName() + "." + Displayable.class.getSimpleName() + ": " + "Problem Adding Command: "+e.getMessage());
 		}
 	}
 

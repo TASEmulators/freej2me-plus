@@ -29,6 +29,8 @@
 	import javazoom.jl.decoder.JavaLayerException;
 	import javazoom.jl.decoder.SampleBuffer;
 
+	import org.recompile.mobile.Mobile;
+
 	/**
 	 * The <code>Player</code> class implements a simple player for playback
 	* of an MPEG audio stream.
@@ -164,18 +166,18 @@
 
 				if (reset) 
 				{
-					System.out.println("play locked");
+					Mobile.log(Mobile.LOG_WARNING, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "play locked");
 					synchronized (dataStream) {
 						dataStream.wait();
 					}
-					System.out.println("play unlocked");
+					Mobile.log(Mobile.LOG_WARNING, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "play unlocked");
 				}
 				//int i = audio.getPosition();
 				try { ret = decodeFrame(); } 
 				catch (JavaLayerException e) { if (!reset) throw e; }
 
 				//int j = audio.getPosition() - i;
-				//	System.out.println("fps: " + ((1000-j)/j) + " ("+j+"ms)");
+				//	Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "fps: " + ((1000-j)/j) + " ("+j+"ms)");
 			}
 			if (!ret)
 			{
@@ -204,7 +206,7 @@
 		{
 			if (!isBuffered) { return; }
 
-			//System.out.println("reset");
+			Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "reset");
 			dataIndex = positionOffset = 0;
 			reset = true;
 			try 
@@ -230,7 +232,7 @@
 			reset = false;
 
 			synchronized (dataStream) { dataStream.notifyAll(); }
-			//System.out.println("reset done");
+			Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "reset done");
 
 			/* If looping has been set as more than 0, consume a count, and begin playing again. */
 			if(loopCount > 0) 
@@ -239,7 +241,7 @@
 				{
 					loopCount--; 
 					play(Integer.MAX_VALUE);
-				} catch (Exception e) { System.out.println("MPEGPlayer: Failed to loop player:"+e.getMessage()); }
+				} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "MPEGPlayer: Failed to loop player:"+e.getMessage()); }
 			}
 		}
 
@@ -315,7 +317,7 @@
 				if (h==null)
 					return false;
 				bitrate = h.bitrate();
-				//System.out.println(h.toString());
+				Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + h.toString());
 
 				// sample buffer set when decoder constructed
 				SampleBuffer output = (SampleBuffer)decoder.decodeFrame(h, bitstream);
@@ -383,7 +385,7 @@
 			positionOffset = skip;
 			float o = framesPerSecond(h);
 			int offset = (int)((skip / 1000D) * o);
-			//System.out.println("skip: "+ skip + "ms" + " d: " + o + " off: "+ offset);
+			Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "skip: "+ skip + "ms" + " d: " + o + " off: "+ offset);
 			boolean ret = true;
 			int initial = offset;
 			while (offset-- > 0 && ret) {
@@ -426,7 +428,7 @@
 			reset();
 			skip((int) (position / 1000L), hdr);
 			play(Integer.MAX_VALUE);
-		} catch (Exception e) { System.out.println("MPEGPlayer: Failed to set microsecond position:" + e.getMessage());}
+		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "MPEGPlayer: Failed to set microsecond position:" + e.getMessage());}
 		*/
 	}
 
@@ -437,7 +439,7 @@
 		long duration = 0;
 
 		//try { duration = (long) ((data.length * 8) / getBitrate()); } 
-		//catch (Exception e){ System.out.println("Couldn't get duration:" + e.getMessage()); return 0;}
+		//catch (Exception e){ Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "Couldn't get duration:" + e.getMessage()); return 0;}
 		
 		return duration; 
 	}

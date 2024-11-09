@@ -16,11 +16,17 @@
 */
 package org.recompile.mobile;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.m3g.Graphics3D;
+
+import javax.microedition.midlet.MIDlet;
 
 /*
 
@@ -38,8 +44,17 @@ public class Mobile
 
 	private static Graphics3D graphics3d;
 
-	// Enable/disable logging to the console (Though not really used yet... better change that)
-	public static boolean quiet = false; 
+	// Enable/disable logging to the console and optionally to a file
+	public static boolean logging = true; 
+	private static final String LOG_FILE = "freej2me_system" + File.separatorChar + "FreeJ2ME.log";
+	public static byte minLogLevel = 1;
+
+	//Log Levels
+	public static final byte LOG_DEBUG = 0;
+    public static final byte LOG_INFO = 1;
+    public static final byte LOG_WARNING = 2;
+    public static final byte LOG_ERROR = 3;
+    public static final byte LOG_FATAL = 4;
 
 	// Keycode modifiers
 	public static boolean lg = false;
@@ -208,7 +223,7 @@ public class Mobile
 	{
 		if(!isLibretro) { keycode = awtguiKeycodes[keycode]; } // Cast the received awt key to the correct value.
 
-		//System.out.println("KeyPress:" + keyArray[keycode]); // Will be turned into a "Mobile.log()" call
+		log(Mobile.LOG_DEBUG, Mobile.class.getPackage().getName() + "." + Mobile.class.getSimpleName() + ": " + "KeyPress:" + keyArray[keycode]);
 
 		// These keys are overridden by the modifier variables (comments simulate the Libretro interface with a NS Pro Controller)
 		if(lg)
@@ -354,5 +369,48 @@ public class Mobile
 		return 0;
 	}
 
-	public static final void log(String text) { if(!quiet) { System.out.println(text); } }
+	public static final void log(byte logLevel, String text) 
+	{
+		if(!logging || (logLevel < minLogLevel)) { return; }
+
+		switch(logLevel) 
+		{
+			case LOG_DEBUG:
+				text = new String("[DEBUG] " + text);
+				break;
+			case LOG_INFO:
+				text = new String("[INFO] " + text);
+				break;
+			case LOG_WARNING:
+				text = new String("[WARNING] " + text);
+				break;
+			case LOG_ERROR:
+				text = new String("[ERROR] " + text);
+				break;
+			case LOG_FATAL:
+				text = new String("[FATAL] " + text);
+				break;
+		}
+
+		// Log to console only if not libretro, as it won't be seen there anyway
+		if(!MIDlet.isLibretro) { System.out.println(text); }
+
+		File logFile = new File(LOG_FILE);
+
+		// Create system dir if not available yet and try writing to the log file
+		logFile.getParentFile().mkdirs();
+
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true))) 
+		{
+			writer.write(text);
+			writer.newLine();
+		} catch (IOException e) { System.out.println("Couldn't write to log file: " + e.getMessage()); e.printStackTrace(); }
+	}
+
+	/* Clears old log file at boot. */
+	public static final void clearOldLog() 
+	{
+		File logFile = new File(LOG_FILE);
+        if (logFile.exists()) { logFile.delete(); }
+	}
 }

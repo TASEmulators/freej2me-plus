@@ -320,7 +320,6 @@ public class CheckMethodAdapter extends MethodAdapter {
     // for (int i = 0; i < TYPE.length; ++i) {
     // System.out.print((char)(TYPE[i] + 1 + 'A'));
     // }
-    // System.out.println();
     // }
 
     /**

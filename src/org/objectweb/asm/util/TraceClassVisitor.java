@@ -75,19 +75,6 @@ import org.objectweb.asm.signature.SignatureReader;
  * }
  * </pre>
  * 
- * </blockquote> where <tt>Hello</tt> is defined by: <p> <blockquote>
- * 
- * <pre>
- * public class Hello {
- *
- *     public static void main(String[] args) {
- *         System.out.println(&quot;hello&quot;);
- *     }
- * }
- * </pre>
- * 
- * </blockquote>
- * 
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */

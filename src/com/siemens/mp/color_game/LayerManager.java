@@ -17,6 +17,7 @@
 package com.siemens.mp.color_game;
 
 import javax.microedition.lcdui.Graphics;
+import org.recompile.mobile.Mobile;
 
 public class LayerManager
 {
@@ -116,5 +117,5 @@ public class LayerManager
 		height = wheight;
 	}
 
-	public void removeLayer(com.siemens.mp.misc.NativeMem NativeMemoryTable, Layer l) { System.out.println("Siemens: color_game.LayerManager: removeLayer()"); } // TODO
+	public void removeLayer(com.siemens.mp.misc.NativeMem NativeMemoryTable, Layer l) { Mobile.log(Mobile.LOG_WARNING, LayerManager.class.getPackage().getName() + "." + LayerManager.class.getSimpleName() + ": " + "Siemens: color_game.LayerManager: removeLayer()"); } // TODO
 }

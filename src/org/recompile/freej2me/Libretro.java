@@ -67,6 +67,7 @@ public class Libretro
 
 	public static void main(String args[])
 	{
+		Mobile.clearOldLog();
 		Libretro app = new Libretro(args);
 	}
 
@@ -95,7 +96,7 @@ public class Libretro
 				dummyFile.createNewFile();
 			}
 		}
-		catch(IOException e) { System.out.println("Failed to create custom midi info file:" + e.getMessage()); }
+		catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Failed to create custom midi info file:" + e.getMessage()); }
 
 		/* 
 		 * Checks if the arguments were received from the commandline -> width, height, rotate, phonetype, fps, sound, ...
@@ -135,6 +136,10 @@ public class Libretro
 
 		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
 		if(Integer.parseInt(args[7]) == 1) { Manager.dumpAudioStreams = true; }
+
+		/* Same for Logging Level */
+		if(Integer.parseInt(args[8]) == 0) { Mobile.logging = false; }
+		else { Mobile.logging = true; Mobile.minLogLevel = (byte) (Integer.parseInt(args[8])-1); }
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -320,7 +325,7 @@ public class Libretro
 									}
 									else
 									{
-										System.out.println("Couldn't load jar...");
+										Mobile.log(Mobile.LOG_ERROR, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Couldn't load jar...");
 										System.exit(0);
 									}
 								break;
@@ -378,6 +383,9 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[8])==1) { Manager.dumpAudioStreams = true;  }
 									if(Integer.parseInt(cfgtokens[8])==0) { Manager.dumpAudioStreams = false; }
 
+									if(Integer.parseInt(cfgtokens[9])==0) { Mobile.logging = false;  }
+									else { Mobile.logging = true; Mobile.minLogLevel = (byte) (Integer.parseInt(cfgtokens[9])-1); }
+
 									config.saveConfig();
 									settingsChanged();
 								break;
@@ -412,7 +420,7 @@ public class Libretro
 									}
 								break;
 							}
-							//System.out.println(" ("+code+") <- Key");
+							Mobile.log(Mobile.LOG_DEBUG, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + " ("+code+") <- Key");
 							//System.out.flush();
 						}
 					}

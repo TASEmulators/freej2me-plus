@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.recompile.mobile.Mobile;
+
 public final class WavImaAdpcmDecoder
 {
 
@@ -303,8 +305,6 @@ public final class WavImaAdpcmDecoder
 				<Sample data>
 		*/
 
-		/* As for IMA ADPCM, its header usually has 60 bytes of data: */
-
 		String riff = readInputStreamASCII(input, 4); // 0 - 4
 		int dataSize = readInputStreamInt32(input);  // 4 - 8
 		String format = readInputStreamASCII(input, 4);  // 8 - 12
@@ -316,43 +316,27 @@ public final class WavImaAdpcmDecoder
 		int bytesPerSec = readInputStreamInt32(input); // 28 - 32
 		short frameSize = (short) readInputStreamInt16(input); // 32 - 34
 		short bitsPerSample = (short) readInputStreamInt16(input); // 34 - 36
-		short ByteExtraData = (short) readInputStreamInt16(input); // 36 - 38
-		short ExtraData = (short) readInputStreamInt16(input); // 38 - 40
-		String Subchunk2ID_fact = readInputStreamASCII(input, 4); // 40 - 44
-		int SubChunk2Size = readInputStreamInt32(input); // 44 - 48
-		int numOfSamples = readInputStreamInt32(input); // 48 - 52
-		String subchunk3ID_data = readInputStreamASCII(input, 4); // 52 - 56
-		int sampleDataLength = readInputStreamInt32(input); // 56 - 60
+		String dataHeader = readInputStreamASCII(input, 4);  // 36 - 40
+		int dataLen = readInputStreamInt32(input); // 40 - 44
 
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "WAV HEADER_START");
 
-		/* Those are only meant for debugging. */
-		/*
-		System.out.println("WAV HEADER_START");
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + riff);
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "FileSize:" + dataSize);
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Format: " + format);
 
-		System.out.println(riff);
-		System.out.println("FileSize:" + dataSize);
-		System.out.println("Format: " + format);
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + fmt + "' header---\n");
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Header ChunkSize:" + Integer.toString(chunkSize));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "AudioFormat: " + Integer.toString(audioFormat));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "AudioChannels:" + Integer.toString(audioChannels));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "SampleRate:" + Integer.toString(sampleRate));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "BytesPerSec:" + Integer.toString(bytesPerSec));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "FrameSize:" + Integer.toString(frameSize));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "BitsPerSample:" + Integer.toHexString(bitsPerSample));
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + dataHeader +"' header---\n");
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "SampleDataLength:" + Integer.toString(dataLen));
 
-		System.out.println("---'fmt' header---\n");
-		System.out.println("Header ChunkSize:" + Integer.toString(chunkSize));
-		System.out.println("AudioFormat: " + Integer.toString(audioFormat));
-		System.out.println("AudioChannels:" + Integer.toString(audioChannels));
-		System.out.println("SampleRate:" + Integer.toString(sampleRate));
-		System.out.println("BytesPerSec:" + Integer.toString(bytesPerSec));
-		System.out.println("FrameSize:" + Integer.toString(frameSize));
-		System.out.println("BitsPerSample:" + Integer.toHexString(bitsPerSample));
-		System.out.println("ByteExtraData:" + Integer.toString(ByteExtraData));
-		System.out.println("ExtraData:" + Integer.toString(ExtraData));
-		
-		System.out.println("---'fact' header---\n");
-		System.out.println("SubChunk2Size(should be 4 in IMA ADPCM):" + Integer.toString(SubChunk2Size));
-		System.out.println("NumOfSamples:" + Integer.toString(numOfSamples));
-
-		System.out.println("\n---'data' header---\n");
-		System.out.println("SampleData Length:" + Integer.toString(sampleDataLength));
-
-		System.out.println("WAV HEADER_END\n\n\n");
-		*/
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "WAV HEADER_END\n\n\n");
 		
 		/* 
 		 * We need the audio format to check if it's ADPCM or PCM, and the file's 

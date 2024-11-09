@@ -98,6 +98,7 @@ public class Anbu
 
 	public Anbu(String args[])
 	{
+		Mobile.clearOldLog();
 		lcdWidth = 240;
 		lcdHeight = 320;
 
@@ -106,7 +107,7 @@ public class Anbu
 		if(args.length>=1)
 		{
 			file = getFormattedLocation(args[0]);
-			System.out.println(file);
+			Mobile.log(Mobile.LOG_DEBUG, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + file);
 		}
 		if(args.length>=3)
 		{
@@ -130,7 +131,7 @@ public class Anbu
 				dummyFile.createNewFile();
 			}
 		}
-		catch(IOException e) { System.out.println("Failed to create custom midi info file:" + e.getMessage()); }
+		catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "Failed to create custom midi info file:" + e.getMessage()); }
 
 		/* TODO: Anbu/SDL has no way of enabling any settings outside of cmd args yet, a UI and code overhaul might be in order */
 
@@ -185,7 +186,7 @@ public class Anbu
 		}
 		else
 		{
-			System.out.println("Couldn't load jar...");
+			Mobile.log(Mobile.LOG_ERROR, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "Couldn't load jar...");
 			System.exit(0);
 		}
 	}
@@ -198,7 +199,7 @@ public class Anbu
 		File file = new File(loc);
 		if(!file.isFile())
 		{
-			System.out.println("File not found...");
+			Mobile.log(Mobile.LOG_ERROR, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "File not found...");
 			System.exit(0);
 		}
 
@@ -228,7 +229,7 @@ public class Anbu
 		{
 			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0 )
 			{
-				System.out.println("Unable to initialize SDL");
+				Mobile.log(Mobile.LOG_ERROR, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "Unable to initialize SDL");
 				stop();
 			}
 
@@ -663,9 +664,8 @@ public class Anbu
 			// assert(id >= 0 && id < SDL_NumJoysticks());
 
 			// open joystick & add to our list
-			//System.out.println("Joystick Detected!" + SDL_JoystickName(joy));
 			joy = SDL_JoystickOpen(id);
-			//System.out.println("Added Joystick:" + SDL_JoystickName(joy));
+			Mobile.log(Mobile.LOG_DEBUG, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "Added Joystick:" + SDL_JoystickName(joy));
 			// assert(joy);
 
 			// add it to our list so we can close it again later
@@ -680,9 +680,8 @@ public class Anbu
 
 		private void removeJoystick(int joyId)
 		{
-			//System.out.println("Removing Joystick:" + SDL_JoystickName(joy));
 			SDL_JoystickClose(joy);
-			//System.out.println("Joystick Removed!" + SDL_JoystickName(joy));
+			Mobile.log(Mobile.LOG_DEBUG, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "Joystick Removed!" + SDL_JoystickName(joy));
 			// assert(joyId != -1);
 			// delete old prevAxisValues
 			// auto axisIt = mPrevAxisValues.find(joyId);

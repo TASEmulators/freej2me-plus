@@ -39,6 +39,8 @@
 
 package javazoom.jl.decoder;
 
+import org.recompile.mobile.Mobile;
+
 /**
  * Class to implements Huffman decoder.
  */
@@ -515,7 +517,6 @@ final class HuffcodeTable
 			br.rewindNbits(unread);
 	 */
   	  /* Process sign encodings for quadruples tables. */
-      // System.out.println(h.tablename);
   	  if (h.tablename0 == '3' && (h.tablename1 == '2' || h.tablename1 == '3'))
 	  {
 	  	v[0] = (y[0]>>3) & 1;

@@ -35,7 +35,7 @@ public class Image
 
 	public static Image createImage(byte[] imageData, int imageOffset, int imageLength) throws IllegalArgumentException
 	{
-		//System.out.println("Create Image from image data ");
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image from image data ");
 		if (imageData == null) {throw new NullPointerException();}
 		if (imageOffset + imageLength > imageData.length) {throw new ArrayIndexOutOfBoundsException();}
 		
@@ -45,7 +45,7 @@ public class Image
 
 	public static Image createImage(Image source)
 	{
-		//System.out.println("Create Image from Image ");
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image from Image ");
 		if (source == null) {throw new NullPointerException();}
 		// If the source is immutable, just return it, despite the docs not mentioning it directly
 		if (!source.isMutable()) { return source; }
@@ -55,7 +55,7 @@ public class Image
 
 	public static Image createImage(Image img, int x, int y, int width, int height, int transform)
 	{
-		//System.out.println("Create Image from sub-image " + " img_w:" + Integer.toString(img.getWidth()) + " img_h:" + Integer.toString(img.getHeight()) + " x:" + Integer.toString(x) + " y:" + Integer.toString(y) + " width:" + Integer.toString(width) + " height:" + Integer.toString(height));
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image from sub-image " + " img_w:" + Integer.toString(img.getWidth()) + " img_h:" + Integer.toString(img.getHeight()) + " x:" + Integer.toString(x) + " y:" + Integer.toString(y) + " width:" + Integer.toString(width) + " height:" + Integer.toString(height));
 		if (img == null) {throw new NullPointerException();}
 		if (x+width > img.getWidth() || y+height > img.getHeight()) {throw new IllegalArgumentException();}
 		if (width <= 0 || height <= 0) {throw new IllegalArgumentException();}
@@ -67,7 +67,7 @@ public class Image
 
 	public static Image createImage(InputStream stream) throws IOException, IllegalArgumentException
 	{
-		//System.out.println("Create Image stream");
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image stream");
 		if (stream == null) {throw new NullPointerException();}
 		PlatformImage t = new PlatformImage(stream);
 		return t;
@@ -75,14 +75,14 @@ public class Image
 
 	public static Image createImage(int width, int height)
 	{
-		//System.out.println("Create Image w,h " + width + ", " + height);
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image w,h " + width + ", " + height);
 		if (width <= 0 || height <= 0) {throw new IllegalArgumentException();}
 		return new PlatformImage(width, height);
 	}
 
 	public static Image createImage(String name) throws IOException
 	{
-		//System.out.println("Create Image " + name);
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image " + name);
 		if (name == null) {throw new NullPointerException();}
 		PlatformImage t = new PlatformImage(name);
 		return t;
@@ -90,7 +90,7 @@ public class Image
 
 	public static Image createRGBImage(int[] rgb, int width, int height, boolean processAlpha)
 	{
-		//System.out.println("Create Image RGB " + width + ", " + height);
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image RGB " + width + ", " + height);
 		if (rgb == null) {throw new NullPointerException();}
 		if (width <= 0 || height <= 0) {throw new IllegalArgumentException();}
 		if (rgb.length < width * height) {throw new ArrayIndexOutOfBoundsException();}

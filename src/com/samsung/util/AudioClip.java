@@ -26,6 +26,8 @@ import javax.microedition.media.MediaException;
 import javax.microedition.media.Player;
 import javax.microedition.media.control.VolumeControl;
 
+import org.recompile.mobile.Mobile;
+
 public class AudioClip
 {
 	public static final int TYPE_MMF = 1;
@@ -48,7 +50,7 @@ public class AudioClip
 		/* Some jars actually try to pass MMF streams with a different type, so check its header to see if this needs to be handled. */
 		if(audioData[0] == 'M' && audioData[1] == 'M' && audioData[2] == 'M' && audioData[3] == 'D') { clipType = TYPE_MMF; }
 
-		System.out.println("Samsung AudioClip (ByteArray)");
+		Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "Samsung AudioClip (ByteArray)");
 
 		if(clipType == TYPE_MMF) 
 		{
@@ -59,12 +61,12 @@ public class AudioClip
 				//byte[] midiDat = convertMMFToMIDI(audioData);
 				//audioData = midiDat;
 				//clipType = TYPE_MIDI;
-			} catch (Exception e) { System.out.println("AudioClip: Could not convert MMF file to MIDI:" + e.getMessage());}
+			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Could not convert MMF file to MIDI:" + e.getMessage());}
 			
 		}
 
 		try { player = Manager.createPlayer(new ByteArrayInputStream(audioData, audioOffset, audioLength), formatMIMEType[clipType-1]); }
-		catch (Exception e) {System.out.println("AudioClip: Failed to create player:" + e.getMessage()); }
+		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage()); }
 	}
 
 	public AudioClip(int clipType, String filename)
@@ -72,12 +74,12 @@ public class AudioClip
 		if(filename == null) { throw new NullPointerException("AudioClip: Cannot open a player with a null file path"); }
 		if(clipType < 1 || clipType > 3) { throw new IllegalArgumentException("AudioClip: Clip type not recognized");}
 
-		System.out.println("Samsung AudioClip (locator)");
+		Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "Samsung AudioClip (locator)");
 		
 		InputStream stream = null; // TODO: Actually load this stream from the locator provided
 
 		try { player = Manager.createPlayer(stream, formatMIMEType[clipType-1]); }
-		catch (Exception e) {System.out.println("AudioClip: Failed to create player:" + e.getMessage()); }
+		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage()); }
 	}
 
 	public static boolean isSupported() { return true; }
@@ -96,7 +98,7 @@ public class AudioClip
 			((VolumeControl) player.getControl("VolumeControl")).setLevel(volume * 20); // Received volume varies from 1 to 5, so adapt
 			player.start();
 		}
-		catch (Exception e) {System.out.println("AudioClip: Failed to play():" + e.getMessage()); }
+		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to play():" + e.getMessage()); }
 	}
 
 	public void resume() { player.start(); }

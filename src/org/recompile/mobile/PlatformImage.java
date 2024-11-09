@@ -72,7 +72,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	public PlatformImage(String name)
 	{
 		// Create Image from resource name
-		// System.out.println("Image From Resource Name");
+		Mobile.log(Mobile.LOG_DEBUG, PlatformImage.class.getPackage().getName() + "." + PlatformImage.class.getSimpleName() + ": " + "Image From Resource Name");
 		BufferedImage temp;
 
 		InputStream stream = Mobile.getPlatform().loader.getMIDletResourceAsStream(name);
@@ -99,7 +99,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	public PlatformImage(InputStream stream)
 	{
 		// Create Image from InputStream
-		// System.out.println("Image From Stream");
+		Mobile.log(Mobile.LOG_DEBUG, PlatformImage.class.getPackage().getName() + "." + PlatformImage.class.getSimpleName() + ": " + "Image From Stream");
 		BufferedImage temp;
 		try { temp = ImageIO.read(stream); } 
 		catch (IOException e) { throw new IllegalArgumentException("Failed to read image from InputStream:" + e.getMessage()); }

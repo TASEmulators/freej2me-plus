@@ -136,7 +136,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 		catch (Exception e)
 		{
-			System.out.println("drawImage A:"+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage A:"+e.getMessage());
 		}
 	}
 
@@ -148,7 +148,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 		catch (Exception e)
 		{
-			System.out.println("drawImage B:"+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage B:"+e.getMessage());
 		}
 	}
 
@@ -171,7 +171,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 		catch (Exception e)
 		{
-			//System.out.println("flushGraphics A:"+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "flushGraphics A:"+e.getMessage());
 		}
 	}
 
@@ -198,7 +198,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 		catch (Exception e)
 		{
-			//System.out.println("drawRegion A (x:"+x+" y:"+y+" w:"+subw+" h:"+subh+"):"+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawRegion A (x:"+x+" y:"+y+" w:"+subw+" h:"+subh+"):"+e.getMessage());
 		}
 	}
 
@@ -311,11 +311,10 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		gc.setColor(awtColor);
 	}
 
-	public void setGrayScale(int value) { System.out.println("PlatformGraphics: setGrayScale()"); setColor(value, value, value); }
+	public void setGrayScale(int value) { setColor(value, value, value); }
 
 	public int getGrayScale() 
 	{
-		System.out.println("PlatformGraphics: getGrayScale()");
 		int r = gc.getColor().getRed();
 		int g = gc.getColor().getGreen();
 		int b = gc.getColor().getBlue();
@@ -323,15 +322,14 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		return 0x4CB2 * r + 0x9691 * g + 0x1D3E * b >> 16;
 	}
 
-	public int getRedComponent() { System.out.println("PlatformGraphics: getRedComponent()"); return gc.getColor().getRed(); }
+	public int getRedComponent() { return gc.getColor().getRed(); }
 
-	public int getGreenComponent() { System.out.println("PlatformGraphics: getGreenComponent()"); return gc.getColor().getGreen(); }
+	public int getGreenComponent() { return gc.getColor().getGreen(); }
 
-	public int getBlueComponent() { System.out.println("PlatformGraphics: getBlueComponent()"); return gc.getColor().getBlue(); }
+	public int getBlueComponent() { return gc.getColor().getBlue(); }
 
 	public int getColor() 
 	{
-		System.out.println("PlatformGraphics: getColor()");
 		return (gc.getColor().getRed() << 16) | (gc.getColor().getGreen() << 8) | gc.getColor().getBlue();
 	}
 
@@ -339,8 +337,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void setStrokeStyle(int stroke) 
 	{
-		//System.out.println("PlatformGraphics: setStrokeStyle()"); // Called (a lot) by Asphalt Urban GT 2, and Shadow Shoot also uses this on the loading bars
-
 		if (strokeStyle == DOTTED) 
 		{
 			float[] dotPattern = {2.0f, 2.0f}; // Dot of length 2 px, followed by 2 px of gap
@@ -383,9 +379,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		clipHeight = (int)rect.getHeight();
 	}
 
-	public int getTranslateX() { System.out.println("getTranslateX"); return translateY; }
+	public int getTranslateX() { return translateY; }
 	
-	public int getTranslateY() { System.out.println("getTranslateY"); return translateY; }
+	public int getTranslateY() { return translateY; }
 
 	public void translate(int x, int y)
 	{
@@ -443,7 +439,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawImage(javax.microedition.lcdui.Image img, int x, int y, int anchor, int manipulation)
 	{
-		//System.out.println("Nokia drawImage");
 		BufferedImage image = manipulateImage(img.platformImage.getCanvas(), manipulation);
 		x = AnchorX(x, image.getWidth(), anchor);
 		y = AnchorY(y, image.getHeight(), anchor);
@@ -452,7 +447,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
-		//System.out.println("drawPixels A "+format); // Found In Use
 		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
 		int c = 0;
 		int[] data;
@@ -500,13 +494,12 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 			break;
 
-			default: System.out.println("drawPixels A : Format " + format + " Not Implemented");
+			default: Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawPixels A : Format " + format + " Not Implemented");
 		}
 	}
 
 	public void drawPixels(int[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
-		//System.out.println("drawPixels B "+format+" "+transparency); // Found In Use
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		temp.setRGB(0, 0, width, height, pixels, offset, scanlength);
 		BufferedImage temp2 = manipulateImage(temp, manipulation);
@@ -515,7 +508,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawPixels(short[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
-		//System.out.println("drawPixels C "+format+" "+transparency); // Found In Use
 		int[] data = new int[pixels.length];
 		for(int i=0; i<pixels.length; i++)
 		{
@@ -547,7 +539,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int argbColor)
 	{
-		//System.out.println("drawTriange");
 		int temp = color;
 		setAlphaRGB(argbColor);
 		gc.drawPolygon(new int[]{x1,x2,x3}, new int[]{y1,y2,y3}, 3);
@@ -573,13 +564,11 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3)
 	{
-		//System.out.println("fillTriangle"); // Found In Use
 		gc.fillPolygon(new int[]{x1,x2,x3}, new int[]{y1,y2,y3}, 3);
 	}
 
 	public void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int argbColor)
 	{
-		//System.out.println("fillTriangle"); // Found In Use
 		int temp = color;
 		setAlphaRGB(argbColor);
 		gc.fillPolygon(new int[]{x1,x2,x3}, new int[]{y1,y2,y3}, 3);
@@ -588,18 +577,16 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void getPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
-		System.out.println("getPixels A");
+		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "getPixels A");
 	}
 
 	public void getPixels(int[] pixels, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
-		//System.out.println("getPixels B");
 		canvas.getRGB(x, y, width, height, pixels, offset, scanlength);
 	}
 
 	public void getPixels(short[] pixels, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
-		//System.out.println("getPixels C"); // Found In Use
 		int i = offset;
 		for(int row=0; row<height; row++)
 		{
@@ -722,7 +709,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
             case HV180:
                 break;
             default:
-				System.out.println("manipulateImage "+manipulation+" not defined");
+				Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "manipulateImage "+manipulation+" not defined");
 		}
 		return image;
 		

@@ -113,13 +113,13 @@ public class M3D
 
 	public void loadIdentity()
 	{
-		//System.out.println("loadIdentity");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "loadIdentity");
 		identity(matrix);
 	}
 
 	public void frustumxi(int left, int right, int top, int bottom, int nearclip, int farclip) //-3,3, -2,2, 3,1000
 	{
-		//System.out.println("frustrumxi("+left+", "+right+", "+top+", "+bottom+", "+nearclip+", "+farclip+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "frustrumxi("+left+", "+right+", "+top+", "+bottom+", "+nearclip+", "+farclip+");");
 
 		double r = right/65536.0;
 		double l = left/65536.0;
@@ -129,7 +129,7 @@ public class M3D
 		double n = nearclip/65536.0;
 		double f = farclip/65536.0;
 
-		//System.out.println("frustrumxi("+l+", "+r+", "+t+", "+b+", "+n+", "+f+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "frustrumxi("+l+", "+r+", "+t+", "+b+", "+n+", "+f+");");
 		
 		near = -n;
 		far = -f;
@@ -138,12 +138,12 @@ public class M3D
 
 	public void scalexi(int X, int Y, int Z)
 	{
-		//System.out.println("scalexi("+X+", "+Y+", "+Z+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "scalexi("+X+", "+Y+", "+Z+");");
 		double x = (X/65536.0);
 		double y = (Y/65536.0);
 		double z = (Z/65536.0);
 		
-		//System.out.println("scalexi("+x+", "+y+", "+z+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "scalexi("+x+", "+y+", "+z+");");
 
 		temps[0]  = x; temps[1]  = 0; temps[2]  = 0; temps[3]  = 0;
 		temps[4]  = 0; temps[5]  = y; temps[6]  = 0; temps[7]  = 0;
@@ -156,12 +156,12 @@ public class M3D
 
 	public void translatexi(int X, int Y, int Z)
 	{
-		//System.out.println("translatexi("+X+", "+Y+", "+Z+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "translatexi("+X+", "+Y+", "+Z+");");
 		double x = (X/65536.0);
 		double y = (Y/65536.0);
 		double z = (Z/65536.0);
 		
-		//System.out.println("translatexi("+x+", "+y+", "+z+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "translatexi("+x+", "+y+", "+z+");");
 
 		tempt[0]  = 1; tempt[1]  = 0; tempt[2]  = 0; tempt[3]  = 0;
 		tempt[4]  = 0; tempt[5]  = 1; tempt[6]  = 0; tempt[7]  = 0;
@@ -174,7 +174,7 @@ public class M3D
 	
 	public void rotatexi(int Angle, int X, int Y, int Z)
 	{
-		//System.out.println("rotatexi("+Angle+", "+X+", "+Y+", "+Z+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "rotatexi("+Angle+", "+X+", "+Y+", "+Z+");");
 		double a = (Angle/65536.0)*0.0174533;
 
 		// (X, Y, Z) define an axis for rotation
@@ -184,7 +184,7 @@ public class M3D
 		{
 			// rotate on x
 
-			//System.out.println("rotatexi( X: "+Angle/65536+");");
+			Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "rotatexi( X: "+Angle/65536+");");
 
 			tempr[0]  =  1; tempr[1]  =  0;            tempr[2]  =  0;           tempr[3]  =  0;
 			tempr[4]  =  0; tempr[5]  =  Math.cos(a);  tempr[6]  =  Math.sin(a); tempr[7]  =  0;
@@ -196,7 +196,7 @@ public class M3D
 		{
 			// rotate on y
 
-			//System.out.println("rotatexi( Y: "+Angle/65536+");");
+			Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "rotatexi( Y: "+Angle/65536+");");
 
 			tempr[0]  =  Math.cos(a); tempr[1]  =  0; tempr[2]  = -Math.sin(a); tempr[3]  =  0;
 			tempr[4]  =  0;           tempr[5]  =  1; tempr[6]  =  0;           tempr[7]  =  0;
@@ -208,7 +208,7 @@ public class M3D
 		{
 			// rotate on z
 
-			//System.out.println("rotatexi( Z: "+Angle/65536+");");
+			Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "rotatexi( Z: "+Angle/65536+");");
 
 			tempr[0]  =  Math.cos(a); tempr[1]  =  Math.sin(a); tempr[2]  =  0; tempr[3]  =  0;
 			tempr[4]  = -Math.sin(a); tempr[5]  =  Math.cos(a); tempr[6]  =  0; tempr[7]  =  0;
@@ -223,13 +223,13 @@ public class M3D
 
 	public void pushMatrix() // game doesn't seem to push more than one thing at a time
 	{ 
-		//System.out.println("pushMatrix()");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "pushMatrix()");
 		clone(stack, matrix);
 	}
 
 	public void popMatrix()
 	{
-		//System.out.println("popMatrix()");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "popMatrix()");
 		clone(matrix, stack);
 	}
 
@@ -245,7 +245,7 @@ public class M3D
 
 	public void vertexPointerub(int a, int b, byte[] vertices) 
 	{
-		//System.out.println("vertexPointerub("+a+", "+b+")");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "vertexPointerub("+a+", "+b+")");
 		int i=0;
 		for(i=0; i<vertices.length; i+=3)
 		{
@@ -375,7 +375,7 @@ public class M3D
 
 	public void drawElementsub(int A, int B, byte[] facelist)
 	{
-		//System.out.println("drawElementsub("+A+", "+B+")");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "drawElementsub("+A+", "+B+")");
 		byte a, b;
 		double x1, y1, z1, x2, y2, z2, x3, y3, z3, w1;
 		double u1,v1, u2,v2, u3,v3;
@@ -494,7 +494,7 @@ public class M3D
 	// And then fill everything below it with a color.
 	public void drawArrays(int a, int b, int c)
 	{
-		//System.out.println("drawArrays("+a+", "+b+", "+c+")");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "drawArrays("+a+", "+b+", "+c+")");
 		gc.setColor(color);
 		applyMatrix(matrix);
 
@@ -506,7 +506,7 @@ public class M3D
 		double oy = height/2;
 		y = (y*oy)+oy;
 
-		//System.out.println("y: "+y);
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "y: "+y);
 		gc.fillRect(0, (int)y, width, height - (int)y);
 	}
 
@@ -547,7 +547,7 @@ public class M3D
 
 	private void projection(double[] m, double w, double h, double n, double f)
 	{
-		//System.out.println("projection("+w+", "+h+", "+n+", "+f+");");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "projection("+w+", "+h+", "+n+", "+f+");");
 		double d = -(f+n)/(f-n);
 		double e = -(2*f*n)/(f-n);
 
@@ -631,7 +631,7 @@ public class M3D
 
 	private void applyMatrix(double[] m)
 	{
-		//System.out.println("applyMatrix()");
+		Mobile.log(Mobile.LOG_DEBUG, M3D.class.getPackage().getName() + "." + M3D.class.getSimpleName() + ": " + "applyMatrix()");
 		double x, y, z, w;
 		for(int i=0; i<vertCount; i+=3)
 		{	

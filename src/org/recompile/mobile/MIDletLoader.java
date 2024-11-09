@@ -92,7 +92,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println("Can't add CLDC System Properties");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't add CLDC System Properties");
 		}
 
 		try
@@ -101,7 +101,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println("Can't Read Manifest!");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Read Manifest!");
 		}
 
 		properties.put("microedition.platform", "j2me");
@@ -205,8 +205,8 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Constructing " + name + " class: " +className);
-			System.out.println("Reason: "+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Problem Constructing " + name + " class: " +className);
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Reason: "+e.getMessage());
 			e.printStackTrace();
 			System.exit(0);
 			return;
@@ -232,7 +232,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println("Can't Find startApp Method");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Find startApp Method");
 			e.printStackTrace();
 			System.exit(0);
 			return;
@@ -299,7 +299,7 @@ public class MIDletLoader extends URLClassLoader
 				line = lines.get(i);
 				if(line.startsWith("MIDlet-1:"))
 				{
-					System.out.println(line);
+					Mobile.log(Mobile.LOG_INFO, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + line);
 					line = line.substring(9);
 					parts = line.split(",");
 					if(parts.length == 3)
@@ -309,7 +309,7 @@ public class MIDletLoader extends URLClassLoader
 						className = parts[2].trim();
 						suitename = name;
 					}
-					//System.out.println("Loading " + name);
+					//Mobile.log(MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Loading " + name);
 				}
 
 				split = line.indexOf(":");
@@ -325,7 +325,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println("Can't Read Jar Manifest!");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Read Jar Manifest!");
 			e.printStackTrace();
 		}
 	}
@@ -334,7 +334,7 @@ public class MIDletLoader extends URLClassLoader
 	public InputStream getResourceAsStream(String resource)
 	{
 		URL url;
-		//System.out.println("Loading Resource: " + resource);
+		Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Loading Resource: " + resource);
 
 		if(resource.startsWith("/"))
 		{
@@ -364,7 +364,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println(resource + " Not Found");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + resource + " Not Found");
 			return super.getResourceAsStream(resource);
 		}
 	}
@@ -387,7 +387,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println(resource + " Not Found");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + resource + " Not Found");
 			return super.getResource(resource);
 		}
 	}
@@ -442,7 +442,7 @@ public class MIDletLoader extends URLClassLoader
 
 	public InputStream getMIDletResourceAsStream(String resource)
 	{
-		//System.out.println("Get Resource: "+resource);
+		Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Get Resource: "+resource);
 
 		URL url = getResource(resource);
 
@@ -489,7 +489,7 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println(resource + " Not Found");
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + resource + " Not Found");
 			return new byte[0];
 		}
 	}
@@ -501,7 +501,7 @@ public class MIDletLoader extends URLClassLoader
 		String resource;
 		byte[] code;
 
-		// System.out.println("Load Class "+name);
+		Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Load Class "+name);
 
 		// zb3: this needs to be improved as this won't transform games
 		// like hypothetical com.nokia.tictactoe
@@ -517,7 +517,7 @@ public class MIDletLoader extends URLClassLoader
 
 		try
 		{
-			//System.out.println("Instrumenting Class "+name);
+			Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Instrumenting Class "+name);
 			resource = name.replace(".", "/") + ".class";
 			stream = super.getResourceAsStream(resource);
 			code = instrument(stream);
@@ -525,8 +525,8 @@ public class MIDletLoader extends URLClassLoader
 		}
 		catch (Exception e)
 		{
-			System.out.println("Error Adapting Class "+name);
-			System.out.println(e.toString());
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Error Adapting Class "+name);
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + e.toString());
 			return null;
 		}
 

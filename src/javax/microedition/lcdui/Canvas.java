@@ -52,7 +52,7 @@ public abstract class Canvas extends Displayable
 		width = Mobile.getPlatform().lcdWidth;
 		height = Mobile.getPlatform().lcdHeight;
 
-		System.out.println("Create Canvas:"+width+", "+height);
+		Mobile.log(Mobile.LOG_INFO, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Create Canvas:"+width+", "+height);
 
 		platformImage = new PlatformImage(width, height);
 	}

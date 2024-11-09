@@ -52,8 +52,8 @@ public class ScreenShot
 				}
 				catch (Exception e)
 				{
-					System.out.println("Problem Creating Screenshot Path "+ screenshotPath);
-					System.out.println(e.getMessage());
+					Mobile.log(Mobile.LOG_ERROR, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + "Problem Creating Screenshot Path "+ screenshotPath);
+					Mobile.log(Mobile.LOG_ERROR, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + e.getMessage());
 				}
 				fileName = screenshotPath + "/Screenshot from " + 
 							dateFormat.format(date) + ".png";
@@ -65,7 +65,7 @@ public class ScreenShot
 		}
 		catch (Exception e)
 		{
-			System.out.println("Error saving screenshot");
+			Mobile.log(Mobile.LOG_ERROR, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + "Error saving screenshot");
 			e.printStackTrace();
 		}
 	}

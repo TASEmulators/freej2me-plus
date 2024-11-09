@@ -44,15 +44,15 @@ public class Alert extends Screen
 
 	public Alert(String title)
 	{
-		System.out.println("Alert: " + title);
+		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + "Alert: " + title);
 		setTitle(title);
 		Thread.dumpStack();
 	}
 
 	public Alert(String title, String alertText, Image alertImage, AlertType alertType)
 	{
-		System.out.println("Alert: " + title);
-		System.out.println("Alert: " + alertText);
+		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + "Alert: " + title);
+		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + "Alert: " + alertText);
 
 		setTitle(title);
 		setString(alertText);
@@ -80,7 +80,7 @@ public class Alert extends Screen
 
 	public void setString(String text)
 	{
-		System.out.println(text);
+		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + text);
 		message = text;
 	}
 
