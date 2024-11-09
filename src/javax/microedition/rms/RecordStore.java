@@ -55,7 +55,7 @@ public class RecordStore
 
 	private RecordStore(String recordStoreName, boolean createIfNecessary) throws RecordStoreException, RecordStoreNotFoundException
 	{
-		//System.out.println("> RecordStore "+recordStoreName);
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> RecordStore "+recordStoreName);
 
 		records = new Vector<byte[]>();
 		listeners = new Vector<RecordListener>();
@@ -79,8 +79,7 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			//System.out.println("> Problem Creating Record Store Path: "+rmsPath);
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + e.getMessage());
 			throw(new RecordStoreException("Problem Creating Record Store Path "+rmsPath));
 		}
 		file = new File(rmsFile);
@@ -93,7 +92,7 @@ public class RecordStore
 
 			try // Check Record Store File
 			{
-				//System.out.println("> Creating New Record Store "+appname+"/"+recordStoreName);
+				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Creating New Record Store "+appname+"/"+recordStoreName);
 				file.createNewFile();
 				version = 1;
 				nextid = 1;
@@ -103,8 +102,7 @@ public class RecordStore
 			}
 			catch (Exception e)
 			{
-				//System.out.println("> Problem Opening Record Store (createIfNecessary "+createIfNecessary+"): "+rmsFile);
-				System.out.println(e.getMessage());
+				Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + e.getMessage());
 				throw(new RecordStoreException("Problem Opening Record Store (createIfNecessary "+createIfNecessary+"): "+rmsFile));
 			}
 		}
@@ -132,8 +130,8 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Reading Record Store: "+rmsFile);
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Problem Reading Record Store: "+rmsFile);
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + e.getMessage());
 			throw(new RecordStoreException("Problem Reading Record Store: "+rmsFile));
 		}
 	}
@@ -167,7 +165,7 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Saving RecordStore");
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Problem Saving RecordStore");
 			e.printStackTrace();
 		}
 	}
@@ -196,7 +194,7 @@ public class RecordStore
 
 	public int addRecord(byte[] data, int offset, int numBytes) throws RecordStoreNotOpenException, RecordStoreException, RecordStoreFullException
 	{
-		//System.out.println("> Add Record "+nextid+ " to "+name);
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Add Record "+nextid+ " to "+name);
 		try
 		{
 			
@@ -235,7 +233,7 @@ public class RecordStore
 	public void deleteRecord(int recordId)
 	{
 		version++;
-		//System.out.println("> Delete Record");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Delete Record");
 		records.set(recordId, new byte[]{});
 		save();
 		for(int i=0; i<listeners.size(); i++)
@@ -253,7 +251,7 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem deleting RecordStore "+recordStoreName);
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Problem deleting RecordStore "+recordStoreName);
 			e.printStackTrace();
 		}
 		System.gc();
@@ -261,7 +259,7 @@ public class RecordStore
 
 	public RecordEnumeration enumerateRecords(RecordFilter filter, RecordComparator comparator, boolean keepUpdated)
 	{
-		System.out.println("RecordStore.enumerateRecords");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "RecordStore.enumerateRecords");
 		return new enumeration(filter, comparator, keepUpdated);
 	}
 
@@ -274,13 +272,13 @@ public class RecordStore
 
 	public int getNextRecordID()
 	{
-		//System.out.println("> getNextRecordID");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getNextRecordID");
 		return nextid;
 	}
 
 	public int getNumRecords()
 	{
-		//System.out.println("> getNumRecords");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getNumRecords");
 		int count = 0;
 		for(int i=1; i<records.size(); i++) // count deleted records
 		{
@@ -293,10 +291,10 @@ public class RecordStore
 
 	public byte[] getRecord(int recordId) throws InvalidRecordIDException, RecordStoreException
 	{
-		//System.out.println("> getRecord("+recordId+")");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getRecord("+recordId+")");
 		if(recordId >= records.size())
 		{
-			//System.out.println("getRecord Invalid RecordId "+recordId);
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "getRecord Invalid RecordId "+recordId);
 			throw(new InvalidRecordIDException("(A) Invalid Record ID: "+recordId));
 		}
 		try
@@ -307,7 +305,7 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			System.out.println("(getRecord) Record Store Exception: "+recordId);
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "(getRecord) Record Store Exception: "+recordId);
 			e.printStackTrace();
 			throw(new RecordStoreException());
 		}
@@ -315,7 +313,7 @@ public class RecordStore
 
 	public int getRecord(int recordId, byte[] buffer, int offset) throws InvalidRecordIDException, RecordStoreException
 	{
-		//System.out.println("> getRecord(id, buffer, offset)");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getRecord(id, buffer, offset)");
 		byte[] temp = getRecord(recordId);
 
 		if(temp == null)
@@ -336,7 +334,7 @@ public class RecordStore
 
 	public int getRecordSize(int recordId) throws InvalidRecordIDException, RecordStoreException
 	{
-		//System.out.println("> Get Record Size");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Get Record Size");
 		return getRecord(recordId).length;
 	}
 
@@ -348,7 +346,7 @@ public class RecordStore
 
 	public static String[] listRecordStores()
 	{
-		//System.out.println("List Record Stores");
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "List Record Stores");
 		if(rmsPath==null)
 		{
 			rmsPath = Mobile.getPlatform().dataPath + "./rms/"+Mobile.getPlatform().loader.name;
@@ -367,7 +365,7 @@ public class RecordStore
 
 			for(int i=0; i<files.length; i++)
 			{
-				//System.out.println((files[i].toString()).substring(rmsPath.length()+1));
+				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + (files[i].toString()).substring(rmsPath.length()+1));
 				out[i] = (files[i].toString()).substring(rmsPath.length()+1);
 			}
 
@@ -379,19 +377,19 @@ public class RecordStore
 
 	public static RecordStore openRecordStore(String recordStoreName, boolean createIfNecessary) throws RecordStoreException, RecordStoreNotFoundException
 	{
-		//System.out.println("Open Record Store A "+createIfNecessary);
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Open Record Store A "+createIfNecessary);
 		return new RecordStore(recordStoreName, createIfNecessary);
 	}
 
 	public static RecordStore openRecordStore(String recordStoreName, boolean createIfNecessary, int authmode, boolean writable) throws RecordStoreException, RecordStoreNotFoundException
 	{
-		//System.out.println("Open Record Store B "+createIfNecessary);
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Open Record Store B "+createIfNecessary);
 		return new RecordStore(recordStoreName, createIfNecessary);
 	}
 
 	public static RecordStore openRecordStore(String recordStoreName, String vendorName, String suiteName) throws RecordStoreException, RecordStoreNotFoundException
 	{
-		System.out.println("Open Record Store C");
+		Mobile.log(Mobile.LOG_WARNING, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Open Record Store C");
 		return new RecordStore(recordStoreName, false);
 	}
 
@@ -404,7 +402,7 @@ public class RecordStore
 
 	public void setRecord(int recordId, byte[] newData, int offset, int numBytes) throws RecordStoreException, InvalidRecordIDException
 	{
-		//System.out.println("> Set Record "+recordId+" in "+name);
+		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Set Record "+recordId+" in "+name);
 		if(recordId >= records.size())
 		{
 			throw(new InvalidRecordIDException("(C) Invalid Record ID: "+recordId));
@@ -424,7 +422,7 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem in Set Record");
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Problem in Set Record");
 			e.printStackTrace();
 		}
 		lastModified = recordId;
@@ -470,7 +468,7 @@ public class RecordStore
 			count = 0;
 			if(filter==null)
 			{
-				//System.out.println("Not Filtered");
+				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Not Filtered");
 				for(int i=1; i<records.size(); i++)
 				{
 					if(records.get(i).length>0) // not deleted
@@ -482,7 +480,7 @@ public class RecordStore
 			}
 			else
 			{
-				//System.out.println("Filtered");
+				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Filtered");
 				for(int i=1; i<records.size(); i++)
 				{
 					if(filter.matches(records.get(i)))
@@ -500,7 +498,7 @@ public class RecordStore
 			int temp;
 			if(comparator!=null)
 			{
-				//System.out.println("Comparator");
+				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Comparator");
 				for(int i=0; i<count-1; i++)
 				{
 					for(int j=0; j<count-(1+i); j++)
@@ -546,7 +544,7 @@ public class RecordStore
 
 		public byte[] nextRecord() throws InvalidRecordIDException
 		{
-			//System.out.println("> Next Record");
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Next Record");
 			if(keepupdated) { rebuild(); }
 			if(index>=count)
 			{
@@ -558,7 +556,7 @@ public class RecordStore
 
 		public int nextRecordId() throws InvalidRecordIDException
 		{
-			//System.out.println("> Next Record ID (idx:"+index+" cnt:"+count+")");
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Next Record ID (idx:"+index+" cnt:"+count+")");
 			if(keepupdated) { rebuild(); }
 			if(index>=count) { throw(new InvalidRecordIDException()); }
 			return elements[index++];
@@ -566,14 +564,14 @@ public class RecordStore
 
 		public int numRecords()
 		{
-			//System.out.println("> numRecords()");
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> numRecords()");
 			if(keepupdated) { rebuild(); }
 			return count;
 		}
 
 		public byte[] previousRecord() throws InvalidRecordIDException
 		{
-			//System.out.println("> Previous Record");
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Previous Record");
 			if(keepupdated) { rebuild(); }
 			index--;
 			if(index>=0)
@@ -590,7 +588,7 @@ public class RecordStore
 
 		public int previousRecordId() throws InvalidRecordIDException
 		{
-			//System.out.println("> Previous Record ID");
+			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Previous Record ID");
 			if(keepupdated) { rebuild(); }
 			index--;
 			if(index<0) { throw(new InvalidRecordIDException()); }

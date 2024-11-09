@@ -16,10 +16,12 @@
 */ 
 package javax.bluetooth;
 
+import org.recompile.mobile.Mobile;
+
 public class DeviceClass
 {
 
-    public DeviceClass(int record) { System.out.println("DeviceClass record:" + record); }
+    public DeviceClass(int record) { Mobile.log(Mobile.LOG_WARNING, DeviceClass.class.getPackage().getName() + "." + DeviceClass.class.getSimpleName() + ": " + "DeviceClass record:" + record); }
 
     public int getMajorDeviceClass() { return 0x200; } 
 

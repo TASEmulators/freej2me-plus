@@ -30,7 +30,7 @@ public class ActionTable
 	public ActionTable(byte[] b) 
 	{
 		/*
-		System.out.println("Action Table");
+		Mobile.log(Mobile.LOG_DEBUG, ActionTable.class.getPackage().getName() + "." + ActionTable.class.getSimpleName() + ": " + "Action Table");
 		for(int i=0; i<b.length; i++)
 		{
 			System.out.printf("%02X ", b[i]);
@@ -43,7 +43,7 @@ public class ActionTable
 
 	public ActionTable(String name) throws IOException
 	{
-		System.out.println("Action Table "+name);
+		Mobile.log(Mobile.LOG_WARNING, ActionTable.class.getPackage().getName() + "." + ActionTable.class.getSimpleName() + ": " + "Action Table "+name);
 		rawdata = Mobile.getPlatform().loader.getMIDletResourceAsByteArray(name);
 
 		numFrames = 1;

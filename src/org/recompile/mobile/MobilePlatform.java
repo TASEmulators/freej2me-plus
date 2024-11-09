@@ -211,7 +211,7 @@ public class MobilePlatform
 		}
 		catch (Exception e)
 		{
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace();
 			return false;
 		}
@@ -223,7 +223,7 @@ public class MobilePlatform
 		try { loader.start(); }
 		catch (Exception e)
 		{
-			System.out.println("Error Running Jar");
+			Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Error Running Jar");
 			e.printStackTrace();
 		}
 	}
@@ -319,7 +319,7 @@ public class MobilePlatform
 				{
 					Thread.currentThread().interrupt();
 					break;
-				} catch (Exception e) { System.out.println("exception in event handler: "+e.getMessage()); }
+				} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "exception in event handler: "+e.getMessage()); }
 			}
 
 			thread = null;

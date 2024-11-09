@@ -41,15 +41,7 @@ import org.objectweb.asm.Type;
 
 /**
  * A {@link org.objectweb.asm.MethodAdapter} with convenient methods to generate
- * code. For example, using this adapter, the class below
- * 
- * <pre>
- * public class Example {
- *     public static void main(String[] args) {
- *         System.out.println(&quot;Hello world!&quot;);
- *     }
- * }
- * </pre>
+ * code.
  * 
  * can be generated as follows:
  * 

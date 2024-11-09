@@ -79,8 +79,8 @@ public class Config
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Creating Config Path "+configPath);
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Creating Config Path "+configPath);
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
 		}
 
 		try // Check Config File
@@ -101,8 +101,8 @@ public class Config
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Opening Config "+configFile);
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Opening Config "+configFile);
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
 		}
 
 		try // Read Records
@@ -140,8 +140,8 @@ public class Config
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Reading Config: "+configFile);
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Reading Config: "+configFile);
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
 		}
 
 	}
@@ -162,8 +162,8 @@ public class Config
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem Opening Config "+configFile);
-			System.out.println(e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Opening Config "+configFile);
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
 		}
 	}
 
@@ -179,7 +179,7 @@ public class Config
 
 	public void updateSound(String value)
 	{
-		System.out.println("Config: sound "+value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: sound "+value);
 		settings.put("sound", value);
 		saveConfig();
 		onChange.run();
@@ -187,7 +187,7 @@ public class Config
 
 	public void updatePhone(String value)
 	{
-		System.out.println("Config: phone "+value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: phone "+value);
 		settings.put("phone", value);
 		saveConfig();
 		onChange.run();
@@ -195,7 +195,7 @@ public class Config
 
 	public void updateRotate(String value)
 	{
-		System.out.println("Config: rotate "+value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: rotate "+value);
 		settings.put("rotate", value);
 		saveConfig();
 		onChange.run();
@@ -203,7 +203,7 @@ public class Config
 
 	public void updateFPS(String value)
 	{
-		System.out.println("Config: fps "+value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: fps "+value);
 		settings.put("fps", value);
 		saveConfig();
 		onChange.run();
@@ -211,7 +211,7 @@ public class Config
 
 	public void updateSoundfont(String value)
 	{
-		System.out.println("Config: soundfont "+value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: soundfont "+value);
 		settings.put("soundfont", value);
 		saveConfig();
 		onChange.run();

@@ -70,6 +70,9 @@ public final class AWTGUI
 	final Button closeNow = new Button("Close FreeJ2ME");
 	final Button restartLater = new Button("Restart later");
 
+	/* Log Level menu */
+	Menu logLevel = new Menu("Log Level");
+
 	/* Input mapping keys */
 	final Button applyInputs = new Button("Apply Inputs");
 	final Button inputButtons[] = new Button[] 
@@ -166,6 +169,12 @@ public final class AWTGUI
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
 	final CheckboxMenuItem fpsCap30 = new CheckboxMenuItem("30 FPS", false);
 	final CheckboxMenuItem fpsCap15 = new CheckboxMenuItem("15 FPS", false);
+
+	final CheckboxMenuItem logDisabled = new CheckboxMenuItem("Disabled", false);
+	final CheckboxMenuItem logDebug = new CheckboxMenuItem("Debug", false);
+	final CheckboxMenuItem logInfo = new CheckboxMenuItem("Info", false);
+	final CheckboxMenuItem logWarning = new CheckboxMenuItem("Warning", false);
+	final CheckboxMenuItem logError = new CheckboxMenuItem("Error", false);
 
 	final CheckboxMenuItem dumpAudioData = new CheckboxMenuItem("Dump Audio Streams");
 	final CheckboxMenuItem dumpGraphicsData = new CheckboxMenuItem("Dump Graphics Objects");
@@ -660,6 +669,96 @@ public final class AWTGUI
 			}
 		});
 
+		logDisabled.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!logDisabled.getState()){ logDisabled.setState(true); }
+				if(logDisabled.getState())
+				{ 
+					logDebug.setState(false);
+					logInfo.setState(false);
+					logWarning.setState(false);
+					logError.setState(false);
+
+					Mobile.logging = false;
+				}
+			}
+		});
+
+		logDebug.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!logDebug.getState()){ logDebug.setState(true); }
+				if(logDebug.getState())
+				{ 
+					logDisabled.setState(false);
+					logInfo.setState(false);
+					logWarning.setState(false);
+					logError.setState(false);
+
+					Mobile.logging = true; 
+					Mobile.minLogLevel = 0;
+				}
+			}
+		});
+
+		logInfo.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!logInfo.getState()){ logInfo.setState(true); }
+				if(logInfo.getState())
+				{ 
+					logDisabled.setState(false);
+					logDebug.setState(false);
+					logWarning.setState(false);
+					logError.setState(false);
+
+					Mobile.logging = true; 
+					Mobile.minLogLevel = 1;
+				}
+			}
+		});
+
+		logWarning.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!logWarning.getState()){ logWarning.setState(true); }
+				if(logWarning.getState())
+				{ 
+					logDisabled.setState(false);
+					logDebug.setState(false);
+					logInfo.setState(false);
+					logError.setState(false);
+
+					Mobile.logging = true; 
+					Mobile.minLogLevel = 2;
+				}
+			}
+		});
+
+		logError.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!logError.getState()){ logError.setState(true); }
+				if(logError.getState())
+				{ 
+					logDisabled.setState(false);
+					logDebug.setState(false);
+					logInfo.setState(false);
+					logWarning.setState(false);
+
+					Mobile.logging = true; 
+					Mobile.minLogLevel = 3;
+				}
+			}
+		});
+		
+
 
 		dumpAudioData.addItemListener(new ItemListener() 
 		{
@@ -710,9 +809,22 @@ public final class AWTGUI
 		optionMenu.add(fpsCap);
 		optionMenu.add(mapInputs);
 
+		logLevel.add(logDisabled);
+		logLevel.add(logDebug);
+		logLevel.add(logInfo);
+		logLevel.add(logWarning);
+		logLevel.add(logError);
+
+		logDisabled.setState(false);
+		logDebug.setState(false);
+		logInfo.setState(true);
+		logWarning.setState(false);
+		logError.setState(false);
+
 		debugMenu.add(dumpAudioData);
 		debugMenu.add(dumpGraphicsData);
 		debugMenu.add(showMemoryUsage);
+		debugMenu.add(logLevel);
 
 		for(int i = 0; i < config.supportedResolutions.length; i++) { resChoice.add(config.supportedResolutions[i]); }
 
@@ -790,7 +902,7 @@ public final class AWTGUI
 				filename = filePicker.getFile();
 				jarfile = new File(filePicker.getDirectory()+File.separator+filePicker.getFile()).toURI().toString();
 
-				if(filename == null) { System.out.println("JAR Loading was cancelled"); }
+				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "JAR Loading was cancelled"); }
 				else { loadJarFile(jarfile, true); }
 			}
 
@@ -800,7 +912,7 @@ public final class AWTGUI
 				{
 					/* TODO: Try closing the loaded jar without closing FreeJ2ME */
 				}
-				catch (Throwable e) { System.out.println("Couldn't close jar"); }
+				catch (Throwable e) { Mobile.log(Mobile.LOG_ERROR, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "Couldn't close jar"); }
 			}
 
 			else if(a.getActionCommand() == "Screenshot") { ScreenShot.takeScreenshot(false); }

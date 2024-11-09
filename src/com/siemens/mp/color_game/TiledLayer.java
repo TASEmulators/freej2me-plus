@@ -19,6 +19,8 @@ package com.siemens.mp.color_game;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Graphics;
 
+import org.recompile.mobile.Mobile;
+
 import java.util.Arrays;
 
 public class TiledLayer extends Layer 
@@ -213,8 +215,7 @@ public class TiledLayer extends Layer
 
 	private void createStaticSet(Image baseImage, int noOfFrames, int tileWidth, int tileHeight, boolean maintainIndices) 
 	{
-		// JBenchmark 2 uses this, and the rewrite didn't seem to have broken it, still renders as expected
-		//System.out.println("Created StaticTileSet!");
+		Mobile.log(Mobile.LOG_DEBUG, TiledLayer.class.getPackage().getName() + "." + TiledLayer.class.getSimpleName() + ": " + "Created StaticTileSet!");
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 	

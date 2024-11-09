@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 
+import org.recompile.mobile.Mobile;
+
 
 /**
  * The <code>Bistream</code> class is responsible for parsing
@@ -279,7 +281,7 @@ public final class Bitstream implements BitstreamErrors
 			if ((ex.getErrorCode()==INVALIDFRAME))
 			{
 				// Try to skip this frame.
-				//System.out.println("INVALIDFRAME");
+				Mobile.log(Mobile.LOG_DEBUG, Bitstream.class.getPackage().getName() + "." + Bitstream.class.getSimpleName() + ": " + "INVALIDFRAME");
 				try
 				{
 					closeFrame();
@@ -501,16 +503,6 @@ public final class Bitstream implements BitstreamErrors
 	int	b=0;
 	byte[] byteread = frame_bytes;
 	int bytesize = framesize;
-
-	// Check ID3v1 TAG (True only if last frame).
-	//for (int t=0;t<(byteread.length)-2;t++)
-	//{
-	//	if ((byteread[t]=='T') && (byteread[t+1]=='A') && (byteread[t+2]=='G'))
-	//	{
-	//		System.out.println("ID3v1 detected at offset "+t);
-	//		throw newBitstreamException(INVALIDFRAME, null);
-	//	} 	
-	//}
 	
 	for (int k=0;k<bytesize;k=k+4)
 	{

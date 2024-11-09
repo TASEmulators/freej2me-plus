@@ -27,6 +27,8 @@ import javax.microedition.lcdui.game.*;
 import javax.microedition.pki.*;
 import javax.microedition.rms.*;
 
+import org.recompile.mobile.Mobile;
+
 public abstract class MIDlet
 {
 	public static boolean isLibretro = false;
@@ -37,14 +39,14 @@ public abstract class MIDlet
 
 	protected MIDlet()
 	{
-		System.out.println("Create MIDlet");
+		Mobile.log(Mobile.LOG_INFO, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + "Create MIDlet");
 	}
 
 
 	public final int checkPermission(String permission)
 	{
 		// 0 - denied; 1 - allowed; -1 unknown
-		System.out.println("checkPermission: "+permission);
+		Mobile.log(Mobile.LOG_INFO, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + "checkPermission: "+permission);
 		return -1;
 	}
 
@@ -62,7 +64,7 @@ public abstract class MIDlet
 
 	public final void notifyDestroyed()
 	{ 
-		System.out.println("MIDlet sent Destroyed Notification");
+		Mobile.log(Mobile.LOG_INFO, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + "MIDlet sent Destroyed Notification");
 		if(!isLibretro) { System.exit(0); }
 	}
 

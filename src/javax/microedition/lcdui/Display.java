@@ -164,11 +164,11 @@ public class Display
 				current = next;
 				current.notifySetCurrent();
 				Mobile.getPlatform().flushGraphics(current.platformImage, 0,0, current.width, current.height);
-				//System.out.println("Set Current "+current.width+", "+current.height);
+				Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Set Current "+current.width+", "+current.height);
 			}
 			catch (Exception e)
 			{
-				System.out.println("Problem with setCurrent(next)");
+				Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Problem with setCurrent(next)");
 				e.printStackTrace();
 			}
 		} 
@@ -188,17 +188,17 @@ public class Display
 		}
 		catch (Exception e)
 		{
-			System.out.println("Problem with setCurrent(alert, next)");
+			Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Problem with setCurrent(alert, next)");
 			e.printStackTrace();
 		}
 	}
 
-	public void setCurrentItem(Item item) { System.out.println("Display.setCurrentItem"); }
+	public void setCurrentItem(Item item) { Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Display.setCurrentItem"); }
 
 	public boolean vibrate(int duration)
 	{
 		Mobile.vibrationDuration = duration;
-		//System.out.println("Vibrate");
+		Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Vibrate");
 		return true;
 	}
 

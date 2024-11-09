@@ -19,6 +19,8 @@ package com.siemens.mp.color_game;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Graphics;
 
+import org.recompile.mobile.Mobile;
+
 public abstract class Layer
 {
 	
@@ -89,6 +91,6 @@ public abstract class Layer
 
 	public void render() { this.paint(image.platformImage.getGraphics()); }
 
-	protected void copyAllLayerVariables(Layer l) { System.out.println("Siemens: color_game.Layer: copyAllLayerVariables()"); } // TODO
+	protected void copyAllLayerVariables(Layer l) { Mobile.log(Mobile.LOG_WARNING, Layer.class.getPackage().getName() + "." + Layer.class.getSimpleName() + ": " + "Siemens: color_game.Layer: copyAllLayerVariables()"); } // TODO
 
 }

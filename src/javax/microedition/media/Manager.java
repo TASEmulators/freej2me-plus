@@ -106,27 +106,27 @@ public final class Manager
 
 		if(locator == null) { throw new IllegalArgumentException("Cannot create a player with a null locator"); }
 
-		System.out.println("Create Player "+locator);
+		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player "+locator);
 		return new PlatformPlayer(locator);
 	}
 	
 	public static String[] getSupportedContentTypes(String protocol)
 	{
-		//System.out.println("Get Supported Media Content Types");
+		Mobile.log(Mobile.LOG_DEBUG, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Get Supported Media Content Types");
 		return new String[]{"audio/midi", "audio/x-wav", 
 		"audio/amr", "audio/mpeg", "audio/x-tone-seq" };
 	}
 	
 	public static String[] getSupportedProtocols(String content_type)
 	{
-		System.out.println("Get Supported Media Protocols");
+		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Get Supported Media Protocols");
 		return new String[]{};
 	}
 	
 	public static void playTone(int note, int duration, int volume) throws MediaException
 	{
 		checkCustomMidi();
-		System.out.println("Play Tone"); // Haven't found a jar that uses this method yet, but manual testing shows this already works
+		Mobile.log(Mobile.LOG_DEBUG, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Play Tone");
 
 		if (note < 0 || note > 127) { throw new IllegalArgumentException("playTone: Note value must be between 0 and 127."); }
         if (duration <= 0) { throw new IllegalArgumentException("playTone: Note duration must be positive and non-zero."); }
@@ -143,7 +143,7 @@ public final class Manager
 
 				dedicatedToneChannel = dedicatedTonePlayer.getChannels()[0]; 
 			} 
-			catch (MidiUnavailableException e) { System.out.println("playTone: Couldn't open Tone Player: " + e.getMessage()); return;}
+			catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "playTone: Couldn't open Tone Player: " + e.getMessage()); return;}
 		}
 
         /* 
@@ -158,7 +158,7 @@ public final class Manager
         new Thread(() -> 
 		{
             try { Thread.sleep(duration); } 
-			catch (InterruptedException e) { System.out.println("playTone: Failed to keep playing note for its specified duration: " + e.getMessage()); }
+			catch (InterruptedException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "playTone: Failed to keep playing note for its specified duration: " + e.getMessage()); }
             dedicatedToneChannel.noteOff(note);
         }).start();
 	}
@@ -178,7 +178,7 @@ public final class Manager
             for (byte b : md.digest()) { md5Sum.append(String.format("%02x", b)); }
 
             return md5Sum.toString();
-        } catch (Exception e) { System.out.println("Failed to generate stream MD5:" + e.getMessage()); }
+        } catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to generate stream MD5:" + e.getMessage()); }
 
 		return null;
     }
@@ -214,8 +214,8 @@ public final class Manager
 
 				hasLoadedCustomMidi = true; // We have now loaded the custom midi soundfont, mark as such so we don't waste time entering here again
 			} 
-			catch (Exception e) { System.out.println("Manager -> Could not load soundfont: " + e.getMessage());}
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Manager -> Could not load soundfont: " + e.getMessage());}
 		} 
-		else { System.out.println("PlatformPlayer: Custom MIDI enabled but there's no soundfont in" + (soundfontDir.getPath() + File.separatorChar)); }
+		else { Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "PlatformPlayer: Custom MIDI enabled but there's no soundfont in" + (soundfontDir.getPath() + File.separatorChar)); }
 	}
 }

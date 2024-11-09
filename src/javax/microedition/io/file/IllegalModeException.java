@@ -16,11 +16,13 @@
 */ 
 package javax.microedition.io.file;
 
+import org.recompile.mobile.Mobile;
+
 public class IllegalModeException extends RuntimeException 
 {
 	
 	public IllegalModeException() { }
 
-	public IllegalModeException(String detailMessage) { System.out.println("IllegalModeException: " + detailMessage); }
+	public IllegalModeException(String detailMessage) { Mobile.log(Mobile.LOG_ERROR, IllegalModeException.class.getPackage().getName() + "." + IllegalModeException.class.getSimpleName() + ": " + "IllegalModeException: " + detailMessage); }
 
 }

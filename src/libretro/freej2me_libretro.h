@@ -79,7 +79,7 @@ struct retro_core_option_v2_category option_categories[] =
     {
         "advanced_settings",
         "Advanced Settings",
-        "Options related to FreeJ2ME's libretro core, such as the on-screen pointer type and speed."
+        "Options related to FreeJ2ME's libretro core, such as the on-screen pointer type and speed, as well as logging."
     },
 };
 
@@ -200,7 +200,24 @@ struct retro_core_option_v2_definition core_options[] =
             { "on",  "Custom" },
             { NULL, NULL },
         },
-        "Default"
+        "off"
+    },
+    {
+        "freej2me_logginglevel",
+        "Advanced Settings > Logging Level",
+        "Logging Level",
+        "When enabled, this option allows FreeJ2ME to log messages of the specified level and higher into 'freej2me_system/FreeJ2ME.log' to facilitate debugging",
+        "When enabled, this option allows FreeJ2ME to log messages of the specified level and higher into 'freej2me_system/FreeJ2ME.log' to facilitate debugging",
+        "advanced_settings",
+        {
+            { "0",  "Disable"           },
+            { "1",  "Debug"             },
+            { "2",  "Info"              },
+            { "3",  "Warning"           },
+            { "4",  "Error"             },
+            { NULL, NULL },
+        },
+        "0"
     },
     {
         "freej2me_dumpaudiostreams",
@@ -435,7 +452,21 @@ struct retro_core_option_definition core_options_v1 [] =
             { "on",  "Custom" },
             { NULL, NULL },
         },
-        "Default"
+        "off"
+    },
+    {
+        "freej2me_logginglevel",
+        "Logging Level",
+        "When enabled, this option allows FreeJ2ME to log messages of the specified level and higher into 'freej2me_system/FreeJ2ME.log' to facilitate debugging",
+        {
+            { "0",  "Disable"           },
+            { "1",  "Debug"             },
+            { "2",  "Info"              },
+            { "3",  "Warning"           },
+            { "4",  "Error"             },
+            { NULL, NULL },
+        },
+        "0"
     },
     {
         "freej2me_dumpaudiostreams",
@@ -569,6 +600,10 @@ static const struct retro_variable vars[] =
     { /* MIDI Soundfont */
         "freej2me_midifont",
         "MIDI Soundfont; off|on"
+    },
+    { /* Logging Level */
+        "freej2me_logginglevel",
+        "Dump Audio Streams: 0|1|2|3|4"
     },
     { /* Dump Audio Streams */
         "freej2me_dumpaudiostreams",

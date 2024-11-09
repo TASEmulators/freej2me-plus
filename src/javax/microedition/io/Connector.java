@@ -34,7 +34,6 @@ public class Connector
 	
 	public static InputStream openInputStream(String name)
 	{
-		//System.out.println("Connector: " + name);
 		if(name.startsWith("resource:")) // older Siemens phones?
 		{
 			return Mobile.getPlatform().loader.getMIDletResourceAsSiemensStream(name.substring(9).replaceAll("\\\\", "/"));
@@ -42,7 +41,7 @@ public class Connector
 		else
 		{
 			//return Mobile.getPlatform().loader.getMIDletResourceAsStream(name); // possible
-			System.out.println("Faked InputStream for "+name); // just in case //
+			Mobile.log(Mobile.LOG_WARNING, Connector.class.getPackage().getName() + "." + Connector.class.getSimpleName() + ": " + "Faked InputStream for "+name); // just in case //
 			return new fakeIS();
 		}
 	}
@@ -50,7 +49,7 @@ public class Connector
 
 	public static DataInputStream openDataInputStream(String name)
 	{
-		System.out.println("Faked DataInputStream: "+name);
+		Mobile.log(Mobile.LOG_WARNING, Connector.class.getPackage().getName() + "." + Connector.class.getSimpleName() + ": " + "Faked DataInputStream: "+name);
 		return new DataInputStream(new fakeIS());
 	}
 

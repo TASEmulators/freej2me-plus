@@ -45,7 +45,7 @@ public class Gauge extends Item
 
 	public Gauge(String label, boolean isInteractive, int maxvalue, int initialvalue)
 	{
-		System.out.println("Create Gauge");
+		Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "Create Gauge");
 		setLabel(label);
 		interactive = isInteractive;
 		maxValue = maxvalue;

@@ -56,12 +56,12 @@ public class ExtendedImage extends com.siemens.mp.misc.NativeMem
 	public void setPixel(int x, int y, byte color)
 	{
 		image.setPixel(x, y, palette[color & 0x1]);
-		System.out.println("setPixels");
+		Mobile.log(Mobile.LOG_WARNING, ExtendedImage.class.getPackage().getName() + "." + ExtendedImage.class.getSimpleName() + ": " + "setPixels");
 	}
 
 	public void getPixelBytes(byte[] pixels, int x, int y, int width, int height) { }
 
-	public void setPixels(byte[] pixels, int x, int y, int width, int height) { System.out.println("setPixels"); }
+	public void setPixels(byte[] pixels, int x, int y, int width, int height) { Mobile.log(Mobile.LOG_WARNING, ExtendedImage.class.getPackage().getName() + "." + ExtendedImage.class.getSimpleName() + ": " + "setPixels"); }
 
 	public void clear(byte color)
 	{

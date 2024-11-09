@@ -58,6 +58,7 @@ public class FreeJ2ME
 
 	public static void main(String args[])
 	{
+		Mobile.clearOldLog();
 		FreeJ2ME app = new FreeJ2ME(args);
 	}
 
@@ -97,7 +98,7 @@ public class FreeJ2ME
 				dummyFile.createNewFile();
 			}
 		}
-		catch(IOException e) { System.out.println("Failed to create custom midi info file:" + e.getMessage()); }
+		catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, FreeJ2ME.class.getPackage().getName() + "." + FreeJ2ME.class.getSimpleName() + ": " + "Failed to create custom midi info file:" + e.getMessage()); }
 		
 
 		lcdWidth = 240;
@@ -194,12 +195,10 @@ public class FreeJ2ME
 					
 					if (pressedKeys[mobikeyN] == false)
 					{
-						//~ System.out.println("keyPressed:  " + Integer.toString(mobikey));
 						Mobile.getPlatform().keyPressed(mobikey);
 					}
 					else
 					{
-						//~ System.out.println("keyRepeated:  " + Integer.toString(mobikey));
 						Mobile.getPlatform().keyRepeated(mobikey);
 					}
 					pressedKeys[mobikeyN] = true;
@@ -220,7 +219,6 @@ public class FreeJ2ME
 					
 					pressedKeys[mobikeyN] = false;
 					
-					//~ System.out.println("keyReleased: " + Integer.toString(mobikey));
 					Mobile.getPlatform().keyReleased(mobikey);
 				}
 			}
@@ -334,7 +332,7 @@ public class FreeJ2ME
 		}
 		else
 		{
-			System.out.println("Couldn't load jar...");
+			Mobile.log(Mobile.LOG_ERROR, FreeJ2ME.class.getPackage().getName() + "." + FreeJ2ME.class.getSimpleName() + ": " + "Couldn't load jar...");
 		}
 	}
 
@@ -346,7 +344,7 @@ public class FreeJ2ME
 		File file = new File(loc);
 		if(! file.isFile())
 		{
-			System.out.println("File not found...");
+			Mobile.log(Mobile.LOG_ERROR, FreeJ2ME.class.getPackage().getName() + "." + FreeJ2ME.class.getSimpleName() + ": " + "File not found...");
 			System.exit(0);
 		}
 

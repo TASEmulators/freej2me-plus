@@ -26,13 +26,11 @@ public class DirectUtils
 
 	public static Image createImage(byte[] imageData, int imageOffset, int imageLength)
 	{
-		//System.out.println("Nokia Create Image A");
 		return Image.createImage(imageData, imageOffset, imageLength);
 	}
 
 	public static Image createImage(int width, int height, int ARGBcolor)
 	{
-		//System.out.println("Nokia Create Image B");
 		Image image = Image.createImage(width, height);
 		PlatformGraphics gc = (PlatformGraphics)image.getGraphics();
 		gc.clearRect(0, 0, width, height);
@@ -43,7 +41,6 @@ public class DirectUtils
 
 	public static DirectGraphics getDirectGraphics(javax.microedition.lcdui.Graphics g)
 	{
-		//System.out.println("Nokia DirectGraphics");
 		return (PlatformGraphics)g;
 	}
 

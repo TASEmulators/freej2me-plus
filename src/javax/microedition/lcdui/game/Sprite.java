@@ -19,6 +19,8 @@ package	javax.microedition.lcdui.game;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 
+import org.recompile.mobile.Mobile;
+
 public class Sprite extends Layer
 {
 
@@ -242,7 +244,7 @@ public class Sprite extends Layer
 	/* All CollidesWith methods have been rewritten, but i couldn't find a jar that actually uses them yet, so the debug entry messages will remain in place */
 	public final boolean collidesWith(Sprite s, boolean pixelLevel) 
 	{
-		System.out.println("CollidesWith A");
+		Mobile.log(Mobile.LOG_WARNING, Sprite.class.getPackage().getName() + "." + Sprite.class.getSimpleName() + ": " + "CollidesWith A");
 		if (!(s.visible && this.visible)) { return false; }
 	
 		Rect thisRect = getCollisionRect(this);
@@ -256,7 +258,7 @@ public class Sprite extends Layer
 	
 	public final boolean collidesWith(TiledLayer t, boolean pixelLevel) 
 	{
-		System.out.println("CollidesWith B");
+		Mobile.log(Mobile.LOG_WARNING, Sprite.class.getPackage().getName() + "." + Sprite.class.getSimpleName() + ": " + "CollidesWith B");
 		if (!(t.visible && this.visible)) { return false; }
 	
 		Rect thisRect = getCollisionRect(this);
@@ -287,7 +289,7 @@ public class Sprite extends Layer
 	
 	public final boolean collidesWith(Image image, int x, int y, boolean pixelLevel) 
 	{
-		System.out.println("CollidesWith C");
+		Mobile.log(Mobile.LOG_WARNING, Sprite.class.getPackage().getName() + "." + Sprite.class.getSimpleName() + ": " + "CollidesWith C");
 		if (!visible) { return false; }
 	
 		Rect thisRect = getCollisionRect(this);
@@ -413,7 +415,7 @@ public class Sprite extends Layer
 	private static boolean doPixelCollision(int image1XOffset, int image1YOffset, int image2XOffset, int image2YOffset,
 		Image image1, int transform1, Image image2, int transform2, int width, int height) 
 	{
-		System.out.println("TiledLayer: Per-Pixel Collision Check!");
+		Mobile.log(Mobile.LOG_WARNING, Sprite.class.getPackage().getName() + "." + Sprite.class.getSimpleName() + ": " + "TiledLayer: Per-Pixel Collision Check!");
 
 		final int[] argbData1 = getARGBData(image1, image1XOffset, image1YOffset, transform1, width, height);
 		final int[] argbData2 = getARGBData(image2, image2XOffset, image2YOffset, transform2, width, height);
@@ -515,8 +517,7 @@ public class Sprite extends Layer
 
 	private void computeTransformedBounds(int transform) 
 	{
-		// Debug not needed anymore, Viper Wars and JBenchmark 2 use this and neither were broken by the rewrite
-		// System.out.println("TiledLayer: ComputeTransBounds!");
+		Mobile.log(Mobile.LOG_DEBUG, Sprite.class.getPackage().getName() + "." + Sprite.class.getSimpleName() + ": " + "TiledLayer: ComputeTransBounds!");
 		switch (transform) 
 		{
 			case TRANS_NONE:
