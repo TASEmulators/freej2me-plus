@@ -269,8 +269,7 @@ public class Anbu
 
 			/* 
 			 * Like on libretro, access the image's DataBuffer directly instead of using BufferedImage's getRGB() method,
-			 * which is slower. The only difference is that here the data has to be saved as Integers instead of Bytes,
-			 * since the image we copy from is from TYPE_INT_ARGB, and not TYPE_3BYTE_BGR.
+			 * which is slower.
 			 */
 			final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
             pixels.write(0, data, 0, data.length);
