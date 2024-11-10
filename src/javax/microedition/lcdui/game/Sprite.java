@@ -120,6 +120,18 @@ public class Sprite extends Layer
 		y = s.getRefPixelY() - getTransformedPos(dRefY, t_currentTransformation, false);
 	}
 
+	public void defineReferencePixel(int x, int y) 
+	{
+		dRefX = x;
+		dRefY = y;
+	}
+
+	public void setRefPixelPosition(int x, int y) 
+	{
+		this.x = x - getTransformedPos(dRefX, this.t_currentTransformation, true);
+		this.y = y - getTransformedPos(dRefY, this.t_currentTransformation, false);
+	}
+
 	public int getRefPixelX() { return (this.x + getTransformedPos(dRefX, this.t_currentTransformation, true)); }
 
 	public int getRefPixelY() { return (this.y + getTransformedPos(dRefY, this.t_currentTransformation, false)); }
