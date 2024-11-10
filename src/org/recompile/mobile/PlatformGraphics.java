@@ -26,12 +26,14 @@ import com.nokia.mid.ui.DirectGraphics;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.awt.geom.AffineTransform;
 import java.awt.BasicStroke;
 
 public class PlatformGraphics extends javax.microedition.lcdui.Graphics implements DirectGraphics
 {
 	protected BufferedImage canvas;
+	private WritableRaster raster;
 	protected Graphics2D gc;
 
 	protected Color awtColor;
@@ -235,7 +237,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 	
 		final BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		temp.setRGB(0, 0, width, height, pixels, 0, width);
+		raster = temp.getRaster();
+		raster.setDataElements(0, 0, width, height, pixels);
 
 		gc.drawImage(temp, x, y, null);
 	}
@@ -473,7 +476,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				}
 
 				temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-				temp.setRGB(0, 0, width, height, data, 0, width);
+				raster = temp.getRaster();
+				raster.setDataElements(0, 0, width, height, data);
 				gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 			break;
 
@@ -490,7 +494,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 					}
 				}
 				temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-				temp.setRGB(0, 0, width, height, data, 0, scanlength);
+				raster = temp.getRaster();
+				raster.setDataElements(0, 0, width, height, data);
 				gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 			break;
 
@@ -501,7 +506,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	public void drawPixels(int[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		temp.setRGB(0, 0, width, height, pixels, offset, scanlength);
+		raster = temp.getRaster();
+		raster.setDataElements(0, 0, width, height, pixels); // Untested, potentially safe
+		//temp.setRGB(0, 0, width, height, pixels, offset, scanlength);
 		BufferedImage temp2 = manipulateImage(temp, manipulation);
 		gc.drawImage(temp2, x, y, null);
 	}
@@ -516,7 +523,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		temp.setRGB(0, 0, width, height, data, offset, scanlength);
+		raster = temp.getRaster();
+		raster.setDataElements(0, 0, width, height, data); // Untested, potentially safe
+		//temp.setRGB(0, 0, width, height, data, offset, scanlength);
 		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
