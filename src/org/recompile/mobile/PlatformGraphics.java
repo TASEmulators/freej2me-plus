@@ -205,39 +205,37 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	}
 
 	/* Based on J2ME-Loader */
-	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha) {
+	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha) 
+	{
 		if (width <= 0 || height <= 0) { return; }
-		
 		if (rgbData == null) { throw new NullPointerException(); }
-		
 		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException(); }
 		
 		if (scanlength > 0) 
 		{
 			if (offset + scanlength * (height - 1) + width > rgbData.length) { throw new ArrayIndexOutOfBoundsException(); }
-		} 
+		}
 		else 
 		{
 			if (offset + width > rgbData.length || offset + scanlength * (height - 1) < 0) { throw new ArrayIndexOutOfBoundsException(); }
 		}
-	
+
+		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		raster = temp.getRaster();
 		final int[] pixels = new int[width * height];
-	
-		for (int i = 0; i < height; i++) {
+
+		for (int i = 0; i < height; i++) 
+		{
 			int s = offset + i * scanlength;
 			int d = i * width;
-			for (int j = 0; j < width; j++) {
+			for (int j = 0; j < width; j++) 
+			{
 				int pixel = rgbData[s++];
-				if (!processAlpha) {
-					// Set fully opaque
-					pixel = (pixel & 0x00FFFFFF) | 0xFF000000; // Set alpha to 255
-				}
+				if (!processAlpha) { pixel = (pixel & 0x00FFFFFF) | 0xFF000000; } // Set alpha to 255
 				pixels[d + j] = pixel; // Store the pixel
 			}
 		}
-	
-		final BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		raster = temp.getRaster();
+
 		raster.setDataElements(0, 0, width, height, pixels);
 
 		gc.drawImage(temp, x, y, null);
@@ -452,8 +450,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	{
 		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
 		int c = 0;
-		int[] data;
-		BufferedImage temp;
+		int[] data = null;
+		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		raster = temp.getRaster();
 		switch(format)
 		{
 			case -1: // TYPE_BYTE_1_GRAY_VERTICAL // used by Monkiki's Castles
@@ -474,14 +473,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 					b++;
 					if(b>7) b=0;
 				}
-
-				temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-				raster = temp.getRaster();
-				raster.setDataElements(0, 0, width, height, data);
-				gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 			break;
 
-			case 1: // TYPE_BYTE_1_GRAY // used by Monkiki's Castles
+			case 1: // TYPE_BYTE_1_GRAY // used by Munkiki's Castles
 				data = new int[pixels.length*8];
 
 				for(int i=(offset/8); i<pixels.length; i++)
@@ -493,39 +487,72 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 						data[(i*8)+(7-j)] = Type1[c];
 					}
 				}
-				temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-				raster = temp.getRaster();
-				raster.setDataElements(0, 0, width, height, data);
-				gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 			break;
 
 			default: Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawPixels A : Format " + format + " Not Implemented");
 		}
+
+		raster.setDataElements(0, 0, width, height, data);
+		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
-	public void drawPixels(int[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
+	public void drawPixels(int[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format) 
 	{
+		if (width <= 0 || height <= 0) { return; }
+		if (pixels == null) { throw new NullPointerException(); }
+		if (offset < 0 || offset >= pixels.length) { throw new ArrayIndexOutOfBoundsException(); }
+
+		if (scanlength > 0) 
+		{
+			if (offset + scanlength * (height - 1) + width > pixels.length) { throw new ArrayIndexOutOfBoundsException(); }
+		} 
+		else 
+		{
+			if (offset + width > pixels.length || offset + scanlength * (height - 1) < 0) { throw new ArrayIndexOutOfBoundsException(); }
+		}
+
+		// Create the temporary BufferedImage and get its WritableRaster
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		raster = temp.getRaster();
-		raster.setDataElements(0, 0, width, height, pixels); // Untested, potentially safe
-		//temp.setRGB(0, 0, width, height, pixels, offset, scanlength);
-		BufferedImage temp2 = manipulateImage(temp, manipulation);
-		gc.drawImage(temp2, x, y, null);
+
+		// Prepare pixel data
+		final int[] data = new int[width * height];
+
+		for (int row = 0; row < height; row++) 
+		{
+			int srcIndex = offset + row * scanlength;
+			for (int col = 0; col < width; col++) 
+			{
+				int pixel = pixels[srcIndex + col];
+				if (!transparency) { pixel = (pixel & 0x00FFFFFF) | 0xFF000000; } // Set alpha to 255
+				data[row * width + col] = pixel;
+			}
+		}
+
+		raster.setDataElements(0, 0, width, height, data);
+		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
 	public void drawPixels(short[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
-		int[] data = new int[pixels.length];
-		for(int i=0; i<pixels.length; i++)
-		{
-			data[i] = pixelToColor(pixels[i], format);
-			if(!transparency) { data[i] &=0x00FFFFFF; }
-		}
-
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		raster = temp.getRaster();
-		raster.setDataElements(0, 0, width, height, data); // Untested, potentially safe
-		//temp.setRGB(0, 0, width, height, data, offset, scanlength);
+
+		final int[] data = new int[pixels.length];
+		// Prepare the pixel data
+		for (int row = 0; row < height; row++) 
+		{
+			for (int col = 0; col < width; col++) 
+			{
+				int index = offset + row * scanlength + col;
+				data[row * width + col] = pixelToColor(pixels[index], format);
+				if (!transparency) { data[row * width + col] &= 0x00FFFFFF; } // Clear the alpha channel
+			
+			}
+		}
+	
+		// Set the pixel data directly into the raster
+		raster.setDataElements(0, 0, width, height, data);
 		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
