@@ -30,10 +30,12 @@ import javax.microedition.lcdui.game.GameCanvas;
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.awt.geom.AffineTransform;
 
 public class PlatformImage extends javax.microedition.lcdui.Image
 {
+	private WritableRaster raster;
 	protected BufferedImage canvas;
 	protected PlatformGraphics gc;
 
@@ -190,13 +192,12 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 	public void getRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height)
 	{
-		canvas.getRGB(x, y, width, height, rgbData, offset, scanlength);
+		raster = canvas.getRaster();
+		raster.getDataElements(x, y, width, height, rgbData);
+		//canvas.getRGB(x, y, width, height, rgbData, offset, scanlength);
 	}
 
-	public int getARGB(int x, int y)
-	{
-		return canvas.getRGB(x, y);
-	}
+	public int getARGB(int x, int y) { return canvas.getRGB(x, y); }
 
 	public int getPixel(int x, int y)
 	{
