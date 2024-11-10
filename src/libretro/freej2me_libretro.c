@@ -933,7 +933,7 @@ void retro_run(void)
 				t = 0;
 				for(i=0; i<frameSize; i++)
 				{
-					frame[i] = (frameBuffer[t]) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]<<16);
+					frame[i] = (frameBuffer[t]<<16) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]);
 					t+=3;
 				}
 			}
@@ -945,7 +945,7 @@ void retro_run(void)
 				{
 					for(i=frameHeight-1; i>=0; i--)
 					{
-						frame[(i*frameWidth)+j] = (frameBuffer[t]) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]<<16);
+						frame[(i*frameWidth)+j] = (frameBuffer[t]<<16) | (frameBuffer[t+1]<<8) | (frameBuffer[t+2]);
 						t+=3;
 					}
 				}

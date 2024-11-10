@@ -18,12 +18,7 @@ package org.recompile.freej2me;
 
 import org.recompile.mobile.*;
 
-import java.awt.Image;
-import java.awt.Canvas;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-
+import java.awt.image.DataBufferInt;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -38,11 +33,6 @@ public class Libretro
 {
 	private int lcdWidth;
 	private int lcdHeight;
-
-	private Runnable painter;
-
-	private BufferedImage surface;
-	private Graphics2D gc;
 
 	private Config config;
 	private boolean rotateDisplay = false;
@@ -147,9 +137,6 @@ public class Libretro
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
-		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
-		gc = (Graphics2D)surface.getGraphics();
-
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
 		config = new Config();
@@ -158,18 +145,7 @@ public class Libretro
 		lio = new LibretroIO();
 
 		lio.start();
-
-		painter = new Runnable()
-		{
-			public void run()
-			{
-				try { gc.drawImage(Mobile.getPlatform().getLCD(), 0, 0, lcdWidth, lcdHeight, null); }
-				catch (Exception e) { }
-			}
-		};
 		
-		Mobile.getPlatform().setPainter(painter);
-
 		Mobile.getPlatform().startEventQueue();
 
 		System.out.println("+READY");
@@ -222,11 +198,11 @@ public class Libretro
 							code = (din[1]<<24) | (din[2]<<16) | (din[3]<<8) | din[4];
 							switch(din[0])
 							{
-								case 0: // keyboard key up (unused)
-								break;
+								//case 0: // keyboard key up (unused)
+								//break;
 
-								case 1:	// keyboard key down (unused)
-								break;
+								//case 1:	// keyboard key down (unused)
+								//break;
 
 								case 2:	// joypad key up
 									mobikey = getMobileKeyJoy(code);
@@ -419,13 +395,21 @@ public class Libretro
 										/* Vibration duration should be set to zero to prevent constant sends of the same data, so update it here*/
 										Mobile.vibrationDuration = 0;
 
-										frameBuffer = ((DataBufferByte) surface.getRaster().getDataBuffer()).getData();
-										System.out.write(frameBuffer, 0, frameBuffer.length);
+										final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
+
+										for(int i=0; i<data.length; i++)
+										{
+											frameBuffer[3*i]   = (byte)((data[i]>>16)&0xFF);
+											frameBuffer[3*i+1] = (byte)((data[i]>>8)&0xFF);
+											frameBuffer[3*i+2] = (byte)((data[i])&0xFF);
+										}
+
+										System.out.write(frameBuffer, 0, data.length*3);
 										System.out.flush();
 									}
 									catch (Exception e)
 									{
-										System.out.print("Error sending frame: "+e.getMessage());
+										Mobile.log(Mobile.LOG_DEBUG, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Error sending frame: "+e.getMessage());
 										System.exit(0);
 									}
 								break;
@@ -486,8 +470,6 @@ public class Libretro
 			lcdWidth = w;
 			lcdHeight = h;
 			Mobile.getPlatform().resizeLCD(w, h);
-			surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
-			gc = (Graphics2D)surface.getGraphics();
 		}
 	}
 
