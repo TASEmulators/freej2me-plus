@@ -96,6 +96,7 @@ public class Config
 				settings.put("rotate", "off");
 				settings.put("fps", "0");
 				settings.put("soundfont", "Default");
+				settings.put("spdhacknoalpha", "off");
 				saveConfig();
 			}
 		}
@@ -136,6 +137,7 @@ public class Config
 			if(!settings.containsKey("rotate")) { settings.put("rotate", "off"); }
 			if(!settings.containsKey("fps")) { settings.put("fps", "0"); }
 			if(!settings.containsKey("soundfont")) { settings.put("soundfont", "Default"); }
+			if(!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", "off"); }
 
 		}
 		catch (Exception e)
@@ -213,6 +215,14 @@ public class Config
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: soundfont "+value);
 		settings.put("soundfont", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateAlphaSpeedHack(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhacknoalpha "+value);
+		settings.put("spdhacknoalpha", value);
 		saveConfig();
 		onChange.run();
 	}

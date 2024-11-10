@@ -50,7 +50,8 @@ public final class AWTGUI
 
 	/* MenuBar's menus */
 	Menu fileMenu = new Menu("File");
-	Menu optionMenu = new Menu("Settings"); 
+	Menu optionMenu = new Menu("Settings");
+	Menu speedHackMenu = new Menu("SpeedHacks"); 
 	Menu debugMenu = new Menu("Debug");
 
 	/* Sub menus (for now, all of them are located in "Settings") */
@@ -169,6 +170,8 @@ public final class AWTGUI
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
 	final CheckboxMenuItem fpsCap30 = new CheckboxMenuItem("30 FPS", false);
 	final CheckboxMenuItem fpsCap15 = new CheckboxMenuItem("15 FPS", false);
+
+	final CheckboxMenuItem noAlphaOnBlankImages = new CheckboxMenuItem("No alpha on blank images");
 
 	final CheckboxMenuItem logDisabled = new CheckboxMenuItem("Disabled", false);
 	final CheckboxMenuItem logDebug = new CheckboxMenuItem("Debug", false);
@@ -413,6 +416,18 @@ public final class AWTGUI
 			{
 				if(showFPS.getState()){ Mobile.getPlatform().setShowFPS(true); }
 				else{ Mobile.getPlatform().setShowFPS(false); }
+			}
+		});
+
+		noAlphaOnBlankImages.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(noAlphaOnBlankImages.getState()){ config.updateAlphaSpeedHack("on"); hasPendingChange = true; }
+				else{ config.updateAlphaSpeedHack("off"); hasPendingChange = true; }
+
+				restartRequiredDialog.setLocationRelativeTo(main);
+				restartRequiredDialog.setVisible(true);
 			}
 		});
 
@@ -808,6 +823,7 @@ public final class AWTGUI
 		optionMenu.add(phoneType);
 		optionMenu.add(fpsCap);
 		optionMenu.add(mapInputs);
+		optionMenu.add(speedHackMenu);
 
 		logLevel.add(logDisabled);
 		logLevel.add(logDebug);
@@ -842,6 +858,8 @@ public final class AWTGUI
 		fpsCap.add(fpsCap60);
 		fpsCap.add(fpsCap30);
 		fpsCap.add(fpsCap15);
+
+		speedHackMenu.add(noAlphaOnBlankImages);
 		
 		// add menus to menubar
 		menuBar.add(fileMenu);
@@ -868,6 +886,8 @@ public final class AWTGUI
 			nokiaKbLayout.setState(config.settings.get("phone").equals("NokiaKeyboard"));
 			lgLayout.setState(config.settings.get("phone").equals("LG"));
 			motorolaLayout.setState(config.settings.get("phone").equals("Motorola"));
+
+			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));
 
 			resChoice.select(""+ Integer.parseInt(config.settings.get("width")) + "x" + ""+ Integer.parseInt(config.settings.get("height")));
 

@@ -81,6 +81,11 @@ struct retro_core_option_v2_category option_categories[] =
         "Advanced Settings",
         "Options related to FreeJ2ME's libretro core, such as the on-screen pointer type and speed, as well as logging."
     },
+    {
+        "speed_hacks",
+        "Speed Hacks",
+        "Options that can increase FreeJ2ME's performance in exchange for lower compatibility by going out of J2ME specifications."
+    },
 };
 
 /* Core config options if running on a frontend with support for config version 2 */
@@ -340,6 +345,20 @@ struct retro_core_option_v2_definition core_options[] =
         },
         "Yellow"
     },
+    {
+        "freej2me_spdhacknoalpha",
+        "Speed Hacks > No Alpha on Blank Images (Restart Required)",
+        "No Alpha on Blank Images (Restart Required)",
+        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with not transparency. Provides a Moderate to Large performance boost depending with little to no side effects",
+        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with not transparency. Provides a Moderate to Large performance boost depending with little to no side effects",
+        "speed_hacks",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
     { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },
 };
 
@@ -568,6 +587,17 @@ struct retro_core_option_definition core_options_v1 [] =
         },
         "Yellow"
     },
+    {
+        "freej2me_spdhacknoalpha",
+        "No Alpha on Blank Images (Restart Required)",
+        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with not transparency. Provides a Moderate to Large performance boost depending with little to no side effects",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
     { NULL, NULL, NULL, {{0}}, NULL },
 };
 
@@ -603,11 +633,11 @@ static const struct retro_variable vars[] =
     },
     { /* Logging Level */
         "freej2me_logginglevel",
-        "Dump Audio Streams: 0|1|2|3|4"
+        "Dump Audio Streams; 0|1|2|3|4"
     },
     { /* Dump Audio Streams */
         "freej2me_dumpaudiostreams",
-        "Dump Audio Streams: off|on"
+        "Dump Audio Streams; off|on"
     },
     { /* Pointer Type */
         "freej2me_pointertype",
@@ -632,6 +662,10 @@ static const struct retro_variable vars[] =
     { /* Pointer's click indicator color */
         "freej2me_pointerclickcolor",
         "Pointer Click Indicator Color; Yellow|Black|Red|Green|Blue|Pink|Cyan|White"
+    },
+    { /* No Alpha on Blank Images speed hack */
+        "freej2me_spdhacknoalpha",
+        "No Alpha on Blank Images(SpeedHack); off|on",
     },
     { NULL, NULL },
 };

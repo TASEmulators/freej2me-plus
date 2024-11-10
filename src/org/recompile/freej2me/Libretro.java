@@ -141,6 +141,10 @@ public class Libretro
 		if(Integer.parseInt(args[8]) == 0) { Mobile.logging = false; }
 		else { Mobile.logging = true; Mobile.minLogLevel = (byte) (Integer.parseInt(args[8])-1); }
 
+		/* No Alpha on Blank Images SpeedHack is a per-game config */
+		if(Integer.parseInt(args[9]) == 0) { Mobile.noAlphaOnBlankImages = false; }
+		else { Mobile.noAlphaOnBlankImages = true; }
+
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
 		surface = new BufferedImage(lcdWidth, lcdHeight, BufferedImage.TYPE_3BYTE_BGR); // libretro display
@@ -299,15 +303,15 @@ public class Libretro
 										if(rotateDisplay)   { config.settings.put("rotate", "on");  }
 										if(!rotateDisplay)  { config.settings.put("rotate", "off"); }
 
-										if(Mobile.lg)                { config.settings.put("phone", "LG");    }
-										else if(Mobile.motorola)     { config.settings.put("phone", "Motorola");  }
-										else if(Mobile.motoTriplets) { config.settings.put("phone", "MotoTriplets"); }
-										else if(Mobile.motoV8)       { config.settings.put("phone", "MotoV8"); }
-										else if(Mobile.nokia)        { config.settings.put("phone", "Nokia"); }
-										else if(Mobile.nokiaKeyboard)      { config.settings.put("phone", "NokiaKeyboard"); }
-										else if(Mobile.sagem)        { config.settings.put("phone", "Sagem"); }
-										else if(Mobile.siemens)      { config.settings.put("phone", "Siemens"); }
-										else                         { config.settings.put("phone", "Standard"); }
+										if(Mobile.lg)                 { config.settings.put("phone", "LG");    }
+										else if(Mobile.motorola)      { config.settings.put("phone", "Motorola");  }
+										else if(Mobile.motoTriplets)  { config.settings.put("phone", "MotoTriplets"); }
+										else if(Mobile.motoV8)        { config.settings.put("phone", "MotoV8"); }
+										else if(Mobile.nokia)         { config.settings.put("phone", "Nokia"); }
+										else if(Mobile.nokiaKeyboard) { config.settings.put("phone", "NokiaKeyboard"); }
+										else if(Mobile.sagem)         { config.settings.put("phone", "Sagem"); }
+										else if(Mobile.siemens)       { config.settings.put("phone", "Siemens"); }
+										else                          { config.settings.put("phone", "Standard"); }
 
 										if(soundEnabled)   { config.settings.put("sound", "on");  }
 										if(!soundEnabled)  { config.settings.put("sound", "off"); }
@@ -315,8 +319,11 @@ public class Libretro
 										config.settings.put("fps", "" + Mobile.limitFPS);
 
 										if(!Manager.useCustomMidi) { config.settings.put("soundfont", "Default"); }
-										else                           { config.settings.put("soundfont", "Custom");  }
-										
+										else                       { config.settings.put("soundfont", "Custom");  }
+
+										if(!Mobile.noAlphaOnBlankImages) { config.settings.put("spdhacknoalpha", "off"); }
+										else                             { config.settings.put("spdhacknoalpha", "on"); }
+
 										config.saveConfig();
 										settingsChanged();
 
@@ -385,6 +392,9 @@ public class Libretro
 
 									if(Integer.parseInt(cfgtokens[9])==0) { Mobile.logging = false;  }
 									else { Mobile.logging = true; Mobile.minLogLevel = (byte) (Integer.parseInt(cfgtokens[9])-1); }
+
+									if(Integer.parseInt(cfgtokens[10])==0) { Mobile.noAlphaOnBlankImages = false;  }
+									else { Mobile.noAlphaOnBlankImages = true; }
 
 									config.saveConfig();
 									settingsChanged();
@@ -466,6 +476,10 @@ public class Libretro
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
 		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
+
+		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
+		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
+		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
 
 		if(lcdWidth != w || lcdHeight != h)
 		{
