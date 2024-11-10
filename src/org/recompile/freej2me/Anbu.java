@@ -759,5 +759,9 @@ public class Anbu
 		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
 		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
 
+		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
+		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
+		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
+
 	}
 }

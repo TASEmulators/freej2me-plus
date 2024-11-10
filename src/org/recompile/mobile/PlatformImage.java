@@ -61,7 +61,9 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		width = Width;
 		height = Height;
 
-		canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
+		if(Mobile.noAlphaOnBlankImages) { canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_RGB); }
+		else { canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB); }
+		
 		createGraphics();
 
 		gc.setColor(0xFFFFFF);

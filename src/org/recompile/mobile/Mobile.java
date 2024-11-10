@@ -44,12 +44,15 @@ public class Mobile
 
 	private static Graphics3D graphics3d;
 
+	// Mobile should contain flags to any and all "speedhacks" present in FreeJ2ME
+	public static boolean noAlphaOnBlankImages = true;
+
 	// Enable/disable logging to the console and optionally to a file
 	public static boolean logging = true; 
 	private static final String LOG_FILE = "freej2me_system" + File.separatorChar + "FreeJ2ME.log";
 	public static byte minLogLevel = 1;
 
-	//Log Levels
+	// Log Levels
 	public static final byte LOG_DEBUG = 0;
     public static final byte LOG_INFO = 1;
     public static final byte LOG_WARNING = 2;
