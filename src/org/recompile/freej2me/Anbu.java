@@ -175,10 +175,12 @@ public class Anbu
 				config.settings.put("height", ""+lcdHeight);
 			}
 
-			settingsChanged();
-
 			// Start SDL
 			sdl = new SDL();
+
+			config.saveConfig();
+			settingsChanged();
+			
 			sdl.start(args);
 
 			// Run jar
@@ -725,6 +727,9 @@ public class Anbu
 
 	void settingsChanged() 
 	{
+		int w = Integer.parseInt(config.settings.get("width"));
+		int h = Integer.parseInt(config.settings.get("height"));
+
 		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
 
 		String sound = config.settings.get("sound");
@@ -761,6 +766,22 @@ public class Anbu
 		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
 		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
 		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
+
+		if(lcdWidth != w || lcdHeight != h)
+		{
+			if(!rotateDisplay) 
+			{
+				lcdWidth = w;
+				lcdHeight = h;
+			}
+			else 
+			{
+				lcdWidth = h;
+				lcdHeight = w;
+			}
+			Mobile.getPlatform().resizeLCD(lcdWidth, lcdHeight);
+			sdl.resolutionChanged = true;
+		}
 
 	}
 }
