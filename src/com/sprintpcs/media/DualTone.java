@@ -35,18 +35,18 @@ public class DualTone
 	private static final int PPQ = 24; // Ticks per quarter note
     private static final int BPM = 120; // Default BPM, not sure if DTFM changes this
     private static final double TICKS_PER_MILLISECOND = PPQ / (BPM * 4.0); // 4 quarter notes in a minute
-
 	
 	byte[] sequence;
-	int loops;
-
-	/* x-frequencies (high freqs?), y-frequencies (low freqs?), note duration, unknown, loops? */
+	int priority, vibration;
 
 	/* Implementation Idea: Dual Tone can just be made a single midi sequence with two tracks, one for each tone sequence. */
-	public DualTone(int[] x_frequencies, int[] y_frequencies, int[] durations, int unknown, int loops) 
+	public DualTone(int[] x_frequencies, int[] y_frequencies, int[] durations, int priority, int vibration) 
 	{
         try
 		{
+			this.priority = priority;
+			this.vibration = vibration;
+
             Sequence midiSequence = new Sequence(Sequence.PPQ, PPQ);
             Track trackA = midiSequence.createTrack();
 			Track trackB = midiSequence.createTrack();
@@ -84,6 +84,10 @@ public class DualTone
             Mobile.log(Mobile.LOG_ERROR, DualTone.class.getPackage().getName() + "." + DualTone.class.getSimpleName() + ": " + " failed to create DualTone:" + e.getMessage());
         }
     }
+
+	public int getPriority() { return priority; }
+
+	public int getVibration() { return vibration; }
 
 	private int convertFreqToNote(int frequency) 
 	{
