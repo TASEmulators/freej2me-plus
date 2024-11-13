@@ -35,8 +35,6 @@ public class Clip
 
 	public Clip(String locator, String contentType, int priority, int vibration) throws IOException 
     {
-        Mobile.log(Mobile.LOG_WARNING, Clip.class.getPackage().getName() + "." + Clip.class.getSimpleName() + ": " + "Clip (String, String, int, int)");
-
 		this.locator = locator;
 		this.contentType = contentType;
 		this.priority = priority;
@@ -45,8 +43,6 @@ public class Clip
 
 	public Clip(byte[] stream, String contentType, int priority, int vibration) throws IOException 
     {
-        Mobile.log(Mobile.LOG_WARNING, Clip.class.getPackage().getName() + "." + Clip.class.getSimpleName() + ": " + "Clip (byte[], String, int, int)");
-
 		this.stream = stream;
 		this.contentType = contentType;
 		this.priority = priority;
@@ -59,14 +55,21 @@ public class Clip
 
 	protected Player getPlayer() throws MediaException
     {
-        Mobile.log(Mobile.LOG_WARNING, Clip.class.getPackage().getName() + "." + Clip.class.getSimpleName() + ": " + "GetPlayer()");
-
 		Player player = null;
 		try 
         {
 			if (stream != null) { player = Manager.createPlayer(new ByteArrayInputStream(stream), contentType); } 
-            else { player = Manager.createPlayer(locator); }
-		} 
+            else 
+            {
+                // JAMDAT's Solitaire Deluxe prepends "resource:" before the actual resource location, also is the only sprint jar i've seen do this (and load data with locators)
+                if(locator.contains(":"))
+                {
+                    int lastIndex = locator.lastIndexOf(":");
+                    
+                    return Manager.createPlayer(Mobile.getResourceAsStream(null, locator.substring(lastIndex + 1)), contentType); 
+                }
+		    }
+        }
         catch (IOException e) { Mobile.log(Mobile.LOG_WARNING, Clip.class.getPackage().getName() + "." + Clip.class.getSimpleName() + ": " + "failed to getPlayer: " + e.getMessage()); } 
         
 		return player;
