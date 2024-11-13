@@ -509,7 +509,8 @@ public class MIDletLoader extends URLClassLoader
 			name.startsWith("java.") || name.startsWith("javax.") || name.startsWith("com.nokia") ||
 			name.startsWith("com.mascotcapsule") || name.startsWith("com.samsung") || name.startsWith("sun.") ||
 			name.startsWith("com.siemens") || name.startsWith("org.recompile") || name.startsWith("jdk.") ||
-			name.startsWith("com.vodafone.") || name.startsWith("com.jblend.") || name.startsWith("com.motorola.")
+			name.startsWith("com.vodafone.") || name.startsWith("com.jblend.") || name.startsWith("com.motorola.") ||
+			name.startsWith("com.sprintpcs.")
 			)
 		{
 			return loadClass(name, true);
