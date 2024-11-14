@@ -56,7 +56,7 @@ public class Player
         try 
         { 
             player.start();
-            listener.playerUpdate(PlayerListener.STARTED, player.getMediaTime());
+            if(listener != null) { listener.playerUpdate(PlayerListener.STARTED, player.getMediaTime()); }
         } 
         catch (Exception e) { Mobile.log(Mobile.LOG_WARNING, Player.class.getPackage().getName() + "." + Player.class.getSimpleName() + ": " + "failed to play Clip media: " + e.getMessage()); }
 	}
@@ -86,7 +86,7 @@ public class Player
         try 
         { 
             player.start();
-            listener.playerUpdate(PlayerListener.STARTED, player.getMediaTime());
+            if(listener != null) { listener.playerUpdate(PlayerListener.STARTED, player.getMediaTime()); }
         } 
         catch (Exception e) 
         { 
@@ -94,7 +94,11 @@ public class Player
         }
 	}
 
-    public static void resume() { player.start(); }
+    public static void resume() 
+    { 
+        player.start(); 
+        if(listener != null) { listener.playerUpdate(PlayerListener.STARTED, player.getMediaTime()); } 
+    }
 
     public static void addPlayerListener(PlayerListener playerListener) { listener = playerListener; }
 
@@ -105,7 +109,7 @@ public class Player
 		if (player != null) 
         { 
             player.stop(); 
-            listener.playerUpdate(PlayerListener.STOPPED, player.getMediaTime());
+            if(listener != null) { listener.playerUpdate(PlayerListener.STOPPED, player.getMediaTime()); }
         }
 	}
 }
