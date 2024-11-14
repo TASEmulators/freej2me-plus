@@ -267,7 +267,7 @@ public class Libretro
 										path.append((char)bin);
 									}
 									url = (new File(path.toString())).toURI().toURL();
-									if(Mobile.getPlatform().loadJar(url.toString()))
+									if(Mobile.getPlatform().load(url.toString()))
 									{
 										// Check config
 										config.init();

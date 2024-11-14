@@ -161,7 +161,7 @@ public class Anbu
 
 		Mobile.getPlatform().startEventQueue();
 
-		if(file != null && Mobile.getPlatform().loadJar(file))
+		if(file != null && Mobile.getPlatform().load(file))
 		{
 			// Check config
 			config.init();
