@@ -26,9 +26,10 @@ import org.recompile.mobile.Mobile;
 
 public class Player 
 {
-	private static javax.microedition.media.Player player;
+    private static javax.microedition.media.Player player;
+    private static javax.microedition.media.Player bgPlayer;
     private static PlayerListener listener;
-	private static int priority;
+    private static int priority;
 
 	public static void play(Clip clip, int repeat) 
     {
@@ -93,6 +94,29 @@ public class Player
             Mobile.log(Mobile.LOG_WARNING, Player.class.getPackage().getName() + "." + Player.class.getSimpleName() + ": " + "failed to play DualTone media: " + e.getMessage());
         }
 	}
+
+    public static void playBackground(Clip clip, int repeat) 
+    {
+        if (repeat < -1) { throw new IllegalArgumentException("Invalid repeat value was received"); }
+
+		if (bgPlayer != null) { bgPlayer.close(); }
+
+        try { bgPlayer = clip.getPlayer(); }
+        catch (Exception e) { Mobile.log(Mobile.LOG_WARNING, Player.class.getPackage().getName() + "." + Player.class.getSimpleName() + ": " + "failed to prepare Clip media: " + e.getMessage()); }
+        
+
+		if (repeat != -1 /* Clip.LOOP_CONTINUOUSLY */) { bgPlayer.setLoopCount(repeat+1); }
+		else { bgPlayer.setLoopCount(repeat); }
+		
+		Mobile.vibrationDuration = clip.getVibration();
+		
+        try 
+        { 
+            bgPlayer.start();
+            if(listener != null) { listener.playerUpdate(PlayerListener.STARTED, bgPlayer.getMediaTime()); }
+        } 
+        catch (Exception e) { Mobile.log(Mobile.LOG_WARNING, Player.class.getPackage().getName() + "." + Player.class.getSimpleName() + ": " + "failed to play Clip media on Background: " + e.getMessage()); }
+    }
 
     public static void resume() 
     { 
