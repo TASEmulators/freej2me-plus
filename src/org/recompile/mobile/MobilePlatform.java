@@ -17,9 +17,18 @@
 package org.recompile.mobile;
 
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.awt.Color;
@@ -198,25 +207,52 @@ public class MobilePlatform
 	}
 
 /*
-	******** Jar Loading ********
+	******** Jar/Jad Loading ********
 */
 
-	public boolean loadJar(String jarurl)
+	public boolean load(String fileName) 
 	{
-		try
-		{
-			URL jar = new URL(jarurl);
-			loader = new MIDletLoader(new URL[]{jar});
-			return true;
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + e.getMessage());
-			e.printStackTrace();
-			return false;
-		}
+        Map<String, String> descriptorProperties = new HashMap<>();
+        boolean isJad = fileName.toLowerCase().endsWith(".jad");
 
-	}
+        if (isJad) 
+		{
+            String preparedFileName = fileName.substring(fileName.lastIndexOf(":") + 1).trim();
+            try { preparedFileName = URLDecoder.decode(preparedFileName, StandardCharsets.UTF_8.name()); } 
+			catch (Exception e) 
+			{
+                System.err.println("Error decoding file name: " + e.getMessage());
+                return false;
+            }
+
+            try (InputStream targetStream = new FileInputStream(preparedFileName)) { MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties); } 
+			catch (IOException e) 
+			{
+                Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load Jad: " + e.getMessage());
+                return false;
+            }
+
+            String jarUrl = descriptorProperties.getOrDefault("MIDlet-Jar-URL", preparedFileName.replace(".jad", ".jar"));
+
+            // We will not support downloading jars from the internet on the fly, unless there is a very good reason to do so.
+            if (jarUrl.toLowerCase().contains("http:") || jarUrl.toLowerCase().contains("https:")) 
+				{ jarUrl = fileName.replace(".jad", ".jar"); }
+
+            fileName = jarUrl;
+        }
+
+        try 
+		{
+            URL jar = new URL(fileName);
+            loader = new MIDletLoader(new URL[]{jar}, descriptorProperties);
+            return true;
+        } 
+		catch (Exception e) 
+		{
+            Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load Jar: " + e.getMessage());
+            return false;
+        }
+    }
 
 	public void runJar()
 	{
@@ -252,12 +288,6 @@ public class MobilePlatform
 		painter.run();
 
 		//System.gc();
-	}
-
-	public void setPlatformProperty(String value)
-	{
-		loader.setProperty("microedition.platform", value);
-		System.setProperty("microedition.platform", value);
 	}
 
 

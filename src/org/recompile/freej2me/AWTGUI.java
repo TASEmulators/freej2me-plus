@@ -145,7 +145,7 @@ public final class AWTGUI
 	final MenuItem aboutMenuItem = new MenuItem("About FreeJ2ME");
 	final MenuItem resChangeMenuItem = new MenuItem("Change Phone Resolution");
 
-	final MenuItem openMenuItem = new MenuItem("Open Jar");
+	final MenuItem openMenuItem = new MenuItem("Open JAR/JAD File");
 	final MenuItem closeMenuItem = new MenuItem("Close Jar (Stub)");
 	final MenuItem scrShot = new MenuItem("Take Screenshot");
 	final MenuItem exitMenuItem = new MenuItem("Exit FreeJ2ME");
@@ -910,12 +910,12 @@ public final class AWTGUI
 
 			if(a.getActionCommand() == "Open") 
 			{
-				FileDialog filePicker = new FileDialog(main, "Open JAR File", FileDialog.LOAD);
+				FileDialog filePicker = new FileDialog(main, "Open JAR/JAD File", FileDialog.LOAD);
 				String filename;
 				filePicker.setFilenameFilter(new FilenameFilter()
 				{
 					public boolean accept(File dir, String name) 
-					{ return name.toLowerCase().endsWith(".jar"); }
+					{ return name.toLowerCase().endsWith(".jar") || name.toLowerCase().endsWith(".jad"); }
 				});
 				filePicker.setVisible(true);
 

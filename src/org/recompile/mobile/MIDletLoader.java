@@ -36,6 +36,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import java.util.Map;
 import java.util.HashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -68,14 +69,18 @@ public class MIDletLoader extends URLClassLoader
 	private HashMap<String, String> properties = new HashMap<String, String>(32);
 
 
-	public MIDletLoader(URL urls[])
+	public MIDletLoader(URL urls[], Map<String, String> descriptorProperties)
 	{
 		super(urls);
 
-		try {
+		try 
+		{
 			String jarName = Paths.get(urls[0].toURI()).getFileName().toString().replace('.', '_');
 			suitename = jarName;
-		} catch (URISyntaxException e) {
+		} 
+		catch (URISyntaxException e) 
+		{
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse jar:" + e.getMessage());
 			e.printStackTrace();
 		}
 
@@ -95,10 +100,7 @@ public class MIDletLoader extends URLClassLoader
 			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't add CLDC System Properties");
 		}
 
-		try
-		{
-			loadManifest();
-		}
+		try { loadManifest(); }
 		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Read Manifest!");
@@ -114,77 +116,72 @@ public class MIDletLoader extends URLClassLoader
 		properties.put("device.imei", "000000000000000");
 
 
-		if (className == null) {
-			className = findMainClassInJars(urls);
-		}
+		if (className == null) { className = findMainClassInJars(urls); }
+
+		// Integrate properties retrieved from JAD file, if any.
+		properties.putAll(descriptorProperties);
 	}
 
-	public static String findMainClassInJars(URL[] urls) {
+	public static String findMainClassInJars(URL[] urls) 
+	{
 		// we search for a class file containing "startApp" 
 		// note this is just an approximation, but it often works
 		// the class might be abstract though..
 
-
-        for (URL url : urls) {
+        for (URL url : urls) 
+		{
 			File file;
-			try {
-				file = new File(url.toURI());
-			} catch (URISyntaxException e) {
-				return null;
-			}
-            try (JarFile jarFile = new JarFile(file)) {
+			try { file = new File(url.toURI()); } 
+			catch (URISyntaxException e) { return null; }
+
+            try (JarFile jarFile = new JarFile(file)) 
+			{
                 Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
+                while (entries.hasMoreElements()) 
+				{
                     JarEntry entry = entries.nextElement();
-                    if (entry.getName().endsWith(".class")) {
+                    if (entry.getName().endsWith(".class")) 
+					{
                         String className = entry.getName().replace('/', '.').replace(".class", "");
-                        if (hasStartApp(className, jarFile.getInputStream(entry))) {
-                            return className;
-                        }
+                        if (hasStartApp(className, jarFile.getInputStream(entry))) { return className; }
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            } 
+			catch (IOException e) { e.printStackTrace(); }
         }
         return null;
     }
 
-	private static boolean hasStartApp(String className, InputStream is) {
+	private static boolean hasStartApp(String className, InputStream is) 
+	{
 		byte[] pattern = "startApp".getBytes();
-		try {
+		try 
+		{
 			byte[] classBytes = readBytes(is);
-			for (int i = 0; i < classBytes.length - pattern.length; i++) {
+			for (int i = 0; i < classBytes.length - pattern.length; i++) 
+			{
 				int j = 0;
-				for (j = 0; j < pattern.length; j++) {
-					if (classBytes[i+j] != pattern[j]) {
-						break;
-					}
+				for (j = 0; j < pattern.length; j++) 
+				{
+					if (classBytes[i+j] != pattern[j]) { break; }
 				}
-				if (j == pattern.length) {
-					return true;
-				}
+				if (j == pattern.length) { return true; }
 			}
-		} catch (IOException e) {
-				e.printStackTrace();
-		}
-  		finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		} catch (IOException e) { e.printStackTrace(); }
+  		finally 
+		{
+			try { is.close(); } 
+			catch (IOException e) { e.printStackTrace(); }
 		} 
         return false;
     }
 
-	private static byte[] readBytes(InputStream is) throws IOException {
+	private static byte[] readBytes(InputStream is) throws IOException 
+	{
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         int nRead;
         byte[] data = new byte[1024];
-        while ((nRead = is.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, nRead);
-        }
+        while ((nRead = is.read(data, 0, data.length)) != -1) { buffer.write(data, 0, nRead); }
         return buffer.toByteArray();
     }
 
@@ -249,84 +246,74 @@ public class MIDletLoader extends URLClassLoader
 		}
 	}
 
+	public static void parseDescriptorInto(InputStream is, Map<String, String> keyValueMap) 
+	{
+        String currentKey = null;
+        StringBuilder currentValue = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) 
+		{
+            String line;
+            while ((line = br.readLine()) != null) 
+			{
+				if (line.trim().isEmpty()) { continue; }
+                if (line.startsWith(" ")) { currentValue.append(line, 1, line.length()); } 
+				else 
+				{
+                    if (currentKey != null) 
+					{
+                        keyValueMap.put(currentKey, currentValue.toString().trim());
+                        currentValue.setLength(0);
+                    }
+
+                    int colonIndex = line.indexOf(':');
+
+                    if (colonIndex != -1) 
+					{
+                        currentKey = line.substring(0, colonIndex).trim();
+                        currentValue.append(line.substring(colonIndex + 1).trim());
+                    }
+                }
+            }
+            if (currentKey != null) { keyValueMap.put(currentKey, currentValue.toString().trim()); }
+        } 
+		catch (IOException e) 
+		{
+            Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse JAD:" + e.getMessage());
+        }
+    }
+
 	private void loadManifest()
 	{
 		String resource = "META-INF/MANIFEST.MF";
 		URL url = findResource(resource);
-		if(url==null)
+		if (url == null) 
 		{
-			resource = "meta-inf/MANIFEST.MF";
+			resource = "META-INF/MANIFEST.FM";
 			url = findResource(resource);
-			if(url==null)
-			{
-				resource = "META-INF/manifest.fm";
-				url = findResource(resource);
-				if(url==null)
-				{
-					resource = "meta-inf/manifest.fm";
-					url = findResource(resource);
-					if(url==null)
-					{
-						return;
-					}	
-				}	
-			}
+			if (url == null) { return; }
 		}
 
-		String line;
-		String[] parts;
-		int split;
-		String key;
-		String value;
-		try
-		{
-			InputStream is = url.openStream();
-			BufferedReader br = new BufferedReader(new InputStreamReader(is,"utf-8"));
-			
-			ArrayList<String> lines = new ArrayList<String>();
-			while ((line = br.readLine()) != null) 
-			{
-				if(line.startsWith(" "))
-				{
-					line = lines.get(lines.size()-1) + line.trim();
-					lines.remove(lines.size()-1);
-				}
-				lines.add(line);
-			}
-
-			for (int i=0; i<lines.size(); i++)
-			{
-				line = lines.get(i);
-				if(line.startsWith("MIDlet-1:"))
-				{
-					Mobile.log(Mobile.LOG_INFO, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + line);
-					line = line.substring(9);
-					parts = line.split(",");
-					if(parts.length == 3)
-					{
-						name = parts[0].trim();
-						icon = parts[1].trim();
-						className = parts[2].trim();
-						suitename = name;
-					}
-					//Mobile.log(MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Loading " + name);
-				}
-
-				split = line.indexOf(":");
-				if(split>0)
-				{
-					key = line.substring(0, split).trim();
-					value = line.substring(split+1).trim();
-					properties.put(key, value);
-				}
-			}
-			// for RecordStore, remove illegal chars from name
-			suitename = suitename.replace(":","");
-		}
-		catch (Exception e)
+		try { parseDescriptorInto(url.openStream(), properties); } 
+		catch (Exception e) 
 		{
 			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Read Jar Manifest!");
 			e.printStackTrace();
+		}
+
+		if (properties.containsKey("MIDlet-1")) 
+		{
+			String val = properties.get("MIDlet-1");
+			String[] parts = val.split(",");
+			if (parts.length == 3) 
+			{
+				name = parts[0].trim();
+				icon = parts[1].trim();
+				
+				if (className == null) { className = parts[2].trim(); }
+				
+				suitename = name;
+				suitename = suitename.replace(":","");
+			}
 		}
 	}
 
@@ -412,22 +399,27 @@ public class MIDletLoader extends URLClassLoader
         return null;
     }
 
-    private URL findResourceInJar(URL jarUrl, String resourceName) {
-        if (jarUrl.getProtocol().equals("file") && jarUrl.getPath().endsWith(".jar")) {
-            try (JarFile jarFile = new JarFile(new File(jarUrl.toURI()))) {
+    private URL findResourceInJar(URL jarUrl, String resourceName) 
+	{
+        if (jarUrl.getProtocol().equals("file") && jarUrl.getPath().endsWith(".jar")) 
+		{
+            try (JarFile jarFile = new JarFile(new File(jarUrl.toURI()))) 
+			{
                 Enumeration<JarEntry> entries = jarFile.entries();
-                while (entries.hasMoreElements()) {
+                while (entries.hasMoreElements()) 
+				{
                     JarEntry entry = entries.nextElement();
                     String entryName = entry.getName();
-                    if (entryName.equalsIgnoreCase(resourceName)) {
+                    if (entryName.equalsIgnoreCase(resourceName)) 
+					{
                         // Construct the URL for the found resource
                         String jarEntryUrl = "jar:" + jarUrl.toExternalForm() + "!/" + entryName;
                         return new URL(jarEntryUrl);
                     }
                 }
             } catch (URISyntaxException | IOException e) {
-                // Handle exceptions as needed
-                e.printStackTrace();
+				Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Couldn't find resource in jar: "+ e.getMessage());
+				e.printStackTrace();
             }
         }
         return null;
@@ -560,11 +552,6 @@ public class MIDletLoader extends URLClassLoader
 		{
 			return super.getResourceAsStream(resource);
 		}
-	}
-
-	public void setProperty(String key, String value)
-	{
-		properties.put(key, value);
 	}
 
 	private class SiemensInputStream extends InputStream

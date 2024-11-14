@@ -313,7 +313,7 @@ public class FreeJ2ME
 				catch (InterruptedException e) { }
 			}
 		}
-		if(Mobile.getPlatform().loadJar(awtGUI.getJarPath()))
+		if(Mobile.getPlatform().load(awtGUI.getJarPath()))
 		{
 			config.init();
 
