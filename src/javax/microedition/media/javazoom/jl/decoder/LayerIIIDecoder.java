@@ -276,7 +276,6 @@ final class LayerIIIDecoder implements FrameDecoder
 	              get_LSF_scale_factors(ch, gr);
 
 				  huffman_decode(ch, gr);
-				  Mobile.log(Mobile.LOG_DEBUG, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "CheckSum HuffMan = " + CheckSumHuff);
 				  dequantize_sample(ro[ch], ch, gr);
 				}
 
@@ -788,7 +787,6 @@ final class LayerIIIDecoder implements FrameDecoder
 	      is_1d[index++] = y[0];
 	      
 	      CheckSumHuff = CheckSumHuff + x[0] + y[0];
-	      Mobile.log(Mobile.LOG_DEBUG, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "x = "+x[0]+" y = "+y[0]);
 		}
 
 		// Read count1 area
@@ -804,8 +802,6 @@ final class LayerIIIDecoder implements FrameDecoder
 	      is_1d[index++] = x[0];
 	      is_1d[index++] = y[0];
           CheckSumHuff = CheckSumHuff + v[0] + w[0] + x[0] + y[0];
-	      Mobile.log(Mobile.LOG_DEBUG, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "v = "+v[0]+" w = "+w[0]);
-	      Mobile.log(Mobile.LOG_DEBUG, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "x = "+x[0]+" y = "+y[0]);
 	      num_bits = br.hsstell();
 	   }
 
@@ -1046,7 +1042,6 @@ final class LayerIIIDecoder implements FrameDecoder
 					 {*/						   
 		 		for( sfb=3; sfb < 13; sfb++)
 	            	 {						   
-							Mobile.log(Mobile.LOG_DEBUG, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "sfreq="+sfreq+" sfb="+sfb+" sfBandIndex="+sfBandIndex.length+" sfBandIndex[sfreq].s="+sfBandIndex[sfreq].s.length);
 							sfb_start = sfBandIndex[sfreq].s[sfb];
 							sfb_lines = sfBandIndex[sfreq].s[sfb+1] - sfb_start;
 
@@ -1382,7 +1377,7 @@ final class LayerIIIDecoder implements FrameDecoder
 	               }
 					}
 					else {
-						Mobile.log(Mobile.LOG_DEBUG, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "Error in stereo processing\n");
+						Mobile.log(Mobile.LOG_ERROR, LayerIIIDecoder.class.getPackage().getName() + "." + LayerIIIDecoder.class.getSimpleName() + ": " + "Error in stereo processing\n");
 					}
 	            i++;
 				}
