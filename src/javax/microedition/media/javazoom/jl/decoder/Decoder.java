@@ -62,6 +62,8 @@ public class Decoder implements DecoderErrors
 	
 	private int						outputFrequency;
 	private int						outputChannels;
+
+	private Equalizer				equalizer = new Equalizer();
 	
 	private boolean					initialized;
 		
@@ -229,11 +231,11 @@ public class Decoder implements DecoderErrors
 		if (output==null)
 			output = new SampleBuffer(header.frequency(), channels);
 		
-		filter1 = new SynthesisFilter(0, scalefactor);
+		float[] factors = equalizer.getBandFactors();
+		filter1 = new SynthesisFilter(0, scalefactor, factors);
    		
 		// REVIEW: allow mono output for stereo
-		if (channels==2) 
-			filter2 = new SynthesisFilter(1, scalefactor);
+		if (channels==2)  { filter2 = new SynthesisFilter(1, scalefactor, factors); }
 
 		outputChannels = channels;
 		outputFrequency = header.frequency();
