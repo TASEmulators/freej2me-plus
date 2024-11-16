@@ -135,9 +135,9 @@ class LayerIDecoder implements FrameDecoder
   		  	for (i = 0; i < num_subbands; ++i)
   		  		write_ready = subbands[i].put_next_sample(which_channels,filter1, filter2);
 
-  		  	filter1.calculate_pcm_samples(buffer);
+			filter1.calculate_pcm_samples_layer_i_ii(buffer);
   		  	if ((which_channels == OutputChannels.BOTH_CHANNELS) && (mode != Header.SINGLE_CHANNEL))
-           		filter2.calculate_pcm_samples(buffer);
+			filter2.calculate_pcm_samples_layer_i_ii(buffer);
   		  } while (!write_ready);
   		} while (!read_ready);
 		
