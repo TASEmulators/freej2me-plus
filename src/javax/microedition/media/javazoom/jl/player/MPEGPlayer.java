@@ -167,9 +167,7 @@
 				if (reset) 
 				{
 					Mobile.log(Mobile.LOG_WARNING, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "play locked");
-					synchronized (dataStream) {
-						dataStream.wait();
-					}
+					synchronized (dataStream) { dataStream.wait(); }
 					Mobile.log(Mobile.LOG_WARNING, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "play unlocked");
 				}
 				//int i = audio.getPosition();
@@ -199,6 +197,7 @@
 					}
 				}
 			}
+			paused = true;
 			return ret;
 		}
 
@@ -248,7 +247,7 @@
 		public int getBitrate() {
 			if(bitrate == 0) {
 				try {
-					bitrate = bitstream.header.bitrate();
+					bitrate = bitstream.readFrame().bitrate();
 				} catch (Exception ignored) {}
 			}
 			return bitrate;
@@ -309,15 +308,12 @@
 			try
 			{
 				AudioDevice out = audio;
-				if (out==null)
-					return false;
+				if (out==null) { return false; }
 
 				Header h = bitstream.readFrame();
 
-				if (h==null)
-					return false;
+				if (h==null) { return false; }
 				bitrate = h.bitrate();
-				Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + h.toString());
 
 				// sample buffer set when decoder constructed
 				SampleBuffer output = (SampleBuffer)decoder.decodeFrame(h, bitstream);
@@ -413,35 +409,31 @@
 		public Bitstream bitstream() { return bitstream; }
 
 	/* 
-		* TODO: Revise these J2ME Player methods, as the bitstream header isn't available here, 
-		* which means that setMicrosecondPosition as well as getDuration will not work as expected.
-		*/
-
-	/* This player works in milliseconds, these functions are called Microsecond just to match better against J2ME's player docs */
+	 * This player works in milliseconds. setMicrosecondPosition actually sets in milliseconds, but 
+	 * since getMicrosecondPosition converts to microseconds, the jar will get the resulting microsecond
+	 * position, aligning to the j2me docs.
+	 */
 	public void setMicrosecondPosition(long position) 
 	{
-		/*
-		try 
+		try
 		{
-			stop();
-			Header hdr = bitstream().header;
+			Header hdr = bitstream.readFrame();
 			reset();
 			skip((int) (position / 1000L), hdr);
-			play(Integer.MAX_VALUE);
 		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "MPEGPlayer: Failed to set microsecond position:" + e.getMessage());}
-		*/
 	}
 
+	/* getPosition returns in milliseconds, so multiplying by 1000 gives us the result in microseconds */
 	public long getMicrosecondPosition() { return getPosition() * 1000L; }
 
 	public long getDuration() 
 	{ 
-		long duration = 0;
+		double duration = 0;
 
-		//try { duration = (long) ((data.length * 8) / getBitrate()); } 
-		//catch (Exception e){ Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "Couldn't get duration:" + e.getMessage()); return 0;}
+		try { duration = (double) ((data.length * 8 * 1000D) / getBitrate()); } 
+		catch (Exception e){ Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "Couldn't get duration:" + e.getMessage()); return 0;}
 		
-		return duration; 
+		return (long) duration; 
 	}
 
 	public void loop(int count) 
