@@ -603,7 +603,7 @@ public class PlatformPlayer implements Player
 	{
 		private byte[] stream;
 		private MPEGPlayer mp3Player;
-		private Thread playerThread;
+		private Thread playerThread = null;
 
 		public MP3Player(InputStream stream)
 		{
@@ -629,32 +629,24 @@ public class PlatformPlayer implements Player
 
 		public void start()
 		{	
-			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
-
 			try 
 			{
 				playerThread = new Thread(() -> 
-				{ 
-					try 
-					{ 
-						boolean completed = mp3Player.play();
-					}
-					catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
-				});
-
-				/* TODO: MPEGPlayer needs some way of notifying listeners about END_OF_MEDIA events */
-				/* mp3Player.addLineListener(new LineListener() 
 				{
-					@Override
-					public void update(LineEvent event) 
+					try 
 					{
-						if (event.getType() == LineEvent.Type.STOP) 
+						if(getMediaTime() >= getDuration()) { setMediaTime(0); }
+						mp3Player.play();
+
+						//mp3Player.play(); is thread-blocking, so having this directly after it is safe.
+						if (!Thread.currentThread().isInterrupted()) 
 						{
 							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 							state = Player.PREFETCHED;
 						}
 					}
-				});*/
+					catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
+				});
 
 				playerThread.start();
 
@@ -667,6 +659,8 @@ public class PlatformPlayer implements Player
 		public void stop()
 		{
 			mp3Player.stop();
+			if (playerThread != null && playerThread.isAlive()) { playerThread.interrupt(); }
+
 			state = Player.PREFETCHED;
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
@@ -675,6 +669,7 @@ public class PlatformPlayer implements Player
 
 		public void setLoopCount(int count)
 		{
+			if(mp3Player == null) { return; }
 			/* 
 			 * Treat cases where an app wants this stream to loop continuously.
 			 * Here, count = 1 means it should loop one time, whereas in j2me
@@ -687,22 +682,36 @@ public class PlatformPlayer implements Player
 
 		public long setMediaTime(long now)
 		{
+			if(mp3Player == null) { return 0; }
+
 			if(now >= getDuration()) { mp3Player.setMicrosecondPosition(getDuration()); }
 			else if(now < 0) { mp3Player.setMicrosecondPosition(0); }
-			else { mp3Player.setMicrosecondPosition(now);  }
+			else { mp3Player.setMicrosecondPosition(now); }
 
 			/* 
-			 * IN MP3Player's case, we don't deal with microsecond resolution, so return the new
-			 * effective position according to the stream.
+			 * In MP3Player's case, we don't deal with microsecond resolution, so return the new
+			 * effective position converted to microseconds.
 			 */
 			return getMediaTime();
 		}
 
-		public long getMediaTime() { return mp3Player.getMicrosecondPosition(); }
+		public long getMediaTime() 
+		{ 
+			if(mp3Player != null) { return mp3Player.getMicrosecondPosition(); } 
+			return 0; 
+		}
 
-		public long getDuration() { return  mp3Player.getDuration(); }
+		public long getDuration() 
+		{ 
+			if(mp3Player != null) { return mp3Player.getDuration(); } 
+			return Player.TIME_UNKNOWN; 
+		}
 
-		public boolean isRunning() { return mp3Player.isRunning(); }
+		public boolean isRunning() 
+		{ 
+			if(mp3Player != null) { return mp3Player.isRunning(); } 
+			return false; 
+		}
 	}
 
 	/* Todo: Implement tone playing functionality */
