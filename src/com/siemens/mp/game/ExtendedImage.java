@@ -59,7 +59,10 @@ public class ExtendedImage extends com.siemens.mp.misc.NativeMem
 		Mobile.log(Mobile.LOG_WARNING, ExtendedImage.class.getPackage().getName() + "." + ExtendedImage.class.getSimpleName() + ": " + "setPixels");
 	}
 
-	public void getPixelBytes(byte[] pixels, int x, int y, int width, int height) { }
+	public void getPixelBytes(byte[] pixels, int x, int y, int width, int height) 
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, ExtendedImage.class.getPackage().getName() + "." + ExtendedImage.class.getSimpleName() + ": " + "getPixelBytes");
+	}
 
 	public void setPixels(byte[] pixels, int x, int y, int width, int height) { Mobile.log(Mobile.LOG_WARNING, ExtendedImage.class.getPackage().getName() + "." + ExtendedImage.class.getSimpleName() + ": " + "setPixels"); }
 
