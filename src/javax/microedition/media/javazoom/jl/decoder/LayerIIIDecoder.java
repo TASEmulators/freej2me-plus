@@ -44,8 +44,8 @@ import org.recompile.mobile.Mobile;
 final class LayerIIIDecoder implements FrameDecoder
 {
 	final double d43 = (4.0/3.0);
-	
-	public int[]				scalefac_buffer;
+	private static final float SCALE_FACTOR = 32760;
+	public final int[]				scalefac_buffer;
 
     private int                 CheckSumHuff = 0;
 	private int[] 				is_1d;
@@ -223,119 +223,109 @@ final class LayerIIIDecoder implements FrameDecoder
     * Decode one frame, filling the buffer with the output samples.
 	*/
 
-   // subband samples are buffered and passed to the
-   // SynthesisFilter in one go.
-	private float[] samples1 = new float[32];
-	private float[] samples2 = new float[32];
-
 	public void decode()
 	{
-		int nSlots = header.slots();
-	    int flush_main;
-	    int gr, ch, ss, sb, sb18;
-	    int main_data_end;
+		final int nSlots = header.slots();
+		final int flush_main;
+		int gr, ch, ss, sb, sb18;
+		int main_data_end;
 		int bytes_to_discard;
-	    int i;
+		int i;
 
 		get_side_info();
 
-	    for (i=0; i<nSlots; i++)
-	    	br.hputbuf(stream.get_bits(8));
+		for (i=0; i<nSlots; i++)
+			br.hputbuf(stream.get_bits(8));
 
-	    main_data_end = br.hsstell() >>> 3; // of previous frame
+		main_data_end = br.hsstell() >>> 3; // of previous frame
 
-	    if ((flush_main = (br.hsstell() & 7)) != 0) {
-	         br.hgetbits(8 - flush_main);
+			if ((flush_main = (br.hsstell() & 7)) != 0) 
+			{
+				br.hgetbits(8 - flush_main);
 				main_data_end++;
-		 }
+			}
 
-		 bytes_to_discard = frame_start - main_data_end
-								  - si.main_data_begin;
+			bytes_to_discard = frame_start - main_data_end
+					- si.main_data_begin;
 
-		 frame_start += nSlots;
+			frame_start += nSlots;
 
-	    if (bytes_to_discard < 0)
+			if (bytes_to_discard < 0)
 				return;
 
-		 if (main_data_end > 4096) {
+			if (main_data_end > 4096) 
+			{
 				frame_start -= 4096;
 				br.rewindNbytes(4096);
-		 }
+			}
 
-		 for (; bytes_to_discard > 0; bytes_to_discard--)
-	    		br.hgetbits(8);
+			for (; bytes_to_discard > 0; bytes_to_discard--)
+				br.hgetbits(8);
 
-		 for (gr=0;gr<max_gr;gr++) {
+			for (gr=0;gr<max_gr;gr++)
+			{
+				for (ch=0; ch<channels; ch++) 
+				{
+					part2_start = br.hsstell();
 
-				for (ch=0; ch<channels; ch++) {
-	           part2_start = br.hsstell();
+					if (header.version() == Header.MPEG1)
+						get_scale_factors(ch, gr);
+					else  // MPEG-2 LSF, SZD: MPEG-2.5 LSF
+						get_LSF_scale_factors(ch, gr);
 
-	           if (header.version() == Header.MPEG1)
-					  get_scale_factors(ch, gr);
-			   else  // MPEG-2 LSF, SZD: MPEG-2.5 LSF
-	              get_LSF_scale_factors(ch, gr);
-
-				  huffman_decode(ch, gr);
-				  dequantize_sample(ro[ch], ch, gr);
+					huffman_decode(ch, gr);
+					dequantize_sample(ro[ch], ch, gr);
 				}
 
-	         stereo(gr);
+				stereo(gr);
 
-	         if ((which_channels == OutputChannels.DOWNMIX_CHANNELS) && (channels > 1))
-	         	do_downmix();
+				if ((which_channels == OutputChannels.DOWNMIX_CHANNELS) && (channels > 1))
+					do_downmix();
 
-	         for (ch=first_channel; ch<=last_channel; ch++) {
+				for (ch=first_channel; ch<=last_channel; ch++)
+				{
 
-	         		reorder(lr[ch], ch, gr);
-						antialias(ch, gr);
+					reorder(lr[ch], ch, gr);
+					antialias(ch, gr);
+					
+					hybrid(ch, gr);
 
-	               hybrid(ch, gr);
+					for (sb18=18;sb18<576;sb18+=36) // Frequency inversion
+						for (ss=1;ss<SSLIMIT;ss+=2)
+							out_1d[sb18 + ss] = -out_1d[sb18 + ss];
 
-						for (sb18=18;sb18<576;sb18+=36) // Frequency inversion
-	                   for (ss=1;ss<SSLIMIT;ss+=2)
-	                  	  out_1d[sb18 + ss] = -out_1d[sb18 + ss];
-
-						if ((ch == 0) || (which_channels == OutputChannels.RIGHT_CHANNEL)) {
-						  for (ss=0;ss<SSLIMIT;ss++) { // Polyphase synthesis
-	                  	sb = 0;
-	                 		for (sb18=0; sb18<576; sb18+=18) {
-								samples1[sb] =  out_1d[sb18+ss];
-								//filter1.input_sample(out_1d[sb18+ss], sb);
-	                         sb++;
-	                     }
-	                    	filter1.input_samples(samples1);
-							filter1.calculate_pcm_samples(buffer);
-						  }
-						} else {
-						  for (ss=0;ss<SSLIMIT;ss++) { // Polyphase synthesis
-	                  	sb = 0;
-	                 		for (sb18=0; sb18<576; sb18+=18) {
-								samples2[sb] =  out_1d[sb18+ss];
-									 //filter2.input_sample(out_1d[sb18+ss], sb);
-	                         sb++;
-	                     }
-	                    	filter2.input_samples(samples2);
-							filter2.calculate_pcm_samples(buffer);
-						  }
-
-	               }
+					if ((ch == 0) || (which_channels == OutputChannels.RIGHT_CHANNEL)) 
+					{
+						for (ss=0;ss<SSLIMIT;ss++) 
+						{
+							// Polyphase synthesis
+							final float[] samples1 = filter1.samples;
+							sb = 0;
+							for (sb18=0; sb18<576; sb18+=18) 
+							{
+								samples1[sb] = out_1d[sb18+ss] * SCALE_FACTOR;
+								sb++;
+							}
+							filter1.calculate_pcm_samples_layer_iii(buffer);
+						}
+					} 
+					else
+					{
+						for (ss=0;ss<SSLIMIT;ss++)
+						{ 
+							// Polyphase synthesis
+							final float[] samples2 = filter2.samples;
+							sb = 0;
+							for (sb18=0; sb18<576; sb18+=18) 
+							{
+								samples2[sb] = out_1d[sb18+ss] * SCALE_FACTOR;
+								sb++;
+							}
+							filter2.calculate_pcm_samples_layer_iii(buffer);
+						}
+					}
 				}	// channels
-		 }	// granule
-
-  	        //if (counter <  609)
-  	        //{
-  	            counter++;
-  	            buffer.write_buffer(1);
-  	        //}
-  	        //else if (counter == 609)
-  	        //{
-  	        //    buffer.close();
-  	        //    counter++;
-  	        //}
-  	        //else
-  	        //{
-  	        //}
-
+			}	// granule
 	}
 
     /**
