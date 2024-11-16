@@ -37,7 +37,7 @@ import javax.sound.midi.Synthesizer;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
 
-public final class Manager
+public class Manager
 {
 	public static final String TONE_DEVICE_LOCATOR = "device://tone";
 
