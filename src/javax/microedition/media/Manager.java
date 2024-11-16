@@ -87,7 +87,7 @@ public class Manager
 
 			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
 
-			if(type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi")) 
+			if(type.equalsIgnoreCase("audio/x-mid") || type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi")) 
 				{ dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid");}
 			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav");}
 			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3");}
@@ -98,6 +98,17 @@ public class Manager
 		}
 
 		return new PlatformPlayer(stream, type);
+	}
+
+	public static Player createPlayer(com.siemens.mp.media.protocol.DataSource source) throws MediaException
+	{
+		checkCustomMidi();
+
+		if(source == null) { throw new IllegalArgumentException("Cannot create a player with a null DataSource"); }
+
+		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player DataSource");
+
+		return null;
 	}
 
 	public static Player createPlayer(String locator) throws MediaException
