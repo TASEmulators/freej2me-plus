@@ -192,11 +192,22 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		platformImage = this;
 	}
 
-	public void getRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height)
-	{
+	public void getRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height) 
+	{	
+		// Temporary array to hold the raw pixel data
+		int[] tempData = new int[width * height];
+		
 		raster = canvas.getRaster();
-		raster.getDataElements(x, y, width, height, rgbData);
-		//canvas.getRGB(x, y, width, height, rgbData, offset, scanlength);
+		raster.getDataElements(x, y, width, height, tempData);
+	
+		// Copy the data into rgbData, taking scanlength into account
+		for (int row = 0; row < height; row++) 
+		{
+			int sourceIndex = row * width;
+			int destIndex = offset + row * scanlength;
+	
+			System.arraycopy(tempData, sourceIndex, rgbData, destIndex, width);
+		}
 	}
 
 	public int getARGB(int x, int y) { return canvas.getRGB(x, y); }
