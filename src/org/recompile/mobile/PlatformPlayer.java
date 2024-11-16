@@ -80,7 +80,7 @@ public class PlatformPlayer implements Player
 		}
 		else
 		{
-			if(type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi"))
+			if(type.equalsIgnoreCase("audio/x-mid") || type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi"))
 			{
 				player = new midiPlayer(stream);
 			}
