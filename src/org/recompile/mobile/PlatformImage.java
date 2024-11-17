@@ -17,10 +17,13 @@
 package org.recompile.mobile;
 
 import java.net.URL;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Graphics;
@@ -117,7 +120,6 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		createGraphics();
 
 		gc.drawImage2(temp, 0, 0);
-
 
 		platformImage = this;
 	}
@@ -226,71 +228,199 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 	public static BufferedImage transformImage(BufferedImage image, int transform)
 	{
-		int width = (int)image.getWidth();
-		int height = (int)image.getHeight();
-		int out_width = width;
-		int out_height = height;
+		// Return early if no transform is specified.
+		if(transform == Sprite.TRANS_NONE) { return image; }
 
-		AffineTransform af = new AffineTransform();
+		final int width = (int)image.getWidth();
+		final int height = (int)image.getHeight();
 
-		switch (transform) {
-			case Sprite.TRANS_NONE:
-				break;
+		BufferedImage transimage = null;
+		if(transform == Sprite.TRANS_ROT90 || transform == Sprite.TRANS_ROT270 || transform == Sprite.TRANS_MIRROR_ROT90 || transform == Sprite.TRANS_MIRROR_ROT270) 
+		{
+			transimage = new BufferedImage(height, width, BufferedImage.TYPE_INT_ARGB); // Non-Math.PI rotations require width and height to be swapped
+		}
+		else { transimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB); }
 
+		final WritableRaster sourceRaster = image.getRaster();
+        final WritableRaster targetRaster = transimage.getRaster();
+
+		switch (transform) 
+		{
 			case Sprite.TRANS_ROT90: 
-				af.translate(height, 0);
-				af.rotate(Math.PI / 2);
-				out_width = height;
-				out_height = width;
-				break;
+				for (int y = 0; y < height; y++) 
+				{
+					for (int x = 0; x < width; x++) 
+					{
+						// Map original pixel (x, y) to new position (width - 1 - y, x)
+						int targetX = height - 1 - y; // New x position in the rotated image
+						int targetY = x; // New y position in the rotated image
+
+						int[] pixelData = new int[4]; // TYPE_INT_ARGB has 4 components
+						sourceRaster.getDataElements(x, y, pixelData); // Get pixel from original image
+						targetRaster.setDataElements(targetX, targetY, pixelData); // Set pixel in rotated image
+					}
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_rot90");
+				return transimage;
 
 			case Sprite.TRANS_ROT180: 
-				af.translate(width, height);
-				af.rotate(Math.PI);
-				break;
+				for (int y = 0; y < height; y++) 
+				{
+					for (int x = 0; x < width; x++) 
+					{
+						int transformedX = width - 1 - x;
+						int transformedY = height - 1 - y;
+						
+						int[] pixelData = new int[4]; 
+						sourceRaster.getDataElements(x, y, pixelData);
+						targetRaster.setDataElements(transformedX, transformedY, pixelData);
+					}
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_rot180");
+				return transimage;
 			
 			case Sprite.TRANS_ROT270:
-				af.translate(0, width);
-				af.rotate(Math.PI * 3 / 2);
-				out_width = height;
-				out_height = width;
-				break;
+				for (int y = 0; y < height; y++) 
+				{
+					for (int x = 0; x < width; x++) 
+					{
+						// Map original pixel (x, y) to new position (y, originalWidth - 1 - x)
+						int targetX = y; // New x position in the rotated image
+						int targetY = width - 1 - x; // New y position in the rotated image
+			
+						// Copy the pixel from the original raster to the new position in the rotated raster
+						int[] pixelData = new int[4];
+						sourceRaster.getDataElements(x, y, pixelData); // Get pixel from original image
+						targetRaster.setDataElements(targetX, targetY, pixelData); // Set pixel in rotated image
+					}
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_rot270");
+				return transimage;
 
 			case Sprite.TRANS_MIRROR: 
-				af.translate(width, 0);
-				af.scale(-1, 1);
-				break;
+				for (int y = 0; y < height; y++) 
+				{
+					int[] rowData = new int[width];
+		
+					// Get the pixel data for the current row to be mirrored
+					sourceRaster.getDataElements(0, y, width, 1, rowData);
+		
+					for (int x = 0; x < width; x++) {
+						// Set each mirrored pixel
+						targetRaster.setDataElements(width - 1 - x, y, new int[]{rowData[x]});
+					}
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_mirror");
+				return transimage;
 
-			case Sprite.TRANS_MIRROR_ROT90: 
-				af.translate(height, 0);
-				af.rotate(Math.PI / 2);
-				af.translate(width, 0);
-				af.scale(-1, 1);
-				out_width = height;
-				out_height = width;
-				break;
+			case Sprite.TRANS_MIRROR_ROT90: 				
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
+						// Get the pixel from the original image
+						int[] pixelData = new int[4]; // Assuming 4 channels (RGBA)
+						sourceRaster.getDataElements(x, y, pixelData);
+				
+						// Calculate the mirrored position
+						int mirroredX = width - 1 - x; // Mirrored x position
+				
+						// Calculate the new positions after 90-degree rotation
+						int targetX = y; // New x position in the rotated image
+						int targetY = width - 1 - mirroredX; // New y position in the rotated image
+				
+						// Set the pixel in the target raster
+						targetRaster.setDataElements(targetX, targetY, pixelData);
+					}
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_mirror90");
+				return transimage;
 
-			case Sprite.TRANS_MIRROR_ROT180: 
-				af.translate(width, 0);
-				af.scale(-1, 1);
-				af.translate(width, height);
-				af.rotate(Math.PI);
-				break;
+			case Sprite.TRANS_MIRROR_ROT180: // Basically mirror vertically (an arrow pointing up will then point down)
+				for (int y = 0; y < height; y++) 
+				{
+					int[] pixelData = new int[width * 4];
+					
+					// Get the entire row
+					sourceRaster.getDataElements(0, y, width, 1, pixelData);
+					
+					// Set the row in the target raster at the flipped position
+					targetRaster.setDataElements(0, height - 1 - y, width, 1, pixelData);
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_mirror180");
+				return transimage;
 
 			case Sprite.TRANS_MIRROR_ROT270: 
-				af.translate(0, width);
-				af.rotate(Math.PI * 3 / 2);
-				af.translate(width, 0);
-				af.scale(-1, 1);
-				out_width = height;
-				out_height = width;
-				break;
+				for (int y = 0; y < height; y++) 
+				{
+					for (int x = 0; x < width; x++) 
+					{
+						// Get the pixel from the original image
+						int[] pixelData = new int[4]; // Assuming 4 channels (RGBA)
+						sourceRaster.getDataElements(x, y, pixelData);
+	
+						// Calculate the new positions after 270-degree rotation
+						int targetX = height - 1 - y; // New x position in the rotated image
+						int targetY = width - 1 - x; // New y position in the rotated image
+
+						// Set the pixel in the target raster
+						targetRaster.setDataElements(targetX, targetY, pixelData);
+					}
+				}
+				//dumpImage(image, "");
+				//dumpImage(transimage, "_mirror270");
+				return transimage;
 		}
 
-		BufferedImage transimage = new BufferedImage(out_width, out_height, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D gc = transimage.createGraphics();
-		gc.drawImage(image, af, null);
-
-		return transimage;
+		return image;
 	}
+
+	// TODO: Turn this into a setting. Being able to dump image data would be nice.
+	public static void dumpImage(BufferedImage image, String append) 
+	{
+        try 
+		{
+			String imageMD5 = generateMD5Hash(image);
+			String dumpPath = "." + File.separatorChar + "FreeJ2MEDumps" + File.separatorChar + "Image" + File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar;
+			File dumpFile = new File(dumpPath);
+			
+			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
+			
+			dumpPath = dumpPath + "Image_" + imageMD5 + append + ".png";
+			
+			dumpFile = new File(dumpPath);
+			if(dumpFile.exists()) { return; } // Don't overwrite an image that already exists
+            ImageIO.write(image, "png", dumpFile);
+            System.out.println("Image saved successfully: " + dumpPath);
+        } catch (IOException e) { System.err.println("Error saving image: " + e.getMessage()); }
+    }
+
+	private static String generateMD5Hash(BufferedImage image) 
+	{
+        try {
+            // Convert BufferedImage to byte array
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", baos); // Change format as needed
+            byte[] imageBytes = baos.toByteArray();
+
+            // Create MD5 hash
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hashBytes = md.digest(imageBytes);
+
+            // Convert byte array to hex string
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+
+            return sb.toString(); // Return the MD5 hash as a hex string
+        } catch (Exception e) {
+            e.printStackTrace(); // Handle exceptions as needed
+            return null;
+        }
+    }
 }
