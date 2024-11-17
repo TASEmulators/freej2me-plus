@@ -16,4 +16,9 @@
 */
 package com.siemens.mp.media;
 
-public interface Controllable extends javax.microedition.media.Controllable { }
+public interface Controllable extends javax.microedition.media.Controllable 
+{ 
+	public com.siemens.mp.media.Control getControl(String controlType);
+
+	public com.siemens.mp.media.Control[] getControls();
+}
