@@ -226,7 +226,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		canvas.setRGB(x, y, color);
 	}
 
-	public static BufferedImage transformImage(BufferedImage image, int transform)
+	public static BufferedImage transformImage(final BufferedImage image, final int transform)
 	{
 		// Return early if no transform is specified.
 		if(transform == Sprite.TRANS_NONE) { return image; }
@@ -246,7 +246,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 		switch (transform) 
 		{
-			case Sprite.TRANS_ROT90: 
+			case Sprite.TRANS_ROT90:
 				for (int y = 0; y < height; y++) 
 				{
 					for (int x = 0; x < width; x++) 
@@ -264,7 +264,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				//dumpImage(transimage, "_rot90");
 				return transimage;
 
-			case Sprite.TRANS_ROT180: 
+			case Sprite.TRANS_ROT180:
 				for (int y = 0; y < height; y++) 
 				{
 					for (int x = 0; x < width; x++) 
@@ -300,7 +300,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				//dumpImage(transimage, "_rot270");
 				return transimage;
 
-			case Sprite.TRANS_MIRROR: 
+			case Sprite.TRANS_MIRROR:
 				for (int y = 0; y < height; y++) 
 				{
 					int[] rowData = new int[width];
@@ -317,24 +317,24 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				//dumpImage(transimage, "_mirror");
 				return transimage;
 
-			case Sprite.TRANS_MIRROR_ROT90: 				
-				for (int y = 0; y < height; y++) {
-					for (int x = 0; x < width; x++) {
+			case Sprite.TRANS_MIRROR_ROT90:
+				for (int y = 0; y < height; y++) 
+				{
+					for (int x = 0; x < width; x++) 
+					{
 						// Get the pixel from the original image
 						int[] pixelData = new int[4]; // Assuming 4 channels (RGBA)
 						sourceRaster.getDataElements(x, y, pixelData);
-				
-						// Calculate the mirrored position
-						int mirroredX = width - 1 - x; // Mirrored x position
-				
-						// Calculate the new positions after 90-degree rotation
-						int targetX = y; // New x position in the rotated image
-						int targetY = width - 1 - mirroredX; // New y position in the rotated image
-				
+	
+						// Calculate the new positions after 270-degree rotation
+						int targetX = height - 1 - y; // New x position in the rotated image
+						int targetY = width - 1 - x; // New y position in the rotated image
+
 						// Set the pixel in the target raster
 						targetRaster.setDataElements(targetX, targetY, pixelData);
 					}
-				}
+				}		
+				
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror90");
 				return transimage;
@@ -354,19 +354,20 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				//dumpImage(transimage, "_mirror180");
 				return transimage;
 
-			case Sprite.TRANS_MIRROR_ROT270: 
-				for (int y = 0; y < height; y++) 
-				{
-					for (int x = 0; x < width; x++) 
-					{
+			case Sprite.TRANS_MIRROR_ROT270:
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
 						// Get the pixel from the original image
 						int[] pixelData = new int[4]; // Assuming 4 channels (RGBA)
 						sourceRaster.getDataElements(x, y, pixelData);
-	
-						// Calculate the new positions after 270-degree rotation
-						int targetX = height - 1 - y; // New x position in the rotated image
-						int targetY = width - 1 - x; // New y position in the rotated image
-
+				
+						// Calculate the mirrored position
+						int mirroredX = width - 1 - x; // Mirrored x position
+				
+						// Calculate the new positions after 90-degree rotation
+						int targetX = y; // New x position in the rotated image
+						int targetY = width - 1 - mirroredX; // New y position in the rotated image
+				
 						// Set the pixel in the target raster
 						targetRaster.setDataElements(targetX, targetY, pixelData);
 					}
