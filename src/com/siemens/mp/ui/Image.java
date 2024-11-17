@@ -21,11 +21,13 @@ import java.io.IOException;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
 
+import javax.microedition.lcdui.game.Sprite;
+
 // NativeMem is a complete stub as is, so inherit javax Image directly
 public class Image extends javax.microedition.lcdui.Image 
 {
     int width, height;
-    javax.microedition.lcdui.Image img;
+    static javax.microedition.lcdui.Image img;
     public static final int COLOR_BMP_8BIT = 5;
 
     protected Image() { }
@@ -101,6 +103,19 @@ public class Image extends javax.microedition.lcdui.Image
     {
         Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "getNativeImage(image) not implemented"); 
         return img; 
+    }
+
+    public static void mirrorImageHorizontally(javax.microedition.lcdui.Image image) 
+    {
+        img = image;
+        img.platformImage = new  org.recompile.mobile.PlatformImage(image, 0, 0, img.getWidth(), img.getHeight(), Sprite.TRANS_MIRROR); // Seems to work in 'Bermuda'
+    }
+
+    public static void mirrorImageVertically(javax.microedition.lcdui.Image image) 
+    {
+        img = image;
+        img.platformImage = new  org.recompile.mobile.PlatformImage(image, 0, 0, img.getWidth(), img.getHeight(), Sprite.TRANS_MIRROR_ROT180); // Untested
+        Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "mirrorImageVertically(image) untested"); 
     }
 
 	public int getHeight() { return height; }
