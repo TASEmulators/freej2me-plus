@@ -73,15 +73,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		setStrokeStyle(SOLID);
 	}
 
-	public Graphics2D getGraphics2D()
-	{
-		return gc;
-	}
+	public Graphics2D getGraphics2D() { return gc; }
 
-	public BufferedImage getCanvas()
-	{
-		return canvas;
-	}
+	public BufferedImage getCanvas() { return canvas; }
 
 	public void clearRect(int x, int y, int width, int height)
 	{
@@ -179,7 +173,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawRegion(Image image, int subx, int suby, int subw, int subh, int transform, int x, int y, int anchor)
 	{
-		if (subw <= 0 || subh <= 0) return;
+		if (subw <= 0 || subh <= 0) { return; }
 
 		try
 		{
@@ -204,7 +198,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 	}
 
-	/* Based on J2ME-Loader */
 	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha) 
 	{
 		if (width <= 0 || height <= 0) { return; }
@@ -223,14 +216,15 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		raster = temp.getRaster();
 		final int[] pixels = new int[width * height];
+		int s, d, pixel;
 
 		for (int i = 0; i < height; i++) 
 		{
-			int s = offset + i * scanlength;
-			int d = i * width;
+			s = offset + i * scanlength;
+			d = i * width;
 			for (int j = 0; j < width; j++) 
 			{
-				int pixel = rgbData[s++];
+				pixel = rgbData[s++];
 				if (!processAlpha) { pixel = (pixel & 0x00FFFFFF) | 0xFF000000; } // Set alpha to 255
 				pixels[d + j] = pixel; // Store the pixel
 			}
@@ -261,13 +255,17 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	{
 		if(str!=null)
 		{
-			x = AnchorX(x, gc.getFontMetrics().stringWidth(str), anchor);
-			y = y + gc.getFontMetrics().getAscent() - 1;
-			y = AnchorY(y, gc.getFontMetrics().getHeight(), anchor);
-			try {
-				gc.drawString(str, x, y);
-			} catch (Exception e) {
-			}
+			final FontMetrics metrics = gc.getFontMetrics();
+			final int strWidth = metrics.stringWidth(str);
+			final int strHeight = metrics.getHeight();
+			final int ascent = metrics.getAscent();
+
+			x = AnchorX(x, strWidth, anchor);
+			y = y + ascent - 1;
+			y = AnchorY(y, strHeight, anchor);
+
+			try { gc.drawString(str, x, y); } 
+			catch (Exception e) { }
 		}
 	}
 
