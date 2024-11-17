@@ -51,6 +51,10 @@ public class DualTone
             Track trackA = midiSequence.createTrack();
 			Track trackB = midiSequence.createTrack();
 
+			// Like siemens' MelodyComposer, use a square wave instrument here.
+			trackA.add(new MidiEvent(new ShortMessage(ShortMessage.PROGRAM_CHANGE, 0, 80, 0), 0));
+			trackB.add(new MidiEvent(new ShortMessage(ShortMessage.PROGRAM_CHANGE, 0, 80, 0), 0));
+
 			// Start from tick 0, and move onwards afte reading each note pair's duration.
             long currentTick = 0;
 			int tmpNote;
