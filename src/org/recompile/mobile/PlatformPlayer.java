@@ -943,8 +943,8 @@ public class PlatformPlayer implements Player
 			{
 				wavPlayer wav = (wavPlayer) player;
 
-				/* We have to map 0 <= value <= 100 to a clip's range of -80dB to 0dB  */
-				float dB = isMuted() ? 0 : -80.0f + ((this.level / 100.0f) * (80.0f));
+				/* We have to map 0 <= value <= 100 to a clip's range of -20dB to 0dB  */
+				float dB = isMuted() ? -80.0f : -20.0f + ((this.level / 100.0f) * (20.0f));
 
 				FloatControl volumeControl = (FloatControl) wav.wavClip.getControl(FloatControl.Type.MASTER_GAIN);
 				volumeControl.setValue(dB);
