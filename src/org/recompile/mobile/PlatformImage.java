@@ -42,6 +42,9 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	protected BufferedImage canvas;
 	protected PlatformGraphics gc;
 
+	// transformImage variable that is better off not being allocated every call. Is an array because of raster getDataElements()
+	private static final int[] transformPixelData = new int[1];
+
 	public BufferedImage getCanvas()
 	{
 		return canvas;
@@ -243,21 +246,16 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 		final WritableRaster sourceRaster = image.getRaster();
         final WritableRaster targetRaster = transimage.getRaster();
-
+		
 		switch (transform) 
 		{
 			case Sprite.TRANS_ROT90:
 				for (int y = 0; y < height; y++) 
 				{
 					for (int x = 0; x < width; x++) 
-					{
-						// Map original pixel (x, y) to new position (width - 1 - y, x)
-						int targetX = height - 1 - y; // New x position in the rotated image
-						int targetY = x; // New y position in the rotated image
-
-						int[] pixelData = new int[4]; // TYPE_INT_ARGB has 4 components
-						sourceRaster.getDataElements(x, y, pixelData); // Get pixel from original image
-						targetRaster.setDataElements(targetX, targetY, pixelData); // Set pixel in rotated image
+					{		
+						sourceRaster.getDataElements(x, y, transformPixelData); // Get pixel from original image
+						targetRaster.setDataElements(height - 1 - y, x, transformPixelData); // Set pixel in rotated image
 					}
 				}
 				//dumpImage(image, "");
@@ -269,12 +267,8 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				{
 					for (int x = 0; x < width; x++) 
 					{
-						int transformedX = width - 1 - x;
-						int transformedY = height - 1 - y;
-						
-						int[] pixelData = new int[4]; 
-						sourceRaster.getDataElements(x, y, pixelData);
-						targetRaster.setDataElements(transformedX, transformedY, pixelData);
+						sourceRaster.getDataElements(x, y, transformPixelData);
+						targetRaster.setDataElements(width - 1 - x, height - 1 - y, transformPixelData);
 					}
 				}
 				//dumpImage(image, "");
@@ -286,52 +280,44 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				{
 					for (int x = 0; x < width; x++) 
 					{
-						// Map original pixel (x, y) to new position (y, originalWidth - 1 - x)
-						int targetX = y; // New x position in the rotated image
-						int targetY = width - 1 - x; // New y position in the rotated image
-			
-						// Copy the pixel from the original raster to the new position in the rotated raster
-						int[] pixelData = new int[4];
-						sourceRaster.getDataElements(x, y, pixelData); // Get pixel from original image
-						targetRaster.setDataElements(targetX, targetY, pixelData); // Set pixel in rotated image
+						sourceRaster.getDataElements(x, y, transformPixelData); // Get pixel from original image
+						targetRaster.setDataElements(y, width - 1 - x, transformPixelData); // Set pixel in rotated image
 					}
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_rot270");
 				return transimage;
 
-			case Sprite.TRANS_MIRROR:
+			case Sprite.TRANS_MIRROR: 
+				/*
+				 * Even though sorting an entire column would be faster from a pure algorithmic perspective (like processing
+				 * a whole row at once is on TRANS_MIRROR_ROT180), image data tends to be stored so that each row is contiguous 
+				 * in memory, which makes its access oftentimes MUCH faster than for columns, which could negate the performance 
+				 * benefits of column access entirely and then some.
+				 * 
+				 * This transform is such a case. Making get/setDataElements operate on columns, and eliminating that
+				 * inner row loop actually results in far worse performance since columns would be accessed way more often.
+				 */
 				for (int y = 0; y < height; y++) 
-				{
-					int[] rowData = new int[width];
-		
-					// Get the pixel data for the current row to be mirrored
-					sourceRaster.getDataElements(0, y, width, 1, rowData);
-		
-					for (int x = 0; x < width; x++) {
-						// Set each mirrored pixel
-						targetRaster.setDataElements(width - 1 - x, y, new int[]{rowData[x]});
+				{	
+					for (int x = 0; x < width; x++) 
+					{
+						sourceRaster.getDataElements(x, y, transformPixelData); // Get the pixel data to be mirrored
+						targetRaster.setDataElements(width - 1 - x, y, transformPixelData); // Set each mirrored pixel on the row
 					}
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror");
 				return transimage;
+				
 
 			case Sprite.TRANS_MIRROR_ROT90:
 				for (int y = 0; y < height; y++) 
 				{
 					for (int x = 0; x < width; x++) 
 					{
-						// Get the pixel from the original image
-						int[] pixelData = new int[4]; // Assuming 4 channels (RGBA)
-						sourceRaster.getDataElements(x, y, pixelData);
-	
-						// Calculate the new positions after 270-degree rotation
-						int targetX = height - 1 - y; // New x position in the rotated image
-						int targetY = width - 1 - x; // New y position in the rotated image
-
-						// Set the pixel in the target raster
-						targetRaster.setDataElements(targetX, targetY, pixelData);
+						sourceRaster.getDataElements(x, y, transformPixelData); // Get the pixel from the original image
+						targetRaster.setDataElements(height - 1 - y, width - 1 - x, transformPixelData); // Set the pixel in the target raster
 					}
 				}		
 				
@@ -340,36 +326,25 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				return transimage;
 
 			case Sprite.TRANS_MIRROR_ROT180: // Basically mirror vertically (an arrow pointing up will then point down)
+				final int[] rowData = new int[width * 4]; // Batch array for the entire row processing
 				for (int y = 0; y < height; y++) 
-				{
-					int[] pixelData = new int[width * 4];
-					
-					// Get the entire row
-					sourceRaster.getDataElements(0, y, width, 1, pixelData);
-					
-					// Set the row in the target raster at the flipped position
-					targetRaster.setDataElements(0, height - 1 - y, width, 1, pixelData);
+				{	
+					sourceRaster.getDataElements(0, y, width, 1, rowData); // Get the entire row
+					targetRaster.setDataElements(0, height - 1 - y, width, 1, rowData); // Set the row in the target raster at the flipped position
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror180");
 				return transimage;
+				
 
 			case Sprite.TRANS_MIRROR_ROT270:
-				for (int y = 0; y < height; y++) {
-					for (int x = 0; x < width; x++) {
-						// Get the pixel from the original image
-						int[] pixelData = new int[4]; // Assuming 4 channels (RGBA)
-						sourceRaster.getDataElements(x, y, pixelData);
-				
-						// Calculate the mirrored position
-						int mirroredX = width - 1 - x; // Mirrored x position
-				
-						// Calculate the new positions after 90-degree rotation
-						int targetX = y; // New x position in the rotated image
-						int targetY = width - 1 - mirroredX; // New y position in the rotated image
-				
-						// Set the pixel in the target raster
-						targetRaster.setDataElements(targetX, targetY, pixelData);
+				for (int y = 0; y < height; y++) 
+				{
+					for (int x = 0; x < width; x++) 
+					{
+						sourceRaster.getDataElements(x, y, transformPixelData); // Get the pixel from the original image
+						int mirroredX = width - 1 - x; // Mirrored x position, so the "y" argument below doesn't become too convoluted
+						targetRaster.setDataElements(y, width - 1 - mirroredX, transformPixelData); // Set the pixel in the target raster
 					}
 				}
 				//dumpImage(image, "");
