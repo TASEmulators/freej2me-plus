@@ -229,7 +229,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		canvas.setRGB(x, y, color);
 	}
 
-	public static BufferedImage transformImage(final BufferedImage image, final int transform)
+	public static final BufferedImage transformImage(final BufferedImage image, final int transform)
 	{
 		// Return early if no transform is specified.
 		if(transform == Sprite.TRANS_NONE) { return image; }
