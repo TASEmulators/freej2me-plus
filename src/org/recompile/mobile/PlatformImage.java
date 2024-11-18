@@ -175,8 +175,20 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		if(width < 1) { width = 1; }
 		if(height < 1) { height = 1; }
 
-		canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		/*
+		 * We can also apply the alpha speedhack here too, assuming the game isn't trying to read
+		 * from a non-alpha image (RGB) as ARGB anyway. 
+		 */
+		if(!processAlpha && Mobile.noAlphaOnBlankImages) { canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); }
+		else { canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB); }
+		
 		createGraphics();
+
+		// Process alpha if necessary
+		if (!processAlpha) 
+		{
+			for (int i = 0; i < rgb.length; i++) { rgb[i] |= 0xFF000000; } // Set alpha to opaque
+		}
 
 		gc.drawRGB(rgb, 0, width, 0, 0, width, height, true);
 
@@ -198,7 +210,18 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	}
 
 	public void getRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height) 
-	{	
+	{
+		if (rgbData == null) { throw new NullPointerException("rgbData cannot be null"); }
+		if (width <= 0 || height <= 0) { return; } // No pixels to copy
+		if (x < 0 || y < 0 || x + width > canvas.getWidth() || y + height > canvas.getHeight()) 
+		{
+			throw new IllegalArgumentException("Requested area exceeds bounds of the image");
+		}
+		if (Math.abs(scanlength) < width) 
+		{
+			throw new IllegalArgumentException("scanlength must be >= width");
+		}
+
 		// Temporary array to hold the raw pixel data
 		int[] tempData = new int[width * height];
 		
