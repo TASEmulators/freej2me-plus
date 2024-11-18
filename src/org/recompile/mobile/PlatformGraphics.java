@@ -38,12 +38,23 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	protected Color awtColor;
 
-	protected int strokeStyle = SOLID;
+	/* 
+	 * Both DirectGraphics and Sprite's rotations are counter-clockwise, flipping
+	 * an image horizontally is done by multiplying its height or width scale
+	 * by -1 respectively. Flipping vertically is the same as flipping horizontally, 
+	 * and then rotating by 180 degrees.
+	 */
+	private static final int HV = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL;
+	private static final int HV90 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_90;
+	private static final int HV180 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_180;
+	private static final int HV270 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_270;
+	private static final int H90 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.ROTATE_90;
+	private static final int H180 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.ROTATE_180;
+	private static final int H270 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.ROTATE_270;
+	private static final int V90 = DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_90;
+	private static final int V180 = DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_180;
+	private static final int V270 = DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_270;
 
-	protected Font font = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
-
-	public PlatformGraphics platformGraphics;
-	public PlatformImage platformImage;
 
 	public PlatformGraphics(PlatformImage image)
 	{
@@ -698,24 +709,11 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		return (short)out;
 	}
 
-	private BufferedImage manipulateImage(BufferedImage image, int manipulation)
+	private static final BufferedImage manipulateImage(final BufferedImage image, final int manipulation)
 	{
-        /* 
-		 * Both DirectGraphics and Sprite's rotations are counter-clockwise, flipping
-		 * an image horizontally is done by multiplying its height or width scale
-		 * by -1 respectively. Flipping vertically is the same as flipping horizontally, 
-		 * and then rotating by 180 degrees.
-		*/
-		final int HV = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL;
-        final int HV90 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_90;
-        final int HV180 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_180;
-        final int HV270 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_270;
-        final int H90 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.ROTATE_90;
-        final int H180 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.ROTATE_180;
-        final int H270 = DirectGraphics.FLIP_HORIZONTAL | DirectGraphics.ROTATE_270;
-        final int V90 = DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_90;
-        final int V180 = DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_180;
-        final int V270 = DirectGraphics.FLIP_VERTICAL | DirectGraphics.ROTATE_270;
+		// Return early if there's no manipulation to be done
+		if(manipulation == 0 || manipulation == HV180) { return image; }
+		
 		switch(manipulation)
 		{
 			case V180:
@@ -739,13 +737,10 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
             case V90:
             case H270:
                 return PlatformImage.transformImage(image, Sprite.TRANS_MIRROR_ROT270);
-            case 0: /* No Manipulation */
-            case HV180:
-                break;
             default:
 				Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "manipulateImage "+manipulation+" not defined");
 		}
+
 		return image;
-		
 	}
 }
