@@ -68,6 +68,7 @@ public class Mobile
 	public static boolean nokiaKeyboard = false;
 	public static boolean sagem = false;
 	public static boolean siemens = false;
+	public static boolean siemensold = false; // Siemens for SoftKeys and J2ME default/Canvas for everything else.
 
 	/* 
 	 * For AWTGUI, the input array is as follows: [LeftSoft, RightSoft, Up, Left, Fire, Right, Down, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, 0, #] (5 and Fire are made the same)
@@ -344,6 +345,15 @@ public class Mobile
 				case 9: return SIEMENS_SOFT1; // Select
 			}
 		}
+		if(siemensold)
+		{
+			switch(keycode)
+			{
+				// Up, Down, Left, Right, Fire are handled by J2ME Canvas
+				case 8: return SIEMENS_SOFT2; // Start
+				case 9: return SIEMENS_SOFT1; // Select
+			}
+		}
 		
 		// J2ME Canvas standard keycodes, to match against any keys not covered above.
 		switch(keycode)
@@ -366,6 +376,118 @@ public class Mobile
 			case 15: return KEY_NUM4; // Left
 			case 16: return KEY_NUM6; // Right
 			case 17: return KEY_NUM8; // Down
+		}
+
+		// If a matching key wasn't found, return 0;
+		return 0;
+	}
+
+	// This is just for a correct handling of Canvas.getGameAction(), though it didn't fix some siemens jars that still get stuck in the LCDUI menu
+	public static final int getGameAction(int keycode) 
+	{
+		if (lg) 
+		{
+			switch (keycode) 
+			{
+				case LG_UP: return Canvas.UP; // Up
+				case LG_DOWN: return Canvas.DOWN; // Down
+				case LG_LEFT: return Canvas.LEFT; // Left
+				case LG_RIGHT: return Canvas.RIGHT; // Right
+				case LG_FIRE: return Canvas.FIRE; // Y
+			}
+		}
+		if (motorola) 
+		{
+			switch (keycode) 
+			{
+				case MOTOROLA_UP: return Canvas.UP; // Up
+				case MOTOROLA_DOWN: return Canvas.DOWN; // Down
+				case MOTOROLA_LEFT: return Canvas.LEFT; // Left
+				case MOTOROLA_RIGHT: return Canvas.RIGHT; // Right
+				case MOTOROLA_FIRE: return Canvas.FIRE; // Y
+			}
+		}
+		if (motoTriplets) 
+		{
+			switch (keycode) 
+			{
+				case TRIPLETS_UP: return Canvas.UP; // Up
+				case TRIPLETS_DOWN: return Canvas.DOWN; // Down
+				case TRIPLETS_LEFT: return Canvas.LEFT; // Left
+				case TRIPLETS_RIGHT: return Canvas.RIGHT; // Right
+				case TRIPLETS_FIRE: return Canvas.FIRE; // Y
+			}
+		}
+		if (motoV8) 
+		{
+			switch (keycode) 
+			{
+				case MOTOV8_UP: return Canvas.UP; // Up
+				case MOTOV8_DOWN: return Canvas.DOWN; // Down
+				case MOTOV8_LEFT: return Canvas.LEFT; // Left
+				case MOTOV8_RIGHT: return Canvas.RIGHT; // Right
+				case MOTOV8_FIRE: return Canvas.FIRE; // Y
+			}
+		}
+		if (nokia) {
+			switch (keycode) {
+				case NOKIA_UP: return Canvas.UP; // Up
+				case NOKIA_DOWN: return Canvas.DOWN; // Down
+				case NOKIA_LEFT: return Canvas.LEFT; // Left
+				case NOKIA_RIGHT: return Canvas.RIGHT; // Right
+				case NOKIA_SOFT3: return Canvas.FIRE; // Y
+			}
+		}
+		if (nokiaKeyboard) 
+		{
+			switch (keycode) 
+			{
+				case NOKIAKB_UP: return Canvas.UP; // Up
+				case NOKIAKB_DOWN: return Canvas.DOWN; // Down
+				case NOKIAKB_LEFT: return Canvas.LEFT; // Left
+				case NOKIAKB_RIGHT: return Canvas.RIGHT; // Right
+				case NOKIAKB_NUM9: return Canvas.GAME_D; // A
+				case NOKIAKB_NUM7: return Canvas.GAME_C; // B
+				case NOKIAKB_SOFT3: return Canvas.FIRE; // Y
+				case NOKIAKB_NUM1: return Canvas.GAME_A; // L
+				case NOKIAKB_NUM3: return Canvas.GAME_B; // R
+			}
+		}
+		if (sagem) 
+		{
+			switch (keycode) 
+			{
+				case SAGEM_UP: return Canvas.UP; // Up
+				case SAGEM_DOWN: return Canvas.DOWN; // Down
+				case SAGEM_LEFT: return Canvas.LEFT; // Left
+				case SAGEM_RIGHT: return Canvas.RIGHT; // Right
+				case SAGEM_SOFT3: return Canvas.FIRE; // Y
+			}
+		}
+		if (siemens) 
+		{
+			switch (keycode) 
+			{
+				case SIEMENS_UP: return Canvas.UP; // Up
+				case SIEMENS_DOWN: return Canvas.DOWN; // Down
+				case SIEMENS_LEFT: return Canvas.LEFT; // Left
+				case SIEMENS_RIGHT: return Canvas.RIGHT; // Right
+				case SIEMENS_FIRE: return Canvas.FIRE; // Y
+			}
+		}
+		
+		// J2ME Canvas standard keycodes, to match against any keys not covered above.
+		switch (keycode) 
+		{
+			case KEY_NUM2: return Canvas.UP; // Up
+			case KEY_NUM8: return Canvas.DOWN; // Down
+			case KEY_NUM4: return Canvas.LEFT; // Left
+			case KEY_NUM6: return Canvas.RIGHT; // Right
+			case KEY_NUM9: return Canvas.GAME_D; // A
+			case KEY_NUM7: return Canvas.GAME_C; // B
+			case KEY_NUM5: return Canvas.FIRE; // Y
+			case KEY_NUM1: return Canvas.GAME_A; // L
+			case KEY_NUM3: return Canvas.GAME_B; // R
 		}
 
 		// If a matching key wasn't found, return 0;
