@@ -165,6 +165,7 @@ public final class AWTGUI
 	final CheckboxMenuItem nokiaKbLayout = new CheckboxMenuItem("Nokia Keyboard", false);
 	final CheckboxMenuItem sagemLayout = new CheckboxMenuItem("Sagem", false);
 	final CheckboxMenuItem siemensLayout = new CheckboxMenuItem("Siemens", false);
+	final CheckboxMenuItem siemensOldLayout = new CheckboxMenuItem("Siemens Old", false);
 
 	final CheckboxMenuItem fpsCapNone = new CheckboxMenuItem("No Limit", true);
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
@@ -447,6 +448,7 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -468,6 +470,7 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -489,6 +492,7 @@ public final class AWTGUI
 					nokiaLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -510,6 +514,7 @@ public final class AWTGUI
 					nokiaLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -531,6 +536,7 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -552,6 +558,7 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -573,6 +580,7 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -594,6 +602,7 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -615,6 +624,29 @@ public final class AWTGUI
 					nokiaKbLayout.setState(false);
 					tripletsLayout.setState(false);
 					siemensLayout.setState(false);
+					siemensOldLayout.setState(false);
+					hasPendingChange = true;
+				}
+			}
+		});
+
+		siemensOldLayout.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!siemensOldLayout.getState()){ siemensOldLayout.setState(true); }
+				if(siemensOldLayout.getState())
+				{ 
+					config.updatePhone("SiemensOld");
+					stdLayout.setState(false);
+					lgLayout.setState(false);
+					motov8Layout.setState(false);
+					motorolaLayout.setState(false);
+					nokiaLayout.setState(false);
+					nokiaKbLayout.setState(false);
+					tripletsLayout.setState(false);
+					siemensLayout.setState(false);
+					sagemLayout.setState(false);
 					hasPendingChange = true;
 				}
 			}
@@ -853,6 +885,7 @@ public final class AWTGUI
 		phoneType.add(nokiaKbLayout);
 		phoneType.add(sagemLayout);
 		phoneType.add(siemensLayout);
+		phoneType.add(siemensOldLayout);
 		
 		fpsCap.add(fpsCapNone);
 		fpsCap.add(fpsCap60);
@@ -880,6 +913,7 @@ public final class AWTGUI
 			stdLayout.setState(config.settings.get("phone").equals("Standard"));
 			nokiaLayout.setState(config.settings.get("phone").equals("Nokia"));
 			siemensLayout.setState(config.settings.get("phone").equals("Siemens"));
+			siemensOldLayout.setState(config.settings.get("phone").equals("SiemensOld"));
 			motov8Layout.setState(config.settings.get("phone").equals("MotoV8"));
 			tripletsLayout.setState(config.settings.get("phone").equals("MotoTriplets"));
 			sagemLayout.setState(config.settings.get("phone").equals("Sagem"));

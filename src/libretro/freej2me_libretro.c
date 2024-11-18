@@ -326,6 +326,7 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "Nokia Keyboard"))     { phoneType = 6; }
 		else if (!strcmp(var.value, "Sagem"))              { phoneType = 7; }
 		else if (!strcmp(var.value, "Siemens"))            { phoneType = 8; }
+		else if (!strcmp(var.value, "Siemens Old"))        { phoneType = 9; }
 	}
 
 

@@ -371,6 +371,7 @@ public class FreeJ2ME
 		Mobile.nokiaKeyboard = false;
 		Mobile.sagem = false;
 		Mobile.siemens = false;
+		Mobile.siemensold = false;
 		if(phone.equals("LG"))            { Mobile.lg = true;}
 		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
 		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
@@ -379,6 +380,7 @@ public class FreeJ2ME
 		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
 		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
 		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
+		if(phone.equals("SiemensOld"))    { Mobile.siemensold = true;}
 
 		String rotate = config.settings.get("rotate");
 		if(rotate.equals("on")) { rotateDisplay = true; }

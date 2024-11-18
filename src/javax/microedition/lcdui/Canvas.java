@@ -57,27 +57,7 @@ public abstract class Canvas extends Displayable
 		platformImage = new PlatformImage(width, height);
 	}
 
-	public int getGameAction(int keyCode)
-	{
-		switch(keyCode)
-		{
-			case Mobile.KEY_NUM2: return UP;
-			case Mobile.KEY_NUM8: return DOWN;
-			case Mobile.KEY_NUM4: return LEFT;
-			case Mobile.KEY_NUM6: return RIGHT;
-			case Mobile.KEY_NUM5: return FIRE;
-			case Mobile.KEY_NUM1: return GAME_A;
-			case Mobile.KEY_NUM3: return GAME_B;
-			case Mobile.KEY_NUM7: return GAME_C;
-			case Mobile.KEY_NUM9: return GAME_D;
-			case Mobile.NOKIA_UP: return UP;
-			case Mobile.NOKIA_DOWN: return DOWN;
-			case Mobile.NOKIA_LEFT: return LEFT;
-			case Mobile.NOKIA_RIGHT: return RIGHT;
-			case Mobile.NOKIA_SOFT3: return FIRE;
-		}
-		return 0;
-	}
+	public int getGameAction(int keyCode) { return Mobile.getGameAction(keyCode); }
 
 	public int getKeyCode(int gameAction)
 	{
@@ -88,17 +68,17 @@ public abstract class Canvas extends Displayable
 			//case Mobile.GAME_LEFT: return Mobile.KEY_NUM4;
 			//case Mobile.GAME_RIGHT: return Mobile.KEY_NUM6;
 			//case Mobile.GAME_FIRE: return Mobile.KEY_NUM5;
-			case Mobile.GAME_UP: return Mobile.NOKIA_UP;
-			case Mobile.GAME_DOWN: return Mobile.NOKIA_DOWN;
-			case Mobile.GAME_LEFT: return Mobile.NOKIA_LEFT;
-			case Mobile.GAME_RIGHT: return Mobile.NOKIA_RIGHT;
-			case Mobile.GAME_FIRE: return Mobile.NOKIA_SOFT3;
-			case Mobile.GAME_A: return Mobile.KEY_NUM1;
-			case Mobile.GAME_B: return Mobile.KEY_NUM3;
-			case Mobile.GAME_C: return Mobile.KEY_NUM7;
-			case Mobile.GAME_D: return Mobile.KEY_NUM9;
+			case Mobile.GAME_UP: return Mobile.getMobileKey(0, true);
+			case Mobile.GAME_DOWN: return Mobile.getMobileKey(1, true);
+			case Mobile.GAME_LEFT: return Mobile.getMobileKey(2, true);
+			case Mobile.GAME_RIGHT: return Mobile.getMobileKey(3, true);
+			case Mobile.GAME_FIRE: return Mobile.getMobileKey(7, true);
+			case Mobile.GAME_A: return Mobile.getMobileKey(10, true);
+			case Mobile.GAME_B: return Mobile.getMobileKey(11, true);
+			case Mobile.GAME_C: return Mobile.getMobileKey(5, true);
+			case Mobile.GAME_D: return Mobile.getMobileKey(4, true);
 		}
-		return Mobile.NOKIA_SOFT3;
+		return 0;
 	}
 
 	public String getKeyName(int keyCode)
