@@ -62,20 +62,22 @@ public class DualTone
 			// x_frequencies and y-frequencies are expected to always be the same length, same for durations
             for (int i = 0; i < x_frequencies.length; i++) 
 			{
-                tmpNote = convertFreqToNote(x_frequencies[i]);
-
-                int durationInMillis = durations[i];
                 // Convert duration from milliseconds to ticks
-                long durationInTicks = Math.round(durationInMillis * TICKS_PER_MILLISECOND);
+                long durationInTicks = Math.round(durations[i] * TICKS_PER_MILLISECOND);
 
-				trackA.add(createMidiEvent(ShortMessage.NOTE_ON, tmpNote, 93, currentTick));
-				trackA.add(createMidiEvent(ShortMessage.NOTE_OFF, tmpNote, 0, currentTick + durationInTicks));
-
-				tmpNote = convertFreqToNote(y_frequencies[i]);
-
-				trackB.add(createMidiEvent(ShortMessage.NOTE_ON, tmpNote, 93, currentTick));
-				trackB.add(createMidiEvent(ShortMessage.NOTE_OFF, tmpNote, 0, currentTick + durationInTicks));
-
+				if(x_frequencies[i] != 0) // Don't add silent notes
+				{
+					tmpNote = convertFreqToNote(x_frequencies[i]);
+					trackA.add(createMidiEvent(ShortMessage.NOTE_ON, tmpNote, 93, currentTick));
+					trackA.add(createMidiEvent(ShortMessage.NOTE_OFF, tmpNote, 0, currentTick + durationInTicks));
+				}
+				if(y_frequencies[i] != 0)
+				{
+					tmpNote = convertFreqToNote(y_frequencies[i]);
+					trackB.add(createMidiEvent(ShortMessage.NOTE_ON, tmpNote, 93, currentTick));
+					trackB.add(createMidiEvent(ShortMessage.NOTE_OFF, tmpNote, 0, currentTick + durationInTicks));
+				}
+				
                 currentTick += durationInTicks;
             }
 
