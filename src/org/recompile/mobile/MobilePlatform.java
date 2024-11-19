@@ -75,7 +75,7 @@ public class MobilePlatform
 
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
-	private Displayable d;
+	public static Displayable displayable;
 
 	public Runnable painter;
 
@@ -112,6 +112,7 @@ public class MobilePlatform
 
 		lcd = new PlatformImage(width, height);
 		gc = lcd.getGraphics();
+
 	}
 
 	public BufferedImage getLCD() { return lcd.getCanvas(); }
@@ -152,33 +153,33 @@ public class MobilePlatform
 	public void doKeyPressed(int keycode)
 	{
 		updateKeyState(keycode, 1);
-		if ((d = Mobile.getDisplay().getCurrent()) != null) { d.keyPressed(keycode); }
+		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.keyPressed(keycode); }
 	}
 
 	public void doKeyReleased(int keycode)
 	{
 		updateKeyState(keycode, 0);
-		if ((d = Mobile.getDisplay().getCurrent()) != null) { d.keyReleased(keycode); }
+		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.keyReleased(keycode); }
 	}
 
 	public void doKeyRepeated(int keycode)
 	{
-		if ((d = Mobile.getDisplay().getCurrent()) != null) { d.keyRepeated(keycode); }
+		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.keyRepeated(keycode); }
 	}
 
 	public void doPointerDragged(int x, int y)
 	{
-		if ((d = Mobile.getDisplay().getCurrent()) != null) { d.pointerDragged(x, y); }
+		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.pointerDragged(x, y); }
 	}
 
 	public void doPointerPressed(int x, int y)
 	{
-		if ((d = Mobile.getDisplay().getCurrent()) != null) { d.pointerPressed(x, y); }
+		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.pointerPressed(x, y); }
 	}
 
 	public void doPointerReleased(int x, int y)
 	{
-		if ((d = Mobile.getDisplay().getCurrent()) != null) { d.pointerReleased(x, y); }
+		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.pointerReleased(x, y); }
 	}
 
 	private void updateKeyState(int key, int val)
