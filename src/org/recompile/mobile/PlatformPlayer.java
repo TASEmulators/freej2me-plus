@@ -417,6 +417,7 @@ public class PlatformPlayer implements Player
 		public void start()
 		{
 			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
+			cleanSequencer();
 			midi.start();
 
 			/* 
@@ -467,7 +468,6 @@ public class PlatformPlayer implements Player
 				if(now >= getDuration()) { midi.setMicrosecondPosition(getDuration()); }
 				else if(now < 0) { midi.setMicrosecondPosition(0); }
 				else { midi.setMicrosecondPosition(now);  }
-				midi.open();
 			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI position:" + e.getMessage()); }
 			
@@ -485,6 +485,18 @@ public class PlatformPlayer implements Player
 		public boolean isRunning() { return midi.isRunning(); }
 
 		public Receiver getReceiver() { return receiver; }
+
+		// Reload the sequence into the sequencer to prevent MIDI property carryovers
+		private void cleanSequencer() 
+		{
+			try 
+			{
+				final long time = getMediaTime();
+				midi.setSequence(midiSequence);
+				setMediaTime(time);
+			}
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to clean MIDI sequencer for playback:" + e.getMessage()); }
+		}
 	}
 
 	private class wavPlayer extends audioplayer
