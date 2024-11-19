@@ -30,9 +30,11 @@ import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Synthesizer;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 import javax.sound.sampled.AudioFormat;
@@ -362,18 +364,34 @@ public class PlatformPlayer implements Player
 		private byte[] stream;
 		private Sequencer midi;
 		private Sequence midiSequence;
+		private Synthesizer synthesizer;
+		private Receiver receiver;
 
-		public midiPlayer(InputStream stream)
+		public midiPlayer(InputStream stream) 
 		{
-			try
+			try 
 			{
-				/* Open the midi stream without a receiver, so that we can load up the custom soundfont if available */
 				midi = MidiSystem.getSequencer(false);
+
+				/* Make a new copy of the media stream, as realize() can be called more than once during the player's lifecycle */
 				this.stream = copyMediaData(stream);
-			}
+
+				if (Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
+				{
+					synthesizer = Manager.customSynth; // Use the custom synthesizer
+				} 
+				else 
+				{
+					synthesizer = MidiSystem.getSynthesizer(); // Default synthesizer
+				}
+				
+				synthesizer.open();
+				receiver = synthesizer.getReceiver();
+				midi.getTransmitter().setReceiver(receiver);
+			} 
 			catch (Exception e) 
-			{ 
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load midi file:" + e.getMessage());
+			{
+				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load MIDI file: " + e.getMessage());
 			}
 		}
 
@@ -382,16 +400,6 @@ public class PlatformPlayer implements Player
 			try 
 			{ 
 				midi.open();
-				if(Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
-				{
-					midi.getTransmitter().setReceiver(Manager.customSynth.getReceiver()); 
-				}
-				else
-				{
-					midi.getTransmitter().setReceiver(MidiSystem.getReceiver());
-				}
-
-				/* Make a new copy of the media stream, as realize() can be called more than once during the player's lifecycle */
 				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(stream));
 				midi.setSequence(midiSequence);
 				state = Player.REALIZED; 
@@ -475,6 +483,8 @@ public class PlatformPlayer implements Player
 		public long getDuration() { return midi.getMicrosecondLength(); }
 
 		public boolean isRunning() { return midi.isRunning(); }
+
+		public Receiver getReceiver() { return receiver; }
 	}
 
 	private class wavPlayer extends audioplayer
@@ -918,25 +928,24 @@ public class PlatformPlayer implements Player
 			 * from only making effective changes if needed.
 			 */
 
-			if(player instanceof midiPlayer) 
+			if (player instanceof midiPlayer) 
 			{
-				
 				midiPlayer sequencer = (midiPlayer) player;
-				int midiVolume = isMuted() ? 0: (int) (this.level * 127 / 100);
+				int midiVolume = isMuted() ? 0 : (int) (this.level * 127 / 100); // Convert to MIDI volume range
 
-				/* Set volume for all channels, through Control Change command 7 */
-				for (Track track : sequencer.midiSequence.getTracks())
+				ShortMessage volumeMessage = new ShortMessage();			
+				// Set volume for all channels through Control Change command 7 (volume)
+				for (int channel = 0; channel < 16; channel++) 
 				{
-					for (int i = 0; i < 16; i++)
-						{
-							/* 
-							 * This will make it so that volume changes take effect at the start of the midi stream.
-							 * As far as i could test, all jars that have volume adjustment seem to start their streams
-							 * from the very beginning after the volume is changed, so this is probably safe.
-							 */
-							try {track.add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, i, 7, midiVolume), 0)); }
-							catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Midi setLevel failed: " + e.getMessage());}
-						}
+					try 
+					{
+						volumeMessage.setMessage(ShortMessage.CONTROL_CHANGE, channel, 7, midiVolume);
+						sequencer.getReceiver().send(volumeMessage, -1);
+					} 
+					catch (Exception e) 
+					{
+						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Midi setLevel failed: " + e.getMessage());
+					}
 				}
 			}
 			else if(player instanceof wavPlayer) /* Haven't found a jar that actually makes use of this yet - Scratch that: Shadow Shoot again */
