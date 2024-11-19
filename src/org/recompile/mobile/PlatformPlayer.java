@@ -906,11 +906,8 @@ public class PlatformPlayer implements Player
 
 		public int getLevel() 
 		{
-			/* 
-			 * We could return -1 here if the player is in REALIZED state, but that would require
-			 * having access to platformPlayer itself, and this seems a bit optional... let's wait
-			 * and see if any jar uses this for flow control of any kind.
-			 */
+			if(getState() == Player.REALIZED) { return -1; }
+
 			return level; 
 		}
 
