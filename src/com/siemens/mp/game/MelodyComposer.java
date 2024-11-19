@@ -123,6 +123,10 @@ public class MelodyComposer
 	private Track tmpTrack;
 	private Melody curMelody;
 	private int curTick = 0;
+	private int lastMark = 0; // Used for TONE_MARK
+
+	private final int[] tmpNoteArray = new int[MAX_NOTES*2]; // This will hold notes AND their length, hence why it's 2 * MAX_NOTES
+	private int tmpNoteArrayIdx = 0;
 
 	/* Jars are expected to call this before appending notes or doing anything else, so prepare an empty melody (sequence and track) */
 	public MelodyComposer() 
@@ -133,6 +137,7 @@ public class MelodyComposer
 		
 	}
 
+	// No need for tmpNoteArray here, the notes array is what we'll use to determine repeats and such
 	public MelodyComposer(int[] notes, int bpm) 
 	{ 
 		curMelody = new Melody();
@@ -140,7 +145,60 @@ public class MelodyComposer
 		curMelody.bpm = bpm;
 
 		/* The notes array is a pair of [note, length] */
-		for (int i = 0; i < notes.length; i += 2) { appendNote(notes[i], notes[i + 1]); }
+		for (int i = 0; i < notes.length; i += 2) 
+		{
+			if(notes[i] == TONE_REPEAT) 
+			{
+				Mobile.log(Mobile.LOG_DEBUG, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "TONE_REPEAT!");
+				for(int rep = 0; rep < notes[i+1]; rep++) // Repeat N times from the beginning until the current position
+				{
+					for(int repindex= 0; repindex < i; repindex += 2) 
+					{
+						if(notes[repindex] != TONE_REPEAT && 
+							notes[repindex] != TONE_MARK && 
+							notes[repindex] != TONE_REPEAT_MARK &&
+							notes[repindex] != TONE_REPEV &&
+							notes[repindex] != TONE_REPEV_MARK &&
+							notes[repindex] != TONE_REPON &&
+							notes[repindex] != TONE_REPON_MARK) // Only append actual notes, or else this would become an infinite loop
+						{
+							appendNote(notes[repindex], notes[repindex+1]);
+						}
+					}
+				}
+			}
+			else if (notes[i] == TONE_REPEAT_MARK) 
+			{
+				Mobile.log(Mobile.LOG_DEBUG, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "TONE_REPEAT_MARK!");
+				for(int rep = 0; rep < notes[i+1]; rep++) // Repeat N times from the beginning until the last mark
+				{
+					for(int repindex= lastMark; repindex < i; repindex += 2) 
+					{
+						if(notes[repindex] != TONE_REPEAT && 
+							notes[repindex] != TONE_MARK && 
+							notes[repindex] != TONE_REPEAT_MARK &&
+							notes[repindex] != TONE_REPEV &&
+							notes[repindex] != TONE_REPEV_MARK &&
+							notes[repindex] != TONE_REPON &&
+							notes[repindex] != TONE_REPON_MARK) // Only append actual notes, or else this would become an infinite loop
+						{
+							appendNote(notes[repindex], notes[repindex+1]);
+						}
+					}
+				}
+			}
+
+			else if(notes[i] == TONE_MARK) { lastMark = i; } // This should only set a mark
+
+			else { appendNote(notes[i], notes[i + 1]); }	
+		
+			/* 
+			 * TONE_REPEV, TONE_REPEV_MARK, TONE_REPON, TONE_REPON_MARK not handled, as handling 
+			 * them would require a different playback method involving a state machine that uses Manager.playTone()
+			 * to play notes. Would be a decent rewrite, since that would have to also work with PlayerListener and other Player 
+			 * structures
+			 */
+		}
 
 		/* Due to that, the real count of notes has to be half of the array's length */
 		curMelody.len = notes.length/2;
@@ -148,35 +206,66 @@ public class MelodyComposer
 	
 	public void appendNote(int note, int length) 
 	{
+		Mobile.log(Mobile.LOG_DEBUG, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "Adding note-length:" + note + " - " + length);
 		if (note == TONE_PAUSE || note == NO_TONE) // Assume TONE_PAUSE and NO_TONE are the same for now, couldn't find an example of NO_TONE being used yet to confirm. 
 		{
 			final int pauseTicks = convertLengthToTicks(length);
 			curTick += pauseTicks; // Just advance the current tick count to "pause" by the given length (at least it's what jars seem to use this for on their code)
 			return;
 		}
-		else if (note == TONE_REPEAT_MARK) 
-		{
-			// Logic to repeat from the last marked note
-			// You can store the last mark's position and repeat the sequence
-			//repeatLastSection();
-			//curMelody.len++; 
-		} 
-		else if (note == TONE_REPEAT) 
-		{
-			// Logic for repeating the entire melody
-			//repeatFullMelody();
-			//curMelody.len++; 
-		} 
+		if(note == TONE_REPEAT) 
+			{
+				Mobile.log(Mobile.LOG_INFO, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "TONE_REPEAT!");
+				for(int rep = 0; rep < length; rep++) // Repeat N times from the beginning until the current position
+				{
+					for(int repindex= 0; repindex <= tmpNoteArrayIdx; repindex += 2) // <= because we aren't operating directly on the received array like in MelodyComposer()
+					{
+						if(tmpNoteArray[repindex] != TONE_REPEAT && 
+							tmpNoteArray[repindex] != TONE_MARK && 
+							tmpNoteArray[repindex] != TONE_REPEAT_MARK &&
+							tmpNoteArray[repindex] != TONE_REPEV &&
+							tmpNoteArray[repindex] != TONE_REPEV_MARK &&
+							tmpNoteArray[repindex] != TONE_REPON &&
+							tmpNoteArray[repindex] != TONE_REPON_MARK) // Only append actual notes, or else this would become an infinite loop
+						{
+							appendNote(tmpNoteArray[repindex], tmpNoteArray[repindex+1]);
+						}
+					}
+				}
+			}
+			else if (note == TONE_REPEAT_MARK) 
+			{
+				Mobile.log(Mobile.LOG_DEBUG, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "TONE_REPEAT_MARK!");
+				for(int rep = 0; rep < length; rep++) // Repeat N times from the beginning until the last mark
+				{
+					for(int repindex = lastMark; repindex <= tmpNoteArrayIdx; repindex += 2) 
+					{
+						if(tmpNoteArray[repindex] != TONE_REPEAT && 
+							tmpNoteArray[repindex] != TONE_MARK && 
+							tmpNoteArray[repindex] != TONE_REPEAT_MARK &&
+							tmpNoteArray[repindex] != TONE_REPEV &&
+							tmpNoteArray[repindex] != TONE_REPEV_MARK &&
+							tmpNoteArray[repindex] != TONE_REPON &&
+							tmpNoteArray[repindex] != TONE_REPON_MARK) // Only append actual notes, or else this would become an infinite loop
+						{
+							appendNote(tmpNoteArray[repindex], tmpNoteArray[repindex+1]);
+						}
+					}
+				}
+			}
+		else if(note == TONE_MARK) { lastMark = tmpNoteArrayIdx; }
 		else 
 		{
 			try 
 			{
-				int ticks = convertLengthToTicks(length);
-				Mobile.log(Mobile.LOG_INFO, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + " adding Melody note " + note);
-				tmpTrack.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_ON, 0, mapToMidi(note), 93), curTick));
-				tmpTrack.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_OFF, 0, mapToMidi(note), 0), curTick+ticks));
-				curTick += ticks;
-				curMelody.len++; 
+				tmpNoteArray[tmpNoteArrayIdx * 2] = note;
+				tmpNoteArray[tmpNoteArrayIdx * 2 + 1] = convertLengthToTicks(length);
+
+				tmpTrack.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_ON, 0, mapToMidi(tmpNoteArray[tmpNoteArrayIdx * 2]), 93), curTick));
+				tmpTrack.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_OFF, 0, mapToMidi(tmpNoteArray[tmpNoteArrayIdx * 2]), 0), curTick+tmpNoteArray[tmpNoteArrayIdx * 2 + 1]));
+				curTick += tmpNoteArray[tmpNoteArrayIdx * 2 + 1];
+				tmpNoteArrayIdx++;
+				curMelody.len++;
 			} 
 			catch (InvalidMidiDataException e) 
 			{
@@ -277,7 +366,6 @@ public class MelodyComposer
 
 	public Melody getMelody() 
 	{
-		Mobile.log(Mobile.LOG_INFO, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + " getMelody()");
 		curMelody.populateMelody(convertMelody(tmpSequence)); // Send MIDI melody converted to a byte array
 		return curMelody;
 	}
@@ -291,10 +379,12 @@ public class MelodyComposer
 	/* Here, we can basically create a new melody from scratch with default BPM */
 	public void resetMelody()
 	{ 
-		Mobile.log(Mobile.LOG_INFO, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + " resetMelody()");
+		Mobile.log(Mobile.LOG_DEBUG, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "Reset Melody!");
 		setBPM(BPM);
 		curMelody = new Melody();
 		curTick = 0;
+		lastMark = 0;
+		tmpNoteArrayIdx = 0;
 	}
 
 	/* This is always called after a Melody() constructor or resetMelody() so creating a new sequence and track should be safe */
