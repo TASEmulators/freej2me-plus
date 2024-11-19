@@ -389,7 +389,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		clipHeight = (int)rect.getHeight();
 	}
 
-	public int getTranslateX() { return translateY; }
+	public int getTranslateX() { return translateX; }
 	
 	public int getTranslateY() { return translateY; }
 
