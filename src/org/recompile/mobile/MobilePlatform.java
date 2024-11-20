@@ -76,6 +76,7 @@ public class MobilePlatform
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
 	public static Displayable displayable;
+	public static Canvas canvas;
 
 	public Runnable painter;
 
@@ -113,6 +114,20 @@ public class MobilePlatform
 		lcd = new PlatformImage(width, height);
 		gc = lcd.getGraphics();
 
+		/* 
+		 * Try to have the jar scale as well. If this doesn't work,
+		 * a simple restart is all it takes, just like before.
+		 */
+		if(canvas != null) 
+		{
+			canvas.doSizeChanged(width, height);
+			canvas.platformImage = lcd;
+		}
+		if(Mobile.getDisplay() != null) 
+		{ 
+			Mobile.getDisplay().getCurrent().doSizeChanged(width, height);
+			Mobile.getDisplay().getCurrent().platformImage = lcd;  
+		}
 	}
 
 	public BufferedImage getLCD() { return lcd.getCanvas(); }

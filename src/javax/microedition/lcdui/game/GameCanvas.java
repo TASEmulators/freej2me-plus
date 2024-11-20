@@ -39,12 +39,8 @@ public abstract class GameCanvas extends Canvas
 
 	protected GameCanvas(boolean suppressKeyEvents)
 	{
+		super();
 		this.suppressKeyEvents = suppressKeyEvents;
-
-		width = Mobile.getPlatform().lcdWidth;
-		height = Mobile.getPlatform().lcdHeight;
-
-		platformImage = new PlatformImage(width, height);
 	}
 
 	protected Graphics getGraphics()
@@ -69,4 +65,7 @@ public abstract class GameCanvas extends Canvas
 		int t = Mobile.getPlatform().keyState;
 		return t;
 	}
+
+	@Override
+	public void doSizeChanged(int w, int h) { super.sizeChanged(w, h); }
 }
