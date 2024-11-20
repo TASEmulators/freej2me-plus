@@ -33,6 +33,7 @@ import java.io.InputStream;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 
 import javax.microedition.lcdui.Canvas;
@@ -424,6 +425,10 @@ public class MobilePlatform
 
 		BufferedImage overlayImage = new BufferedImage(OVERLAY_WIDTH, OVERLAY_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D overlayGraphics = overlayImage.createGraphics();
+
+		// Enable font AA for better text quality (GASP uses font resource information to apply AA when appropriate)
+        gc.getGraphics2D().setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		gc.getGraphics2D().setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		
 		// Set the overlay background
 		overlayGraphics.setColor(new Color(0, 0, 105, 150)); // BG is a semi-transparent dark blue
@@ -444,7 +449,7 @@ public class MobilePlatform
 		double scale = Math.min(lcdWidth, lcdHeight);
 
 		int scaledWidth = 0;
-		if(scale < 100) { scaledWidth = (int) (lcdWidth / 2);}
+		if(scale < 100) { scaledWidth = (int) (lcdWidth / 2.5);}
 		if(scale > 100) { scaledWidth = (int) (lcdWidth / 3);}
 		if(scale > 200) { scaledWidth = (int) (lcdWidth / 4);}
 		if(scale > 300) { scaledWidth = (int) (lcdWidth / 5);}
