@@ -16,6 +16,8 @@
 */
 package org.recompile.mobile;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -230,6 +233,24 @@ public class MobilePlatform
 	public boolean load(String fileName) 
 	{
         Map<String, String> descriptorProperties = new HashMap<>();
+
+		/*
+		 * If loading a jar directly, check if an accompanying jad with the same name 
+		 * is present in the directory, to load any platform properties from there.
+		 */
+		if(fileName.toLowerCase().contains(".jar")) 
+		{
+			try 
+			{
+				File checkJad = new File(new URI(fileName.replace(".jar", ".jad")));
+				if(checkJad.exists() && !checkJad.isDirectory()) 
+				{
+					Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Accompanying JAD found! Parsing additional MIDlet properties.");
+					fileName = fileName.replace(".jar", ".jad"); 
+				}
+			} catch (Exception e) { Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Couldn't check for accompanying JAD:" + e.getMessage()); }
+		}
+		
         boolean isJad = fileName.toLowerCase().endsWith(".jad");
 
         if (isJad) 
