@@ -85,7 +85,9 @@ public abstract class Displayable
 	
 	public void setCommandListener(CommandListener listener) { commandlistener = listener; }
 
-	protected void sizeChanged(int width, int height) { }
+	protected void sizeChanged(int width, int height) { this.width = width; this.height = height; }
+
+	public void doSizeChanged(int width, int height) { sizeChanged(width, height); }
 
 	public Display getDisplay() { return Mobile.getDisplay(); }
 

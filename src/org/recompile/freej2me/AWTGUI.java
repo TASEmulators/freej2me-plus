@@ -989,8 +989,6 @@ public final class AWTGUI
 					hasPendingChange = true;
 				}
 				resDialog.setVisible(false);
-				restartRequiredDialog.setLocationRelativeTo(main);
-				restartRequiredDialog.setVisible(true);
 			}
 
 			else if (a.getActionCommand() == "CancelResChange") { resDialog.setVisible(false); }

@@ -55,6 +55,8 @@ public abstract class Canvas extends Displayable
 		Mobile.log(Mobile.LOG_INFO, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Create Canvas:"+width+", "+height);
 
 		platformImage = new PlatformImage(width, height);
+
+		Mobile.getPlatform().canvas = this;
 	}
 
 	public int getGameAction(int keyCode) { return Mobile.getGameAction(keyCode); }
@@ -202,6 +204,8 @@ public abstract class Canvas extends Displayable
 		width = w;
 		height = h;
 	}
+
+	public void doSizeChanged(int w, int h) { sizeChanged(w, h); }
 
 	public void notifySetCurrent() { repaint(); }
 
