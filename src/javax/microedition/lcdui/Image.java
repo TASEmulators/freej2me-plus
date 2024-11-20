@@ -38,9 +38,8 @@ public class Image
 		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image from image data ");
 		if (imageData == null) {throw new NullPointerException();}
 		if (imageOffset + imageLength > imageData.length) {throw new ArrayIndexOutOfBoundsException();}
-		
-		PlatformImage t = new PlatformImage(imageData, imageOffset, imageLength);
-		return t;
+
+		return new PlatformImage(imageData, imageOffset, imageLength);
 	}
 
 	public static Image createImage(Image source)
@@ -49,7 +48,6 @@ public class Image
 		if (source == null) {throw new NullPointerException();}
 		// If the source is immutable, just return it, despite the docs not mentioning it directly
 		if (!source.isMutable()) { return source; }
-
 		return new PlatformImage(source);
 	}
 
@@ -69,8 +67,7 @@ public class Image
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image stream");
 		if (stream == null) {throw new NullPointerException();}
-		PlatformImage t = new PlatformImage(stream);
-		return t;
+		return new PlatformImage(stream);
 	}
 
 	public static Image createImage(int width, int height)
@@ -84,8 +81,7 @@ public class Image
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image " + name);
 		if (name == null) {throw new NullPointerException();}
-		PlatformImage t = new PlatformImage(name);
-		return t;
+		return new PlatformImage(name);
 	}
 
 	public static Image createRGBImage(int[] rgb, int width, int height, boolean processAlpha)
