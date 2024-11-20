@@ -34,7 +34,6 @@ import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.awt.geom.AffineTransform;
 
 public class PlatformImage extends javax.microedition.lcdui.Image
 {
@@ -45,15 +44,9 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	// transformImage variable that is better off not being allocated every call. Is an array because of raster getDataElements()
 	private static final int[] transformPixelData = new int[1];
 
-	public BufferedImage getCanvas()
-	{
-		return canvas;
-	}
+	public BufferedImage getCanvas() { return canvas; }
 
-	public PlatformGraphics getGraphics()
-	{
-		return gc;
-	}
+	public PlatformGraphics getGraphics() { return gc; }
 
 	protected void createGraphics()
 	{

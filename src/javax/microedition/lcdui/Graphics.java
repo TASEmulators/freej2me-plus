@@ -16,8 +16,6 @@
 */
 package javax.microedition.lcdui;
 
-import org.recompile.mobile.Mobile;
-import org.recompile.mobile.PlatformImage;
 import org.recompile.mobile.PlatformGraphics;
 
 public class Graphics
@@ -46,7 +44,6 @@ public class Graphics
 	protected int strokeStyle = SOLID;
 
 
-	public PlatformImage platformImage;
 	public PlatformGraphics platformGraphics;
 
 	public void copyArea(int x_src, int y_src, int width, int height, int x_dest, int y_dest, int anchor) {  }

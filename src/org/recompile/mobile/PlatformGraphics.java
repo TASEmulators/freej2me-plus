@@ -27,7 +27,6 @@ import com.nokia.mid.ui.DirectGraphics;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.awt.geom.AffineTransform;
 import java.awt.BasicStroke;
 
 public class PlatformGraphics extends javax.microedition.lcdui.Graphics implements DirectGraphics
@@ -60,7 +59,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	{
 		canvas = image.getCanvas();
 		gc = canvas.createGraphics();
-		platformImage = image;
 
 		platformGraphics = this;
 
@@ -178,7 +176,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "flushGraphics A:"+e.getMessage());
+			// Games can try to render offscreen even at the correct resolution, so this makes more sense as a debug log
+			Mobile.log(Mobile.LOG_DEBUG, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "flushGraphics A:"+e.getMessage());
 		}
 	}
 
