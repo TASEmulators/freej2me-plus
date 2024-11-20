@@ -46,8 +46,6 @@ public class FreeJ2ME
 	private int xborder;
 	private int yborder;
 
-	private PlatformImage img;
-
 	private Config config;
 	private boolean rotateDisplay = false;
 	
@@ -395,26 +393,30 @@ public class FreeJ2ME
 		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
 
 		// Create a standard size LCD if not rotated, else invert window's width and height.
-		if(!rotateDisplay) 
+		if(w != lcdWidth || h != lcdHeight) 
 		{
-			lcdWidth = w;
-			lcdHeight = h;
+			if(!rotateDisplay) 
+			{
+				lcdWidth = w;
+				lcdHeight = h;
 
-			Mobile.getPlatform().resizeLCD(w, h);
-			
-			resize();
-			main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
+				Mobile.getPlatform().resizeLCD(w, h);
+				
+				resize();
+				main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
+			}
+			else 
+			{
+				lcdWidth = h;
+				lcdHeight = w;
+
+				Mobile.getPlatform().resizeLCD(w, h);
+
+				resize();
+				main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
+			}
 		}
-		else 
-		{
-			lcdWidth = h;
-			lcdHeight = w;
-
-			Mobile.getPlatform().resizeLCD(w, h);
-
-			resize();
-			main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);
-		}
+		
 	}
 
 	private int getMobileKey(int keycode)
