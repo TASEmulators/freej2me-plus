@@ -56,6 +56,7 @@ public final class AWTGUI
 
 	/* Sub menus (for now, all of them are located in "Settings") */
 	final Menu fpsCap = new Menu("FPS Limit");
+	final Menu showFPS = new Menu("Show FPS Counter");
 	final Menu phoneType = new Menu("Phone Key Layout");
 
 	/* Dialogs for resolution changes, restart notifications, MemStats and info about FreeJ2ME */
@@ -154,7 +155,6 @@ public final class AWTGUI
 	final CheckboxMenuItem enableAudio = new CheckboxMenuItem("Enable Audio", false);
 	final CheckboxMenuItem enableRotation = new CheckboxMenuItem("Rotate Screen", false);
 	final CheckboxMenuItem useCustomMidi = new CheckboxMenuItem("Use custom midi soundfont", false);
-	final CheckboxMenuItem showFPS = new CheckboxMenuItem("Show FPS Counter", false);
 
 	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("J2ME Standard", true);
 	final CheckboxMenuItem lgLayout = new CheckboxMenuItem("LG", false);
@@ -171,6 +171,12 @@ public final class AWTGUI
 	final CheckboxMenuItem fpsCap60 = new CheckboxMenuItem("60 FPS", false);
 	final CheckboxMenuItem fpsCap30 = new CheckboxMenuItem("30 FPS", false);
 	final CheckboxMenuItem fpsCap15 = new CheckboxMenuItem("15 FPS", false);
+
+	final CheckboxMenuItem showFPSNone        = new CheckboxMenuItem("Off", true);
+	final CheckboxMenuItem showFPSTopLeft     = new CheckboxMenuItem("Top Left", false);
+	final CheckboxMenuItem showFPSTopRight    = new CheckboxMenuItem("Top Right", false);
+	final CheckboxMenuItem showFPSBottomLeft  = new CheckboxMenuItem("Bottom Left", false);
+	final CheckboxMenuItem showFPSBottomRight = new CheckboxMenuItem("Bottom Right", false);
 
 	final CheckboxMenuItem noAlphaOnBlankImages = new CheckboxMenuItem("No alpha on blank images");
 
@@ -408,15 +414,6 @@ public final class AWTGUI
 
 				restartRequiredDialog.setLocationRelativeTo(main);
 				restartRequiredDialog.setVisible(true);
-			}
-		});
-
-		showFPS.addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(showFPS.getState()){ Mobile.getPlatform().setShowFPS(true); }
-				else{ Mobile.getPlatform().setShowFPS(false); }
 			}
 		});
 
@@ -716,6 +713,86 @@ public final class AWTGUI
 			}
 		});
 
+		showFPSNone.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!showFPSNone.getState()){ showFPSNone.setState(true); }
+				if(showFPSNone.getState())
+				{ 
+					Mobile.getPlatform().setShowFPS("Off"); 
+					showFPSTopLeft.setState(false);
+					showFPSTopRight.setState(false);
+					showFPSBottomLeft.setState(false);
+					showFPSBottomRight.setState(false);
+				}
+			}
+		});
+
+		showFPSTopLeft.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!showFPSTopLeft.getState()){ showFPSTopLeft.setState(true); }
+				if(showFPSTopLeft.getState())
+				{ 
+					Mobile.getPlatform().setShowFPS("TopLeft"); 
+					showFPSNone.setState(false);
+					showFPSTopRight.setState(false);
+					showFPSBottomLeft.setState(false);
+					showFPSBottomRight.setState(false);
+				}
+			}
+		});
+
+		showFPSTopRight.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!showFPSTopRight.getState()){ showFPSTopRight.setState(true); }
+				if(showFPSTopRight.getState())
+				{ 
+					Mobile.getPlatform().setShowFPS("TopRight"); 
+					showFPSTopLeft.setState(false);
+					showFPSNone.setState(false);
+					showFPSBottomLeft.setState(false);
+					showFPSBottomRight.setState(false);
+				}
+			}
+		});
+
+		showFPSBottomLeft.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!showFPSBottomLeft.getState()){ showFPSBottomLeft.setState(true); }
+				if(showFPSBottomLeft.getState())
+				{ 
+					Mobile.getPlatform().setShowFPS("BottomLeft"); 
+					showFPSTopLeft.setState(false);
+					showFPSTopRight.setState(false);
+					showFPSNone.setState(false);
+					showFPSBottomRight.setState(false);
+				}
+			}
+		});
+
+		showFPSBottomRight.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(!showFPSBottomRight.getState()){ showFPSBottomRight.setState(true); }
+				if(showFPSBottomRight.getState())
+				{ 
+					Mobile.getPlatform().setShowFPS("BottomRight"); 
+					showFPSTopLeft.setState(false);
+					showFPSTopRight.setState(false);
+					showFPSBottomLeft.setState(false);
+					showFPSNone.setState(false);
+				}
+			}
+		});
+
 		logDisabled.addItemListener(new ItemListener() 
 		{
 			public void itemStateChanged(ItemEvent e) 
@@ -891,6 +968,12 @@ public final class AWTGUI
 		fpsCap.add(fpsCap60);
 		fpsCap.add(fpsCap30);
 		fpsCap.add(fpsCap15);
+
+		showFPS.add(showFPSNone);
+		showFPS.add(showFPSTopLeft);
+		showFPS.add(showFPSTopRight);
+		showFPS.add(showFPSBottomLeft);
+		showFPS.add(showFPSBottomRight);
 
 		speedHackMenu.add(noAlphaOnBlankImages);
 		

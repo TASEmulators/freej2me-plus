@@ -67,7 +67,7 @@ public class MobilePlatform
 	// Whether the user has toggled the ShowFPS option
 	private final int OVERLAY_WIDTH = 80;
 	private final int OVERLAY_HEIGHT = 20;
-	private boolean showFPS = false;
+	private String showFPS = "Off";
 	private int frameCount = 0;
 	private long lastFpsTime = System.nanoTime();
     private int fps = 0;
@@ -289,7 +289,7 @@ public class MobilePlatform
 		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
 		
-		if(showFPS) { showFPS();}
+		if(!showFPS.equals("Off")) { showFPS();}
 		painter.run();
 
 		//System.gc();
@@ -300,7 +300,7 @@ public class MobilePlatform
 		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
 
-		if(showFPS) { showFPS();}
+		if(!showFPS.equals("Off")) { showFPS();}
 		painter.run();
 
 		//System.gc();
@@ -452,8 +452,11 @@ public class MobilePlatform
 		int scaledHeight = (int) (scaledWidth / 4);
 	
 		// Draw the scaled overlay image onto the jar's main screen.
-		gc.getGraphics2D().drawImage(overlayImage, 2, 2, scaledWidth, scaledHeight, null);
+		if(showFPS.equals("TopLeft"))          { gc.getGraphics2D().drawImage(overlayImage, 2, 2, scaledWidth, scaledHeight, null); }
+		else if(showFPS.equals("TopRight"))    { gc.getGraphics2D().drawImage(overlayImage, lcdWidth-scaledWidth-2, 2, scaledWidth, scaledHeight, null); }
+		else if(showFPS.equals("BottomLeft"))  { gc.getGraphics2D().drawImage(overlayImage, 2, lcdHeight-scaledHeight-2, scaledWidth, scaledHeight, null); }
+		else if(showFPS.equals("BottomRight")) { gc.getGraphics2D().drawImage(overlayImage, lcdWidth-scaledWidth-2, lcdHeight-scaledHeight-2, scaledWidth, scaledHeight, null); }
 	}
 
-	public void setShowFPS(boolean show) { showFPS = show; }
+	public void setShowFPS(String show) { showFPS = show; }
 }
