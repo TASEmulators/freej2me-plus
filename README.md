@@ -30,14 +30,9 @@ Latest build:
 
   Libretro cores: https://nightly.link/TASEmulators/freej2me-plus/workflows/libretro/devel
 
-Screenshots:
-  https://imgur.com/a/2vAeC
+  Screenshots: https://imgur.com/a/2vAeC
 
-Discussion/Support thread:
-  https://retropie.org.uk/forum/topic/13084/freej2me-support-thread
-
-Development thread:
-  https://retropie.org.uk/forum/topic/11441/would-you-like-to-play-nokia-j2me-games-on-retropie/
+  Compatibility List: https://tasemulators.github.io/freej2me-plus/
 
 ----
 **FreeJ2ME Jar Compilation:**
@@ -49,25 +44,13 @@ Development thread:
 >```
 > Will create three different jar files inside `build/`:
 >
-> `freej2me.jar` -> Standalone AWT jar executable
+> `freej2me.jar` -> Standalone AWT jar executable, currently the main standalone flavor
 > 
 > `freej2me-lr.jar` -> Libretro executable (has to be placed on the frontend's `system/` folder, since it acts as a BIOS for the libretro core and runs J2ME jars)
 >
->`freej2me-sdl.jar` -> Jar executable meant to be used in conjunction with SDL2
+>`freej2me-sdl.jar` -> Jar executable meant to be used in conjunction with SDL2 for libtas and joystick support, will likely become the de-facto standalone at some point
 >
->Both the Libretro and SDL2 jar files need additional binaries to be compiled before use. Look at the additional steps below if you're going to use one of them.
-
-**Building the SDL2 binary:**
->
->To build the SDL2 binary, run the following commands from the root directory:
-> ```
-> # SDL2 binary compilation
-> > cd src/sdl2
-> > make
-> > make install
-> ```
->
-> SDL2 allows FreeJ2ME to run on a Raspberry Pi.
+>The Libretro jar file needs additional binaries to be compiled before use. Look at the additional steps below if you're going to use it.
 
 **Building the Libretro core**
 
@@ -114,7 +97,7 @@ Launching the AWT frontend (freej2me.jar) will bring up a filepicker to select t
 Alternatively it can be launched from the command line: `java -jar freej2me.jar 'file:///path/to/midlet.jar' [width] [height] [scale]`
 Where _width_, _height_ (dimensions of the simulated screen) and _scale_ (initial scale factor of the window) are optional arguments.
 
-The SDL2 frontend (freej2me-sdl.jar) accepts the same command-line arguments format, aside from the _scale_ option which is unavailable.
+The SDL2 frontend (freej2me-sdl.jar) accepts the same command-line arguments format, aside from the _scale_ option which is unavailable. **NOTE**: This flavor requires libSDL 2.24.0-1 or newer in order to even launch. Make sure you have it installed in your system, or placed alongside the jar for it to load.
 
 When running under Microsoft Windows please do note paths require an additional `/` prefixed. For example, `C:\path\to\midlet.jar` should be passed as `file:///C:\path\to\midlet.jar`
 
@@ -123,7 +106,18 @@ Special note for Windows: It is recommended to use Adoptium's [OpenJDK JRE](http
 FreeJ2ME keeps savedata and config at the working directory it is run from. Currently any resolution specified at the config file takes precedence over the values passed via command-line.
 
 ---
-**How to contribute as a developer:**
+
+## Modules and external dependencies used:
+
+### JLayer(MPEG Player): - LGPLv2.1 License, compatible with GPLv3
+
+### libsdl4j: zlib License, compatible with GPLv3
+
+### ObjectWeb's ASM: BSD 3-Clause License, not directly compatible with GPLv3, but can be used as long as the original license is published alongside GPLv3 (check the 'License' tab)
+
+### Libretro's API: MIT License, compatible with GPLv3
+
+# How to contribute as a developer:
   1) Open an Issue
   2) Try solving that issue
   3) Post on the Issue if you have a possible solution
