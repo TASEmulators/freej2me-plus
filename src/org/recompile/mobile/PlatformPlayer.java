@@ -158,10 +158,10 @@ public class PlatformPlayer implements Player
 
 		try
 		{
-			player.stop();
-			player.deallocate(); /* Call player's deallocate directly, otherwise we'll realize() again */
-			state = Player.CLOSED;
+			if(player.isRunning()) { stop(); }
+			player.close();
 			player = null;
+			state = Player.CLOSED;
 			notifyListeners(PlayerListener.CLOSED, null);	
 		}
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not close player: " + e.getMessage()); }
@@ -217,7 +217,7 @@ public class PlatformPlayer implements Player
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot deallocate player, it is already CLOSED."); }
 
-		stop();
+		if(player.isRunning()) { stop(); }
 		player.deallocate();
 
 		/* 
@@ -225,11 +225,7 @@ public class PlatformPlayer implements Player
 		 * as deallocate can be called during the transition from UNREALIZED to REALIZED, and if that happens,
 		 * we can't actually set it as REALIZED, it must be kept as UNREALIZED.
 		*/
-		if(state > Player.UNREALIZED) 
-		{
-			player.realize();
-			state = Player.REALIZED;
-		}	
+		if(state > Player.UNREALIZED) { state = Player.REALIZED; }
 	}
 
 	public String getContentType() 
@@ -252,6 +248,15 @@ public class PlatformPlayer implements Player
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call getMediaTime on a CLOSED player."); }
 		
+		/* 
+		 * If the player isn't at least prefetched, there's no way to get media time.
+		 * PlatformPlayer does in fact acquire everything needed to play the media on realize(),
+		 * however, J2ME docs state that the exclusive and scarce resources (such as an actual
+		 * player resources) should only be acquired in prefetch. So let's assume we're working this
+		 * way here for now.
+		*/
+		if(getState() == Player.UNREALIZED || getState() == Player.REALIZED) { return Player.TIME_UNKNOWN; }
+
 		return player.getMediaTime(); 
 	}
 
@@ -336,6 +341,7 @@ public class PlatformPlayer implements Player
 		public long getMediaTime() { return 0; }
 		public boolean isRunning() { return false; }
 		public void deallocate() {  }
+		public void close() { }
 		public void realize() { }
 		public void prefetch() { }
 		public long getDuration() { return Player.TIME_UNKNOWN; }
@@ -361,7 +367,6 @@ public class PlatformPlayer implements Player
 
 	private class midiPlayer extends audioplayer
 	{
-		private byte[] stream;
 		private Sequencer midi;
 		private Sequence midiSequence;
 		private Synthesizer synthesizer;
@@ -372,9 +377,6 @@ public class PlatformPlayer implements Player
 			try 
 			{
 				midi = MidiSystem.getSequencer(false);
-
-				/* Make a new copy of the media stream, as realize() can be called more than once during the player's lifecycle */
-				this.stream = copyMediaData(stream);
 
 				if (Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
 				{
@@ -388,6 +390,7 @@ public class PlatformPlayer implements Player
 				synthesizer.open();
 				receiver = synthesizer.getReceiver();
 				midi.getTransmitter().setReceiver(receiver);
+				midiSequence = MidiSystem.getSequence(stream);
 			} 
 			catch (Exception e) 
 			{
@@ -400,7 +403,6 @@ public class PlatformPlayer implements Player
 			try 
 			{ 
 				midi.open();
-				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(stream));
 				midi.setSequence(midiSequence);
 				state = Player.REALIZED; 
 			} 
@@ -431,8 +433,8 @@ public class PlatformPlayer implements Player
 				{
 					if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
 					{
-						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 						state = Player.PREFETCHED;
+						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 					}
 				}
 			});
@@ -447,7 +449,15 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { midi.close(); }
+		public void deallocate() { } // Prefetch does "nothing" in each internal player so deallocate must also do nothing
+
+		public void close() 
+		{
+			midi.close();
+			synthesizer.close();
+			midiSequence = null;
+			receiver = null;
+		}
 
 		public void setLoopCount(int count)
 		{
@@ -502,17 +512,14 @@ public class PlatformPlayer implements Player
 	private class wavPlayer extends audioplayer
 	{
 		/* PCM WAV variables */
-		private byte[] stream;
 		private AudioInputStream wavStream;
 		private Clip wavClip;
-		/* IMA ADPCM WAV variables */
-		InputStream decodedStream;
 		private int[] wavHeaderData = new int[4];
 
 		public wavPlayer(InputStream stream)
 		{
 			/*
-			 * A wav header is generally 44-bytes long (60 for IMA ADPCM), and it is what we need to read in order 
+			 * A wav header is generally 44-bytes long (up to 60 for IMA ADPCM), and it is what we need to read in order 
 			 * to get the stream's format, frame size, bit rate, number of channels, etc. which gives us information
 			 * on the kind of codec needed to play or decode the incoming stream. The stream needs to be reset
 			 * or else PCM files will be loaded without a header and it might cause issues with playback.
@@ -522,7 +529,16 @@ public class PlatformPlayer implements Player
 				stream.mark(60);
 				wavHeaderData = WavImaAdpcmDecoder.readHeader(stream);
 				stream.reset();
-				this.stream = copyMediaData(stream);
+
+				if(wavHeaderData[0] != 17) /* If it's not IMA ADPCM we don't need to do anything to the stream. */
+				{
+					wavStream = AudioSystem.getAudioInputStream(stream);
+				}
+				else /* But if it is IMA ADPCM, we have to decode it manually. */
+				{
+					wavStream = AudioSystem.getAudioInputStream(WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData));
+				}
+
 			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare wav stream:" + e.getMessage());}
 		}
 
@@ -530,23 +546,9 @@ public class PlatformPlayer implements Player
 		{ 
 			try
 			{
-				/* We only check for IMA ADPCM at the moment. */
-				if(wavHeaderData[0] != 17) /* If it's not IMA ADPCM we don't need to do anything to the stream. */
-				{
-					/* Same idea as midiPlayer, operate on a new copy of the media stream */
-					wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(stream));
-					wavClip = AudioSystem.getClip();
-					wavClip.open(wavStream);
-					state = Player.REALIZED;
-				}
-				else /* But if it is IMA ADPCM, we have to decode it manually. */
-				{
-					decodedStream = WavImaAdpcmDecoder.decodeImaAdpcm(new ByteArrayInputStream(stream), wavHeaderData);
-					wavStream = AudioSystem.getAudioInputStream(decodedStream);
-					wavClip = AudioSystem.getClip();
-					wavClip.open(wavStream);
-					state = Player.REALIZED;
-				}
+				wavClip = AudioSystem.getClip();
+				wavClip.open(wavStream);
+				state = Player.REALIZED;
 			}
 			catch (Exception e) 
 			{ 
@@ -587,7 +589,14 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { wavClip = null; }
+		public void deallocate() { } // Prefetch does "nothing" in each internal player so deallocate must also do nothing
+
+		public void close() 
+		{
+			wavClip = null;
+			wavStream = null;
+			wavHeaderData = null;
+		}
 
 		public void setLoopCount(int count)
 		{
@@ -687,7 +696,14 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { mp3Player = null; }
+		public void deallocate() { } // Prefetch does "nothing" in each internal player so deallocate must also do nothing
+
+		public void close() 
+		{
+			mp3Player = null;
+			stream = null;
+			playerThread = null;
+		}
 
 		public void setLoopCount(int count)
 		{
