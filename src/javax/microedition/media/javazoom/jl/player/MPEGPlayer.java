@@ -29,6 +29,7 @@
 	import javazoom.jl.decoder.JavaLayerException;
 	import javazoom.jl.decoder.SampleBuffer;
 
+	import javax.microedition.media.Player;
 	import org.recompile.mobile.Mobile;
 
 	/**
@@ -187,13 +188,7 @@
 					synchronized (this)
 					{
 						/* Only set complete flag if not entering a new loop */
-						if(loopCount == 0) { complete = (!closed); }
-						else 
-						{
-							loopCount--;
-							complete = false;
-							reset();
-						}
+						complete = (!closed);
 					}
 				}
 			}
@@ -232,16 +227,6 @@
 
 			synchronized (dataStream) { dataStream.notifyAll(); }
 			Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "reset done");
-
-			/* If looping has been set as more than 0, consume a count, and begin playing again. */
-			if(loopCount > 0) 
-			{
-				try 
-				{
-					loopCount--; 
-					play(Integer.MAX_VALUE);
-				} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "MPEGPlayer: Failed to loop player:"+e.getMessage()); }
-			}
 		}
 
 		public int getBitrate() {
@@ -430,13 +415,13 @@
 	{ 
 		double duration = 0;
 
-		try { duration = (double) ((data.length * 8 * 1000D) / getBitrate()); } 
-		catch (Exception e){ Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "Couldn't get duration:" + e.getMessage()); return 0;}
+		try { duration = (double) ((data.length * 8 * 1_000D) / getBitrate()); } 
+		catch (Exception e){ Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "Couldn't get duration:" + e.getMessage()); return Player.TIME_UNKNOWN;}
 		
 		return (long) duration; 
 	}
 
-	public void loop(int count) 
+	public void setLoopCount(int count) 
 	{
 		if(count == -1) { loopCount = Integer.MAX_VALUE; } // Loop "indefinitely"
 		else { loopCount = count; }
@@ -447,4 +432,9 @@
 		if(!paused && !closed && !reset) { return true; }
 		else { return false; }
 	}
+
+	// Looping is handled by PlatformPlayer
+	public int getLoopCount() { return loopCount; }
+
+	public void decreaseLoopCount() { loopCount--; }
 }
