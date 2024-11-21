@@ -659,7 +659,14 @@ public class PlatformPlayer implements Player
 		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
-		{	
+		{
+			/*
+			 * The fact these null checks have to be littered on MP3Player gives me a bad feeling...
+			 * Maybe it's because it doesn't at all work like wav and midi players, which are
+			 * integrated into Java Sound and don't need a thread object to play non-blocking.
+			 */
+			if(mp3Player == null) { return; }
+
 			try 
 			{
 				playerThread = new Thread(() -> 
@@ -667,11 +674,26 @@ public class PlatformPlayer implements Player
 					try 
 					{
 						if(getMediaTime() >= getDuration()) { setMediaTime(0); }
-						mp3Player.play();
+						mp3Player.play(); // This is thread-blocking, so the code below only executes after this has finished.
 
-						//mp3Player.play(); is thread-blocking, so having this directly after it is safe.
+						/* 
+						 * Check if mp3Player is still valid and exit early, since this thread can be 
+						 * interrupted and the player can also be closed abruptly. 
+						 */ 
+						if (mp3Player == null) { return; }
+
 						if (!Thread.currentThread().isInterrupted()) 
 						{
+							if(mp3Player.getLoopCount() > 0) 
+							{
+								while(mp3Player.getLoopCount() > 0) 
+								{
+									mp3Player.decreaseLoopCount();
+									mp3Player.reset();
+									mp3Player.play();
+								}
+							}
+							// After all loops (if any) are done, notify END_OF_MEDIA
 							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 							state = Player.PREFETCHED;
 						}
@@ -684,11 +706,11 @@ public class PlatformPlayer implements Player
 				state = Player.STARTED;
 				notifyListeners(PlayerListener.STARTED, getMediaTime());
 			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
-			
 		}
 
 		public void stop()
 		{
+			if(mp3Player == null) { return; }
 			mp3Player.stop();
 			if (playerThread != null && playerThread.isAlive()) { playerThread.interrupt(); }
 
@@ -714,8 +736,8 @@ public class PlatformPlayer implements Player
 			 * it appears that count = 1 means no loop at all, at least based
 			 * on Gameloft games that set effects and some music with count = 1
 			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { mp3Player.loop(count); }
-			else { mp3Player.loop(count-1); }
+			if(count == Clip.LOOP_CONTINUOUSLY) { mp3Player.setLoopCount(count); }
+			else { mp3Player.setLoopCount(count-1); }
 		}
 
 		public long setMediaTime(long now)
