@@ -353,6 +353,7 @@ public class FreeJ2ME
 	{
 		int w = Integer.parseInt(config.settings.get("width"));
 		int h = Integer.parseInt(config.settings.get("height"));
+		boolean hasRotated = false;
 
 		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
 
@@ -381,8 +382,16 @@ public class FreeJ2ME
 		if(phone.equals("SiemensOld"))    { Mobile.siemensold = true;}
 
 		String rotate = config.settings.get("rotate");
-		if(rotate.equals("on")) { rotateDisplay = true; }
-		if(rotate.equals("off")) { rotateDisplay = false; }
+		if(rotate.equals("on") && rotateDisplay != true) 
+		{
+			rotateDisplay = true;
+			hasRotated = true;
+		}
+		if(rotate.equals("off") && rotateDisplay != false) 
+		{
+			rotateDisplay = false;
+			hasRotated = true;
+		}
 
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
@@ -393,7 +402,7 @@ public class FreeJ2ME
 		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
 
 		// Create a standard size LCD if not rotated, else invert window's width and height.
-		if(w != lcdWidth || h != lcdHeight) 
+		if(w != lcdWidth || h != lcdHeight || hasRotated) 
 		{
 			if(!rotateDisplay) 
 			{
@@ -407,10 +416,13 @@ public class FreeJ2ME
 			}
 			else 
 			{
-				lcdWidth = h;
-				lcdHeight = w;
+				lcdWidth = w;
+				lcdHeight = h;
 
 				Mobile.getPlatform().resizeLCD(w, h);
+
+				lcdWidth = h;
+				lcdHeight = w;
 
 				resize();
 				main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder);

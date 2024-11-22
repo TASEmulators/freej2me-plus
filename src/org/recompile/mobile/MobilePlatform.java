@@ -111,6 +111,9 @@ public class MobilePlatform
 
 	public void resizeLCD(int width, int height)
 	{
+		// No need to waste time here if the screen dimensions haven't changed (screen was just rotated for example)
+		if(lcdWidth == width && lcdHeight == height) { return; }
+
 		lcdWidth = width;
 		lcdHeight = height;
 		Font.setScreenSize(width, height);
