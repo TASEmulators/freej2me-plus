@@ -454,7 +454,7 @@ public class PlatformPlayer implements Player
 		public void close() 
 		{
 			midi.close();
-			synthesizer.close();
+			synthesizer = null;
 			midiSequence = null;
 			receiver = null;
 		}
