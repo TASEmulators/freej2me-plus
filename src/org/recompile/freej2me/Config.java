@@ -46,7 +46,7 @@ public class Config
 	private String configPath = "";
 	private String configFile = "";
 
-	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","128x160","132x176","176x208","176x220","220x176","208x208","180x320","320x180","208x320","240x320","320x240","240x400","240x432","240x480","352x416","360x640","640x360","640x480","480x800","800x480"};
+	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","128x160","132x176","176x208","176x220","220x176","208x208","180x320","320x180","208x320","240x320","320x240","240x400","400x240","240x432","240x480","352x416","360x640","640x360","640x480","480x800","800x480"};
 
 	public Runnable onChange;
 
