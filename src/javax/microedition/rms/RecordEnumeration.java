@@ -21,6 +21,8 @@ public interface RecordEnumeration
 
 	public void destroy();
 
+	public int getRecordId(int index) throws IllegalArgumentException, RecordStoreNotOpenException; 
+
 	public boolean hasNextElement();
 
 	public boolean hasPreviousElement();
@@ -29,15 +31,15 @@ public interface RecordEnumeration
 
 	public void keepUpdated(boolean keepUpdated);
 
-	public byte[] nextRecord() throws InvalidRecordIDException;
+	public byte[] nextRecord() throws InvalidRecordIDException, RecordStoreNotOpenException;
 
-	public int nextRecordId() throws InvalidRecordIDException;
+	public int nextRecordId() throws InvalidRecordIDException, RecordStoreNotOpenException;	
 
 	public int numRecords();
 
-	public byte[] previousRecord() throws InvalidRecordIDException;
+	public byte[] previousRecord() throws InvalidRecordIDException, RecordStoreNotOpenException;
 
-	public int previousRecordId() throws InvalidRecordIDException;
+	public int previousRecordId() throws InvalidRecordIDException, RecordStoreNotOpenException;
 
 	public void rebuild();
 
