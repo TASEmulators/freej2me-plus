@@ -75,10 +75,10 @@ public class Mobile
 	 * While on Libretro, it's:                   [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1, 3. *. #, 2, 4, 6, 8] (5 isn't even considered, as the core already abstracts it)
 	 * Anbu still isn't considered here, but it should match libretro at some point.
 	 */
-	private static final int[] awtguiKeycodes   = {9, 8, 0, 2, 7, 3, 1, 10, 14, 11, 15, 7, 16, 5, 17, 4, 12, 6, 13};
+	private static final int[] awtguiKeycodes   = {9, 8, 0, 2, 7, 3, 1, 10, 14, 11, 15, 18, 16, 5, 17, 4, 12, 6, 13};
 	//private static final int[] libretroKeycodes = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}; // 5 and Fire are also the same, and this array doesn't have to be used.
 
-	private static final String[] keyArray = {"Up", "Down", "Left", "Right", "9", "7", "0", "Fire/5", "RightSoft", "LeftSoft", "1", "3", "*", "#", "2", "4", "6", "8"};
+	private static final String[] keyArray = {"Up", "Down", "Left", "Right", "9", "7", "0", "Fire", "RightSoft", "LeftSoft", "1", "3", "*", "#", "2", "4", "6", "8", "5"};
 
 	// Set whether audio should be enabled or not. Can work around jars that crash FreeJ2ME due to audio
 	public static boolean sound = true;
@@ -317,6 +317,7 @@ public class Mobile
 				case 15: return NOKIAKB_NUM4; // Left
 				case 16: return NOKIAKB_NUM6; // Right
 				case 17: return NOKIAKB_NUM8; // Down
+				case 18: return NOKIAKB_NUM5; // User-Mappable (often same as case 7)
 			}
 		}
 		if(sagem)
@@ -358,14 +359,14 @@ public class Mobile
 		// J2ME Canvas standard keycodes, to match against any keys not covered above.
 		switch(keycode)
 		{
-			case 0: return KEY_NUM2; // Up
-			case 1: return KEY_NUM8; // Down
-			case 2: return KEY_NUM4; // Left
-			case 3: return KEY_NUM6; // Right
+			case 0: return GAME_UP; // Up
+			case 1: return GAME_DOWN; // Down
+			case 2: return GAME_LEFT; // Left
+			case 3: return GAME_RIGHT; // Right
 			case 4: return KEY_NUM9; // A
 			case 5: return KEY_NUM7; // B
 			case 6: return KEY_NUM0; // X
-			case 7: return KEY_NUM5; // Y
+			case 7: return GAME_FIRE; // Y
 			case 8: return NOKIA_SOFT2; // Start
 			case 9: return NOKIA_SOFT1; // Select
 			case 10: return KEY_NUM1; // L
@@ -376,6 +377,7 @@ public class Mobile
 			case 15: return KEY_NUM4; // Left
 			case 16: return KEY_NUM6; // Right
 			case 17: return KEY_NUM8; // Down
+			case 18: return KEY_NUM5; // User-Mappable (often same as case 7)
 		}
 
 		// If a matching key wasn't found, return 0;
@@ -451,6 +453,14 @@ public class Mobile
 				case NOKIAKB_SOFT3: return Canvas.FIRE; // Y
 				case NOKIAKB_NUM1: return Canvas.GAME_A; // L
 				case NOKIAKB_NUM3: return Canvas.GAME_B; // R
+				case NOKIAKB_NUM5: return Canvas.KEY_NUM5;
+				case NOKIAKB_NUM2: return Canvas.KEY_NUM2;
+				case NOKIAKB_NUM8: return Canvas.KEY_NUM8;
+				case NOKIAKB_NUM4: return Canvas.KEY_NUM4;
+				case NOKIAKB_NUM6: return Canvas.KEY_NUM6;
+				case NOKIAKB_NUM0: return Canvas.KEY_NUM0;
+				case NOKIAKB_STAR: return Canvas.KEY_STAR;
+				case NOKIAKB_POUND: return Canvas.KEY_POUND;
 			}
 		}
 		if (sagem) 
@@ -476,18 +486,26 @@ public class Mobile
 			}
 		}
 		
-		// J2ME Canvas standard keycodes, to match against any keys not covered above.
-		switch (keycode) 
+		// J2ME Canvas standard keycodes, to match against any keys not covered above (Canvas does not handle left/right soft keys).
+		switch (keycode) // This can probably be turned into a single 'return Canvas.getKeyCode(keycode)''
 		{
-			case KEY_NUM2: return Canvas.UP; // Up
-			case KEY_NUM8: return Canvas.DOWN; // Down
-			case KEY_NUM4: return Canvas.LEFT; // Left
-			case KEY_NUM6: return Canvas.RIGHT; // Right
-			case KEY_NUM9: return Canvas.GAME_D; // A
-			case KEY_NUM7: return Canvas.GAME_C; // B
-			case KEY_NUM5: return Canvas.FIRE; // Y
-			case KEY_NUM1: return Canvas.GAME_A; // L
-			case KEY_NUM3: return Canvas.GAME_B; // R
+			case GAME_UP:    return Canvas.UP;
+			case GAME_DOWN:  return Canvas.DOWN;
+			case GAME_LEFT:  return Canvas.LEFT;
+			case GAME_RIGHT: return Canvas.RIGHT;
+			case KEY_NUM2:   return Canvas.KEY_NUM2;
+			case KEY_NUM8:   return Canvas.KEY_NUM8;
+			case KEY_NUM4:   return Canvas.KEY_NUM4;
+			case KEY_NUM6:   return Canvas.KEY_NUM6;
+			case KEY_NUM9:   return Canvas.KEY_NUM9;
+			case KEY_NUM7:   return Canvas.KEY_NUM7;
+			case KEY_NUM5:   return Canvas.KEY_NUM5;
+			case KEY_NUM1:   return Canvas.KEY_NUM1;
+			case KEY_NUM3:   return Canvas.KEY_NUM3;
+			case KEY_NUM0:   return Canvas.KEY_NUM0;
+			case KEY_STAR:   return Canvas.KEY_STAR;
+			case KEY_POUND:   return Canvas.KEY_POUND;
+			case GAME_FIRE:   return Canvas.FIRE;
 		}
 
 		// If a matching key wasn't found, return 0;
