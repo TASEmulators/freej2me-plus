@@ -22,18 +22,24 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayList;
 import java.util.Vector;
 
+import javax.sound.midi.Instrument;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaEventListener;
 import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Patch;
 import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Soundbank;
 import javax.sound.midi.Synthesizer;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
@@ -496,6 +502,12 @@ public class PlatformPlayer implements Player
 
 		public Receiver getReceiver() { return receiver; }
 
+		public Synthesizer getSynthesizer() { return synthesizer; }
+
+		public Sequence getSequence() { return midiSequence; }
+
+		public Sequencer getSequencer() { return midi; }
+
 		// Reload the sequence into the sequencer to prevent MIDI property carryovers
 		private void cleanSequencer() 
 		{
@@ -824,112 +836,225 @@ public class PlatformPlayer implements Player
 			for(int channel = 0; channel < channelVolume.length; channel++) { channelVolume[channel] = 127; }
 		}
 
-		public int[] getBankList(boolean custom) 
-		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getBankList()");
-			return new int[]{}; 
+		public int[] getBankList(boolean custom)
+		{
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getBankList() untested");
+
+			if(custom) { Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getBankList() with custom bank not implemented, returning all banks."); }
+		
+			// Use a list to collect bank numbers
+			ArrayList<Integer> bankList = new ArrayList<>();
+		
+			try 
+			{
+				Patch[] patches = player.getSequence().getPatchList();
+		
+				// Use the current sequence as a source for the patches and its available banks
+				for (int i = 0; i < patches.length; i++) { bankList.add(patches[i].getBank()); }
+			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Error retrieving bank list: " + e.getMessage()); }
+		
+			// Convert the list to an int array to return
+			return bankList.stream().mapToInt(Integer::intValue).toArray();
 		}
 
 		public int getChannelVolume(int channel) 
 		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getChannelVolume()");
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getChannelVolume() untested");
 			return channelVolume[channel];
 		}
 
 		public java.lang.String getKeyName(int bank, int prog, int key) 
 		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getKeyName()");
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getKeyName() not implemented ");
+			// And probably will never be, i don't think Java has any concept of this, all the way to Key-Mapped Banks
 			return ""; 
 		}
 
 		public int[] getProgram(int channel) 
-		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getProgram()");
-			return new int[]{}; 
+		{
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getProgram() untested");
+		
+			final int[] program = new int[2];
+		
+			// This is VERY costly, and might not even be correct as it relies on getProgramList and getBankList, which themselves are untested.
+			try
+			{
+				MidiChannel[] channels = player.getSynthesizer().getChannels();
+
+				if(channel < 0 || channel > channels.length) {throw new IllegalArgumentException("midiControl: Tried to call getProgram with invalid channel");}
+		
+				int currentProgram = channels[channel].getProgram(); // This returns a {bank, program} pair, so only channel.getProgram() is not enough.
+				
+				// We got the program mapped to that channel, now to find the corresponding bank for this program
+				int[] banks = getBankList(false); // Retrieve the list of available banks
+				
+				for (int bank : banks) // Iterate through the banks to find the matching program, if there's any at all
+				{
+					int[] programList = getProgramList(bank); // Get list of programs for the current bank
+					
+					// Check if the current program exists in this bank
+					for (int programNum : programList) 
+					{
+						if (programNum == currentProgram) // IF it does, we found the {bank,program} pair to be returned
+						{ 
+							program[0] = bank;
+							program[1] = currentProgram;
+						}
+					}
+				}
+			} 
+			catch (Exception e) 
+			{
+				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Error retrieving program for channel: " + e.getMessage());
+				return null;
+			}
+		
+			return program;
 		}
 
-		public int[] getProgramList(int bank) 
-		{ 
+		public int[] getProgramList(int bank) {
+
 			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getProgramList()");
-			return new int[]{}; 
+		
+			ArrayList<Integer> programList = new ArrayList<>();
+		
+			try 
+			{
+				Patch[] patches = player.getSequence().getPatchList();
+				
+				// Iterate through the available patches and collect program numbers for the specified bank
+				for (Patch patch : patches) 
+				{
+					if (patch.getBank() == bank) { programList.add(patch.getProgram()); } // Add the program number for the matching bank
+				}
+			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Error retrieving program list: " + e.getMessage()); }
+
+			return programList.stream().mapToInt(Integer::intValue).toArray();
 		}
 
-		public java.lang.String getProgramName(int bank, int prog) 
-		{ 
+		public String getProgramName(int bank, int prog)
+		{
 			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: getProgramName()");
-			return ""; 
+		
+			// Java doesn't even have a concept of having names for programs, only instruments. So let's return the instrument's name instead.
+			try 
+			{
+				Soundbank soundbank = player.getSynthesizer().getDefaultSoundbank();
+		
+				Instrument[] instruments = soundbank.getInstruments();
+				for (Instrument instrument : instruments)
+				{
+					Patch patch = instrument.getPatch();
+					// If a matching bank and program number is found on the instrument's patch, return the name of the patch's instrument
+					if (patch.getBank() == bank && patch.getProgram() == prog) { return instrument.getName(); }
+				}
+			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Error retrieving program name: " + e.getMessage()); }
+		
+			return ""; // Return an empty string if no match is found
 		}
 
 		public boolean isBankQuerySupported() 
 		{ 
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: isBankQuerySupported()");
+			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "isBankQuerySupported() requested, returning unsupported.");
 			return false; 
 		}
 
-		public int longMidiEvent(byte[] data, int offset, int length) 
-		{
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: longMidiEvent()");
-
-			if(data == null || offset < 0 || length < 0) { throw new IllegalArgumentException("MmidiControl: Invalid arguments for shortMidiEvent()"); }
-
-			/* longMidiEvent sends System Exclusive messages hence the SysexMessage data */
-			Track[] tracks = player.midiSequence.getTracks();
+		public int longMidiEvent(byte[] data, int offset, int length) {
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: longMidiEvent() untested");
+		
+			// Validate input parameters
+			if (data == null || offset < 0 || length < 0 || offset + length > data.length) { throw new IllegalArgumentException("MidiControl: Invalid arguments for longMidiEvent()"); }
+		
 			try 
 			{
-				if (data.length >= offset + length && length > 0) 
+				Receiver receiver = player.getReceiver();
+                if (data[offset] == (byte) 0xF0 && data[offset + length - 1] == (byte) 0xF7) // Check if it is a SysEx message
 				{
-					MidiEvent event = new MidiEvent(new SysexMessage(data, length), 0);
-					tracks[0].add(event); // Add to track 0; adjust as necessary
-					return 1; // Return 1 to indicate success
-				}
-			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to send long MIDI event: " + e.getMessage()); }
+                    // Create the SysEx message without the status byte
+                    byte[] sysExData = new byte[length - 2];
+                    System.arraycopy(data, offset + 1, sysExData, 0, length - 2); // Exclude the 0xF0 and 0xF7
 
-			return 0; 
+                    // Create the SysexMessage
+                    SysexMessage sysexMessage = new SysexMessage(0xF0, sysExData, sysExData.length);
+                    receiver.send(sysexMessage, -1); // Send the message
+                }
+				else // If it is not, send data as a series of short messages (probably implemented incorrectly, and being untested only makes things worse)
+				{
+					for (int i = offset; i < offset + length; i += 3) 
+					{
+                        int msgLength = Math.min(3, length - (i - offset)); // Ensure we don't exceed the shortMessage's length
+                        ShortMessage shortMessage = new ShortMessage();
+
+                        if      (msgLength == 1) { shortMessage.setMessage(data[i] & 0xFF); }  // Send only status byte (is this even useful?)
+						else if (msgLength == 2) { shortMessage.setMessage(data[i] & 0xFF, data[i + 1] & 0xFF, 0); } // Status byte + one data byte
+						else if (msgLength == 3) { shortMessage.setMessage(data[i] & 0xFF, data[i + 1] & 0xFF, data[i + 2] & 0xFF); } // Full short message
+
+                        receiver.send(shortMessage, -1);
+                    }
+				}
+				return length; // Return the number of bytes sent
+			} 
+			catch (Exception e) 
+			{
+				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Error sending long MIDI event: " + e.getMessage());
+				return -1; // Return -1 if an error occurred
+			}
 		}
 
 		public void setChannelVolume(int channel, int volume) 
 		{
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: setChannelVolume()");
-
-			if(channel < 0 || channel > 15 || volume < 0 || volume > 127) {throw new IllegalArgumentException("midiControl: Tried to call setChannelVolume with invalid args");}
-
-			Track[] track = player.midiSequence.getTracks();
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: setChannelVolume() untested");
 
 			try 
 			{
-				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, 7, volume), 0));
-				channelVolume[channel] = volume; // Update the stored volume
+				MidiChannel[] channels = player.getSynthesizer().getChannels();
+
+				if(channel < 0 || channel > channels.length || volume < 0 || volume > 127) {throw new IllegalArgumentException("midiControl: Tried to call setChannelVolume with invalid args");}
+
+				// Set the volume on the MIDI channel
+				channelVolume[channel] = volume; // For tracking purposes, whenever getChannelVolume is called.
+				channels[channel].controlChange(7, volume);
 			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Midi setChannelVolume failed: " + e.getMessage());}
 		}
 
 		public void setProgram(int channel, int bank, int program) 
 		{  
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: setProgram()");
-
-			/* Track[] track = player.midiSequence.getTracks();
-			try 
-			{
-				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, 0, bank), 0));
-				track[channel].add(new MidiEvent(new ShortMessage(ShortMessage.PROGRAM_CHANGE, channel, program, 0), 0));
-
-				programs[channel] = program;
-			} catch (Exception e) { Mobile.log(PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set program: " + e.getMessage()); } */
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: setProgram() untested");
+		
+			// Validate input parameters
+			if (channel < 0 || channel > 15) { throw new IllegalArgumentException("Channel must be between 0 and 15."); }
+			if (program < 0 || program > 127) { throw new IllegalArgumentException("Program must be between 0 and 127."); }
+			if (bank < -1 || bank > 16383) { throw new IllegalArgumentException("Bank must be between 0 and 16383, or -1 for default bank."); }
+		
+			// Send bank change
+			shortMidiEvent(CONTROL_CHANGE | channel, CONTROL_BANK_CHANGE_MSB, bank >> 7); // Send MSB (Most Significant Byte)
+			shortMidiEvent(CONTROL_CHANGE | channel, CONTROL_BANK_CHANGE_LSB, bank & 0x7F); // Send LSB (Least Significant Byte)
+		
+			// Send program change
+			shortMidiEvent(PROGRAM_CHANGE | channel, program, 0);
 		}
 
 		public void shortMidiEvent(int type, int data1, int data2) 
 		{  
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: shortMidiEvent()");
+			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "midiControl: shortMidiEvent() untested");
 
-			if(type == 0xF0 || type == 0xF7 || data1 < 0 || data1 > 127 || data2 < 0 || data2 > 127) { throw new IllegalArgumentException("MmidiControl: Invalid arguments for shortMidiEvent()"); }
+			if(type < 0x80 || type == 0xF0 || type == 0xF7 || data1 < 0 || data1 > 127 || data2 < 0 || data2 > 127) { throw new IllegalArgumentException("MmidiControl: Invalid arguments for shortMidiEvent()"); }
 
-			Track[] tracks = player.midiSequence.getTracks();
+			try 
+			{
+				// Create a MIDI message from the type and data values received
+				final byte[] message = new byte[3];
+				message[0] = (byte) type;
+				message[1] = (byte) data1;
+				message[2] = (byte) data2;
 
-			/* 
-			 * This is probably incorrect, but send the shortEvent to the first track of the Sequence,
-			 * as i don't think we can send that to the MIDI device itself.
-			 */
-			try { tracks[0].add(new MidiEvent(new ShortMessage(type, data1, data2), 0)); } 
+				ShortMessage midiMessage = new ShortMessage();
+				midiMessage.setMessage(type, data1, data2);
+		
+				// Send the MIDI message to the receiver
+				player.getReceiver().send(midiMessage, -1); // -1 is the timestamp value to send this message immediately.
+			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to send short MIDI event: " + e.getMessage()); }
 		}
 	}
