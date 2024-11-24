@@ -59,7 +59,7 @@ public class RecordStore
 
 	private RecordStore(String recordStoreName, boolean createIfNecessary) throws RecordStoreException, RecordStoreNotFoundException
 	{
-		if(recordStoreName == null) { throw new NullPointerException("RecordEnumeration received a null argument"); }
+		if(recordStoreName == null) { throw new NullPointerException("RecordStore received a null argument"); }
 
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> RecordStore "+recordStoreName);
 
@@ -290,6 +290,12 @@ public class RecordStore
 		return new enumeration(filter, comparator, keepUpdated);
 	}
 
+	public RecordEnumeration enumerateRecords(RecordFilter filter, RecordComparator comparator, boolean keepUpdated, int[] tags)
+	{
+		Mobile.log(Mobile.LOG_WARNING, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "RecordStore.enumerateRecords with tags not implemented. Enumerating without tags...");
+		return new enumeration(filter, comparator, keepUpdated);
+	}
+
 	public long getLastModified() { return lastModified; }
 
 	public String getName() { return name; }
@@ -460,7 +466,7 @@ public class RecordStore
 		
 		if (recordId == records.size()-1) 
 		{
-			Mobile.log(Mobile.LOG_INFO, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> "+recordId+" in "+name + "has no data yet, creating it now as a workaround.");
+			Mobile.log(Mobile.LOG_INFO, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> "+recordId+" in "+name + " has no data yet, creating it now as a workaround.");
 			addRecord(newData, offset, numBytes);
 			return;
 		}
@@ -513,7 +519,6 @@ public class RecordStore
 
 		public enumeration(RecordFilter filter, RecordComparator comparator, boolean keepUpdated)
 		{
-			if(filter == null || comparator == null) { throw new NullPointerException("RecordEnumeration received a null argument"); }
 			keepupdated = keepUpdated;
 			index = 0;
 			count = 0;
