@@ -22,6 +22,9 @@ public interface MIDIControl extends javax.microedition.media.Control
 	public static final int CONTROL_CHANGE = 176;
 	public static final int NOTE_ON = 144;
 
+	static final int PROGRAM_CHANGE = 0xC0;
+	static final int CONTROL_BANK_CHANGE_MSB = 0x00;
+	static final int CONTROL_BANK_CHANGE_LSB = 0x20;
 
 	public int[] getBankList(boolean custom);
 
