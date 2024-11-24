@@ -26,7 +26,6 @@
 
 
 #define PHONE_KEYS 19
-#define ANALOG_THRESHOLD 0.25f
 
 /* Input mapping variables and descriptions */
 static const struct retro_controller_description port_1[] =
@@ -209,6 +208,20 @@ struct retro_core_option_v2_definition core_options[] =
         {
             { "off", "Default" },
             { "on",  "Custom" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_analogasentirekeypad",
+        "Virtual Phone Settings > Use Analog As Entire Keypad",
+        "Use Analog As Entire Keypad",
+        "A few games like Time Crisis Elite and Rayman Raving Rabbids can benefit from having the analog serve as the entire keypad for smoother gameplay (in TC Elite's case, with num 5 as pressing the analog too). If you have a game that appears to benefit from this by using the diagonal keypad keys instead of allowing for num2 and num4 to be pressed simultaneously for the same effect for example, try enabling it.",
+        "A few games like Time Crisis Elite and Rayman Raving Rabbids can benefit from having the analog serve as the entire keypad for smoother gameplay (in TC Elite's case, with num 5 as pressing the analog too). If you have a game that appears to benefit from this by using the diagonal keypad keys instead of allowing for num2 and num4 to be pressed simultaneously for the same effect for example, try enabling it.",
+        "vphone_settings",
+        {
+            { "off", "Disabled" },
+            { "on",  "Enabled" },
             { NULL, NULL },
         },
         "off"
@@ -482,6 +495,17 @@ struct retro_core_option_definition core_options_v1 [] =
         "off"
     },
     {
+        "freej2me_analogasentirekeypad",
+        "Use Analog As Entire Keypad",
+        "A few games like Time Crisis Elite and Rayman Raving Rabbids can benefit from having the analog serve as the entire keypad for smoother gameplay (in TC Elite's case, with num 5 as pressing the analog too). If you have a game that appears to benefit from this by using the diagonal keypad keys instead of allowing for num2 and num4 to be pressed simultaneously for the same effect for example, try enabling it.",
+        {
+            { "off", "Disabled" },
+            { "on",  "Enabled" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_logginglevel",
         "Logging Level",
         "When enabled, this option allows FreeJ2ME to log messages of the specified level and higher into 'freej2me_system/FreeJ2ME.log' to facilitate debugging",
@@ -638,6 +662,10 @@ static const struct retro_variable vars[] =
     { /* MIDI Soundfont */
         "freej2me_midifont",
         "MIDI Soundfont; off|on"
+    },
+    { /* Use Analog As Entire Keypad */
+        "freej2me_analogasentirekeypad",
+        "Use Analog As Entire Keypad; off|on"
     },
     { /* Logging Level */
         "freej2me_logginglevel",
