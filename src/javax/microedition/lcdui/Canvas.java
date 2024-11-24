@@ -63,22 +63,28 @@ public abstract class Canvas extends Displayable
 
 	public int getKeyCode(int gameAction)
 	{
-		switch(gameAction)
+		switch(gameAction) // Look on Mobile.java for what these magic numbers mean ("J2ME Canvas standard keycodes")
 		{
-			//case Mobile.GAME_UP: return Mobile.KEY_NUM2;
-			//case Mobile.GAME_DOWN: return Mobile.KEY_NUM8;
-			//case Mobile.GAME_LEFT: return Mobile.KEY_NUM4;
-			//case Mobile.GAME_RIGHT: return Mobile.KEY_NUM6;
-			//case Mobile.GAME_FIRE: return Mobile.KEY_NUM5;
-			case Mobile.GAME_UP: return Mobile.getMobileKey(0, true);
-			case Mobile.GAME_DOWN: return Mobile.getMobileKey(1, true);
-			case Mobile.GAME_LEFT: return Mobile.getMobileKey(2, true);
+			case Mobile.KEY_NUM2:   return Mobile.getMobileKey(14, true);
+			case Mobile.KEY_NUM8:   return Mobile.getMobileKey(17, true);
+			case Mobile.KEY_NUM4:   return Mobile.getMobileKey(15, true);
+			case Mobile.KEY_NUM6:   return Mobile.getMobileKey(16, true);
+			case Mobile.KEY_NUM5:   return Mobile.getMobileKey(18, true);
+			case Mobile.GAME_UP:    return Mobile.getMobileKey(0, true);
+			case Mobile.GAME_DOWN:  return Mobile.getMobileKey(1, true);
+			case Mobile.GAME_LEFT:  return Mobile.getMobileKey(2, true);
 			case Mobile.GAME_RIGHT: return Mobile.getMobileKey(3, true);
-			case Mobile.GAME_FIRE: return Mobile.getMobileKey(7, true);
-			case Mobile.GAME_A: return Mobile.getMobileKey(10, true);
-			case Mobile.GAME_B: return Mobile.getMobileKey(11, true);
-			case Mobile.GAME_C: return Mobile.getMobileKey(5, true);
-			case Mobile.GAME_D: return Mobile.getMobileKey(4, true);
+			case Mobile.GAME_FIRE:  return Mobile.getMobileKey(7, true);
+	
+			// GAME_A through D don't show up in documentation at all.
+			case Mobile.GAME_A: case Mobile.KEY_NUM1: return Mobile.getMobileKey(10, true);
+			case Mobile.GAME_B: case Mobile.KEY_NUM3: return Mobile.getMobileKey(11, true);
+			case Mobile.GAME_C: case Mobile.KEY_NUM7: return Mobile.getMobileKey(5, true);
+			case Mobile.GAME_D: case Mobile.KEY_NUM9: return Mobile.getMobileKey(4, true);
+
+			case Mobile.KEY_NUM0:  return Mobile.getMobileKey(6, true);
+			case Mobile.KEY_STAR:  return Mobile.getMobileKey(12, true);
+			case Mobile.KEY_POUND: return Mobile.getMobileKey(13, true);
 		}
 		return 0;
 	}

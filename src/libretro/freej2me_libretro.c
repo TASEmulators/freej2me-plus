@@ -678,9 +678,8 @@ void retro_run(void)
 		InputPoll();
 
 		/* 
-		 *                            0    1    2     3     4  5  6   7         8          9     10 11 12 13 14 15 16 17
-		 * Input array in libretro: [Up, Down, Left, Right, 9, 7, 0, 5/Fire, RightSoft, LeftSoft, 1, 3. *. #, 2, 4, 6, 8] 
-		 * NOTE: 2,4,6,8 aren't used yet.
+		 *                            0    1    2     3     4  5  6   7       8          9     10 11 12 13 14 15 16 17 18
+		 * Input array in libretro: [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1, 3. *. #, 2, 4, 6, 8, 5] 
 		 */
 
 		joypad[0] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
@@ -701,6 +700,14 @@ void retro_run(void)
 		joypad[12] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
 		joypad[13] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 
+		// ANALOG_THRESHOLD comes from freej2me_libretro.h.
+		joypad[14] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -ANALOG_THRESHOLD); // Num 2
+		joypad[15] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -ANALOG_THRESHOLD); // Num 4
+		joypad[16] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > ANALOG_THRESHOLD);  // Num 6
+		joypad[17] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > ANALOG_THRESHOLD);  // Num 8
+
+		joypad[18] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3); // Num 5
+		
 		/* Right analog will control the pointer, freeing the left analog to mirror the D-Pad if needed. */
 		int joyRx = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 		int joyRy = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
@@ -809,12 +816,12 @@ void retro_run(void)
 			/* joypad - spot the difference, send corresponding keyup/keydown events */
 			if(joypad[i]!=joypre[i])
 			{
-				if(i==7 && joymouseTime>0 && joymouseAnalog)
+				if(i==18 && joymouseTime>0 && joymouseAnalog)
 				{
-					/* when mouse is visible, and using analog stick for mouse, Y / [5] clicks */
+					/* when mouse is visible, and using analog stick for mouse, L3 / [num 5] clicks */
 					if(joypad[i] == 1) { joymouseClickedTime = DEFAULT_FPS * 0.1; }
 					joymouseTime = DEFAULT_FPS / 2;
-					joyevent[0] = 4+joypad[7];
+					joyevent[0] = 4+joypad[18];
 					joyevent[1] = (joymouseX >> 8) & 0xFF;
 					joyevent[2] = (joymouseX) & 0xFF;
 					joyevent[3] = (joymouseY >> 8) & 0xFF;
