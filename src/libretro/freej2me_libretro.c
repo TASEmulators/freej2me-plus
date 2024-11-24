@@ -120,6 +120,8 @@ bool uses_mouse = true;
 bool uses_pointer = false;
 bool booted = false;
 bool restarting = false;
+bool useAnalogAsEntireKeypad = false; // Enhancement for games like Time Crisis Elite which use the keypad's diagonals exclusively, and not 2+4, 6+8, etc.
+float analogDeadzone = 0.10f; // Additional Deadzone over libretro for input reads
 
 unsigned char readBuffer[PIPE_READ_BUFFER_SIZE];
 
@@ -353,6 +355,13 @@ static void check_variables(bool first_time_startup)
 	{
 		if (!strcmp(var.value, "off"))     { customMidi = 0; }
 		else if (!strcmp(var.value, "on")) { customMidi = 1; }
+	}
+
+	var.key = "freej2me_analogasentirekeypad";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (!strcmp(var.value, "off"))     { useAnalogAsEntireKeypad = false; }
+		else if (!strcmp(var.value, "on")) { useAnalogAsEntireKeypad = true;  }
 	}
 
 	var.key = "freej2me_logginglevel";
@@ -658,6 +667,9 @@ void retro_run(void)
 	bool mouseChange = false;
 	bool updated_vars = false; /* Used to check if the core's variables were updated */
 
+	// These are only used if useAnalogAsEntireKeypad is enabled.
+	bool num1pressed = false, num3pressed = false, num7pressed = false, num9pressed = false;
+
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars) { check_variables(false); }
 
 	if(isRunning(javaProcess))
@@ -687,24 +699,59 @@ void retro_run(void)
 		joypad[2] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
 		joypad[3] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 
-		joypad[4] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);
-		joypad[5] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
 		joypad[6] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X);
 		joypad[7] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y);
 
 		joypad[8] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
 		joypad[9] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
 
-		joypad[10] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L);
-		joypad[11] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R);
+		if(useAnalogAsEntireKeypad) 
+		{
+			// These are more sensitive (lower threshold) in order to minimize cases where the 2,4,6,8 inputs are registered before these. 
+			// Num 8 & Num 6
+			num9pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone/2) 
+							&& ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > analogDeadzone/2);
+			// Num 8 & Num 4
+			num7pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone/2) 
+							&& ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone/2);
+			// Num 2 & Num 4
+			num1pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone/2)
+							&& ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone/2);
+			// Num 2 & Num 6
+			num3pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone/2)
+							&& ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > analogDeadzone/2);
+
+			joypad[4] =  (int) num9pressed;  // num 9
+			joypad[5] =  (int) num7pressed;  // num 7
+			joypad[10] = (int) num1pressed; // num 1
+			joypad[11] = (int) num3pressed; // num 3
+		}
+		else
+		{
+			joypad[4] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);  // num 9
+			joypad[5] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);  // num 7
+			joypad[10] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L); // num 1
+			joypad[11] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R); // num 3
+		}
+		
+
 		joypad[12] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
 		joypad[13] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 
-		// ANALOG_THRESHOLD comes from freej2me_libretro.h.
-		joypad[14] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -ANALOG_THRESHOLD); // Num 2
-		joypad[15] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -ANALOG_THRESHOLD); // Num 4
-		joypad[16] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > ANALOG_THRESHOLD);  // Num 6
-		joypad[17] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > ANALOG_THRESHOLD);  // Num 8
+		if(useAnalogAsEntireKeypad) 
+		{
+			joypad[14] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone) && !num1pressed && !num3pressed; // Num 2
+			joypad[15] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone) && !num1pressed && !num7pressed;  // Num 4
+			joypad[16] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > analogDeadzone) && !num3pressed && !num9pressed;  // Num 6
+			joypad[17] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone) && !num9pressed && !num7pressed;  // Num 8
+		}
+		else 
+		{
+			joypad[14] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone); // Num 2
+			joypad[15] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone);  // Num 4
+			joypad[16] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > analogDeadzone);  // Num 6
+			joypad[17] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone);  // Num 8
+		}
 
 		joypad[18] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3); // Num 5
 		
