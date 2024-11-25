@@ -91,8 +91,8 @@ static const struct retro_input_descriptor desc[] =
 struct retro_core_option_v2_category option_categories[] =
 {
     {
-        "vphone_settings",
-        "Emulated phone Settings",
+        "system_settings",
+        "System",
         "Options related to FreeJ2ME's internal phone emulation such as screen resolution, rotation and game FPS limit."
     },
     {
@@ -112,11 +112,11 @@ struct retro_core_option_v2_definition core_options[] =
 {
     {
         "freej2me_resolution",
-        "Virtual Phone Settings > Phone Resolution (Core Restart may be required)",
+        "System > Phone Resolution (Core Restart may be required)",
         "Phone Resolution (Core Restart may be required)",
         "Not all J2ME games run at the same screen resolution. If the game's window is too small, or has sections of it cut off, try increasing or decreasing the internal screen resolution. Some games also break when the screen size is updated while it's running, so in those cases, a restart is required.",
         "Not all J2ME games run at the same screen resolution. If the game's window is too small, or has sections of it cut off, try increasing or decreasing the internal screen resolution. Some games also break when the screen size is updated while it's running, so in those cases, a restart is required.",
-        "vphone_settings",
+        "system_settings",
         {
             { "96x65",     NULL },
             { "101x64",    NULL },
@@ -151,11 +151,11 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_rotate",
-        "Virtual Phone Settings > Rotate Screen",
+        "System > Rotate Screen",
         "Rotate Screen",
         "Some games, especially ones that support touch controls, tend to expect the screen to be rotated. This option comes in handy on those cases.",
         "Some games, especially ones that support touch controls, tend to expect the screen to be rotated. This option comes in handy on those cases.",
-        "vphone_settings",
+        "system_settings",
         {
             { "off", "Disabled" },
             { "on",  "Enabled"  },
@@ -165,11 +165,11 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_phone",
-        "Virtual Phone Settings > Phone Key Layout",
+        "System > Phone Key Layout",
         "Phone Key Layout",
         "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
         "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
-        "vphone_settings",
+        "system_settings",
         {
             { "J2ME Standard",      NULL },
             { "LG",                 NULL },
@@ -187,11 +187,11 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_fps",
-        "Virtual Phone Settings > Game FPS Limit",
+        "System > Game FPS Limit",
         "Game FPS Limit",
         "The J2ME platform allows a great deal of freedom when dealing with synchronization, so while many games are locked to a certain framerate internally, others allow for variable framerates when uncapped at the cost of higher CPU usage, and some even run faster than intended when they get over a certain FPS threshold. Use the option that best suits the game at hand.",
         "The J2ME platform allows a great deal of freedom when dealing with synchronization, so while many games are locked to a certain framerate internally, others allow for variable framerates when uncapped at the cost of higher CPU usage, and some even run faster than intended when they get over a certain FPS threshold. Use the option that best suits the game at hand.",
-        "vphone_settings",
+        "system_settings",
         {
             { "Auto", "Disabled" },
             { "60",   "60 FPS"   },
@@ -203,11 +203,11 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_sound",
-        "Virtual Phone Settings > Virtual Phone Sound (Core Restart required)",
+        "System > Virtual Phone Sound (Core Restart required)",
         "Virtual Phone Sound (Core Restart required)",
         "Enables or disables the virtual phone's ability to load and play audio samples/tones. Some games require support for codecs not yet implemented, or have issues that can be worked around by disabling audio in FreeJ2ME. If a game doesn't run or has issues during longer sessions, try disabling this option.",
         "Enables or disables the virtual phone's ability to load and play audio samples/tones. Some games require support for codecs not yet implemented, or have issues that can be worked around by disabling audio in FreeJ2ME. If a game doesn't run or has issues during longer sessions, try disabling this option.",
-        "vphone_settings",
+        "system_settings",
         {
             { "on",  "On"  },
             { "off", "Off" },
@@ -217,11 +217,11 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_midifont",
-        "Virtual Phone Settings > MIDI Soundfont",
+        "System > MIDI Soundfont",
         "MIDI Soundfont",
         "Selects which kind of MIDI soundfont to use. 'Default' uses the soundfont bundled with the system or Java VM, while 'Custom' allows you to place a custom soundfont on '<freej2me-lr.jar folder>/freej2me_system/customMIDI' and use it on J2ME apps to simulate a specific phone or improve MIDI sound quality. WARNING: Big soundfonts greatly increase the emulator's RAM footprint and processing requirements, while smaller ones can actually help it perform better.",
         "Selects which kind of MIDI soundfont to use. 'Default' uses the soundfont bundled with the system or Java VM, while 'Custom' allows you to place a custom soundfont on '<freej2me-lr.jar folder>/freej2me_system/customMIDI' and use it on J2ME apps to simulate a specific phone or improve MIDI sound quality. WARNING: Big soundfonts greatly increase the emulator's RAM footprint and processing requirements, while smaller ones can actually help it perform better.",
-        "vphone_settings",
+        "system_settings",
         {
             { "off", "Default" },
             { "on",  "Custom" },
@@ -231,11 +231,11 @@ struct retro_core_option_v2_definition core_options[] =
     },
     {
         "freej2me_analogasentirekeypad",
-        "Virtual Phone Settings > Use Analog As Entire Keypad",
+        "System > Use Analog As Entire Keypad",
         "Use Analog As Entire Keypad",
         "A few games like Time Crisis Elite and Rayman Raving Rabbids can benefit from having the analog serve as the entire keypad for smoother gameplay (in TC Elite's case, with num 5 as pressing the analog too). If you have a game that appears to benefit from this by using the diagonal keypad keys instead of allowing for num2 and num4 to be pressed simultaneously for the same effect for example, try enabling it.",
         "A few games like Time Crisis Elite and Rayman Raving Rabbids can benefit from having the analog serve as the entire keypad for smoother gameplay (in TC Elite's case, with num 5 as pressing the analog too). If you have a game that appears to benefit from this by using the diagonal keypad keys instead of allowing for num2 and num4 to be pressed simultaneously for the same effect for example, try enabling it.",
-        "vphone_settings",
+        "system_settings",
         {
             { "off", "Disabled" },
             { "on",  "Enabled" },
@@ -385,8 +385,8 @@ struct retro_core_option_v2_definition core_options[] =
         "freej2me_spdhacknoalpha",
         "Speed Hacks > No Alpha on Blank Images (Restart Required)",
         "No Alpha on Blank Images (Restart Required)",
-        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with not transparency. Provides a Moderate to Large performance boost depending with little to no side effects",
-        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with not transparency. Provides a Moderate to Large performance boost depending with little to no side effects",
+        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with no transparency. Provides a Moderate to Large performance boost depending on the app with little to no side effects",
+        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with no transparency. Provides a Moderate to Large performance boost depending on the app with little to no side effects",
         "speed_hacks",
         {
             { "on",  "Enabled"            },
@@ -640,7 +640,7 @@ struct retro_core_option_definition core_options_v1 [] =
     {
         "freej2me_spdhacknoalpha",
         "No Alpha on Blank Images (Restart Required)",
-        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with not transparency. Provides a Moderate to Large performance boost depending with little to no side effects",
+        "J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with no transparency. Provides a Moderate to Large performance boost depending on the app with little to no side effects",
         {
             { "on",  "Enabled"            },
             { "off", "Disabled (Default)" },
