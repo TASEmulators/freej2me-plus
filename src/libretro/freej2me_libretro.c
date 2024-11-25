@@ -670,6 +670,7 @@ void retro_run(void)
 	// These are only used if useAnalogAsEntireKeypad is enabled.
 	bool num1pressed = false, num3pressed = false, num7pressed = false, num9pressed = false;
 
+	// If paused, unpause FreeJ2ME in order to request a frame and send input data to it
 	pauseFreeJ2ME(false);
 
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars) { check_variables(false); }
@@ -1056,9 +1057,19 @@ void retro_run(void)
 		}
 	}
 	else { retro_deinit(); }
+
 	/* send frame to libretro irrespective of FreeJ2ME running (for error messages) */
 	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 
+	/* 
+	 * I couldn't find a way for the frontend to notify FreeJ2ME's process that it has paused,
+	 * so this is the alternative. What happens is that, for every frame, libretro will ask
+	 * FreeJ2ME's process to resume/continue at the start, and stop/pause at the end. When
+	 * libretro is running, this pause call below doesn't do much (and i couldn't notice any
+	 * additional overhead), but once the frontend pauses to bring up its menu, or at the user's
+	 * request through the pause button, this takes effect, since retro_run() runs for an entire
+	 * frame. This also means that frame advance is kinda supported, although not perfect.
+	 */
 	pauseFreeJ2ME(true);
 }
 
@@ -1071,7 +1082,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name = "FreeJ2ME-Plus";
-	info->library_version = "1.4";
+	info->library_version = "1.42";
 	info->valid_extensions = "jar|jad";
 	info->need_fullpath = true;
 }
