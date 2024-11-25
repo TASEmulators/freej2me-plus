@@ -89,16 +89,17 @@ void retro_set_input_state(retro_input_state_t fn) { InputState = fn; }
 /* Global variables */
 struct retro_game_geometry Geometry;
 
+
+bool isRunning();
+int javaOpen(char *cmd, char **params);
+
 #ifdef __linux__
-bool isRunning(pid_t pid);
-pid_t javaOpen(char *cmd, char **params);
-pid_t javaProcess;
+int javaProcess;
 int pRead[2];
 int pWrite[2];
+
 #elif _WIN32
 BOOL succeeded = FALSE;
-bool isRunning();
-void javaOpen(char *cmd, char **params);
 PROCESS_INFORMATION javaProcess;
 STARTUPINFO startInfo;
 HANDLE pRead[2];
@@ -234,9 +235,9 @@ unsigned int joymouseClickedImage[408] =
  * pipe write/read is requested.
  */
 #ifdef __linux__
-void write_to_pipe(int pipe, void *data, int datasize)
-{
-	write(pipe, data, datasize);
+void write_to_pipe(int pipe, void *data, int datasize) { write(pipe, data, datasize); }
+int read_from_pipe(int pipe, void *data, int datasize) { return read(pipe, data, datasize); }
+
 #elif _WIN32
 void write_to_pipe(void* pipe, void *data, int datasize)
 {
@@ -252,14 +253,8 @@ void write_to_pipe(void* pipe, void *data, int datasize)
 		log_fn(RETRO_LOG_ERROR, "Failed to write to pipe. Error: %d!\n", GetLastError() );
 		retro_deinit();
 	}
-#endif
 }
 
-#ifdef __linux__
-int read_from_pipe(int pipe, void *data, int datasize)
-{
-	return read(pipe, data, datasize);
-#elif _WIN32
 int read_from_pipe(void* pipe, void *data, int datasize)
 {
 	BOOL succeeded = FALSE;
@@ -285,8 +280,8 @@ int read_from_pipe(void* pipe, void *data, int datasize)
 	}
 
 	return (int) bytesRead;
-#endif
 }
+#endif
 
 /* Function to check the core's config states in the libretro frontend */
 static void check_variables(bool first_time_startup)
@@ -487,18 +482,15 @@ static void check_variables(bool first_time_startup)
 }
 
 /* Core exit function */
-#ifdef __linux__
-void quit(int state)
-{
-	if(isRunning(javaProcess)) { kill(javaProcess, SIGKILL); }
-}
 
-#elif _WIN32
 void quit(int state)
 {
+#ifdef __linux__
+	if(isRunning()) { kill(javaProcess, SIGKILL); }
+#elif _WIN32
 	if(isRunning()) { TerminateProcess(javaProcess.hProcess, state); }
-}
 #endif
+}
 
 static void Keyboard(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
@@ -575,23 +567,14 @@ void retro_init(void)
 	/* wait for java process */
 	int t = 0;
 	int status = 0;
-#ifdef __linux__
-	while(status<1 && isRunning(javaProcess))
+
+	while(status<1 && isRunning())
 	{
 		status = read_from_pipe(pRead[0], &t, 1);
 		if(status<0 && errno != EAGAIN) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[INVALID_STATUS_MSG]); }
 	}
-	if(!isRunning(javaProcess)) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]); }
-#elif _WIN32
-	while(status<1 && isRunning())
-	{
-		log_fn(RETRO_LOG_INFO, "Reading status...\n");
-		status = read_from_pipe(pRead[0], &t, 1);
-		log_fn(RETRO_LOG_INFO, "Status read! It's %d\n", status);
-		if(status<0) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[INVALID_STATUS_MSG]); }
-	}
+
 	if(!isRunning()) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]); }
-#endif
 	else 
 	{
 		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[CORE_HAS_LOADED_MSG]);
@@ -657,10 +640,11 @@ void retro_unload_game(void)
 	quit(0);
 }
 
+// TODO: FreeJ2ME doesn't pause perfectly yet, biggest offender being the MIDI Sequencer.
 void pauseFreeJ2ME(bool pause) 
 {
 #ifdef __linux__
-	// Note: Despite being a "kill" function, it really just sends a signal to stop and continue the process here 
+	// NOTE: Despite being a "kill" function, it really just sends a signal to stop and continue the process here 
 	if(pause) { kill(javaProcess, SIGTSTP); }
 	else { kill(javaProcess, SIGCONT); }
 #elif _WIN32
@@ -1135,11 +1119,11 @@ void retro_set_controller_port_device(unsigned port, unsigned device) {  }
 
 
 /* Java Process */
-#ifdef __linux__
-pid_t javaOpen(char *cmd, char **params)
+int javaOpen(char *cmd, char **params)
 {
-    pid_t pid;
+	int pid = 0;
 
+#ifdef __linux__
 	if(!restarting)
 	{
 		log_fn(RETRO_LOG_INFO, "System Path: %s\n", systemPath);
@@ -1194,21 +1178,7 @@ pid_t javaOpen(char *cmd, char **params)
 		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]);
 	}
 
-	booted = true;
-	log_fn(RETRO_LOG_INFO, "Core and Java app started! Initializing game data... \n");
-	return pid;
-}
-
-bool isRunning(pid_t pid)
-{
-	int status;
-
-	if(waitpid(pid, &status, WNOHANG) == 0) { return true; }
-	return false;
-}
 #elif _WIN32
-void javaOpen(char *cmd, char **params)
-{
 	SECURITY_ATTRIBUTES pipeSec;
 
 	log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
@@ -1311,21 +1281,32 @@ void javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_ERROR, "Couldn't create process, error: %lu\n", GetLastError() );
 		retro_deinit();
 	}
+	log_fn(RETRO_LOG_INFO, "Created process! PID=%d \n", javaProcess.dwProcessId);
+#endif
 
 	booted = true;
-	log_fn(RETRO_LOG_INFO, "Created process! PID=%d \n", javaProcess.dwProcessId);
 	log_fn(RETRO_LOG_INFO, "Core and Java app started! Initializing game data... \n");
+
+	return pid;
 }
+
 
 bool isRunning()
 {
+#ifdef __linux__
+	int status;
+	if(waitpid(javaProcess, &status, WNOHANG) == 0) { return true; }
+	return false;
+
+#elif _WIN32
 	/*
-		* On win32, receiving a WAIT_TIMEOUT signal before timing out means the process is
-		* still running and didn't face any issues that caused it to lock up or crash.
-		*/
+	 * On win32, receiving a WAIT_TIMEOUT signal before timing out means the process is
+	 * still running and didn't face any issues that caused it to lock up or crash.
+	 */
 	if(WaitForSingleObject(javaProcess.hProcess, 0) == WAIT_TIMEOUT) { return true; }
 
 	log_fn(RETRO_LOG_INFO, "Java app is not running anymore! Last known PID=%d \n", javaProcess.dwProcessId);
 	return false;
-}
 #endif
+}
+
