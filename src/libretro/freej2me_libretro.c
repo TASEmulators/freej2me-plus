@@ -657,6 +657,19 @@ void retro_unload_game(void)
 	quit(0);
 }
 
+void pauseFreeJ2ME(bool pause) 
+{
+#ifdef __linux__
+	// Note: Despite being a "kill" function, it really just sends a signal to stop and continue the process here 
+	if(pause) { kill(javaProcess, SIGTSTP); }
+	else { kill(javaProcess, SIGCONT); }
+#elif _WIN32
+	// NOTE: Untested, tries to suspend/resume java app's main thread.
+	if(pause) { SuspendThread(javaProcess.hThread); }
+	else { ResumeThread(javaProcess.hThread); }
+#endif
+}
+
 void retro_run(void)
 {
 	int i = 0;
@@ -672,6 +685,8 @@ void retro_run(void)
 
 	// These are only used if useAnalogAsEntireKeypad is enabled.
 	bool num1pressed = false, num3pressed = false, num7pressed = false, num9pressed = false;
+
+	pauseFreeJ2ME(false);
 
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars) { check_variables(false); }
 
@@ -1059,6 +1074,8 @@ void retro_run(void)
 	else { retro_deinit(); }
 	/* send frame to libretro irrespective of FreeJ2ME running (for error messages) */
 	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
+
+	pauseFreeJ2ME(true);
 }
 
 unsigned retro_get_region(void)
