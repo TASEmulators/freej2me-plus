@@ -579,20 +579,23 @@ void retro_init(void)
 	while(status<1 && isRunning(javaProcess))
 	{
 		status = read_from_pipe(pRead[0], &t, 1);
-		if(status<0 && errno != EAGAIN) { quit(EXIT_FAILURE); }
+		if(status<0 && errno != EAGAIN) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[INVALID_STATUS_MSG]); }
 	}
-	if(!isRunning(javaProcess)) { quit(EXIT_FAILURE); }
+	if(!isRunning(javaProcess)) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]); }
 #elif _WIN32
 	while(status<1 && isRunning())
 	{
 		log_fn(RETRO_LOG_INFO, "Reading status...\n");
 		status = read_from_pipe(pRead[0], &t, 1);
 		log_fn(RETRO_LOG_INFO, "Status read! It's %d\n", status);
-		if(status<0) { quit(EXIT_FAILURE); }
+		if(status<0) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[INVALID_STATUS_MSG]); }
 	}
-	if(!isRunning()) { quit(EXIT_FAILURE); }
+	if(!isRunning()) { Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]); }
 #endif
-
+	else 
+	{
+		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[CORE_HAS_LOADED_MSG]);
+	}
 	/* Setup keyboard input */
 	struct retro_keyboard_callback kb = { Keyboard };
 	Environ(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &kb);
@@ -905,17 +908,17 @@ void retro_run(void)
 				framesDropped++;
 				if(framesDropped>250)
 				{
-					log_fn(RETRO_LOG_ERROR, "More than 250 frames dropped. Exiting!\n");
-					quit(EXIT_FAILURE);
+					Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[FRAMES_DROPPED_MSG]);
 				}
 				Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 				return;
 			}
 			if(status<0 && errno != EAGAIN)
 			{
-				log_fn(RETRO_LOG_ERROR, "Serious Error!\n");
+				Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[INVALID_STATUS_MSG]);
 				fflush(stdout);
-				quit(EXIT_FAILURE);
+				Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
+				return;
 			}
 			/*
 			if(t!=0xFE)
@@ -1052,11 +1055,10 @@ void retro_run(void)
 				}
 			}
 		}
-
-		/* send frame to libretro */
-		Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 	}
 	else { retro_deinit(); }
+	/* send frame to libretro irrespective of FreeJ2ME running (for error messages) */
+	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 }
 
 unsigned retro_get_region(void)
@@ -1172,8 +1174,7 @@ pid_t javaOpen(char *cmd, char **params)
 
 	if(pid<0) /* error */
 	{
-		log_fn(RETRO_LOG_ERROR, "Couldn't create child process!\n");
-		quit(EXIT_FAILURE);
+		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]);
 	}
 
 	booted = true;
@@ -1186,9 +1187,6 @@ bool isRunning(pid_t pid)
 	int status;
 
 	if(waitpid(pid, &status, WNOHANG) == 0) { return true; }
-
-	log_fn(RETRO_LOG_INFO, "Java app is not running anymore! Last known PID=%d \n", pid);
-	exit(0);
 	return false;
 }
 #elif _WIN32
