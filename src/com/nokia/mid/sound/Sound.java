@@ -114,7 +114,16 @@ public class Sound
 				try { player = Manager.createPlayer(new ByteArrayInputStream(convertToMidi(data)), "audio/x-tone-seq"); } 
 				catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't create Tone player:" + e.getMessage()); }
 			}
-			else if (type == FORMAT_WAV) { player = Manager.createPlayer(new ByteArrayInputStream(data), "audio/wav"); }
+			else if (type == FORMAT_WAV) 
+			{
+
+				String format;
+				if(data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') { format = "audio/mid"; }
+				else if(data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') { format = "audio/wav"; }
+				else { Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't find what format this is. Passing as FORMAT_WAV."); format = "audio/wav";}
+
+				player = Manager.createPlayer(new ByteArrayInputStream(data), format); 
+			}
 			else { throw new IllegalArgumentException("Nokia Sound: Invalid audio format: " + type); }
 		}
 		catch (MediaException exception) { } catch (IOException exception) { }
@@ -133,7 +142,8 @@ public class Sound
 	}
 
 	public void play(int loop) 
-	{ 
+	{
+		if(loop == 0) { loop = -1; }
 		player.setLoopCount(loop);
 		player.start();
 	}
