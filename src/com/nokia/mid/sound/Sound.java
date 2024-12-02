@@ -170,6 +170,7 @@ public class Sound
 		{
 			parsePos = 0; // Reset the parsePos counter
 			noteScale = 1f; // Reset scale as well
+			noteStyle = NATURAL_STYLE; // Reset note style too
 			curTick = 0; // Also move curTick to the beginning
 			toneBitArray = new boolean[data.length * 8]; 
 
@@ -429,7 +430,7 @@ public class Sound
 			
 			curTick += ticks;
 		}
-		catch (InvalidMidiDataException e) { Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Couldn't parse note instruction" + e.getMessage()); }
+		catch (InvalidMidiDataException e) { Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Couldn't parse note instruction:" + e.getMessage()); }
 	}
 
 	private static void parseScaleInstruction() 
@@ -631,7 +632,9 @@ public class Sound
 			case 0b1010: baseFrequency = 880; break;// A1
 			case 0b1011: baseFrequency = 932; break;// A#1
 			case 0b1100: baseFrequency = 988; break;// B(or H)1
-			default: return -1; // Invalid note, shall make the midi fail
+			default:
+			Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Parsed Note: " + noteStrings[noteValue] + ". Returning a pause instead."); 
+			return 0; // Invalid note, but CaveCab tries to add notes with reserved values. Let's just return a pause instead of causing issues for midi playback.
 		}
 
 		/* 
