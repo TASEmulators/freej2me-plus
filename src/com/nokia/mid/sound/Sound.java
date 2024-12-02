@@ -104,7 +104,6 @@ public class Sound
 
 	public void init(byte[] data, int type) 
 	{
-		/* NOTE: Maybe we should realize() here? */
 		try 
 		{
 			if (player != null) { player.close(); }
@@ -122,7 +121,8 @@ public class Sound
 				else if(data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') { format = "audio/wav"; }
 				else { Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't find what format this is. Passing as FORMAT_WAV."); format = "audio/wav";}
 
-				player = Manager.createPlayer(new ByteArrayInputStream(data), format); 
+				player = Manager.createPlayer(new ByteArrayInputStream(data), format);
+				player.realize();
 			}
 			else { throw new IllegalArgumentException("Nokia Sound: Invalid audio format: " + type); }
 		}
@@ -143,7 +143,8 @@ public class Sound
 
 	public void play(int loop) 
 	{
-		if(loop == 0) { loop = -1; }
+		if(loop < 0) { throw new IllegalArgumentException("Cannot play media, invalid loop value received"); }
+		else if(loop == 0) { loop = -1; }
 		player.setLoopCount(loop);
 		player.start();
 	}
