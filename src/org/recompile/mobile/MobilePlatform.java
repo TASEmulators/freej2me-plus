@@ -275,9 +275,9 @@ public class MobilePlatform
 
             String jarUrl = descriptorProperties.getOrDefault("MIDlet-Jar-URL", preparedFileName.replace(".jad", ".jar"));
 
-            // We will not support downloading jars from the internet on the fly, unless there is a very good reason to do so.
-            if (jarUrl.toLowerCase().contains("http:") || jarUrl.toLowerCase().contains("https:")) 
-				{ jarUrl = fileName.replace(".jad", ".jar"); }
+            // We will not support downloading jars from the internet on the fly, unless there is a very good reason to do so. Also, unless the jad has a URI for loading the jar, ignore the path as well
+            if (jarUrl.toLowerCase().contains("http:") || jarUrl.toLowerCase().contains("https:") || !jarUrl.toLowerCase().contains("file:")) 
+				{ jarUrl = fileName.replace(".jad", ".jar"); } // Just try getting the jar in the same directory as the jad in those cases.
 
             fileName = jarUrl;
         }
