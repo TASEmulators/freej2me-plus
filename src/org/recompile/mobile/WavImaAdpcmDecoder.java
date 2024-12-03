@@ -65,8 +65,8 @@ public final class WavImaAdpcmDecoder
 		15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 	};
 
-	private static final int[] predictedSample = {0, 0};
-	private static final int[] tableIndex = {ima_step_size_table[0], ima_step_size_table[0]};
+	private static final short[] predictedSample = {0, 0};
+	private static final byte[] tableIndex = {0, 0};
 
 	/* 
 	 * This method will decode IMA WAV ADPCM into linear PCM_S16LE.
@@ -90,74 +90,68 @@ public final class WavImaAdpcmDecoder
 		 * for each preamble added.
 		 */
 		final byte[] output = new byte[(inputSize * 4) + PCMHEADERSIZE - ((PCMPREAMBLESIZE*numChannels) * (int) java.lang.Math.floor(inputSize / frameSize))];
-		int tmpPreambleIndex;
 
 		/* Initialize the predictor's sample and step values. */
 		predictedSample[LEFTCHANNEL] = 0;
-		tableIndex[LEFTCHANNEL] = ima_step_size_table[0];
+		tableIndex[LEFTCHANNEL] = 0;
 
 		if(numChannels == 2) 
 		{
 			predictedSample[RIGHTCHANNEL] = 0;
-			tableIndex[RIGHTCHANNEL] = ima_step_size_table[0];
+			tableIndex[RIGHTCHANNEL] = 0;
 		}
 
-		while ((inputSize - inputIndex) > 0) 
+		while (inputIndex < inputSize) 
 		{
-			if(numChannels == 2 && (inputSize - inputIndex) < 16) { break; } // If we don't have enough bytes left to do another stereo run here, return. TODO: Check if this is expected behavior
+			// If we don't have enough bytes left to do another stereo run here, return (or else we risk an OOB access and the whole stream gets invalidated). TODO: Check if this is expected behavior.
+			if(numChannels == 2 && (inputSize - inputIndex) < 16) 
+			{
+				Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Remaining Bytes:" + (inputSize-inputIndex) + " < 16, cannot decode the last few stereo samples. Adding silence instead."); 
+			 	break;
+			} 
+
 			/* Check if the decoder is at the beginning of a new chunk to see if the preamble needs to be read. */
 			if (inputIndex % frameSize == 0)
 			{
-				/* Bytes 0 and 1 describe the chunk's initial predictor value (little-endian) */
-				predictedSample[LEFTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
-				
-				/* 
-				 * Byte 2 is the chunk's initial index on the step_size_table (this one has been found to get out of bounds rather easily, so there's a 
-				 * function to try and approximate it to a reasonable value based on the last predicted sample and the one retrieved above 
-				 * for slightly better playback quality.
-				 */
-				tmpPreambleIndex = (input[inputIndex+2]);
-
-				/* don't assign any invalid table values */
-				if(tmpPreambleIndex > 88 || tmpPreambleIndex < 0) { Mobile.log(Mobile.LOG_ERROR, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header"); }
-				else { tableIndex[LEFTCHANNEL] = tmpPreambleIndex; }
-
 				/* 
 				 * For each 4 bits used in IMA ADPCM, 16 must be used for PCM so adjust 
 				 * indices and sizes accordingly. Byte 3 is reserved and has no practical 
 				 * use for us.
 				 */
-				inputIndex += 4;
 
+				// Check byte 2 of the preamble beforehand and notify if there's any problem. TODO: On valid streams, there shouldn't be any problem, but this is triggered sometimes. Have to find out why.
+				if((input[inputIndex + 2]) > 88 || (input[inputIndex + 2]) < 0) 
+				{ 
+					Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header (Mono/L-Channel). Decoded stream might sound bad.");
+				}
+				/* Bytes 0 and 1 describe the chunk's initial predictor value (little-endian), clamp it even in case of issues such as to try and preserve the decoded stream's quality. */
+				predictedSample[LEFTCHANNEL] = (short) Math.max(Short.MIN_VALUE, Math.min(((input[inputIndex])) | ((input[inputIndex+1]) << 8), Short.MAX_VALUE));
+				/* Byte 2 is the chunk's initial index on the step_size_table. Clamp as well */
+				tableIndex[LEFTCHANNEL] = (byte) Math.max(0, Math.min(input[inputIndex+2], 88));
+				inputIndex += 4;
+				
 				if (numChannels == 2) /* If we're dealing with stereo IMA ADPCM: */
 				{
-					/* Bytes 4 and 5 describe the chunk's initial predictor value (little-endian) for the second channel */
-					predictedSample[RIGHTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
-
-					tmpPreambleIndex  = (input[inputIndex + 2]);
-
-					/* don't assign any invalid table values */
-					if(tmpPreambleIndex > 88 || tmpPreambleIndex < 0) { Mobile.log(Mobile.LOG_ERROR, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header"); }
-					else { tableIndex[RIGHTCHANNEL] = tmpPreambleIndex; }
-
+					if((input[inputIndex + 2]) > 88 || (input[inputIndex + 2]) < 0) 
+					{ 
+						Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header (R-Channel). Decoded stream might sound bad.");
+					}
+					predictedSample[RIGHTCHANNEL] = (short) Math.max(Short.MIN_VALUE, Math.min(((input[inputIndex])) | ((input[inputIndex+1]) << 8), Short.MAX_VALUE));
+					tableIndex[RIGHTCHANNEL] = (byte) Math.max(0, Math.min(input[inputIndex+2], 88));
 					inputIndex += 4;
 				}
 			}
 
 			/* 
-			 * If the decoder isn't at the beginning of a chunk, or the preamble has already been read, 
-			 * decode ADPCM samples inside that same chunk. 
-			 */
-
-			/* 
-			 * In the very rare (pretty much non-existent) cases where some j2me app 
-			 * might use stereo IMA ADPCM, we should decode each audio channel. 
+			 * In the very rare cases where some j2me app might use stereo IMA ADPCM, 
+			 * we should decode each audio channel. 
 			 * 
 			 * If the format is stereo, it is assumed to be interleaved, which means that
 			 * the stream will have a left channel sample followed by a right channel sample,
-			 * followed by a left... and so on. In ADPCM those samples appear to be setup in
-			 * such a way that 4 bytes (or 8 nibbles) for the left channel are followed by 4 bytes 
-			 * for the right, at least according to https://wiki.multimedia.cx/index.php/Microsoft_IMA_ADPCM.
+			 * followed by a left... and so on. In ADPCM those samples are setup so that 4 bytes
+			 * from the left channel are followed by 4 bytes of the right channel.
+			 * 
+			 * https://wiki.multimedia.cx/index.php/Microsoft_IMA_ADPCM.
 			 */
 			if (numChannels == 2) 
 			{
@@ -165,7 +159,7 @@ public final class WavImaAdpcmDecoder
 				 * So in the case it's a stereo stream, decode 8 nibbles from both left and right channels, interleaving
 				 * them in the resulting PCM stream.
 				 */
-				for (short i = 0; i < 8; i++) 
+				for (byte i = 0; i < 8; i++) 
 				{
 					if(i < 4) { curChannel = LEFTCHANNEL; }
 					else      { curChannel = RIGHTCHANNEL; }
@@ -188,21 +182,28 @@ public final class WavImaAdpcmDecoder
 				/* 
 				 * If it's mono, just decode nibbles from ADPCM into PCM data sequentially, there's no sample 
 				 * interleaving to worry about, much less multiple channels, so we only use channel 0.
+				 * 
+				 * Decode the entire block here and only get out of the loop for preamble reads, or
+				 * if we reached the end of the stream, because we don't really need
+				 * to keep going back up to check all those if cases for every sample. 
 				 */
-				adpcmSample = (byte)(input[inputIndex] & 0x0f);
-				decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
-				output[outputIndex++] = (byte) decodedSample;
-				output[outputIndex++] = (byte) (decodedSample >> 8);
+				while(inputIndex % frameSize != 0 && inputIndex < inputSize) 
+				{
+					adpcmSample = (byte)(input[inputIndex] & 0x0f);
+					decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
+					output[outputIndex++] = (byte) decodedSample;
+					output[outputIndex++] = (byte) (decodedSample >> 8);
 
-				adpcmSample = (byte)((input[inputIndex] >> 4) & 0x0f);
-				decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
-				output[outputIndex++] = (byte) decodedSample;
-				output[outputIndex++] = (byte) (decodedSample >> 8);
-				inputIndex++;
+					adpcmSample = (byte)((input[inputIndex] >> 4) & 0x0f);
+					decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
+					output[outputIndex++] = (byte) decodedSample;
+					output[outputIndex++] = (byte) (decodedSample >> 8);
+					inputIndex++;
+				}
 			}
 		}
 
-		// TODO: This is maybe inconsequential, but this decoder is leaving a bit of garbage at the end of the output. This is a workaround for it.
+		// TODO: This is maybe inconsequential, but the decoder is leaving a bit of garbage at the end of the output. This is a workaround for it.
 		for(int i = 0; i < 512; i++) { output[output.length-i-1] = (byte) 0; }
 
 		return output;
@@ -212,7 +213,7 @@ public final class WavImaAdpcmDecoder
 	private static final short decodeSample(final byte channel, final byte adpcmSample)
 	{
 		/* 
-		 * This decode procedure is based on the following document:
+		 * This decode procedure is mostly based on the following document:
 		 * https://www.cs.columbia.edu/~hgs/audio/dvi/IMA_ADPCM.pdf
 		 */
 
@@ -221,40 +222,27 @@ public final class WavImaAdpcmDecoder
 		 * the new given sample. 
 		 */
 		final int stepSize = ima_step_size_table[tableIndex[channel]];
-
-		/* This variable acts as 'difference' and then 'newSample' on columbia's doc */
-		int decodedSample = 0;
 		
 		/* 
-		 * Similar to cs.columbia doc's first code block on Page 32, multiplication through 
-		 * repetitive addition. Nowadays using multiplication is probably faster on most archs, 
-		 * but let's follow the reference implementation for the sake of improving documentation.
+		 * This follows the first optimization of the original IMA ADPCM diff calculation formula
+		 * found in https://wiki.multimedia.cx/index.php/IMA_ADPCM ()
 		 */
-		if ((adpcmSample & 4) != 0) { decodedSample += stepSize; }
-		if ((adpcmSample & 2) != 0) { decodedSample += stepSize >> 1; }
-		if ((adpcmSample & 1) != 0) { decodedSample += stepSize >> 2; }
-		
-		decodedSample += stepSize >> 3;
+    	int diff = ((stepSize * (adpcmSample & 0x07)) + (stepSize >> 1)) >> 2;
 
-		if ((adpcmSample & 8) != 0) { decodedSample  = -decodedSample; }
-
-		decodedSample += predictedSample[channel];
+		// Negate if the sign bit is set 
+		if ((adpcmSample & 8) != 0) { diff = -diff; }
 
 		/* 
 		 * Clamps the value of decodedSample to that of a short data type. At this point, the decoded 
 		 * sample should already fit nicely into a short type value range as per columbia's doc.
 		 */
-		
-		decodedSample = Math.max(Short.MIN_VALUE, Math.min(decodedSample, Short.MAX_VALUE));
-
-		predictedSample[channel] = decodedSample;
+		predictedSample[channel] = (short) Math.max(Short.MIN_VALUE, Math.min(predictedSample[channel] + diff, Short.MAX_VALUE));
 
 		/* Basically columbia doc's "calculate stepsize" snippet */
 		tableIndex[channel] += ima_step_index_table[adpcmSample];
-		tableIndex[channel] = Math.max(0, Math.min(tableIndex[channel], 88));
+		tableIndex[channel] = (byte) Math.max(0, Math.min(tableIndex[channel], 88));
 
-		/* Return the decoded sample casted to short (16-bit) */
-		return (short) (decodedSample);
+		return predictedSample[channel];
 	}
 	
 	/*
@@ -356,7 +344,7 @@ public final class WavImaAdpcmDecoder
 		 * We need the audio format to check if it's ADPCM or PCM, and the file's 
 		 * dataSize, SampleRate and audioChannels to decode ADPCM and build a new header. 
 		 */
-		return new int[] {audioFormat, sampleRate, audioChannels, computeFrameSize(audioChannels, sampleRate)};
+		return new int[] {audioFormat, sampleRate, audioChannels, frameSize};
 	}
 
 	/* Read a 16-bit little-endian unsigned integer from input.*/
@@ -460,12 +448,6 @@ public final class WavImaAdpcmDecoder
 		ByteBuffer.wrap(buffer, 40, 4).order(ByteOrder.LITTLE_ENDIAN).putInt(sampleDataLength);
 	}
 
-	/* This is from ADPCM-XQ, more specifically, a Java port of it: https://github.com/MDZhB/jt-adpcm/tree/master */
-	private static int computeFrameSize(int channels, int sampleRate) 
-	{
-        return 256 * channels * (sampleRate < 11000 ? 1 : sampleRate / 11000);
-    }
-
 	/* Decode the received IMA WAV ADPCM stream into a signed PCM16LE byte array, then return it to PlatformPlayer. */
 	public static final ByteArrayInputStream decodeImaAdpcm(final InputStream stream, final int[] wavHeaderData) throws IOException
 	{
@@ -475,10 +457,9 @@ public final class WavImaAdpcmDecoder
 		final byte[] input = new byte[stream.available()];
 		readInputStreamData(stream, input, 0, stream.available());
 
-		byte[] output = decodeADPCM(input, input.length, (short) wavHeaderData[2], wavHeaderData[3]);
+		final byte[] output = decodeADPCM(input, input.length, (short) wavHeaderData[2], wavHeaderData[3]);
 		buildHeader(output, (short) wavHeaderData[2], wavHeaderData[1]); /* Builds a new header for the decoded stream. */
 
 		return new ByteArrayInputStream(output);
 	}
-
 }
