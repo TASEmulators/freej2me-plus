@@ -42,8 +42,9 @@ public final class WavImaAdpcmDecoder
 	private static final byte LEFTCHANNEL = 0;
 	private static final byte RIGHTCHANNEL = 1;
 
-	private static final byte HEADERSIZE = 44;
+	private static final byte PCMHEADERSIZE = 44;
 	private static final byte PCMPREAMBLESIZE = 16;
+	private static final byte IMAHEADERSIZE = 60;
 	
 	private static final byte[] ima_step_index_table = 
 	{
@@ -74,7 +75,7 @@ public final class WavImaAdpcmDecoder
 	{
 		byte adpcmSample;
 		byte curChannel;
-		int inputIndex = 0, outputIndex = HEADERSIZE; /* Give some space for the header by starting from byte 44. */
+		int inputIndex = 0, outputIndex = PCMHEADERSIZE; /* Give some space for the header by starting from byte 44. */
 		short decodedSample;
 
 		/* 
@@ -88,7 +89,7 @@ public final class WavImaAdpcmDecoder
 		 * and each preamble is 4*numChannels bytes long on IMA ADPCM, which means it would take 16*numChannels bytes on the decoded stream 
 		 * for each preamble added.
 		 */
-		final byte[] output = new byte[(inputSize * 4) + HEADERSIZE - ((PCMPREAMBLESIZE*numChannels) * (int) java.lang.Math.floor(inputSize / frameSize))];
+		final byte[] output = new byte[(inputSize * 4) + PCMHEADERSIZE - ((PCMPREAMBLESIZE*numChannels) * (int) java.lang.Math.floor(inputSize / frameSize))];
 		int tmpPreambleIndex;
 
 		/* Initialize the predictor's sample and step values. */
@@ -103,8 +104,9 @@ public final class WavImaAdpcmDecoder
 
 		while ((inputSize - inputIndex) > 0) 
 		{
-			/* Check if the decoder reached the beginning of a new chunk to see if the preamble needs to be read. */
-			if ((inputSize - inputIndex) % frameSize == 0)
+			if(numChannels == 2 && (inputSize - inputIndex) < 16) { break; } // If we don't have enough bytes left to do another stereo run here, return. TODO: Check if this is expected behavior
+			/* Check if the decoder is at the beginning of a new chunk to see if the preamble needs to be read. */
+			if (inputIndex % frameSize == 0)
 			{
 				/* Bytes 0 and 1 describe the chunk's initial predictor value (little-endian) */
 				predictedSample[LEFTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
@@ -116,13 +118,9 @@ public final class WavImaAdpcmDecoder
 				 */
 				tmpPreambleIndex = (input[inputIndex+2]);
 
-				/* don't assign any invalid table values, use an approximation based on last decoded sample instead */
-				if(tmpPreambleIndex > 88 || tmpPreambleIndex < 0) { tableIndex[LEFTCHANNEL] = approximateTableIndex(tableIndex[LEFTCHANNEL], predictedSample[LEFTCHANNEL], predictedSample[LEFTCHANNEL]); }
+				/* don't assign any invalid table values */
+				if(tmpPreambleIndex > 88 || tmpPreambleIndex < 0) { Mobile.log(Mobile.LOG_ERROR, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header"); }
 				else { tableIndex[LEFTCHANNEL] = tmpPreambleIndex; }
-
-				/* Those aren't needed now that the check above is in place */
-				//if (tableIndex[LEFTCHANNEL] < 0)       { tableIndex[LEFTCHANNEL] = 0; }
-				//else if (tableIndex[LEFTCHANNEL] > 88) { tableIndex[LEFTCHANNEL] = 88; }
 
 				/* 
 				 * For each 4 bits used in IMA ADPCM, 16 must be used for PCM so adjust 
@@ -135,14 +133,12 @@ public final class WavImaAdpcmDecoder
 				{
 					/* Bytes 4 and 5 describe the chunk's initial predictor value (little-endian) for the second channel */
 					predictedSample[RIGHTCHANNEL] = ((input[inputIndex])) | ((input[inputIndex+1]) << 8);
-					tmpPreambleIndex   = (input[inputIndex + 2]);
 
-					/* don't assign any invalid table values, use an approximation based on last decoded sample instead */
-					if(tmpPreambleIndex > 88 || tmpPreambleIndex < 0) { tableIndex[RIGHTCHANNEL] = approximateTableIndex(tableIndex[RIGHTCHANNEL], predictedSample[RIGHTCHANNEL], predictedSample[RIGHTCHANNEL]); }
+					tmpPreambleIndex  = (input[inputIndex + 2]);
+
+					/* don't assign any invalid table values */
+					if(tmpPreambleIndex > 88 || tmpPreambleIndex < 0) { Mobile.log(Mobile.LOG_ERROR, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header"); }
 					else { tableIndex[RIGHTCHANNEL] = tmpPreambleIndex; }
-
-					//if (tableIndex[RIGHTCHANNEL] < 0)       { tableIndex[RIGHTCHANNEL] = 0; }
-					//else if (tableIndex[RIGHTCHANNEL] > 88) { tableIndex[RIGHTCHANNEL] = 88; }
 
 					inputIndex += 4;
 				}
@@ -186,7 +182,6 @@ public final class WavImaAdpcmDecoder
 					inputIndex++;
 				}
 				outputIndex += 32;
-				inputIndex += 8;
 			}
 			else
 			{
@@ -203,10 +198,12 @@ public final class WavImaAdpcmDecoder
 				decodedSample = decodeSample(LEFTCHANNEL, adpcmSample);
 				output[outputIndex++] = (byte) decodedSample;
 				output[outputIndex++] = (byte) (decodedSample >> 8);
-
 				inputIndex++;
 			}
 		}
+
+		// TODO: This is maybe inconsequential, but this decoder is leaving a bit of garbage at the end of the output. This is a workaround for it.
+		for(int i = 0; i < 512; i++) { output[output.length-i-1] = (byte) 0; }
 
 		return output;
 	}
@@ -248,33 +245,16 @@ public final class WavImaAdpcmDecoder
 		 * sample should already fit nicely into a short type value range as per columbia's doc.
 		 */
 		
-		if (decodedSample < -32768)     { decodedSample = -32768; }
-		else if (decodedSample > 32767) { decodedSample = 32767; }
+		decodedSample = Math.max(Short.MIN_VALUE, Math.min(decodedSample, Short.MAX_VALUE));
 
 		predictedSample[channel] = decodedSample;
 
 		/* Basically columbia doc's "calculate stepsize" snippet */
 		tableIndex[channel] += ima_step_index_table[adpcmSample];
-		if (tableIndex[channel] < 0)       { tableIndex[channel] = 0; }
-		else if (tableIndex[channel] > 88) { tableIndex[channel] = 88; }
+		tableIndex[channel] = Math.max(0, Math.min(tableIndex[channel], 88));
 
 		/* Return the decoded sample casted to short (16-bit) */
 		return (short) (decodedSample);
-	}
-
-	private static int approximateTableIndex(int lastSizeIndex, int predictor, int newPredictor) {
-		int predictorDifference = Math.abs(newPredictor - predictor);
-		
-		// Since we only have double-digits for positions, we have to scale down the difference quite a bit.
-		int adjustment = predictorDifference / 1000;
-		
-		// Similar to the 'tableIndex[channel] += ima_step_index_table[adpcmSample];' in DecodeSample
-		int newIndex = lastSizeIndex + adjustment;
-	
-		// Clamp the index within valid range just in case
-		newIndex = Math.max(0, Math.min(newIndex, 88));
-	
-		return newIndex;
 	}
 	
 	/*
@@ -303,6 +283,13 @@ public final class WavImaAdpcmDecoder
 				CHAR[4] "data" header
 				UINT32 Length of sample data.
 				<Sample data>
+
+			-- IMA ADPCM introduces the following before "data" header, and after BitsPerSample:
+			UINT16 ByteExtraData
+			UINT16 ExtraData
+			CHAR[4] "fact" header
+			UINT32 SubChunk2Size
+			UINT32 NumOfSamples
 		*/
 
 		String riff = readInputStreamASCII(input, 4); // 0 - 4
@@ -316,27 +303,54 @@ public final class WavImaAdpcmDecoder
 		int bytesPerSec = readInputStreamInt32(input); // 28 - 32
 		short frameSize = (short) readInputStreamInt16(input); // 32 - 34
 		short bitsPerSample = (short) readInputStreamInt16(input); // 34 - 36
-		String dataHeader = readInputStreamASCII(input, 4);  // 36 - 40
-		int dataLen = readInputStreamInt32(input); // 40 - 44
+		
+		// These are conditionally read depending on IMA ADPCM
+		short ByteExtraData = 0;
+		short ExtraData = 0;
+		String factHeader = "";
+		int SubChunk2Size = 0;
+		int numOfSamples = 0;
 
-		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "WAV HEADER_START");
+		if(audioFormat == 0x11) 
+		{
+			ByteExtraData = (short) readInputStreamInt16(input); // 36 - 38 -- On IMA ADPCM
+			ExtraData = (short) readInputStreamInt16(input); // 38 - 40 -- On IMA ADPCM
+			factHeader = readInputStreamASCII(input, 4);  // 40 - 44 -- On IMA ADPCM
+			SubChunk2Size = readInputStreamInt32(input);  // 44 - 48 -- On IMA ADPCM
+			numOfSamples = readInputStreamInt32(input);  // 48 - 52 -- On IMA ADPCM
+		}
+
+		String dataHeader = readInputStreamASCII(input, 4);  // 36 - 40 -- On PCM WAV, 52-56 On IMA ADPCM
+		int dataLen = readInputStreamInt32(input); // 40 - 44 -- On PCM WAV, 56-60 On IMA ADPCM
+
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + (audioFormat == 0x11 ? "IMA ADPCM" : "PCM") + " WAV HEADER_START");
 
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + riff);
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "FileSize:" + dataSize);
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Format: " + format);
 
-		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + fmt + "' header---\n");
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + fmt + "' header---");
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Header ChunkSize:" + Integer.toString(chunkSize));
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "AudioFormat: " + Integer.toString(audioFormat));
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "AudioChannels:" + Integer.toString(audioChannels));
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "SampleRate:" + Integer.toString(sampleRate));
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "BytesPerSec:" + Integer.toString(bytesPerSec));
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "FrameSize:" + Integer.toString(frameSize));
-		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "BitsPerSample:" + Integer.toHexString(bitsPerSample));
-		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + dataHeader +"' header---\n");
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "BitsPerSample:" + Integer.toString(bitsPerSample));
+		
+		if(audioFormat == 0x11) 
+		{
+			Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "ByteExtraData:" + Integer.toString(ByteExtraData));
+			Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "ExtraData:" + Integer.toString(ExtraData));
+			Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + factHeader +"' header---");
+			Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "SubChunk2Size:" + Integer.toString(SubChunk2Size));
+			Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "numOfSamples:" + Integer.toString(numOfSamples));
+		}
+		
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "---'" + dataHeader +"' header---");
 		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "SampleDataLength:" + Integer.toString(dataLen));
 
-		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "WAV HEADER_END\n\n\n");
+		Mobile.log(Mobile.LOG_DEBUG, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "WAV HEADER_END");
 		
 		/* 
 		 * We need the audio format to check if it's ADPCM or PCM, and the file's 
@@ -380,7 +394,7 @@ public final class WavImaAdpcmDecoder
 	 * Builds a WAV header that describes the decoded ADPCM file on the first 44 bytes. 
 	 * Data: little-endian, 16-bit, signed, same sample rate and channels as source IMA ADPCM.
 	 */
-	private static final void buildHeader(final byte[] buffer, final short numChannels, final int sampleRate) 
+	private static final void buildHeader(byte[] buffer, final short numChannels, final int sampleRate) 
 	{ 
 		final short bitsPerSample = 16;   /* 16-bit PCM */
 		final short audioFormat = 1;      /* WAV linear PCM */
@@ -393,9 +407,9 @@ public final class WavImaAdpcmDecoder
 		/* 
 		 * We'll have 16 bits per sample, so each sample has 2 bytes, with that we just divide
 		 * the size of the byte buffer (minus the header) by (bitsPerSample/8), then multiply by the amount 
-		 * of channels... assuming i didn't mess anything up on the calculus.
+		 * of channels.
 		*/
-		final int samplesPerChannel = buffer.length-44 / ((bitsPerSample/8) * numChannels);
+		final int samplesPerChannel = (buffer.length - 44) / ((bitsPerSample / 8) * numChannels);
 
 		/* 
 		 * Frame size is fairly standard, and PCM's fixed sample size makes it so the frameSize is either 2 bytes 
@@ -420,8 +434,8 @@ public final class WavImaAdpcmDecoder
 
 		/* ChunkID */
 		ByteBuffer.wrap(buffer, 0, 4).order(ByteOrder.BIG_ENDIAN).putInt(chunk);
-		/* ChunkSize (or File size) */
-		ByteBuffer.wrap(buffer, 4, 4).order(ByteOrder.LITTLE_ENDIAN).putInt(sampleDataLength + 44);
+		/* ChunkSize (or File size, "RIFF" and "WAVE" fiels from the header are not considered) */
+		ByteBuffer.wrap(buffer, 4, 4).order(ByteOrder.LITTLE_ENDIAN).putInt(sampleDataLength + 36);
 		/* Format (WAVE) */
 		ByteBuffer.wrap(buffer, 8, 4).order(ByteOrder.BIG_ENDIAN).putInt(format);
 		/* SubchunkID (fmt) */
@@ -446,6 +460,7 @@ public final class WavImaAdpcmDecoder
 		ByteBuffer.wrap(buffer, 40, 4).order(ByteOrder.LITTLE_ENDIAN).putInt(sampleDataLength);
 	}
 
+	/* This is from ADPCM-XQ, more specifically, a Java port of it: https://github.com/MDZhB/jt-adpcm/tree/master */
 	private static int computeFrameSize(int channels, int sampleRate) 
 	{
         return 256 * channels * (sampleRate < 11000 ? 1 : sampleRate / 11000);
@@ -455,7 +470,7 @@ public final class WavImaAdpcmDecoder
 	public static final ByteArrayInputStream decodeImaAdpcm(final InputStream stream, final int[] wavHeaderData) throws IOException
 	{
 		/* Remove the header from the stream, we shouldn't "decode" it as if it was a sample */
-		readHeader(stream);
+		stream.skip(IMAHEADERSIZE);
 
 		final byte[] input = new byte[stream.available()];
 		readInputStreamData(stream, input, 0, stream.available());
