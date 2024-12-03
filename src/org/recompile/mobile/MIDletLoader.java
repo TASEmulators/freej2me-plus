@@ -100,6 +100,9 @@ public class MIDletLoader extends URLClassLoader
 			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't add CLDC System Properties");
 		}
 
+		// Integrate properties retrieved from JAD file, if any.
+		properties.putAll(descriptorProperties);
+
 		try { loadManifest(); }
 		catch (Exception e)
 		{
@@ -115,11 +118,7 @@ public class MIDletLoader extends URLClassLoader
 		properties.put("wireless.messaging.sms.smsc", "+8613800010000");
 		properties.put("device.imei", "000000000000000");
 
-
 		if (className == null) { className = findMainClassInJars(urls); }
-
-		// Integrate properties retrieved from JAD file, if any.
-		properties.putAll(descriptorProperties);
 	}
 
 	public static String findMainClassInJars(URL[] urls) 
@@ -261,7 +260,9 @@ public class MIDletLoader extends URLClassLoader
 				{
                     if (currentKey != null) 
 					{
-                        keyValueMap.put(currentKey, currentValue.toString().trim());
+						// Only add a new key-value pair if the key doesn't already exist (set by the JAD file)
+                        if(!keyValueMap.containsKey(currentKey)) { keyValueMap.put(currentKey, currentValue.toString().trim());  }
+						else { Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey)); }
                         currentValue.setLength(0);
                     }
 
@@ -274,11 +275,15 @@ public class MIDletLoader extends URLClassLoader
                     }
                 }
             }
-            if (currentKey != null) { keyValueMap.put(currentKey, currentValue.toString().trim()); }
+            if (currentKey != null) 
+			{
+				if(!keyValueMap.containsKey(currentKey)) { keyValueMap.put(currentKey, currentValue.toString().trim());  }
+				else { Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey)); }
+			}
         } 
 		catch (IOException e) 
 		{
-            Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse JAD:" + e.getMessage());
+            Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage());
         }
     }
 
@@ -314,6 +319,8 @@ public class MIDletLoader extends URLClassLoader
 				suitename = name;
 				suitename = suitename.replace(":","");
 			}
+
+			Mobile.log(Mobile.LOG_INFO, "Loading MIDlet: " + suitename +" | Main Class: " + className);
 		}
 	}
 
