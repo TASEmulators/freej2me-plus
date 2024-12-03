@@ -561,6 +561,7 @@ public class PlatformPlayer implements Player
 	private class wavPlayer extends audioplayer
 	{
 		/* PCM WAV variables */
+		private InputStream tmpStream;
 		private AudioInputStream wavStream;
 		private Clip wavClip;
 		private int[] wavHeaderData = new int[4];
@@ -585,7 +586,21 @@ public class PlatformPlayer implements Player
 				}
 				else /* But if it is IMA ADPCM, we have to decode it manually. */
 				{
-					wavStream = AudioSystem.getAudioInputStream(WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData));
+					if(Mobile.minLogLevel == Mobile.LOG_DEBUG) /* Print the decoded stream's header for analysis */
+					{
+						tmpStream = WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData);
+
+						tmpStream.mark(60);
+						WavImaAdpcmDecoder.readHeader(tmpStream);
+						tmpStream.reset();
+
+						wavStream = AudioSystem.getAudioInputStream(tmpStream);
+					}
+					else /* If not debugging, throw the decoded stream into wavStream right away. */
+					{
+						wavStream = AudioSystem.getAudioInputStream(WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData));
+					}
+					
 				}
 
 			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare wav stream:" + e.getMessage());}
