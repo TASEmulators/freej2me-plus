@@ -608,11 +608,16 @@ public class PlatformPlayer implements Player
 
 		public void realize() 
 		{ 
+			state = Player.REALIZED;
+		}
+
+		public void prefetch() 
+		{
 			try
 			{
 				wavClip = AudioSystem.getClip();
 				wavClip.open(wavStream);
-				state = Player.REALIZED;
+				state = Player.PREFETCHED; 
 			}
 			catch (Exception e) 
 			{ 
@@ -620,8 +625,6 @@ public class PlatformPlayer implements Player
 				wavClip.close();
 			}
 		}
-
-		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
 		{	
@@ -653,7 +656,7 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { } // Prefetch does "nothing" in each internal player so deallocate must also do nothing
+		public void deallocate() { wavClip.close(); }
 
 		public void close() 
 		{
