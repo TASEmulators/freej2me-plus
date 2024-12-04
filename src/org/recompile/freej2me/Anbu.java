@@ -205,7 +205,7 @@ public class Anbu
 			System.exit(0);
 		}
 
-		return "file://" + file.getAbsolutePath();
+		return file.toURI().toString();
 	}
 
 	private class SDL

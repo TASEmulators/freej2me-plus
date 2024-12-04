@@ -346,7 +346,7 @@ public class FreeJ2ME
 			System.exit(0);
 		}
 
-		return "file://" + file.getAbsolutePath();
+		return file.toURI().toString();
 	}
 
 	private void settingsChanged()
