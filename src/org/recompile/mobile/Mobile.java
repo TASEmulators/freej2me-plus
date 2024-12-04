@@ -536,7 +536,7 @@ public class Mobile
 		}
 
 		// Log to console only if not libretro, as it won't be seen there anyway
-		if(!MIDlet.isLibretro) { System.out.println(text); }
+		if(!getPlatform().isLibretro) { System.out.println(text); }
 
 		File logFile = new File(LOG_FILE);
 
