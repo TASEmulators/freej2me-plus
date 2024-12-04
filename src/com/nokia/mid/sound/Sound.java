@@ -70,6 +70,8 @@ public class Sound
 	private static int noteStyle = NATURAL_STYLE; // The default style is NATURAL
 	private static int curTick = 0; // To keep track of the current midi note tick, or else all notes will play at the same time.
 
+	private static boolean isPrevPlayerTone = false;
+
 	// This one is used for debugging.
 	private static final String[] noteStrings = new String[] {"Pause", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H", "Reserved", "Reserved", "Reserved"};
 
@@ -106,16 +108,27 @@ public class Sound
 	{
 		try 
 		{
-			if (player != null) { player.close(); }
-
 			if (type == FORMAT_TONE) 
 			{
-				try { player = Manager.createPlayer(new ByteArrayInputStream(convertToMidi(data)), "audio/x-tone-seq"); } 
+				try 
+				{
+					if(player == null || !isPrevPlayerTone)  // check for null because release() can be called after all.
+					{ 
+						player = Manager.createPlayer(new ByteArrayInputStream(convertToMidi(data)), "audio/x-tone-seq"); 
+						isPrevPlayerTone = true; 
+					}
+					else 
+					{
+						player.deallocate();
+						((ToneControl) player.getControl("ToneControl")).setSequence(convertToMidi(data));
+					}
+					player.prefetch();
+				}
 				catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't create Tone player:" + e.getMessage()); }
 			}
 			else if (type == FORMAT_WAV) 
 			{
-
+				if (player != null) { player.close(); }
 				String format;
 				if(data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') { format = "audio/mid"; }
 				else if(data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') { format = "audio/wav"; }
@@ -123,6 +136,8 @@ public class Sound
 
 				player = Manager.createPlayer(new ByteArrayInputStream(data), format);
 				player.realize();
+				player.prefetch();
+				isPrevPlayerTone = false;
 			}
 			else { throw new IllegalArgumentException("Nokia Sound: Invalid audio format: " + type); }
 		}
@@ -194,6 +209,7 @@ public class Sound
 		
 			for (int i = 0; i < commandLength; i++) 
 			{
+				if(toneBitArray.length - parsePos - 8 <= 0) { Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "OTT tried to read beyond bounds. Returning stream early. "); break; }
 				int commandType = readBits(8); // Check command type (first 7 bits + filler bit which is always 0)
 		
 				switch (commandType) {

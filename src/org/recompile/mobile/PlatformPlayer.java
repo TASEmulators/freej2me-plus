@@ -547,7 +547,15 @@ public class PlatformPlayer implements Player
 
 		public Sequence getSequence() { return midiSequence; }
 
-		public void setSequence(Sequence sequence) { midiSequence = sequence; }
+		public void setSequence(InputStream sequence) 
+		{ 
+			try 
+			{
+				midiSequence = MidiSystem.getSequence(sequence); 
+			}
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI sequence:" + e.getMessage());  }
+			
+		}
 
 		public Sequencer getSequencer() { return midi; }
 
@@ -1267,22 +1275,30 @@ public class PlatformPlayer implements Player
 		 */
 		public void setSequence(byte[] sequence) 
 		{
-			/* This should show up in the case a jar tries to use it... just so we can find a jar that can test this */
-			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setSequence() not implemented");
-			try 
+			if(sequence == null) { throw new IllegalArgumentException("ToneControl: cannot set a null sequence"); }
+
+			if(getState() == Player.PREFETCHED || getState() == Player.STARTED) { throw new IllegalStateException("Cannot call setSequence(), as the player is either PREFETCHED or STARTED."); }
+
+			// If what we received is a tone sequence from nokia, siemens, sprint, etc. which is converted to midi beforehand, just send it to the player right away.
+			if(sequence[0] == 'M' && sequence[1] == 'T' && sequence[2] == 'h' && sequence[3] == 'd') 
 			{
-				if(sequence == null) { throw new IllegalArgumentException("ToneControl: cannot set a null sequence"); }
+				player.setSequence(new ByteArrayInputStream(sequence));
+			}
+			else // TODO: For J2ME's ToneControl Augmented BNF tone format, if anything out there even uses it.
+			{
+				/* This should show up in the case a jar tries to use it... just so we can find a jar that can test this */
+				Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setSequence() for A-BNF Tones not implemented");
+				try 
+				{
+					Sequence toneSequence = new Sequence(Sequence.PPQ, 24);
+					Track track = toneSequence.createTrack();
 
-				if(getState() == Player.PREFETCHED || getState() == Player.STARTED) { throw new IllegalStateException("Cannot call setSequence(), as the player is either PREFETCHED or STARTED."); }
+					setupSequence(sequence, track);
 
-				Sequence toneSequence = new Sequence(Sequence.PPQ, 24);
-				Track track = toneSequence.createTrack();
-
-				setupSequence(sequence, track);
-
-				player.setSequence(toneSequence);
-				player.midi.setSequence(toneSequence);
-			} catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Can't parse tone sequence: " + e.getMessage());}
+					//player.setSequence(toneSequence);
+					//player.midi.setSequence(toneSequence);
+				} catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Can't parse tone sequence: " + e.getMessage());}
+			}
 		}
 
 		private void setupSequence(byte[] sequence, Track track) // This tries to parse the default
