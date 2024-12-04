@@ -26,7 +26,10 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.io.File;
 import java.io.FileInputStream;
@@ -76,6 +79,8 @@ public class MobilePlatform
 	private long lastFpsTime = System.nanoTime();
     private int fps = 0;
 
+	public static boolean isLibretro = false;
+	public static boolean isSDL = false;
 
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
@@ -103,6 +108,22 @@ public class MobilePlatform
 				// Placeholder //
 			}
 		};
+
+		// SDL is the only one that needs this, since its runnable ties input and render logic for TAS support
+		if(isSDL)
+		{
+			final ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+
+			service.scheduleAtFixedRate(() -> 
+			{
+				// If 100ms have passed and a new painter run did not happen, force it to happen
+				if(lastRenderTime - System.nanoTime() < -100_000_000)
+				{
+					painter.run();
+				}
+			}, 100_000_000, 100_000_000, TimeUnit.NANOSECONDS); // run 20 times per second
+		}
+		
 	}
 
 	public void startEventQueue() { eventQueue.start(); }
@@ -420,7 +441,7 @@ public class MobilePlatform
 
 	private void limitFps() 
 	{
-		if(Mobile.limitFPS == 0) { return; }
+		if(Mobile.limitFPS == 0) { lastRenderTime = System.nanoTime(); return; }
 
 		requiredFrametime = 1_000_000_000 / Mobile.limitFPS;
 		elapsedTime = System.nanoTime() - lastRenderTime;

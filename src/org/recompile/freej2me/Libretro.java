@@ -71,7 +71,7 @@ public class Libretro
 		 * the ability to close the jar when a J2ME app requests an exit as this can cause segmentation
 		 * faults on frontends and also close the unexpectedly.
 		*/
-		MIDlet.isLibretro = true;
+		Mobile.getPlatform().isLibretro = true;
 
 		/* 
 		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user

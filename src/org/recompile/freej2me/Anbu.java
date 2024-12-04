@@ -116,6 +116,7 @@ public class Anbu
 		}
 		if(args.length>=4) { scaleFactor = Integer.parseInt(args[3]); }
 
+		Mobile.getPlatform().isSDL = true;
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
 		/* 
