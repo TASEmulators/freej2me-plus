@@ -444,24 +444,24 @@ public class PlatformPlayer implements Player
 			}
 		}
 
-		public void realize() { state = Player.REALIZED; }
-
-		public void prefetch() 
-		{
+		public void realize() 
+		{ 
 			try 
 			{
 				midi = MidiSystem.getSequencer(false);
 				midi.getTransmitter().setReceiver(receiver);
 				midi.open();
 				midi.setSequence(midiSequence);
-				state = Player.PREFETCHED;
+				state = Player.REALIZED;
 			}
 			catch (Exception e) 
 			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prefetch midi stream:" + e.getMessage());
-				state = Player.REALIZED; 
+				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not realize midi stream:" + e.getMessage());
+				state = Player.UNREALIZED; 
 			}
 		}
+
+		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
 		{
