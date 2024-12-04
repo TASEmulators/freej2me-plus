@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import javax.microedition.lcdui.Display;
 import javax.microedition.media.Manager;
 import javax.microedition.media.MediaException;
+import javax.microedition.media.control.ToneControl;
 
 import org.recompile.mobile.Mobile; 
 
@@ -74,9 +75,17 @@ public class Player
 
         priority = dTone.getPriority();
 
-		if (player != null) { player.close(); }
-
-        try { player = Manager.createPlayer(new ByteArrayInputStream(dTone.sequence), "audio/mid"); }
+        try 
+        {
+            if(player == null) { player = Manager.createPlayer(new ByteArrayInputStream(dTone.sequence), "audio/x-tone-seq"); }
+            
+            else 
+            {
+                player.deallocate();
+				((ToneControl) player.getControl("ToneControl")).setSequence(dTone.sequence);
+                // No need to prefetch here, as player.start() will have to happen below.
+            }
+        }
         catch (Exception e) { Mobile.log(Mobile.LOG_WARNING, Player.class.getPackage().getName() + "." + Player.class.getSimpleName() + ": " + "failed to prepare DualTone media: " + e.getMessage()); }
         
 		if (repeat != -1 /* Clip.LOOP_CONTINUOUSLY */) { player.setLoopCount(repeat+1); }
