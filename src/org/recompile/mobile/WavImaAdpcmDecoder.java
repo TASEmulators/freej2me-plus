@@ -449,7 +449,7 @@ public final class WavImaAdpcmDecoder
 	}
 
 	/* Decode the received IMA WAV ADPCM stream into a signed PCM16LE byte array, then return it to PlatformPlayer. */
-	public static final ByteArrayInputStream decodeImaAdpcm(final InputStream stream, final int[] wavHeaderData) throws IOException
+	public static final byte[] decodeImaAdpcm(final InputStream stream, final int[] wavHeaderData) throws IOException
 	{
 		/* Remove the header from the stream, we shouldn't "decode" it as if it was a sample */
 		stream.skip(IMAHEADERSIZE);
@@ -460,6 +460,6 @@ public final class WavImaAdpcmDecoder
 		final byte[] output = decodeADPCM(input, input.length, (short) wavHeaderData[2], wavHeaderData[3]);
 		buildHeader(output, (short) wavHeaderData[2], wavHeaderData[1]); /* Builds a new header for the decoded stream. */
 
-		return new ByteArrayInputStream(output);
+		return output;
 	}
 }

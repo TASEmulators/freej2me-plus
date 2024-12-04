@@ -191,7 +191,9 @@ public class PlatformPlayer implements Player
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot call start() on a CLOSED player."); }
 		
-		if(getState() == Player.REALIZED || getState() == Player.UNREALIZED) { prefetch(); }
+		if(getState() == Player.UNREALIZED) { realize(); }
+
+		if(getState() == Player.REALIZED) { prefetch(); }
 
 		if(getState() == Player.PREFETCHED) { player.start(); }
 	}
@@ -243,7 +245,11 @@ public class PlatformPlayer implements Player
 		 * as deallocate can be called during the transition from UNREALIZED to REALIZED, and if that happens,
 		 * we can't actually set it as REALIZED, it must be kept as UNREALIZED.
 		*/
-		if(state > Player.UNREALIZED) { state = Player.REALIZED; }
+		if(state > Player.UNREALIZED) 
+		{
+			player.realize();
+			state = Player.REALIZED; 
+		}
 	}
 
 	public String getContentType() 
@@ -430,7 +436,6 @@ public class PlatformPlayer implements Player
 				
 				synthesizer.open();
 				receiver = synthesizer.getReceiver();
-				midi.getTransmitter().setReceiver(receiver);
 				midiSequence = MidiSystem.getSequence(stream);
 			} 
 			catch (Exception e) 
@@ -439,23 +444,24 @@ public class PlatformPlayer implements Player
 			}
 		}
 
-		public void realize() 
-		{ 
+		public void realize() { state = Player.REALIZED; }
+
+		public void prefetch() 
+		{
 			try 
-			{ 
+			{
+				midi = MidiSystem.getSequencer(false);
+				midi.getTransmitter().setReceiver(receiver);
 				midi.open();
 				midi.setSequence(midiSequence);
-				state = Player.REALIZED; 
-			} 
+				state = Player.PREFETCHED;
+			}
 			catch (Exception e) 
-			{ 
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not realize midi stream:" + e.getMessage());
-				deallocate();
-				state = Player.UNREALIZED; 
+			{
+				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prefetch midi stream:" + e.getMessage());
+				state = Player.REALIZED; 
 			}
 		}
-
-		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
 		{
@@ -490,7 +496,7 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { } // Prefetch does "nothing" in each internal player so deallocate must also do nothing
+		public void deallocate() { midi.close(); }
 
 		public void close() 
 		{
@@ -561,7 +567,7 @@ public class PlatformPlayer implements Player
 	private class wavPlayer extends audioplayer
 	{
 		/* PCM WAV variables */
-		private InputStream tmpStream;
+		private byte[] tmpStream;
 		private AudioInputStream wavStream;
 		private Clip wavClip;
 		private int[] wavHeaderData = new int[4];
@@ -580,51 +586,43 @@ public class PlatformPlayer implements Player
 				wavHeaderData = WavImaAdpcmDecoder.readHeader(stream);
 				stream.reset();
 
-				if(wavHeaderData[0] != 17) /* If it's not IMA ADPCM we don't need to do anything to the stream. */
+				if(wavHeaderData[0] != 17) /* If it's not IMA ADPCM we don't need to do anything to the stream. Just pass it to a local copy */
 				{
-					wavStream = AudioSystem.getAudioInputStream(stream);
+					tmpStream = new byte[stream.available()];
+					stream.read(tmpStream, 0, stream.available());
 				}
 				else /* But if it is IMA ADPCM, we have to decode it manually. */
 				{
+					tmpStream = WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData);
+
 					if(Mobile.minLogLevel == Mobile.LOG_DEBUG) /* Print the decoded stream's header for analysis */
 					{
-						tmpStream = WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData);
-
-						tmpStream.mark(60);
-						WavImaAdpcmDecoder.readHeader(tmpStream);
-						tmpStream.reset();
-
-						wavStream = AudioSystem.getAudioInputStream(tmpStream);
+						wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(tmpStream));
+						wavStream.mark(60);
+						WavImaAdpcmDecoder.readHeader(wavStream);
+						wavStream.reset();
 					}
-					else /* If not debugging, throw the decoded stream into wavStream right away. */
-					{
-						wavStream = AudioSystem.getAudioInputStream(WavImaAdpcmDecoder.decodeImaAdpcm(stream, wavHeaderData));
-					}
-					
 				}
-
 			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare wav stream:" + e.getMessage());}
 		}
 
 		public void realize() 
 		{ 
-			state = Player.REALIZED;
-		}
-
-		public void prefetch() 
-		{
 			try
 			{
+				wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(tmpStream));
 				wavClip = AudioSystem.getClip();
 				wavClip.open(wavStream);
-				state = Player.PREFETCHED; 
+				state = Player.REALIZED; 
 			}
 			catch (Exception e) 
 			{ 
 				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't realize wav stream: " + e.getMessage());
 				wavClip.close();
-			}
+			} 
 		}
+
+		public void prefetch() { state = Player.PREFETCHED; }
 
 		public void start()
 		{	
@@ -660,6 +658,7 @@ public class PlatformPlayer implements Player
 
 		public void close() 
 		{
+			wavClip.close();
 			wavClip = null;
 			wavStream = null;
 			wavHeaderData = null;
