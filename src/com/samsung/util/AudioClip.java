@@ -47,8 +47,10 @@ public class AudioClip
 			throw new ArrayIndexOutOfBoundsException("AudioClip: Cannot create player, tried to access audioData at an invalid position");
 		}
 
-		/* Some jars actually try to pass MMF streams with a different type, so check its header to see if this needs to be handled. */
-		if(audioData[0] == 'M' && audioData[1] == 'M' && audioData[2] == 'M' && audioData[3] == 'D') { clipType = TYPE_MMF; }
+		/* Some jars actually try to pass streams with a different clip type from what they should be, so check their header and ignore whatever the jar is passing here. */
+		if(audioData[audioOffset+0] == 'M' && audioData[audioOffset+1] == 'M' && audioData[audioOffset+2] == 'M' && audioData[audioOffset+3] == 'D') { clipType = TYPE_MMF; }
+		else if(audioData[audioOffset+0] == 'M' && audioData[audioOffset+1] == 'T' && audioData[audioOffset+2] == 'h' && audioData[audioOffset+3] == 'd') { clipType = TYPE_MIDI; }
+		else if(audioData[audioOffset+0] == 'I' && audioData[audioOffset+1] == 'D' && audioData[audioOffset+2] == '3' || ((audioData[audioOffset+0] == (byte) 0xFF) && (audioData[audioOffset+1] & 0xE0) == 0xE0)) { clipType = TYPE_MP3; }
 
 		Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "Samsung AudioClip (ByteArray)");
 
