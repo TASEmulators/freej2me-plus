@@ -82,66 +82,93 @@ public class PlatformPlayer implements Player
 
 		contentType = type;
 
-		if(Mobile.sound == false)
-		{
-			player = new audioplayer();
-		}
+		if(Mobile.sound == false) { player = new audioplayer(); }
 		else
 		{
-			if(type.equalsIgnoreCase("audio/x-mid") || type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi"))
+			// Midi player will also play tones, as these are converted to midi in pretty much all cases at the moment
+			if(contentType.equalsIgnoreCase("audio/x-mid") || contentType.equalsIgnoreCase("audio/mid") || contentType.equalsIgnoreCase("audio/midi") || contentType.equalsIgnoreCase("sp-midi") || contentType.equalsIgnoreCase("audio/spmidi") || contentType.equalsIgnoreCase("audio/x-tone-seq"))
 			{
 				player = new midiPlayer(stream);
 			}
-			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav"))
+			else if(contentType.equalsIgnoreCase("audio/x-wav") || contentType.equalsIgnoreCase("audio/wav"))
 			{
 				player = new wavPlayer(stream);
 			}
-			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3"))
+			else if(contentType.equalsIgnoreCase("audio/mpeg") || contentType.equalsIgnoreCase("audio/mp3"))
 			{
 				player = new MP3Player(stream);
 			}
-			else if (type.equalsIgnoreCase("")) /* If the stream doesn't have an accompanying type, try everything we can to try and load it */
+			else /* If the stream doesn't have an accompanying type or its a type we don't have an explicit player for, do everything we can to try and load it */
 			{
+				Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Audio type <'" + contentType + "'> doesn't match any supported ones. Trying to find what it is...");
 				try 
 				{
-					final byte[] tryStream = new byte[stream.available()];
-					readInputStreamData(stream, tryStream, 0, stream.available());
+					final byte[] data = new byte[stream.available()];
+					stream.read(data, 0, stream.available());
 
-					Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Received no explicit audio type. Trying to load as MIDI, and if it fails, WAV.");
-					/* Try loading it as a MIDI file first */
-					try { player = new midiPlayer(new ByteArrayInputStream(tryStream)); } 
-					catch (Exception e) { }
-					
-					/* If that doesn't work, try as WAV next, if it still doesn't work, we have no other players to try */
-					try { player = new wavPlayer(new ByteArrayInputStream(tryStream)); }
-					catch (Exception e)
+					if(data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') 
 					{
-						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "No Player For: "+contentType);
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MIDI!");
+						player = new midiPlayer(new ByteArrayInputStream(data));
+						contentType = "audio/mid";
+					}
+					else if(data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') 
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is WAV!");
+						player = new wavPlayer(new ByteArrayInputStream(data));
+						contentType = "audio/wav";
+					}
+					else if(data[0] == 'I' && data[1] == 'D' && data[2] == '3' || ((data[0] == (byte) 0xFF) && (data[1] & 0xE0) == 0xE0)) // Check for MPEG files WITH and WITHOUT the ID3 tag
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MPEG!");
+						player = new MP3Player(new ByteArrayInputStream(data));
+						contentType = "audio/mpeg";
+					}
+					else if(data[0] == 'M' && data[1] == 'M' && data[2] == 'M' && data[3] == 'D')
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is SMAF/MMF! (not supported yet)");
+						player = new audioplayer();
+						contentType = "audio/mmf";
+					}
+					else if(data[0] == 'm' && data[1] == 'e' && data[2] == 'l' && data[3] == 'o')
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MFi! (not supported yet)");
+						player = new audioplayer();
+						contentType = "audio/mfi";
+					}
+					else if (data.length >= 6 && data[0] == '#' && data[1] == '!' && data[2] == 'A' && data[3] == 'M' && data[4] == 'R' && data[5] == '\n') 
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is AMR-NB! (not supported yet)");
+						player = new audioplayer();
+						contentType = "audio/amr";
+					} 
+					else if (data.length >= 9 && data[0] == '#' && data[1] == '!' && data[2] == 'A' && data[3] == 'M' && data[4] == 'R' && data[5] == '-' && data[6] == 'W' && data[7] == 'B' && data[8] == '\n') 
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is AMR-WB! (not supported yet)");
+						player = new audioplayer();
+						contentType = "audio/amr-wb";
+					}
+					else /* If none of the formats match, we don't know what this is */
+					{
+						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "None of the known formats match the received stream, it won't play!");
 						player = new audioplayer();
 					}
 				}
 				catch (IOException e)
 				{
-					Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't read input stream: " + e.getMessage());
+					Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't parse input stream: " + e.getMessage());
 				}
 			}
-			else if (type.equalsIgnoreCase("audio/x-tone-seq")) // Midi player will also play tones, as these are converted to midi in pretty much all cases at the moment
-			{
-				player = new midiPlayer(stream);
-			}
-			else /* TODO: Implement a player for amr audio types */
-			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "No Player For: "+contentType);
-				player = new audioplayer();
-			}
 		}
+
+		// Set up control interfaces based on player type.
 		controls[0] = new volumeControl(this.player); // Midi Player with Tones might not use this
 
 		/* Midi Player has a few additional controls */
 		if(player instanceof midiPlayer) 
 		{
 			/* If we're using midiPlayer to play tones, only set it up with ToneControl. */
-			if(type.equalsIgnoreCase("audio/x-tone-seq")) { controls[3] = new toneControl((midiPlayer) this.player); }
+			if(contentType.equalsIgnoreCase("audio/x-tone-seq")) { controls[3] = new toneControl((midiPlayer) this.player); }
 			else
 			{
 				controls[1] = new tempoControl((midiPlayer) this.player);
@@ -149,7 +176,7 @@ public class PlatformPlayer implements Player
 			}
 		}
 
-		Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "media type: "+type);
+		Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "media type: " + contentType);
 	}
 
 	public PlatformPlayer(String locator)
@@ -161,7 +188,8 @@ public class PlatformPlayer implements Player
 			controls = new Control[NUM_CONTROLS];
 			controls[0] = new volumeControl(this.player); // Midi Player with Tones might not use this
 			controls[3] = new toneControl((midiPlayer) this.player);
-		} else 
+		} 
+		else 
 		{
 			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "No player for locator: "+locator);
 			player = new audioplayer();
@@ -178,6 +206,7 @@ public class PlatformPlayer implements Player
 		{
 			if(player.isRunning()) { stop(); }
 			player.close();
+			controls = null;
 			player = null;
 			state = Player.CLOSED;
 			notifyListeners(PlayerListener.CLOSED, null);	
@@ -244,7 +273,7 @@ public class PlatformPlayer implements Player
 		 * Only set state to REALIZED if we have effectively moved into REALIZED or higher (PREFETCHED, etc), 
 		 * as deallocate can be called during the transition from UNREALIZED to REALIZED, and if that happens,
 		 * we can't actually set it as REALIZED, it must be kept as UNREALIZED.
-		*/
+		 */
 		if(state > Player.UNREALIZED) 
 		{
 			player.realize();
@@ -278,7 +307,7 @@ public class PlatformPlayer implements Player
 		 * however, J2ME docs state that the exclusive and scarce resources (such as an actual
 		 * player resources) should only be acquired in prefetch. So let's assume we're working this
 		 * way here for now.
-		*/
+		 */
 		if(getState() == Player.UNREALIZED || getState() == Player.REALIZED) { return Player.TIME_UNKNOWN; }
 
 		return player.getMediaTime(); 
@@ -304,15 +333,15 @@ public class PlatformPlayer implements Player
 	public void setLoopCount(int count) 
 	{
 		/* A MIDlet setting 0 explicitly here is illegal */
-		if(count == 0) {throw new IllegalStateException("Jar tried to set loop count as 0. ");}
-		if(getState() == Player.CLOSED || getState() == Player.STARTED) { throw new IllegalStateException("Jar tried to set loop count on a player in an invalid state. "); }
+		if(count == 0) {throw new IllegalStateException("Jar tried to set loop count as 0.");}
+		if(getState() == Player.CLOSED || getState() == Player.STARTED) { throw new IllegalStateException("Jar tried to set loop count on a player in an invalid state."); }
 
 		player.setLoopCount(count); 
 	}
 
 	public long setMediaTime(long now) 
 	{
-		if(getState() == Player.UNREALIZED || getState() == Player.CLOSED) { throw new IllegalStateException("Cannot set Media Time. Player is either UNREALIZED or CLOSED. "); }
+		if(getState() == Player.UNREALIZED || getState() == Player.CLOSED) { throw new IllegalStateException("Cannot set Media Time. Player is either UNREALIZED or CLOSED."); }
 
 		return player.setMediaTime(now);
 	}
@@ -342,17 +371,6 @@ public class PlatformPlayer implements Player
 		return controls; 
 	}
 
-	/* Read 'n' Bytes from the InputStream. Used by IMA ADPCM decoder as well. */
-	public static void readInputStreamData(InputStream input, byte[] output, int offset, int nBytes) throws IOException 
-	{
-		int end = offset + nBytes;
-		while(offset < end) 
-		{
-			int read = input.read(output, offset, end - offset);
-			if(read < 0) throw new java.io.EOFException();
-			offset += read;
-		}
-	}
 
 	// Players //
 
@@ -369,24 +387,6 @@ public class PlatformPlayer implements Player
 		public void realize() { }
 		public void prefetch() { }
 		public long getDuration() { return Player.TIME_UNKNOWN; }
-
-		/* Copy the stream to a local variable, as we need it in order to realize() and prefetch() on midi and wav players */
-		protected byte[] copyMediaData(InputStream stream) 
-		{
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			byte[] buffer = new byte[1024];
-			int bytesRead;
-			try 
-			{
-				while ((bytesRead = stream.read(buffer)) != -1) 
-				{
-					byteArrayOutputStream.write(buffer, 0, bytesRead);
-				}
-			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to copy audio stream data:" + e.getMessage()); }
-			
-
-			return byteArrayOutputStream.toByteArray();
-		}
 	}
 
 	private class midiPlayer extends audioplayer
@@ -549,12 +549,8 @@ public class PlatformPlayer implements Player
 
 		public void setSequence(InputStream sequence) 
 		{ 
-			try 
-			{
-				midiSequence = MidiSystem.getSequence(sequence); 
-			}
+			try { midiSequence = MidiSystem.getSequence(sequence); }
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI sequence:" + e.getMessage());  }
-			
 		}
 
 		public Sequencer getSequencer() { return midi; }
@@ -706,13 +702,17 @@ public class PlatformPlayer implements Player
 
 	private class MP3Player extends audioplayer
 	{
-		private byte[] stream;
+		private byte[] tmpStream;
 		private MPEGPlayer mp3Player;
 		private Thread playerThread = null;
 
 		public MP3Player(InputStream stream)
 		{
-			try { this.stream = copyMediaData(stream); }
+			try 
+			{
+				tmpStream = new byte[stream.available()];
+				stream.read(tmpStream, 0, stream.available()); 
+			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare mpeg stream:" + e.getMessage());}
 		}
 
@@ -720,7 +720,7 @@ public class PlatformPlayer implements Player
 		{ 
 			try
 			{
-				mp3Player = new MPEGPlayer(new ByteArrayInputStream(stream), false);
+				mp3Player = new MPEGPlayer(new ByteArrayInputStream(tmpStream), false);
 				state = Player.REALIZED;
 			}
 			catch (Exception e) 
@@ -797,7 +797,7 @@ public class PlatformPlayer implements Player
 		public void close() 
 		{
 			mp3Player = null;
-			stream = null;
+			tmpStream = null;
 			playerThread = null;
 		}
 
@@ -1000,29 +1000,29 @@ public class PlatformPlayer implements Player
 			try 
 			{
 				Receiver receiver = player.getReceiver();
-                if (data[offset] == (byte) 0xF0 && data[offset + length - 1] == (byte) 0xF7) // Check if it is a SysEx message
+				if (data[offset] == (byte) 0xF0 && data[offset + length - 1] == (byte) 0xF7) // Check if it is a SysEx message
 				{
-                    // Create the SysEx message without the status byte
-                    byte[] sysExData = new byte[length - 2];
-                    System.arraycopy(data, offset + 1, sysExData, 0, length - 2); // Exclude the 0xF0 and 0xF7
+					// Create the SysEx message without the status byte
+					byte[] sysExData = new byte[length - 2];
+					System.arraycopy(data, offset + 1, sysExData, 0, length - 2); // Exclude the 0xF0 and 0xF7
 
-                    // Create the SysexMessage
-                    SysexMessage sysexMessage = new SysexMessage(0xF0, sysExData, sysExData.length);
-                    receiver.send(sysexMessage, -1); // Send the message
-                }
+					// Create the SysexMessage
+					SysexMessage sysexMessage = new SysexMessage(0xF0, sysExData, sysExData.length);
+					receiver.send(sysexMessage, -1); // Send the message
+				}
 				else // If it is not, send data as a series of short messages (probably implemented incorrectly, and being untested only makes things worse)
 				{
 					for (int i = offset; i < offset + length; i += 3) 
 					{
-                        int msgLength = Math.min(3, length - (i - offset)); // Ensure we don't exceed the shortMessage's length
-                        ShortMessage shortMessage = new ShortMessage();
+						int msgLength = Math.min(3, length - (i - offset)); // Ensure we don't exceed the shortMessage's length
+						ShortMessage shortMessage = new ShortMessage();
 
-                        if      (msgLength == 1) { shortMessage.setMessage(data[i] & 0xFF); }  // Send only status byte (is this even useful?)
+						if      (msgLength == 1) { shortMessage.setMessage(data[i] & 0xFF); }  // Send only status byte (is this even useful?)
 						else if (msgLength == 2) { shortMessage.setMessage(data[i] & 0xFF, data[i + 1] & 0xFF, 0); } // Status byte + one data byte
 						else if (msgLength == 3) { shortMessage.setMessage(data[i] & 0xFF, data[i + 1] & 0xFF, data[i + 2] & 0xFF); } // Full short message
 
-                        receiver.send(shortMessage, -1);
-                    }
+						receiver.send(shortMessage, -1);
+					}
 				}
 				return length; // Return the number of bytes sent
 			} 
@@ -1117,7 +1117,7 @@ public class PlatformPlayer implements Player
 			 * hit cases where a jar goes into mute (sets level to 0 because of that)
 			 * then goes out of mute but is still silent since setMute() will call this
 			 * method with 0 as its level, which was the one that was saved.
-			*/
+			 */
 			if(!isMuted()) 
 			{
 				/* Some Digital Chocolate games actually go all the way to level = 120. E.g. Tornado Mania */
@@ -1225,7 +1225,7 @@ public class PlatformPlayer implements Player
 			 * indicates that we probably should add a midiEvent message to its
 			 * tracks in order to change their tempo at tick 0, but first we need
 			 * to find a jar that uses this, otherwise it's a shot in the dark.
-			*/
+			 */
 			player.midi.setTempoInBPM(getEffectiveBPM());
 
 			return tempo; 
