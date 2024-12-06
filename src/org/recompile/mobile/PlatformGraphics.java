@@ -452,14 +452,19 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
+		if (width == 0 || height == 0) { return; }
+		if (width < 0 || height < 0) { throw new IllegalArgumentException("drawPixels(byte) received negative width or height"); }
+		if (pixels == null) { throw new NullPointerException("drawPixels(byte) received a null pixel array"); }
+		if (offset < 0 || offset >= (pixels.length * 8)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length * 8) + "| offset:" + offset); }
+
 		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
 		int c = 0;
-		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);// Nokia DirectGraphics states that image width and height CAN be zero.
 		final int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 
 		switch (format) 
 		{
-			case -1: // TYPE_BYTE_1_GRAY_VERTICAL - Used by Munkiki's Castles
+			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL: // TYPE_BYTE_1_GRAY_VERTICAL - Used by Munkiki's Castles
 				int ods = offset / scanlength;
 				int oms = offset % scanlength;
 				int b = ods % 8; // Bit offset in a byte
@@ -472,7 +477,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 						c = ((pixels[tmp + xj] >> b) & 1);
 						if (transparencyMask != null) 
 						{
-							c |= (((transparencyMask[tmp + xj] >> b) & 1) ^ 1) << 1;
+							c |= (((transparencyMask[tmp + xj] >> b) & 1) ^ 1) << 1; // Apply transparency mask
 						}
 						data[ypos + xj] = Type1[c]; // Set pixel directly in the DataBuffer also removing the need for setDataElements
 					}
@@ -481,17 +486,22 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				}
 				break;
 	
-			case 1: // TYPE_BYTE_1_GRAY - Also used by Munkiki's Castles
+			case DirectGraphics.TYPE_BYTE_1_GRAY: // TYPE_BYTE_1_GRAY - Also used by Munkiki's Castles
 				for (int i = (offset / 8); i < pixels.length; i++) 
 				{
 					for (int j = 7; j >= 0; j--) 
 					{
+						int pixelIndex = (i * 8) + (7 - j);
+						
+						// Ensure we don't exceed data length based on image's width and height (as here the pixel can go out of bounds)
+						if (pixelIndex >= width * height) { break; }
+			
 						c = ((pixels[i] >> j) & 1);
 						if (transparencyMask != null) 
 						{
-							c |= (((transparencyMask[i] >> j) & 1) ^ 1) << 1;
+							c |= (((transparencyMask[i] >> j) & 1) ^ 1) << 1; 
 						}
-						data[(i * 8) + (7 - j)] = Type1[c]; // Same as above
+						data[pixelIndex] = Type1[c];
 					}
 				}
 				break;
@@ -504,9 +514,10 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawPixels(int[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format) 
 	{
-		if (width <= 0 || height <= 0) { return; }
-		if (pixels == null) { throw new NullPointerException(); }
-		if (offset < 0 || offset >= pixels.length) { throw new ArrayIndexOutOfBoundsException(); }
+		if (width == 0 || height == 0) { return; }
+		if (width < 0 || height < 0) { throw new IllegalArgumentException("drawPixels(int) received negative width or height"); }
+		if (pixels == null) { throw new NullPointerException("drawPixels(int) received a null pixel array"); }
+		if (offset < 0 || offset >= pixels.length) { throw new ArrayIndexOutOfBoundsException("drawPixels(int) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
 
 		if (scanlength > 0) 
 		{
@@ -537,6 +548,11 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void drawPixels(short[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
+		if (width == 0 || height == 0) { return; }
+		if (width < 0 || height < 0) { throw new IllegalArgumentException("drawPixels(short) received negative width or height"); }
+		if (pixels == null) { throw new NullPointerException("drawPixels(short) received a null pixel array"); }
+		if (offset < 0 || offset >= pixels.length) { throw new ArrayIndexOutOfBoundsException("drawPixels(short) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
+
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
     	int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 
