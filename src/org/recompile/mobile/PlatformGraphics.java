@@ -26,13 +26,11 @@ import com.nokia.mid.ui.DirectGraphics;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
-import java.awt.BasicStroke;
+import java.awt.image.DataBufferInt;
 
 public class PlatformGraphics extends javax.microedition.lcdui.Graphics implements DirectGraphics
 {
 	protected BufferedImage canvas;
-	private WritableRaster raster;
 	protected Graphics2D gc;
 
 	protected Color awtColor;
@@ -224,8 +222,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		raster = temp.getRaster();
-		final int[] pixels = new int[width * height];
+		// Let's get the target pixel array directly from the image's DataBuffer, saving us an array copy and the overhead of setDataElements().
+    	final int[] pixels = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 		int s, d, pixel;
 
 		for (int i = 0; i < height; i++) 
@@ -239,8 +237,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				pixels[d + j] = pixel; // Store the pixel
 			}
 		}
-
-		raster.setDataElements(0, 0, width, height, pixels);
 
 		gc.drawImage(temp, x, y, null);
 	}
@@ -458,49 +454,51 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	{
 		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
 		int c = 0;
-		int[] data = null;
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		raster = temp.getRaster();
-		switch(format)
+		final int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
+
+		switch (format) 
 		{
-			case -1: // TYPE_BYTE_1_GRAY_VERTICAL // used by Monkiki's Castles
-				data = new int[width*height];
+			case -1: // TYPE_BYTE_1_GRAY_VERTICAL - Used by Munkiki's Castles
 				int ods = offset / scanlength;
 				int oms = offset % scanlength;
-				int b = ods % 8; //Bit offset in a byte
-				for (int yj = 0; yj < height; yj++)
+				int b = ods % 8; // Bit offset in a byte
+				for (int yj = 0; yj < height; yj++) 
 				{
 					int ypos = yj * width;
-					int tmp = (ods + yj) / 8 * scanlength+oms;
-					for (int xj = 0; xj < width; xj++)
+					int tmp = (ods + yj) / 8 * scanlength + oms;
+					for (int xj = 0; xj < width; xj++) 
 					{
-						c = ((pixels[tmp + xj]>>b)&1);
-						if(transparencyMask!=null) { c |= (((transparencyMask[tmp + xj]>>b)&1)^1)<<1; }
-						data[(yj*width)+xj] = Type1[c];
+						c = ((pixels[tmp + xj] >> b) & 1);
+						if (transparencyMask != null) 
+						{
+							c |= (((transparencyMask[tmp + xj] >> b) & 1) ^ 1) << 1;
+						}
+						data[ypos + xj] = Type1[c]; // Set pixel directly in the DataBuffer also removing the need for setDataElements
 					}
 					b++;
-					if(b>7) b=0;
+					if (b > 7) b = 0;
 				}
-			break;
-
-			case 1: // TYPE_BYTE_1_GRAY // used by Munkiki's Castles
-				data = new int[pixels.length*8];
-
-				for(int i=(offset/8); i<pixels.length; i++)
+				break;
+	
+			case 1: // TYPE_BYTE_1_GRAY - Also used by Munkiki's Castles
+				for (int i = (offset / 8); i < pixels.length; i++) 
 				{
-					for(int j=7; j>=0; j--)
+					for (int j = 7; j >= 0; j--) 
 					{
-						c = ((pixels[i]>>j)&1);
-						if(transparencyMask!=null) { c |= (((transparencyMask[i]>>j)&1)^1)<<1; }
-						data[(i*8)+(7-j)] = Type1[c];
+						c = ((pixels[i] >> j) & 1);
+						if (transparencyMask != null) 
+						{
+							c |= (((transparencyMask[i] >> j) & 1) ^ 1) << 1;
+						}
+						data[(i * 8) + (7 - j)] = Type1[c]; // Same as above
 					}
 				}
-			break;
+				break;
 
 			default: Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawPixels A : Format " + format + " Not Implemented");
 		}
 
-		raster.setDataElements(0, 0, width, height, data);
 		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
@@ -519,12 +517,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 			if (offset + width > pixels.length || offset + scanlength * (height - 1) < 0) { throw new ArrayIndexOutOfBoundsException(); }
 		}
 
-		// Create the temporary BufferedImage and get its WritableRaster
+		// Create the temporary BufferedImage and get its DataBuffer to manipulate it directly.
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		raster = temp.getRaster();
-
-		// Prepare pixel data
-		final int[] data = new int[width * height];
+		int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 
 		for (int row = 0; row < height; row++) 
 		{
@@ -537,16 +532,14 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 			}
 		}
 
-		raster.setDataElements(0, 0, width, height, data);
 		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
 	public void drawPixels(short[] pixels, boolean transparency, int offset, int scanlength, int x, int y, int width, int height, int manipulation, int format)
 	{
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		raster = temp.getRaster();
+    	int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();
 
-		final int[] data = new int[pixels.length];
 		// Prepare the pixel data
 		for (int row = 0; row < height; row++) 
 		{
@@ -555,12 +548,9 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				int index = offset + row * scanlength + col;
 				data[row * width + col] = pixelToColor(pixels[index], format);
 				if (!transparency) { data[row * width + col] &= 0x00FFFFFF; } // Clear the alpha channel
-			
 			}
 		}
 	
-		// Set the pixel data directly into the raster
-		raster.setDataElements(0, 0, width, height, data);
 		gc.drawImage(manipulateImage(temp, manipulation), x, y, null);
 	}
 
