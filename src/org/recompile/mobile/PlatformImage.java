@@ -36,11 +36,9 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
-import java.awt.image.WritableRaster;
 
 public class PlatformImage extends javax.microedition.lcdui.Image
 {
-	private WritableRaster raster;
 	protected BufferedImage canvas;
 	protected PlatformGraphics gc;
 
@@ -198,7 +196,22 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
 	{
 		// Create Image From Sub-Image, Transformed //
-		BufferedImage sub = image.platformImage.canvas.getSubimage(x, y, Width, Height);
+		BufferedImage sub = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
+    
+		// Get the original pixel data from the source image
+		final int[] sourcePixels = ((DataBufferInt) image.platformImage.canvas.getRaster().getDataBuffer()).getData();
+
+		// Create an array to hold the sub-image pixel data
+		final int[] subPixels = new int[Width * Height];
+	
+		// Copy pixel data directly
+		for (int j = 0; j < Height; j++) 
+		{
+			System.arraycopy(sourcePixels, (y + j) * image.platformImage.canvas.getWidth() + x, subPixels, j * Width, Width);
+		}
+	
+		// Set the pixel data for the new sub-image
+		sub.getRaster().setDataElements(0, 0, Width, Height, subPixels);
 
 		canvas = transformImage(sub, transform);
 		createGraphics();
@@ -215,7 +228,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		if (width <= 0 || height <= 0) { return; } // No pixels to copy
 		if (x < 0 || y < 0 || x + width > canvas.getWidth() || y + height > canvas.getHeight()) 
 		{
-			throw new IllegalArgumentException("Requested area exceeds bounds of the image");
+			throw new IllegalArgumentException("getRGB Requested area exceeds bounds of the image");
 		}
 		if (Math.abs(scanlength) < width) 
 		{
@@ -223,11 +236,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		}
 
 		// Temporary array to hold the raw pixel data
-		int[] tempData = new int[width * height];
-		
-		raster = canvas.getRaster();
-		raster.getDataElements(x, y, width, height, tempData);
-	
+		int[] tempData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		// Copy the data into rgbData, taking scanlength into account
 		for (int row = 0; row < height; row++) 
 		{
@@ -238,18 +247,30 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		}
 	}
 
-	public int getARGB(int x, int y) { return canvas.getRGB(x, y); }
-
-	public int getPixel(int x, int y)
-	{
-		int[] rgbData = { 0 };
-		canvas.getRGB(x, y, 1, 1, rgbData, 0, 1);
-		return rgbData[0];
+	public int getARGB(int x, int y) 
+	{ 
+		if (x < 0 || y < 0 || x >= canvas.getWidth() || y >= canvas.getHeight()) 
+		{
+			throw new IllegalArgumentException("Requested area exceeds bounds of the image");
+		}
+	
+		// Get the raw pixel data array directly from the canvas
+		int[] pixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		return pixels[y * canvas.getWidth() + x];
 	}
+
+	public int getPixel(int x, int y) { return getARGB(x, y); }
 
 	public void setPixel(int x, int y, int color)
 	{
-		canvas.setRGB(x, y, color);
+		if (x < 0 || y < 0 || x >= canvas.getWidth() || y >= canvas.getHeight()) 
+		{
+			throw new IllegalArgumentException("Requested area exceeds bounds of the image");
+		}
+	
+		// Get the raw pixel data array directly from the canvas
+		int[] pixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		pixels[y * canvas.getWidth() + x] = color;
 	}
 
 	public static final BufferedImage transformImage(final BufferedImage image, final int transform)
@@ -263,9 +284,9 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		BufferedImage transimage = null;
 		if(transform == Sprite.TRANS_ROT90 || transform == Sprite.TRANS_ROT270 || transform == Sprite.TRANS_MIRROR_ROT90 || transform == Sprite.TRANS_MIRROR_ROT270) 
 		{
-			transimage = new BufferedImage(height, width, BufferedImage.TYPE_INT_ARGB); // Non-Math.PI rotations require width and height to be swapped
+			transimage = new BufferedImage(height, width, image.getType()); // Non-Math.PI rotations require width and height to be swapped
 		}
-		else { transimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB); }
+		else { transimage = new BufferedImage(width, height, image.getType()); }
 
 		// We know the data is of TYPE_INT_ARGB, so just get it directly instead of checking for its type
 		final int[] sourceData = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
@@ -284,7 +305,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_rot90");
-				return transimage;
+				break;
 
 			case Sprite.TRANS_ROT180:
 				for (int y = 0; y < height; y++) 
@@ -297,7 +318,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_rot180");
-				return transimage;
+				break;
 			
 			case Sprite.TRANS_ROT270:
 				for (int y = 0; y < height; y++) 
@@ -309,7 +330,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_rot270");
-				return transimage;
+				break;
 
 			case Sprite.TRANS_MIRROR: 
 				/*
@@ -340,7 +361,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror");
-				return transimage;
+				break;
 
 			case Sprite.TRANS_MIRROR_ROT90:
 				for (int y = 0; y < height; y++) 
@@ -353,7 +374,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}	
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror90");
-				return transimage;
+				break;
 
 			case Sprite.TRANS_MIRROR_ROT180: // Basically mirror vertically (an arrow pointing up will then point down).
 				for (int y = 0; y < height; y++) // Due to this, we copy entire rows at once instead of going pixel by pixel
@@ -362,7 +383,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror180");
-				return transimage;
+				break;
 				
 
 			case Sprite.TRANS_MIRROR_ROT270:
@@ -376,9 +397,10 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror270");
-				return transimage;
+				break;
 		}
-		return image;
+
+		return transimage;
 	}
 
 	// TODO: Turn this into a setting. Being able to dump image data would be nice.
