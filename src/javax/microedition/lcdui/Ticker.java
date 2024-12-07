@@ -22,10 +22,7 @@ public class Ticker
 
 	private String text;
 
-	Ticker(String str)
-	{
-		text = str;
-	}
+	public Ticker(String str) { setString(str); }
 
 	public String getString() { return text; }
 
