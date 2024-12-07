@@ -227,13 +227,13 @@ public class Sound
 						break;
 					case 0b00001010: // Cancel command, Does any actual OTT/OTA ringtone use this?
 						Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Cancel command detected.");
-						return null;
+						break;
 					case 0b00000000: // This should happen at the end of every parsing procedure.
 						Mobile.log(Mobile.LOG_DEBUG, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "End of ringtone programming!");
 						break;
-					default: // If this is the case, we can't parse the header, so just return null outright
+					default: // If this is the case, we can't parse the header, so just return outright
 						Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Unknown command type: " + Integer.toBinaryString(commandType));
-						return null;
+						break;
 				}
 			}
 		
