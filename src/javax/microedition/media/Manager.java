@@ -159,6 +159,7 @@ public class Manager
 			catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Couldn't open Tone Player: " + e.getMessage()); return;}
 		}
 
+		dedicatedToneChannel.programChange(80); // Set it to use the square wave instrument, just so all tones formats are using the same
 		/* 
 		 * There's no need to calculate the note frequency as per the MIDP Manager docs,
 		 * they are pretty much the note numbers used by Java's Built-in MIDI library. 
