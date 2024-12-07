@@ -75,6 +75,10 @@ public class PlatformPlayer implements Player
 
 	private Control[] controls;
 
+	// Manager already sets these two
+	public static Synthesizer synthesizer;
+	public static Receiver receiver;
+
 	public PlatformPlayer(InputStream stream, String type)
 	{
 		listeners = new Vector<PlayerListener>();
@@ -400,51 +404,26 @@ public class PlatformPlayer implements Player
 	{
 		private Sequencer midi;
 		private Sequence midiSequence;
-		private Synthesizer synthesizer;
-		private Receiver receiver;
 
 		public midiPlayer() // For when a Locator call (usually for tones) is issued
 		{
 			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Midi Player [locator] untested");
-			try
-			{
-				midi = MidiSystem.getSequencer(false);
 
-				if (Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
-				{
-					synthesizer = Manager.customSynth; // Use the custom synthesizer
-				} 
-				else 
-				{
-					synthesizer = MidiSystem.getSynthesizer(); // Default synthesizer
-				}
-				
-				synthesizer.open();
-				receiver = synthesizer.getReceiver();
-				midi.getTransmitter().setReceiver(receiver);
-				midiSequence = new Sequence(Sequence.PPQ, 24); // Create an empty sequence, which should be overriden with whatever setSequence() receives.
-			} catch (Exception e) {  Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load midi file:" + e.getMessage()); }
+			// Create an empty sequence, which should be overriden with whatever setSequence() receives.
+			try 
+			{ 
+				midi = MidiSystem.getSequencer(false);
+				midiSequence = new Sequence(Sequence.PPQ, 24); 
+			} 
+			catch (Exception e) {  Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load midi file:" + e.getMessage()); }
 		}
 
 		public midiPlayer(InputStream stream) 
 		{
 			try 
-			{
+			{ 
 				midi = MidiSystem.getSequencer(false);
-
-				if (Manager.useCustomMidi && Manager.hasLoadedCustomMidi) 
-				{
-					synthesizer = Manager.customSynth; // Use the custom synthesizer
-				} 
-				else 
-				{
-					synthesizer = MidiSystem.getSynthesizer(); // Default synthesizer
-				}
-				
-				synthesizer.open();
-				receiver = synthesizer.getReceiver();
-				midiSequence = MidiSystem.getSequence(stream);
-			} 
+				midiSequence = MidiSystem.getSequence(stream); } 
 			catch (Exception e) 
 			{
 				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load MIDI file: " + e.getMessage());
@@ -456,7 +435,7 @@ public class PlatformPlayer implements Player
 			try 
 			{
 				midi = MidiSystem.getSequencer(false);
-				midi.getTransmitter().setReceiver(receiver);
+				midi.getTransmitter().setReceiver(PlatformPlayer.receiver);
 				midi.open();
 				midi.setSequence(midiSequence);
 				state = Player.REALIZED;
@@ -508,9 +487,7 @@ public class PlatformPlayer implements Player
 		public void close() 
 		{
 			midi.close();
-			synthesizer = null;
 			midiSequence = null;
-			receiver = null;
 		}
 
 		public void setLoopCount(int count)
@@ -547,10 +524,6 @@ public class PlatformPlayer implements Player
 		public long getDuration() { return midi.getMicrosecondLength(); }
 
 		public boolean isRunning() { return midi.isRunning(); }
-
-		public Receiver getReceiver() { return receiver; }
-
-		public Synthesizer getSynthesizer() { return synthesizer; }
 
 		public Sequence getSequence() { return midiSequence; }
 
@@ -918,7 +891,7 @@ public class PlatformPlayer implements Player
 			// This is VERY costly, and might not even be correct as it relies on getProgramList and getBankList, which themselves are untested.
 			try
 			{
-				MidiChannel[] channels = player.getSynthesizer().getChannels();
+				MidiChannel[] channels = PlatformPlayer.synthesizer.getChannels();
 
 				if(channel < 0 || channel > channels.length) {throw new IllegalArgumentException("midiControl: Tried to call getProgram with invalid channel");}
 		
@@ -978,7 +951,7 @@ public class PlatformPlayer implements Player
 			// Java doesn't even have a concept of having names for programs, only instruments. So let's return the instrument's name instead.
 			try 
 			{
-				Soundbank soundbank = player.getSynthesizer().getDefaultSoundbank();
+				Soundbank soundbank = PlatformPlayer.synthesizer.getDefaultSoundbank();
 		
 				Instrument[] instruments = soundbank.getInstruments();
 				for (Instrument instrument : instruments)
@@ -1006,7 +979,6 @@ public class PlatformPlayer implements Player
 		
 			try 
 			{
-				Receiver receiver = player.getReceiver();
 				if (data[offset] == (byte) 0xF0 && data[offset + length - 1] == (byte) 0xF7) // Check if it is a SysEx message
 				{
 					// Create the SysEx message without the status byte
@@ -1015,7 +987,7 @@ public class PlatformPlayer implements Player
 
 					// Create the SysexMessage
 					SysexMessage sysexMessage = new SysexMessage(0xF0, sysExData, sysExData.length);
-					receiver.send(sysexMessage, -1); // Send the message
+					PlatformPlayer.receiver.send(sysexMessage, player.getMediaTime() + 50_000L); // Send the message
 				}
 				else // If it is not, send data as a series of short messages (probably implemented incorrectly, and being untested only makes things worse)
 				{
@@ -1028,7 +1000,7 @@ public class PlatformPlayer implements Player
 						else if (msgLength == 2) { shortMessage.setMessage(data[i] & 0xFF, data[i + 1] & 0xFF, 0); } // Status byte + one data byte
 						else if (msgLength == 3) { shortMessage.setMessage(data[i] & 0xFF, data[i + 1] & 0xFF, data[i + 2] & 0xFF); } // Full short message
 
-						receiver.send(shortMessage, -1);
+						PlatformPlayer.receiver.send(shortMessage, player.getMediaTime() + 50_000L);
 					}
 				}
 				return length; // Return the number of bytes sent
@@ -1046,7 +1018,7 @@ public class PlatformPlayer implements Player
 
 			try 
 			{
-				MidiChannel[] channels = player.getSynthesizer().getChannels();
+				MidiChannel[] channels = PlatformPlayer.synthesizer.getChannels();
 
 				if(channel < 0 || channel > channels.length || volume < 0 || volume > 127) {throw new IllegalArgumentException("midiControl: Tried to call setChannelVolume with invalid args");}
 
@@ -1092,7 +1064,7 @@ public class PlatformPlayer implements Player
 				midiMessage.setMessage(type, data1, data2);
 		
 				// Send the MIDI message to the receiver
-				player.getReceiver().send(midiMessage, -1); // -1 is the timestamp value to send this message immediately.
+				PlatformPlayer.receiver.send(midiMessage, player.getMediaTime() + 50_000L); // Send message after 50ms
 			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to send short MIDI event: " + e.getMessage()); }
 		}
@@ -1151,7 +1123,8 @@ public class PlatformPlayer implements Player
 					try 
 					{
 						volumeMessage.setMessage(ShortMessage.CONTROL_CHANGE, channel, 7, midiVolume);
-						sequencer.getReceiver().send(volumeMessage, -1);
+						// Apply volume change 50ms after the current playback time, to give sequencer some time to breathe.
+						PlatformPlayer.receiver.send(volumeMessage, sequencer.getMediaTime() + 50_000L);
 					} 
 					catch (Exception e) 
 					{
