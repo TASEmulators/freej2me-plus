@@ -239,7 +239,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		// Copy the data into rgbData, taking scanlength into account
 		for (int row = 0; row < height; row++) 
 		{
-			int sourceIndex = row * width;
+			int sourceIndex = (y + row) * canvas.getWidth() + x;
 			int destIndex = offset + row * scanlength;
 	
 			System.arraycopy(tempData, sourceIndex, rgbData, destIndex, width);
