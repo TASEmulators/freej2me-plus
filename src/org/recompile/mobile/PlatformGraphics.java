@@ -267,11 +267,13 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 			final int ascent = metrics.getAscent();
 
 			x = AnchorX(x, strWidth, anchor);
-			y = y + ascent - 1;
-			y = AnchorY(y, strHeight, anchor);
+			y = AnchorY(y + ascent, strHeight, anchor);
 
 			try { gc.drawString(str, x, y); } 
-			catch (Exception e) { }
+			catch (Exception e) 
+			{ 
+				Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawString():" + e.getMessage()); 
+			}
 		}
 	}
 
@@ -467,7 +469,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL: // TYPE_BYTE_1_GRAY_VERTICAL - Used by Munkiki's Castles
 				int ods = offset / scanlength;
 				int oms = offset % scanlength;
-				int b = ods % 8; // Bit offset in a byte
+				int b = ods % 8; // Bit offset in a byte, since GRAY_VERTICAL is packing 8 vertical pixel bits in a byte.
 				for (int yj = 0; yj < height; yj++) 
 				{
 					int ypos = yj * width;
@@ -487,22 +489,24 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				break;
 	
 			case DirectGraphics.TYPE_BYTE_1_GRAY: // TYPE_BYTE_1_GRAY - Also used by Munkiki's Castles
-				for (int i = (offset / 8); i < pixels.length; i++) 
+				b = 7 - offset % 8;
+				for (int yj = 0; yj < height; yj++) 
 				{
-					for (int j = 7; j >= 0; j--) 
+					int line = offset + yj * scanlength;
+					int ypos = yj * width;
+					for (int xj = 0; xj < width; xj++) 
 					{
-						int pixelIndex = (i * 8) + (7 - j);
-						
-						// Ensure we don't exceed data length based on image's width and height (as here the pixel can go out of bounds)
-						if (pixelIndex >= width * height) { break; }
-			
-						c = ((pixels[i] >> j) & 1);
+						c = ((pixels[(line + xj) / 8] >> b) & 1);
 						if (transparencyMask != null) 
 						{
-							c |= (((transparencyMask[i] >> j) & 1) ^ 1) << 1; 
+							c |= (((transparencyMask[(line + xj) / 8] >> b) & 1) ^ 1) << 1; // Apply transparency mask
 						}
-						data[pixelIndex] = Type1[c];
+						data[ypos + xj] = Type1[c];
+						b--;
+						if (b < 0) b = 7;
 					}
+					b = b - (scanlength - width) % 8;
+					if (b < 0) b = 8 + b;
 				}
 				break;
 
@@ -627,7 +631,57 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void getPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
-		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "getPixels A");
+		if (width <= 0 || height <= 0) { return; } // We have no pixels to copy
+		if (pixels == null) { throw new NullPointerException("Byte array cannot be null");}
+		if (x < 0 || y < 0 || x + width > canvas.getWidth() || y + height > canvas.getHeight()) 
+		{
+			throw new IllegalArgumentException("Requested copy area exceeds bounds of the image");
+		}
+		if (Math.abs(scanlength) < width) { throw new IllegalArgumentException("scanlength must be >= width");}
+	
+		// Temporary canvas data array to read raw pixel data from.
+		int[] canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+
+		// Just like DrawPixels(byte), we only handle BYTE_1_GRAY_VERTICAL and BYTE_1_GRAY yet
+		switch (format) 
+		{
+			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL:
+				for (int row = 0; row < height; row++) 
+				{
+					for (int col = 0; col < width; col++) 
+					{
+						int pixelIndex = (y + row) * canvas.getWidth() + (x + col);
+						int pixelValue = canvasData[pixelIndex];
+
+						// Store pixel value as a bit in the pixels array
+						int byteIndex = (offset + row) * scanlength + (col / 8);
+						int bitIndex = col % 8;
+
+						// Set the bit in the retrieved byte to the expected value.
+						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 0 : 1) << (7 - bitIndex);
+						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << (7 - bitIndex); }
+					}
+				}
+				break;
+
+			case DirectGraphics.TYPE_BYTE_1_GRAY: // Pretty similar to the one above
+				for (int row = 0; row < height; row++) 
+				{
+					for (int col = 0; col < width; col++) 
+					{
+						int pixelIndex = (y + row) * canvas.getWidth() + (x + col);
+						int pixelValue = canvasData[pixelIndex];
+						int byteIndex = (offset / 8) + ((row * width + col) / 8);
+						int bitIndex = (row * width + col) % 8;
+
+						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 0 : 1) << (7 - bitIndex);
+						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << (7 - bitIndex); }
+					}
+				}
+				break;
+
+			default: Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "getPixels A : Format " + format + " Not Implemented");
+		}
 	}
 
 	public void getPixels(int[] pixels, int offset, int scanlength, int x, int y, int width, int height, int format)
