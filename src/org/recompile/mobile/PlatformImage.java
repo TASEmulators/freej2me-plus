@@ -195,30 +195,29 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
 	{
-		// Create Image From Sub-Image, Transformed //
 		BufferedImage sub = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
-    
-		// Get the original pixel data from the source image
-		final int[] sourcePixels = ((DataBufferInt) image.platformImage.canvas.getRaster().getDataBuffer()).getData();
-
-		// Create an array to hold the sub-image pixel data
-		final int[] subPixels = new int[Width * Height];
 	
-		// Copy pixel data directly
+		// Get the raw pixel data from the source image, and the new sub image
+		final int[] sourceData = ((DataBufferInt) image.platformImage.canvas.getRaster().getDataBuffer()).getData();
+		final int[] subData = ((DataBufferInt) sub.getRaster().getDataBuffer()).getData();
+	
+		// Copy pixel data directly to the subimage's databuffer.
 		for (int j = 0; j < Height; j++) 
 		{
-			System.arraycopy(sourcePixels, (y + j) * image.platformImage.canvas.getWidth() + x, subPixels, j * Width, Width);
+			int sourceRow = (y + j) * image.platformImage.canvas.getWidth() + x;
+			int subRow = j * Width;
+	
+			// Copy pixel rows from the source image to the new sub-image
+			System.arraycopy(sourceData, sourceRow, subData, subRow, Math.min(Width, image.platformImage.canvas.getWidth() - x));
 		}
 	
-		// Set the pixel data for the new sub-image
-		sub.getRaster().setDataElements(0, 0, Width, Height, subPixels);
-
-		canvas = transformImage(sub, transform);
+		canvas = transformImage(sub, transform);;
+	
 		createGraphics();
-
-		width = (int)canvas.getWidth();
-		height = (int)canvas.getHeight();
-
+	
+		width = (int) canvas.getWidth();
+		height = (int) canvas.getHeight();
+	
 		platformImage = this;
 	}
 
@@ -290,7 +289,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 		// We know the data is of TYPE_INT_ARGB, so just get it directly instead of checking for its type
 		final int[] sourceData = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
-        final int[] targetData = ((DataBufferInt)transimage.getRaster().getDataBuffer()).getData();
+		final int[] targetData = ((DataBufferInt)transimage.getRaster().getDataBuffer()).getData();
 		
 		switch (transform) 
 		{
@@ -334,17 +333,17 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 
 			case Sprite.TRANS_MIRROR: 
 				/*
-				 * Even though sorting an entire column would be faster from a pure algorithmic perspective (like processing
-				 * a whole row at once is on TRANS_MIRROR_ROT180), image data tends to be stored so that each row is contiguous 
-				 * in memory, which makes its access oftentimes MUCH faster than for columns, which could negate the performance 
-				 * benefits of column access entirely and then some.
-				 * 
-				 * This transform is such a case. Making operations on columns, and eliminating that inner row loop actually 
-				 * results in far worse performance since columns would be accessed way more often. So the next best thing is
-				 * only working on half of the image's width, making two pixel assignments on each inner loop iteration from
-				 * the image's edges to the center, then checking if the width is odd, to just copy the pixel in the middle
-				 * as it won't change.
-				 */
+				* Even though sorting an entire column would be faster from a pure algorithmic perspective (like processing
+				* a whole row at once is on TRANS_MIRROR_ROT180), image data tends to be stored so that each row is contiguous 
+				* in memory, which makes its access oftentimes MUCH faster than for columns, which could negate the performance 
+				* benefits of column access entirely and then some.
+				* 
+				* This transform is such a case. Making operations on columns, and eliminating that inner row loop actually 
+				* results in far worse performance since columns would be accessed way more often. So the next best thing is
+				* only working on half of the image's width, making two pixel assignments on each inner loop iteration from
+				* the image's edges to the center, then checking if the width is odd, to just copy the pixel in the middle
+				* as it won't change.
+				*/
 				int tempPixel;
 				for (int y = 0; y < height; y++) 
 				{
@@ -385,14 +384,12 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				//dumpImage(transimage, "_mirror180");
 				break;
 				
-
 			case Sprite.TRANS_MIRROR_ROT270:
 				for (int y = 0; y < height; y++) 
 				{
-					int targetPos = (width - 1 - y);
 					for (int x = 0; x < width; x++) 
 					{
-						targetData[x * height + targetPos] = sourceData[y * width + x];
+						targetData[(width - 1 - x) * height + y] = sourceData[y * width + x];
 					}
 				}
 				//dumpImage(image, "");
