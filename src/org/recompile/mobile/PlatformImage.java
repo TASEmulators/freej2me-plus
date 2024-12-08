@@ -307,13 +307,22 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				break;
 
 			case Sprite.TRANS_ROT180:
+				/* 
+				 * Since this one also has the effect of mirroring the image horizontally like TRANS_MIRROR alongside a
+				 * vertical transformation, we can optimize it by only going up to half of the image's width, making two 
+				 * pixel assignments on each inner loop iteration from the image's edges to the center, then checking if 
+				 * the width is odd, to just copy the pixel in the middle as it won't change on the transformed image.
+				 */
 				for (int y = 0; y < height; y++) 
 				{
 					int targetPos = (height - 1 - y) * width;
-					for (int x = 0; x < width; x++) 
+					for (int x = 0; x < width / 2; x++) 
 					{
 						targetData[targetPos + (width - 1 - x)] = sourceData[y * width + x];
+						targetData[targetPos + x] = sourceData[y * width + (width - 1 - x)];
 					}
+					// If image width is odd, copy the middle pixel directly as there's no need to swap anything.
+					if (width % 2 != 0) { targetData[targetPos + (width / 2)] = sourceData[y * width + (width / 2)]; }
 				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_rot180");
@@ -340,18 +349,14 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				* 
 				* This transform is such a case. Making operations on columns, and eliminating that inner row loop actually 
 				* results in far worse performance since columns would be accessed way more often. So the next best thing is
-				* only working on half of the image's width, making two pixel assignments on each inner loop iteration from
-				* the image's edges to the center, then checking if the width is odd, to just copy the pixel in the middle
-				* as it won't change.
+				* only working on half of the image's width, just like TRANS_ROT180.
 				*/
-				int tempPixel;
 				for (int y = 0; y < height; y++) 
 				{
 					int targetRow = y * width;
 					for (int x = 0; x < width / 2; x++) 
 					{
-						tempPixel = sourceData[targetRow + x];
-						targetData[targetRow + (width - 1 - x)] = tempPixel;
+						targetData[targetRow + (width - 1 - x)] = sourceData[targetRow + x];
 						targetData[targetRow + x] = sourceData[targetRow + (width - 1 - x)];
 					}
 					
@@ -365,12 +370,12 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 			case Sprite.TRANS_MIRROR_ROT90:
 				for (int y = 0; y < height; y++) 
 				{
-					int targetPos = (height - 1 - y) * width;
+					int targetRow = height - 1 - y;
 					for (int x = 0; x < width; x++) 
 					{
-						targetData[targetPos + (width - 1 - x)] = sourceData[y * width + x];
+						targetData[x * height + targetRow] = sourceData[y * width + x];
 					}
-				}	
+				}
 				//dumpImage(image, "");
 				//dumpImage(transimage, "_mirror90");
 				break;
