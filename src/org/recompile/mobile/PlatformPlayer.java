@@ -423,6 +423,7 @@ public class PlatformPlayer implements Player
 	{
 		private Sequencer midi;
 		private Sequence midiSequence;
+		private int numLoops = 0;
 
 		public midiPlayer() // For when a Locator call (usually for tones) is issued
 		{
@@ -487,6 +488,12 @@ public class PlatformPlayer implements Player
 					{
 						state = Player.PREFETCHED;
 						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+						if(numLoops != 0) 
+						{
+							if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+							setMediaTime(0);
+							start();
+						}
 					}
 				}
 			});
@@ -517,8 +524,8 @@ public class PlatformPlayer implements Player
 			 * it appears that count = 1 means no loop at all, at least based
 			 * on Gameloft games that set effects and some music with count = 1
 			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { midi.setLoopCount(count); }
-			else { midi.setLoopCount(count-1); }
+			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
+			else { numLoops = count-1; }
 		}
 
 		public long setMediaTime(long now)
@@ -574,6 +581,7 @@ public class PlatformPlayer implements Player
 		private AudioInputStream wavStream;
 		private Clip wavClip;
 		private int[] wavHeaderData = new int[4];
+		private int numLoops = 0;
 
 		public wavPlayer(InputStream stream)
 		{
@@ -640,8 +648,14 @@ public class PlatformPlayer implements Player
 				{
 					if (event.getType() == LineEvent.Type.STOP) 
 					{
-						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 						state = Player.PREFETCHED;
+						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+						if(numLoops != 0) 
+						{
+							if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+							setMediaTime(0);
+							start();
+						}
 					}
 				}
 			});
@@ -675,8 +689,8 @@ public class PlatformPlayer implements Player
 			 * it appears that count = 1 means no loop at all, at least based
 			 * on Gameloft games that set effects and some music with count = 1
 			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { wavClip.loop(count); }
-			else { wavClip.loop(count-1); }
+			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
+			else { numLoops = count-1; }
 		}
 
 		public long setMediaTime(long now)
@@ -757,18 +771,14 @@ public class PlatformPlayer implements Player
 
 						if (!Thread.currentThread().isInterrupted()) 
 						{
-							if(mp3Player.getLoopCount() > 0) 
-							{
-								while(mp3Player.getLoopCount() > 0) 
-								{
-									mp3Player.decreaseLoopCount();
-									mp3Player.reset();
-									mp3Player.play();
-								}
-							}
-							// After all loops (if any) are done, notify END_OF_MEDIA
-							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 							state = Player.PREFETCHED;
+							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+							if(mp3Player.getLoopCount() != 0) 
+							{
+								if(mp3Player.getLoopCount() > 0) { mp3Player.decreaseLoopCount(); } // If getLoopCount() = -1, we're looping indefinitely
+								mp3Player.reset();
+								mp3Player.play();
+							}
 						}
 					}
 					catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
