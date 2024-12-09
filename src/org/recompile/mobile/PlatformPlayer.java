@@ -424,6 +424,7 @@ public class PlatformPlayer implements Player
 		private Sequencer midi;
 		private Sequence midiSequence;
 		private int numLoops = 0;
+		private MetaEventListener metaListener = null;
 
 		public midiPlayer() // For when a Locator call (usually for tones) is issued
 		{
@@ -479,24 +480,28 @@ public class PlatformPlayer implements Player
 			 * We have to listen for END_OF_MEDIA events, or else jars that rely on this
 			 * won't work in the expected way.
 			 */
-			midi.addMetaEventListener(new MetaEventListener() 
+			if (metaListener == null) 
 			{
-				@Override
-				public void meta(MetaMessage meta) 
+				metaListener = new MetaEventListener() 
 				{
-					if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
+					@Override
+					public void meta(MetaMessage meta) 
 					{
-						state = Player.PREFETCHED;
-						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-						if(numLoops != 0) 
+						if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
 						{
-							if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-							setMediaTime(0);
-							start();
+							state = Player.PREFETCHED;
+							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+							if(numLoops != 0) 
+							{
+								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+								setMediaTime(0);
+								start();
+							}
 						}
 					}
-				}
-			});
+				};
+				midi.addMetaEventListener(metaListener);
+			}
 			state = Player.STARTED;
 			notifyListeners(PlayerListener.STARTED, getMediaTime());
 		}
@@ -508,10 +513,23 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { midi.close(); }
+		public void deallocate() 
+		{ 
+			if(metaListener != null) 
+			{
+				midi.removeMetaEventListener(metaListener);
+				metaListener = null;
+			}
+			midi.close();
+		}
 
 		public void close() 
 		{
+			if (metaListener != null) 
+			{
+				midi.removeMetaEventListener(metaListener);
+				metaListener = null;
+			}
 			midi.close();
 			midiSequence = null;
 		}
@@ -582,6 +600,7 @@ public class PlatformPlayer implements Player
 		private Clip wavClip;
 		private int[] wavHeaderData = new int[4];
 		private int numLoops = 0;
+		private LineListener lineListener = null;
 
 		public wavPlayer(InputStream stream)
 		{
@@ -641,24 +660,28 @@ public class PlatformPlayer implements Player
 			wavClip.start();
 
 			/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
-			wavClip.addLineListener(new LineListener() 
+			if (lineListener == null) 
 			{
-				@Override
-				public void update(LineEvent event) 
+				lineListener = new LineListener() 
 				{
-					if (event.getType() == LineEvent.Type.STOP) 
+					@Override
+					public void update(LineEvent event) 
 					{
-						state = Player.PREFETCHED;
-						notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-						if(numLoops != 0) 
+						if (event.getType() == LineEvent.Type.STOP) 
 						{
-							if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-							setMediaTime(0);
-							start();
+							state = Player.PREFETCHED;
+							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+							if(numLoops != 0) 
+							{
+								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+								setMediaTime(0);
+								start();
+							}
 						}
 					}
-				}
-			});
+				};
+				wavClip.addLineListener(lineListener);
+			}
 
 			state = Player.STARTED;
 			notifyListeners(PlayerListener.STARTED, getMediaTime());
@@ -671,10 +694,23 @@ public class PlatformPlayer implements Player
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
 
-		public void deallocate() { wavClip.close(); }
+		public void deallocate() 
+		{
+			if (lineListener != null) 
+			{
+				wavClip.removeLineListener(lineListener);
+				lineListener = null;
+			}
+			wavClip.close(); 
+		}
 
 		public void close() 
 		{
+			if (lineListener != null) 
+			{
+				wavClip.removeLineListener(lineListener);
+				lineListener = null;
+			}
 			wavClip.close();
 			wavClip = null;
 			wavStream = null;
