@@ -42,6 +42,8 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 	protected BufferedImage canvas;
 	protected PlatformGraphics gc;
 
+	private boolean isMutable = false;
+
 	public BufferedImage getCanvas() { return canvas; }
 
 	public PlatformGraphics getGraphics() { return gc; }
@@ -271,6 +273,10 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 		int[] pixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		pixels[y * canvas.getWidth() + x] = color;
 	}
+
+	public boolean isMutable() { return isMutable; }
+
+	public void setMutable(boolean mutable) { isMutable = mutable; }
 
 	public static final BufferedImage transformImage(final BufferedImage image, final int transform)
 	{

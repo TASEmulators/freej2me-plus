@@ -33,6 +33,7 @@ public class Image
 	public int width;
 	public int height;
 
+
 	public static Image createImage(byte[] imageData, int imageOffset, int imageLength) throws IllegalArgumentException
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image from image data ");
@@ -42,12 +43,30 @@ public class Image
 		return new PlatformImage(imageData, imageOffset, imageLength);
 	}
 
+	// The only difference here is that DirectUtils creates a mutable image, not an immutable one.
+	public static Image createNokiaImage(byte[] imageData, int imageOffset, int imageLength) throws IllegalArgumentException
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create DirectUtils Image from image data ");
+		if (imageData == null) {throw new NullPointerException();}
+		if (imageOffset + imageLength > imageData.length) {throw new ArrayIndexOutOfBoundsException();}
+
+		PlatformImage img = new PlatformImage(imageData, imageOffset, imageLength);
+		img.setMutable(true);
+
+		return img;
+	}
+
 	public static Image createImage(Image source)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image from Image ");
 		if (source == null) {throw new NullPointerException();}
 		// If the source is immutable, just return it, despite the docs not mentioning it directly
 		if (!source.isMutable()) { return source; }
+
+		// Else, create an immutable copy of the received image.
+		PlatformImage newSource = new PlatformImage(source);
+		newSource.setMutable(false);
+		
 		return new PlatformImage(source);
 	}
 
@@ -74,7 +93,10 @@ public class Image
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Create Image w,h " + width + ", " + height);
 		if (width <= 0 || height <= 0) {throw new IllegalArgumentException();}
-		return new PlatformImage(width, height);
+
+		PlatformImage img = new PlatformImage(width, height);
+		img.setMutable(true);
+		return img;
 	}
 
 	public static Image createImage(String name) throws IOException
@@ -101,6 +123,6 @@ public class Image
 
 	public int getWidth() { return width; }
 
-	public boolean isMutable() { return true; }
+	public boolean isMutable() { return platformImage.isMutable(); }
 
 }
