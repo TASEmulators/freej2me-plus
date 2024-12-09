@@ -148,7 +148,7 @@ public class Anbu
 					/* Check if vibration commands have to be handled */
 					if(Mobile.vibrationDuration != 0) 
 					{
-						int vib = SDL_JoystickRumble(joy, (short) 0xFFFF, (short) 0xFFFF, Mobile.vibrationDuration);
+						int vib = SDL_JoystickRumble(joy, (short) (Mobile.vibrationStrength & 0xFFFF), (short) (Mobile.vibrationStrength & 0xFFFF), Mobile.vibrationDuration);
 						Mobile.vibrationDuration = 0;
 					}
 					

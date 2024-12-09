@@ -26,8 +26,12 @@ public final class Vibration
 	{ 
 		if(duration < 0 || strength < 1 || strength > 5) { throw new IllegalArgumentException("Samsung Vibration: Cannot start vibrating due to illegal argument"); }
 		Mobile.vibrationDuration = duration; 
-		//Mobile.vibrationStrength = (byte) strength; // This doesn't seem to be important, and is ignored according to the documentation
+		Mobile.vibrationStrength = (int) ((strength / 5.0) * 0xFFFF); // Map from 1-5 to 0x3333-0xFFFF
 	}
 
-	public static void stop() {  Mobile.vibrationDuration = 0; }
+	public static void stop() 
+	{
+		Mobile.vibrationDuration = 0;
+		Mobile.vibrationStrength = 0xFFFF;
+	}
 }

@@ -117,6 +117,7 @@ long joymouseClickedTime = 0; /* Countdown to show/hide the cursor in the clicke
 bool joymouseAnalog = false; /* flag - using analog stick for mouse movement */
 int mouseLpre = 0; /* old mouse button state */
 int rumbleTime = 0; /* Rumble duration calculated based on data received from FreeJ2ME-lr.jar */
+unsigned short rumbleStrength = 0xFFFF; /* Rumble strength calculated based on data received from FreeJ2ME-lr.jar */
 bool uses_mouse = true;
 bool uses_pointer = false;
 bool booted = false;
@@ -132,7 +133,7 @@ unsigned int frameSize = MAX_WIDTH * MAX_HEIGHT;
 unsigned int frameBufferSize = MAX_WIDTH * MAX_HEIGHT * 3;
 unsigned int frame[MAX_WIDTH * MAX_HEIGHT];
 unsigned char frameBuffer[MAX_WIDTH * MAX_HEIGHT * 3];
-unsigned char frameHeader[9];
+unsigned char frameHeader[13];
 struct retro_game_info gameinfo;
 
 bool frameRequested = false;
@@ -166,8 +167,8 @@ unsigned int spdHackNoAlpha = 0; // Boolean
 
 /* Libretro exposed config variables END */
 
-/* First byte is the identifier, next four are width and height, and next four are vibration */
-unsigned char javaRequestFrame[9] = { 0xF, 0, 0, 0, 0, 0, 0, 0, 0 };
+/* First byte is the identifier, next four are width and height */
+unsigned char javaRequestFrame[5] = { 0xF, 0, 0, 0, 0 };
 
 /* mouse cursor image */
 unsigned int joymouseImage[408] =
@@ -773,8 +774,8 @@ void retro_run(void)
 		/* Process rumble events */
 		if (rumbleTime > 0 && rumble.set_rumble_state)
 		{
-			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, 0xFFFF);
-			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 0xFFFF);
+			rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, rumbleStrength);
+			rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK,  rumbleStrength);
 			rumbleTime -= 1000 / DEFAULT_FPS;
 		}
 		else
@@ -935,7 +936,7 @@ void retro_run(void)
 		/* read frame header */
 		frameRequested = false;
 		framesDropped = 0;
-		status = read_from_pipe(pRead[0], frameHeader, 9);
+		status = read_from_pipe(pRead[0], frameHeader, 13);
 
 		if(status>0)
 		{
@@ -945,7 +946,12 @@ void retro_run(void)
 
 			/* Read vibration event */
 			int preRumbleTime = ( (frameHeader[5]<<24) | (frameHeader[6]<<16) | (frameHeader[7]<<8) | (frameHeader[8]));
-			if(preRumbleTime > 0) { log_fn(RETRO_LOG_INFO, "Received Vibration event of %d ms.\n", preRumbleTime); rumbleTime = preRumbleTime; }
+			rumbleStrength = ( (frameHeader[9]<<24) | (frameHeader[10]<<16) | (frameHeader[11]<<8) | (frameHeader[12]));
+			if(preRumbleTime > 0) 
+			{ 
+				log_fn(RETRO_LOG_INFO, "Received Vibration event of %d ms. Strength is 0x%04X\n", preRumbleTime, rumbleStrength); 
+				rumbleTime = preRumbleTime;
+			}
 
 			if(r!=0)
 			{

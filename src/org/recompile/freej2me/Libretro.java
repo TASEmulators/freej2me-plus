@@ -41,7 +41,7 @@ public class Libretro
 	private boolean[] pressedKeys = new boolean[128];
 
 	private byte[] frameBuffer = new byte[800*800*3];
-	private final byte[] frameHeader = new byte[]{(byte)0xFE, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	private final byte[] frameHeader = new byte[]{(byte)0xFE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	private int mousex;
 	private int mousey;
@@ -394,9 +394,14 @@ public class Libretro
 										frameHeader[7] = (byte)((Mobile.vibrationDuration>>16) & 0xFF);
 										frameHeader[8] = (byte)((Mobile.vibrationDuration>>8) & 0xFF);
 										frameHeader[9] = (byte)((Mobile.vibrationDuration) & 0xFF);
-										System.out.write(frameHeader, 0, 10);
 
-										/* Vibration duration should be set to zero to prevent constant sends of the same data, so update it here*/
+										frameHeader[10] = (byte)((Mobile.vibrationStrength>>24) & 0xFF);
+										frameHeader[11] = (byte)((Mobile.vibrationStrength>>16) & 0xFF);
+										frameHeader[12] = (byte)((Mobile.vibrationStrength>>8) & 0xFF);
+										frameHeader[13] = (byte)((Mobile.vibrationStrength) & 0xFF);
+										System.out.write(frameHeader, 0, 14);
+
+										/* Vibration duration should be set to zero to prevent constant sends of the same data, so update it here */
 										Mobile.vibrationDuration = 0;
 
 										final int[] data = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
