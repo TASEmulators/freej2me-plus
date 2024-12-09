@@ -16,13 +16,26 @@
 */
 package com.nokia.mid.ui;
 
+import org.recompile.mobile.Mobile;
+
 public class DeviceControl
 {
 	public static void flashLights(long duration) { }
 
 	public static void setLights(int num, int level) { }
 
-	public static void startVibra(int freq, long duration) { }
+	public static void startVibra(int freq, long duration) 
+	{
+		if(freq == 0) { return; } // No need to vibrate if the strength will be zero.
+		if(freq < 0 || freq > 100) { throw new IllegalArgumentException("Cannot startVibra(), freq value is out of bounds"); }
+		
+		Mobile.vibrationDuration = (int) duration;
+		Mobile.vibrationStrength = (int) ((freq / 100.0) * 0xFFFF); // Map from 0-100 to 0x0000-0xFFFF
+	}
 
-	public static void stopVibra() { }
+	public static void stopVibra() 
+	{ 
+		Mobile.vibrationDuration = 0; 
+		Mobile.vibrationStrength = 0xFFFF;
+	}
 }

@@ -88,6 +88,7 @@ public class Mobile
 
 	// Vibration support for Libretro and SDL
 	public static int vibrationDuration = 0;
+	public static int vibrationStrength = 0xFFFF;
 
 	// Support for explicit FPS limit on jars that require it to work properly
 	public static int limitFPS = 0;
