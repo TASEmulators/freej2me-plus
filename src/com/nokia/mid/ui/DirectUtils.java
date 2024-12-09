@@ -26,12 +26,12 @@ public class DirectUtils
 
 	public static Image createImage(byte[] imageData, int imageOffset, int imageLength)
 	{
-		return Image.createImage(imageData, imageOffset, imageLength);
+		return Image.createNokiaImage(imageData, imageOffset, imageLength);
 	}
 
 	public static Image createImage(int width, int height, int ARGBcolor)
 	{
-		Image image = Image.createImage(width, height);
+		Image image = Image.createImage(width, height); // This one already creates a mutable image
 		PlatformGraphics gc = (PlatformGraphics)image.getGraphics();
 		gc.clearRect(0, 0, width, height);
 		gc.setAlphaRGB(ARGBcolor);
