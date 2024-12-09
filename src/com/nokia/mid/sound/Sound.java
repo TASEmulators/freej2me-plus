@@ -35,6 +35,7 @@ import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
 
 import org.recompile.mobile.Mobile;
+import org.recompile.mobile.PlatformPlayer;
 
 /* Using references from http://www.j2megame.org/j2meapi/Nokia_UI_API_1_1/com/nokia/mid/sound/Sound.html */
 public class Sound
@@ -62,7 +63,6 @@ public class Sound
 	private static final double SEMITONE_CONST = 17.31234049066755; // 1/(ln(2^(1/12)))
 
 	private Player player;
-	private SoundListener soundListener;
 
 	private static int parsePos = 0; // Used exclusively as a marker for OTA/OTT Parsing
 	private static boolean[] toneBitArray;
@@ -81,8 +81,6 @@ public class Sound
 	public Sound(int freq, long duration) { init(freq, duration); }
 
 	public static int getConcurrentSoundCount(int type) { return 1; }
-
-	public int getGain() { return 0; }
 
 	public int getState() 
 	{ 
@@ -158,19 +156,36 @@ public class Sound
 
 	public void play(int loop) 
 	{
+		if(getState() == SOUND_PLAYING) { player.stop(); }
+		if(getState() == SOUND_UNINITIALIZED) { return; }
 		if(loop < 0) { throw new IllegalArgumentException("Cannot play media, invalid loop value received"); }
 		else if(loop == 0) { loop = -1; }
+
 		player.setLoopCount(loop);
+		player.setMediaTime(0); // A play call always makes the media play from the beginning.
 		player.start();
 	}
 
 	public void release() { player.close(); }
 
-	public void resume() { player.start(); }
+	public void resume() 
+	{
+		if(getState() == SOUND_UNINITIALIZED || getState() == SOUND_PLAYING) { return; }
+		player.start(); 
+	}
 
-	public void setGain(int gain) { }
+	public void setGain(int gain) 
+	{ 
+		// Gain goes from 0 to 255, while setLevel works from 0 to 100
+		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255 * 100));
+	}
 
-	public void setSoundListener(SoundListener soundListener) { this.soundListener = soundListener; }
+	public int getGain() 
+	{ 
+		return (int) ((((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).getLevel() / 100) * 255);
+	}
+
+	public void setSoundListener(SoundListener soundListener) { ((PlatformPlayer) player).setSoundListener(this, soundListener); }
 
 	public void stop() { player.stop(); }
 

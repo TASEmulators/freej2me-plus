@@ -50,6 +50,10 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineListener;
+
+import com.nokia.mid.sound.Sound;
+import com.nokia.mid.sound.SoundListener;
+
 import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
 import javax.microedition.media.control.ToneControl;
@@ -72,6 +76,9 @@ public class PlatformPlayer implements Player
 	private int state = Player.UNREALIZED;
 
 	private Vector<PlayerListener> listeners;
+
+	private SoundListener nokiaListener;
+	private Sound nokiaSound;
 
 	private Control[] controls;
 
@@ -257,6 +264,15 @@ public class PlatformPlayer implements Player
 		listeners.add(playerListener);
 	}
 
+	public void setSoundListener(Sound sound, SoundListener listener) // Nokia Sound only has methods to set the Sound Listener, not remove it
+	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot add SoundListener to an UNINITIALIZED Sound"); }
+		if(listener == null) { return; }
+
+		nokiaListener = listener;
+		nokiaSound = sound;
+	}
+
 	public void removePlayerListener(PlayerListener playerListener)
 	{
 		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot remove PlayerListener from a CLOSED player"); }
@@ -270,6 +286,13 @@ public class PlatformPlayer implements Player
 		for(int i=0; i<listeners.size(); i++)
 		{
 			listeners.get(i).playerUpdate(this, event, eventData);
+		}
+
+		if(nokiaListener != null) 
+		{
+			if(event == PlayerListener.CLOSED) { nokiaListener.soundStateChanged(nokiaSound, Sound.SOUND_UNINITIALIZED); }
+			else if(event == PlayerListener.STARTED) { { nokiaListener.soundStateChanged(nokiaSound, Sound.SOUND_PLAYING); } }
+			else if(event == PlayerListener.STOPPED || event == PlayerListener.END_OF_MEDIA) { { nokiaListener.soundStateChanged(nokiaSound, Sound.SOUND_STOPPED); } }
 		}
 	}
 
@@ -363,14 +386,10 @@ public class PlatformPlayer implements Player
 	{
 		if(getState() == Player.CLOSED || getState() == Player.UNREALIZED) { throw new IllegalStateException("Cannot call getControl(), as the player is either CLOSED or UNREALIZED."); }
 
-		if(controlType.equals("VolumeControl")) { return controls[0]; }
-		if(controlType.equals("TempoControl")) { return controls[1]; }
-		if(controlType.equals("MIDIControl")) { return controls[2]; }
-		if(controlType.equals("ToneControl")) { return controls[3]; }
-		if(controlType.equals("javax.microedition.media.control.VolumeControl")) { return controls[0]; }
-		if(controlType.equals("javax.microedition.media.control.TempoControl")) { return controls[1]; }
-		if(controlType.equals("javax.microedition.media.control.MIDIControl")) { return controls[2]; }
-		if(controlType.equals("javax.microedition.media.control.ToneControl")) { return controls[3]; }
+		if(controlType.contains("VolumeControl")) { return controls[0]; }
+		if(controlType.contains("TempoControl"))  { return controls[1]; }
+		if(controlType.contains("MIDIControl"))   { return controls[2]; }
+		if(controlType.contains("ToneControl"))   { return controls[3]; }
 		
 		return null;
 	}
@@ -831,7 +850,7 @@ public class PlatformPlayer implements Player
 	// Controls //
 
 	/* midiControl is untested */
-	private class midiControl implements javax.microedition.media.control.MIDIControl
+	public class midiControl implements javax.microedition.media.control.MIDIControl
 	{
 		private midiPlayer player;
 
@@ -1070,7 +1089,7 @@ public class PlatformPlayer implements Player
 		}
 	}
 
-	private class volumeControl implements javax.microedition.media.control.VolumeControl
+	public class volumeControl implements javax.microedition.media.control.VolumeControl
 	{
 		private int level = 100;
 		private boolean muted = false;
@@ -1166,7 +1185,7 @@ public class PlatformPlayer implements Player
 	}
 
 	/* This one hasn't been tested yet, no jar was found at the time it was implemented */
-	private class tempoControl implements javax.microedition.media.control.TempoControl
+	public class tempoControl implements javax.microedition.media.control.TempoControl
 	{
 		/* MAX_RATE and MIN_RATE follow the JSR-135 docs guaranteed values, no matter if our player has a wider range */
 		private final int MAX_RATE = 300000;
@@ -1243,7 +1262,7 @@ public class PlatformPlayer implements Player
 	}
 
 	/* ToneControl is also almost entirely untested right now, couldn't find a jar that uses setSequence() */
-	private class toneControl implements javax.microedition.media.control.ToneControl
+	public class toneControl implements javax.microedition.media.control.ToneControl
 	{
 		private midiPlayer player;
 
