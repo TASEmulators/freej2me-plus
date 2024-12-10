@@ -17,11 +17,11 @@
 package org.recompile.mobile;
 
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import org.recompile.mobile.Mobile;
 
@@ -43,7 +43,6 @@ public final class WavImaAdpcmDecoder
 	private static final byte RIGHTCHANNEL = 1;
 
 	private static final byte PCMHEADERSIZE = 44;
-	private static final byte PCMPREAMBLESIZE = 16;
 	private static final byte IMAHEADERSIZE = 60;
 	
 	private static final byte[] ima_step_index_table = 
@@ -77,19 +76,17 @@ public final class WavImaAdpcmDecoder
 		byte curChannel;
 		int inputIndex = 0, outputIndex = PCMHEADERSIZE; /* Give some space for the header by starting from byte 44. */
 		short decodedSample;
+		boolean hasMalformedBlock = false;
 
 		/* 
 		 * Make sure that the output size is 4 times as big as input's due to IMA ADPCM being able to pack 4 bytes of standard PCM 
 		 * data into a single one, with 44 additional bytes in place to accomodate for the new header that will be created afterwards.
 		 *
-		 * Also, calculate the final expected output size right here instead of decreasing the output size on each preamble read,
-		 * checking if the final size doesn't match what was initially expected (if there's at least one preamble, it won't)
-		 * and then copying everything into a new byte array, which is too costly and can be cut entirely by just passing the 
-		 * correct output size right at the start. This is done because preamble data should not be added into the decoded stream,
-		 * and each preamble is 4*numChannels bytes long on IMA ADPCM, which means it would take 16*numChannels bytes on the decoded stream 
-		 * for each preamble added.
+		 * For this reason, make it so the initial size for output is 4 times the size of the ADPCM input + the space required for the
+		 * header it will have. In case of malformed headers or preamble reads, we'll just have to subtract its size based on the point 
+		 * that the outputIndex has stopped when doing the Arrays.copyOf() call, and a few extra adjustments.
 		 */
-		final byte[] output = new byte[(inputSize * 4) + PCMHEADERSIZE - ((PCMPREAMBLESIZE*numChannels) * (int) java.lang.Math.floor(inputSize / frameSize))];
+		final byte[] output = new byte[inputSize * 4 + PCMHEADERSIZE];
 
 		/* Initialize the predictor's sample and step values. */
 		predictedSample[LEFTCHANNEL] = 0;
@@ -119,10 +116,12 @@ public final class WavImaAdpcmDecoder
 				 * use for us.
 				 */
 
-				// Check byte 2 of the preamble beforehand and notify if there's any problem. TODO: On valid streams, there shouldn't be any problem, but this is triggered sometimes. Have to find out why.
+				// Check byte 2 of the preamble beforehand and notify if there's any problem. If there is, we stop decoding as anything afterwards will be decoded into garbage.
 				if((input[inputIndex + 2]) > 88 || (input[inputIndex + 2]) < 0) 
 				{ 
-					Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header (Mono/L-Channel). Decoded stream might sound bad.");
+					Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header (Mono/L-Channel). Decoded stream might sound incorrect.");
+					hasMalformedBlock = true;
+					break;
 				}
 				/* Bytes 0 and 1 describe the chunk's initial predictor value (little-endian), clamp it even in case of issues such as to try and preserve the decoded stream's quality. */
 				predictedSample[LEFTCHANNEL] = (short) Math.max(Short.MIN_VALUE, Math.min(((input[inputIndex])) | ((input[inputIndex+1]) << 8), Short.MAX_VALUE));
@@ -134,7 +133,9 @@ public final class WavImaAdpcmDecoder
 				{
 					if((input[inputIndex + 2]) > 88 || (input[inputIndex + 2]) < 0) 
 					{ 
-						Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header (R-Channel). Decoded stream might sound bad.");
+						Mobile.log(Mobile.LOG_WARNING, WavImaAdpcmDecoder.class.getPackage().getName() + "." + WavImaAdpcmDecoder.class.getSimpleName() + ": " + "Malformed block header (R-Channel). Decoded stream might sound incorrect.");
+						hasMalformedBlock = true;
+						break;
 					}
 					predictedSample[RIGHTCHANNEL] = (short) Math.max(Short.MIN_VALUE, Math.min(((input[inputIndex])) | ((input[inputIndex+1]) << 8), Short.MAX_VALUE));
 					tableIndex[RIGHTCHANNEL] = (byte) Math.max(0, Math.min(input[inputIndex+2], 88));
@@ -203,10 +204,19 @@ public final class WavImaAdpcmDecoder
 			}
 		}
 
-		// TODO: This is maybe inconsequential, but the decoder is leaving a bit of garbage at the end of the output. This is a workaround for it.
-		for(int i = 0; i < 512; i++) { output[output.length-i-1] = (byte) 0; }
+		/* Whenever a malformed block is found, there's a pretty good chance that the decoder has created at least 
+		 * a whole adpcm frame of garbage, which is framesize*4 in the PCM array's terms. Still, throw a reduction
+		 * of frameSize * 6 in its size to further reduce noise. However, this might cut a bit into the stream's
+		 * audio since we might skip a bit of it (hence why the message says it might sound incorrect)
+		*/
+		int malformedBlockCorrection = (frameSize * 6) * (hasMalformedBlock ? 1 : 0);
 
-		return output;
+		/* 
+		 * TODO: This is maybe inconsequential, but the decoder is leaving a bit of garbage at the end 
+		 * of the output even when correct (at max framesize*2, or half of a decoded PCM frame).
+		 * This unconditional framesize*2 reduction on the final array's size is a workaround for it.
+		 */
+		return Arrays.copyOf(output, outputIndex - frameSize*2 - malformedBlockCorrection);
 	}
 
 	/* This method will decode a single IMA ADPCM sample to linear PCM_S16LE sample. */

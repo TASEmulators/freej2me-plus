@@ -627,10 +627,9 @@ public class PlatformPlayer implements Player
 
 					if(Mobile.minLogLevel == Mobile.LOG_DEBUG) /* Print the decoded stream's header for analysis */
 					{
-						wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(tmpStream));
-						wavStream.mark(60);
-						WavImaAdpcmDecoder.readHeader(wavStream);
-						wavStream.reset();
+						InputStream headerRead = new ByteArrayInputStream(tmpStream);
+						WavImaAdpcmDecoder.readHeader(headerRead);
+						headerRead = null;
 					}
 				}
 			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare wav stream:" + e.getMessage());}
