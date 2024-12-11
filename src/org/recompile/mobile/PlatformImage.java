@@ -379,7 +379,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 					int targetRow = height - 1 - y;
 					for (int x = 0; x < width; x++) 
 					{
-						targetData[x * height + targetRow] = sourceData[y * width + x];
+						targetData[x * height + targetRow] = sourceData[y * width + (width - 1 - x)];
 					}
 				}
 				//dumpImage(image, "");
@@ -400,7 +400,7 @@ public class PlatformImage extends javax.microedition.lcdui.Image
 				{
 					for (int x = 0; x < width; x++) 
 					{
-						targetData[(width - 1 - x) * height + y] = sourceData[y * width + x];
+						targetData[(width - 1 - x) * height + y] = sourceData[y * width + (width - 1 - x)];
 					}
 				}
 				//dumpImage(image, "");
