@@ -140,7 +140,7 @@ public class FreeJ2ME
 				if(awtGUI.hasJustLoaded()) { awtGUI.updateOptions(); }
 
 				/* Only update mem dialog's stats if it is visible */
-				if(awtGUI.memStatDialog.isVisible()) { awtGUI.updateMemStatDialog(); }
+				if(awtGUI.awtDialogs[2].isVisible()) { awtGUI.updateMemStatDialog(); }
 
 				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
 				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
