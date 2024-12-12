@@ -120,12 +120,8 @@ public class Config
 					parts[1] = parts[1].trim();
 					if(parts[0]!="" && parts[1]!="")
 					{
-						//Compatibility with the deprecated "nokia" boolean setting
-						if(parts[0].equals("nokia"))
-						{
-							parts[0] = "phone";
-							if(parts[1].equals("on")) { parts[1] = "Nokia"; } else { parts[0] = "Standard"; }
-						}
+						// Compatibility with the deprecated "Nokia" input mapping, which is now the Standard mapping (as Canvas was reworked to not need J2ME's default mappings)
+						if(parts[0].equals("phone") && parts[1].equals("Nokia") ) { parts[1] = "Standard"; }
 						settings.put(parts[0], parts[1]);
 					}
 				}

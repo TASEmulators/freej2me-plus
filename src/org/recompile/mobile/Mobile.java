@@ -64,7 +64,6 @@ public class Mobile
 	public static boolean motorola = false;
 	public static boolean motoV8 = false;
 	public static boolean motoTriplets = false;
-	public static boolean nokia = false;
 	public static boolean nokiaKeyboard = false;
 	public static boolean sagem = false;
 	public static boolean siemens = false;
@@ -283,19 +282,6 @@ public class Mobile
 				case 9: return MOTOV8_SOFT1; // Select
 			}
 		}
-		if(nokia)
-		{
-			switch(keycode)
-			{
-				case 0: return NOKIA_UP; // Up
-				case 1: return NOKIA_DOWN; // Down
-				case 2: return NOKIA_LEFT; // Left
-				case 3: return NOKIA_RIGHT; // Right
-				case 7: return NOKIA_SOFT3; // Y
-				case 8: return NOKIA_SOFT2; // Start
-				case 9: return NOKIA_SOFT1; // Select
-			}
-		}
 		if(nokiaKeyboard)
 		{
 			switch(keycode)
@@ -356,18 +342,18 @@ public class Mobile
 				case 9: return SIEMENS_SOFT1; // Select
 			}
 		}
-		
-		// J2ME Canvas standard keycodes, to match against any keys not covered above.
+
+		// J2ME Canvas standard keycodes (not exactly standard, just the most common mappings), to match against any keys not covered above.
 		switch(keycode)
 		{
-			case 0: return GAME_UP; // Up
-			case 1: return GAME_DOWN; // Down
-			case 2: return GAME_LEFT; // Left
-			case 3: return GAME_RIGHT; // Right
+			case 0: return NOKIA_UP; // Up
+			case 1: return NOKIA_DOWN; // Down
+			case 2: return NOKIA_LEFT; // Left
+			case 3: return NOKIA_RIGHT; // Right
 			case 4: return KEY_NUM9; // A
 			case 5: return KEY_NUM7; // B
 			case 6: return KEY_NUM0; // X
-			case 7: return GAME_FIRE; // Y
+			case 7: return NOKIA_SOFT3; // Y
 			case 8: return NOKIA_SOFT2; // Start
 			case 9: return NOKIA_SOFT1; // Select
 			case 10: return KEY_NUM1; // L
@@ -432,15 +418,6 @@ public class Mobile
 				case MOTOV8_FIRE: return Canvas.FIRE; // Y
 			}
 		}
-		if (nokia) {
-			switch (keycode) {
-				case NOKIA_UP: return Canvas.UP; // Up
-				case NOKIA_DOWN: return Canvas.DOWN; // Down
-				case NOKIA_LEFT: return Canvas.LEFT; // Left
-				case NOKIA_RIGHT: return Canvas.RIGHT; // Right
-				case NOKIA_SOFT3: return Canvas.FIRE; // Y
-			}
-		}
 		if (nokiaKeyboard) 
 		{
 			switch (keycode) 
@@ -486,27 +463,27 @@ public class Mobile
 				case SIEMENS_FIRE: return Canvas.FIRE; // Y
 			}
 		}
-		
+
 		// J2ME Canvas standard keycodes, to match against any keys not covered above (Canvas does not handle left/right soft keys).
-		switch (keycode) // This can probably be turned into a single 'return Canvas.getKeyCode(keycode)''
+		switch (keycode) // TODO: This can probably be turned into a single 'return Canvas.getKeyCode(keycode)''
 		{
-			case GAME_UP:    return Canvas.UP;
-			case GAME_DOWN:  return Canvas.DOWN;
-			case GAME_LEFT:  return Canvas.LEFT;
-			case GAME_RIGHT: return Canvas.RIGHT;
-			case KEY_NUM2:   return Canvas.KEY_NUM2;
-			case KEY_NUM8:   return Canvas.KEY_NUM8;
-			case KEY_NUM4:   return Canvas.KEY_NUM4;
-			case KEY_NUM6:   return Canvas.KEY_NUM6;
-			case KEY_NUM9:   return Canvas.KEY_NUM9;
-			case KEY_NUM7:   return Canvas.KEY_NUM7;
-			case KEY_NUM5:   return Canvas.KEY_NUM5;
-			case KEY_NUM1:   return Canvas.KEY_NUM1;
-			case KEY_NUM3:   return Canvas.KEY_NUM3;
-			case KEY_NUM0:   return Canvas.KEY_NUM0;
-			case KEY_STAR:   return Canvas.KEY_STAR;
+			case NOKIA_UP:    return Canvas.UP;
+			case NOKIA_DOWN:  return Canvas.DOWN;
+			case NOKIA_LEFT:  return Canvas.LEFT;
+			case NOKIA_RIGHT: return Canvas.RIGHT;
+			case KEY_NUM2:    return Canvas.KEY_NUM2;
+			case KEY_NUM8:    return Canvas.KEY_NUM8;
+			case KEY_NUM4:    return Canvas.KEY_NUM4;
+			case KEY_NUM6:    return Canvas.KEY_NUM6;
+			case KEY_NUM9:    return Canvas.KEY_NUM9;
+			case KEY_NUM7:    return Canvas.KEY_NUM7;
+			case KEY_NUM5:    return Canvas.KEY_NUM5;
+			case KEY_NUM1:    return Canvas.KEY_NUM1;
+			case KEY_NUM3:    return Canvas.KEY_NUM3;
+			case KEY_NUM0:    return Canvas.KEY_NUM0;
+			case KEY_STAR:    return Canvas.KEY_STAR;
 			case KEY_POUND:   return Canvas.KEY_POUND;
-			case GAME_FIRE:   return Canvas.FIRE;
+			case NOKIA_SOFT3: return Canvas.FIRE;
 		}
 
 		// If a matching key wasn't found, return 0;
@@ -537,7 +514,7 @@ public class Mobile
 		}
 
 		// Log to console only if not libretro, as it won't be seen there anyway
-		if(!getPlatform().isLibretro) { System.out.println(text); }
+		if(!MobilePlatform.isLibretro) { System.out.println(text); }
 
 		File logFile = new File(LOG_FILE);
 

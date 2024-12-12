@@ -171,19 +171,18 @@ struct retro_core_option_v2_definition core_options[] =
         "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
         "system_settings",
         {
-            { "J2ME Standard",      NULL },
-            { "LG",                 NULL },
-            { "Motorola/SoftBank",  NULL },
-            { "Motorola Triplets",  NULL },
-            { "Motorola V8",        NULL },
-            { "Nokia/Sony/Samsung", NULL },
-            { "Nokia Keyboard",     NULL },
-            { "Sagem",              NULL },
-            { "Siemens",            NULL },
-            { "Siemens Old",        NULL },
+            { "LG",                            NULL },
+            { "Motorola/SoftBank",             NULL },
+            { "Motorola Triplets",             NULL },
+            { "Motorola V8",                   NULL },
+            { "Nokia/Sony/Samsung (Standard)", NULL },
+            { "Nokia Keyboard",                NULL },
+            { "Sagem",                         NULL },
+            { "Siemens",                       NULL },
+            { "Siemens Old",                   NULL },
             { NULL, NULL },
         },
-        "J2ME Standard"
+        "Nokia/Sony/Samsung (Standard)"
     },
     {
         "freej2me_fps",
@@ -463,19 +462,18 @@ struct retro_core_option_definition core_options_v1 [] =
         "Phone Key Layout",
         "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
         {
-            { "J2ME Standard",      NULL },
-            { "LG",                 NULL },
-            { "Motorola/SoftBank",  NULL },
-            { "Motorola Triplets",  NULL },
-            { "Motorola V8",        NULL },
-            { "Nokia/Sony/Samsung", NULL },
-            { "Nokia Keyboard",     NULL },
-            { "Sagem",              NULL },
-            { "Siemens",            NULL },
-            { "Siemens Old",        NULL },
+            { "LG",                            NULL },
+            { "Motorola/SoftBank",             NULL },
+            { "Motorola Triplets",             NULL },
+            { "Motorola V8",                   NULL },
+            { "Nokia/Sony/Samsung (Standard)", NULL },
+            { "Nokia Keyboard",                NULL },
+            { "Sagem",                         NULL },
+            { "Siemens",                       NULL },
+            { "Siemens Old",                   NULL },
             { NULL, NULL },
         },
-        "J2ME Standard"
+        "Nokia/Sony/Samsung (Standard)"
     },
     {
         "freej2me_fps",
@@ -667,7 +665,7 @@ static const struct retro_variable vars[] =
     },
     { /* Phone Control Type */
         "freej2me_phone",
-        "Phone Key Layout; J2ME Standard|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Nokia/Sony/Samsung|Nokia Keyboard|Sagem|Siemens|Siemens Old" 
+        "Phone Key Layout; Nokia/Sony/Samsung (Standard)|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Nokia Keyboard|Sagem|Siemens|Siemens Old" 
     },
     { /* Game FPS limit */
         "freej2me_fps",

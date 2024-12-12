@@ -156,12 +156,11 @@ public final class AWTGUI
 	final CheckboxMenuItem enableRotation = new CheckboxMenuItem("Rotate Screen", false);
 	final CheckboxMenuItem useCustomMidi = new CheckboxMenuItem("Use custom midi soundfont", false);
 
-	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("J2ME Standard", true);
 	final CheckboxMenuItem lgLayout = new CheckboxMenuItem("LG", false);
 	final CheckboxMenuItem motorolaLayout = new CheckboxMenuItem("Motorola/SoftBank", false);
 	final CheckboxMenuItem motov8Layout = new CheckboxMenuItem("Motorola V8", false);
 	final CheckboxMenuItem tripletsLayout = new CheckboxMenuItem("Motorola Triplets", false);
-	final CheckboxMenuItem nokiaLayout = new CheckboxMenuItem("Nokia/Sony/Samsung", false);
+	final CheckboxMenuItem stdLayout = new CheckboxMenuItem("Nokia/Sony/Samsung (Standard)", true);
 	final CheckboxMenuItem nokiaKbLayout = new CheckboxMenuItem("Nokia Keyboard", false);
 	final CheckboxMenuItem sagemLayout = new CheckboxMenuItem("Sagem", false);
 	final CheckboxMenuItem siemensLayout = new CheckboxMenuItem("Siemens", false);
@@ -441,29 +440,6 @@ public final class AWTGUI
 					motorolaLayout.setState(false);
 					motov8Layout.setState(false);
 					tripletsLayout.setState(false);
-					nokiaLayout.setState(false);
-					nokiaKbLayout.setState(false);
-					sagemLayout.setState(false);
-					siemensLayout.setState(false);
-					siemensOldLayout.setState(false);
-					hasPendingChange = true;
-				}
-			}
-		});
-
-		nokiaLayout.addItemListener(new ItemListener() 
-		{
-			public void itemStateChanged(ItemEvent e) 
-			{
-				if(!nokiaLayout.getState()){ nokiaLayout.setState(true); }
-				if(nokiaLayout.getState())
-				{ 
-					config.updatePhone("Nokia");
-					stdLayout.setState(false);
-					lgLayout.setState(false);
-					motorolaLayout.setState(false);
-					motov8Layout.setState(false);
-					tripletsLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
@@ -481,12 +457,11 @@ public final class AWTGUI
 				if(nokiaKbLayout.getState())
 				{ 
 					config.updatePhone("NokiaKeyboard");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motorolaLayout.setState(false);
 					motov8Layout.setState(false);
 					tripletsLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
 					siemensOldLayout.setState(false);
@@ -503,12 +478,11 @@ public final class AWTGUI
 				if(siemensLayout.getState())
 				{ 
 					config.updatePhone("Siemens");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motorolaLayout.setState(false);
 					motov8Layout.setState(false);
 					tripletsLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensOldLayout.setState(false);
@@ -525,11 +499,10 @@ public final class AWTGUI
 				if(motorolaLayout.getState())
 				{ 
 					config.updatePhone("Motorola");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motov8Layout.setState(false);
 					tripletsLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
@@ -547,11 +520,10 @@ public final class AWTGUI
 				if(lgLayout.getState())
 				{ 
 					config.updatePhone("LG");
-					stdLayout.setState(false);
 					motorolaLayout.setState(false);
 					motov8Layout.setState(false);
 					tripletsLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
@@ -569,11 +541,10 @@ public final class AWTGUI
 				if(motov8Layout.getState())
 				{ 
 					config.updatePhone("MotoV8");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motorolaLayout.setState(false);
 					tripletsLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
@@ -591,11 +562,10 @@ public final class AWTGUI
 				if(tripletsLayout.getState())
 				{ 
 					config.updatePhone("MotoTriplets");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motov8Layout.setState(false);
 					motorolaLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					sagemLayout.setState(false);
 					siemensLayout.setState(false);
@@ -613,11 +583,10 @@ public final class AWTGUI
 				if(sagemLayout.getState())
 				{ 
 					config.updatePhone("Sagem");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motov8Layout.setState(false);
 					motorolaLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					tripletsLayout.setState(false);
 					siemensLayout.setState(false);
@@ -635,11 +604,10 @@ public final class AWTGUI
 				if(siemensOldLayout.getState())
 				{ 
 					config.updatePhone("SiemensOld");
-					stdLayout.setState(false);
 					lgLayout.setState(false);
 					motov8Layout.setState(false);
 					motorolaLayout.setState(false);
-					nokiaLayout.setState(false);
+					stdLayout.setState(false);
 					nokiaKbLayout.setState(false);
 					tripletsLayout.setState(false);
 					siemensLayout.setState(false);
@@ -958,7 +926,6 @@ public final class AWTGUI
 		phoneType.add(motorolaLayout);
 		phoneType.add(tripletsLayout);
 		phoneType.add(motov8Layout);
-		phoneType.add(nokiaLayout);
 		phoneType.add(nokiaKbLayout);
 		phoneType.add(sagemLayout);
 		phoneType.add(siemensLayout);
@@ -994,7 +961,6 @@ public final class AWTGUI
 			fpsCap60.setState(config.settings.get("fps").equals("60"));
 
 			stdLayout.setState(config.settings.get("phone").equals("Standard"));
-			nokiaLayout.setState(config.settings.get("phone").equals("Nokia"));
 			siemensLayout.setState(config.settings.get("phone").equals("Siemens"));
 			siemensOldLayout.setState(config.settings.get("phone").equals("SiemensOld"));
 			motov8Layout.setState(config.settings.get("phone").equals("MotoV8"));

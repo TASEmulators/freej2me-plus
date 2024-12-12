@@ -366,7 +366,6 @@ public class FreeJ2ME
 		Mobile.motorola = false;
 		Mobile.motoTriplets = false;
 		Mobile.motoV8 = false;
-		Mobile.nokia = false;
 		Mobile.nokiaKeyboard = false;
 		Mobile.sagem = false;
 		Mobile.siemens = false;
@@ -375,7 +374,6 @@ public class FreeJ2ME
 		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
 		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
 		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
-		if(phone.equals("Nokia"))         { Mobile.nokia = true;}
 		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
 		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
 		if(phone.equals("Siemens"))       { Mobile.siemens = true;}

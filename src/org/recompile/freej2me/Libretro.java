@@ -104,7 +104,6 @@ public class Libretro
 		Mobile.motorola = false;
 		Mobile.motoTriplets = false;
 		Mobile.motoV8 = false;
-		Mobile.nokia = false;
 		Mobile.nokiaKeyboard = false;
 		Mobile.sagem = false;
 		Mobile.siemens = false;
@@ -114,11 +113,10 @@ public class Libretro
 		else if(Integer.parseInt(args[3]) == 2) { Mobile.motorola = true;  }
 		else if(Integer.parseInt(args[3]) == 3) { Mobile.motoTriplets = true; }
 		else if(Integer.parseInt(args[3]) == 4) { Mobile.motoV8 = true; }
-		else if(Integer.parseInt(args[3]) == 5) { Mobile.nokia = true; }
-		else if(Integer.parseInt(args[3]) == 6) { Mobile.nokiaKeyboard = true; }
-		else if(Integer.parseInt(args[3]) == 7) { Mobile.sagem = true; }
-		else if(Integer.parseInt(args[3]) == 8) { Mobile.siemens = true; }
-		else if(Integer.parseInt(args[3]) == 9) { Mobile.siemensold = true; }
+		else if(Integer.parseInt(args[3]) == 5) { Mobile.nokiaKeyboard = true; }
+		else if(Integer.parseInt(args[3]) == 6) { Mobile.sagem = true; }
+		else if(Integer.parseInt(args[3]) == 7) { Mobile.siemens = true; }
+		else if(Integer.parseInt(args[3]) == 8) { Mobile.siemensold = true; }
 
 		Mobile.limitFPS = Integer.parseInt(args[4]);
 
@@ -285,7 +283,6 @@ public class Libretro
 										else if(Mobile.motorola)      { config.settings.put("phone", "Motorola");  }
 										else if(Mobile.motoTriplets)  { config.settings.put("phone", "MotoTriplets"); }
 										else if(Mobile.motoV8)        { config.settings.put("phone", "MotoV8"); }
-										else if(Mobile.nokia)         { config.settings.put("phone", "Nokia"); }
 										else if(Mobile.nokiaKeyboard) { config.settings.put("phone", "NokiaKeyboard"); }
 										else if(Mobile.sagem)         { config.settings.put("phone", "Sagem"); }
 										else if(Mobile.siemens)       { config.settings.put("phone", "Siemens"); }
@@ -353,11 +350,10 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[4])==2) { config.settings.put("phone", "Motorola");  }
 									if(Integer.parseInt(cfgtokens[4])==3) { config.settings.put("phone", "MotoTriplets"); }
 									if(Integer.parseInt(cfgtokens[4])==4) { config.settings.put("phone", "MotoV8"); }
-									if(Integer.parseInt(cfgtokens[4])==5) { config.settings.put("phone", "Nokia"); }
-									if(Integer.parseInt(cfgtokens[4])==6) { config.settings.put("phone", "NokiaKeyboard"); }
-									if(Integer.parseInt(cfgtokens[4])==7) { config.settings.put("phone", "Sagem"); }
-									if(Integer.parseInt(cfgtokens[4])==8) { config.settings.put("phone", "Siemens"); }
-									if(Integer.parseInt(cfgtokens[4])==9) { config.settings.put("phone", "SiemensOld"); }
+									if(Integer.parseInt(cfgtokens[4])==5) { config.settings.put("phone", "NokiaKeyboard"); }
+									if(Integer.parseInt(cfgtokens[4])==6) { config.settings.put("phone", "Sagem"); }
+									if(Integer.parseInt(cfgtokens[4])==7) { config.settings.put("phone", "Siemens"); }
+									if(Integer.parseInt(cfgtokens[4])==8) { config.settings.put("phone", "SiemensOld"); }
 
 									config.settings.put("fps", ""+cfgtokens[5]);
 
@@ -449,7 +445,6 @@ public class Libretro
 		Mobile.motorola = false;
 		Mobile.motoTriplets = false;
 		Mobile.motoV8 = false;
-		Mobile.nokia = false;
 		Mobile.nokiaKeyboard = false;
 		Mobile.sagem = false;
 		Mobile.siemens = false;
@@ -458,7 +453,6 @@ public class Libretro
 		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
 		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
 		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
-		if(phone.equals("Nokia"))         { Mobile.nokia = true;}
 		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
 		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
 		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
