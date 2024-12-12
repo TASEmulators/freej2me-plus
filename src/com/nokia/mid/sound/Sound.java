@@ -385,6 +385,10 @@ public class Sound
 				Mobile.log(Mobile.LOG_DEBUG, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "New pattern length: " + patternSpecifier);
 				int numberOfInstructions = patternSpecifier; // The number of instructions to read
 		
+				// Reset note Style and Scale, otherwise it'll carry over from the last pattern (which is incorrect despite the Smart Message API not disclosing it)
+				noteStyle = NATURAL_STYLE;
+				noteScale = 1f;
+
 				for (int j = 0; j < numberOfInstructions; j++) { parsePatternInstruction(track); }
 			}
 			loopValue--; // We completed a loop, so decrease the counter.
