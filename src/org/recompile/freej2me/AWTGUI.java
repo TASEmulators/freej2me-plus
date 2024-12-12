@@ -165,7 +165,7 @@ public final class AWTGUI
 
 	final CheckboxMenuItem[] layoutOptions = 
 	{
-		new CheckboxMenuItem("Nokia/Sony/Samsung (Standard)", true),
+		new CheckboxMenuItem("Default", true),
 		new CheckboxMenuItem("LG", false),
 		new CheckboxMenuItem("Motorola/SoftBank", false),
 		new CheckboxMenuItem("Motorola V8", false),

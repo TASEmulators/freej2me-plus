@@ -315,7 +315,7 @@ static void check_variables(bool first_time_startup)
 	var.key = "freej2me_phone";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (!strcmp(var.value, "Nokia/Sony/Samsung (Standard)"))      { phoneType = 0; }
+		if (!strcmp(var.value, "Default"))                 { phoneType = 0; }
 		else if (!strcmp(var.value, "LG"))                 { phoneType = 1; }
 		else if (!strcmp(var.value, "Motorola/SoftBank"))  { phoneType = 2; }
 		else if (!strcmp(var.value, "Motorola Triplets"))  { phoneType = 3; }
