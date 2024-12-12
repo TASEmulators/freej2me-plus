@@ -111,11 +111,12 @@ public class Sound
 				try 
 				{
 					if(player == null || !isPrevPlayerTone)  // check for null because release() can be called after all.
-					{ 
+					{
+						if(Manager.dumpAudioStreams) { Manager.dumpAudioStream(new ByteArrayInputStream(data), "audio/x-tone-seq"); } // Dump original OTA as well
 						player = Manager.createPlayer(new ByteArrayInputStream(convertToMidi(data)), "audio/x-tone-seq"); 
 						isPrevPlayerTone = true; 
 					}
-					else 
+					else
 					{
 						player.deallocate();
 						((ToneControl) player.getControl("ToneControl")).setSequence(convertToMidi(data));

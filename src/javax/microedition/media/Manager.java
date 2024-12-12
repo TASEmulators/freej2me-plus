@@ -40,6 +40,7 @@ import org.recompile.mobile.PlatformPlayer;
 public class Manager
 {
 	public static final String TONE_DEVICE_LOCATOR = "device://tone";
+	public static final String MIDI_DEVICE_LOCATOR = "device://midi";
 
 	/* Custom MIDI variables */
 	public static boolean useCustomMidi = false;
@@ -64,40 +65,7 @@ public class Manager
 		 * only a lot of testing will be able to determine which is preferable, or if we'd need a config toggle to alternate both.
 		 */
 
-		if(dumpAudioStreams) 
-		{
-			stream.mark(1024);
-			String streamMD5 = generateMD5Hash(stream, 1024);
-			stream.reset();
-
-			// Copy the stream contents into a temporary stream to be saved as file
-			final ByteArrayOutputStream streamCopy = new ByteArrayOutputStream();
-			final byte[] copyBuffer = new byte[1024];
-			int copyLength;
-			while ((copyLength = stream.read(copyBuffer)) > -1 ) { streamCopy.write(copyBuffer, 0, copyLength); }
-			streamCopy.flush();
-
-			// Make sure the initial stream will still be available for FreeJ2ME
-			stream = new ByteArrayInputStream(streamCopy.toByteArray());
-
-			// And save the copy to the specified dir
-
-			OutputStream outStream;
-			String dumpPath = "." + File.separatorChar + "FreeJ2MEDumps" + File.separatorChar + "Audio" + File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar;
-			File dumpFile = new File(dumpPath);
-
-			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
-
-			if(type.equalsIgnoreCase("audio/x-mid") || type.equalsIgnoreCase("audio/mid") || type.equalsIgnoreCase("audio/midi") || type.equalsIgnoreCase("sp-midi") || type.equalsIgnoreCase("audio/spmidi")) 
-				{ dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid");}
-			else if(type.equalsIgnoreCase("audio/x-wav") || type.equalsIgnoreCase("audio/wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav");}
-			else if(type.equalsIgnoreCase("audio/mpeg") || type.equalsIgnoreCase("audio/mp3")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3");}
-			else if(type.equalsIgnoreCase("audio/x-tone-seq")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid");} // Tone Seq should arrive converted to midi
-
-			outStream = new FileOutputStream(dumpFile);
-
-			streamCopy.writeTo(outStream);
-		}
+		if(dumpAudioStreams) { stream = dumpAudioStream(stream, type); }
 
 		return new PlatformPlayer(stream, type);
 	}
@@ -119,8 +87,17 @@ public class Manager
 
 		if(locator == null) { throw new IllegalArgumentException("Cannot create a player with a null locator"); }
 
+		InputStream stream = Mobile.getPlatform().loader.getResourceAsStream(locator);
+
+		if(dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
+		{
+			dumpAudioStream(stream, locator); // Using the locator, we can try find out what this is by parsing the file extension
+		}
+
 		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player "+locator);
-		return new PlatformPlayer(locator);
+		if(!locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) { return new PlatformPlayer(stream, ""); } // Empty type, let PlatformPlayer handle it
+		else { return new PlatformPlayer(locator); } // If it's a dedicated locator, PlatformPlayer can handle it directly
+		 
 	}
 	
 	public static String[] getSupportedContentTypes(String protocol)
@@ -175,6 +152,54 @@ public class Manager
 			catch (InterruptedException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to keep playing note for its specified duration: " + e.getMessage()); }
             dedicatedToneChannel.noteOff(note);
         }).start();
+	}
+
+	public static final InputStream dumpAudioStream(InputStream stream, String type) 
+	{
+		try 
+		{
+			stream.mark(1024);
+			String streamMD5 = generateMD5Hash(stream, 1024);
+			stream.reset();
+
+			// Copy the stream contents into a temporary stream to be saved as file
+			final ByteArrayOutputStream streamCopy = new ByteArrayOutputStream();
+			final byte[] copyBuffer = new byte[1024];
+			int copyLength;
+			while ((copyLength = stream.read(copyBuffer)) > -1 ) { streamCopy.write(copyBuffer, 0, copyLength); }
+			streamCopy.flush();
+
+			// Make sure the initial stream will still be available for FreeJ2ME
+			stream = new ByteArrayInputStream(streamCopy.toByteArray());
+
+			// And save the copy to the specified dir
+			OutputStream outStream;
+			String dumpPath = "." + File.separatorChar + "FreeJ2MEDumps" + File.separatorChar + "Audio" + File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar;
+			File dumpFile = new File(dumpPath);
+
+			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
+
+			// TODO: Locators will break this sometimes, since file names might also contain those substrings.
+			if(type.toLowerCase().contains("mid") )     { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid"); }
+			else if(type.toLowerCase().contains("wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav"); }
+			else if(type.toLowerCase().contains("mp"))  { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3"); }
+			else if(type.equalsIgnoreCase("audio/x-tone-seq")) 
+			{
+				stream.mark(4);
+				byte[] data = new byte[4]; 
+				stream.read(data);
+				if((data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') ) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + "_Decoded.mid"); } // Tone Seq is converted to midi, save it as "decoded"
+				else { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".ota"); } // Only nokia OTA tones are going to be dumped in their original form right now. Dual Tone and MelodyComposer have no format of their own.
+				stream.reset();
+			}
+
+			outStream = new FileOutputStream(dumpFile);
+
+			streamCopy.writeTo(outStream);
+		}
+		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to dump media: " + e.getMessage()); }
+
+		return stream;
 	}
 
 	private static String generateMD5Hash(InputStream stream, int byteCount) 

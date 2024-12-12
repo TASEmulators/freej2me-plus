@@ -97,21 +97,12 @@ public class PlatformPlayer implements Player
 		else
 		{
 			// Midi player will also play tones, as these are converted to midi in pretty much all cases at the moment
-			if(contentType.equalsIgnoreCase("audio/x-mid") || contentType.equalsIgnoreCase("audio/mid") || contentType.equalsIgnoreCase("audio/midi") || contentType.equalsIgnoreCase("sp-midi") || contentType.equalsIgnoreCase("audio/spmidi") || contentType.equalsIgnoreCase("audio/x-tone-seq"))
-			{
-				player = new midiPlayer(stream);
-			}
-			else if(contentType.equalsIgnoreCase("audio/x-wav") || contentType.equalsIgnoreCase("audio/wav"))
-			{
-				player = new wavPlayer(stream);
-			}
-			else if(contentType.equalsIgnoreCase("audio/mpeg") || contentType.equalsIgnoreCase("audio/mp3"))
-			{
-				player = new MP3Player(stream);
-			}
+			if(contentType.toLowerCase().contains("mid") || contentType.toLowerCase().contains("tone")) { player = new midiPlayer(stream); }
+			else if(contentType.toLowerCase().contains("wav")) { player = new wavPlayer(stream); }
+			else if(contentType.toLowerCase().contains("mp"))  { player = new MP3Player(stream); } // MP1, MP2, MP3, MPEG, etc. No other J2ME format has those two letters in sequence.
 			else /* If the stream doesn't have an accompanying type or its a type we don't have an explicit player for, do everything we can to try and load it */
 			{
-				Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Audio type <'" + contentType + "'> doesn't match any supported ones. Trying to find what it is...");
+				Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Audio type <'" + contentType + "'> doesn't match any supported ones. Trying to find what it is...");
 				try 
 				{
 					final byte[] data = new byte[stream.available()];
@@ -119,7 +110,7 @@ public class PlatformPlayer implements Player
 
 					if(data.length >= 4 && data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') 
 					{
-						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MIDI!");
+						Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MIDI!");
 						player = new midiPlayer(new ByteArrayInputStream(data));
 						contentType = "audio/mid";
 					}
@@ -132,13 +123,13 @@ public class PlatformPlayer implements Player
 					}
 					else if(data.length >= 4 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') 
 					{
-						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is WAV!");
+						Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is WAV!");
 						player = new wavPlayer(new ByteArrayInputStream(data));
 						contentType = "audio/wav";
 					}
 					else if(data.length >= 3 && data[0] == 'I' && data[1] == 'D' && data[2] == '3' || ((data[0] == (byte) 0xFF) && (data[1] & 0xE0) == 0xE0)) // Check for MPEG files WITH and WITHOUT the ID3 tag
 					{
-						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MPEG!");
+						Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MPEG!");
 						player = new MP3Player(new ByteArrayInputStream(data));
 						contentType = "audio/mpeg";
 					}
@@ -199,7 +190,7 @@ public class PlatformPlayer implements Player
 
 	public PlatformPlayer(String locator)
 	{
-		if(locator.equals(Manager.TONE_DEVICE_LOCATOR)) 
+		if(locator.equals(Manager.TONE_DEVICE_LOCATOR) || locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
 		{
 			player = new midiPlayer();
 			listeners = new Vector<PlayerListener>();
