@@ -320,7 +320,7 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "Motorola/SoftBank"))  { phoneType = 2; }
 		else if (!strcmp(var.value, "Motorola Triplets"))  { phoneType = 3; }
 		else if (!strcmp(var.value, "Motorola V8"))        { phoneType = 4; }
-		else if (!strcmp(var.value, "Nokia Keyboard"))     { phoneType = 5; }
+		else if (!strcmp(var.value, "Nokia Full Keyboard")){ phoneType = 5; }
 		else if (!strcmp(var.value, "Sagem"))              { phoneType = 6; }
 		else if (!strcmp(var.value, "Siemens"))            { phoneType = 7; }
 		else if (!strcmp(var.value, "Siemens Old"))        { phoneType = 8; }

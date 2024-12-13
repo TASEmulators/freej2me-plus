@@ -176,7 +176,7 @@ struct retro_core_option_v2_definition core_options[] =
             { "Motorola/SoftBank",   NULL },
             { "Motorola Triplets",   NULL },
             { "Motorola V8",         NULL },
-            { "Nokia Keyboard",      NULL },
+            { "Nokia Full Keyboard", NULL },
             { "Sagem",               NULL },
             { "Siemens",             NULL },
             { "Siemens Old",         NULL },
@@ -467,7 +467,7 @@ struct retro_core_option_definition core_options_v1 [] =
             { "Motorola/SoftBank",   NULL },
             { "Motorola Triplets",   NULL },
             { "Motorola V8",         NULL },
-            { "Nokia Keyboard",      NULL },
+            { "Nokia Full Keyboard", NULL },
             { "Sagem",               NULL },
             { "Siemens",             NULL },
             { "Siemens Old",         NULL },
@@ -665,7 +665,7 @@ static const struct retro_variable vars[] =
     },
     { /* Phone Control Type */
         "freej2me_phone",
-        "Phone Key Layout; Default|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Nokia Keyboard|Sagem|Siemens|Siemens Old" 
+        "Phone Key Layout; Default|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Nokia Full Keyboard|Sagem|Siemens|Siemens Old" 
     },
     { /* Game FPS limit */
         "freej2me_fps",

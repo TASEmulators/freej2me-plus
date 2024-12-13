@@ -170,7 +170,7 @@ public final class AWTGUI
 		new CheckboxMenuItem("Motorola/SoftBank", false),
 		new CheckboxMenuItem("Motorola V8", false),
 		new CheckboxMenuItem("Motorola Triplets", false),
-		new CheckboxMenuItem("Nokia Keyboard", false),
+		new CheckboxMenuItem("Nokia Full Keyboard", false),
 		new CheckboxMenuItem("Sagem", false),
 		new CheckboxMenuItem("Siemens", false),
 		new CheckboxMenuItem("Siemens Old", false)
