@@ -26,6 +26,9 @@ public interface SensorInfo
 	public static final String CONTEXT_TYPE_AMBIENT = "ambient";
 	public static final String CONTEXT_TYPE_DEVICE = "device";
 	public static final String CONTEXT_TYPE_USER = "user";
+	public static final String CONTEXT_TYPE_VEHICLE = "vehicle";
+	public static final String PROP_IS_CONTROLLABLE = "controllable";
+	public static final String PROP_IS_REPORTING_ERRORS = "errorsReported";
 	public static final String PROP_LATITUDE = "latitude";
 	public static final String PROP_LOCATION = "location";
 	public static final String PROP_LONGITUDE = "longitude";

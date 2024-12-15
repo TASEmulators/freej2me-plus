@@ -18,17 +18,21 @@ package javax.microedition.sensor;
 
 import org.recompile.mobile.Mobile;
 
-public class Unit
+public final class ObjectCondition implements Condition 
 {
-	private String symbol;
+    private Object limit;
 
-	public Unit(String symbol) 
-	{ 
-		Mobile.log(Mobile.LOG_WARNING, Unit.class.getPackage().getName() + "." + Unit.class.getSimpleName() + ": " + "Created new Unit with symbol " + symbol + ".");
-		this.symbol = symbol; 
-	}
+	public ObjectCondition(Object limit) 
+    {
+        Mobile.log(Mobile.LOG_WARNING, ObjectCondition.class.getPackage().getName() + "." + ObjectCondition.class.getSimpleName() + ": " + "Created new ObjectCondition.");
+        this.limit = limit; 
+    }
 
-	public static Unit getUnit(String symbol) { return new Unit(symbol); }
+	public final Object getLimit() { return limit; }
 
-	public String toString() { return symbol; }
+	@Override
+	public boolean isMet(double value) { return false; }
+
+	@Override
+	public boolean isMet(Object value) { return false; }
 }

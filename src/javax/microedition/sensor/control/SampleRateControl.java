@@ -14,21 +14,13 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package javax.microedition.sensor;
+package javax.microedition.sensor.control;
 
-import org.recompile.mobile.Mobile;
-
-public class Unit
+public interface SampleRateControl extends Control
 {
-	private String symbol;
+    public float getSampleRate();
 
-	public Unit(String symbol) 
-	{ 
-		Mobile.log(Mobile.LOG_WARNING, Unit.class.getPackage().getName() + "." + Unit.class.getSimpleName() + ": " + "Created new Unit with symbol " + symbol + ".");
-		this.symbol = symbol; 
-	}
+    public float[] getSampleRates();
 
-	public static Unit getUnit(String symbol) { return new Unit(symbol); }
-
-	public String toString() { return symbol; }
+    public void setSampleRate(float sampleRate);
 }
