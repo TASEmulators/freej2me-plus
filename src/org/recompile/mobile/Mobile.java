@@ -432,10 +432,10 @@ public class Mobile
 				case NOKIAKB_NUM1: return Canvas.GAME_A; // L
 				case NOKIAKB_NUM3: return Canvas.GAME_B; // R
 				case NOKIAKB_NUM5: return Canvas.KEY_NUM5;
-				case NOKIAKB_NUM2: return Canvas.KEY_NUM2;
-				case NOKIAKB_NUM8: return Canvas.KEY_NUM8;
-				case NOKIAKB_NUM4: return Canvas.KEY_NUM4;
-				case NOKIAKB_NUM6: return Canvas.KEY_NUM6;
+				case NOKIAKB_NUM2: return Canvas.UP;
+				case NOKIAKB_NUM8: return Canvas.DOWN;
+				case NOKIAKB_NUM4: return Canvas.LEFT;
+				case NOKIAKB_NUM6: return Canvas.RIGHT;
 				case NOKIAKB_NUM0: return Canvas.KEY_NUM0;
 				case NOKIAKB_STAR: return Canvas.KEY_STAR;
 				case NOKIAKB_POUND: return Canvas.KEY_POUND;
@@ -471,15 +471,15 @@ public class Mobile
 			case NOKIA_DOWN:  return Canvas.DOWN;
 			case NOKIA_LEFT:  return Canvas.LEFT;
 			case NOKIA_RIGHT: return Canvas.RIGHT;
-			case KEY_NUM2:    return Canvas.KEY_NUM2;
-			case KEY_NUM8:    return Canvas.KEY_NUM8;
-			case KEY_NUM4:    return Canvas.KEY_NUM4;
-			case KEY_NUM6:    return Canvas.KEY_NUM6;
-			case KEY_NUM9:    return Canvas.KEY_NUM9;
-			case KEY_NUM7:    return Canvas.KEY_NUM7;
+			case KEY_NUM2:    return Canvas.UP;
+			case KEY_NUM8:    return Canvas.DOWN;
+			case KEY_NUM4:    return Canvas.LEFT;
+			case KEY_NUM6:    return Canvas.RIGHT;
+			case KEY_NUM9:    return Canvas.GAME_D;
+			case KEY_NUM7:    return Canvas.GAME_C;
 			case KEY_NUM5:    return Canvas.KEY_NUM5;
-			case KEY_NUM1:    return Canvas.KEY_NUM1;
-			case KEY_NUM3:    return Canvas.KEY_NUM3;
+			case KEY_NUM1:    return Canvas.GAME_A;
+			case KEY_NUM3:    return Canvas.GAME_B;
 			case KEY_NUM0:    return Canvas.KEY_NUM0;
 			case KEY_STAR:    return Canvas.KEY_STAR;
 			case KEY_POUND:   return Canvas.KEY_POUND;
