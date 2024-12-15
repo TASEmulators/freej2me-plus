@@ -195,34 +195,34 @@ public class MobilePlatform
 
 	public void doKeyPressed(int keycode)
 	{
-		updateKeyState(keycode, 1);
-		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.keyPressed(keycode); }
+		updateKeyState(canvas.getGameAction(keycode), 1);
+		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.keyPressed(keycode); }
 	}
 
 	public void doKeyReleased(int keycode)
 	{
-		updateKeyState(keycode, 0);
-		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.keyReleased(keycode); }
+		updateKeyState(canvas.getGameAction(keycode), 0);
+		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.keyReleased(keycode); }
 	}
 
 	public void doKeyRepeated(int keycode)
 	{
-		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.keyRepeated(keycode); }
+		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.keyRepeated(keycode); }
 	}
 
 	public void doPointerDragged(int x, int y)
 	{
-		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.pointerDragged(x, y); }
+		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.pointerDragged(x, y); }
 	}
 
 	public void doPointerPressed(int x, int y)
 	{
-		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.pointerPressed(x, y); }
+		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.pointerPressed(x, y); }
 	}
 
 	public void doPointerReleased(int x, int y)
 	{
-		if ((displayable =  Mobile.getDisplay().getCurrent()) != null) { displayable.pointerReleased(x, y); }
+		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.pointerReleased(x, y); }
 	}
 
 	private void updateKeyState(int key, int val)
@@ -230,20 +230,20 @@ public class MobilePlatform
 		int mask=0;
 		switch (key)
 		{
-			case Mobile.KEY_NUM2: mask = GameCanvas.UP_PRESSED; break;
-			case Mobile.KEY_NUM4: mask = GameCanvas.LEFT_PRESSED; break;
-			case Mobile.KEY_NUM6: mask = GameCanvas.RIGHT_PRESSED; break;
-			case Mobile.KEY_NUM8: mask = GameCanvas.DOWN_PRESSED; break;
-			case Mobile.KEY_NUM5: mask = GameCanvas.FIRE_PRESSED; break;
-			case Mobile.KEY_NUM1: mask = GameCanvas.GAME_A_PRESSED; break;
-			case Mobile.KEY_NUM3: mask = GameCanvas.GAME_B_PRESSED; break;
-			case Mobile.KEY_NUM7: mask = GameCanvas.GAME_C_PRESSED; break;
-			case Mobile.KEY_NUM9: mask = GameCanvas.GAME_D_PRESSED; break;
-			case Mobile.NOKIA_UP: mask = GameCanvas.UP_PRESSED; break;
-			case Mobile.NOKIA_LEFT: mask = GameCanvas.LEFT_PRESSED; break;
-			case Mobile.NOKIA_RIGHT: mask = GameCanvas.RIGHT_PRESSED; break;
-			case Mobile.NOKIA_DOWN: mask = GameCanvas.DOWN_PRESSED; break;
-			case Mobile.NOKIA_SOFT3: mask = GameCanvas.FIRE_PRESSED; break;
+			case Canvas.KEY_NUM2: mask = GameCanvas.UP_PRESSED;     break;
+			case Canvas.KEY_NUM4: mask = GameCanvas.LEFT_PRESSED;   break;
+			case Canvas.KEY_NUM6: mask = GameCanvas.RIGHT_PRESSED;  break;
+			case Canvas.KEY_NUM8: mask = GameCanvas.DOWN_PRESSED;   break;
+			case Canvas.KEY_NUM5: mask = GameCanvas.FIRE_PRESSED;   break;
+			case Canvas.KEY_NUM1: mask = GameCanvas.GAME_A_PRESSED; break;
+			case Canvas.KEY_NUM3: mask = GameCanvas.GAME_B_PRESSED; break;
+			case Canvas.KEY_NUM7: mask = GameCanvas.GAME_C_PRESSED; break;
+			case Canvas.KEY_NUM9: mask = GameCanvas.GAME_D_PRESSED; break;
+			case Canvas.UP:       mask = GameCanvas.UP_PRESSED;     break;
+			case Canvas.LEFT:     mask = GameCanvas.LEFT_PRESSED;   break;
+			case Canvas.RIGHT:    mask = GameCanvas.RIGHT_PRESSED;  break;
+			case Canvas.DOWN:     mask = GameCanvas.DOWN_PRESSED;   break;
+			case Canvas.FIRE:     mask = GameCanvas.FIRE_PRESSED;   break;
 		}
 		keyState |= mask;
 		keyState ^= mask;
