@@ -56,6 +56,13 @@ public final class Font
 
 	private Font(int fontFace, int fontStyle, int fontSize)
 	{
+		if(face != FACE_SYSTEM && face != FACE_PROPORTIONAL && face != FACE_MONOSPACE
+			&& style != STYLE_PLAIN && style != STYLE_ITALIC && style != STYLE_BOLD
+			&& size != SIZE_SMALL && size != SIZE_MEDIUM && size != SIZE_LARGE) 
+		{
+			throw new IllegalArgumentException("Cannot create a font with invalid face, style or size");
+		}
+
 		face = fontFace;
 		style = fontStyle;
 		size = fontSize;
@@ -73,6 +80,9 @@ public final class Font
 
 	public int charsWidth(char[] ch, int offset, int length)
 	{
+		if(ch == null) { throw new NullPointerException("Cannot do charsWidth() with a null char array"); }
+		if(offset < 0 || length < 0 || (offset+length) > ch.length) { throw new ArrayIndexOutOfBoundsException("charsWidth tried to access invalid char array index"); }
+		
 		String str = new String(ch, offset, length);
 		return stringWidth(str);
 	}
@@ -89,9 +99,24 @@ public final class Font
 
 	public int getFace() { return face; }
 
-	public static Font getFont(int fontSpecifier) { return defaultFont; }
+	public static Font getFont(int fontSpecifier) 
+	{
+		if(fontSpecifier != FONT_INPUT_TEXT && fontSpecifier != FONT_STATIC_TEXT) { throw new IllegalArgumentException("Cannot get font with an invalid specifier"); }
 
-	public static Font getFont(int face, int style, int size) { return new Font(face, style, size); }
+		return defaultFont; 
+	}
+
+	public static Font getFont(int face, int style, int size) 
+	{
+		if(face != FACE_SYSTEM && face != FACE_PROPORTIONAL && face != FACE_MONOSPACE
+			&& style != STYLE_PLAIN && style != STYLE_ITALIC && style != STYLE_BOLD
+			&& size != SIZE_SMALL && size != SIZE_MEDIUM && size != SIZE_LARGE) 
+		{
+			throw new IllegalArgumentException("Cannot get a font with invalid face, style or size");
+		}
+
+		return new Font(face, style, size); 
+	}
 
 	public int getHeight() { return platformFont.getHeight(); }
 
@@ -109,9 +134,20 @@ public final class Font
 
 	public boolean isUnderlined() { return (style & STYLE_UNDERLINED) == STYLE_UNDERLINED; }
 
-	public int stringWidth(String str) { return platformFont.stringWidth(str); }
+	public int stringWidth(String str) 
+	{
+		if(str == null) { throw new NullPointerException("Cannot get stringWidth from a null String"); }
 
-	public int substringWidth(String str, int offset, int len) { return stringWidth(str.substring(offset, offset+len)); }
+		return platformFont.stringWidth(str); 
+	}
+
+	public int substringWidth(String str, int offset, int len) 
+	{
+		if(str == null) { throw new NullPointerException("Cannot get substringWidth of a null String"); }
+		if(offset < 0 || len < 0 || (offset+len) > str.length()) {throw new StringIndexOutOfBoundsException("substringWidth tried to access invalid index on received string");}
+
+		return stringWidth(str.substring(offset, offset+len)); 
+	}
 
 	private int convertSize(int size)
 	{
