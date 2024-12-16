@@ -240,15 +240,7 @@ public abstract class Canvas extends Displayable
 	public void notifySetCurrent() { _invalidate(); }
 
 	@Override
-	public int getHeight() 
-	{ 
-		/* 
-		 * zb3: this is quite problematic because games check this before adding commands
-		 * so if we'd only include the bar if there are commands, games could
-		 * get invalid resolution 
-		 */
-		return fullscreen ? height : height - barHeight;
-	}
+	public int getHeight() { return commands.isEmpty() ? height : height - barHeight; }
 
 	private void paintCommandsBar() 
 	{
