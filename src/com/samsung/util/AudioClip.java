@@ -67,7 +67,11 @@ public class AudioClip
 			
 		}
 
-		try { player = Manager.createPlayer(new ByteArrayInputStream(audioData, audioOffset, audioLength), formatMIMEType[clipType-1]); }
+		try 
+		{ 
+			player = Manager.createPlayer(new ByteArrayInputStream(audioData, audioOffset, audioLength), formatMIMEType[clipType-1]);
+			player.prefetch();
+		}
 		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage()); }
 	}
 
@@ -80,7 +84,11 @@ public class AudioClip
 		
 		InputStream stream = null; // TODO: Actually load this stream from the locator provided
 
-		try { player = Manager.createPlayer(stream, formatMIMEType[clipType-1]); }
+		try 
+		{ 
+			player = Manager.createPlayer(stream, formatMIMEType[clipType-1]);
+			player.prefetch();
+		}
 		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage()); }
 	}
 
@@ -94,16 +102,20 @@ public class AudioClip
 
 		try
 		{
-			if (loop == 0) { loop = -1; }
 			if (player.getState() == Player.STARTED) { player.stop(); }
-			player.setLoopCount(loop);
+			player.setMediaTime(0); // play() should always play media from the beginning, like Nokia Sound
+			player.setLoopCount((loop == 0 || loop == 255) ? -1 : loop); // Treat 0 loops, and the max allowed value as infinite looping
 			((VolumeControl) player.getControl("VolumeControl")).setLevel(volume * 20); // Received volume varies from 1 to 5, so adapt
 			player.start();
 		}
 		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to play():" + e.getMessage()); }
 	}
 
-	public void resume() { player.start(); }
+	public void resume() 
+	{
+		/* Resume only restarts the player if it is paused, AND its current saved position is not at the end of the media. Otherwise, this results in infinite playback loops */
+		if(player.getState() == Player.PREFETCHED && (player.getMediaTime() < player.getDuration())) { player.start(); }
+	}
 
 	public void stop() { player.close(); }
 
