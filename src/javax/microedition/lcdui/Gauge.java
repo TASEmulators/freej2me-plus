@@ -143,7 +143,7 @@ public class Gauge extends Item
 
 		int barWidth = maxValue == 0 ? 0 : ((value * (width-2*arrowSpacing))/maxValue);
 
-		graphics.fillRect(arrowSpacing, 0, barWidth, Font.getDefaultFont().getHeight());
+		graphics.fillRect(arrowSpacing+3, 3, barWidth-5, Font.getDefaultFont().getHeight()-5);
 		
 		_drawArrow(graphics, 1,  value < maxValue, 0, 0, width, Font.getDefaultFont().getHeight());
 	
