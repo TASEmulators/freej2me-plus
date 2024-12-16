@@ -20,7 +20,7 @@ package javax.microedition.lcdui;
 public class Spacer extends Item
 {
 
-	private int minWidth;
+	private int minWidth; // TODO: Unused?
 	private int minHeight;
 
 
@@ -38,8 +38,10 @@ public class Spacer extends Item
 
 	public void setMinimumSize(int minwidth, int minheight)
 	{
-		minWidth = minwidth;
-		minHeight = minHeight;
+		this.minWidth = minwidth;
+		this.minHeight = minheight;
 	}
+
+	protected int getContentHeight(int width) { return minHeight; }
 
 }

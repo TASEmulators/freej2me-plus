@@ -17,6 +17,7 @@
 package javax.microedition.lcdui;
 
 import org.recompile.mobile.Mobile;
+import org.recompile.mobile.MobilePlatform;
 import org.recompile.mobile.PlatformImage;
 import org.recompile.mobile.PlatformGraphics;
 
@@ -46,17 +47,21 @@ public abstract class Canvas extends Displayable
 	public static final int KEY_STAR = 42;
 	public static final int KEY_POUND = 35;
 
+	public static final int KEY_SOFT_LEFT = Mobile.NOKIA_SOFT1;
+	public static final int KEY_SOFT_RIGHT = Mobile.NOKIA_SOFT2;
+
+	private int barHeight;
+	private boolean fullscreen = false;
+	private boolean repaintCommandBar = true;
+	private boolean isPainting = false;
 
 	protected Canvas()
 	{
-		width = Mobile.getPlatform().lcdWidth;
-		height = Mobile.getPlatform().lcdHeight;
-
 		Mobile.log(Mobile.LOG_INFO, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Create Canvas:"+width+", "+height);
 
-		platformImage = new PlatformImage(width, height);
+		barHeight = Font.getDefaultFont().getHeight();
 
-		Mobile.getPlatform().canvas = this;
+		MobilePlatform.canvas = this;
 	}
 
 	public int getGameAction(int keyCode) { return Mobile.getGameAction(keyCode); }
@@ -129,7 +134,21 @@ public abstract class Canvas extends Displayable
 
 	public boolean isDoubleBuffered() { return true; }
 
-	public void keyPressed(int keyCode) { }
+	public void keyPressed(int keyCode) 
+	{ 
+		if (listCommands) { keyPressedCommands(getGameAction(keyCode)); } 
+		else 
+		{
+			if (getGameAction(keyCode) == KEY_SOFT_LEFT && commands.size()>0) 
+			{
+				doLeftCommand();
+			} 
+			else if (getGameAction(keyCode) == KEY_SOFT_RIGHT && commands.size()>1) 
+			{
+				doRightCommand();
+			}
+		}
+	}
 
 	public void keyReleased(int keyCode) { }
 
@@ -143,45 +162,51 @@ public abstract class Canvas extends Displayable
 
 	public void pointerReleased(int x, int y) { }
 
-	public void repaint()
-	{
-		Display.LCDUILock.lock();
-		try {
-			PlatformGraphics graphics;
-			try
-			{
-				graphics = platformImage.getGraphics();
-				graphics.reset();
-				paint(graphics);
-				if(Mobile.getDisplay().getCurrent() == this)
-				{
-					Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
-				}
-			}
-			catch (Exception e)
-			{
-				System.out.print("Canvas repaint(): "+e.getMessage());
-				e.printStackTrace();
-			}
-		} finally {
-			Display.LCDUILock.unlock();
-		}	
-	}
+	public void repaint() { repaint(0, 0, width, height); } // Just a full canvas repaint
 
 	public void repaint(int x, int y, int width, int height)
 	{
 		Display.LCDUILock.lock();
-		try {
-			PlatformGraphics graphics = platformImage.getGraphics();
-			graphics.reset();
-			paint(graphics);
-			if(Mobile.getDisplay().getCurrent() == this)
+		try 
+		{
+			try 
 			{
+				if (getDisplay().getCurrent() != this || listCommands) { return; }
+				
+				// TODO: This might be an issue
+				if (isPainting) 
+				{
+					// we need this to avoid stackoverflow
+					// but it seems the underlying problem is that when paint calls
+					// repaint, we shouldn't even land here...
+					Mobile.getDisplay().callSerially(() -> { repaint(x, y, width, height); });
+					return;
+				}
+
+				graphics.reset();
+				isPainting = true;
+
+				try { paint(graphics); }
+				catch (Exception e) 
+				{
+					Mobile.log(Mobile.LOG_WARNING, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Exception hit in paint(graphics)" + e.getMessage());
+				}
+				finally { isPainting = false; }
+				
+				if (repaintCommandBar && !fullscreen) 
+				{ 
+					paintCommandsBar(); 
+					repaintCommandBar = false;
+				}
+
 				Mobile.getPlatform().repaint(platformImage, x, y, width, height);
 			}
-		} finally {
-			Display.LCDUILock.unlock();
-		}
+			catch (Exception e) 
+			{
+				Mobile.log(Mobile.LOG_ERROR, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Serious Exception hit in repaint()" + e.getMessage());
+				e.printStackTrace();
+			}
+		} finally { Display.LCDUILock.unlock(); }
 	}
 
 	public void serviceRepaints()
@@ -194,12 +219,11 @@ public abstract class Canvas extends Displayable
 
 	public void setFullScreenMode(boolean mode)
 	{
-		//System.out.print("Set Canvas Full Screen Mode ");
-		fullScreen = mode;
-		if(fullScreen)
+		fullscreen = mode;
+		if (mode != fullscreen) 
 		{
-			width = Mobile.getPlatform().lcdWidth;
-			height = Mobile.getPlatform().lcdHeight;
+			fullscreen = mode;
+			_invalidate();
 		}
 	}
 
@@ -213,6 +237,63 @@ public abstract class Canvas extends Displayable
 
 	public void doSizeChanged(int w, int h) { sizeChanged(w, h); }
 
-	public void notifySetCurrent() { repaint(); }
+	public void notifySetCurrent() { _invalidate(); }
+
+	@Override
+	public int getHeight() 
+	{ 
+		/* 
+		 * zb3: this is quite problematic because games check this before adding commands
+		 * so if we'd only include the bar if there are commands, games could
+		 * get invalid resolution 
+		 */
+		return fullscreen ? height : height - barHeight;
+	}
+
+	private void paintCommandsBar() 
+	{
+		graphics.reset();
+
+		graphics.setFont(Font.getDefaultFont());
+		graphics.setColor(Mobile.lcduiBGColor);
+		graphics.fillRect(0, height-barHeight, width, barHeight);
+
+		int padding = 2;
+
+		if (!commands.isEmpty())
+		{
+			graphics.setColor(Mobile.lcduiTextColor);
+			graphics.drawString(commands.size() > 2 ? "Options" : commands.get(0).getLabel(), padding, height-barHeight, Graphics.LEFT);
+		}
+
+		if (commands.size() == 2) 
+		{
+			graphics.drawString(commands.get(1).getLabel(), width-padding, height-barHeight, Graphics.RIGHT);
+		}
+	}
+
+	public void addCommand(Command cmd)	
+	{ 
+		commands.add(cmd);
+		repaintCommandBar = true;
+		_invalidate();
+	}
+
+	public void removeCommand(Command cmd) 
+	{
+		commands.add(cmd);
+		repaintCommandBar = true;
+		_invalidate();
+	}
+
+	protected void render() 
+	{
+		if (listCommands) 
+		{
+			repaintCommandBar = true;
+			super.render();
+		} 
+		else { repaint(); }
+	}
 
 }

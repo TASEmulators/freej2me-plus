@@ -59,6 +59,11 @@ public class Mobile
     public static final byte LOG_ERROR = 3;
     public static final byte LOG_FATAL = 4;
 
+	//LCDUI colors
+	public static int lcduiBGColor = 0xFFFFFF;
+	public static int lcduiStrokeColor = 0xAAAAAA;
+	public static int lcduiTextColor = 0x000000;
+
 	// Keycode modifiers
 	public static boolean lg = false;
 	public static boolean motorola = false;
@@ -374,6 +379,7 @@ public class Mobile
 	// This is just for a correct handling of Canvas.getGameAction(), though it didn't fix some siemens jars that still get stuck in the LCDUI menu
 	public static final int getGameAction(int keycode) 
 	{
+		// NOTE: Canvas doesn't support SOFT keys by default. Those cases are all returning NOKIA softkeys to abstract lcdui's menu navigation
 		if (lg) 
 		{
 			switch (keycode) 
@@ -383,6 +389,8 @@ public class Mobile
 				case LG_LEFT: return Canvas.LEFT; // Left
 				case LG_RIGHT: return Canvas.RIGHT; // Right
 				case LG_FIRE: return Canvas.FIRE; // Y
+				case LG_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case LG_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (motorola) 
@@ -394,6 +402,8 @@ public class Mobile
 				case MOTOROLA_LEFT: return Canvas.LEFT; // Left
 				case MOTOROLA_RIGHT: return Canvas.RIGHT; // Right
 				case MOTOROLA_FIRE: return Canvas.FIRE; // Y
+				case MOTOROLA_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case MOTOROLA_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (motoTriplets) 
@@ -405,6 +415,8 @@ public class Mobile
 				case TRIPLETS_LEFT: return Canvas.LEFT; // Left
 				case TRIPLETS_RIGHT: return Canvas.RIGHT; // Right
 				case TRIPLETS_FIRE: return Canvas.FIRE; // Y
+				case TRIPLETS_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case TRIPLETS_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (motoV8) 
@@ -416,6 +428,8 @@ public class Mobile
 				case MOTOV8_LEFT: return Canvas.LEFT; // Left
 				case MOTOV8_RIGHT: return Canvas.RIGHT; // Right
 				case MOTOV8_FIRE: return Canvas.FIRE; // Y
+				case MOTOV8_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case MOTOV8_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (nokiaKeyboard) 
@@ -439,6 +453,8 @@ public class Mobile
 				case NOKIAKB_NUM0: return Canvas.KEY_NUM0;
 				case NOKIAKB_STAR: return Canvas.KEY_STAR;
 				case NOKIAKB_POUND: return Canvas.KEY_POUND;
+				case NOKIAKB_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case NOKIAKB_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (sagem) 
@@ -450,17 +466,21 @@ public class Mobile
 				case SAGEM_LEFT: return Canvas.LEFT; // Left
 				case SAGEM_RIGHT: return Canvas.RIGHT; // Right
 				case SAGEM_SOFT3: return Canvas.FIRE; // Y
+				case SAGEM_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case SAGEM_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (siemens) 
 		{
 			switch (keycode) 
 			{
-				case SIEMENS_UP: return Canvas.UP; // Up
-				case SIEMENS_DOWN: return Canvas.DOWN; // Down
-				case SIEMENS_LEFT: return Canvas.LEFT; // Left
+				case SIEMENS_UP:    return Canvas.UP; // Up
+				case SIEMENS_DOWN:  return Canvas.DOWN; // Down
+				case SIEMENS_LEFT:  return Canvas.LEFT; // Left
 				case SIEMENS_RIGHT: return Canvas.RIGHT; // Right
-				case SIEMENS_FIRE: return Canvas.FIRE; // Y
+				case SIEMENS_FIRE:  return Canvas.FIRE; // Y
+				case SIEMENS_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case SIEMENS_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 
@@ -484,6 +504,8 @@ public class Mobile
 			case KEY_STAR:    return Canvas.KEY_STAR;
 			case KEY_POUND:   return Canvas.KEY_POUND;
 			case NOKIA_SOFT3: return Canvas.FIRE;
+			case NOKIA_SOFT1: return Canvas.KEY_SOFT_LEFT;
+			case NOKIA_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 		}
 
 		// If a matching key wasn't found, return 0;

@@ -19,6 +19,7 @@ package javax.microedition.lcdui;
 import java.util.ArrayList;
 
 import org.recompile.mobile.Mobile;
+import org.recompile.mobile.MobilePlatform;
 import org.recompile.mobile.PlatformImage;
 import org.recompile.mobile.PlatformGraphics;
 
@@ -26,12 +27,11 @@ public abstract class Displayable
 {
 
 	public PlatformImage platformImage;
+	public PlatformGraphics graphics = null;
 
 	public int width = 0;
 
 	public int height = 0;
-
-	public boolean fullScreen = false;
 	
 	protected String title = "";
 
@@ -49,25 +49,27 @@ public abstract class Displayable
 
 	public Ticker ticker;
 
+	private volatile boolean isValidating = false;
+
 	public Displayable()
 	{
 		width = Mobile.getPlatform().lcdWidth;
 		height = Mobile.getPlatform().lcdHeight;
+		platformImage = new PlatformImage(width, height);
+		graphics = platformImage.getGraphics();
 	}
 
 	public void addCommand(Command cmd)
 	{ 
-		try
-		{
-			commands.add(cmd);
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, Displayable.class.getPackage().getName() + "." + Displayable.class.getSimpleName() + ": " + "Problem Adding Command: "+e.getMessage());
-		}
+		commands.add(cmd);
+		_invalidate();
 	}
 
-	public void removeCommand(Command cmd) { commands.remove(cmd); }
+	public void removeCommand(Command cmd) 
+	{ 
+		commands.remove(cmd);
+		_invalidate(); 
+	}
 	
 	public int getWidth() { return width; }
 
@@ -94,7 +96,35 @@ public abstract class Displayable
 	public ArrayList<Command> getCommands() { return commands; }
 
 
-	public void keyPressed(int key) { }
+	public void keyPressed(int key) 
+	{ 
+		if (listCommands) { keyPressedCommands(MobilePlatform.canvas.getGameAction(key)); } 
+		else 
+		{
+			boolean handled = screenKeyPressed(MobilePlatform.canvas.getGameAction(key));
+			if (!handled)
+			{
+				if (MobilePlatform.canvas.getGameAction(key) == Canvas.KEY_SOFT_LEFT) 
+				{
+					doLeftCommand();
+				} 
+				else if (MobilePlatform.canvas.getGameAction(key) == Canvas.KEY_SOFT_RIGHT) 
+				{
+					doRightCommand();
+				}
+				else if ((MobilePlatform.canvas.getGameAction(key) == Canvas.FIRE 
+						|| MobilePlatform.canvas.getGameAction(key) == Canvas.KEY_NUM5)) 
+				{
+					doDefaultCommand();
+				}
+			}
+		}
+	}
+
+	public boolean screenKeyPressed(int key) { return false; } // Ignore, classes like Form and List inherit this, and do their own thing with it.
+	public void screenKeyReleased(int key) { }
+	public void screenKeyRepeated(int key) { }
+	
 	public void keyReleased(int key) { }
 	public void keyRepeated(int key) { }
 	public void pointerDragged(int x, int y) { }
@@ -103,159 +133,161 @@ public abstract class Displayable
 	public void showNotify() { }
 	public void hideNotify() { }
 
-	public void notifySetCurrent() { }
+	public void notifySetCurrent() { render(); }
 
 	protected void render()
 	{
-		if(listCommands==true)
-		{
-			renderCommands();
-		}
-		else
-		{
-			renderItems();
-		}
-	}
+		graphics.setFont(Font.getDefaultFont());
 
-	public void renderItems()
-	{
-		PlatformGraphics gc = platformImage.getGraphics();
 		// Draw Background:
-		gc.setColor(0xFFFFFF);
-		gc.fillRect(0,0,width,height);
-		gc.setColor(0x000000);
+		graphics.setColor(Mobile.lcduiBGColor);
+		graphics.fillRect(0,0,width,height);
+		graphics.setColor(Mobile.lcduiTextColor);
+
+		String currentTitle = listCommands ? "Options" : title;
+
+		int titlePadding = Font.getDefaultFont().getHeight() / 10;
+		int titleHeight = Font.getDefaultFont().getHeight() + 2*titlePadding;
+
+		int xPadding = Font.getDefaultFont().getHeight()/5;
+
+		int commandsBarHeight = titleHeight - 1;
+
+		int contentHeight = height - titleHeight - commandsBarHeight - 2; // 1px for line
 		
 		// Draw Title:
-		gc.drawString(title, width/2, 2, Graphics.HCENTER);
-		gc.drawLine(0, 20, width, 20);
-		gc.drawLine(0, height-20, width, height-20);
+		graphics.drawString(currentTitle, width/2, titlePadding, Graphics.HCENTER);
+		graphics.drawLine(0, titleHeight, width, titleHeight);
+		graphics.drawLine(0, height-commandsBarHeight-1, width, height-commandsBarHeight-1);
 
-		if(items.size()>0)
+		int currentY = titleHeight + 1;
+
+		if (listCommands) // Render Commands
 		{
-			if(currentItem<0) { currentItem = 0; }
-			// Draw list items //
-			int ah = height - 50; // allowed height
-			int max = (int)Math.floor(ah / 15); // max items per page
-			if(items.size()<max) { max = items.size(); }
-		
-			int page = 0;
-			page = (int)Math.floor(currentItem/max); // current page
-			int first = page * max; // first item to show
-			int last = first + max - 1;
+			if(commands.size()>0)
+			{
+				if(currentCommand<0) { currentCommand = 0; }
+				// Draw commands //
 
-			if(last>=items.size()) { last = items.size()-1; }
-			
-			int y = 25;
-			for(int i=first; i<=last; i++)
-			{	
-				if(currentItem == i)
-				{
-					gc.fillRect(0,y,width,15);
-					gc.setColor(0xFFFFFF);
+				int listPadding = Font.getDefaultFont().getHeight()/5;
+				int itemHeight = Font.getDefaultFont().getHeight();
+
+				int ah = contentHeight - 2*listPadding; // allowed height
+				int max = (int)Math.floor(ah / itemHeight); // max items per page			
+				if(commands.size()<max) { max = commands.size(); }
+
+				int page = 0;
+				page = (int)Math.floor(currentCommand/max); // current page
+				int first = page * max; // first item to show
+				int last = first + max - 1;
+
+				if(last>=commands.size()) { last = commands.size()-1; }
+				
+				int y = currentY + listPadding;
+				for(int i=first; i<=last; i++)
+				{	
+					if(currentCommand == i)
+					{
+						graphics.fillRect(0,y,width,itemHeight);
+						graphics.setColor(Mobile.lcduiBGColor);
+					}
+					
+					graphics.drawString(commands.get(i).getLabel(), width/2, y, Graphics.HCENTER);
+					
+					graphics.setColor(Mobile.lcduiTextColor);
+					y += itemHeight;
 				}
-				gc.drawString(items.get(i).getLabel(), width/2, y, Graphics.HCENTER);
-				if(items.get(i) instanceof StringItem)
-				{
-					gc.drawString(((StringItem)items.get(i)).getText(), width/2, y, Graphics.HCENTER);
-				}
-				gc.setColor(0x000000);
-				if(items.get(i) instanceof ImageItem)
-				{
-					gc.drawImage(((ImageItem)items.get(i)).getImage(), width/2, y, Graphics.HCENTER);
-				}
-				y+=15;
+			}
+
+			currentY += contentHeight;
+
+			graphics.drawString("Okay", xPadding, currentY+titlePadding, Graphics.LEFT);
+			graphics.drawString("Back", width-xPadding, currentY+titlePadding, Graphics.RIGHT);
+		}
+		else // Render Items
+		{
+			graphics.setClip(0, currentY, width, contentHeight);
+			String status = renderScreen(0, currentY, width, contentHeight);
+
+			currentY += contentHeight;
+
+			graphics.reset();
+			graphics.setFont(Font.getDefaultFont());
+
+			Command itemCommand = null;
+			if (this instanceof Form) {
+				itemCommand = ((Form)this).getItemCommand();
+			}
+
+			switch(commands.size())
+			{
+				case 0: break;
+				case 1:
+					graphics.drawString(commands.get(0).getLabel(), xPadding, currentY+titlePadding, Graphics.LEFT);
+					if (status != null)
+					{
+						graphics.drawString(status, width-xPadding, currentY+titlePadding, Graphics.RIGHT);
+					}
+					
+					break;
+				case 2:
+					graphics.drawString(commands.get(0).getLabel(), xPadding, currentY+titlePadding, Graphics.LEFT);
+					graphics.drawString(commands.get(1).getLabel(), width-xPadding, currentY+titlePadding, Graphics.RIGHT);
+
+					if (status != null && itemCommand == null)
+					{
+						graphics.drawString(status, width/2, currentY+titlePadding, Graphics.HCENTER);
+					}
+					break;
+				default:
+					graphics.drawString("Options", xPadding, currentY+titlePadding, Graphics.LEFT);
+			}
+
+			if (itemCommand != null) {
+				graphics.drawString(itemCommand.getLabel(), width/2, currentY+titlePadding, Graphics.HCENTER);
 			}
 		}
-		// Draw Commands
-		switch(commands.size())
-		{
-			case 0: break;
-			case 1:
-				gc.drawString(commands.get(0).getLabel(), 3, height-17, Graphics.LEFT);
-				gc.drawString(""+(currentItem+1)+" of "+items.size(), width-3, height-17, Graphics.RIGHT);
-				break;
-			case 2:
-				gc.drawString(commands.get(0).getLabel(), 3, height-17, Graphics.LEFT);
-				gc.drawString(commands.get(1).getLabel(), width-3, height-17, Graphics.RIGHT);
-				break;
-			default:
-				gc.drawString("Options", 3, height-17, Graphics.LEFT);
-		}
-
+	
 		if(this.getDisplay().getCurrent() == this)
 		{
 			Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
 		}
 	}
 
-	protected void renderCommands()
-	{
-		PlatformGraphics gc = platformImage.getGraphics();
-
-		// Draw Background:
-		gc.setColor(0xFFFFFF);
-		gc.fillRect(0,0,width,height);
-		gc.setColor(0x000000);
-		
-		// Draw Title:
-		gc.drawString("Options", width/2, 2, Graphics.HCENTER);
-		gc.drawLine(0, 20, width, 20);
-		gc.drawLine(0, height-20, width, height-20);
-
-		if(commands.size()>0)
-		{
-			if(currentCommand<0) { currentCommand = 0; }
-			// Draw commands //
-			int ah = height - 50; // allowed height
-			int max = (int)Math.floor(ah / 15); // max items per page			
-			if(commands.size()<max) { max = commands.size(); }
-
-			int page = 0;
-			page = (int)Math.floor(currentCommand/max); // current page
-			int first = page * max; // first item to show
-			int last = first + max - 1;
-
-			if(last>=commands.size()) { last = commands.size()-1; }
-			
-			int y = 25;
-			for(int i=first; i<=last; i++)
-			{	
-				if(currentCommand == i)
-				{
-					gc.fillRect(0,y,width,15);
-					gc.setColor(0xFFFFFF);
-				}
-				
-				gc.drawString(commands.get(i).getLabel(), width/2, y, Graphics.HCENTER);
-				
-				gc.setColor(0x000000);
-				y+=15;
-			}
-		}
-		gc.drawString("Okay", 3, height-17, Graphics.LEFT);
-		gc.drawString("Back", width-3, height-17, Graphics.RIGHT);
-
-		if(this.getDisplay().getCurrent() == this)
-		{
-			Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
-		}
-	}
+	protected String renderScreen(int x, int y, int width, int height) { return null; } // Also inherited by Form, List, etc.
 
 	protected void keyPressedCommands(int key)
 	{
-		switch(key)
+		if(key == Canvas.KEY_NUM2 || key == Canvas.UP) 
 		{
-			case Mobile.KEY_NUM2: currentCommand--; break;
-			case Mobile.KEY_NUM8: currentCommand++; break;
-			case Mobile.NOKIA_UP: currentCommand--; break;
-			case Mobile.NOKIA_DOWN: currentCommand++; break;
-			case Mobile.NOKIA_SOFT1: doLeftCommand(); break;
-			case Mobile.NOKIA_SOFT2: doRightCommand(); break;
-			case Mobile.KEY_NUM5: doLeftCommand(); break;
+			currentCommand--;
+			if(currentCommand<0) { currentCommand = commands.size()-1; }
 		}
-		if(currentCommand>=commands.size()) { currentCommand = 0; }
-		if(currentCommand<0) { currentCommand = commands.size()-1; }
-		if(listCommands==true) { renderCommands(); }
+		else if(key == Canvas.KEY_NUM8 || key == Canvas.DOWN) 
+		{
+			currentCommand++;
+			if(currentCommand>=commands.size()) { currentCommand = 0; }
+		}
+		else if (key == Canvas.KEY_NUM5 || key == Canvas.FIRE) 
+		{
+			listCommands = false;
+			doCommand(currentCommand);
+			currentCommand = 0;
+		}
+		else if (key == Canvas.KEY_SOFT_LEFT) 
+		{
+			doLeftCommand();
+			currentCommand = 0;
+		}
+		else if (key == Canvas.KEY_SOFT_RIGHT) 
+		{
+			listCommands = false;
+			doRightCommand();
+			currentCommand = 0;
+		}
+		else { return; }
+
+		_invalidate(); 
 	}
 
 	protected void doCommand(int index)
@@ -269,26 +301,19 @@ public abstract class Displayable
 		}
 	}
 
-	protected void doDefaultCommand()
-	{
-		doCommand(0);
-	}
+	protected void doDefaultCommand() { doCommand(0); }
 
 	protected void doLeftCommand()
 	{
-		if(commands.size()>2)
+		if(commands.size()>2 && !listCommands)
 		{
-			if(listCommands == true)
-			{
-				doCommand(currentCommand);
-			}
-			else
-			{
-				listCommands = true;
-				currentCommand = 0;
-				render();
-			}
-			return;
+			listCommands = true;
+			_invalidate();
+		}
+		else if(commands.size()>2 && listCommands) 
+		{
+			doCommand(currentCommand);
+			listCommands = false;
 		}
 		else
 		{
@@ -301,17 +326,31 @@ public abstract class Displayable
 
 	protected void doRightCommand()
 	{
-		if(listCommands==true)
+		if(commands.size()>0 && commands.size()<=2)
 		{
-			listCommands = false;
-			currentCommand = 0;
-			render();
+			doCommand(1);
 		}
-		else
+	}
+
+	protected void _invalidate() 
+	{
+		// zb3: TODO: consider queuing this
+		// the code below ensures this function is not reentrant
+		synchronized (Display.LCDUILock)
 		{
-			if(commands.size()>0 && commands.size()<=2)
+			if (getDisplay().getCurrent() != this) { return; }
+
+			if (isValidating) 
 			{
-				doCommand(1);
+				Mobile.log(Mobile.LOG_ERROR, Displayable.class.getPackage().getName() + "." + Displayable.class.getSimpleName() + ": " + "Recursive invalidation attempt detected.");
+				Thread.dumpStack();
+			} 
+			else 
+			{
+				isValidating = true;
+
+				try { render(); } 
+				finally { isValidating = false; }
 			}
 		}
 	}

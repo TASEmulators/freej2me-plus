@@ -16,6 +16,8 @@
 */
 package javax.microedition.lcdui;
 
+import org.recompile.mobile.Mobile;
+import org.recompile.mobile.PlatformGraphics;
 
 public abstract class CustomItem extends Item
 {
@@ -32,6 +34,7 @@ public abstract class CustomItem extends Item
 
 	protected CustomItem(String label)
 	{
+		Mobile.log(Mobile.LOG_WARNING, CustomItem.class.getPackage().getName() + "." + CustomItem.class.getSimpleName() + ": " + "CustomItem created. LCDUI support is incomplete");
 		setLabel(label);
 	}
 
@@ -49,9 +52,9 @@ public abstract class CustomItem extends Item
 
 	protected void hideNotify() { }
 
-	protected final void invalidate() { }
+	protected final void invalidate() { super.invalidate(); }
 
-	protected void keyPressed(int keyCode) { }
+	protected boolean keyPressed(int keyCode) { return false; }
 
 	protected void keyReleased(int keyCode) { }
 
@@ -65,16 +68,29 @@ public abstract class CustomItem extends Item
 
 	protected void pointerReleased(int x, int y) { }
 
-	protected final void repaint() { }
+	protected final void repaint() { this._invalidateContents(); }
 
-	protected final void repaint(int x, int y, int w, int h) { }
+	protected final void repaint(int x, int y, int w, int h) { this._invalidateContents(); }
 
 	protected void showNotify() { }
 
 	protected void sizeChanged(int w, int h) { }
 
+	protected int getContentHeight(int width) { return this.getPrefContentHeight(width); }
+
 	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout) { return true; }
 
 	protected void traverseOut() { }
+
+	protected void renderItem(PlatformGraphics graphics, int x, int y, int width, int height) 
+	{
+		// TODO: Incomplete. Possibly we'd need to save/restore much more
+
+		int color = graphics.getColor();
+		graphics.getGraphics2D().translate(x, y);
+		paint(graphics, width, height);
+		graphics.getGraphics2D().translate(-x, -y);
+		graphics.setColor(color);
+	}
 
 }

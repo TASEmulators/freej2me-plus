@@ -39,10 +39,10 @@ public final class Font
 
 	private static final int[] fontSizes = 
 	{
-		8,  8, 10, // < 128 minimum px dimension
-		8, 11, 12, // < 176 minimum px dimension
-		9, 12, 14, // < 220 minimum px dimension
-		10, 14, 16, // >= 220 minimum px dimension
+		 9, 10, 12, // < 128 minimum px dimension
+		10, 12, 14, // < 176 minimum px dimension
+		12, 14, 16, // < 220 minimum px dimension
+		14, 16, 20, // >= 220 minimum px dimension
 	};
 
 	private static int screenType = -4;
@@ -72,10 +72,12 @@ public final class Font
 	public static void setScreenSize(int width, int height)
 	{
 		final int minSize = Math.min(width, height);
-		if (minSize < 128) { screenType = 0; }
+		if (minSize < 128)      { screenType = 0; }
 		else if (minSize < 176) { screenType = 1; }
 		else if (minSize < 220) { screenType = 2; }
-		else { screenType = 3; }
+		else                    { screenType = 3; }
+
+		defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, convertSize(SIZE_MEDIUM));   
 	}
 
 	public int charsWidth(char[] ch, int offset, int length)
@@ -93,7 +95,10 @@ public final class Font
 
 	public static Font getDefaultFont() 
 	{ 
-		if (defaultFont == null) { defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM); }
+		if (defaultFont == null) 
+		{
+			defaultFont = new Font(Font.FACE_SYSTEM, Font.STYLE_PLAIN, convertSize(SIZE_MEDIUM)); 
+		}
 		return defaultFont;
 	}
 
@@ -122,7 +127,7 @@ public final class Font
 
 	public int getSize() { return size; }
 
-	public int getPointSize() { return convertSize(size); }
+	public int getPointSize() { return Font.convertSize(size); }
 
 	public int getStyle() { return style; }
 
@@ -149,7 +154,7 @@ public final class Font
 		return stringWidth(str.substring(offset, offset+len)); 
 	}
 
-	private int convertSize(int size)
+	private static int convertSize(int size)
 	{
 		switch(size)
 		{

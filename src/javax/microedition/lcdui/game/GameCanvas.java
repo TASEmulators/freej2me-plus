@@ -52,7 +52,7 @@ public abstract class GameCanvas extends Canvas
 
 	public void flushGraphics(int x, int y, int width, int height)
 	{
-		Mobile.getPlatform().flushGraphics(platformImage, x, y, width, height);
+		Mobile.getPlatform().flushGraphics(platformImage, x, y, width, getHeight());
 	}
 
 	public void flushGraphics()

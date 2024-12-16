@@ -59,7 +59,7 @@ public class Display
 
 	private SerialCallTimerTask timertask;
 
-	private boolean insideSetCurrent = false;
+	private boolean isSettingCurrent = false;
 
 	public Display()
 	{
@@ -146,20 +146,22 @@ public class Display
 
 	public void setCurrent(Displayable next)
 	{
-		if (next == null){ return; }
-		if (current == next || insideSetCurrent) { return; }
+		if (next == null) { return; }
 
 		LCDUILock.lock();
 		try 
-		{			
+		{		
+			if(current == next || isSettingCurrent) { return; }
 			try
 			{
-				insideSetCurrent = true;
+				isSettingCurrent = true;
 				try 
 				{
+					if (current != null) { current.hideNotify(); }
 					Mobile.getPlatform().keyState = 0; // reset keystate
 					next.showNotify();
-				} finally { insideSetCurrent = false; }
+				} 
+				finally { isSettingCurrent = false; }
 
 				current = next;
 				current.notifySetCurrent();
@@ -193,7 +195,15 @@ public class Display
 		}
 	}
 
-	public void setCurrentItem(Item item) { Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Display.setCurrentItem"); }
+	public void setCurrentItem(Item item) 
+	{
+		Form form = item.getOwner();
+		if (form != null) 
+		{
+			if (form != current) { setCurrent(form); }
+			form.focusItem(item);
+		}
+	}
 
 	public boolean vibrate(int duration)
 	{

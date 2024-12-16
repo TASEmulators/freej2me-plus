@@ -34,26 +34,25 @@ public class Gauge extends Item
 
 	private boolean interactive;
 	private int maxValue;
-	private int initialValue;
 	private int value;
-
-	//private ArrayList<Command> commands;
-	private Command defaultCommand;
-
-	private ItemCommandListener listener;
-
 
 	public Gauge(String label, boolean isInteractive, int maxvalue, int initialvalue)
 	{
+		if(isInteractive && maxvalue <= 0) { throw new IllegalArgumentException("Cannot create an interactive gauge with negative or 0 max value"); }
+		if(maxvalue < 0 && (!isInteractive && maxvalue != INDEFINITE)) { throw new IllegalArgumentException("Cannot create a gauge with negative or 0 max value, or an non-interactive gauge whose max value is not positive or INDEFINITE"); }
+		if(!isInteractive && maxvalue == INDEFINITE && initialvalue != INCREMENTAL_IDLE && initialvalue != CONTINUOUS_RUNNING && initialvalue !=  INCREMENTAL_UPDATING)
+			{ throw new IllegalArgumentException("Cannot create non-interactive gauge with indefinite range and a special value " + initialvalue + " that isn't in the range 0-3."); }
+
+
 		Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "Create Gauge");
 		setLabel(label);
 		interactive = isInteractive;
 		maxValue = maxvalue;
-		initialValue = initialvalue;
+		value = initialvalue;
 	}
 
 
-	//public void addCommand(Command cmd) { commands.add(cmd); }
+	public void addCommand(Command cmd) { super.addCommand(cmd); }
 
 	public int getMaxValue() { return maxValue; }
 
@@ -61,12 +60,94 @@ public class Gauge extends Item
 
 	public boolean isInteractive() { return interactive; }
 
-	public void setDefaultCommand(Command cmd) { defaultCommand = cmd; }
+	public void setDefaultCommand(Command cmd) { super.setDefaultCommand(cmd); }
 
-	public void setItemCommandListener(ItemCommandListener l) { listener = l; }
+	public void setItemCommandListener(ItemCommandListener l) { super.setItemCommandListener(l); }
 
-	public void setMaxValue(int maxvalue) { maxValue = maxvalue; }
+	public void setMaxValue(int newmax) 
+	{
+		if(!interactive) 
+		{
+			if(newmax == INDEFINITE) 
+			{
+				maxValue = newmax;
+				setValue(CONTINUOUS_IDLE);
+			}
+			else if(newmax > 0) { maxValue = newmax; }
+		}
+		else if(newmax > maxValue) 
+		{
+			Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "setMaxValue received value " + newmax + " which is higher or equal to the current max of " + maxValue + ". Keeping its value unchanged.");
+		}
+		else if(newmax > 0) { maxValue = newmax; }
 
-	public void setValue(int newvalue) { value = newvalue; }
+		_invalidateContents();
+	}
+
+	public void setValue(int newvalue) 
+	{
+		if(interactive || maxValue != INDEFINITE) 
+		{
+			if(newvalue < 0) 
+			{ 
+				Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "setValue received value " + newvalue + " which is below the min allowed value of 0. Clamping value to 0.");
+				value = 0;
+			}
+			else if(newvalue > maxValue) 
+			{
+				Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "setValue received value " + newvalue + " which is beyond the max allowed value of " + maxValue + ". Clamping value to " + maxValue + ".");
+				value = maxValue; 
+			}
+			else { value = newvalue; }
+		}
+		else 
+		{
+			if(newvalue != CONTINUOUS_IDLE && newvalue != CONTINUOUS_RUNNING && newvalue != INCREMENTAL_IDLE && newvalue != INCREMENTAL_UPDATING) 
+			{
+				throw new IllegalArgumentException("Gauge is non-interactive and has indefinite value. Received invalid value update");
+			}
+			value = newvalue;
+		}
+		_invalidateContents();
+	}
+
+	protected int getContentHeight(int width) { return Font.getDefaultFont().getHeight() + Font.getDefaultFont().getHeight()/5; }
+
+	protected boolean keyPressed(int key) // Gauge extends Item, which receives a converted Canvas key
+	{ 
+		boolean handled = !interactive;
+
+		if(interactive) 
+		{
+			if ((key == Canvas.LEFT || key == Canvas.KEY_NUM4) && value > 0) { setValue(value-1); handled = true; } 
+			else if ((key == Canvas.RIGHT || key == Canvas.KEY_NUM6) && value < maxValue) { setValue(value+1); handled = true; } 
+
+			if (handled) 
+			{
+				notifyStateChanged();
+				_invalidateContents();
+			}
+		}
+		
+		return handled;
+	}
+
+	protected void renderItem(PlatformGraphics graphics, int x, int y, int width, int height) 
+	{
+		graphics.getGraphics2D().translate(x, y);
+		
+		int arrowSpacing = _drawArrow(graphics, -1,  value > 0, 0, 0, width, Font.getDefaultFont().getHeight());
+
+		graphics.setColor(Mobile.lcduiTextColor);
+		graphics.drawRect(arrowSpacing, 0, width-2*arrowSpacing, Font.getDefaultFont().getHeight());
+
+		int barWidth = maxValue == 0 ? 0 : ((value * (width-2*arrowSpacing))/maxValue);
+
+		graphics.fillRect(arrowSpacing, 0, barWidth, Font.getDefaultFont().getHeight());
+		
+		_drawArrow(graphics, 1,  value < maxValue, 0, 0, width, Font.getDefaultFont().getHeight());
+	
+		graphics.getGraphics2D().translate(-x, -y);
+	}
 
 }

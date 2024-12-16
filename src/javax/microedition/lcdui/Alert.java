@@ -16,10 +16,10 @@
 */
 package javax.microedition.lcdui;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.recompile.mobile.Mobile;
-
+import org.recompile.mobile.MobilePlatform;
 
 public class Alert extends Screen
 {
@@ -33,6 +33,15 @@ public class Alert extends Screen
 
 	private Image image;
 
+	private List<String> lines;
+	private int lineSpacing;
+	private int margin;
+	private int scrollbarWidth;
+	private int scrollY = 0;
+	private int scrollHeight = 0;
+	private int clientHeight;
+	private boolean needsLayout = true;
+
 	private AlertType type;
 
 	private int timeout = FOREVER;
@@ -42,18 +51,23 @@ public class Alert extends Screen
 	private Displayable nextScreen = null;
 
 
-	public Alert(String title)
+	public Alert(String title) 
 	{
-		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + "Alert: " + title);
 		setTitle(title);
-		Thread.dumpStack();
+		setTimeout(getDefaultTimeout());
+		setType(new AlertType());
+
+		addCommand(Alert.DISMISS_COMMAND);
+
+		setCommandListener(defaultListener);
+
+		lineSpacing = 1;
+		scrollbarWidth = 4;
+		margin = Font.getDefaultFont().getHeight() / 4;
 	}
 
 	public Alert(String title, String alertText, Image alertImage, AlertType alertType)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + "Alert: " + title);
-		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + "Alert: " + alertText);
-
 		setTitle(title);
 		setString(alertText);
 		setImage(alertImage);
@@ -64,6 +78,10 @@ public class Alert extends Screen
 		addCommand(Alert.DISMISS_COMMAND);
 
 		setCommandListener(defaultListener);
+
+		lineSpacing = 1;
+		scrollbarWidth = 4;
+		margin = Font.getDefaultFont().getHeight() / 4;
 	}
 
 	public int getDefaultTimeout() { return Alert.FOREVER; }
@@ -82,6 +100,7 @@ public class Alert extends Screen
 	{
 		Mobile.log(Mobile.LOG_WARNING, Alert.class.getPackage().getName() + "." + Alert.class.getSimpleName() + ": " + text);
 		message = text;
+		needsLayout = true;
 	}
 
 	public Image getImage() { return image; }
@@ -124,10 +143,84 @@ public class Alert extends Screen
 	{
 		public void commandAction(Command cmd, Displayable next)
 		{
-			Mobile.getDisplay().setCurrent(next);
+			Mobile.getDisplay().setCurrent(nextScreen);
 		}
 	};
 
 	public void setNextScreen(Displayable next) { nextScreen = next; }
+	
+	public String renderScreen(int x, int y, int width, int height) {
+		clientHeight = height;
 
+		if (message == null) {
+			return null;
+		}
+		if (needsLayout) {
+			lines = StringItem.wrapText(message, width - 2*margin - scrollbarWidth, Font.getDefaultFont());
+			needsLayout = false;
+			if (lines.isEmpty()) {
+				return "";
+			}
+
+			scrollHeight = (lines.size()*Font.getDefaultFont().getHeight() + (lines.size()-1)*lineSpacing) + 2*margin;
+			scrollY = 0;
+		}
+
+		if (lines.isEmpty()) {
+			return "";
+		}
+
+		for(int l=0;l<lines.size();l++) {
+			int ystart = margin + l*Font.getDefaultFont().getHeight() + (l > 0 ? (l-1)*lineSpacing : 0);
+			int yend = ystart + Font.getDefaultFont().getHeight();
+
+			if (yend < scrollY || ystart >= scrollY+height) {
+				continue;
+			}
+
+			graphics.drawString(
+				lines.get(l),
+				x + margin,
+				y + ystart - scrollY,
+				Graphics.LEFT);
+		}
+		
+		double fact = (double)height/scrollHeight;
+		int yscrollStart = (int)Math.round(scrollY * fact);
+		int yscrollHeight = (int)Math.min(height, Math.round(height * fact));
+	
+		if (height < scrollHeight)
+		{
+			graphics.setColor(Mobile.lcduiBGColor);
+			graphics.fillRect(x + width - scrollbarWidth, y+yscrollStart, scrollbarWidth, yscrollHeight);
+		}
+		
+		return null;
+	}
+
+	public boolean screenKeyPressed(int key) 
+	{
+		if (needsLayout || lines.isEmpty() || scrollHeight <= clientHeight) 
+		{
+			return false;
+		}
+
+		boolean handled = true;
+		int scrollAmount = clientHeight/4;
+		int maxScroll = scrollHeight - clientHeight;
+
+		// TODO: Check if this is functional. Inputs should be abstracted here to work on all key layouts, Displayable is what does this
+		if ((key == Canvas.UP || key == Canvas.KEY_NUM2) && scrollY > 0) 
+		{
+			scrollY = Math.max(0, scrollY - scrollAmount);
+		} 
+		else if ((key == Canvas.DOWN || key == Canvas.KEY_NUM8) && scrollY < maxScroll) 
+		{
+			scrollY = Math.min(maxScroll, scrollY + scrollAmount);
+		}
+
+		if (handled) { _invalidate(); }
+
+		return handled;
+	}
 }
