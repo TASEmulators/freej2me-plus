@@ -252,7 +252,7 @@ public abstract class Displayable
 	
 		if(this.getDisplay().getCurrent() == this)
 		{
-			Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+			Mobile.getPlatform().flushGraphics(platformImage, 0, 0, width, height);
 		}
 	}
 

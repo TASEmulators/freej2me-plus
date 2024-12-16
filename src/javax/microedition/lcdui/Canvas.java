@@ -188,7 +188,7 @@ public abstract class Canvas extends Displayable
 				// Draw command bar whenever the canvas is not fullscreen and there are commands in the bar
 				if (!fullscreen && !commands.isEmpty()) { paintCommandsBar(); }
 
-				Mobile.getPlatform().repaint(platformImage, x, y, width, height);
+				Mobile.getPlatform().flushGraphics(platformImage, x, y, width, height);
 			}
 			catch (Exception e) 
 			{
@@ -202,7 +202,7 @@ public abstract class Canvas extends Displayable
 	{
 		if (Mobile.getDisplay().getCurrent() == this)
 		{
-			Mobile.getPlatform().repaint(platformImage, 0, 0, width, height);
+			Mobile.getPlatform().flushGraphics(platformImage, 0, 0, width, height);
 		}
 	}
 

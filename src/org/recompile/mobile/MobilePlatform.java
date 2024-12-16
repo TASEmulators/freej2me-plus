@@ -325,22 +325,11 @@ public class MobilePlatform
 	********* Graphics ********
 */
 
-	public void flushGraphics(Image img, int x, int y, int width, int height)
+	public final void flushGraphics(Image img, int x, int y, int width, int height)
 	{
 		limitFps();
 		gc.flushGraphics(img, x, y, width, height);
 		
-		if(!showFPS.equals("Off")) { showFPS();}
-		painter.run();
-
-		//System.gc();
-	}
-
-	public void repaint(Image img, int x, int y, int width, int height)
-	{
-		limitFps();
-		gc.flushGraphics(img, x, y, width, height);
-
 		if(!showFPS.equals("Off")) { showFPS();}
 		painter.run();
 
