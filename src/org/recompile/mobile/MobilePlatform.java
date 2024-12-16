@@ -85,7 +85,6 @@ public class MobilePlatform
 	public MIDletLoader loader;
 	private EventQueue eventQueue;
 	public static Displayable displayable;
-	public static Canvas canvas;
 
 	public Runnable painter;
 
@@ -191,13 +190,13 @@ public class MobilePlatform
 
 	public void doKeyPressed(int keycode)
 	{
-		updateKeyState(canvas.getGameAction(keycode), 1);
+		updateKeyState(Mobile.getGameAction(keycode), 1);
 		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.keyPressed(keycode); }
 	}
 
 	public void doKeyReleased(int keycode)
 	{
-		updateKeyState(canvas.getGameAction(keycode), 0);
+		updateKeyState(Mobile.getGameAction(keycode), 0);
 		if ((displayable = Mobile.getDisplay().getCurrent()) != null) { displayable.keyReleased(keycode); }
 	}
 

@@ -52,19 +52,25 @@ public abstract class Canvas extends Displayable
 
 	private int barHeight;
 	private boolean fullscreen = false;
-	private boolean repaintCommandBar = true;
 	private boolean isPainting = false;
+	private boolean keyCodePressed = false; // Only used to discern actual soft key command bar inputs below
 
 	protected Canvas()
 	{
 		Mobile.log(Mobile.LOG_INFO, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Create Canvas:"+width+", "+height);
 
 		barHeight = Font.getDefaultFont().getHeight();
-
-		MobilePlatform.canvas = this;
 	}
 
-	public int getGameAction(int keyCode) { return Mobile.getGameAction(keyCode); }
+	public int getGameAction(int keyCode) 
+	{ 
+		int castKey = Mobile.getGameAction(keyCode);
+		// We should send those soft keys to handle commands if not fullscreen. As it means the command bar is visible
+		if((castKey == KEY_SOFT_LEFT || castKey == KEY_SOFT_RIGHT) && !fullscreen && !keyCodePressed) { keyPressedCommands(castKey); keyCodePressed = true; }
+		else {keyCodePressed = false; } // Make sure keyReleases aren't registered here.
+
+		return castKey;
+	}
 
 	public int getKeyCode(int gameAction)
 	{
@@ -134,21 +140,7 @@ public abstract class Canvas extends Displayable
 
 	public boolean isDoubleBuffered() { return true; }
 
-	public void keyPressed(int keyCode) 
-	{ 
-		if (listCommands) { keyPressedCommands(getGameAction(keyCode)); } 
-		else 
-		{
-			if (getGameAction(keyCode) == KEY_SOFT_LEFT && commands.size()>0) 
-			{
-				doLeftCommand();
-			} 
-			else if (getGameAction(keyCode) == KEY_SOFT_RIGHT && commands.size()>1) 
-			{
-				doRightCommand();
-			}
-		}
-	}
+	public void keyPressed(int keyCode) { super.keyPressed(keyCode); }
 
 	public void keyReleased(int keyCode) { }
 
@@ -193,11 +185,8 @@ public abstract class Canvas extends Displayable
 				}
 				finally { isPainting = false; }
 				
-				if (repaintCommandBar && !fullscreen) 
-				{ 
-					paintCommandsBar(); 
-					repaintCommandBar = false;
-				}
+				// Draw command bar whenever the canvas is not fullscreen and there are commands in the bar
+				if (!fullscreen && !commands.isEmpty()) { paintCommandsBar(); }
 
 				Mobile.getPlatform().repaint(platformImage, x, y, width, height);
 			}
@@ -235,12 +224,9 @@ public abstract class Canvas extends Displayable
 		height = h;
 	}
 
-	public void doSizeChanged(int w, int h) { sizeChanged(w, h); }
-
 	public void notifySetCurrent() { _invalidate(); }
 
-	@Override
-	public int getHeight() { return commands.isEmpty() ? height : height - barHeight; }
+	public int getHeight() { return height; }
 
 	private void paintCommandsBar() 
 	{
@@ -263,27 +249,13 @@ public abstract class Canvas extends Displayable
 		}
 	}
 
-	public void addCommand(Command cmd)	
-	{ 
-		commands.add(cmd);
-		repaintCommandBar = true;
-		_invalidate();
-	}
+	public void addCommand(Command cmd)	{ super.addCommand(cmd); }
 
-	public void removeCommand(Command cmd) 
-	{
-		commands.add(cmd);
-		repaintCommandBar = true;
-		_invalidate();
-	}
+	public void removeCommand(Command cmd) { super.removeCommand(cmd); }
 
 	protected void render() 
 	{
-		if (listCommands) 
-		{
-			repaintCommandBar = true;
-			super.render();
-		} 
+		if (listCommands) { super.render(); } 
 		else { repaint(); }
 	}
 
