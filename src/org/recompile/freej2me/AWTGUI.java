@@ -175,7 +175,7 @@ public final class AWTGUI
 		new CheckboxMenuItem("Siemens", false),
 		new CheckboxMenuItem("Siemens Old", false)
 	};
-	final String[] layoutValues = {"Standard", "LG", "Motorola", "MotoTriplets", "MotoV8", "NokiaKeyboard", "Sagem", "Siemens", "SiemensOld"};
+	final String[] layoutValues = {"Standard", "LG", "Motorola", "MotoV8", "MotoTriplets", "NokiaKeyboard", "Sagem", "Siemens", "SiemensOld"};
 	
 	final CheckboxMenuItem[] fpsOptions = 
 	{
