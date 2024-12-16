@@ -193,14 +193,15 @@ public abstract class Displayable
 					}
 					
 					graphics.drawString(commands.get(i).getLabel(), width/2, y, Graphics.HCENTER);
-					
 					graphics.setColor(Mobile.lcduiTextColor);
+
 					y += itemHeight;
 				}
 			}
 
 			currentY += contentHeight;
 
+			graphics.setColor(Mobile.lcduiTextColor);
 			graphics.drawString("Okay", xPadding, currentY+titlePadding, Graphics.LEFT);
 			graphics.drawString("Back", width-xPadding, currentY+titlePadding, Graphics.RIGHT);
 		}
@@ -219,6 +220,7 @@ public abstract class Displayable
 				itemCommand = ((Form)this).getItemCommand();
 			}
 
+			graphics.setColor(Mobile.lcduiTextColor);
 			switch(commands.size())
 			{
 				case 0: break;

@@ -260,12 +260,11 @@ public abstract class Canvas extends Displayable
 
 		int padding = 2;
 
+		graphics.setColor(Mobile.lcduiTextColor);
 		if (!commands.isEmpty())
 		{
-			graphics.setColor(Mobile.lcduiTextColor);
 			graphics.drawString(commands.size() > 2 ? "Options" : commands.get(0).getLabel(), padding, height-barHeight, Graphics.LEFT);
 		}
-
 		if (commands.size() == 2) 
 		{
 			graphics.drawString(commands.get(1).getLabel(), width-padding, height-barHeight, Graphics.RIGHT);

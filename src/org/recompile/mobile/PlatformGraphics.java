@@ -457,7 +457,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		if (pixels == null) { throw new NullPointerException("drawPixels(byte) received a null pixel array"); }
 		if (offset < 0 || offset >= (pixels.length * 8)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length * 8) + "| offset:" + offset); }
 
-		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
+		int[] Type1 = {0xFF000000|Mobile.lcduiBGColor, 0xFF000000|Mobile.lcduiTextColor, 0x00000000|Mobile.lcduiBGColor, 0x00000000|Mobile.lcduiTextColor};
 		int c = 0;
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);// Nokia DirectGraphics states that image width and height CAN be zero.
 		final int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();

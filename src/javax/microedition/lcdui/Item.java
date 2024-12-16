@@ -154,6 +154,7 @@ public abstract class Item
 	{
 		Font oldFont = graphics.getFont();
 		graphics.setFont(Font.getDefaultFont());
+		graphics.setColor(Mobile.lcduiTextColor);
 		graphics.drawString(getLabel(), x, y, 0);
 		graphics.setFont(oldFont);
 	}

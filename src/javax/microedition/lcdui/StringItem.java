@@ -120,6 +120,7 @@ public class StringItem extends Item
 		} 
 		else 
 		{
+			graphics.setColor(Mobile.lcduiTextColor);
 			for(int l=0;l<lines.size();l++) 
 			{
 				graphics.drawString( lines.get(l), x,

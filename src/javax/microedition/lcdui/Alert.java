@@ -170,6 +170,7 @@ public class Alert extends Screen
 			return "";
 		}
 
+		graphics.setColor(Mobile.lcduiTextColor);
 		for(int l=0;l<lines.size();l++) {
 			int ystart = margin + l*Font.getDefaultFont().getHeight() + (l > 0 ? (l-1)*lineSpacing : 0);
 			int yend = ystart + Font.getDefaultFont().getHeight();

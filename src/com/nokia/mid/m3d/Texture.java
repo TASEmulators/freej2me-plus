@@ -19,6 +19,7 @@ package com.nokia.mid.m3d;
 
 import javax.microedition.lcdui.Image;
 
+import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
 
 public class Texture
@@ -39,7 +40,7 @@ public class Texture
 
 	private double[] tempm = new double[9]; // scratch
 
-	private int[] colors = {0xFFFFFFFF, 0xFF000000};
+	private int[] colors = {0xFF000000|Mobile.lcduiBGColor, 0xFF000000|Mobile.lcduiTextColor};
 
 	public Texture() { }
 	public Texture(int a, int b, Image c)
