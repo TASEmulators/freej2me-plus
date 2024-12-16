@@ -435,7 +435,8 @@ public class PlatformPlayer implements Player
 			try 
 			{ 
 				midi = MidiSystem.getSequencer(false);
-				midiSequence = MidiSystem.getSequence(stream); } 
+				midiSequence = MidiSystem.getSequence(stream); 
+			} 
 			catch (Exception e) 
 			{
 				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load MIDI file: " + e.getMessage());
@@ -450,6 +451,34 @@ public class PlatformPlayer implements Player
 				midi.getTransmitter().setReceiver(PlatformPlayer.receiver);
 				midi.open();
 				midi.setSequence(midiSequence);
+
+				/* 
+				 * We have to listen for END_OF_MEDIA events, or else jars that rely on this
+				 * won't work in the expected way.
+				 */
+				if (metaListener == null) 
+				{
+					metaListener = new MetaEventListener() 
+					{
+						@Override
+						public void meta(MetaMessage meta) 
+						{
+							if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
+							{
+								state = Player.PREFETCHED;
+								notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+								if(numLoops != 0) 
+								{
+									if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+									setMediaTime(0);
+									start();
+								}
+							}
+						}
+					};
+					midi.addMetaEventListener(metaListener);
+				}
+
 				state = Player.REALIZED;
 			}
 			catch (Exception e) 
@@ -463,38 +492,19 @@ public class PlatformPlayer implements Player
 
 		public void start()
 		{
-			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
-			cleanSequencer();
-			midi.start();
-
-			/* 
-			 * We have to listen for END_OF_MEDIA events, or else jars that rely on this
-			 * won't work in the expected way.
-			 */
-			if (metaListener == null) 
+			try 
 			{
-				metaListener = new MetaEventListener() 
-				{
-					@Override
-					public void meta(MetaMessage meta) 
-					{
-						if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
-						{
-							state = Player.PREFETCHED;
-							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-							if(numLoops != 0) 
-							{
-								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-								setMediaTime(0);
-								start();
-							}
-						}
-					}
-				};
-				midi.addMetaEventListener(metaListener);
+				// Reload the sequence into the sequencer to prevent MIDI property carryovers
+				final long time = getMediaTime(); // We'll reload the sequence, so save it's current position to restore later.
+				midi.setSequence(midiSequence);
+				if(time >= getDuration()) { setMediaTime(0); } // If mediaTime >= getDuration, we should start playing from the beginning
+				else { setMediaTime(time); } // Else, resume from where it stopped
+
+				midi.start();
+				state = Player.STARTED;
+				notifyListeners(PlayerListener.STARTED, getMediaTime());
 			}
-			state = Player.STARTED;
-			notifyListeners(PlayerListener.STARTED, getMediaTime());
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to clean MIDI sequencer and start playback:" + e.getMessage()); }
 		}
 
 		public void stop()
@@ -569,18 +579,6 @@ public class PlatformPlayer implements Player
 		}
 
 		public Sequencer getSequencer() { return midi; }
-
-		// Reload the sequence into the sequencer to prevent MIDI property carryovers
-		private void cleanSequencer() 
-		{
-			try 
-			{
-				final long time = getMediaTime();
-				midi.setSequence(midiSequence);
-				setMediaTime(time);
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to clean MIDI sequencer for playback:" + e.getMessage()); }
-		}
 	}
 
 	private class wavPlayer extends audioplayer
@@ -633,6 +631,30 @@ public class PlatformPlayer implements Player
 				wavStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(tmpStream));
 				wavClip = AudioSystem.getClip();
 				wavClip.open(wavStream);
+				/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
+				if (lineListener == null) 
+				{
+					lineListener = new LineListener() 
+					{
+						@Override
+						public void update(LineEvent event) 
+						{
+							if (event.getType() == LineEvent.Type.STOP) 
+							{
+								state = Player.PREFETCHED;
+								notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+								if(numLoops != 0) 
+								{
+									if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+									setMediaTime(0);
+									start();
+								}
+							}
+						}
+					};
+					wavClip.addLineListener(lineListener);
+				}
+
 				state = Player.REALIZED; 
 			}
 			catch (Exception e) 
@@ -648,30 +670,6 @@ public class PlatformPlayer implements Player
 		{	
 			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
 			wavClip.start();
-
-			/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
-			if (lineListener == null) 
-			{
-				lineListener = new LineListener() 
-				{
-					@Override
-					public void update(LineEvent event) 
-					{
-						if (event.getType() == LineEvent.Type.STOP) 
-						{
-							state = Player.PREFETCHED;
-							notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-							if(numLoops != 0) 
-							{
-								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-								setMediaTime(0);
-								start();
-							}
-						}
-					}
-				};
-				wavClip.addLineListener(lineListener);
-			}
 
 			state = Player.STARTED;
 			notifyListeners(PlayerListener.STARTED, getMediaTime());
