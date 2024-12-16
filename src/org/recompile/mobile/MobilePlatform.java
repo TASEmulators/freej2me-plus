@@ -146,15 +146,11 @@ public class MobilePlatform
 		 * Try to have the jar scale as well. If this doesn't work,
 		 * a simple restart is all it takes, just like before.
 		 */
-		if(canvas != null) 
-		{
-			canvas.doSizeChanged(width, height);
-			canvas.platformImage = lcd;
-		}
 		if(Mobile.getDisplay() != null) 
 		{ 
 			Mobile.getDisplay().getCurrent().doSizeChanged(width, height);
-			Mobile.getDisplay().getCurrent().platformImage = lcd;  
+			Mobile.getDisplay().getCurrent().platformImage = lcd; 
+			Mobile.getDisplay().getCurrent().graphics = gc; 
 		}
 	}
 
