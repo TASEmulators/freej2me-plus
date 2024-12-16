@@ -162,7 +162,7 @@ public class Display
 					next.showNotify();
 				} 
 				finally { isSettingCurrent = false; }
-
+				if(next instanceof Alert) { ((Alert) next).setNextScreen(current); }
 				current = next;
 				current.notifySetCurrent();
 				Mobile.getPlatform().flushGraphics(current.platformImage, 0,0, current.width, current.height);
