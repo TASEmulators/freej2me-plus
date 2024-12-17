@@ -170,6 +170,13 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		try
 		{
 			BufferedImage sub = image.platformImage.getCanvas().getSubimage(x, y, width, height);
+
+			// Apply the backlight mask if Display, nokia's DeviceControl, or others request it for backlight effects.
+			if(Mobile.renderLCDMask)
+			{
+				final int[] pixels = ((DataBufferInt) sub.getRaster().getDataBuffer()).getData();
+				for(int i = 0; i < pixels.length; i++) { pixels[i] = pixels[i] & Mobile.lcdMaskColors[Mobile.maskIndex]; }
+			}
 			gc.drawImage(sub, x, y, null);
 		}
 		catch (Exception e)
@@ -457,7 +464,7 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		if (pixels == null) { throw new NullPointerException("drawPixels(byte) received a null pixel array"); }
 		if (offset < 0 || offset >= (pixels.length * 8)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length * 8) + "| offset:" + offset); }
 
-		int[] Type1 = {0xFF000000|Mobile.lcduiBGColor, 0xFF000000|Mobile.lcduiTextColor, 0x00000000|Mobile.lcduiBGColor, 0x00000000|Mobile.lcduiTextColor};
+		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
 		int c = 0;
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);// Nokia DirectGraphics states that image width and height CAN be zero.
 		final int[] data = ((DataBufferInt) temp.getRaster().getDataBuffer()).getData();

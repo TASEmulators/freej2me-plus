@@ -40,7 +40,7 @@ public class Texture
 
 	private double[] tempm = new double[9]; // scratch
 
-	private int[] colors = {0xFF000000|Mobile.lcduiBGColor, 0xFF000000|Mobile.lcduiTextColor};
+	private int[] colors = {0xFFFFFFFF, 0xFF000000};
 
 	public Texture() { }
 	public Texture(int a, int b, Image c)

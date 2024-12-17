@@ -135,6 +135,9 @@ public class Libretro
 		if(Integer.parseInt(args[9]) == 0) { Mobile.noAlphaOnBlankImages = false; }
 		else { Mobile.noAlphaOnBlankImages = true; }
 
+		/* LCD Backlight Mask color index. */
+		Mobile.maskIndex = Integer.parseInt(args[10]);
+
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
@@ -300,6 +303,13 @@ public class Libretro
 										if(!Mobile.noAlphaOnBlankImages) { config.settings.put("spdhacknoalpha", "off"); }
 										else                             { config.settings.put("spdhacknoalpha", "on"); }
 
+										if(Mobile.maskIndex == 0)      { config.settings.put("backlightcolor", "Disabled"); }
+										else if(Mobile.maskIndex == 1) { config.settings.put("backlightcolor", "Green"); }
+										else if(Mobile.maskIndex == 2) { config.settings.put("backlightcolor", "Cyan"); }
+										else if(Mobile.maskIndex == 3) { config.settings.put("backlightcolor", "Orange"); }
+										else if(Mobile.maskIndex == 4) { config.settings.put("backlightcolor", "Violet"); }
+										else if(Mobile.maskIndex == 5) { config.settings.put("backlightcolor", "Red"); }
+
 										config.saveConfig();
 										settingsChanged();
 
@@ -371,6 +381,13 @@ public class Libretro
 
 									if(Integer.parseInt(cfgtokens[10])==0) { Mobile.noAlphaOnBlankImages = false;  }
 									else { Mobile.noAlphaOnBlankImages = true; }
+
+									if(Integer.parseInt(cfgtokens[11])==0) { config.settings.put("backlightcolor", "Disabled"); }
+									if(Integer.parseInt(cfgtokens[11])==1) { config.settings.put("backlightcolor", "Green");    }
+									if(Integer.parseInt(cfgtokens[11])==2) { config.settings.put("backlightcolor", "Cyan");  }
+									if(Integer.parseInt(cfgtokens[11])==3) { config.settings.put("backlightcolor", "Orange"); }
+									if(Integer.parseInt(cfgtokens[11])==4) { config.settings.put("backlightcolor", "Violet"); }
+									if(Integer.parseInt(cfgtokens[11])==5) { config.settings.put("backlightcolor", "Red"); }
 
 									config.saveConfig();
 									settingsChanged();
@@ -471,6 +488,14 @@ public class Libretro
 		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
 		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
 
+		String lcdBacklightColor = config.settings.get("backlightcolor");
+		if(lcdBacklightColor.equals("Disabled"))    { Mobile.maskIndex = 0; }
+		else if(lcdBacklightColor.equals("Green"))  { Mobile.maskIndex = 1; }
+		else if(lcdBacklightColor.equals("Cyan"))   { Mobile.maskIndex = 2; }
+		else if(lcdBacklightColor.equals("Orange")) { Mobile.maskIndex = 3; }
+		else if(lcdBacklightColor.equals("Violet")) { Mobile.maskIndex = 4; }
+		else if(lcdBacklightColor.equals("Red"))    { Mobile.maskIndex = 5; }
+		
 		if(lcdWidth != w || lcdHeight != h)
 		{
 			lcdWidth = w;

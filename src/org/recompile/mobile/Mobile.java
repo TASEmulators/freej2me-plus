@@ -59,10 +59,18 @@ public class Mobile
     public static final byte LOG_ERROR = 3;
     public static final byte LOG_FATAL = 4;
 
+
+
 	//LCDUI colors
 	public static int lcduiBGColor = 0xFFFFFF;
-	public static int lcduiStrokeColor = 0x777777;
+	public static int lcduiStrokeColor = 0x555555;
 	public static int lcduiTextColor = 0x000000;
+
+	// Mask for simulating device backlights of early nokias, etc. Used by Display's flashBacklight for example
+											// Disabled  , Green     , Cyan      , Orange    , Violet    , Red
+	public static final int[] lcdMaskColors = {0xFFFFFFFF, 0xFF77EF5A, 0xFF5676F6, 0xFFEE9930, 0xFFC47AFF, 0xFFFF6262};
+	public static int maskIndex = 1;
+	public static boolean renderLCDMask = false;
 
 	// Keycode modifiers
 	public static boolean lg = false;

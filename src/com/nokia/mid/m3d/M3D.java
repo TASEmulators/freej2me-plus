@@ -65,8 +65,8 @@ public class M3D
 	private double near;
 	private double far;
 
-	private int color = 0xFF000000|Mobile.lcduiTextColor;
-	private int clearcolor = 0xFF000000|Mobile.lcduiBGColor;
+	private int color = 0xFF000000;
+	private int clearcolor = 0xFFFFFFFF;
 
 
 	private M3D() {  }
@@ -235,12 +235,12 @@ public class M3D
 
 	public void color4ub(byte r, byte g, byte b, byte a)
 	{
-		color = (((0xFF)<<24) | ((r&0xFF)<<16) | ((g&0xFF)<<8) | (b&0xFF))|Mobile.lcduiTextColor;
+		color = (((0xFF)<<24) | ((r&0xFF)<<16) | ((g&0xFF)<<8) | (b&0xFF));
 	}
 
 	public void clearColor4ub(byte r, byte g, byte b, byte a)
 	{
-		clearcolor = (((0xFF)<<24) | ((r&0xFF)<<16) | ((g&0xFF)<<8) | (b&0xFF))|Mobile.lcduiBGColor;
+		clearcolor = (((0xFF)<<24) | ((r&0xFF)<<16) | ((g&0xFF)<<8) | (b&0xFF));
 	}
 
 	public void vertexPointerub(int a, int b, byte[] vertices) 

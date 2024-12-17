@@ -766,6 +766,14 @@ public class Anbu
 		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
 		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
 
+		String lcdBacklightColor = config.settings.get("backlightcolor");
+		if(lcdBacklightColor.equals("Disabled"))    { Mobile.maskIndex = 0; }
+		else if(lcdBacklightColor.equals("Green"))  { Mobile.maskIndex = 1; }
+		else if(lcdBacklightColor.equals("Cyan"))   { Mobile.maskIndex = 2; }
+		else if(lcdBacklightColor.equals("Orange")) { Mobile.maskIndex = 3; }
+		else if(lcdBacklightColor.equals("Violet")) { Mobile.maskIndex = 4; }
+		else if(lcdBacklightColor.equals("Red"))    { Mobile.maskIndex = 5; }
+
 		if(lcdWidth != w || lcdHeight != h)
 		{
 			if(!rotateDisplay) 

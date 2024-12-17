@@ -16,13 +16,19 @@
 */
 package com.nokia.mid.ui;
 
+import javax.microedition.lcdui.Display;
+
 import org.recompile.mobile.Mobile;
 
 public class DeviceControl
 {
-	public static void flashLights(long duration) { }
+	public static void flashLights(long duration) { Mobile.getDisplay().flashBacklight((int)duration); }
 
-	public static void setLights(int num, int level) { }
+	public static void setLights(int num, int level) 
+	{ 
+		if(level == 0)       { Mobile.renderLCDMask = false; }
+		else                 { Mobile.renderLCDMask = true;  }
+	}
 
 	public static void startVibra(int freq, long duration) 
 	{

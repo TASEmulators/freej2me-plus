@@ -16,11 +16,13 @@
 */
 package com.samsung.util;
 
+import org.recompile.mobile.Mobile;
+
 public final class LCDLight
 {
 	public static boolean isSupported() { return true; }
 
-	public static void off() { }
+	public static void off() { Mobile.getDisplay().flashBacklight(0); }
 
-	public static void on(int duration) { }
+	public static void on(int duration) { Mobile.getDisplay().flashBacklight(duration); }
 }

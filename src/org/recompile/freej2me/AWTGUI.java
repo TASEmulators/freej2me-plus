@@ -58,6 +58,7 @@ public final class AWTGUI
 	final Menu fpsCap = new Menu("FPS Limit");
 	final Menu showFPS = new Menu("Show FPS Counter");
 	final Menu phoneType = new Menu("Phone Key Layout");
+	final Menu backlightColor = new Menu("Backlight Color");
 
 	/* Dialogs for resolution changes, restart notifications, MemStats and info about FreeJ2ME */
 	final Dialog[] awtDialogs = 
@@ -177,6 +178,17 @@ public final class AWTGUI
 	};
 	final String[] layoutValues = {"Standard", "LG", "Motorola", "MotoV8", "MotoTriplets", "NokiaKeyboard", "Sagem", "Siemens", "SiemensOld"};
 	
+	final CheckboxMenuItem[] backlightOptions = 
+	{
+		new CheckboxMenuItem("Disabled", false),
+		new CheckboxMenuItem("Green", true),
+		new CheckboxMenuItem("Cyan", false),
+		new CheckboxMenuItem("Orange", false),
+		new CheckboxMenuItem("Violet", false),
+		new CheckboxMenuItem("Red", false)
+	};
+	final String[] backlightValues = {"Disabled", "Green", "Cyan", "Orange", "Violet", "Red"};
+
 	final CheckboxMenuItem[] fpsOptions = 
 	{
 		new CheckboxMenuItem("No Limit", true),
@@ -475,6 +487,27 @@ public final class AWTGUI
 			});
 		}
 
+		for(byte i = 0; i < backlightOptions.length; i++) 
+		{
+			final byte index = i;
+			backlightOptions[i].addItemListener(new ItemListener() 
+			{
+				public void itemStateChanged(ItemEvent e) 
+				{
+					if(!backlightOptions[index].getState()){ backlightOptions[index].setState(true); }
+					if(backlightOptions[index].getState())
+					{ 
+						config.updateBacklight(backlightValues[index]);
+						for(int j = 0; j < backlightOptions.length; j++) 
+						{
+							if(j != index) { backlightOptions[j].setState(false); }
+						}
+						hasPendingChange = true;
+					}
+				}
+			});
+		}
+
 		for(byte i = 0; i < fpsOptions.length; i++) 
 		{
 			final byte index = i;
@@ -583,6 +616,7 @@ public final class AWTGUI
 		optionMenu.add(resChangeMenuItem);
 		optionMenu.add(showFPS);
 		optionMenu.add(phoneType);
+		optionMenu.add(backlightColor);
 		optionMenu.add(fpsCap);
 		optionMenu.add(mapInputs);
 		optionMenu.add(speedHackMenu);
@@ -601,6 +635,7 @@ public final class AWTGUI
 
 		for(int i = 0; i < config.supportedResolutions.length; i++) { resChoice.add(config.supportedResolutions[i]); }
 		for(int i = 0; i < layoutOptions.length; i++) { phoneType.add(layoutOptions[i]); }
+		for(int i = 0; i < backlightOptions.length; i++) { backlightColor.add(backlightOptions[i]); }
 		for(int i = 0; i < fpsOptions.length; i++) { fpsCap.add(fpsOptions[i]); }
 		for(int i = 0; i < fpsCounterPos.length; i++) { showFPS.add(fpsCounterPos[i]); }
 
@@ -623,6 +658,11 @@ public final class AWTGUI
 			for(int i = 0; i < layoutOptions.length; i++) 
 			{
 				layoutOptions[i].setState(config.settings.get("phone").equals(layoutValues[i]));
+			}
+
+			for(int i = 0; i < backlightOptions.length; i++) 
+			{
+				backlightOptions[i].setState(config.settings.get("backlightcolor").equals(backlightValues[i]));
 			}
 
 			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));

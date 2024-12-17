@@ -21,6 +21,6 @@ import org.recompile.mobile.Mobile;
 
 public class Light
 {
-	public static void setLightOn() { }
-	public static void setLightOff() { }
+	public static void setLightOn() { Mobile.getDisplay().flashBacklight(Integer.MAX_VALUE); }
+	public static void setLightOff() { Mobile.getDisplay().flashBacklight(0); }
 }

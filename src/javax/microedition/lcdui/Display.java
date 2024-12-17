@@ -61,6 +61,8 @@ public class Display
 
 	private boolean isSettingCurrent = false;
 
+	private Thread flashThread;
+
 	public Display()
 	{
 		display = this;
@@ -103,7 +105,27 @@ public class Display
 		}
 	}
 
-	public boolean flashBacklight(int duration) { return true; }
+	public boolean flashBacklight(int duration) 
+	{
+		try 
+		{
+			if (flashThread != null && flashThread.isAlive()) 
+			{
+				flashThread.interrupt();
+				Mobile.renderLCDMask = false;
+			}
+			flashThread = new Thread(() -> 
+			{
+				Mobile.renderLCDMask = true;
+				try { Thread.sleep((duration == Integer.MAX_VALUE) ? Long.MAX_VALUE : duration); } // If backlight is Int MAX_VALUE, that means it should stay on.
+				catch(Exception e) {}
+				Mobile.renderLCDMask = false;
+			});
+			flashThread.start();
+		}
+		catch(Exception e) { Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Failed to flash Backlight: "+ e.getMessage()); }
+		return true;
+	}
 
 	public int getBestImageHeight(int imageType)
 	{

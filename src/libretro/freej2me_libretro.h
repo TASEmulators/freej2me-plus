@@ -185,6 +185,24 @@ struct retro_core_option_v2_definition core_options[] =
         "Default"
     },
     {
+        "freej2me_backlightcolor",
+        "System > LCD Backlight Color",
+        "LCD Backlight Color",
+        "Mostly used for monochrome games, where they request the screen to be lit/unlit for additional effects. This option allows you to select a color for the backlight to mimic some of these devices, like Green (Nokia 3410), Cyan (Nokia 6310i), Orange (Siemens C55), etc. If the game you're running has colored graphics and requests screen backlight anyway, or you don't like those backlight effects, disable this option.",
+        "Mostly used for monochrome games, where they request the screen to be lit/unlit for additional effects. This option allows you to select a color for the backlight to mimic some of these devices, like Green (Nokia 3410), Cyan (Nokia 6310i), Orange (Siemens C55), etc. If the game you're running has colored graphics and requests screen backlight anyway, or you don't like those backlight effects, disable this option.",
+        "system_settings",
+        {
+            { "Disabled", NULL },
+            { "Green",    NULL },
+            { "Cyan",     NULL },
+            { "Orange",   NULL },
+            { "Violet",   NULL },
+            { "Red",      NULL },
+            { NULL, NULL },
+        },
+        "Green"
+    },
+    {
         "freej2me_fps",
         "System > Game FPS Limit",
         "Game FPS Limit",
@@ -476,6 +494,21 @@ struct retro_core_option_definition core_options_v1 [] =
         "Default"
     },
     {
+        "freej2me_backlightcolor",
+        "LCD Backlight Color",
+        "Mostly used for monochrome games, where they request the screen to be lit/unlit for additional effects. This option allows you to select a color for the backlight to mimic some of these devices, like Green (Nokia 3410), Cyan (Nokia 6310i), Orange (Siemens C55), etc. If the game you're running has colored graphics and requests screen backlight anyway, or you don't like those backlight effects, disable this option.",
+        {
+            { "Disabled", NULL },
+            { "Green",    NULL },
+            { "Cyan",     NULL },
+            { "Orange",   NULL },
+            { "Violet",   NULL },
+            { "Red",      NULL },
+            { NULL, NULL },
+        },
+        "Green"
+    },
+    {
         "freej2me_fps",
         "Game FPS Limit",
         "The J2ME platform allows a great deal of freedom when dealing with synchronization, so while many games are locked to a certain framerate internally, others allow for variable framerates when uncapped at the cost of higher CPU usage, and some even run faster than intended when they get over a certain FPS threshold. Use the option that best suits the game at hand.",
@@ -666,6 +699,10 @@ static const struct retro_variable vars[] =
     { /* Phone Control Type */
         "freej2me_phone",
         "Phone Key Layout; Default|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Nokia Full Keyboard|Sagem|Siemens|Siemens Old" 
+    },
+    { /* LCD Backlight Color */
+        "freej2me_backlightcolor",
+        "LCD Backlight Color; Green|Disabled|Cyan|Orange|Violet|Red"
     },
     { /* Game FPS limit */
         "freej2me_fps",
