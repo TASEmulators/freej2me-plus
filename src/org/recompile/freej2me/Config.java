@@ -50,7 +50,7 @@ public class Config
 
 	public Runnable onChange;
 
-	HashMap<String, String> settings = new HashMap<String, String>(4);
+	public HashMap<String, String> settings = new HashMap<String, String>(4);
 
 	public Config()
 	{

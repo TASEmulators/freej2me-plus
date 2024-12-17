@@ -112,7 +112,7 @@ public class Sound
 				{
 					if(player == null || !isPrevPlayerTone)  // check for null because release() can be called after all.
 					{
-						if(Manager.dumpAudioStreams) { Manager.dumpAudioStream(new ByteArrayInputStream(data), "audio/x-tone-seq"); } // Dump original OTA as well
+						if(Mobile.dumpAudioStreams) { Manager.dumpAudioStream(new ByteArrayInputStream(data), "audio/x-tone-seq"); } // Dump original OTA as well
 						player = Manager.createPlayer(new ByteArrayInputStream(convertToMidi(data)), "audio/x-tone-seq"); 
 						isPrevPlayerTone = true; 
 					}

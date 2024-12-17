@@ -84,11 +84,9 @@ public class Anbu
 	private boolean isFullscreen = false;
 	private boolean SDLInitialized = false;
 
-	private Config config;
 	private boolean useNokiaControls = false;
 	private boolean useSiemensControls = false;
 	private boolean useMotorolaControls = false;
-	private boolean rotateDisplay = false;
 
 	SDL_Joystick joy = null;
 
@@ -99,8 +97,8 @@ public class Anbu
 	public Anbu(String args[])
 	{
 		Mobile.clearOldLog();
-		lcdWidth = 240;
-		lcdHeight = 320;
+		lcdWidth = Mobile.lcdWidth;
+		lcdHeight = Mobile.lcdHeight;
 
 		String file = null;
 
@@ -119,25 +117,10 @@ public class Anbu
 		Mobile.getPlatform().isSDL = true;
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
-		/* 
-		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user
-		 * is going to use it or not.
-		 */
-		try 
-		{
-			if(!Manager.soundfontDir.isDirectory()) 
-			{ 
-				Manager.soundfontDir.mkdirs();
-				File dummyFile = new File(Manager.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
-				dummyFile.createNewFile();
-			}
-		}
-		catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, Anbu.class.getPackage().getName() + "." + Anbu.class.getSimpleName() + ": " + "Failed to create custom midi info file:" + e.getMessage()); }
-
 		/* TODO: Anbu/SDL has no way of enabling any settings outside of cmd args yet, a UI and code overhaul might be in order */
 
-		config = new Config();
-		config.onChange = new Runnable() { public void run() { settingsChanged(); } };
+		Mobile.config = new Config();
+		Mobile.config.onChange = new Runnable() { public void run() { settingsChanged(); } };
 
 		painter = new Runnable()
 		{
@@ -165,21 +148,21 @@ public class Anbu
 		if(file != null && Mobile.getPlatform().load(file))
 		{
 			// Check config
-			config.init();
+			Mobile.config.init();
 
 			/* Allows FreeJ2ME to set the width and height passed as cmd arguments. */
 			if(args.length>=3)
 			{
 				lcdWidth = Integer.parseInt(args[1]);
 				lcdHeight = Integer.parseInt(args[2]);
-				config.settings.put("width",  ""+lcdWidth);
-				config.settings.put("height", ""+lcdHeight);
+				Mobile.config.settings.put("width",  ""+lcdWidth);
+				Mobile.config.settings.put("height", ""+lcdHeight);
 			}
 
 			// Start SDL
 			sdl = new SDL();
 
-			config.saveConfig();
+			Mobile.config.saveConfig();
 			settingsChanged();
 			
 			sdl.start(args);
@@ -728,65 +711,21 @@ public class Anbu
 
 	void settingsChanged() 
 	{
-		int w = Integer.parseInt(config.settings.get("width"));
-		int h = Integer.parseInt(config.settings.get("height"));
+		boolean hasRotated = Mobile.updateSettings();
 
-		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
-
-		String sound = config.settings.get("sound");
-		Mobile.sound = false;
-		if(sound.equals("on")) { Mobile.sound = true; }
-
-		String phone = config.settings.get("phone");
-		Mobile.lg = false;
-		Mobile.motorola = false;
-		Mobile.motoTriplets = false;
-		Mobile.motoV8 = false;
-		Mobile.nokiaKeyboard = false;
-		Mobile.sagem = false;
-		Mobile.siemens = false;
-		if(phone.equals("LG"))            { Mobile.lg = true;}
-		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
-		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
-		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
-		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
-		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
-		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
-
-		// We should send this one over to the sdl interface.
-		String rotate = config.settings.get("rotate");
-		if(rotate.equals("on")) { rotateDisplay = true; }
-		if(rotate.equals("off")) { rotateDisplay = false; }
-
-		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
-		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
-
-		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
-		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
-		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
-
-		String lcdBacklightColor = config.settings.get("backlightcolor");
-		if(lcdBacklightColor.equals("Disabled"))    { Mobile.maskIndex = 0; }
-		else if(lcdBacklightColor.equals("Green"))  { Mobile.maskIndex = 1; }
-		else if(lcdBacklightColor.equals("Cyan"))   { Mobile.maskIndex = 2; }
-		else if(lcdBacklightColor.equals("Orange")) { Mobile.maskIndex = 3; }
-		else if(lcdBacklightColor.equals("Violet")) { Mobile.maskIndex = 4; }
-		else if(lcdBacklightColor.equals("Red"))    { Mobile.maskIndex = 5; }
-
-		if(lcdWidth != w || lcdHeight != h)
+		if(Mobile.lcdWidth != lcdWidth || Mobile.lcdHeight != lcdHeight || hasRotated) 
 		{
-			if(!rotateDisplay) 
+			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
+			if(!Mobile.rotateDisplay) 
 			{
-				lcdWidth = w;
-				lcdHeight = h;
+				lcdWidth = Mobile.lcdWidth;
+				lcdHeight = Mobile.lcdHeight;
 			}
 			else 
 			{
-				lcdWidth = h;
-				lcdHeight = w;
+				lcdWidth = Mobile.lcdHeight;
+				lcdHeight = Mobile.lcdWidth;
 			}
-			Mobile.getPlatform().resizeLCD(lcdWidth, lcdHeight);
 			sdl.resolutionChanged = true;
 		}
 

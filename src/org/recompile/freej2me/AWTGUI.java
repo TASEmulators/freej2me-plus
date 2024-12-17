@@ -574,8 +574,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
-				if(dumpAudioData.getState()){ Manager.dumpAudioStreams = true; }
-				else{ Manager.dumpAudioStreams = false; }
+				if(dumpAudioData.getState()){ Mobile.dumpAudioStreams = true; }
+				else{ Mobile.dumpAudioStreams = false; }
 			}
 		});
 

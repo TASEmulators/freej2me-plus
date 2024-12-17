@@ -34,6 +34,7 @@ import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Soundbank;
 import javax.sound.midi.Synthesizer;
 
+import org.recompile.freej2me.FreeJ2ME;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
 
@@ -43,7 +44,6 @@ public class Manager
 	public static final String MIDI_DEVICE_LOCATOR = "device://midi";
 
 	/* Custom MIDI variables */
-	public static boolean useCustomMidi = false;
 	public static boolean hasLoadedSynth = false;
 	public static boolean hasLoadedToneSynth = false;
 	public static File soundfontDir = new File("freej2me_system" + File.separatorChar + "customMIDI" + File.separatorChar);
@@ -51,8 +51,6 @@ public class Manager
 	public static Synthesizer mainSynth;
 	private static Synthesizer dedicatedTonePlayer = null;
 	private static MidiChannel dedicatedToneChannel;
-	
-	public static boolean dumpAudioStreams = false;
 
 	public static synchronized Player createPlayer(InputStream stream, String type) throws IOException, MediaException
 	{
@@ -65,7 +63,7 @@ public class Manager
 		 * only a lot of testing will be able to determine which is preferable, or if we'd need a config toggle to alternate both.
 		 */
 
-		if(dumpAudioStreams) { stream = dumpAudioStream(stream, type); }
+		if(Mobile.dumpAudioStreams) { stream = dumpAudioStream(stream, type); }
 
 		return new PlatformPlayer(stream, type);
 	}
@@ -89,7 +87,7 @@ public class Manager
 
 		InputStream stream = Mobile.getPlatform().loader.getResourceAsStream(locator);
 
-		if(dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
+		if(Mobile.dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
 		{
 			dumpAudioStream(stream, locator); // Using the locator, we can try find out what this is by parsing the file extension
 		}
@@ -129,7 +127,7 @@ public class Manager
 			{ 
 				dedicatedTonePlayer = MidiSystem.getSynthesizer(); 
 				dedicatedTonePlayer.open();
-				if(useCustomMidi && !hasLoadedToneSynth) { dedicatedTonePlayer.loadAllInstruments(customSoundfont); hasLoadedToneSynth = true; }
+				if(Mobile.useCustomMidi && !hasLoadedToneSynth) { dedicatedTonePlayer.loadAllInstruments(customSoundfont); hasLoadedToneSynth = true; }
 
 				dedicatedToneChannel = dedicatedTonePlayer.getChannels()[0]; 
 			} 
@@ -229,6 +227,21 @@ public class Manager
 		 * in checking if the directory exists again. If it has already been loaded, jsut return.
 		 */
 		if(hasLoadedSynth) { return; }
+
+		/* 
+		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user
+		 * is going to use it or not.
+		 */
+		if(!soundfontDir.isDirectory()) 
+		{
+			try 
+			{
+				soundfontDir.mkdirs();
+				File dummyFile = new File(soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
+				dummyFile.createNewFile();
+			}
+			catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to create custom midi dir:" + e.getMessage()); }
+		}
 		
 		/* Get the first sf2 soundfont in the directory */
 		String[] fontfile = soundfontDir.list(new FilenameFilter()
@@ -241,7 +254,7 @@ public class Manager
 		 * Only really set the player to use a custom midi soundfont if there is
 		 * at least one inside the directory.
 		 */
-		if(useCustomMidi && fontfile != null && fontfile.length > 0) 
+		if(Mobile.useCustomMidi && fontfile != null && fontfile.length > 0) 
 		{
 			try 
 			{
@@ -258,7 +271,7 @@ public class Manager
 			} 
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Could not load soundfont into synth: " + e.getMessage());}
 		}
-		else if (!useCustomMidi) 
+		else if (!Mobile.useCustomMidi) 
 		{
 			try 
 			{

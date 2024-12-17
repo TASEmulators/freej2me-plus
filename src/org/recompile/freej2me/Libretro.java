@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-import javax.microedition.media.Manager;
 import javax.microedition.midlet.MIDlet;
 
 public class Libretro
@@ -34,8 +33,6 @@ public class Libretro
 	private int lcdWidth;
 	private int lcdHeight;
 
-	private Config config;
-	private boolean rotateDisplay = false;
 	private boolean soundEnabled = true;
 
 	private boolean[] pressedKeys = new boolean[128];
@@ -63,8 +60,8 @@ public class Libretro
 
 	public Libretro(String args[])
 	{
-		lcdWidth  = 240;
-		lcdHeight = 320;
+		lcdWidth  = Mobile.lcdWidth;
+		lcdHeight = Mobile.lcdHeight;
 
 		/* 
 		 * Notify the MIDlet class that this version of FreeJ2ME is for Libretro, which disables 
@@ -72,21 +69,6 @@ public class Libretro
 		 * faults on frontends and also close the unexpectedly.
 		*/
 		Mobile.getPlatform().isLibretro = true;
-
-		/* 
-		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user
-		 * is going to use it or not.
-		 */
-		try 
-		{
-			if(!Manager.soundfontDir.isDirectory()) 
-			{ 
-				Manager.soundfontDir.mkdirs();
-				File dummyFile = new File(Manager.soundfontDir.getPath() + File.separatorChar + "Put your sf2 bank here");
-				dummyFile.createNewFile();
-			}
-		}
-		catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Failed to create custom midi info file:" + e.getMessage()); }
 
 		/* 
 		 * Checks if the arguments were received from the commandline -> width, height, rotate, phonetype, fps, sound, ...
@@ -98,7 +80,7 @@ public class Libretro
 		lcdWidth =  Integer.parseInt(args[0]);
 		lcdHeight = Integer.parseInt(args[1]);
 
-		if(Integer.parseInt(args[2]) == 1) { rotateDisplay = true; }
+		if(Integer.parseInt(args[2]) == 1) { Mobile.rotateDisplay = true; }
 
 		Mobile.lg = false;
 		Mobile.motorola = false;
@@ -122,10 +104,10 @@ public class Libretro
 
 		if(Integer.parseInt(args[5]) == 0) { soundEnabled = false; }
 
-		if(Integer.parseInt(args[6]) == 1) { Manager.useCustomMidi = true; }
+		if(Integer.parseInt(args[6]) == 1) { Mobile.useCustomMidi = true; }
 
 		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
-		if(Integer.parseInt(args[7]) == 1) { Manager.dumpAudioStreams = true; }
+		if(Integer.parseInt(args[7]) == 1) { Mobile.dumpAudioStreams = true; }
 
 		/* Same for Logging Level */
 		if(Integer.parseInt(args[8]) == 0) { Mobile.logging = false; }
@@ -142,8 +124,8 @@ public class Libretro
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight));
 
-		config = new Config();
-		config.onChange = new Runnable() { public void run() { settingsChanged(); } };
+		Mobile.config = new Config();
+		Mobile.config.onChange = new Runnable() { public void run() { settingsChanged(); } };
 
 		lio = new LibretroIO();
 
@@ -226,7 +208,7 @@ public class Libretro
 								case 4: // mouse up
 									mousex = (din[1]<<8) | din[2];
 									mousey = (din[3]<<8) | din[4];
-									if(!rotateDisplay)
+									if(!Mobile.rotateDisplay)
 									{
 										Mobile.getPlatform().pointerReleased(mousex, mousey);
 									}
@@ -239,7 +221,7 @@ public class Libretro
 								case 5: // mouse down
 									mousex = (din[1]<<8) | din[2];
 									mousey = (din[3]<<8) | din[4];
-									if(!rotateDisplay)
+									if(!Mobile.rotateDisplay)
 									{
 										Mobile.getPlatform().pointerPressed(mousex, mousey);
 									}
@@ -252,7 +234,7 @@ public class Libretro
 								case 6: // mouse drag
 									mousex = (din[1]<<8) | din[2];
 									mousey = (din[3]<<8) | din[4];
-									if(!rotateDisplay)
+									if(!Mobile.rotateDisplay)
 									{
 										Mobile.getPlatform().pointerDragged(mousex, mousey);
 									}
@@ -273,44 +255,44 @@ public class Libretro
 									if(Mobile.getPlatform().load(url.toString()))
 									{
 										// Check config
-										config.init();
+										Mobile.config.init();
 
 										/* Override configs with the ones passed through commandline */
-										config.settings.put("width",  ""+lcdWidth);
-										config.settings.put("height", ""+lcdHeight);
+										Mobile.config.settings.put("width",  ""+lcdWidth);
+										Mobile.config.settings.put("height", ""+lcdHeight);
 
-										if(rotateDisplay)   { config.settings.put("rotate", "on");  }
-										if(!rotateDisplay)  { config.settings.put("rotate", "off"); }
+										if(Mobile.rotateDisplay)   { Mobile.config.settings.put("rotate", "on");  }
+										if(!Mobile.rotateDisplay)  { Mobile.config.settings.put("rotate", "off"); }
 
-										if(Mobile.lg)                 { config.settings.put("phone", "LG");    }
-										else if(Mobile.motorola)      { config.settings.put("phone", "Motorola");  }
-										else if(Mobile.motoTriplets)  { config.settings.put("phone", "MotoTriplets"); }
-										else if(Mobile.motoV8)        { config.settings.put("phone", "MotoV8"); }
-										else if(Mobile.nokiaKeyboard) { config.settings.put("phone", "NokiaKeyboard"); }
-										else if(Mobile.sagem)         { config.settings.put("phone", "Sagem"); }
-										else if(Mobile.siemens)       { config.settings.put("phone", "Siemens"); }
-										else if(Mobile.siemensold)    { config.settings.put("phone", "SiemensOld"); }
-										else                          { config.settings.put("phone", "Standard"); }
+										if(Mobile.lg)                 { Mobile.config.settings.put("phone", "LG");    }
+										else if(Mobile.motorola)      { Mobile.config.settings.put("phone", "Motorola");  }
+										else if(Mobile.motoTriplets)  { Mobile.config.settings.put("phone", "MotoTriplets"); }
+										else if(Mobile.motoV8)        { Mobile.config.settings.put("phone", "MotoV8"); }
+										else if(Mobile.nokiaKeyboard) { Mobile.config.settings.put("phone", "NokiaKeyboard"); }
+										else if(Mobile.sagem)         { Mobile.config.settings.put("phone", "Sagem"); }
+										else if(Mobile.siemens)       { Mobile.config.settings.put("phone", "Siemens"); }
+										else if(Mobile.siemensold)    { Mobile.config.settings.put("phone", "SiemensOld"); }
+										else                          { Mobile.config.settings.put("phone", "Standard"); }
 
-										if(soundEnabled)   { config.settings.put("sound", "on");  }
-										if(!soundEnabled)  { config.settings.put("sound", "off"); }
+										if(soundEnabled)   { Mobile.config.settings.put("sound", "on");  }
+										if(!soundEnabled)  { Mobile.config.settings.put("sound", "off"); }
 
-										config.settings.put("fps", "" + Mobile.limitFPS);
+										Mobile.config.settings.put("fps", "" + Mobile.limitFPS);
 
-										if(!Manager.useCustomMidi) { config.settings.put("soundfont", "Default"); }
-										else                       { config.settings.put("soundfont", "Custom");  }
+										if(!Mobile.useCustomMidi)  { Mobile.config.settings.put("soundfont", "Default"); }
+										else                       { Mobile.config.settings.put("soundfont", "Custom");  }
 
-										if(!Mobile.noAlphaOnBlankImages) { config.settings.put("spdhacknoalpha", "off"); }
-										else                             { config.settings.put("spdhacknoalpha", "on"); }
+										if(!Mobile.noAlphaOnBlankImages) { Mobile.config.settings.put("spdhacknoalpha", "off"); }
+										else                             { Mobile.config.settings.put("spdhacknoalpha", "on"); }
 
-										if(Mobile.maskIndex == 0)      { config.settings.put("backlightcolor", "Disabled"); }
-										else if(Mobile.maskIndex == 1) { config.settings.put("backlightcolor", "Green"); }
-										else if(Mobile.maskIndex == 2) { config.settings.put("backlightcolor", "Cyan"); }
-										else if(Mobile.maskIndex == 3) { config.settings.put("backlightcolor", "Orange"); }
-										else if(Mobile.maskIndex == 4) { config.settings.put("backlightcolor", "Violet"); }
-										else if(Mobile.maskIndex == 5) { config.settings.put("backlightcolor", "Red"); }
+										if(Mobile.maskIndex == 0)      { Mobile.config.settings.put("backlightcolor", "Disabled"); }
+										else if(Mobile.maskIndex == 1) { Mobile.config.settings.put("backlightcolor", "Green"); }
+										else if(Mobile.maskIndex == 2) { Mobile.config.settings.put("backlightcolor", "Cyan"); }
+										else if(Mobile.maskIndex == 3) { Mobile.config.settings.put("backlightcolor", "Orange"); }
+										else if(Mobile.maskIndex == 4) { Mobile.config.settings.put("backlightcolor", "Violet"); }
+										else if(Mobile.maskIndex == 5) { Mobile.config.settings.put("backlightcolor", "Red"); }
 
-										config.saveConfig();
+										Mobile.config.saveConfig();
 										settingsChanged();
 
 										// Run jar
@@ -349,32 +331,32 @@ public class Libretro
 									 * received string is a config update. Only useful for debugging, 
 									 * but better leave it in there as we might make adjustments later.
 									 */
-									config.settings.put("width",  ""+Integer.parseInt(cfgtokens[1]));
-									config.settings.put("height", ""+Integer.parseInt(cfgtokens[2]));
+									Mobile.config.settings.put("width",  ""+Integer.parseInt(cfgtokens[1]));
+									Mobile.config.settings.put("height", ""+Integer.parseInt(cfgtokens[2]));
 
-									if(Integer.parseInt(cfgtokens[3])==1) { config.settings.put("rotate", "on");  }
-									if(Integer.parseInt(cfgtokens[3])==0) { config.settings.put("rotate", "off"); }
+									if(Integer.parseInt(cfgtokens[3])==1) { Mobile.config.settings.put("rotate", "on");  }
+									if(Integer.parseInt(cfgtokens[3])==0) { Mobile.config.settings.put("rotate", "off"); }
 
-									if(Integer.parseInt(cfgtokens[4])==0) { config.settings.put("phone", "Standard"); }
-									if(Integer.parseInt(cfgtokens[4])==1) { config.settings.put("phone", "LG");    }
-									if(Integer.parseInt(cfgtokens[4])==2) { config.settings.put("phone", "Motorola");  }
-									if(Integer.parseInt(cfgtokens[4])==3) { config.settings.put("phone", "MotoTriplets"); }
-									if(Integer.parseInt(cfgtokens[4])==4) { config.settings.put("phone", "MotoV8"); }
-									if(Integer.parseInt(cfgtokens[4])==5) { config.settings.put("phone", "NokiaKeyboard"); }
-									if(Integer.parseInt(cfgtokens[4])==6) { config.settings.put("phone", "Sagem"); }
-									if(Integer.parseInt(cfgtokens[4])==7) { config.settings.put("phone", "Siemens"); }
-									if(Integer.parseInt(cfgtokens[4])==8) { config.settings.put("phone", "SiemensOld"); }
+									if(Integer.parseInt(cfgtokens[4])==0) { Mobile.config.settings.put("phone", "Standard"); }
+									if(Integer.parseInt(cfgtokens[4])==1) { Mobile.config.settings.put("phone", "LG");    }
+									if(Integer.parseInt(cfgtokens[4])==2) { Mobile.config.settings.put("phone", "Motorola");  }
+									if(Integer.parseInt(cfgtokens[4])==3) { Mobile.config.settings.put("phone", "MotoTriplets"); }
+									if(Integer.parseInt(cfgtokens[4])==4) { Mobile.config.settings.put("phone", "MotoV8"); }
+									if(Integer.parseInt(cfgtokens[4])==5) { Mobile.config.settings.put("phone", "NokiaKeyboard"); }
+									if(Integer.parseInt(cfgtokens[4])==6) { Mobile.config.settings.put("phone", "Sagem"); }
+									if(Integer.parseInt(cfgtokens[4])==7) { Mobile.config.settings.put("phone", "Siemens"); }
+									if(Integer.parseInt(cfgtokens[4])==8) { Mobile.config.settings.put("phone", "SiemensOld"); }
 
-									config.settings.put("fps", ""+cfgtokens[5]);
+									Mobile.config.settings.put("fps", ""+cfgtokens[5]);
 
-									if(Integer.parseInt(cfgtokens[6])==1) { config.settings.put("sound", "on");  }
-									if(Integer.parseInt(cfgtokens[6])==0) { config.settings.put("sound", "off"); }
+									if(Integer.parseInt(cfgtokens[6])==1) { Mobile.config.settings.put("sound", "on");  }
+									if(Integer.parseInt(cfgtokens[6])==0) { Mobile.config.settings.put("sound", "off"); }
 
-									if(Integer.parseInt(cfgtokens[7])==0) { config.settings.put("soundfont", "Default"); }
-									if(Integer.parseInt(cfgtokens[7])==1) { config.settings.put("soundfont", "Custom");  }
+									if(Integer.parseInt(cfgtokens[7])==0) { Mobile.config.settings.put("soundfont", "Default"); }
+									if(Integer.parseInt(cfgtokens[7])==1) { Mobile.config.settings.put("soundfont", "Custom");  }
 
-									if(Integer.parseInt(cfgtokens[8])==1) { Manager.dumpAudioStreams = true;  }
-									if(Integer.parseInt(cfgtokens[8])==0) { Manager.dumpAudioStreams = false; }
+									if(Integer.parseInt(cfgtokens[8])==1) { Mobile.dumpAudioStreams = true;  }
+									if(Integer.parseInt(cfgtokens[8])==0) { Mobile.dumpAudioStreams = false; }
 
 									if(Integer.parseInt(cfgtokens[9])==0) { Mobile.logging = false;  }
 									else { Mobile.logging = true; Mobile.minLogLevel = (byte) (Integer.parseInt(cfgtokens[9])-1); }
@@ -382,14 +364,14 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[10])==0) { Mobile.noAlphaOnBlankImages = false;  }
 									else { Mobile.noAlphaOnBlankImages = true; }
 
-									if(Integer.parseInt(cfgtokens[11])==0) { config.settings.put("backlightcolor", "Disabled"); }
-									if(Integer.parseInt(cfgtokens[11])==1) { config.settings.put("backlightcolor", "Green");    }
-									if(Integer.parseInt(cfgtokens[11])==2) { config.settings.put("backlightcolor", "Cyan");  }
-									if(Integer.parseInt(cfgtokens[11])==3) { config.settings.put("backlightcolor", "Orange"); }
-									if(Integer.parseInt(cfgtokens[11])==4) { config.settings.put("backlightcolor", "Violet"); }
-									if(Integer.parseInt(cfgtokens[11])==5) { config.settings.put("backlightcolor", "Red"); }
+									if(Integer.parseInt(cfgtokens[11])==0) { Mobile.config.settings.put("backlightcolor", "Disabled"); }
+									if(Integer.parseInt(cfgtokens[11])==1) { Mobile.config.settings.put("backlightcolor", "Green");    }
+									if(Integer.parseInt(cfgtokens[11])==2) { Mobile.config.settings.put("backlightcolor", "Cyan");  }
+									if(Integer.parseInt(cfgtokens[11])==3) { Mobile.config.settings.put("backlightcolor", "Orange"); }
+									if(Integer.parseInt(cfgtokens[11])==4) { Mobile.config.settings.put("backlightcolor", "Violet"); }
+									if(Integer.parseInt(cfgtokens[11])==5) { Mobile.config.settings.put("backlightcolor", "Red"); }
 
-									config.saveConfig();
+									Mobile.config.saveConfig();
 									settingsChanged();
 								break;
 								
@@ -448,59 +430,16 @@ public class Libretro
 
 	private void settingsChanged()
 	{
-		int w = Integer.parseInt(config.settings.get("width"));
-		int h = Integer.parseInt(config.settings.get("height"));
+		Mobile.updateSettings();
 
-		Mobile.limitFPS = Integer.parseInt(config.settings.get("fps"));
-
-		String sound = config.settings.get("sound");
-		Mobile.sound = false;
-		if(sound.equals("on")) { Mobile.sound = true; }
-
-		String phone = config.settings.get("phone");
-		Mobile.lg = false;
-		Mobile.motorola = false;
-		Mobile.motoTriplets = false;
-		Mobile.motoV8 = false;
-		Mobile.nokiaKeyboard = false;
-		Mobile.sagem = false;
-		Mobile.siemens = false;
-		Mobile.siemensold = false;
-		if(phone.equals("LG"))            { Mobile.lg = true;}
-		if(phone.equals("Motorola"))      { Mobile.motorola = true;}
-		if(phone.equals("MotoTriplets"))  { Mobile.motoTriplets = true;}
-		if(phone.equals("MotoV8"))        { Mobile.motoV8 = true;}
-		if(phone.equals("NokiaKeyboard")) { Mobile.nokiaKeyboard = true;}
-		if(phone.equals("Sagem"))         { Mobile.sagem = true;}
-		if(phone.equals("Siemens"))       { Mobile.siemens = true;}
-		if(phone.equals("SiemensOld"))    { Mobile.siemensold = true;}
-
-
-		String rotate = config.settings.get("rotate");
-		if(rotate.equals("on")) { rotateDisplay = true; frameHeader[5] = (byte)1; }
-		if(rotate.equals("off")) { rotateDisplay = false; frameHeader[5] = (byte)0; }
-
-		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom"))  { Manager.useCustomMidi = true; }
-		else if(midiSoundfont.equals("Default")) { Manager.useCustomMidi = false; }
-
-		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
-		if(speedHackNoAlpha.equals("on")) { Mobile.noAlphaOnBlankImages = true; }
-		else if (speedHackNoAlpha.equals("off")) { Mobile.noAlphaOnBlankImages = false; };
-
-		String lcdBacklightColor = config.settings.get("backlightcolor");
-		if(lcdBacklightColor.equals("Disabled"))    { Mobile.maskIndex = 0; }
-		else if(lcdBacklightColor.equals("Green"))  { Mobile.maskIndex = 1; }
-		else if(lcdBacklightColor.equals("Cyan"))   { Mobile.maskIndex = 2; }
-		else if(lcdBacklightColor.equals("Orange")) { Mobile.maskIndex = 3; }
-		else if(lcdBacklightColor.equals("Violet")) { Mobile.maskIndex = 4; }
-		else if(lcdBacklightColor.equals("Red"))    { Mobile.maskIndex = 5; }
+		if(Mobile.rotateDisplay == true) { frameHeader[5] = (byte)1; } 
+		else                             { frameHeader[5] = (byte)0; }
 		
-		if(lcdWidth != w || lcdHeight != h)
+		if(lcdWidth != Mobile.lcdWidth || lcdHeight != Mobile.lcdHeight)
 		{
-			lcdWidth = w;
-			lcdHeight = h;
-			Mobile.getPlatform().resizeLCD(w, h);
+			lcdWidth = Mobile.lcdWidth;
+			lcdHeight = Mobile.lcdHeight;
+			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
 		}
 	}
 

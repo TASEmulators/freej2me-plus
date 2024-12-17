@@ -25,8 +25,10 @@ import java.io.InputStream;
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.m3g.Graphics3D;
-
+import javax.microedition.media.Manager;
 import javax.microedition.midlet.MIDlet;
+
+import org.recompile.freej2me.Config;
 
 /*
 
@@ -46,6 +48,21 @@ public class Mobile
 
 	// Mobile should contain flags to any and all "speedhacks" present in FreeJ2ME
 	public static boolean noAlphaOnBlankImages = true;
+
+	// Config file handle
+	public static Config config;
+
+	public static int lcdWidth = 240;
+	public static int lcdHeight = 320;
+
+	// State of display rotation.
+	public static boolean rotateDisplay = false;
+
+	// Support for loading custom MIDI soundfonts
+	public static boolean useCustomMidi = false;
+
+	// Enable/Disable audio dumping
+	public static boolean dumpAudioStreams = false;
 
 	// Enable/disable logging to the console and optionally to a file
 	public static boolean logging = true; 
@@ -563,5 +580,65 @@ public class Mobile
 	{
 		File logFile = new File(LOG_FILE);
         if (logFile.exists()) { logFile.delete(); }
+	}
+
+	public static boolean updateSettings() 
+	{
+		lcdWidth = Integer.parseInt(config.settings.get("width"));
+		lcdHeight = Integer.parseInt(config.settings.get("height"));
+
+		limitFPS = Integer.parseInt(config.settings.get("fps"));
+
+		String soundEnabled = config.settings.get("sound");
+		sound = false;
+		if(soundEnabled.equals("on")) { sound = true; }
+
+		String phone = config.settings.get("phone");
+		lg = false;
+		motorola = false;
+		motoTriplets = false;
+		motoV8 = false;
+		nokiaKeyboard = false;
+		sagem = false;
+		siemens = false;
+		siemensold = false;
+		if(phone.equals("LG"))            { lg = true;}
+		if(phone.equals("Motorola"))      { motorola = true;}
+		if(phone.equals("MotoTriplets"))  { motoTriplets = true;}
+		if(phone.equals("MotoV8"))        { motoV8 = true;}
+		if(phone.equals("NokiaKeyboard")) { nokiaKeyboard = true;}
+		if(phone.equals("Sagem"))         { sagem = true;}
+		if(phone.equals("Siemens"))       { siemens = true;}
+		if(phone.equals("SiemensOld"))    { siemensold = true;}
+
+		String midiSoundfont = config.settings.get("soundfont");
+		if(midiSoundfont.equals("Custom"))       { useCustomMidi = true; }
+		else if(midiSoundfont.equals("Default")) { useCustomMidi = false; }
+
+		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
+		if(speedHackNoAlpha.equals("on"))        { noAlphaOnBlankImages = true; }
+		else if (speedHackNoAlpha.equals("off")) { noAlphaOnBlankImages = false; };
+
+		String lcdBacklightColor = config.settings.get("backlightcolor");
+		if(lcdBacklightColor.equals("Disabled"))    { maskIndex = 0; }
+		else if(lcdBacklightColor.equals("Green"))  { maskIndex = 1; }
+		else if(lcdBacklightColor.equals("Cyan"))   { maskIndex = 2; }
+		else if(lcdBacklightColor.equals("Orange")) { maskIndex = 3; }
+		else if(lcdBacklightColor.equals("Violet")) { maskIndex = 4; }
+		else if(lcdBacklightColor.equals("Red"))    { maskIndex = 5; }
+
+		String rotate = config.settings.get("rotate");
+		if(rotate.equals("on") && rotateDisplay != true) 
+		{
+			rotateDisplay = true;
+			return true;
+		}
+		if(rotate.equals("off") && rotateDisplay != false) 
+		{
+			rotateDisplay = false;
+			return true;
+		}
+		// If no rotation has to be done, return false
+		return false;
 	}
 }
