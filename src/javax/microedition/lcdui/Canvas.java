@@ -248,16 +248,24 @@ public abstract class Canvas extends Displayable
 		graphics.setColor(Mobile.lcduiBGColor);
 		graphics.fillRect(0, height-barHeight, width, barHeight);
 
-		int padding = 2;
+		int textCenter;
+		int xPos;
 
 		graphics.setColor(Mobile.lcduiTextColor);
+		graphics.drawLine(0, height-barHeight, width, height-barHeight);
+		graphics.drawLine(width/2, height-barHeight, width/2, height);
 		if (!commands.isEmpty())
 		{
-			graphics.drawString(commands.size() > 2 ? "Options" : commands.get(0).getLabel(), padding, height-barHeight, Graphics.LEFT);
+			String label = commands.size() > 2 ? "Options" : commands.get(0).getLabel();
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(label))/2;
+			xPos = (width / 4) - textCenter;
+			graphics.drawString(label, xPos, height-barHeight, Graphics.LEFT);
 		}
 		if (commands.size() == 2) 
 		{
-			graphics.drawString(commands.get(1).getLabel(), width-padding, height-barHeight, Graphics.RIGHT);
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(1).getLabel()))/2;
+			xPos = (3 * width / 4) - textCenter;
+			graphics.drawString(commands.get(1).getLabel(), xPos, height-barHeight, Graphics.LEFT);
 		}
 	}
 
