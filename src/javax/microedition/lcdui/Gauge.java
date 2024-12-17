@@ -143,7 +143,15 @@ public class Gauge extends Item
 
 		int barWidth = maxValue == 0 ? 0 : ((value * (width-2*arrowSpacing))/maxValue);
 
-		graphics.fillRect(arrowSpacing+3, 3, barWidth-5, Font.getDefaultFont().getHeight()-5);
+		graphics.fillRect(arrowSpacing+2, 2, barWidth-3, Font.getDefaultFont().getHeight()-3);
+		
+		graphics.setColor(Mobile.lcduiStrokeColor); // Gauge Value will be rendered with stroke color instead of "lcduiTextColor" (as the bar is TextColor and the BG is BGColor) 
+		
+		String text;
+		if(maxValue != INDEFINITE) { text = Integer.toString(value) + " (" + String.format("%.0f", (value / (float) maxValue * 100f)) + "%)"; }
+		else { text = "? (?%)"; }
+		int textWidth = (graphics.getGraphics2D().getFontMetrics().stringWidth(text));
+		graphics.drawString(text, (width-textWidth)/2 + 1, 0, Graphics.LEFT); // Using Grapyics' HCENTER doesn't work as expected here, so centering has to be done manually
 		
 		_drawArrow(graphics, 1,  value < maxValue, 0, 0, width, Font.getDefaultFont().getHeight());
 	

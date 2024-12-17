@@ -61,7 +61,7 @@ public class Mobile
 
 	//LCDUI colors
 	public static int lcduiBGColor = 0xFFFFFF;
-	public static int lcduiStrokeColor = 0xAAAAAA;
+	public static int lcduiStrokeColor = 0x777777;
 	public static int lcduiTextColor = 0x000000;
 
 	// Keycode modifiers
