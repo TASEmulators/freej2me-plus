@@ -80,9 +80,9 @@ public class AudioClip
 		if(filename == null) { throw new NullPointerException("AudioClip: Cannot open a player with a null file path"); }
 		if(clipType < 1 || clipType > 3) { throw new IllegalArgumentException("AudioClip: Clip type not recognized");}
 
-		Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "Samsung AudioClip (locator)");
+		Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "Samsung AudioClip(type, locator) untested");
 		
-		InputStream stream = null; // TODO: Actually load this stream from the locator provided
+		InputStream stream = Mobile.getPlatform().loader.getResourceAsStream(filename);
 
 		try 
 		{ 
