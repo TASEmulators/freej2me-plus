@@ -161,6 +161,8 @@ public abstract class Displayable
 		graphics.drawLine(0, height-commandsBarHeight-1, width, height-commandsBarHeight-1);
 
 		int currentY = titleHeight + 1;
+		int textCenter;
+		int xPos;
 
 		if (listCommands) // Render Commands
 		{
@@ -202,8 +204,16 @@ public abstract class Displayable
 			currentY += contentHeight;
 
 			graphics.setColor(Mobile.lcduiTextColor);
-			graphics.drawString("Okay", xPadding, currentY+titlePadding, Graphics.LEFT);
-			graphics.drawString("Back", width-xPadding, currentY+titlePadding, Graphics.RIGHT);
+
+			graphics.drawLine(width/2, height-commandsBarHeight-1, width/2, height);
+
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))/2;
+			xPos = (width / 4) - textCenter;
+			graphics.drawString("Okay", xPos, currentY+titlePadding, Graphics.LEFT);
+
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back"))/2;
+			xPos = (3 * width / 4) - textCenter;
+			graphics.drawString("Back", xPos, currentY+titlePadding, Graphics.LEFT);
 		}
 		else // Render Items
 		{
@@ -225,14 +235,26 @@ public abstract class Displayable
 			{
 				case 0: break;
 				case 1:
-					graphics.drawString(commands.get(0).getLabel(), xPadding, currentY+titlePadding, Graphics.LEFT);
+					// Draw a center line on the lower bar, we'll only have two objects there
+					graphics.drawLine(width/2, height-commandsBarHeight-1, width/2, height);
+
+					textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(0).getLabel()))/2;
+					xPos = (width / 4) - textCenter;
+					graphics.drawString(commands.get(0).getLabel(), xPos, currentY+titlePadding, Graphics.LEFT);
 					if (status != null)
 					{
-						graphics.drawString(status, width-xPadding, currentY+titlePadding, Graphics.RIGHT);
+						textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(status))/2;
+						xPos = (3* width / 4) - textCenter;
+						graphics.drawString(status, xPos, currentY+titlePadding, Graphics.LEFT);
 					}
 					
 					break;
 				case 2:
+					
+					graphics.drawLine(3 * width / 4, height-commandsBarHeight-1, 4 * width / 6, height);
+
+					graphics.drawLine(width/4, height-commandsBarHeight-1, width/3, height);
+
 					graphics.drawString(commands.get(0).getLabel(), xPadding, currentY+titlePadding, Graphics.LEFT);
 					graphics.drawString(commands.get(1).getLabel(), width-xPadding, currentY+titlePadding, Graphics.RIGHT);
 
@@ -245,7 +267,8 @@ public abstract class Displayable
 					graphics.drawString("Options", xPadding, currentY+titlePadding, Graphics.LEFT);
 			}
 
-			if (itemCommand != null) {
+			if (itemCommand != null) 
+			{
 				graphics.drawString(itemCommand.getLabel(), width/2, currentY+titlePadding, Graphics.HCENTER);
 			}
 		}
