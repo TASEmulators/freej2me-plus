@@ -53,7 +53,10 @@ public abstract class Canvas extends Displayable
 	private int barHeight;
 	private boolean fullscreen = false;
 	private boolean isPainting = false;
-	private boolean keyCodePressed = false; // Only used to discern actual soft key command bar inputs below
+
+	// Those are only used to discern actual soft key command bar inputs below
+	private boolean leftSoftPressed = false;
+	private boolean rightSoftPressed = false;
 
 	protected Canvas()
 	{
@@ -65,9 +68,18 @@ public abstract class Canvas extends Displayable
 	public int getGameAction(int keyCode) 
 	{ 
 		int castKey = Mobile.getGameAction(keyCode);
+
 		// We should send those soft keys to handle commands if not fullscreen. As it means the command bar is visible
-		if((castKey == KEY_SOFT_LEFT || castKey == KEY_SOFT_RIGHT) && !fullscreen && !keyCodePressed) { keyPressedCommands(castKey); keyCodePressed = true; }
-		else {keyCodePressed = false; } // Make sure keyReleases aren't registered here.
+		if(castKey == KEY_SOFT_LEFT && !fullscreen) 
+		{ 
+			if(!leftSoftPressed) { keyPressedCommands(castKey); } // Make sure keyReleases aren't registered here
+			leftSoftPressed = !leftSoftPressed; 
+		}
+		else if(castKey == KEY_SOFT_RIGHT && !fullscreen) 
+		{
+			if(!rightSoftPressed) { keyPressedCommands(castKey); } 
+			rightSoftPressed = !rightSoftPressed; 
+		}
 
 		return castKey;
 	}
