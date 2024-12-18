@@ -39,6 +39,10 @@ public class FunLight
     {
         new DeviceRegion(0), // Blank Region
         new DeviceRegion(1)  // Display Region (this array position is the same on all devices that support it, it seems)
+        // TODO: Implement those other Regions in some way, maybe by lighting the corners of the screen or something, as most jars light up the main display fully white
+        // new DeviceRegion(2) // Navigation Keypad
+        // new DeviceRegion(3) // Numeric Keypad
+        // new DeviceRegion(4) // Sidebands
     };
 
     private static int[] availableRegions = {0, 1};
@@ -77,7 +81,7 @@ public class FunLight
 
         public DeviceRegion(int ID) 
         { 
-            Mobile.log(Mobile.LOG_WARNING, FunLight.class.getPackage().getName() + "." + FunLight.class.getSimpleName() + ": " + " (Untested) New Light Region: " + ID);
+            Mobile.log(Mobile.LOG_DEBUG, FunLight.class.getPackage().getName() + "." + FunLight.class.getSimpleName() + ": " + " New Light Region: " + ID);
             this.ID = ID; 
         }
 
@@ -102,7 +106,7 @@ public class FunLight
             this.color = (red<<16) + (green<<8) + blue;
             if(this.ID == 1) // ID == 1 means it's the Display Region
             {
-                Mobile.lcdMaskColors[6] = this.color;
+                Mobile.lcdMaskColors[6] = (0xFF << 24) + this.color; // Alpha is always fully opaque when handling actual backlights
                 Mobile.maskIndex = 6;
                 Mobile.getDisplay().flashBacklight(Integer.MAX_VALUE);
             }
@@ -115,7 +119,7 @@ public class FunLight
             this.color = color;
             if(this.ID == 1) 
             {
-                Mobile.lcdMaskColors[6] = this.color;
+                Mobile.lcdMaskColors[6] = (0xFF << 24) + this.color;
                 Mobile.maskIndex = 6;
                 Mobile.getDisplay().flashBacklight(Integer.MAX_VALUE);
             }
