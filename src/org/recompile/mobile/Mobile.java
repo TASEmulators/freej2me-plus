@@ -89,6 +89,18 @@ public class Mobile
 	public static int maskIndex = 1;
 	public static boolean renderLCDMask = false;
 
+	// Moto Funlight Regions (here, corners of the screen, Display region is handled through the LCD mask)
+	public static boolean funLightsEnabled = false;
+	public static int[] funLightRegionColor = 
+	{
+		0x88FFFFFE, // Blank Region color, not used
+		0x88FFFFFE, // Display Region color, not used (handled by lcdMaskColors above)
+		0x88FFFFFE, // Navigation Key Region
+		0x88FFFFFE, // Numeric Keypad Region
+		0x88FFFFFE, // Sidebands Region
+	};
+	public static byte funLightRegionSize = 8;
+
 	// Keycode modifiers
 	public static boolean lg = false;
 	public static boolean motorola = false;

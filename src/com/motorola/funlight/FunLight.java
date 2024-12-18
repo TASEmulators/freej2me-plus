@@ -38,11 +38,11 @@ public class FunLight
     private static DeviceRegion[] deviceRegions = 
     {
         new DeviceRegion(0), // Blank Region
-        new DeviceRegion(1)  // Display Region (this array position is the same on all devices that support it, it seems)
+        new DeviceRegion(1),  // Display Region (this array position is the same on all devices that support it, it seems)
         // TODO: Implement those other Regions in some way, maybe by lighting the corners of the screen or something, as most jars light up the main display fully white
-        // new DeviceRegion(2) // Navigation Keypad
-        // new DeviceRegion(3) // Numeric Keypad
-        // new DeviceRegion(4) // Sidebands
+        new DeviceRegion(2), // Navigation Keypad
+        new DeviceRegion(3), // Numeric Keypad
+        new DeviceRegion(4)  // Sidebands
     };
 
     private static int[] availableRegions = {0, 1};
@@ -75,51 +75,47 @@ public class FunLight
 
 	static class DeviceRegion implements Region 
     {
-        // This should be 0x0RGB, but since we're not aiming to run FreeJ2ME on an actual FunLights device, we can use 0x00RRGGBB normally
-        private int color = 0xFFFFFFFE; // Initial value to indicate that it hasn't been set yet
+        
         private int ID;
 
         public DeviceRegion(int ID) 
         { 
             Mobile.log(Mobile.LOG_DEBUG, FunLight.class.getPackage().getName() + "." + FunLight.class.getSimpleName() + ": " + " New Light Region: " + ID);
+			if(Mobile.funLightsEnabled == false) { Mobile.funLightsEnabled = true; }
             this.ID = ID; 
         }
 
 		public int getColor() throws FunLightException
         { 
-            if(ID != 0 && color == 0xFFFFFFFE) { throw new FunLightException(); }
-            return color; 
+            if(ID != 0 && Mobile.funLightRegionColor[ID] == 0x88FFFFFE) { throw new FunLightException(); }
+            return Mobile.funLightRegionColor[ID];
         }
 
-		
 		public int getControl() { return ID == 0 ? QUEUED : SUCCESS; }
 
-		
 		public int getID() { return this.ID; }
 
-		
 		public void releaseControl() { }
 
-		
+		// Colors should be saved as 0x0RGB, but since we're not aiming to run FreeJ2ME on an actual FunLights device, we can use 0xAARRGGBB normally
 		public int setColor(byte red, byte green, byte blue) 
         {
-            this.color = (red<<16) + (green<<8) + blue;
-            if(this.ID == 1) // ID == 1 means it's the Display Region
+            Mobile.funLightRegionColor[ID] = (0x88 << 24) + (red<<16) + (green<<8) + blue; // Alpha is always fully opaque when handling lights in FreeJ2ME
+            if(this.ID == 1) // ID == 1 means it's the Display Region, handled by the LCD mask code as it's faster to render
             {
-                Mobile.lcdMaskColors[6] = (0xFF << 24) + this.color; // Alpha is always fully opaque when handling actual backlights
+                Mobile.lcdMaskColors[6] = Mobile.funLightRegionColor[ID]; 
                 Mobile.maskIndex = 6;
                 Mobile.getDisplay().flashBacklight(Integer.MAX_VALUE);
             }
 			return ID == 0 ? QUEUED : SUCCESS;
 		}
 
-		
 		public int setColor(int color) 
         {
-            this.color = color;
+			Mobile.funLightRegionColor[ID] = (0x88 << 24) + color;
             if(this.ID == 1) 
             {
-                Mobile.lcdMaskColors[6] = (0xFF << 24) + this.color;
+                Mobile.lcdMaskColors[6] = Mobile.funLightRegionColor[ID];
                 Mobile.maskIndex = 6;
                 Mobile.getDisplay().flashBacklight(Integer.MAX_VALUE);
             }

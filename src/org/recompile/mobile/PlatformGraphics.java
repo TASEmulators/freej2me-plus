@@ -26,7 +26,9 @@ import com.nokia.mid.ui.DirectGraphics;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
 import java.awt.image.DataBufferInt;
+import java.awt.image.Kernel;
 
 public class PlatformGraphics extends javax.microedition.lcdui.Graphics implements DirectGraphics
 {
@@ -34,6 +36,18 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	protected Graphics2D gc;
 
 	protected Color awtColor;
+
+	// Gaussian blur kernel (7x7) for Motorola's FunLights
+	final float[] gaussianKernel = 
+	{
+		1f / 159,  2f / 159,  3f / 159,  2f / 159,  1f / 159, 0, 0,
+		2f / 159,  5f / 159,  8f / 159,  5f / 159,  2f / 159, 0, 0,
+		3f / 159,  8f / 159, 12f / 159,  8f / 159,  3f / 159, 0, 0,
+		2f / 159,  5f / 159,  8f / 159,  5f / 159,  2f / 159, 0, 0,
+		1f / 159,  2f / 159,  3f / 159,  2f / 159,  1f / 159, 0, 0,
+		0,         0,         0,         0,         0,         0, 0,
+		0,         0,         0,         0,         0,         0, 0
+	};
 
 	/* 
 	 * Both DirectGraphics and Sprite's rotations are counter-clockwise, flipping
@@ -177,7 +191,19 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 				final int[] pixels = ((DataBufferInt) sub.getRaster().getDataBuffer()).getData();
 				for(int i = 0; i < pixels.length; i++) { pixels[i] = pixels[i] & Mobile.lcdMaskColors[Mobile.maskIndex]; }
 			}
-			gc.drawImage(sub, x, y, null);
+
+			// This one is rather costly, as it has to draw overlays on the corners of the screen with gaussian filtering applied.
+			if(Mobile.funLightsEnabled)
+			{
+				// Create an overlay image for the fun lights
+				BufferedImage overlayImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+				drawFunLights(overlayImage, width, height);
+
+				gc.drawImage(sub, x, y, null);
+				gc.drawImage(overlayImage, x, y, null);
+			} 
+			else { gc.drawImage(sub, x, y, null); }
 		}
 		catch (Exception e)
 		{
@@ -806,5 +832,132 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		}
 
 		return image;
+	}
+
+
+	/*
+		****************************
+			Motorola FunLights
+		****************************
+	*/
+	public void drawFunLights(BufferedImage overlayImage, int width, int height) 
+	{
+		int[] pixelData = ((DataBufferInt)overlayImage.getRaster().getDataBuffer()).getData();
+		
+		// Set pixels for the fun lights directly
+		for (int y = 0; y < height; y++) 
+		{
+			for (int x = 0; x < width; x++) 
+			{
+				if (x < width / 2 && y >= height - Mobile.funLightRegionSize / 2) // Navigation Keypad Region (Bottom-Left)
+				{
+					if (y < height) pixelData[y * width + x] = Mobile.funLightRegionColor[2]; // funLightColorNav
+				} 
+				else if (x >= width / 2 && y >= height - Mobile.funLightRegionSize / 2) // Numeric Keypad Region (Bottom-Right)
+				{
+					if (y < height) pixelData[y * width + x] = Mobile.funLightRegionColor[3];
+				} 
+				else if (x < (Mobile.funLightRegionSize / 2) -2) // Left Sideband Region
+				{
+					pixelData[y * width + x] = Mobile.funLightRegionColor[4];
+				} 
+				else if (x >= width - Mobile.funLightRegionSize / 2) // Right Sideband Region
+				{
+					pixelData[y * width + x] = Mobile.funLightRegionColor[4];
+				}
+			}
+		}
+	
+		// Now apply a Gaussian blur using direct pixel manipulation
+		applyGaussianBlur(overlayImage, width, height);
+	}
+	
+	private void applyGaussianBlur(BufferedImage image, int width, int height) 
+	{
+		final int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
+		final int[] result = new int[pixels.length];
+	
+		int kernelSize = 7;
+		int kernelRadius = kernelSize / 2;
+	
+		for (int y = 0; y < height; y++) 
+		{
+			for (int x = 0; x < width; x++) 
+			{
+				float r = 0, g = 0, b = 0, a = 0;
+				float weightSum = 0;
+	
+				for (int kx = -kernelRadius; kx <= kernelRadius; kx++) 
+				{
+					int pixelX = x + kx;
+	
+					if (pixelX >= 0 && pixelX < width) 
+					{
+						int pixelColor = pixels[y * width + pixelX];
+						int alpha = (pixelColor >> 24) & 0xff;
+						int red = (pixelColor >> 16) & 0xff;
+						int green = (pixelColor >> 8) & 0xff;
+						int blue = pixelColor & 0xff;
+	
+						int premultipliedRed = (red * alpha) / 255;
+						int premultipliedGreen = (green * alpha) / 255;
+						int premultipliedBlue = (blue * alpha) / 255;
+	
+						float kernelWeight = gaussianKernel[kx + kernelRadius];
+						r += premultipliedRed * kernelWeight;
+						g += premultipliedGreen * kernelWeight;
+						b += premultipliedBlue * kernelWeight;
+						a += alpha * kernelWeight;
+						weightSum += kernelWeight;
+					}
+				}
+	
+				int newAlpha = Math.min(255, (int)(a / weightSum));
+				int newRed = Math.min(255, (int)(r / weightSum));
+				int newGreen = Math.min(255, (int)(g / weightSum));
+				int newBlue = Math.min(255, (int)(b / weightSum));
+	
+				result[y * width + x] = (newAlpha << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+			}
+		}
+	
+		for (int x = 0; x < width; x++) 
+		{
+			for (int y = 0; y < height; y++) 
+			{
+				float r = 0, g = 0, b = 0, a = 0;
+				float weightSum = 0;
+	
+				for (int ky = -kernelRadius; ky <= kernelRadius; ky++) 
+				{
+					int pixelY = y + ky;
+	
+					if (pixelY >= 0 && pixelY < height) 
+					{
+						int pixelColor = result[pixelY * width + x];
+						int alpha = (pixelColor >> 24) & 0xff;
+						int red = (pixelColor >> 16) & 0xff;
+						int green = (pixelColor >> 8) & 0xff;
+						int blue = pixelColor & 0xff;
+	
+						float kernelWeight = gaussianKernel[ky + kernelRadius];
+						r += red * kernelWeight;
+						g += green * kernelWeight;
+						b += blue * kernelWeight;
+						a += alpha * kernelWeight;
+						weightSum += kernelWeight;
+					}
+				}
+	
+				int newAlpha = Math.min(255, (int)(a / weightSum));
+				int newRed = Math.min(255, (int)(r / weightSum));
+				int newGreen = Math.min(255, (int)(g / weightSum));
+				int newBlue = Math.min(255, (int)(b / weightSum));
+	
+				result[y * width + x] = (newAlpha << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+			}
+		}
+	
+		System.arraycopy(result, 0, pixels, 0, pixels.length);
 	}
 }
