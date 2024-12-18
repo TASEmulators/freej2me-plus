@@ -152,7 +152,7 @@ public abstract class Canvas extends Displayable
 
 	public boolean isDoubleBuffered() { return true; }
 
-	public void keyPressed(int keyCode) { super.keyPressed(keyCode); }
+	public void keyPressed(int keyCode) { }
 
 	public void keyReleased(int keyCode) { }
 

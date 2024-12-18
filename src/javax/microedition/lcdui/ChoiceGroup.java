@@ -113,21 +113,25 @@ public class ChoiceGroup extends Item implements Choice
 
 	public Image getImage(int elementNum) { return images.get(elementNum); }
 
-	public int getSelectedFlags(boolean[] selectedArray) 
+	public int getSelectedFlags(boolean[] selectedArray_return) 
 	{ 
-		boolean[] ret = new boolean[selectedElements.size()];
-		int number = 0;
+		int numSelected = 0;
 
-		for (int t=0; t<ret.length; t++) 
+		for (int i=0; i<selectedElements.size(); i++) 
 		{
-			ret[t] = selectedElements.get(t);
-			if (ret[t]) number++;
+			if(selectedElements.get(i) == true) { selectedArray_return[i] = true; numSelected++; }
+			else { selectedArray_return[i] = false; }
 		}
 
-		return number;
+		return numSelected;
 	}
 
-  	public int getSelectedIndex() { return selectedIndex; }
+  	public int getSelectedIndex() 
+	{ 
+		if(type == Choice.POPUP || type == Choice.EXCLUSIVE) { return selectedIndex; }
+
+		return -1;
+	}
 
 	public String getString(int elementNum) { return strings.get(elementNum); }
 
@@ -144,7 +148,11 @@ public class ChoiceGroup extends Item implements Choice
 		invalidate();
 	}
 
-	public boolean isSelected(int elementNum) { return selectedElements.get(elementNum); }
+	public boolean isSelected(int elementNum) 
+	{
+		if(type == Choice.EXCLUSIVE) { return elementNum==selectedIndex; }
+		return selectedElements.get(elementNum); 
+	}
 
 	public void set(int elementNum, String stringPart, Image imagePart)
 	{
@@ -163,7 +171,7 @@ public class ChoiceGroup extends Item implements Choice
 
 	public void setSelectedFlags(boolean[] selectedArray) 
 	{ 
-		for (int t=0; t<selectedArray.length && t<size(); t++) { selectedElements.set(t, selectedArray[t]); }
+		for (int i=0; i<selectedArray.length && i<size(); i++) { selectedElements.set(i, selectedArray[i]); }
 
 		_invalidateContents();
 	}
@@ -244,7 +252,7 @@ public class ChoiceGroup extends Item implements Choice
 		else if ((key == Canvas.KEY_NUM5 || key == Canvas.FIRE) && highlightedIndex != -1) 
 		{
 			if (type == Choice.EXCLUSIVE) { selectedIndex = highlightedIndex; }
-			else { selectedElements.set(highlightedIndex, !selectedElements.get(highlightedIndex)); }
+			setSelectedIndex(highlightedIndex, !selectedElements.get(highlightedIndex));
 
 			handled = true;
 		} 

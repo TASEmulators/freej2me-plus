@@ -25,11 +25,13 @@ import java.util.ArrayList;
 public class List extends Screen implements Choice
 {
 
-	public static Command SELECT_COMMAND = new Command("Select", Command.SCREEN, 0);
+	public static Command SELECT_COMMAND = new Command("", Command.SCREEN, 0);
 
 	protected int currentItem = -1;
 
 	private int fitPolicy = Choice.TEXT_WRAP_ON;
+
+	private ArrayList<Boolean> selectedItems = new ArrayList<Boolean>();
 
 	private int type;
 
@@ -48,10 +50,12 @@ public class List extends Screen implements Choice
 			if(imageElements!=null)
 			{
 				items.add(new ImageItem(stringElements[i], imageElements[i], 0, stringElements[i]));
+				selectedItems.add(false);
 			}	
 			else
 			{
 				items.add(new StringItem(stringElements[i], stringElements[i]));
+				selectedItems.add(false);
 			}
 		}
 	}
@@ -61,10 +65,12 @@ public class List extends Screen implements Choice
 			if(imagePart!=null)
 			{
 				items.add(new ImageItem(stringPart, imagePart, 0, stringPart));
+				selectedItems.add(false);
 			}
 			else
 			{
 				items.add(new StringItem(stringPart, stringPart));
+				selectedItems.add(false);
 			}
 			_invalidate();
 			return items.size()-1;
@@ -72,12 +78,12 @@ public class List extends Screen implements Choice
 
 	public void delete(int elementNum)
 	{
-		try { items.remove(elementNum); }
+		try { items.remove(elementNum); selectedItems.remove(elementNum); }
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, List.class.getPackage().getName() + "." + List.class.getSimpleName() + ": " + "Failed delete element from list:" + e.getMessage()); }
 		_invalidate();
 	}
 
-	public void deleteAll() { items.clear(); _invalidate(); }
+	public void deleteAll() { items.clear(); selectedItems.clear(); _invalidate(); }
 
 	public int getFitPolicy() { return fitPolicy; }
 
@@ -85,9 +91,24 @@ public class List extends Screen implements Choice
 
 	public Image getImage(int elementNum) { return ((ImageItem)(items.get(elementNum))).getImage(); }
 	
-	public int getSelectedFlags(boolean[] selectedArray_return) { return 0; }
+	public int getSelectedFlags(boolean[] selectedArray_return) 
+	{
+		if(type == Choice.IMPLICIT) { return 0; }
+		int numSelected = 0;
+		for(int i = 0; i < selectedItems.size(); i++) 
+		{
+			if(selectedItems.get(i) == true) { selectedArray_return[i] = true; numSelected++; }
+			else { selectedArray_return[i] = false; }
+		}
+		return numSelected;
+	}
 
-	public int getSelectedIndex() { return currentItem; }
+	public int getSelectedIndex() 
+	{
+		if(type == Choice.IMPLICIT || type == Choice.EXCLUSIVE) { return currentItem; }
+
+		return -1; 
+	}
 
 	public String getString(int elementNum)
 	{
@@ -106,17 +127,20 @@ public class List extends Screen implements Choice
 				if(imagePart!=null)
 				{
 					items.add(elementNum, new ImageItem(stringPart, imagePart, 0, stringPart));
+					selectedItems.add(elementNum, false);
 				}
 				else
 				{
 					items.add(elementNum, new StringItem(stringPart, stringPart));
+					selectedItems.add(elementNum, false);
 				}
+				if (currentItem >= elementNum) { currentItem++; }
 				_invalidate();
 			}
 			catch(Exception e)
 			{
 				append(stringPart, imagePart);
-			} 
+			}
 		}
 		else
 		{
@@ -124,9 +148,20 @@ public class List extends Screen implements Choice
 		}
 	}
 
-	public boolean isSelected(int elementNum) { return elementNum==currentItem; }
+	public boolean isSelected(int elementNum) 
+	{ 
+		if(type == Choice.IMPLICIT) { return elementNum==currentItem; }
 
-	// public void removeCommand(Command cmd) {  }
+		return selectedItems.get(elementNum); 
+	}
+
+	@Override
+	public void removeCommand(Command cmd) 
+	{
+		if(cmd == SELECT_COMMAND) { setSelectCommand(null); }
+		commands.remove(cmd);
+		_invalidate(); 
+	}
 
 	public void set(int elementNum, String stringPart, Image imagePart)
 	{
@@ -144,20 +179,40 @@ public class List extends Screen implements Choice
 
 	public void setFont(int elementNum, Font font) { }
 		
-	public void setSelectCommand(Command command) { SELECT_COMMAND = command; }
+	public void setSelectCommand(Command command) 
+	{ 
+		SELECT_COMMAND = command;
+		commands.add(command);
+	}
  
-	public void setSelectedFlags(boolean[] selectedArray) { }
+	public void setSelectedFlags(boolean[] selectedArray) 
+	{ 
+		for(int i = 0; i < selectedArray.length; i++) 
+		{
+			setSelectedIndex(i, selectedArray[i]);
+		}
+	}
 
 	public void setSelectedIndex(int elementNum, boolean selected)
 	{
-		if(selected == true)
+		if(type == Choice.IMPLICIT) 
 		{
-			currentItem = elementNum;
+			if(selected == true) { currentItem = elementNum; }
+			else { currentItem = 0; }
+			_invalidate();
+			return;
 		}
-		else
+
+		selectedItems.set(elementNum, selected);
+
+		if(type == Choice.EXCLUSIVE) // Deselect everyone else
 		{
-			currentItem = 0;
+			for(int i = 0; i < selectedItems.size(); i++) 
+			{
+				if(i != elementNum) { selectedItems.set(elementNum, false); }
+			}
 		}
+
 		_invalidate();
 	}
 
@@ -177,7 +232,8 @@ public class List extends Screen implements Choice
 		boolean handled = true;
 
 		if (key == Canvas.UP || key == Canvas.KEY_NUM2) { currentItem--; } 
-		else if (key == Canvas.DOWN || key == Canvas.KEY_NUM8) { currentItem++; } 
+		else if (key == Canvas.DOWN || key == Canvas.KEY_NUM8) { currentItem++; }
+		else if (key == Canvas.FIRE || key == Canvas.KEY_NUM5) { doDefaultCommand(); }
 		else { handled = false; }
 
 		if (currentItem>=items.size()) { currentItem=0; }
@@ -185,14 +241,18 @@ public class List extends Screen implements Choice
 
 		if (handled) { _invalidate(); }
 
-		return handled;		
+		return handled;
 	}
 
 	protected void doDefaultCommand()
 	{
 		if(commandlistener!=null)
 		{
-			commandlistener.commandAction(SELECT_COMMAND, this);
+			if(type == Choice.IMPLICIT) { commandlistener.commandAction(SELECT_COMMAND, this); }
+			else
+			{
+				setSelectedIndex(currentItem, !selectedItems.get(currentItem));
+			}
 		}
 	}
 
@@ -220,13 +280,31 @@ public class List extends Screen implements Choice
 			
 			y += listPadding;
 			for(int i=first; i<=last; i++)
-			{	
+			{
 				if(currentItem == i)
 				{
 					// Don't touch the edges of the screen, or the border from another item for better spacing
 					graphics.fillRect(x+2, y+1, width-4, itemHeight-1);
 					graphics.setColor(Mobile.lcduiBGColor);
 				}
+
+				if(type == Choice.MULTIPLE) 
+				{
+					graphics.drawRect(x+5, y+2, itemHeight-4, itemHeight-4);
+					if(selectedItems.get(i) == true) 
+					{
+						graphics.fillRect(x+7, y+4, itemHeight-7, itemHeight-7);
+					}
+				}
+				else if(type == Choice.EXCLUSIVE) // Exclusive will have Radio-Button selectors
+				{
+					graphics.drawRoundRect(x+5, y+2, itemHeight-4, itemHeight-4, itemHeight-4, itemHeight-4);
+					if(selectedItems.get(i) == true) 
+					{
+						graphics.fillRoundRect(x+7, y+4, itemHeight-8, itemHeight-8, itemHeight-8, itemHeight-8);
+					}
+				}
+				
 
 				graphics.drawString(items.get(i).getLabel(), width/2, y, Graphics.HCENTER);
 

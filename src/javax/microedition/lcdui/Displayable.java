@@ -104,18 +104,14 @@ public abstract class Displayable
 			boolean handled = screenKeyPressed(Mobile.getGameAction(key));
 			if (!handled)
 			{
-				if (Mobile.getGameAction(key) == Canvas.KEY_SOFT_LEFT) 
+				if (Mobile.getGameAction(key) == Canvas.KEY_SOFT_LEFT || Mobile.getGameAction(key) == Canvas.FIRE 
+				|| Mobile.getGameAction(key) == Canvas.KEY_NUM5) 
 				{
 					doLeftCommand();
 				} 
 				else if (Mobile.getGameAction(key) == Canvas.KEY_SOFT_RIGHT) 
 				{
 					doRightCommand();
-				}
-				else if ((Mobile.getGameAction(key) == Canvas.FIRE 
-						|| Mobile.getGameAction(key) == Canvas.KEY_NUM5)) 
-				{
-					doDefaultCommand();
 				}
 			}
 		}
@@ -226,9 +222,7 @@ public abstract class Displayable
 			graphics.setFont(Font.getDefaultFont());
 
 			Command itemCommand = null;
-			if (this instanceof Form) {
-				itemCommand = ((Form)this).getItemCommand();
-			}
+			if (this instanceof Form) { itemCommand = ((Form)this).getItemCommand(); }
 
 			graphics.setColor(Mobile.lcduiTextColor);
 			switch(commands.size())
@@ -293,14 +287,9 @@ public abstract class Displayable
 			currentCommand++;
 			if(currentCommand>=commands.size()) { currentCommand = 0; }
 		}
-		else if (key == Canvas.KEY_NUM5 || key == Canvas.FIRE) 
+		else if (key == Canvas.KEY_NUM5 || key == Canvas.FIRE || key == Canvas.KEY_SOFT_LEFT) 
 		{
 			listCommands = false;
-			doCommand(currentCommand);
-			currentCommand = 0;
-		}
-		else if (key == Canvas.KEY_SOFT_LEFT) 
-		{
 			doLeftCommand();
 			currentCommand = 0;
 		}
@@ -325,8 +314,6 @@ public abstract class Displayable
 			}
 		}
 	}
-
-	protected void doDefaultCommand() { doCommand(0); }
 
 	protected void doLeftCommand()
 	{
