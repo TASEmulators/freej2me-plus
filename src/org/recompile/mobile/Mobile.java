@@ -84,8 +84,8 @@ public class Mobile
 	public static int lcduiTextColor = 0x000000;
 
 	// Mask for simulating device backlights of early nokias, etc. Used by Display's flashBacklight for example
-											// Disabled  , Green     , Cyan      , Orange    , Violet    , Red
-	public static final int[] lcdMaskColors = {0xFFFFFFFF, 0xFF77EF5A, 0xFF5676F6, 0xFFEE9930, 0xFFC47AFF, 0xFFFF6262};
+									  // Disabled  , Green     , Cyan      , Orange    , Violet    , Red       , FunLights (can change)
+	public static int[] lcdMaskColors = {0xFFFFFFFF, 0xFF77EF5A, 0xFF5676F6, 0xFFEE9930, 0xFFC47AFF, 0xFFFF6262, 0xFFFFFFFF};
 	public static int maskIndex = 1;
 	public static boolean renderLCDMask = false;
 
