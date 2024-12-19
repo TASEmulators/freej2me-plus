@@ -109,7 +109,16 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		x = AnchorX(x, subw, anchor);
 		y = AnchorY(y, subh, anchor);
 
-		BufferedImage sub = canvas.getSubimage(subx, suby, subw, subh);
+		BufferedImage sub = new BufferedImage(subw, subh, BufferedImage.TYPE_INT_ARGB);
+
+		// Copy the pixels from the source area to the new image. getSubImage() makes both images contain the same data reference
+		for (int i = 0; i < subw; i++) 
+		{
+			for (int j = 0; j < subh; j++) 
+			{
+				sub.setRGB(i, j, canvas.getRGB(subx + i, suby + j));
+			}
+		}
 
 		gc.drawImage(sub, x, y, null);
 	}
