@@ -74,10 +74,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 		platformGraphics = this;
 
-		clipX = 0;
-		clipY = 0;
-		clipWidth = canvas.getWidth();
-		clipHeight = canvas.getHeight();
+		clip = new Rectangle(0, 0, canvas.getWidth(), canvas.getHeight());
+		gc.getClipBounds(clip);
 
 		setColor(0,0,0);
 		setStrokeStyle(SOLID);
@@ -87,7 +85,8 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void reset() //Internal use method, resets the Graphics object to its inital values
 	{
-		translate(-1 * translateX, -1 * translateY);
+		translate(-translateX, -translateY);
+		translateX = translateY = 0;
 		setClip(0, 0, canvas.getWidth(), canvas.getHeight());
 		setColor(0,0,0);
 		setFont(Font.getDefaultFont());
@@ -215,6 +214,12 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 	public void drawRegion(Image image, int subx, int suby, int subw, int subh, int transform, int x, int y, int anchor)
 	{
 		if (subw <= 0 || subh <= 0) { return; }
+
+		if (subx < 0 || suby < 0 || subx + subw > image.platformImage.getCanvas().getWidth() 
+					|| suby + subh > image.platformImage.getCanvas().getHeight()) 
+		{
+			throw new IllegalArgumentException("Source region exceeds image bounds.");
+		}
 
 		try
 		{
@@ -397,24 +402,15 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 
 	public void setClip(int x, int y, int width, int height)
 	{
-		gc.setClip(x, y, width, height);
-		Rectangle rect=new Rectangle();
-		gc.getClipBounds(rect);
-		clipX = (int) rect.getX();
-		clipY = (int) rect.getY();
-		clipWidth = (int)rect.getWidth();
-		clipHeight = (int)rect.getHeight();
+		clip.setBounds(x, y, width, height);
+		gc.setClip(clip);
 	}
 
 	public void clipRect(int x, int y, int width, int height)
 	{
-		gc.clipRect(x, y, width, height);
-		Rectangle rect=new Rectangle();
-		gc.getClipBounds(rect);
-		clipX = (int) rect.getX();
-		clipY = (int) rect.getY();
-		clipWidth = (int)rect.getWidth();
-		clipHeight = (int)rect.getHeight();
+		Rectangle newClip = new Rectangle(x, y, width, height);
+        clip = clip.intersection(newClip);
+		gc.setClip(clip);
 	}
 
 	public int getTranslateX() { return translateX; }
@@ -426,10 +422,6 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		translateX += x;
 		translateY += y;
 		gc.translate(x, y);
-		Rectangle rect=new Rectangle();
-		gc.getClipBounds(rect);
-		clipX = (int) rect.getX();
-        clipY = (int) rect.getY();
 	}
 
 	private int AnchorX(int x, int width, int anchor)
@@ -437,16 +429,14 @@ public class PlatformGraphics extends javax.microedition.lcdui.Graphics implemen
 		int xout = x;
 		if((anchor & HCENTER)>0) { xout = x-(width/2); }
 		if((anchor & RIGHT)>0) { xout = x-width; }
-		if((anchor & LEFT)>0) { xout = x; }
 		return xout;
 	}
 
 	private int AnchorY(int y, int height, int anchor)
 	{
 		int yout = y;
-		if((anchor & VCENTER)>0) { yout = y-(height/2); }
-		if((anchor & TOP)>0) { yout = y; }
 		if((anchor & BOTTOM)>0) { yout = y-height; }
+		if((anchor & VCENTER)>0) { yout = y-(height/2); }
 		if((anchor & BASELINE)>0) { yout = y+height; }
 		return yout;
 	}
