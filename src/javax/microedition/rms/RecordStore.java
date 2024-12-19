@@ -51,7 +51,7 @@ public class RecordStore
 
 	private Vector<RecordListener> listeners;
 
-	private int lastModified = 0;
+	private long lastModified = 0;
 
 	private static int recordsOpened = 0;
 
@@ -73,6 +73,8 @@ public class RecordStore
 		int reclen;
 
 		name = recordStoreName.replaceAll("[/\\\\:*?\"<>|]", "");
+
+		if(name == "") { return; }
 
 		appname = Mobile.getPlatform().loader.suitename;
 
@@ -132,6 +134,9 @@ public class RecordStore
 					loadRecord(data, offset, reclen);
 					offset+=reclen;
 				}
+
+				if(data.length - offset < 8) { lastModified = 0; } // For compatibility, as FreeJ2ME was saving records without the lastModified data for quite some time.
+				else { lastModified = getLong(data, offset); }
 			}
 		}
 		catch (Exception e)
@@ -167,6 +172,11 @@ public class RecordStore
 				fout.write(records.get(i));
 			}
 
+			// last modified //
+			byte[] lastMod = new byte[8];
+			setLong(lastMod, 0, lastModified);
+			fout.write(lastMod);
+
 			fout.close();
 		}
 		catch (Exception e)
@@ -193,10 +203,39 @@ public class RecordStore
 
 		return out | 0x00000000;
 	}
+
 	private void setUInt16(byte[] data, int offset, int val)
 	{
 		data[offset]   = (byte)((val>>8) & 0xFF);
-		data[offset+1] = (byte)((val) & 0xFF);
+		data[offset+1] = (byte)((val)    & 0xFF);
+	}
+
+	private long getLong(byte[] data, int offset)
+	{
+		long out = 0;
+		
+		out |= (((long)data[offset])   & 0xFF) << 56;
+		out |= (((long)data[offset+1]) & 0xFF) << 48;
+		out |= (((long)data[offset+2]) & 0xFF) << 40;
+		out |= (((long)data[offset+3]) & 0xFF) << 32;
+		out |= (((long)data[offset+4]) & 0xFF) << 24;
+		out |= (((long)data[offset+5]) & 0xFF) << 16;
+		out |= (((long)data[offset+6]) & 0xFF) << 8;
+		out |= (((long)data[offset+7]) & 0xFF);
+
+		return out | 0x00000000;
+	}
+	
+	private void setLong(byte[] data, int offset, long val)
+	{
+		data[offset]   = (byte)((val>>56) & 0xFF);
+		data[offset+1] = (byte)((val>>48) & 0xFF);
+		data[offset+2] = (byte)((val>>40) & 0xFF);
+		data[offset+3] = (byte)((val>>32) & 0xFF);
+		data[offset+4] = (byte)((val>>24) & 0xFF);
+		data[offset+5] = (byte)((val>>16) & 0xFF);
+		data[offset+6] = (byte)((val>>8)  & 0xFF);
+		data[offset+7] = (byte)((val)     & 0xFF);
 	}
 
 	public int addRecord(byte[] data, int offset, int numBytes) throws RecordStoreException, RecordStoreFullException
@@ -220,12 +259,12 @@ public class RecordStore
 
 			records.addElement(rec);
 
-			lastModified = nextid;
+			lastModified = System.currentTimeMillis();
 			version++;
 			
 			save();
 
-			for(int i=0; i<listeners.size(); i++) { listeners.get(i).recordAdded(this, lastModified); }
+			for(int i=0; i<listeners.size(); i++) { listeners.get(i).recordAdded(this, nextid); }
 
 			return nextid++;
 		}
@@ -316,6 +355,7 @@ public class RecordStore
 	public byte[] getRecord(int recordId) throws InvalidRecordIDException, RecordStoreException
 	{
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the record of a closed Record Store"); }
+		if(recordId > records.size()-1) { throw new InvalidRecordIDException("setRecord: Invalid Record ID: "+recordId); }
 		
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getRecord("+recordId+")");
 
@@ -326,8 +366,7 @@ public class RecordStore
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "(getRecord) Record Store Exception: "+recordId);
-			e.printStackTrace();
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "(getRecord) Record Store Exception: "+recordId);
 			throw new RecordStoreException();
 		}
 	}
@@ -335,7 +374,8 @@ public class RecordStore
 	public int getRecord(int recordId, byte[] buffer, int offset) throws InvalidRecordIDException, RecordStoreException
 	{
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the record of a closed Record Store"); }
-		
+		if(recordId > records.size()-1) { throw new InvalidRecordIDException("setRecord: Invalid Record ID: "+recordId); }
+
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getRecord(id, buffer, offset)");
 		byte[] temp = getRecord(recordId);
 
@@ -353,9 +393,11 @@ public class RecordStore
 	public int getRecordSize(int recordId) throws InvalidRecordIDException, RecordStoreException
 	{
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the record's size on a closed Record Store"); }
+		if(recordId > records.size()-1) { throw new InvalidRecordIDException("setRecord: Invalid Record ID: "+recordId); }
 
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Get Record Size");
-		return getRecord(recordId).length;
+		
+		return records.get(recordId).length;
 	}
 
 	public int getSize() throws RecordStoreNotOpenException
@@ -489,7 +531,7 @@ public class RecordStore
 			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Problem in Set Record");
 			e.printStackTrace();
 		}
-		lastModified = recordId;
+		lastModified = System.currentTimeMillis();
 		save();
 		for(int i=0; i<listeners.size(); i++)
 		{
