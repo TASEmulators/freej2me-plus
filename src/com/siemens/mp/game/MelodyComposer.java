@@ -301,69 +301,8 @@ public class MelodyComposer
 	 */
 	private int mapToMidi(int tone) 
 	{
-		switch (tone) 
-		{
-			case TONE_C0:   return TONE_C0 + 24;   // C0
-			case TONE_CIS0: return TONE_CIS0 + 24; // C#0
-			case TONE_D0:   return TONE_D0 + 24;   // D0
-			case TONE_DIS0: return TONE_DIS0 + 24; // D#0
-			case TONE_E0:   return TONE_E0 + 24;   // E0
-			case TONE_F0:   return TONE_F0 + 24;   // F0
-			case TONE_FIS0: return TONE_FIS0 + 24; // F#0
-			case TONE_G0:   return TONE_G0 + 24;   // G0
-			case TONE_GIS0: return TONE_GIS0 + 24; // G#0
-			case TONE_A0:   return TONE_A0 + 24;   // A0
-			case TONE_AIS0: return TONE_AIS0 + 24; // A#0
-			case TONE_H0:   return TONE_H0 + 24;   // B0
-			case TONE_C1:   return TONE_C1 + 24;   // C1
-			case TONE_CIS1: return TONE_CIS1 + 24; // C#1
-			case TONE_D1:   return TONE_D1 + 24;   // D1
-			case TONE_DIS1: return TONE_DIS1 + 24; // D#1
-			case TONE_E1:   return TONE_E1 + 24;   // E1
-			case TONE_F1:   return TONE_F1 + 24;   // F1
-			case TONE_FIS1: return TONE_FIS1 + 24; // F#1
-			case TONE_G1:   return TONE_G1 + 24;   // G1
-			case TONE_GIS1: return TONE_GIS1 + 24; // G#1
-			case TONE_A1:   return TONE_A1 + 24;   // A1
-			case TONE_AIS1: return TONE_AIS1 + 24; // A#1
-			case TONE_H1:   return TONE_H1 + 24;   // B1
-			case TONE_C2:   return TONE_C2 + 24;   // C2
-			case TONE_CIS2: return TONE_CIS2 + 24; // C#2
-			case TONE_D2:   return TONE_D2 + 24;   // D2
-			case TONE_DIS2: return TONE_DIS2 + 24; // D#2
-			case TONE_E2:   return TONE_E2 + 24;   // E2
-			case TONE_F2:   return TONE_F2 + 24;   // F2
-			case TONE_FIS2: return TONE_FIS2 + 24; // F#2
-			case TONE_G2:   return TONE_G2 + 24;   // G2
-			case TONE_GIS2: return TONE_GIS2 + 24; // G#2
-			case TONE_A2:   return TONE_A2 + 24;   // A2
-			case TONE_AIS2: return TONE_AIS2 + 24; // A#2
-			case TONE_H2:   return TONE_H2 + 24;   // B2
-			case TONE_C3:   return TONE_C3 + 24;   // C3
-			case TONE_CIS3: return TONE_CIS3 + 24; // C#3
-			case TONE_D3:   return TONE_D3 + 24;   // D3
-			case TONE_DIS3: return TONE_DIS3 + 24; // D#3
-			case TONE_E3:   return TONE_E3 + 24;   // E3
-			case TONE_F3:   return TONE_F3 + 24;   // F3
-			case TONE_FIS3: return TONE_FIS3 + 24; // F#3
-			case TONE_G3:   return TONE_G3 + 24;   // G3
-			case TONE_GIS3: return TONE_GIS3 + 24; // G#3
-			case TONE_A3:   return TONE_A3 + 24;   // A3
-			case TONE_AIS3: return TONE_AIS3 + 24; // A#3
-			case TONE_H3:   return TONE_H3 + 24;   // B3
-			case TONE_C4:   return TONE_C4 + 24;   // C4
-			case TONE_CIS4: return TONE_CIS4 + 24; // C#4
-			case TONE_D4:   return TONE_D4 + 24;   // D4
-			case TONE_DIS4: return TONE_DIS4 + 24; // D#4
-			case TONE_E4:   return TONE_E4 + 24;   // E4
-			case TONE_F4:   return TONE_F4 + 24;   // F4
-			case TONE_FIS4: return TONE_FIS4 + 24; // F#4
-			case TONE_G4:   return TONE_G4 + 24;   // G4
-			case TONE_GIS4: return TONE_GIS4 + 24; // G#4
-			case TONE_A4:   return TONE_A4 + 24;   // A4
-			case NO_TONE:                          // no tone (silence)
-			default: return 0;                     // unknown tone will also return silence instead of an error.
-		}
+		if(tone >= 0 && tone < 58) { return tone + 24; } // from TONE_C0 to TONE_A4
+		else                       { return 0; } // NO_TONE or unknown
 	}
 
 	public Melody getMelody() { return new Melody(convertMelody(tmpSequence)); }

@@ -29,13 +29,7 @@ import javax.microedition.media.Player;
 
 public class Melody extends com.siemens.mp.misc.NativeMem
 {
-	/*
-	 * Ideally a having a player instance per Melody instance would be enough, but thanks
-	 * to the stop() method being static, we have this HashMap mess (at least it's the best
-	 * i can come up with at the moment, seems to work on all tested Jars including AH-1 SeaBomber
-	 * AquaRace)
-	 */
-    private Player melodyPlayer; // Instance-specific plafyer
+    private Player melodyPlayer; // Instance-specific player
     private static Player currentPlayingMelody;
 
     public Melody(byte[] data) 
@@ -44,7 +38,6 @@ public class Melody extends com.siemens.mp.misc.NativeMem
         {
             melodyPlayer = Manager.createPlayer(new ByteArrayInputStream(data), "audio/x-mid");
             melodyPlayer.prefetch();
-            Melody.currentPlayingMelody = melodyPlayer;
         } 
         catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Melody.class.getPackage().getName() + "." + Melody.class.getSimpleName() + ": " + " failed to create Melody player:" + e.getMessage());}
     }
