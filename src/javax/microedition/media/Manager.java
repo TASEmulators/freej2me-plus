@@ -37,6 +37,8 @@ import javax.sound.midi.Synthesizer;
 import org.recompile.freej2me.FreeJ2ME;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
+import org.recompile.mobile.JavaxPlatformPlayer;
+import org.recompile.mobile.SiemensPlatformPlayer;
 
 public class Manager
 {
@@ -65,18 +67,7 @@ public class Manager
 
 		if(Mobile.dumpAudioStreams) { stream = dumpAudioStream(stream, type); }
 
-		return new PlatformPlayer(stream, type);
-	}
-
-	public static Player createPlayer(com.siemens.mp.media.protocol.DataSource source) throws MediaException
-	{
-		checkCustomMidi();
-
-		if(source == null) { throw new IllegalArgumentException("Cannot create a player with a null DataSource"); }
-
-		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player DataSource");
-
-		return null;
+		return new JavaxPlatformPlayer(stream, type);
 	}
 
 	public static Player createPlayer(String locator) throws MediaException
@@ -93,10 +84,59 @@ public class Manager
 		}
 
 		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player "+locator);
-		if(!locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) { return new PlatformPlayer(stream, ""); } // Empty type, let PlatformPlayer handle it
-		else { return new PlatformPlayer(locator); } // If it's a dedicated locator, PlatformPlayer can handle it directly
-		 
+		if(!locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) { return new JavaxPlatformPlayer(stream, ""); } // Empty type, let PlatformPlayer handle it
+		else { return new JavaxPlatformPlayer(locator); } // If it's a dedicated locator, PlatformPlayer can handle it directly
 	}
+
+	// Siemens-Specific Manager stuff
+
+	public static Player createSiemensPlayer(com.siemens.mp.media.protocol.DataSource source) throws MediaException
+	{
+		checkCustomMidi();
+
+		if(source == null) { throw new IllegalArgumentException("Cannot create a player with a null DataSource"); }
+
+		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player DataSource");
+
+		return null; // mew SiemensPlatformPlayer(TODO)
+	}
+
+	public static synchronized Player createSiemensPlayer(InputStream stream, String type) throws IOException, MediaException
+	{
+		checkCustomMidi();
+
+		if (stream == null) { throw new IllegalArgumentException("Cannot create a player since the received stream is null"); }
+		/* 
+		 * NOTE: If type is null, we can either try to determine the type, or throw a MediaException. Some jars do use exceptions
+		 * here as part of the game logic (Sonic Spinball K800i uses the exception above in order to load its streams properly), so
+		 * only a lot of testing will be able to determine which is preferable, or if we'd need a config toggle to alternate both.
+		 */
+
+		if(Mobile.dumpAudioStreams) { stream = dumpAudioStream(stream, type); }
+
+		return new SiemensPlatformPlayer(stream, type);
+	}
+
+	public static Player createSiemensPlayer(String locator) throws MediaException
+	{
+		checkCustomMidi();
+
+		if(locator == null) { throw new IllegalArgumentException("Cannot create a player with a null locator"); }
+
+		InputStream stream = Mobile.getPlatform().loader.getResourceAsStream(locator);
+
+		if(Mobile.dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
+		{
+			dumpAudioStream(stream, locator); // Using the locator, we can try find out what this is by parsing the file extension
+		}
+
+		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Create Player "+locator);
+		if(!locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) { return new SiemensPlatformPlayer(stream, ""); } // Empty type, let PlatformPlayer handle it
+		else { return new SiemensPlatformPlayer(locator); } // If it's a dedicated locator, PlatformPlayer can handle it directly
+	}
+
+
+	// Manager's helper functions
 	
 	public static String[] getSupportedContentTypes(String protocol)
 	{

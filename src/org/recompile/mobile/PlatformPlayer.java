@@ -66,7 +66,6 @@ import javazoom.jl.player.MPEGPlayer;
 
 public class PlatformPlayer implements Player
 {
-
 	private final byte NUM_CONTROLS = 4;
 
 	private String contentType = "";
@@ -75,12 +74,12 @@ public class PlatformPlayer implements Player
 
 	private int state = Player.UNREALIZED;
 
-	private Vector<PlayerListener> listeners;
+	protected Vector<PlayerListener> listeners;
 
 	private SoundListener nokiaListener;
 	private Sound nokiaSound;
 
-	private Control[] controls;
+	protected Control[] controls;
 
 	// Manager already sets these two
 	public static Synthesizer synthesizer;
@@ -192,6 +191,7 @@ public class PlatformPlayer implements Player
 	{
 		if(locator.equals(Manager.TONE_DEVICE_LOCATOR) || locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
 		{
+			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + " Creating MIDI Player for locator: "+locator);
 			player = new midiPlayer();
 			listeners = new Vector<PlayerListener>();
 			controls = new Control[NUM_CONTROLS];
@@ -1123,7 +1123,7 @@ public class PlatformPlayer implements Player
 		}
 	}
 
-	public class volumeControl implements javax.microedition.media.control.VolumeControl
+	public class volumeControl implements com.siemens.mp.media.control.VolumeControl // Siemens already extends javax here
 	{
 		private int level = 100;
 		private boolean muted = false;
@@ -1296,7 +1296,7 @@ public class PlatformPlayer implements Player
 	}
 
 	/* ToneControl is also almost entirely untested right now, couldn't find a jar that uses setSequence() */
-	public class toneControl implements javax.microedition.media.control.ToneControl
+	public class toneControl implements com.siemens.mp.media.control.ToneControl // Siemens already extends javax here too
 	{
 		private midiPlayer player;
 

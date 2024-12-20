@@ -17,26 +17,51 @@
 package com.siemens.mp.media;
 
 import java.io.InputStream;
-import java.io.IOException;
+
+import javax.microedition.media.MediaException;
+
+import org.recompile.mobile.Mobile;
+import org.recompile.mobile.SiemensPlatformPlayer;
 
 public class Manager extends javax.microedition.media.Manager 
 { 
-    public static Player createPlayer(InputStream stream, String type) throws IOException, MediaException
+    public static com.siemens.mp.media.Player createPlayer(InputStream stream, String type) throws MediaException
 	{
-        try { return (com.siemens.mp.media.Player) javax.microedition.media.Manager.createPlayer(stream, type); }
-        catch(Exception e) { return null; }
+		try 
+		{
+			com.siemens.mp.media.Player player = (com.siemens.mp.media.Player) javax.microedition.media.Manager.createSiemensPlayer(stream, type);
+			player.realize(); // Doing realize right after creating because Chessmaster is such a broken game it's not even funny
+			return player;
+		} 
+		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to create player from stream:" + e.getMessage()); }
+		
+		return null;
     }
 
-    public static Player createPlayer(com.siemens.mp.media.protocol.DataSource source) throws MediaException
+    public static com.siemens.mp.media.Player createPlayer(com.siemens.mp.media.protocol.DataSource source) throws MediaException
 	{
-		try { return (com.siemens.mp.media.Player) javax.microedition.media.Manager.createPlayer(source); }
-        catch(Exception e) { return null; }
+		try 
+		{ 
+			com.siemens.mp.media.Player player = (com.siemens.mp.media.Player) javax.microedition.media.Manager.createSiemensPlayer(source);
+			player.realize(); // Doing realize right after creating because Chessmaster is such a broken game it's not even funny
+			return player;
+		} 
+		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to create player from source:" + e.getMessage()); }
+		
+		return null;
 	}
 
     public static Player createPlayer(String locator) throws MediaException
 	{
-        try { return (com.siemens.mp.media.Player) javax.microedition.media.Manager.createPlayer(locator); }
-        catch(Exception e) { return null; }
+		try 
+		{ 
+			com.siemens.mp.media.Player player = (com.siemens.mp.media.Player) javax.microedition.media.Manager.createSiemensPlayer(locator); 
+			player.realize(); // Doing realize right after creating because Chessmaster is such a broken game it's not even funny
+			return player;
+		} 
+		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to create player from locator:" + e.getMessage()); }
+		
+		return null;
     }
 
     public static String[] getSupportedContentTypes(String protocol)

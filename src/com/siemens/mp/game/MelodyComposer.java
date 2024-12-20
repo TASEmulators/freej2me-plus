@@ -122,28 +122,22 @@ public class MelodyComposer
 
 	private Sequence tmpSequence;
 	private Track tmpTrack;
-	private Melody curMelody;
 	private int curTick = 0;
 	private int lastMark = 0; // Used for TONE_MARK
+	public int len = 0;
+    public int bpm = MelodyComposer.BPM;
 
 	private final int[] tmpNoteArray = new int[MAX_NOTES*2]; // This will hold notes AND their length, hence why it's 2 * MAX_NOTES
 	private int tmpNoteArrayIdx = 0;
 
-	/* Jars are expected to call this before appending notes or doing anything else, so prepare an empty melody (sequence and track) */
-	public MelodyComposer() 
-	{
-		curMelody = new Melody();
-		setBPM(BPM); // This will create a new track with the default BPM
-		curMelody.len = 0;
-		
-	}
+	/* Jars are expected to call constructors before appending notes or doing anything else, so prepare an empty melody (sequence and track) */
+	public MelodyComposer() { setBPM(BPM); } // This will create a new track with the default BPM
 
 	// No need for tmpNoteArray here, the notes array is what we'll use to determine repeats and such
 	public MelodyComposer(int[] notes, int bpm) 
 	{ 
-		curMelody = new Melody();
 		setBPM(bpm); // This will create a new track with the received BPM
-		curMelody.bpm = bpm;
+		this.bpm = bpm;
 
 		/* The notes array is a pair of [note, length] */
 		for (int i = 0; i < notes.length; i += 2) 
@@ -202,7 +196,7 @@ public class MelodyComposer
 		}
 
 		/* Due to that, the real count of notes has to be half of the array's length */
-		curMelody.len = notes.length/2;
+		len = notes.length/2;
 	}
 	
 	public void appendNote(int note, int length) 
@@ -266,7 +260,7 @@ public class MelodyComposer
 				tmpTrack.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_OFF, 0, mapToMidi(tmpNoteArray[tmpNoteArrayIdx * 2]), 0), curTick+tmpNoteArray[tmpNoteArrayIdx * 2 + 1]));
 				curTick += tmpNoteArray[tmpNoteArrayIdx * 2 + 1];
 				tmpNoteArrayIdx++;
-				curMelody.len++;
+				len++;
 			} 
 			catch (InvalidMidiDataException e) 
 			{
@@ -372,27 +366,23 @@ public class MelodyComposer
 		}
 	}
 
-	public Melody getMelody() 
-	{
-		curMelody.populateMelody(convertMelody(tmpSequence)); // Send MIDI melody converted to a byte array
-		return curMelody;
-	}
+	public Melody getMelody() { return new Melody(convertMelody(tmpSequence)); }
 
 	/* Let's assume a max of 32767 notes for now, should be more than enough */
 	public static int maxLength() { return (int) MAX_NOTES; }
 
 	/* This should return the current melody's tone count */
-	public int length() { return curMelody.len; }
+	public int length() { return len; }
 
 	/* Here, we can basically create a new melody from scratch with default BPM */
 	public void resetMelody()
 	{ 
 		Mobile.log(Mobile.LOG_DEBUG, MelodyComposer.class.getPackage().getName() + "." + MelodyComposer.class.getSimpleName() + ": " + "Reset Melody!");
 		setBPM(BPM);
-		curMelody = new Melody();
 		curTick = 0;
 		lastMark = 0;
 		tmpNoteArrayIdx = 0;
+		len = 0;
 	}
 
 	/* This is always called after a Melody() constructor or resetMelody() so creating a new sequence and track should be safe */
@@ -400,7 +390,7 @@ public class MelodyComposer
 	{  
         try 
 		{ 
-			curMelody.bpm = bpm; 
+			this.bpm = bpm; 
 			tmpSequence = new Sequence(Sequence.PPQ, 24); // This PPQ value for siemens is assumed to be the same as Nokia's OTA/OTT (which is correct in playback speed). Tested in AH-1 SeaBomber which is available for both
 			tmpTrack = tmpSequence.createTrack();
 			tmpTrack.add(new MidiEvent(new ShortMessage(ShortMessage.PROGRAM_CHANGE, 0, 80, 0), 0)); // 80 is the Square Wave / Lead 1 instrument, which we'll use to get closer to what this should sound like

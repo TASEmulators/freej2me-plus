@@ -14,6 +14,16 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.siemens.mp.media.control;
+package org.recompile.mobile;
 
-public interface VolumeControl extends com.siemens.mp.media.Control, javax.microedition.media.control.VolumeControl { }
+import java.io.InputStream;
+
+import javax.microedition.media.Control;
+import javax.microedition.media.Player;
+
+public class JavaxPlatformPlayer extends PlatformPlayer implements javax.microedition.media.Controllable
+{
+	public JavaxPlatformPlayer(InputStream stream, String type) { super(stream, type); }
+
+	public JavaxPlatformPlayer(String locator) { super(locator); }
+}

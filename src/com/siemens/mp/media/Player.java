@@ -16,8 +16,7 @@
 */
 package com.siemens.mp.media;
 
-public interface Player extends javax.microedition.media.Player 
-
+public interface Player extends Controllable, javax.microedition.media.Player
 { 
 	public void addPlayerListener(com.siemens.mp.media.PlayerListener playerListener);
 

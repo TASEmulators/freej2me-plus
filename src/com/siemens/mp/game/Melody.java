@@ -35,47 +35,32 @@ public class Melody extends com.siemens.mp.misc.NativeMem
 	 * i can come up with at the moment, seems to work on all tested Jars including AH-1 SeaBomber
 	 * AquaRace)
 	 */
-	private static Map<Melody, Player> melodyPlayers = new HashMap<>();
-    private static Melody currentPlayingMelody;  // Track the current playing melody
-    private Player melodyPlayer = null; // Instance-specific player
-    private byte[] melody = null; 
-    public int len = 0;
-    public int bpm = MelodyComposer.BPM;
+    private Player melodyPlayer; // Instance-specific plafyer
+    private static Player currentPlayingMelody;
 
-    public Melody() { }
-
+    public Melody(byte[] data) 
+    { 
+        try 
+        {
+            melodyPlayer = Manager.createPlayer(new ByteArrayInputStream(data), "audio/x-mid");
+            melodyPlayer.prefetch();
+            Melody.currentPlayingMelody = melodyPlayer;
+        } 
+        catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Melody.class.getPackage().getName() + "." + Melody.class.getSimpleName() + ": " + " failed to create Melody player:" + e.getMessage());}
+    }
 
     public static void stop() 
 	{
-        if (currentPlayingMelody != null) 
-		{
-            currentPlayingMelody.stopPlaying(); 
-            currentPlayingMelody = null;
-        }
-    }
-
-    // Non-static method to stop the melody playing
-    private void stopPlaying() 
-	{
-        if (melodyPlayer != null) 
-		{
-            melodyPlayer.stop();
-        }
+        if(currentPlayingMelody != null) { currentPlayingMelody.stop(); }
     }
 
     public void play() { 
-        try {
-            // If not already in the map, create a new player
-            if (!melodyPlayers.containsKey(this)) 
-			{
-                melodyPlayer = Manager.createPlayer(new ByteArrayInputStream(melody), "audio/x-mid");
-                melodyPlayers.put(this, melodyPlayer);
-            }
-            melodyPlayers.get(this).start();
-            currentPlayingMelody = this; // Set this instance as the currently playing melody
+        try 
+        {
+            melodyPlayer.start();
+            Melody.currentPlayingMelody = melodyPlayer;
         } 
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Melody.class.getPackage().getName() + "." + Melody.class.getSimpleName() + ": " + " failed to play Melody:" + e.getMessage());}
     }
 
-    public void populateMelody(byte[] data) { melody = data; }
 }

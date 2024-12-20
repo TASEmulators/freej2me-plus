@@ -16,4 +16,4 @@
 */
 package com.siemens.mp.media.control;
 
-public interface ToneControl extends javax.microedition.media.control.ToneControl { }
+public interface ToneControl extends com.siemens.mp.media.Control, javax.microedition.media.control.ToneControl { }
