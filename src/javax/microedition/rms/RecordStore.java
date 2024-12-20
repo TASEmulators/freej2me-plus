@@ -74,7 +74,7 @@ public class RecordStore
 
 		name = recordStoreName.replaceAll("[/\\\\:*?\"<>|]", "");
 
-		if(name == "") { return; }
+		if(name == "") { throw(new RecordStoreException("The record name:'"+ name +"' is not valid")); }
 
 		appname = Mobile.getPlatform().loader.suitename;
 
