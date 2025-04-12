@@ -68,7 +68,7 @@ body {
     min-height: 500px;
     height: 100vh;
     max-height: 75vh;
-    transform: perspective(150px) rotateX(6deg) rotateZ(15deg) rotateY(-2.5deg) translateX(-35vw) translateZ(-1px) translateY(-2vh) scale(1.7);
+    transform: perspective(150px) rotateX(7deg) rotateZ(15deg) rotateY(-2.25deg) scale(1.7);
     transform-style: preserve-3d;
 }
 
@@ -338,10 +338,10 @@ iframe {
         margin-left: 5%;
     }
     #firstpane-content-left {
-        width: 30%;
+        display: none;
     }
     #firstpane-content-right {
-        width: 70%;
+        width: 100%;
         margin: auto 5%;
     }
     #firstpane-content-right h1 {
