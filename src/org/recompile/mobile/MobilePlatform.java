@@ -537,9 +537,7 @@ public class MobilePlatform
 				}
 
 				// Send dumped jar path to loader
-				fileName = "file:" + tmpfile.getAbsolutePath().replace("./", "");
-
-				URL jar = new URL(fileName);
+				URL jar = tmpfile.toURI().toURL();
 				loader = new MIDletLoader(jar, descriptorProperties);
 
 				if(Mobile.deleteTemporaryKJXFiles) 
