@@ -200,6 +200,7 @@ struct retro_core_option_v2_definition core_options[] =
             { "Sagem",               NULL },
             { "Siemens",             NULL },
             { "Sharp",               NULL },
+            { "SKT",               NULL },
             { NULL, NULL },
         },
         "Default"
@@ -695,6 +696,7 @@ struct retro_core_option_definition core_options_v1 [] =
             { "Sagem",               NULL },
             { "Siemens",             NULL },
             { "Sharp",               NULL },
+            { "SKT",                 NULL },
             { NULL, NULL },
         },
         "Default"

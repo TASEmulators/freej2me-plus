@@ -28,6 +28,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.lang.ClassLoader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -93,14 +97,14 @@ public class MIDletLoader extends URLClassLoader
 	private static byte selectedMidlet = 0;
 	public static boolean MIDletSelected = false;
 
-	private static final String[] knownModelStrings = 
+	private static final String[] knownModelStrings =
 	{
 		"nokia", "samsung", "siemens", "sharp", "sonyericsson", "sony ericsson", "motorola", "sagem", "lg",
 		"c65", "cv65", "cx65", "sx1", "n80", "e61", "n73", "n95", "gx10", "gx15", "gx20", "gx25", "gx30", "k300",
 		"k500", "s700", "k800", "k850" // TODO: Add more devices if any jar has sudden issues booting
 	};
 
-	private static final String[] supportedLocales = 
+	private static final String[] supportedLocales =
 	{
 		"en-US", // English (United States)
 		"en-UK", // English (United Kingdom)
@@ -148,7 +152,7 @@ public class MIDletLoader extends URLClassLoader
 			loadJarEntries();
 			baseUrl = url;
 		} 
-		catch (Exception e) 
+		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse jar:" + e.getMessage());
 			e.printStackTrace();
@@ -189,6 +193,16 @@ public class MIDletLoader extends URLClassLoader
 		System.setProperty("wireless.messaging.mms.mmsc", "http://abc.stubfreej2meplus.net");
 		System.setProperty("wireless.messaging.sms.smsc", "+8613800010000");
 		System.setProperty("wireless.messaging.version", "1.0");
+
+		// SKT stuff
+		System.setProperty("com.xce.wipi.version", "1.0.0");
+		System.setProperty("m.SK_VM", "20");
+		System.setProperty("m.VENDER", "LG");
+		System.setProperty("m.MODEL", "11");
+		System.setProperty("m.CARRIER", "SKT");
+		System.setProperty("m.COLOR", "5");
+		System.setProperty("m.MIN", "0000000000");
+		System.setProperty("MIN", "0000000000"); // legacy SK-VM 1.0.x property
 
 		// Integrate properties retrieved from JAD file, if any.
 		properties.putAll(descriptorProperties);
@@ -380,15 +394,17 @@ public class MIDletLoader extends URLClassLoader
 		}
 	}
 
-	public static void parseDescriptorInto(InputStream is, Map<String, String> keyValueMap) 
+	public static void parseDescriptorInto(InputStream is, Map<String, String> keyValueMap) {
+		parseDescriptorInto(is, keyValueMap, StandardCharsets.UTF_8);
+	}
+
+	public static void parseDescriptorInto(InputStream is, Map<String, String> keyValueMap, Charset charset)
 	{
 		boolean hasMIDlet = false;
         String currentKey = null;
         StringBuilder currentValue = new StringBuilder();
-        try
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is, charset)))
 		{
-			// Use the expanded UTF-8 charset for parsing standard MIDlets (chinese jars would have issues otherwise)
-			BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             String line;
             while ((line = br.readLine()) != null) 
 			{
@@ -428,7 +444,7 @@ public class MIDletLoader extends URLClassLoader
 			// If no MIDlet was found above, we'll try loading this jar as a DoJa file, which has an accompanying .jam descriptor (this is fine because if a jad is present, it's loaded before this method is even called)
 			Mobile.isDoJa = !hasMIDlet;
 			br.close();
-        } 
+        }
 		catch (IOException e) 
 		{
             Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage());
@@ -480,7 +496,7 @@ public class MIDletLoader extends URLClassLoader
 			}
 
 			br.close();
-		} 
+		}
 		catch (IOException e) { Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage()); }
 	}
 
@@ -496,7 +512,7 @@ public class MIDletLoader extends URLClassLoader
 
 		if(url != null) // Standard MIDlet manifest is present (at least i assume so)
 		{
-			try { parseDescriptorInto(url.openStream(), properties); } 
+			try { parseDescriptorInto(url.openStream(), properties); }
 			catch (Exception e) 
 			{
 				Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Read Jar Manifest!");
@@ -594,7 +610,7 @@ public class MIDletLoader extends URLClassLoader
 
 			Mobile.log(Mobile.LOG_INFO, "Loading I-Appli: " + name[0] +" | Main Class: " + className[0]);
 			reg = new Registry(className[0]);
-		}		
+		}
 	}
 
 
@@ -695,25 +711,25 @@ public class MIDletLoader extends URLClassLoader
 			}
 		}
 
-		if (resourceName.contains(System.getProperty("microedition.locale"))) 
+		if (resourceName.contains(System.getProperty("microedition.locale")))
 		{
 			Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Requested resource appears to be a language file. Checking for alternatives...");
 
 			// Search for any language files matching the list of supported locales
-			for (String locale : supportedLocales) 
+			for (String locale : supportedLocales)
 			{
 				String fallbackResourceName = resourceName.replace(System.getProperty("microedition.locale"), locale);
-				for (JarEntry entry : jarEntries) 
+				for (JarEntry entry : jarEntries)
 				{
 					String entryName = entry.getName();
-					if (entryName.equalsIgnoreCase(fallbackResourceName)) 
+					if (entryName.equalsIgnoreCase(fallbackResourceName))
 					{
-						try 
+						try
 						{
 							URI jarEntryURI = new URI("jar:" + jarUrl.toExternalForm() + "!/" + entryName);
-							return jarEntryURI.toURL(); 
-						} 
-						catch (Exception e) 
+							return jarEntryURI.toURL();
+						}
+						catch (Exception e)
 						{
 							Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Couldn't load fallback resource from jar: " + e.getMessage());
 							e.printStackTrace();
@@ -937,19 +953,19 @@ public class MIDletLoader extends URLClassLoader
 			name.startsWith("com.j_phone.") || name.startsWith("com.kddi.") || name.startsWith("com.pantech.") ||
 			name.startsWith("mmpp.") || name.startsWith("com.velox.") || name.startsWith("com.nttdocomo.") ||
 			name.startsWith("org.xml.") || name.startsWith("org.w3c.") || name.startsWith("javacard.") ||
-			name.startsWith("com.sonyericsson")
+			name.startsWith("com.sonyericsson") || name.startsWith("com.xce.") || name.startsWith("com.skt.")
 			)
 		{
-		
+
 			// Change encoding based on vendor (Only DoJa, J_Phone and KDDI at the moment, MIDP already defaults to "ISO_8859_1")
-			if(name.startsWith("com.kddi.") || name.startsWith("com.j_phone.")) 
-			{ 
-				Mobile.isKDDI = true; 
+			if(name.startsWith("com.kddi.") || name.startsWith("com.j_phone."))
+			{
+				Mobile.isKDDI = true;
 				Mobile.textEncoding = "Shift_JIS";
 				MobilePlatform.checkFileEncoding();
 			}
-			else if(name.startsWith("com.nttdocomo.")) 
-			{ 
+			else if(name.startsWith("com.nttdocomo."))
+			{
 				Mobile.isDoJa = true;
 				Mobile.textEncoding = "Shift_JIS";
 				MobilePlatform.checkFileEncoding();
@@ -1132,17 +1148,17 @@ public class MIDletLoader extends URLClassLoader
 			}
 
 			@Override
-			public void visitLdcInsn(Object value) 
+			public void visitLdcInsn(Object value)
 			{
 				// The loaded app might be going for a check against a specific phone model, prepare to override it
-				if (value instanceof String && ((String)value).toLowerCase().contains("microedition.platform")) 
+				if (value instanceof String && ((String)value).toLowerCase().contains("microedition.platform"))
 				{
 					if(Mobile.compatOverridePlatformChecks) { foundPlatformCheck = true; }
 				}
-				
-				if (foundPlatformCheck && value instanceof String) 
+
+				if (foundPlatformCheck && value instanceof String)
 				{
-					for (String keyword : knownModelStrings) 
+					for (String keyword : knownModelStrings)
 					{
 						if (((String)value).toLowerCase().contains(keyword)) // It is going for the check, replace the device string with FreeJ2ME-Plus'
 						{
@@ -1154,6 +1170,35 @@ public class MIDletLoader extends URLClassLoader
 					}
 				}
 				super.visitLdcInsn(value);
+			}
+
+			private static final boolean ENABLE_EXCEPTION_DEBUG = false;
+			private final HashSet<Label> catchLabels = new HashSet<>();
+
+			@Override
+			public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
+				super.visitTryCatchBlock(start, end, handler, type);
+
+				if (ENABLE_EXCEPTION_DEBUG) {
+					catchLabels.add(handler);
+				}
+			}
+
+			@Override
+			public void visitLabel(Label label) {
+				super.visitLabel(label);
+
+				if (ENABLE_EXCEPTION_DEBUG) {
+					if (catchLabels.contains(label)) {
+						super.visitInsn(Opcodes.DUP);
+						super.visitMethodInsn(
+								Opcodes.INVOKEVIRTUAL,
+								"java/lang/Throwable",
+								"printStackTrace",
+								"()V"
+						);
+					}
+				}
 			}
 		}
 	}

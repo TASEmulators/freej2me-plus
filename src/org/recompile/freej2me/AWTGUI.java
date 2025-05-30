@@ -165,7 +165,7 @@ public final class AWTGUI
 	final MenuItem aboutMenuItem = new MenuItem("About FreeJ2ME");
 	final MenuItem resChangeMenuItem = new MenuItem("Change Phone Resolution");
 
-	final MenuItem openMenuItem = new MenuItem("Open JAR / JAD / KJX File");
+	final MenuItem openMenuItem = new MenuItem("Open JAR / JAD / KJX / MSD File");
 	final MenuItem restartMenuItem = new MenuItem("Restart Running Jar");
 	final MenuItem closeMenuItem = new MenuItem("Close Running Jar");
 	final MenuItem scrShot = new MenuItem("Take Screenshot (Ctrl+Alt+C)");
@@ -191,9 +191,10 @@ public final class AWTGUI
 		new CheckboxMenuItem("Nokia Full Keyboard", false),
 		new CheckboxMenuItem("Sagem", false),
 		new CheckboxMenuItem("Siemens", false),
-		new CheckboxMenuItem("Sharp", false)
+		new CheckboxMenuItem("Sharp", false),
+		new CheckboxMenuItem("SKT", false)
 	};
-	final String[] layoutValues = {"Standard", "LG", "Motorola", "MotoV8", "MotoTriplets", "NokiaKeyboard", "Sagem", "Siemens", "Sharp"};
+	final String[] layoutValues = {"Standard", "LG", "Motorola", "MotoV8", "MotoTriplets", "NokiaKeyboard", "Sagem", "Siemens", "Sharp", "SKT"};
 	
 	final CheckboxMenuItem[] backlightOptions = 
 	{
@@ -619,7 +620,7 @@ public final class AWTGUI
 		});
 
 		// Compatibility settings
-		doNotTranslateDrawRGB.addItemListener(new ItemListener() 
+		doNotTranslateDrawRGB.addItemListener(new ItemListener()
 		{
 			public void itemStateChanged(ItemEvent e) 
 			{
@@ -648,9 +649,9 @@ public final class AWTGUI
 			}
 		});
 
-		overridePlatChecks.addItemListener(new ItemListener() 
+		overridePlatChecks.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(overridePlatChecks.getState()){ config.updateCompatOverridePlatformChecks("on"); hasPendingChange = true; }
 				else{ config.updateCompatOverridePlatformChecks("off"); hasPendingChange = true; }
@@ -659,9 +660,9 @@ public final class AWTGUI
 			}
 		});
 
-		siemensFriendlyDrawing.addItemListener(new ItemListener() 
+		siemensFriendlyDrawing.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(siemensFriendlyDrawing.getState()){ config.updateCompatSiemensFriendlyDrawing("on"); hasPendingChange = true; }
 				else{ config.updateCompatSiemensFriendlyDrawing("off"); hasPendingChange = true; }
@@ -940,7 +941,7 @@ public final class AWTGUI
 		compatSettingsMenu.add(immediateRepaints);
 		compatSettingsMenu.add(overridePlatChecks);
 		compatSettingsMenu.add(siemensFriendlyDrawing);
-		
+
 		// add menus to menubar
 		menuBar.add(fileMenu);
 		menuBar.add(optionMenu);
@@ -982,7 +983,7 @@ public final class AWTGUI
 			overridePlatChecks.setState(config.settings.get("compatoverrideplatchecks").equals("on"));
 
 			siemensFriendlyDrawing.setState(config.settings.get("compatsiemensfriendlydrawing").equals("on"));
-			
+
 			resChoice.select(""+ Integer.parseInt(config.settings.get("scrwidth")) + "x" + ""+ Integer.parseInt(config.settings.get("scrheight")));
 
 			// Sys Settings
@@ -1023,12 +1024,15 @@ public final class AWTGUI
 
 			if(a.getActionCommand() == "Open") 
 			{
-				FileDialog filePicker = new FileDialog(main, "Open JAR / JAD / KJX File", FileDialog.LOAD);
+				FileDialog filePicker = new FileDialog(main, "Open JAR / JAD / KJX / MSD File", FileDialog.LOAD);
 				String filename;
-				filePicker.setFilenameFilter(new FilenameFilter()
-				{
-					public boolean accept(File dir, String name) 
-					{ return name.toLowerCase().endsWith(".jar") || name.toLowerCase().endsWith(".jad") || name.toLowerCase().endsWith(".kjx"); }
+				filePicker.setFilenameFilter(new FilenameFilter() {
+					public boolean accept(File dir, String name) {
+						return name.toLowerCase().endsWith(".jar") ||
+								name.toLowerCase().endsWith(".jad") ||
+								name.toLowerCase().endsWith(".kjx") ||
+								name.toLowerCase().endsWith(".msd");
+					}
 				});
 				filePicker.setVisible(true);
 
@@ -1037,10 +1041,10 @@ public final class AWTGUI
 				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "JAR/JAD Loading was cancelled"); }
 				else
 				{
-						try 
+						try
 						{
 							jarfile = new File(filePicker.getDirectory()+filename).toURI().toString();
-							
+
 							if(!hasLoadedFile()) { loadJarFile(jarfile); } // First jar being loaded, load straight away
 							else // Otherwise, this requires a restart.
 							{
@@ -1105,7 +1109,7 @@ public final class AWTGUI
 		}
 	}
 
-	public void loadJarFile(String jarpath) 
+	public void loadJarFile(String jarpath)
 	{
 		jarfile = jarpath;
 		fileLoaded = true;
@@ -1126,9 +1130,9 @@ public final class AWTGUI
 
 	public boolean hasJustLoaded() { return firstLoad; }
 
-	public void showRestartDialog() 
+	public void showRestartDialog()
 	{
 		awtDialogs[3].setLocationRelativeTo(main);
-		awtDialogs[3].setVisible(true);	
+		awtDialogs[3].setVisible(true);
 	}
 }

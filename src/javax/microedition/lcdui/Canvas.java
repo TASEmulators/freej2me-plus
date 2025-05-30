@@ -51,6 +51,23 @@ public abstract class Canvas extends Displayable
 	public static final int KEY_SOFT_LEFT = 126;
 	public static final int KEY_SOFT_RIGHT = 127;
 
+	// SKT-specific keys. They are actually defined in Canvas like that.
+	public static final int KEY_CLR = 8;
+	public static final int KEY_COML = 129;
+	public static final int KEY_COMC = 130;
+	public static final int KEY_COMR = 131;
+	public static final int KEY_UP = 141;
+	public static final int KEY_LEFT = 142;
+	public static final int KEY_RIGHT = 145;
+	public static final int KEY_DOWN = 146;
+	public static final int KEY_FIRE = 148;
+	public static final int KEY_CALL = 190;
+	public static final int KEY_END = 191;
+	public static final int KEY_FLIP_OPEN = 192;
+	public static final int KEY_FLIP_CLOSE = 193;
+	public static final int KEY_VOL_UP = 194;
+	public static final int KEY_VOL_DOWN = 195;
+
 	private int barHeight;
 	private boolean suppressKeyEvents = false; // For GameCanvas
 	private boolean fullscreen = false;

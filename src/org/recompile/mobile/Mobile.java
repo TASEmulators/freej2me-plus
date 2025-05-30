@@ -98,6 +98,7 @@ public class Mobile
 	// Enable/disable logging to the console and optionally to a file
 	private static final String LOG_FILE = "freej2me_system" + File.separatorChar + "FreeJ2ME.log";
 	public static final String SIEMENS_DATA_PATH = "freej2me_system" + File.separatorChar + "SiemensData" + File.separatorChar;
+	public static final String XCE_DATA_PATH = "freej2me_system" + File.separatorChar + "XceData" + File.separatorChar;
 	public static byte minLogLevel = 2;
 
 	// Log Levels
@@ -155,6 +156,7 @@ public class Mobile
 	public static boolean sagem = false;
 	public static boolean siemens = false;
 	public static boolean sharp = false;
+	public static boolean skt = false;
 
 	/*                                               
 	 * For AWTGUI, the input array is as follows:    [LeftSoft, RightSoft, Up, Left, Fire, Right, Down, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, 0, #, Fast-Forward, Screenshot]
@@ -476,6 +478,19 @@ public class Mobile
 				case 9: return SHARP_SOFT1; // Select
 			}
 		}
+		if(skt)
+		{
+			switch(keycode)
+			{
+				case 0: return Canvas.KEY_UP; // Up
+				case 1: return Canvas.KEY_DOWN; // Down
+				case 2: return Canvas.KEY_LEFT; // Left
+				case 3: return Canvas.KEY_RIGHT; // Right
+				case 7: return Canvas.KEY_FIRE; // Y
+				case 8: return Canvas.KEY_COML; // Start
+				case 9: return Canvas.KEY_COMR; // Select
+			}
+		}
 
 		// J2ME Canvas standard keycodes (not exactly standard, just the most common mappings), to match against any keys not covered above.
 		switch(keycode)
@@ -623,6 +638,19 @@ public class Mobile
 				case SHARP_FIRE:  return Canvas.FIRE; // Y
 				case SHARP_SOFT1: return Canvas.KEY_SOFT_LEFT;
 				case SHARP_SOFT2: return Canvas.KEY_SOFT_RIGHT;
+			}
+		}
+		if (skt)
+		{
+			switch (keycode)
+			{
+				case Canvas.KEY_UP:    return Canvas.UP; // Up
+				case Canvas.KEY_DOWN:  return Canvas.DOWN; // Down
+				case Canvas.KEY_LEFT:  return Canvas.LEFT; // Left
+				case Canvas.KEY_RIGHT: return Canvas.RIGHT; // Right
+				case Canvas.KEY_FIRE:  return Canvas.FIRE; // Y
+				case Canvas.KEY_COML:  return Canvas.KEY_SOFT_LEFT;
+				case Canvas.KEY_COMR:  return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 
@@ -921,6 +949,7 @@ public class Mobile
 		sagem = false;
 		siemens = false;
 		sharp = false;
+		skt = false;
 		if(phone.equals("LG"))            { lg = true;}
 		if(phone.equals("Motorola"))      { motorola = true;}
 		if(phone.equals("MotoTriplets"))  { motoTriplets = true;}
@@ -929,6 +958,7 @@ public class Mobile
 		if(phone.equals("Sagem"))         { sagem = true;}
 		if(phone.equals("Siemens"))       { siemens = true;}
 		if(phone.equals("Sharp"))         { sharp = true;}
+		if(phone.equals("SKT"))           { skt = true;}
 
 		String midiSoundfont = config.settings.get("soundfont");
 		if(midiSoundfont.equals("Custom") && useCustomMidi == false)      { useCustomMidi = true;  Manager.changeCustomMidi(); }

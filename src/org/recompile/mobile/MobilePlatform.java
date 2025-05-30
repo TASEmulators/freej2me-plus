@@ -19,6 +19,9 @@ package org.recompile.mobile;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -126,13 +129,19 @@ public class MobilePlatform
 		 * Try to have the jar scale as well. If this doesn't work,
 		 * a simple restart is all it takes, just like before.
 		 */
-		if(!Mobile.isDoJa && Mobile.getDisplay() != null && Mobile.getDisplay().getCurrent() != null) 
-		{ 
-			Mobile.getDisplay().getCurrent().doSizeChanged(width, height);
-			Mobile.getDisplay().getCurrent().platformImage = lcd; 
-			Mobile.getDisplay().getCurrent().graphics = (Graphics) gc; 
-		}
-		else if(Mobile.isDoJa && com.nttdocomo.ui.Display.getCurrent() != null) // Doja's current Frames (Displayables) are static
+
+		if (!Mobile.isDoJa) {
+			com.xce.lcdui.XDisplay.width = width;
+			com.xce.lcdui.XDisplay.height2 = height;
+			com.xce.lcdui.XDisplay.platformImage = lcd;
+			com.xce.lcdui.Toolkit.graphics = (Graphics) gc;
+
+			if (Mobile.getDisplay() != null && Mobile.getDisplay().getCurrent() != null) {
+				Mobile.getDisplay().getCurrent().doSizeChanged(width, height);
+				Mobile.getDisplay().getCurrent().platformImage = lcd;
+				Mobile.getDisplay().getCurrent().graphics = (Graphics) gc;
+			}
+		} else if(Mobile.isDoJa && com.nttdocomo.ui.Display.getCurrent() != null) // Doja's current Frames (Displayables) are static
 		{
 			com.nttdocomo.ui.Display.getCurrent().platformImage = lcd; 
 			com.nttdocomo.ui.Display.getCurrent().graphics = (com.nttdocomo.ui.Graphics) gc; 
@@ -151,7 +160,7 @@ public class MobilePlatform
 			displayable = Mobile.getDisplay().getCurrent();
 			if (!(displayable instanceof Canvas)) { return; }
 			
-			if(!Mobile.isPaused) 
+			if(!Mobile.isPaused)
 			{
 				((Canvas) displayable).hideNotify();
 				
@@ -190,13 +199,13 @@ public class MobilePlatform
 			updateDoJaKeyState(Mobile.getCanvasAction(keycode), true);
 			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null) 
 			{ 
-				Mobile.getDisplay().postInputEvent(new Runnable() 
-				{ 
+				Mobile.getDisplay().postInputEvent(new Runnable()
+				{
 					@Override
-					public void run() 
-					{ 
-						if(!handleCommands(Mobile.getCanvasAction(keycode))) 
-						{ 
+					public void run()
+					{
+						if(!handleCommands(Mobile.getCanvasAction(keycode)))
+						{
 							if(displayable instanceof Canvas && !((Canvas) displayable).areKeysSuppressed()) { displayable.keyPressed(keycode); }
 						}
 					}
@@ -207,18 +216,18 @@ public class MobilePlatform
 
 	public static void keyReleased(final int keycode)
 	{
-		if(!Mobile.isPaused && MIDletLoader.MIDletSelected) 
+		if(!Mobile.isPaused && MIDletLoader.MIDletSelected)
 		{
 			updateKeyState(Mobile.getGameAction(keycode), false);
 			updateVodafoneKeyState(Mobile.getCanvasAction(keycode), false);
 			updateDoJaKeyState(Mobile.getCanvasAction(keycode), false);
-			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null && MIDletLoader.MIDletSelected) 
-			{ 
-				Mobile.getDisplay().postInputEvent(new Runnable() 
-				{ 
+			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null && MIDletLoader.MIDletSelected)
+			{
+				Mobile.getDisplay().postInputEvent(new Runnable()
+				{
 					@Override
-					public void run() 
-					{ 
+					public void run()
+					{
 						if(displayable instanceof Canvas && !((Canvas) displayable).areKeysSuppressed()) { displayable.keyReleased(keycode); }
 					}
 				});
@@ -228,15 +237,15 @@ public class MobilePlatform
 
 	public static void keyRepeated(final int keycode)
 	{
-		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)  
-		{ 
-			Mobile.getDisplay().postInputEvent(new Runnable() 
-			{ 
+		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
+		{
+			Mobile.getDisplay().postInputEvent(new Runnable()
+			{
 				@Override
-				public void run() 
-				{ 
-					if(!handleCommands(Mobile.getCanvasAction(keycode))) 
-					{ 
+				public void run()
+				{
+					if(!handleCommands(Mobile.getCanvasAction(keycode)))
+					{
 						if(displayable instanceof Canvas && !((Canvas) displayable).areKeysSuppressed()) { displayable.keyRepeated(keycode); }
 					}
 				}
@@ -248,9 +257,9 @@ public class MobilePlatform
 	public static void pointerDragged(final int x, final int y)
 	{
 		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
-		{ 
-			Mobile.getDisplay().postInputEvent(new Runnable() 
-			{ 
+		{
+			Mobile.getDisplay().postInputEvent(new Runnable()
+			{
 				@Override
 				public void run() { displayable.pointerDragged(x, y); }
 			});
@@ -262,8 +271,8 @@ public class MobilePlatform
 	{
 		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
 		{
-			Mobile.getDisplay().postInputEvent(new Runnable() 
-			{ 
+			Mobile.getDisplay().postInputEvent(new Runnable()
+			{
 				@Override
 				public void run() { displayable.pointerPressed(x, y); }
 			});
@@ -274,9 +283,9 @@ public class MobilePlatform
 	public static void pointerReleased(final int x, final int y)
 	{
 		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
-		{ 
-			Mobile.getDisplay().postInputEvent(new Runnable() 
-			{ 
+		{
+			Mobile.getDisplay().postInputEvent(new Runnable()
+			{
 				@Override
 				public void run() { displayable.pointerReleased(x, y); }
 			});
@@ -446,34 +455,34 @@ public class MobilePlatform
 		}
 
 		boolean canvasPresent = (com.nttdocomo.ui.Display.getCurrent() != null && com.nttdocomo.ui.Display.getCurrent() instanceof com.nttdocomo.ui.Canvas);
-		
-		if(pressed) 
-		{ 
+
+		if(pressed)
+		{
 			doJaKeyState |= mask;
-			if(canvasPresent) 
+			if(canvasPresent)
 			{
 				((com.nttdocomo.ui.Canvas)com.nttdocomo.ui.Display.getCurrent()).processEvent(com.nttdocomo.ui.Display.KEY_PRESSED_EVENT, doJaKeyState);
 			}
 		}
 		else // Send the released event BEFORE changing the mask (or else this will always send 0 as the key value)
-		{ 
-			if(canvasPresent) 
+		{
+			if(canvasPresent)
 			{
 				((com.nttdocomo.ui.Canvas)com.nttdocomo.ui.Display.getCurrent()).processEvent(com.nttdocomo.ui.Display.KEY_RELEASED_EVENT, doJaKeyState);
 			}
-			doJaKeyState ^= mask; 
+			doJaKeyState ^= mask;
 		}
 	}
 
 	// MIDP Spec dictates that only Canvas (and CustomItem) keys should be serialized, so i'll assume that these commands don't need to as they're usually meant for other LCDUI displayables
-	private static boolean handleCommands(int key) 
+	private static boolean handleCommands(int key)
 	{
 		boolean canvasFullscreen = false, notCanvas = true; // Default to false, as all other displayables can show commands at all times
-		
-		if(displayable instanceof Canvas) 
-		{ 
-			canvasFullscreen = ((Canvas)displayable).getFullScreen(); 
-			notCanvas = false; 
+
+		if(displayable instanceof Canvas)
+		{
+			canvasFullscreen = ((Canvas)displayable).getFullScreen();
+			notCanvas = false;
 		}
 
 		if((!canvasFullscreen && !displayable.commands.isEmpty()) || notCanvas)
@@ -491,7 +500,7 @@ public class MobilePlatform
 				{
 					displayable.currentCommand++;
 					if(displayable.currentCommand>=displayable.commands.size()) { displayable.currentCommand = 0; }
-					displayable._invalidate(); 
+					displayable._invalidate();
 					return true;
 				}
 				else if (key == Canvas.KEY_SOFT_LEFT) // Left and Right soft commands do not need an explicit invalidate call
@@ -519,7 +528,7 @@ public class MobilePlatform
 						showCommandBar();
 						displayable.doLeftCommand();
 						return true;
-					} 
+					}
 					else if (key == Canvas.KEY_SOFT_RIGHT) 
 					{
 						showCommandBar();
@@ -599,16 +608,16 @@ public class MobilePlatform
 					}
 					fos.close();
 				}
-				catch(Exception e) 
-				{ 
+				catch(Exception e)
+				{
 					Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to prepare kjx jad data: " + e.getMessage());
 					return false;
 				}
 
-				try 
-				{ 
+				try
+				{
 					InputStream targetStream = new FileInputStream(tmpfile);
-					MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties); 
+					MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties);
 					targetStream.close();
 				}
 				catch (IOException e) 
@@ -619,15 +628,15 @@ public class MobilePlatform
 	
 				// Write jar
 				tmpfile = new File(Mobile.tempKJXDir, kjxJadFileName.substring(0, kjxJadFileName.length() -4) + ".jar");
-				try 
+				try
 				{
 					FileOutputStream fos = new FileOutputStream(tmpfile);
 					int length = 0;
 					while((length = dis.read(buf)) > 0) { fos.write(buf, 0, length); }
 					fos.close();
 				}
-				catch(Exception e) 
-				{ 
+				catch(Exception e)
+				{
 					Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load kjx jar data: " + e.getMessage());
 					return false;
 				}
@@ -659,38 +668,43 @@ public class MobilePlatform
 					}
 				} catch (Exception e) { Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Couldn't check for accompanying JAD:" + e.getMessage()); }
 			}
-			
-			boolean isJad = fileName.toLowerCase().endsWith(".jad");
+
+			boolean isMsd = fileName.toLowerCase().endsWith(".msd");
+			boolean isJad = fileName.toLowerCase().endsWith(".jad")
+					|| isMsd;
 
 			if (isJad) 
 			{
+				Charset jadCharset = StandardCharsets.UTF_8;
+				if (isMsd) {
+					jadCharset = Charset.forName("CP949");
+				}
+
 				String preparedFileName = fileName.substring(fileName.lastIndexOf(":") + 1).trim();
-				try { preparedFileName = URLDecoder.decode(preparedFileName, "UTF-8"); } 
+				try { preparedFileName = URLDecoder.decode(preparedFileName, "UTF-8"); }
 				catch (Exception e) 
 				{
 					System.err.println("Error decoding file name: " + e.getMessage());
 					return false;
 				}
 
-				try 
-				{ 
-					InputStream targetStream = new FileInputStream(preparedFileName);
-					MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties); 
-				} 
-				catch (IOException e) 
-				{
+				try (InputStream targetStream = new FileInputStream(preparedFileName)) {
+					MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties, jadCharset);
+				} catch (IOException e) {
 					Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load Jad data: " + e.getMessage());
 					return false;
 				}
 
 				// JAD file was parsed, so get the jar path and load it next
 
-				String jarUrl = descriptorProperties.getOrDefault("MIDlet-Jar-URL", preparedFileName.replace(".jad", ".jar"));
+				// String jarUrl = descriptorProperties.getOrDefault("MIDlet-Jar-URL", preparedFileName.replace(".jad", ".jar"));
 
-				// We will not support downloading jars from the internet on the fly, unless there is a very good reason to do so. Also, unless the jad has a URI for loading the jar, ignore the path as well
-				jarUrl = fileName.replace(".jad", ".jar"); // Just try getting the jar in the same directory as the jad in those cases.
+				// We will not support downloading jars from the internet on the fly,
+				// unless there is a very good reason to do so.
+				// Also, unless the jad has a URI for loading the jar, ignore the path as well
 
-				fileName = jarUrl;
+				// Just try getting the jar in the same directory as the jad in those cases.
+				fileName = fileName.substring(0, fileName.lastIndexOf('.')) + ".jar";
 			}
 
 			try 
@@ -712,10 +726,10 @@ public class MobilePlatform
 
 	public void runJar()
 	{
-		try 
-		{ 
-			
-			if(Mobile.deleteTemporaryKJXFiles && kjxJadFileName != null) 
+		try
+		{
+
+			if(Mobile.deleteTemporaryKJXFiles && kjxJadFileName != null)
 			{
 				File tmpfile = new File(Mobile.tempKJXDir, kjxJadFileName.substring(0, kjxJadFileName.length() -4) + ".jar");
 				tmpfile.delete(); // Delete the temporary jar file
@@ -723,13 +737,13 @@ public class MobilePlatform
 				tmpfile.delete(); // Delete the temporary jad file
 			}
 
-			/* 
+			/*
 			 * Load up everything needed to play sound before the jar opens to minimize ingame stutters
 			 * this basically just loads up the synthesizers, as they're the biggest troublemakers.
 			 */
 			javax.microedition.media.Manager.prepareMediaEngine();
-			
-			loader.start(); 
+
+			loader.start();
 		}
 		catch (Exception e)
 		{
@@ -740,7 +754,7 @@ public class MobilePlatform
 
 	public static void checkFileEncoding()
 	{
-		if(!System.getProperty("file.encoding").equals(Mobile.textEncoding)) 
+		if(!System.getProperty("file.encoding").equals(Mobile.textEncoding))
 		{
 			Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "different encoding: " + System.getProperty("file.encoding") + " while it should be " + Mobile.textEncoding + ". Restarting freeJ2ME to apply new encoding");
 			Mobile.restartApp();
@@ -753,14 +767,14 @@ public class MobilePlatform
 
 	public final void flushGraphics(PlatformImage img, int x, int y, int width, int height)
 	{
-		if(!Mobile.isPaused) 
+		if(!Mobile.isPaused)
 		{
 			gc.flushGraphics(img, x, y, width, height);
 
 			if(!showFPS.equals("Off")) { showFPS();}
 			painter.run();
 
-			if(focusCommandBar) 
+			if(focusCommandBar)
 			{
 				timeToUnfocus -= (System.nanoTime()-lastRenderTime);
 				if(timeToUnfocus <= 0) { focusCommandBar = false; }
@@ -785,7 +799,7 @@ public class MobilePlatform
 	// For now, the logic here works by updating the framerate counter every second
 	private final void showFPS() 
 	{
-		if (System.nanoTime() - lastFpsTime >= 1000000000) 
+		if (System.nanoTime() - lastFpsTime >= 1000000000)
 		{ 
 			fps = frameCount; 
 			frameCount = 0; 
@@ -833,7 +847,7 @@ public class MobilePlatform
 
 	public void setShowFPS(String show) { showFPS = show; }
 
-	public static void showCommandBar() 
+	public static void showCommandBar()
 	{
 		focusCommandBar = true;
 		timeToUnfocus = 3000000000L;

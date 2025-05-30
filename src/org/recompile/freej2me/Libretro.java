@@ -96,6 +96,7 @@ public class Libretro
 		Mobile.sagem = false;
 		Mobile.siemens = false;
 		Mobile.sharp = false;
+		Mobile.skt = false;
 
 		if(Integer.parseInt(args[3]) == 1)      { Mobile.lg = true;    }
 		else if(Integer.parseInt(args[3]) == 2) { Mobile.motorola = true;  }
@@ -105,6 +106,7 @@ public class Libretro
 		else if(Integer.parseInt(args[3]) == 6) { Mobile.sagem = true; }
 		else if(Integer.parseInt(args[3]) == 7) { Mobile.siemens = true; }
 		else if(Integer.parseInt(args[3]) == 8) { Mobile.sharp = true; }
+		else if(Integer.parseInt(args[3]) == 9) { Mobile.skt = true; }
 
 		Mobile.limitFPS = Integer.parseInt(args[4]);
 
@@ -313,6 +315,7 @@ public class Libretro
 										else if(Mobile.sagem)         { Mobile.config.settings.put("phone", "Sagem"); }
 										else if(Mobile.siemens)       { Mobile.config.settings.put("phone", "Siemens"); }
 										else if(Mobile.sharp)         { Mobile.config.settings.put("phone", "Sharp"); }
+										else if(Mobile.skt)           { Mobile.config.settings.put("phone", "SKT"); }
 										else                          { Mobile.config.settings.put("phone", "Standard"); }
 
 										if(soundEnabled)   { Mobile.config.settings.put("sound", "on");  }
@@ -429,6 +432,7 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[4])==6) { Mobile.config.settings.put("phone", "Sagem"); }
 									if(Integer.parseInt(cfgtokens[4])==7) { Mobile.config.settings.put("phone", "Siemens"); }
 									if(Integer.parseInt(cfgtokens[4])==8) { Mobile.config.settings.put("phone", "Sharp"); }
+									if(Integer.parseInt(cfgtokens[4])==9) { Mobile.config.settings.put("phone", "SKT"); }
 
 									Mobile.config.settings.put("fps", ""+cfgtokens[5]);
 
