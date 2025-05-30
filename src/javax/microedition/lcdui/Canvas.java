@@ -157,7 +157,10 @@ public abstract class Canvas extends Displayable
 				Mobile.getDisplay().postPaintRequest(() -> { repaintRequest(x, y, width, height); }); 
 			}
 		}
-		else { repaintRequest(x, y, width, height); }
+		else {
+			Mobile.getDisplay().processPaintsNow();
+			repaintRequest(x, y, width, height); 
+		}
 	}
 
 	public void repaintRequest(int x, int y, int width, int height) 
