@@ -19,11 +19,12 @@ package org.recompile.freej2me;
 import org.recompile.mobile.Mobile;
 
 import java.io.File;
-import java.io.InputStream;
 import javax.imageio.ImageIO;
 import java.lang.Exception;
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class ScreenShot
 {
@@ -58,7 +59,7 @@ public class ScreenShot
 			}
 
 			File outputfile = new File(fileName);
-			ImageIO.write(Mobile.getPlatform().getLCD(), "png", outputfile);
+			ImageIO.write(Mobile.getPlatform().getLcdFrontbufferImage(), "png", outputfile);
 			Mobile.log(Mobile.LOG_INFO, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + "Saved screenshot: " + outputfile.toString());
 		}
 		catch (Exception e)

@@ -21,7 +21,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +42,6 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.game.GameCanvas;
-import javax.microedition.lcdui.Image;
 
 import java.awt.image.BufferedImage;
 
@@ -54,8 +52,12 @@ import java.awt.image.BufferedImage;
 public class MobilePlatform
 {
 
+	private static PlatformImage lcdFrontbuffer;
+	private PlatformGraphics gcFrontbuffer;
+
 	private static PlatformImage lcd;
 	private PlatformGraphics gc;
+
 	public static int lcdWidth;
 	public static int lcdHeight;
 
@@ -120,10 +122,12 @@ public class MobilePlatform
 		Font.setScreenSize(width, height);
 		com.nttdocomo.ui.Font.setScreenSize(width, height);
 
+		lcdFrontbuffer = new PlatformImage(width, height);
 		lcd = new PlatformImage(width, height);
 
 		// This works for DoJa as well, their graphics objects are direct extensions of PlatformGraphics
-		gc = (PlatformGraphics) lcd.getMIDPGraphics();
+        gcFrontbuffer = lcdFrontbuffer.getMIDPGraphics();
+		gc = lcd.getMIDPGraphics();
 		
 		/* 
 		 * Try to have the jar scale as well. If this doesn't work,
@@ -149,7 +153,13 @@ public class MobilePlatform
 		
 	}
 
-	public BufferedImage getLCD() { return lcd.getCanvas(); }
+	public static PlatformImage getLcdBackbuffer() {
+		return lcd;
+	}
+
+	public BufferedImage getLcdFrontbufferImage() {
+		return lcdFrontbuffer.getCanvas();
+	}
 
 	public void setPainter(Runnable r) { painter = r; }
 
@@ -769,7 +779,7 @@ public class MobilePlatform
 	{
 		if(!Mobile.isPaused)
 		{
-			gc.flushGraphics(img, x, y, width, height);
+			gcFrontbuffer.flushGraphics(img, x, y, width, height);
 
 			if(!showFPS.equals("Off")) { showFPS();}
 			painter.run();

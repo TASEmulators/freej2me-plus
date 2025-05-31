@@ -317,6 +317,11 @@ public abstract class PlatformGraphics implements DirectGraphics
 				lastImage = image;
 			}
 
+			boolean fastBlit = !Mobile.renderLCDMask && Mobile.maskIndex != 0 && !Mobile.funLightsEnabled;
+			if (fastBlit && imgPixels == canvasData) {
+				return;
+			}
+
 			// This one is rather costly, as it has to draw overlays on the corners of the screen with gaussian filtering applied.
 			if(Mobile.funLightsEnabled)
 			{
@@ -329,10 +334,10 @@ public abstract class PlatformGraphics implements DirectGraphics
 			for (int j = startY + y; j < endY + y; j++) 
 			{
 				// If there's no masking or overlay needed, we can copy a whole row at once, which is faster
-				if(!Mobile.renderLCDMask && Mobile.maskIndex != 0 && !Mobile.funLightsEnabled)
+				if(fastBlit)
 				{
 					destRowIndex = j * canvasWidth + startX + x;
-            		srcRowIndex = j * imageWidth + startX;
+            		srcRowIndex = j * imageWidth + startX + x;
 					System.arraycopy(imgPixels, srcRowIndex, canvasData, destRowIndex, endX - startX);
 				}
 				else

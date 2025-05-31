@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.mobile.PlatformImage;
-import org.recompile.mobile.PlatformGraphics;
 
 public abstract class Displayable
 {
@@ -51,9 +50,11 @@ public abstract class Displayable
 
 	public Displayable()
 	{
-		width = Mobile.getPlatform().lcdWidth;
-		height = Mobile.getPlatform().lcdHeight;
-		platformImage = new PlatformImage(width, height);
+		// TODO: see if it's a breaking change and add a compat flag if it is?
+
+		width = MobilePlatform.lcdWidth;
+		height = MobilePlatform.lcdHeight;
+		platformImage = MobilePlatform.getLcdBackbuffer();
 		graphics = platformImage.getMIDPGraphics();
 	}
 

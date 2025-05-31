@@ -4,36 +4,38 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class FileOutputStream extends OutputStream {
-    private final java.io.FileOutputStream stream;
+    private final XFile file;
+
+    public FileOutputStream(XFile f) throws IOException {
+        this.file = f;
+    }
 
     public FileOutputStream(String name) throws IOException {
-        // System.out.println("open for writing " + name);
-
-        this.stream = new java.io.FileOutputStream(XFile.convertFilePath(name));
+        this.file = new XFile(name, XFile.WRITE);
     }
 
     @Override
     public void write(int b) throws IOException {
-        stream.write(b);
+        file.write(new byte[]{(byte) b}, 0, 1);
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-        stream.write(b);
+        file.write(b, 0, b.length);
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        stream.write(b, off, len);
+        file.write(b, off, len);
     }
 
     @Override
     public void close() throws IOException {
-        stream.close();
+        file.close();
     }
 
     @Override
     public void flush() throws IOException {
-        stream.flush();
+        file.flush();
     }
 }

@@ -24,11 +24,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
-
-import javax.microedition.midlet.MIDlet;
 
 public class Libretro
 {
@@ -39,7 +38,7 @@ public class Libretro
 	private boolean soundEnabled = true;
 
 	private byte[] frameBuffer = new byte[800*800*3];
-	private final byte[] frameHeader = new byte[]{(byte)0xFE, 
+	private final byte[] frameHeader = new byte[]{(byte)0xFE,
 		0, 0, 0, 0, // Display data
 		0,          // Rotation enabled
 		0, 0, 0, 0, // Vibration duration
@@ -179,7 +178,7 @@ public class Libretro
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight), new Runnable() { public void run() { settingsChanged(); } });
-		lcdData = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
+		lcdData = ((DataBufferInt) Mobile.getPlatform().getLcdFrontbufferImage().getRaster().getDataBuffer()).getData();
 
 		lio = new LibretroIO();
 
@@ -393,7 +392,7 @@ public class Libretro
 										Mobile.log(Mobile.LOG_ERROR, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Couldn't load jar...");
 										System.exit(0);
 									}
-									
+
 									Mobile.libretroStarted = true;
 								break;
 
@@ -586,7 +585,7 @@ public class Libretro
 			lcdWidth = Mobile.lcdWidth;
 			lcdHeight = Mobile.lcdHeight;
 			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
-			lcdData = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
+			lcdData = ((DataBufferInt) Mobile.getPlatform().getLcdFrontbufferImage().getRaster().getDataBuffer()).getData();
 		}
 	}
 

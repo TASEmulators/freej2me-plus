@@ -1086,8 +1086,39 @@ public class MIDletLoader extends URLClassLoader
 				Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "MIDlet uses an ALW1 ad/demo wrapper... trying to patch...");
 				access = Opcodes.ACC_PUBLIC;
 			}
+
+			MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);
+
+			if ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC &&
+					"(Ljavax/microedition/midlet/MIDlet;)Z".equals(desc)
+			) {
+				// TODO: better heuristic?
+				// SKT security check bypass
+				visitor = new ASMSecureUtilWorkaroundMethodVisitor(visitor);
+			} else {
+				visitor = new ASMMethodVisitor(visitor);
+			}
 			
-			return new ASMMethodVisitor(super.visitMethod(access, name, desc, signature, exceptions));
+			return visitor;
+		}
+
+		private class ASMSecureUtilWorkaroundMethodVisitor extends MethodAdapter {
+			private final MethodVisitor target;
+
+			public ASMSecureUtilWorkaroundMethodVisitor(MethodVisitor target) {
+                super(target);
+
+				this.target = target;
+			}
+
+			@Override
+			public void visitCode() {
+				target.visitCode();
+				target.visitInsn(Opcodes.ICONST_1);
+				target.visitInsn(Opcodes.IRETURN);
+				target.visitMaxs(1, 0);
+				target.visitEnd();
+			}
 		}
 
 		private class ASMMethodVisitor extends MethodAdapter implements Opcodes

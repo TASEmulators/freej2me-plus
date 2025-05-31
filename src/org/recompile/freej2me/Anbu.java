@@ -23,12 +23,19 @@ import io.github.libsdl4j.api.event.SDL_Event;
 import io.github.libsdl4j.api.surface.SDL_Surface;
 import io.github.libsdl4j.api.video.SDL_Window;
 import io.github.libsdl4j.api.joystick.SDL_Joystick;
-import io.github.libsdl4j.api.joystick.SDL_JoystickID;
 
 import static io.github.libsdl4j.api.Sdl.SDL_Init;
 import static io.github.libsdl4j.api.SdlSubSystemConst.SDL_INIT_JOYSTICK;
 import static io.github.libsdl4j.api.SdlSubSystemConst.SDL_INIT_VIDEO;
 
+import static io.github.libsdl4j.api.render.SdlRender.SDL_CreateRenderer;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderPresent;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderCopy;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_UpdateTexture;
+import static io.github.libsdl4j.api.render.SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_CreateTexture;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_DestroyRenderer;
+import static io.github.libsdl4j.api.render.SdlRender.SDL_DestroyTexture;
 import static io.github.libsdl4j.api.surface.SdlSurface.SDL_BlitScaled;
 import static io.github.libsdl4j.api.surface.SdlSurface.SDL_CreateRGBSurface;
 import static io.github.libsdl4j.api.surface.SdlSurface.SDL_FreeSurface;
@@ -89,6 +96,7 @@ import javax.microedition.media.Manager;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
+import com.sun.jna.Memory;
 
 public class Anbu
 {
@@ -144,7 +152,7 @@ public class Anbu
 		if(args.length>=4) { scaleFactor = Integer.parseInt(args[3]); }
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight), new Runnable() { public void run() { settingsChanged(); } });
-		lcdData = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
+		lcdData = ((DataBufferInt) Mobile.getPlatform().getLcdFrontbufferImage().getRaster().getDataBuffer()).getData();
 
 		/* TODO: Anbu/SDL has no way of enabling any settings outside of cmd args yet, a UI and code overhaul might be in order */
 
@@ -215,7 +223,7 @@ public class Anbu
 	}
 
 	private class SDL
-	{	
+	{
 		protected SDL_Window window;
 		protected SDL_Surface surface;
 		protected SDL_Surface lcdSurface;
@@ -243,7 +251,7 @@ public class Anbu
 			SDL_JoystickEventState(SDL_ENABLE);
 
 			lcdSurface = SDL_CreateRGBSurface(0, lcdWidth, lcdHeight, 32, 0, 0, 0, 0);
-			
+
 			SDLInitialized = true;
 		}
 
@@ -259,12 +267,12 @@ public class Anbu
 
 			// Scale the surface to the windows' size, and blit directly to it. Using a renderer should be faster, but using it incurs a heavy penalty here somehow
 			surface = SDL_GetWindowSurface(window);
-			if (surface != null) 
-			{	
+			if (surface != null)
+			{
 				lcdSurface.getPixels().write(0, lcdData, 0, lcdData.length);
 
 				SDL_BlitScaled(lcdSurface, null, surface, null);
-				
+
 				SDL_UpdateWindowSurface(window);
 			}
 
@@ -601,7 +609,7 @@ public class Anbu
 		 * Whenever FreeJ2ME updates its current displayable, or the user resizes the screen, this must be called to
 		 * to update the renderer and make sure SDL will render to the new window size correctly.
 		 */
-		private synchronized void updateScreen() 
+		private synchronized void updateScreen()
 		{
 			SDL_SetWindowSize(window, lcdWidth*scaleFactor, lcdHeight*scaleFactor);
 			SDL_FreeSurface(lcdSurface);
@@ -618,7 +626,7 @@ public class Anbu
 		if(Mobile.lcdWidth != lcdWidth || Mobile.lcdHeight != lcdHeight || hasRotated) 
 		{
 			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
-			lcdData = ((DataBufferInt) Mobile.getPlatform().getLCD().getRaster().getDataBuffer()).getData();
+			lcdData = ((DataBufferInt) Mobile.getPlatform().getLcdFrontbufferImage().getRaster().getDataBuffer()).getData();
 			if(!Mobile.rotateDisplay) 
 			{
 				lcdWidth = Mobile.lcdWidth;

@@ -36,7 +36,7 @@ public class Graphics2D {
         image.getGraphics().getGraphics2D().drawImage(
                 XDisplay.platformImage.getCanvas(),
                 0, 0, w, h,
-                x, y, x + w, x + h,
+                x, y, x + w, y + h,
                 null
         );
         return image;

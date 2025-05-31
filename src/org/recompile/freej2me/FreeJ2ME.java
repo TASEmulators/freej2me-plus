@@ -34,7 +34,6 @@ import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.datatransfer.*;
 import java.awt.dnd.*;
-import java.awt.event.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
@@ -86,12 +85,12 @@ public class FreeJ2ME
 		FreeJ2ME.app = new FreeJ2ME(args);
 
 		// After FreeJ2ME is properly opened, start the external input thread
-		new Thread(new Runnable() 
+		new Thread(new Runnable()
 		{
 			@Override
-			public void run() 
+			public void run()
 			{
-				while (true) 
+				while (true)
 				{
 					checkExtInputFile();
 					try { Thread.sleep(4); } // External inputs poll at a 250fps rate, more than fast enough for just about everything
@@ -101,14 +100,14 @@ public class FreeJ2ME
 		}, "ExternalInputs-Thread").start();
 	}
 
-	private static void checkExtInputFile() 
+	private static void checkExtInputFile()
 	{
 			File extFile = new File("freej2me_system/"+extInputFilePath);
 
 			// If File doesn't exist on the system dir, check if this is the web/CheerpJ frontend
 			if(!extFile.exists()) { extFile = new File("/str/"+extInputFilePath); }
 
-            if (extFile.exists()) { readFile(extFile.getPath()); } 
+            if (extFile.exists()) { readFile(extFile.getPath()); }
     }
 
     private static void readFile(String filePath)
@@ -119,10 +118,10 @@ public class FreeJ2ME
 		{
 			BufferedReader br = new BufferedReader(new FileReader(filePath));
             String line;
-            while ((line = br.readLine()) != null) 
+            while ((line = br.readLine()) != null)
 			{
                 String[] parts = line.split(":");
-                if (parts.length == 2) 
+                if (parts.length == 2)
 				{
                     String key = parts[0].trim();
                     int value = Integer.parseInt(parts[1].trim());
@@ -138,11 +137,11 @@ public class FreeJ2ME
 		extEventsMap = newEventsMap;
 
 		// Parse external inputs:
-		for (Map.Entry<String, Integer> entry : newEventsMap.entrySet()) 
+		for (Map.Entry<String, Integer> entry : newEventsMap.entrySet())
 		{
 			String key = entry.getKey();
 			Integer value = entry.getValue();
-			switch(key.hashCode()) 
+			switch(key.hashCode())
 			{
 				case 0x6B30:  // 0 - k0
 					if(value == 1) { app.pressKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD0, KeyEvent.CHAR_UNDEFINED), true); }
@@ -156,19 +155,19 @@ public class FreeJ2ME
 					if(value == 1) { app.pressKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD8, KeyEvent.CHAR_UNDEFINED), true); }
 					else { app.releaseKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD8, KeyEvent.CHAR_UNDEFINED)); }
 					break;
-				case 0x6B33: 
+				case 0x6B33:
 					if(value == 1) { app.pressKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD3, KeyEvent.CHAR_UNDEFINED), true); }
 					else { app.releaseKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD3, KeyEvent.CHAR_UNDEFINED)); }
 					break;
-				case 0x6B34: 
+				case 0x6B34:
 					if(value == 1) { app.pressKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD4, KeyEvent.CHAR_UNDEFINED), true); }
 					else { app.releaseKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD4, KeyEvent.CHAR_UNDEFINED)); }
 					break;
-				case 0x6B35: 
+				case 0x6B35:
 					if(value == 1) { app.pressKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD5, KeyEvent.CHAR_UNDEFINED), true); }
 					else { app.releaseKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD5, KeyEvent.CHAR_UNDEFINED)); }
 					break;
-				case 0x6B36: 
+				case 0x6B36:
 					if(value == 1) { app.pressKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD6, KeyEvent.CHAR_UNDEFINED), true); }
 					else { app.releaseKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_NUMPAD6, KeyEvent.CHAR_UNDEFINED)); }
 					break;
@@ -225,12 +224,12 @@ public class FreeJ2ME
 					else if(value == 0 && Mobile.isFastForwarding) { Mobile.isFastForwarding = false; app.releaseKey(new KeyEvent(app.main, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_SPACE, KeyEvent.CHAR_UNDEFINED)); }
 					break;
 				case 0x726F: // Rotation - ro
-					if(value == 1 && !Mobile.rotateDisplay) 
+					if(value == 1 && !Mobile.rotateDisplay)
 					{
 						Mobile.config.settings.put("rotate",  "on");
 						app.settingsChanged();
 					}
-					else if(value == 0 && Mobile.rotateDisplay) 
+					else if(value == 0 && Mobile.rotateDisplay)
 					{
 						Mobile.config.settings.put("rotate",  "off");
 						app.settingsChanged();
@@ -244,9 +243,9 @@ public class FreeJ2ME
 		}
     }
 
-	public static void closeApp() 
+	public static void closeApp()
 	{
-		try 
+		try
 		{
             String java = System.getProperty("java.home") + "/bin/java";
             String classPath = System.getProperty("java.class.path");
@@ -259,7 +258,7 @@ public class FreeJ2ME
 
             // Exit the current instance
             System.exit(0);
-        } 
+        }
 		catch (IOException e) { e.printStackTrace(); }
 	}
 
@@ -267,7 +266,7 @@ public class FreeJ2ME
 	{
 		// Setup Device //
 		boolean fullscreenAtStartup = false;
-		if(args.length>=2) 
+		if(args.length>=2)
 		{
 			fullscreenAtStartup = (Integer.parseInt(args[1]) == 1);
 		}
@@ -414,7 +413,7 @@ public class FreeJ2ME
 				Mobile.config.settings.put("height", ""+lcdHeight);
 			}
 
-			if(args.length>=6) 
+			if(args.length>=6)
 			{
 				if(Integer.parseInt(args[5]) == 0) { Mobile.config.settings.put("phone",  "Standard"); }
 				if(Integer.parseInt(args[5]) == 1) { Mobile.config.settings.put("phone",  "LG"); }
@@ -427,7 +426,7 @@ public class FreeJ2ME
 				if(Integer.parseInt(args[5]) == 8) { Mobile.config.settings.put("phone",  "Sharp"); }
 			}
 
-			if(args.length>=7) 
+			if(args.length>=7)
 			{
 				Mobile.config.settings.put("fps", ""+Integer.parseInt(args[6])+"");
 			}
@@ -445,18 +444,18 @@ public class FreeJ2ME
 		if(fullscreenAtStartup) { toggleFullscreen(); }
 	}
 
-	protected void pressKey(KeyEvent e, boolean ignoreModifiers) 
+	protected void pressKey(KeyEvent e, boolean ignoreModifiers)
 	{
 		if(awtGUI.hasLoadedFile())
 		{
 			int keycode = e.getKeyCode();
 			int mobikey = getMobileKey(keycode);
-			
+
 			switch(keycode) // Handle emulator control keys
 			{
 				case KeyEvent.VK_EQUALS:
 				case KeyEvent.VK_ADD:
-					if(!isFullscreen) 
+					if(!isFullscreen)
 					{
 						scaleFactor++;
 						main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
@@ -484,20 +483,20 @@ public class FreeJ2ME
 					}
 				break;
 			}
-			
+
 			if (mobikey == Integer.MIN_VALUE) // Ignore events from keys not mapped to a phone keypad key (AWTGUI does use 0, so this can't mirror libretro)
 			{
-				return; 
+				return;
 			}
 
 			if (MobilePlatform.pressedKeys[mobikey] == false)
 			{
 				if(mobikey < 19) // Anything over 19 are special keys (fast-forward, etc)
-				{ 
-					MobilePlatform.pressedKeys[mobikey] = true; 
-					MobilePlatform.keyPressed(Mobile.getMobileKey(mobikey)); 
+				{
+					MobilePlatform.pressedKeys[mobikey] = true;
+					MobilePlatform.keyPressed(Mobile.getMobileKey(mobikey));
 				}
-				else 
+				else
 				{
 					if((e.isAltDown() && e.isControlDown()) || ignoreModifiers)
 					{
@@ -512,19 +511,19 @@ public class FreeJ2ME
 		}
 	}
 
-	protected void releaseKey(KeyEvent e) 
+	protected void releaseKey(KeyEvent e)
 	{
-		if(awtGUI.hasLoadedFile()) 
+		if(awtGUI.hasLoadedFile())
 		{
 			int mobikey = getMobileKey(e.getKeyCode());
-			
+
 			if (mobikey == Integer.MIN_VALUE) // Ignore events from keys not mapped to a phone keypad key (AWTGUI does use 0, so this can't mirror libretro)
 			{
-				return; 
+				return;
 			}
-			
+
 			// Figures we must only release if the key is pressed. This vastly simplifies external input event handling
-			if(MobilePlatform.pressedKeys[mobikey]) 
+			if(MobilePlatform.pressedKeys[mobikey])
 			{
 				MobilePlatform.pressedKeys[mobikey] = false;
 				MobilePlatform.keyReleased(Mobile.getMobileKey(mobikey));
@@ -532,7 +531,7 @@ public class FreeJ2ME
 				if(mobikey == 20) { ScreenShot.takeScreenshot(false); }
 				else if(mobikey == 21) { MobilePlatform.pauseResumeApp(); }
 
-				for(int i = 0; i < MobilePlatform.pressedKeys.length; i++) 
+				for(int i = 0; i < MobilePlatform.pressedKeys.length; i++)
 				{
 					if(MobilePlatform.pressedKeys[i]) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
 				}
@@ -716,16 +715,16 @@ public class FreeJ2ME
 		{
 			if(!showDragMessage) 
 			{
-				if(!Mobile.rotateDisplay) { g.drawImage(Mobile.getPlatform().getLCD(), cx, cy, cw, ch, null); }
-				else
-				{
+				if (!Mobile.rotateDisplay) {
+					g.drawImage(Mobile.getPlatform().getLcdFrontbufferImage(), cx, cy, cw, ch, null);
+				} else {
 					// Rotate the FB 90 degrees counterclockwise with an adjusted pivot
 					((Graphics2D) g).rotate(Math.toRadians(-90), ch/2, ch/2);
 					// Draw the rotated FB with adjusted cy and cx values
-					g.drawImage(Mobile.getPlatform().getLCD(), 0, cx, ch, cw, null);
+					g.drawImage(Mobile.getPlatform().getLcdFrontbufferImage(), 0, cx, ch, cw, null);
 				}
 				
-				if(Mobile.isPaused) 
+				if(Mobile.isPaused)
 				{
 					g.setColor(new Color(0, 0, 64, 160));
 					g.fillRect(0, 0, getWidth(), getHeight());
@@ -770,22 +769,22 @@ public class FreeJ2ME
 				@SuppressWarnings("unchecked")
 				public void dragEnter(DropTargetDragEvent dtde) 
 				{
-					try 
+					try
 					{
-						if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) 
+						if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
 						{
 							// Get the files being dragged
 							Transferable transferable = dtde.getTransferable();
 							java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-							
+
 							// Check if the file is supported
 							boolean fileSupported = false;
-							for (File file : files) 
+							for (File file : files)
 							{
-								if (isSupportedFile(file.getName())) 
+								if (isSupportedFile(file.getName()))
 								{
 									fileSupported = true;
-									break; 
+									break;
 								}
 							}
 						}
@@ -819,7 +818,7 @@ public class FreeJ2ME
 						if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) 
 						{
 							java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-							if (!files.isEmpty() && fileSupported) 
+							if (!files.isEmpty() && fileSupported)
 							{
 								// Load the dropped file
 								if(!awtGUI.hasLoadedFile()) { awtGUI.loadJarFile(files.get(0).toURI().toString()); }

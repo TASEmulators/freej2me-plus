@@ -8,11 +8,11 @@ public class Device {
     public static void setBacklightEnabled(boolean flag) {
         backlightEnabled = flag;
 
-        if (flag) {
+        /*if (flag) {
             Mobile.getDisplay().flashBacklight(Integer.MAX_VALUE);
         } else {
             Mobile.getDisplay().flashBacklight(0);
-        }
+        }*/
     }
 
     public static boolean isBacklightEnabled() {
