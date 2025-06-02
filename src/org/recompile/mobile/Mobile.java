@@ -50,6 +50,7 @@ public class Mobile
 	public static IApplication iAppli;
 
 	public static boolean isDoJa = false;
+	public static boolean isKDDI = false;
 
 	// These flags are used for general compatibility adjustments within FreeJ2ME
 	public static boolean usingMessagingAPI = false;
