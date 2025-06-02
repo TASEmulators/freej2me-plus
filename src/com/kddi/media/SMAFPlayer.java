@@ -16,10 +16,16 @@
 */
 package com.kddi.media;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
+import org.recompile.mobile.PlatformPlayer;
+
 import com.jblend.media.MediaPlayerListener;
 
 public class SMAFPlayer extends MediaPlayer 
 {
+    private PlatformPlayer _player;
 
     protected MediaPlayerBox box;
     protected int id;
@@ -32,13 +38,33 @@ public class SMAFPlayer extends MediaPlayer
     protected SMAFPlayer(MediaResource resource, MediaPlayerBox box) 
     { 
         super(resource, box);
+
+        byte[] resourceDat = MediaManager.getResource(resource);
+        InputStream stream = new ByteArrayInputStream(resourceDat);
+        try {
+            this._player = new PlatformPlayer(stream, "");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                stream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-    public static boolean canPlay(String dataType) { return true; }
+    public static boolean canPlay(String dataType) {
+        return true;
+    }
 
-    protected void dispose() { }
+    protected void dispose() {
+    }
 
-    protected boolean disposePlayer() { return true; }
+    protected boolean disposePlayer() { 
+        this._player.close();
+        return true;
+    }
 
     public int getPitch() { return pitch;  }
 
@@ -46,13 +72,22 @@ public class SMAFPlayer extends MediaPlayer
 
     public int getVolume() { return volume; }
 
-    public void pause() { }
+    public void pause() {
+        this._player.stop();
+    }
 
-    public void play() { }
+    public void play() {
+        this.play(0);
+    }
 
-    public void play(int count) { }
+    public void play(int count) {
+        this._player.setLoopCount(count);
+        this._player.start();
+    }
 
-    public void resume() { }
+    public void resume() {
+        this._player.start();
+    }
 
     public void setPitch(int pitch) { pitch = Math.max(-6, Math.min(pitch, 6)); }
 
@@ -60,5 +95,7 @@ public class SMAFPlayer extends MediaPlayer
 
     public void setVolume(int volume) {  volume = Math.max(0, Math.min(volume, 100)); }
 
-    public void stop() { }
+    public void stop() {
+        this._player.stop();
+    }
 }

@@ -16,17 +16,52 @@
 */
 package com.kddi.media;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
+import org.recompile.mobile.Mobile;
+
 public class MediaResource extends java.lang.Object 
 {
-    public MediaResource(byte[] resource, java.lang.String disposition) {}
+	public static final String SMAF_YAMAHA_MA1 = "dev4anm";
+    public static final String SMAF_YAMAHA_MA2 = "devmfan";
+    public static final String SMAF_YAMAHA_MA3 = "devm39z";
+    public static final String SMAF_YAMAHA_MA5 = "devm53z";
 
-    public MediaResource(java.lang.String url) throws java.io.IOException {}
+	private String _type;
 
-    public void dispose() {}
+    public MediaResource(byte[] resource, java.lang.String disposition) {
+		this.initialize(resource, disposition);
+	}
 
-    public MediaPlayerBox[] getPlayer() { return new MediaPlayerBox[0]; }
+    public MediaResource(java.lang.String url) throws java.io.IOException {
+		System.out.println(url);
+		try {
+			byte[] dat = Mobile.getPlatform().loader.getMIDletResourceAsByteArray(url);
+			this.initialize(dat, "devm39z");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-    public java.lang.String getType() { return null; }
+	private void initialize(byte[] resource, String disposition) {
+		this._type = disposition;
+		MediaManager.putResource(this, resource);
+	}
 
-    public java.lang.String toString() { return super.toString(); }
+    public void dispose() {
+		MediaManager.removeResource(this);
+	}
+
+    public MediaPlayerBox[] getPlayer() {
+		return MediaManager.getMediaPlayerBoxes(this);
+	}
+
+    public java.lang.String getType() {
+		return this._type;
+	}
+
+    public java.lang.String toString() {
+		return super.toString();
+	}
 }

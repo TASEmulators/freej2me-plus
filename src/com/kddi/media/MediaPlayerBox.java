@@ -17,10 +17,8 @@
 package com.kddi.media;
 
 import javax.microedition.lcdui.Canvas;
-import com.jblend.media.MediaPlayer;
 
-public class MediaPlayerBox extends Canvas implements MediaPlayerInterface 
-{
+public class MediaPlayerBox extends Canvas implements MediaPlayerInterface {
     protected MediaEventListener _listener;
     public static final int BACKGROUND = 0;
     public static final int FOREGROUND = 1;
@@ -30,59 +28,144 @@ public class MediaPlayerBox extends Canvas implements MediaPlayerInterface
     public static final int RESUME = 5;
     public static final int STOP = 6;
 
-    public MediaPlayerBox() {}
+    private int state = STOP;
+    private int mode = BACKGROUND;
+    private MediaResource _resource;
+    private MediaPlayer _player;
 
-    public MediaPlayerBox(int flag) {}
+    public MediaPlayerBox() {
+        this(null, FOREGROUND);
+    }
 
-    public MediaPlayerBox(MediaResource resource, int flag) {}
+    public MediaPlayerBox(int flag) {
+        this(null, flag);
+    }
 
-    public void addMediaEventListener(MediaEventListener l) {}
+    public MediaPlayerBox(MediaResource resource, int flag) {
+        if (flag != FOREGROUND && flag != BACKGROUND) {
+            throw new IllegalArgumentException("illegal flag[" + flag + "].");
+        }
 
-    public int getAttribute(int attr) { return 0; }
+        this.mode = flag;
+        this._resource = null;
+        this._player = null;
 
-    protected int getMode() { return 0; }
+        if (resource != null) this.setResource(resource);
+    }
 
-    public int getPitch() { return 0; }
+    public void addMediaEventListener(MediaEventListener l) {
+    }
 
-    protected MediaPlayer getPlayer() { return null; }
+    public int getAttribute(int attr) {
+        return 0;
+    }
 
-    public MediaResource getResource() { return null; }
+    protected int getMode() {
+        return this.mode;
+    }
 
-    public int getTempo() { return 0; }
+    public int getPitch() {
+        return this._player.pitch;
+    }
 
-    public int getVolume() { return 0; }
+    protected MediaPlayer getPlayer() {
+        return this._player;
+    }
 
-    public void hide() {}
+    public MediaResource getResource() {
+        return this._resource;
+    }
 
-    protected MediaPlayer instantiatePlayer(MediaResource resource) { return null; }
+    public int getTempo() {
+        return 0;
+    }
 
-    protected void paint(javax.microedition.lcdui.Graphics g) {}
+    public int getVolume() {
+        return 0;
+    }
 
-    public void pause() {}
+    public void hide() {
+    }
 
-    public void play() {}
+    protected MediaPlayer instantiatePlayer(MediaResource resource) {
+        if (resource.getType() == MediaResource.SMAF_YAMAHA_MA1 ||
+        resource.getType() == MediaResource.SMAF_YAMAHA_MA2 ||
+        resource.getType() == MediaResource.SMAF_YAMAHA_MA3 || 
+        resource.getType() == MediaResource.SMAF_YAMAHA_MA5) {
+            return new SMAFPlayer(resource, this);
+        }
+        return null;
+    }
 
-    public void play(int count) {}
+    protected void paint(javax.microedition.lcdui.Graphics g) {
+    }
 
-    public void removeMediaEventListener(MediaEventListener l) {}
+    public void pause() {
+        this._player.pause();
+    }
 
-    public void resume() {}
+    public void play() {
+        this._player.play();
+    }
 
-    public void setAttribute(int attr, int value) {}
+    public void play(int count) {
+        this._player.play(count);
+    }
 
-    public void setPitch(int pitch) {}
+    public void removeMediaEventListener(MediaEventListener l) {
+    }
 
-    protected void setPlayerAttributes() {}
+    public void resume() {
+        this._player.resume();
+    }
 
-    public void setResource(MediaResource resource) {}
+    public void setAttribute(int attr, int value) {
+        this._player.setAttribute(attr, value);
+    }
 
-    public void setTempo(int tempo) {}
+    public void setPitch(int pitch) {
+        this._player.setPitch(pitch);
+    }
 
-    public void setVolume(int volume) {}
+    protected void setPlayerAttributes() {
+    }
 
-    public void show() {}
+    public void setResource(MediaResource resource) {
+        if (state != STOP) {
+            throw new IllegalStateException("state must be STOP");
+        }
+        if (this._resource != null) {
+            throw new IllegalStateException("resource must be unset before setting.");
+        }
+        if (resource == null) throw new NullPointerException();
 
-    public void stop() {}
+        // FIXME: Check the resource can be played.
+        this._resource = resource;
+        MediaManager.linkMediaResourceToMediaPlayerBox(resource, this);
+        if (_player != null) {
+            this._player.dispose();
+        }
+        this._player = instantiatePlayer(resource);
+        this._player.setResource(resource);
+    }
 
-    public void unsetResource(MediaResource resource) {}
+    public void setTempo(int tempo) {
+        this._player.setTempo(tempo);
+    }
+
+    public void setVolume(int volume) {
+        this._player.setVolume(volume);
+    }
+
+    public void show() {
+    }
+
+    public void stop() {
+        if (this._player != null) this._player.stop();
+    }
+
+    public void unsetResource(MediaResource resource) {
+        MediaManager.unlinkMediaResource(resource, this);
+        this._resource = null;
+    }
 }
