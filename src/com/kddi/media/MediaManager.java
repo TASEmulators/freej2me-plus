@@ -38,7 +38,7 @@ public class MediaManager {
     }
 
     public static void unlinkMediaResource(MediaResource resource, MediaPlayerBox box) {
-        var playerBoxSet = playerBoxMap.get(resource);
+        Set<MediaPlayerBox> playerBoxSet = playerBoxMap.get(resource);
         if (playerBoxSet == null) {
             System.out.println("this resource is not registered");
             return;
