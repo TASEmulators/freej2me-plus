@@ -967,8 +967,8 @@ public final class AWTGUI
 			deleteTemporaryKJXFiles.setState(config.sysSettings.get("deleteTempKJXFiles").equals("on"));
 
 			// Get saved inputs from system config file.
-			inputKeycodes = config.inputKeycodes;
-			for(int i = 0; i < inputButtons.length; i++) { inputButtons[i].setLabel(KeyEvent.getKeyText(inputKeycodes[i])); }
+			System.arraycopy(config.inputKeycodes, 0, newInputKeycodes, 0, inputKeycodes.length);
+			for(int i = 0; i < inputButtons.length; i++) { inputButtons[i].setLabel(KeyEvent.getKeyText(newInputKeycodes[i])); }
 			
 			/* We only need to do this call once, when the jar first loads */
 			firstLoad = false;
