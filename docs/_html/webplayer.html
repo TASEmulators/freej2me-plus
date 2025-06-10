@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>FreeJ2ME-Plus Web App</title>
+
+        <meta name="description" content="FreeJ2ME-Plus is a cross-platform J2ME emulator supporting Libretro, AWT, and SDL2 frontends.">
+        <meta name="keywords" content="Java, J2ME, Emulator, FreeJ2ME, Cross-Platform, Libretro, Retroarch">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <!-- Page icon setup -->
+        <link rel="apple-touch-icon" sizes="57x57" href="../icons/apple-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="../icons/apple-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="../icons/apple-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="../icons/apple-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="../icons/apple-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="../icons/apple-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="../icons/apple-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="../icons/apple-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../icons/apple-icon-180x180.png">
+        <link rel="icon" type="image/png" sizes="192x192"  href="../icons/android-icon-192x192.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="../icons/favicon-96x96.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="../icons/favicon-16x16.png">
+        <link rel="manifest" href="../icons/manifest.json">
+        <meta name="msapplication-TileColor" content="#ffffff">
+        <meta name="msapplication-TileImage" content="../icons/ms-icon-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="stylesheet" type="text/css" href="../_css/webplayer.css">
+        <!-- CheerpJ functionality -->
+        <script src="https://cjrtnc.leaningtech.com/4.1/loader.js"></script>
+        <script src="../_js/webplayer.js"></script>
+    </head>
+    <body>
+
+        <h2 id="disclaimer">NOTE: FreeJ2ME-Plus Web is a proof of concept and should be used mostly as a preview. The native binary runs much faster, has higher compatibility and is more stable.</h2>
+
+        <div class="contentDiv" id="binaryLoad">
+            <p class="helperText">Supply your J2ME JAR or KJX binary file here.</p>
+            <input type="file" id="jarFileInput" style="display: none;" accept=".jar,.kjx"/>
+            <button class="loaderButton" id="jarFilePickerButton">Select JAR/KJX</button>
+        </div>
+
+        <div class="contentDiv" id="descriptorLoad">
+            <p class="helperText">Some JARs might need its descriptor to be loaded in order to parse the required properties for boot, this is especially true for DoJa. Supply it here if needed.</p>
+            
+            <div>
+                <input type="file" id="descFileInput" style="display: none;" accept=".jad,.jam"/>
+                <button class="loaderButton" id="descFilePickerButton">Optional JAD/JAM Descriptor</button>
+
+                <button class="loaderButton" id="skipDescFile">Skip Descriptor</button>
+            </div>
+
+            <p class="helperText" id="dojaHelperText"> DoJa requires a scratchpad file to be loaded in conjunction to its JAR and JAM. It must be supplied here.</p>
+            <input type="file" id="spFileInput" style="display: none;" accept=".sp"/>
+            <button class="loaderButton" id="spFilePickerButton">Select DoJa ScratchPad (.sp)</button>
+        </div>
+
+        <div class="contentDiv" id="startupSettings">
+            <p class="helperText">All that's left now is to configure the base settings for FreeJ2ME-Plus.</p>
+
+            <div style="display:flex; margin-left: -5%;">
+                <div class="innerDiv">
+                    <h2> Text encoding</h2>
+                    <select class="selector" id="encodingSelector">
+                        <option value="ISO_8859_1">ISO_8859_1 (Standard MIDP)</option>
+                        <option value="Shift_JIS">Shift_JIS (DoJa/Japanese)</option>
+                        <option value="EUC_KR">EUC_KR (SKT/Korean)</option>
+                    </select>
+                </div>
+
+                <div class="innerDiv">
+                    <h2>Key Layout</h2>
+                    <select class="selector" id="keyMapSelector">
+                        <option value="0">Default</option>
+                        <option value="1">LG</option>
+                        <option value="2">Moto/SoftBank</option>
+                        <option value="3">Motorola V8</option>
+                        <option value="4">Moto Triplets</option>
+                        <option value="5">Nokia Keyboard</option>
+                        <option value="6">Sagem</option>
+                        <option value="7">Siemens</option>
+                        <option value="8">Sharp</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <h2>Screen Resolution</h2>
+                <select class="selector" id="screenResSelector">
+                    <option>96x65</option>
+                    <option>101x64</option>
+                    <option>101x80</option>
+                    <option>128x128</option>
+                    <option>130x130</option>
+                    <option>120x160</option>
+                    <option>128x160</option>
+                    <option>132x176</option>
+                    <option>176x208</option>
+                    <option>176x220</option>
+                    <option>220x176</option>
+                    <option>208x208</option>
+                    <option>180x320</option>
+                    <option>320x180</option>
+                    <option>208x320</option>
+                    <option selected>240x320</option>
+                    <option>320x240</option>
+                    <option>240x400</option>
+                    <option>400x240</option>
+                    <option>240x432</option>
+                    <option>240x480</option>
+                    <option>360x360</option>
+                    <option>352x416</option>
+                    <option>360x640</option>
+                    <option>640x360</option>
+                    <option>640x480</option>
+                    <option>480x800</option>
+                    <option>800x480</option>
+                </select>
+            </div>
+            
+            <button id="startFreeJ2ME">Start FreeJ2ME</button>
+        </div>
+
+        <div id="loadAnim">
+            <div id="init-logo"><img id="loadingindicator" width="1024" height="1024" src="../images/webplayer/FreeJ2ME-Plus Logo_Circle.svg" alt="FreeJ2ME-Plus Loading Circle"></div>
+            <div id="init-logo"><img id="cheerpj" width="800" height="440" src="../images/webplayer/CheerpJ.svg" alt="Powered by CheerpJ Community Edition"></div>
+        </div>
+
+        <!-- On-Screen GUI -->
+         <div id="commandBar"> <!-- Top-left of screen, side bar -->
+            <div id="commandButtons">
+                <button class="commandButton" id="topPos"><img class="commandImg" src="../images/webplayer/OnScreenButtons.svg" onclick="toggleOSDButtons()"></button>
+                <button class="commandButton" id="midTopPos"><img class="commandImg" src="../images/webplayer/ScreenRotationButton.svg" onclick="rotateScreen()"></button>
+                <button class="commandButton" id="midBotPos"><img class="commandImg" src="../images/webplayer/PauseResumeButton.svg" onclick="pauseResume()"></button>
+                <button class="commandButton" id="botPos"><img class="commandImg" src="../images/webplayer/FastForwardButton.svg" onclick="fastForward()"></button>
+            </div>
+        </div>
+
+        <div id="onScreenButtons">
+            <div id="directionalButtons">
+                <div id="topRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('ka')" onmouseup="releaseKey('ka')" ontouchstart="pressKey('ka')" ontouchend="releaseKey('ka')">#</button>
+                    <button class="onScreenButton" id="centerPos" onmousedown="pressKey('ku')" onmouseup="releaseKey('ku')" ontouchstart="pressKey('ku')" ontouchend="releaseKey('ku')">↑</button>
+                    <button class="onScreenButton" id="rightPos" onmousedown="pressKey('kb')" onmouseup="releaseKey('kb')" ontouchstart="pressKey('kb')" ontouchend="releaseKey('kb')">*</button>
+                </div>
+
+                <div id="midRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('kl')" onmouseup="releaseKey('kl')" ontouchstart="pressKey('kl')" ontouchend="releaseKey('kl')">←</button>
+                    <button class="onScreenButton" id="centerPos" onmousedown="pressKey('kc')" onmouseup="releaseKey('kc')" ontouchstart="pressKey('kc')" ontouchend="releaseKey('kc')">F</button>
+                    <button class="onScreenButton" id="rightPos" onmousedown="pressKey('kr')" onmouseup="releaseKey('kr')" ontouchstart="pressKey('kr')" ontouchend="releaseKey('kr')">→</button>
+                </div>
+
+                <div id="botRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('k0')" onmouseup="releaseKey('k0')" ontouchstart="pressKey('k0')" ontouchend="releaseKey('k0')">0</button>
+                    <button class="onScreenButton" id="centerPos" onmousedown="pressKey('kd')" onmouseup="releaseKey('kd')" ontouchstart="pressKey('kd')" ontouchend="releaseKey('kd')">↓</button>
+                </div>
+            </div>
+
+            <div id="actionButtons">
+                <div id="topRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('k1')" onmouseup="releaseKey('k1')" ontouchstart="pressKey('k1')" ontouchend="releaseKey('k1')">1</button>
+                    <button class="onScreenButton" id="centerPos" onmousedown="pressKey('k2')" onmouseup="releaseKey('k2')" ontouchstart="pressKey('k2')" ontouchend="releaseKey('k2')">2</button>
+                    <button class="onScreenButton" id="rightPos" onmousedown="pressKey('k3')" onmouseup="releaseKey('k3')" ontouchstart="pressKey('k3')" ontouchend="releaseKey('k3')">3</button>
+                </div>
+
+                <div id="midRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('k4')" onmouseup="releaseKey('k4')" ontouchstart="pressKey('k4')" ontouchend="releaseKey('k4')">4</button>
+                    <button class="onScreenButton" id="centerPos" onmousedown="pressKey('k5')" onmouseup="releaseKey('k5')" ontouchstart="pressKey('k5')" ontouchend="releaseKey('k5')">5</button>
+                    <button class="onScreenButton" id="rightPos" onmousedown="pressKey('k6')" onmouseup="releaseKey('k6')" ontouchstart="pressKey('k6')" ontouchend="releaseKey('k6')">6</button>
+                </div>
+
+                <div id="botRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('k7')" onmouseup="releaseKey('k7')" ontouchstart="pressKey('k7')" ontouchend="releaseKey('k7')">7</button>
+                    <button class="onScreenButton" id="centerPos" onmousedown="pressKey('k8')" onmouseup="releaseKey('k8')" ontouchstart="pressKey('k8')" ontouchend="releaseKey('k8')">8</button>
+                    <button class="onScreenButton" id="rightPos" onmousedown="pressKey('k9')" onmouseup="releaseKey('k9')" ontouchstart="pressKey('k9')" ontouchend="releaseKey('k9')">9</button>
+                </div>
+            </div>
+
+            <div id="softButtons">
+                <div id="botRow">
+                    <button class="onScreenButton" id="leftPos" onmousedown="pressKey('ls')" onmouseup="releaseKey('ls')" ontouchstart="pressKey('ls')" ontouchend="releaseKey('ls')">ls</button>
+                    <button class="onScreenButton" id="rightPos" onmousedown="pressKey('rs')" onmouseup="releaseKey('rs')" ontouchstart="pressKey('rs')" ontouchend="releaseKey('rs')">rs</button>
+                </div>
+            </div>
+        </div>
+
+    </body>
+</html>

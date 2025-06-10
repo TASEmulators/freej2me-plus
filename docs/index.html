@@ -28,7 +28,7 @@
         <meta name="msapplication-TileImage" content="icons/ms-icon-144x144.png">
         <meta name="theme-color" content="#ffffff">
 
-        <!-- CSS Stylesheets: TODO -->
+        <!-- CSS Stylesheets -->
         <link rel="stylesheet" type="text/css" href="./_css/index.css">
 
         <!-- JavaScript to add functionality to the website -->
@@ -40,9 +40,11 @@
         <div id="init-logo"><img id="logo" width="1100" height="1024" src="./images/FreeJ2ME-Plus Logo_Final.svg" alt="FreeJ2ME-Plus Logo - Fullscreen"></div>
 
         <div id="mainpage">
-            <!-- <iframe id="navbar-iframe" src="_html/navbar.html" allowtransparency = "true" title="Navigation Bar"></iframe> -->
 
             <div class="pagecontent">
+                <!-- TODO: Integrate the webPlayer here -->
+                <iframe id="web_player_frame" src="_html/webplayer.html" scrolling="no" title="Web Player"></iframe>
+
                 <div id="firstpane">
                     <div class="pseudocanvas">
                         <div class="canvas_element" id="element1"></div>
@@ -58,10 +60,10 @@
                         <div id="firstpane-content-right">
                             <div class="titlediv"><h1 id="outertitletext">FREE</h1><h1 id="innertitletext">J2ME - PLUS</h1></div>
                             <p> A fork of FreeJ2ME, a free, cross-platform J2ME emulator with support for Libretro, AWT and SDL2 frontends. </p>
-                            <a href="https://github.com/TASEmulators/freej2me-plus/tags"><button id="downloadbutton">Download</button></a>
+                            <a href="https://github.com/TASEmulators/freej2me-plus/tags"><button class="actionButton" id="downloadbutton">Download</button></a>
+                            <button class="actionButton" id="webplayerbutton" onclick="startWebPlayer()">Web Player</button>
                         </div>
                     </div>
-
                 </div>
 
                 <div class="contentpane">

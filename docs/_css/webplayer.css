@@ -1,0 +1,649 @@
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    background-color: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
+}
+
+p {
+    color: white;
+    margin: 1% 0;
+    font-size: 1.5vw;
+    text-align: center;
+    width: 90%;
+}
+
+h1 {
+    color: white;
+    margin: 0;
+    width: 90%;
+    text-align: center;
+}
+
+h2 {
+    color: white;
+    margin: 0;
+    text-align: center;
+    align-self: center;
+}
+
+#disclaimer {
+    position: absolute;
+    width: 90%;
+    top: 5%;
+}
+
+.contentDiv {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
+    width: 50vw;
+    border-radius: 15px;
+    border-width: 5px;
+    border-color: #0066ffff;
+    border-style: solid;
+    transition-duration: 0.5s;
+    opacity: 0;
+}
+
+.innerDiv {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
+    margin-right: 5%;
+}
+
+#loadAnim {
+    position: absolute;
+    width: 40vw;
+    aspect-ratio: 1/1;
+    opacity: 0;
+    transition-duration: 0.5s;
+    border-style: solid;
+}
+
+#loadAnim #loadingindicator {
+    position: absolute;
+    width: 100%;
+    height: fit-content;
+    aspect-ratio: 1/1;
+    opacity: 0;
+    transition-duration: 0.55s;
+    animation: rotateindicator 2.427s linear infinite;
+}
+
+@keyframes rotateindicator 
+{
+    from { transform: rotate(0deg);  }
+    to { transform: rotate(360deg); }
+}
+
+#loadAnim #cheerpj {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40%;
+    height: fit-content;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes startanim {
+    0%   {transform: scale(1)}
+    50%  {transform: scale(1.1);}
+    100% {transform: scale(1)}
+}
+
+.loaderButton {
+    margin: 2% 0%;
+    padding: 5px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2vw;
+    border-radius: 15px;
+    border-width: 5px;
+    border-color: #0066ffff;
+    border-style: solid;
+    background-color: black;
+    color: #0066ffff;
+    font-weight: bold;
+    transition-duration: 0.2s;
+}
+
+.loaderButton:hover {
+    color: #00ff00ff;
+    border-color: #00ff00ff;
+}
+
+.loaderButton:active {
+    border-width: 5px;
+    border-color: white;
+    color: white;
+    transform:scale(0.9);
+}
+
+#dojaHelperText {
+    display: none;
+}
+
+#spFileInput {
+    display: none;
+}
+
+#spFilePickerButton {
+    display: none;
+}
+
+.selector {
+    margin: 2% 0%;
+    padding: 5px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 1.75vw;
+    border-radius: 15px;
+    border-width: 5px;
+    border-color: #0066ffff;
+    border-style: solid;
+    background-color: black;
+    color: #0066ffff;
+    font-weight: bold;
+    transition-duration: 0.2s;
+}
+
+#resSetup {
+    display: flex;
+}
+
+.jarRes 
+{
+    padding: 5px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2vw;
+    border-radius: 15px;
+    border-width: 5px;
+    margin: 0% 2%;
+    border-color: #0066ffff;
+    border-style: solid;
+    background-color: black;
+    color: #0066ffff;
+    font-weight: bold;
+    transition-duration: 0.2s;
+    width: 3em;
+}
+
+.jarRes:focus {
+    color: #00ff00ff;
+    border-color: #00ff00ff;
+}
+
+#startFreeJ2ME {
+    padding: 5px;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 2.5vw;
+    border-radius: 15px;
+    border-width: 5px;
+    border-color: #00ff00ff;
+    border-style: solid;
+    background-color: black;
+    color: #00ff00ff;
+    font-weight: bold;
+    margin-top: 5%;
+    margin-bottom: 2%;
+    transition-duration: 0.15s;
+    animation: startanim 3s ease-in-out infinite;
+}
+
+#startFreeJ2ME:active {
+    border-width: 5px;
+    border-color: white;
+    color: white;
+    animation: none;
+    transform: scale(0.9);
+}
+
+/* On-Screen buttons*/
+#commandBar 
+{
+    position: absolute;
+    width: 6%;
+    aspect-ratio: 1/4;
+    top: 0%;
+    left: 0%;
+    transition-duration: 0.5s;
+    opacity: 0;
+    background-color: #222222ff;
+    z-index: 1;
+}
+
+#onScreenButtons 
+{
+    position: absolute;
+    width: 100vw;
+    height: 25%;
+    bottom: 5%;
+    z-index: 1;
+}
+
+#onScreenButtons #directionalButtons
+{
+    position: absolute;
+    left: calc(5cqw);
+    height: 100%;
+    aspect-ratio: 1/1;
+}
+
+#onScreenButtons #actionButtons
+{
+    position: absolute;
+    right: calc(5cqw);
+    height: 100%;
+    aspect-ratio: 1/1;
+}
+
+#onScreenButtons #softButtons
+{
+    position: absolute;
+    left: 50%; /* Move to the middle */
+    transform: translateX(-50%);
+    height: 100%;
+    aspect-ratio: 1/1;
+}
+
+#topRow 
+{
+    position: absolute;
+    width: 100%;
+    height: 33.33%;
+}
+
+#midRow 
+{
+    position: absolute;
+    width: 100%;
+    height: 33.33%;
+    top: 33.33%;
+}
+
+#botRow 
+{
+    position: absolute;
+    width: 100%;
+    height: 33.34%;
+    top: 66.66%;
+}
+
+.onScreenButton
+{
+    position: absolute;
+    margin: 1%;
+    width: 31%;
+    height: 93%;
+    font-family: sans-serif;
+    font-weight: bolder;
+    font-size: 2.25em;
+    border-radius: 15px;
+    border-width: 3px;
+    border-color: #0066ffff;
+    border-style: solid;
+    background-color: black;
+    color: #0066ffff;
+    transition-duration: 0.1s;
+}
+
+.onScreenButton:active, .commandButton:active
+{
+    border-width: 7px;
+    border-color: white;
+    animation: none;
+    transform: scale(0.9);
+}
+
+#centerPos 
+{
+    left: 33%;
+}
+
+#rightPos 
+{
+    left: 66%;
+}
+
+.commandButton 
+{
+    position: absolute;
+    margin: 1%;
+    width: 93%;
+    height: 23%;
+    border-radius: 15px;
+    border-width: 3px;
+    border-color: #0066ffff;
+    border-style: solid;
+    background-color: black;
+    color: #0066ffff;
+    font-weight: bold;
+    transition-duration: 0.1s;
+}
+
+.commandImg {
+    position: absolute;
+    width:90%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#midTopPos 
+{
+    top: 25%;
+}
+
+#midBotPos 
+{
+    top: 50%;
+}
+
+#botPos 
+{
+    top: 75%;
+}
+
+@media only screen and (max-width: 600px) {
+    p {
+        font-size: 3.75vw;
+    }
+
+    .contentDiv {
+        width: 90vw;
+    }
+
+    #loadAnim {
+        width: 85vw;
+    }
+
+    .loaderButton {
+        font-size: 3.75vw;
+    }
+
+    .selector {
+        font-size: 3.5vw;
+    }
+
+    .jarRes 
+    {
+        font-size: 3.75vw;
+    }
+
+    #startFreeJ2ME {
+        font-size: 4vw;
+    }
+
+    #commandBar 
+    {
+        width: 15%;
+    }
+
+    #onScreenButtons 
+    {
+        height: 50vw;
+        bottom: 0;
+    }
+
+    #onScreenButtons #directionalButtons
+    {
+        left: 0;
+    }
+
+    #onScreenButtons #actionButtons
+    {
+        right: 0;
+    }
+
+    #onScreenButtons #softButtons /* Move Softbuttons to above the directional and action keys */
+    {
+        top: -100%;
+    }
+
+    .onScreenButton {
+        font-weight: bolder;
+        font-size: 1.75rem;
+    }
+}
+
+@media only screen and (min-width: 600px) {
+    p {
+        font-size: 3vw;
+    }
+
+    .contentDiv {
+        width: 80vw;
+    }
+
+    #loadAnim {
+        width: 75vw;
+    }
+
+    .loaderButton {
+        font-size: 3vw;
+    }
+
+    .selector {
+        font-size: 2.8vw;
+    }
+
+    .jarRes 
+    {
+        font-size: 3vw;
+    }
+
+    #startFreeJ2ME {
+        font-size: 3.5vw;
+    }
+
+    #commandBar 
+    {
+        width: 10%;
+    }
+
+    #onScreenButtons 
+    {
+        height: 50vw;
+        bottom: 0;
+    }
+
+    #onScreenButtons #directionalButtons
+    {
+        left: 0;
+    }
+
+    #onScreenButtons #actionButtons
+    {
+        right: 0;
+    }
+
+    #onScreenButtons #softButtons /* Move Softbuttons to above the directional and action keys */
+    {
+        top: -100%;
+    }
+
+    .onScreenButton {
+        font-weight: bolder;
+        font-size: 1.75em;
+    }
+}
+
+@media only screen and (min-width: 720px) {
+    p {
+        font-size: 2.5vw;
+    }
+
+    .contentDiv {
+        width: 70vw;
+    }
+
+    #loadAnim {
+        width: 60vw;
+    }
+
+    .loaderButton {
+        font-size: 2.5vw;
+    }
+
+    .selector {
+        font-size: 2.25vw;
+    }
+
+    .jarRes 
+    {
+        font-size: 2.5vw;
+    }
+
+    #startFreeJ2ME {
+        font-size: 3vw;
+    }
+
+    #commandBar 
+    {
+        width: 7.5%;
+    }
+
+    #onScreenButtons 
+    {
+        height: 35%;
+        bottom: 0%;
+    }
+
+    #onScreenButtons #directionalButtons
+    {
+        left: calc(5cqw);
+    }
+
+    #onScreenButtons #actionButtons
+    {
+        right: calc(5cqw);
+    }
+
+    #onScreenButtons #softButtons /* Move Softbuttons to above the directional and action keys */
+    {
+        top: -100%;
+    }
+
+    .onScreenButton {
+        font-weight: bolder;
+        font-size: 1.75em;
+    }
+}
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 900px) {
+    p {
+        font-size: 1.8vw;
+    }
+
+    .contentDiv {
+        width: 60vw;
+    }
+
+    #loadAnim {
+        width: 50vw;
+    }
+
+    .loaderButton {
+        font-size: 2vw;
+    }
+
+    .selector {
+        font-size: 1.8vw;
+    }
+
+    .jarRes 
+    {
+        font-size: 2vw;
+    }
+
+    #startFreeJ2ME {
+        font-size: 2.25vw;
+    }
+
+    #commandBar 
+    {
+        width: 7%;
+    }
+
+    #onScreenButtons 
+    {
+        height: 31%;
+        bottom: 0%;
+    }
+
+    #onScreenButtons #directionalButtons
+    {
+        left: 0;
+    }
+
+    #onScreenButtons #actionButtons
+    {
+        right: 0;
+    }
+
+    #onScreenButtons #softButtons /* Move Softbuttons to above the directional and action keys */
+    {
+        top: 0%;
+    }
+
+    .onScreenButton {
+        font-weight: bolder;
+        font-size: 2em;
+    }
+}
+
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+    p {
+        font-size: 1.5vw;
+    }
+
+    .contentDiv {
+        width: 50vw;
+    }
+
+    #loadAnim {
+        width: 40vw;
+    }
+
+    .loaderButton {
+        font-size: 1.75vw;
+    }
+
+    .selector {
+        font-size: 1.5vw;
+    }
+
+    .jarRes 
+    {
+        font-size: 1.75vw;
+    }
+
+    #startFreeJ2ME {
+        font-size: 2vw;
+    }
+
+    #commandBar 
+    {
+        width: 5%;
+    }
+
+    #onScreenButtons 
+    {
+        height: 25%;
+        bottom: 5%;
+    }
+
+    .onScreenButton {
+        font-weight: bolder;
+        font-size: 2.5em;
+    }
+}
