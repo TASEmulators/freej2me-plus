@@ -36,7 +36,7 @@
     </head>
     <body>
 
-        <h2 id="disclaimer">NOTE: FreeJ2ME-Plus Web is a proof of concept and should be used mostly as a preview. The native binary runs much faster, has higher compatibility and is more stable.</h2>
+        <h2 id="disclaimer">NOTE: FreeJ2ME-Plus Web is a proof of concept and should be used as a preview. The native binary runs much faster and has higher compatibility.</h2>
 
         <div class="contentDiv" id="binaryLoad">
             <p class="helperText">Supply your J2ME JAR or KJX binary file here.</p>
@@ -88,38 +88,58 @@
                 </div>
             </div>
             
-            <div>
-                <h2>Screen Resolution</h2>
-                <select class="selector" id="screenResSelector">
-                    <option>96x65</option>
-                    <option>101x64</option>
-                    <option>101x80</option>
-                    <option>128x128</option>
-                    <option>130x130</option>
-                    <option>120x160</option>
-                    <option>128x160</option>
-                    <option>132x176</option>
-                    <option>176x208</option>
-                    <option>176x220</option>
-                    <option>220x176</option>
-                    <option>208x208</option>
-                    <option>180x320</option>
-                    <option>320x180</option>
-                    <option>208x320</option>
-                    <option selected>240x320</option>
-                    <option>320x240</option>
-                    <option>240x400</option>
-                    <option>400x240</option>
-                    <option>240x432</option>
-                    <option>240x480</option>
-                    <option>360x360</option>
-                    <option>352x416</option>
-                    <option>360x640</option>
-                    <option>640x360</option>
-                    <option>640x480</option>
-                    <option>480x800</option>
-                    <option>800x480</option>
-                </select>
+            <div style="display:flex; margin-left: -5%;">
+                <div class="innerDiv">
+                    <h2>Screen</h2>
+                    <select class="selector" id="screenResSelector">
+                        <option>96x65</option>
+                        <option>101x64</option>
+                        <option>101x80</option>
+                        <option>128x128</option>
+                        <option>130x130</option>
+                        <option>120x160</option>
+                        <option>128x160</option>
+                        <option>132x176</option>
+                        <option>176x208</option>
+                        <option>176x220</option>
+                        <option>220x176</option>
+                        <option>208x208</option>
+                        <option>180x320</option>
+                        <option>320x180</option>
+                        <option>208x320</option>
+                        <option selected>240x320</option>
+                        <option>320x240</option>
+                        <option>240x400</option>
+                        <option>400x240</option>
+                        <option>240x432</option>
+                        <option>240x480</option>
+                        <option>360x360</option>
+                        <option>352x416</option>
+                        <option>360x640</option>
+                        <option>640x360</option>
+                        <option>640x480</option>
+                        <option>480x800</option>
+                        <option>800x480</option>
+                    </select>
+                </div>
+
+                <div class="innerDiv">
+                    <h2>FPS</h2>
+                    <select class="selector" id="framerateSelector">
+                        <option value="0">Off</option>
+                        <option value="10">10 FPS</option>
+                        <option value="15">15 FPS</option>
+                        <option value="20">20 FPS</option>
+                        <option value="25">25 FPS</option>
+                        <option value="30">30 FPS</option>
+                        <option value="35">35 FPS</option>
+                        <option value="40">40 FPS</option>
+                        <option value="45">45 FPS</option>
+                        <option value="50">50 FPS</option>
+                        <option value="55">55 FPS</option>
+                        <option value="60">60 FPS</option>
+                    </select>
+                </div>
             </div>
             
             <button id="startFreeJ2ME">Start FreeJ2ME</button>

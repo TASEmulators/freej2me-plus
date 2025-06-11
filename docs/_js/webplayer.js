@@ -252,11 +252,12 @@ async function startFreeJ2ME()
     getScreenRes();
 
     let keyLayout = document.getElementById('keyMapSelector').value;
+    let cmdFPS = document.getElementById('framerateSelector').value;
 
     cheerpjCreateDisplay(-1, -1, document.body);
     document.getElementById('cheerpjDisplay').style.visibility = 'hidden';
     document.getElementById('cheerpjDisplay').style.opacity = '0';
-    await cheerpjRunJar("/app/freej2me-plus/_webplayer/freej2me.jar", "/str/app."+fileType, "1", cmdWidth, cmdHeight, "1", keyLayout);
+    await cheerpjRunJar("/app/freej2me-plus/_webplayer/freej2me.jar", "/str/app."+fileType, "1", cmdWidth, cmdHeight, "1", keyLayout, cmdFPS);
 }
 
 document.addEventListener("DOMContentLoaded", loadPage);

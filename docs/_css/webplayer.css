@@ -12,7 +12,7 @@ body {
 p {
     color: white;
     margin: 1% 0;
-    font-size: 1.5vw;
+    font-size: 1em;
     text-align: center;
     width: 90%;
 }
@@ -34,7 +34,7 @@ h2 {
 #disclaimer {
     position: absolute;
     width: 90%;
-    top: 5%;
+    top: 3%;
 }
 
 .contentDiv {
@@ -105,7 +105,7 @@ h2 {
     font-family: 'Times New Roman', Times, serif;
     font-size: 2vw;
     border-radius: 15px;
-    border-width: 5px;
+    border-width: 4px;
     border-color: #0066ffff;
     border-style: solid;
     background-color: black;
@@ -120,7 +120,6 @@ h2 {
 }
 
 .loaderButton:active {
-    border-width: 5px;
     border-color: white;
     color: white;
     transform:scale(0.9);
@@ -144,7 +143,7 @@ h2 {
     font-family: 'Times New Roman', Times, serif;
     font-size: 1.75vw;
     border-radius: 15px;
-    border-width: 5px;
+    border-width: 4px;
     border-color: #0066ffff;
     border-style: solid;
     background-color: black;
@@ -190,7 +189,7 @@ h2 {
     background-color: black;
     color: #00ff00ff;
     font-weight: bold;
-    margin-top: 5%;
+    margin-top: 2%;
     margin-bottom: 2%;
     transition-duration: 0.15s;
     animation: startanim 3s ease-in-out infinite;
@@ -288,7 +287,7 @@ h2 {
     border-width: 3px;
     border-color: #0066ffff;
     border-style: solid;
-    background-color: black;
+    background-color: #00000077;
     color: #0066ffff;
     transition-duration: 0.1s;
 }
@@ -351,12 +350,16 @@ h2 {
 }
 
 @media only screen and (max-width: 600px) {
+    h2 {
+        font-size: 1.2em;
+    }
+    
     p {
-        font-size: 3.75vw;
+        font-size: 1.2em;
     }
 
     .contentDiv {
-        width: 90vw;
+        width: 96vw;
     }
 
     #loadAnim {
@@ -364,20 +367,20 @@ h2 {
     }
 
     .loaderButton {
-        font-size: 3.75vw;
+        font-size:  1.2em;
     }
 
     .selector {
-        font-size: 3.5vw;
+        font-size: 0.75em;
     }
 
     .jarRes 
     {
-        font-size: 3.75vw;
+        font-size: 1.2em;
     }
 
     #startFreeJ2ME {
-        font-size: 4vw;
+        font-size: 1.2em;
     }
 
     #commandBar 
@@ -408,13 +411,17 @@ h2 {
 
     .onScreenButton {
         font-weight: bolder;
-        font-size: 1.75rem;
+        font-size: 1.75em;
     }
 }
 
 @media only screen and (min-width: 600px) {
+    h2 {
+        font-size: 1.1em;
+    }
+
     p {
-        font-size: 3vw;
+        font-size: 1.2em;
     }
 
     .contentDiv {
@@ -426,20 +433,20 @@ h2 {
     }
 
     .loaderButton {
-        font-size: 3vw;
+        font-size: 1.3em;
     }
 
     .selector {
-        font-size: 2.8vw;
+        font-size: 1em;
     }
 
     .jarRes 
     {
-        font-size: 3vw;
+        font-size: 1.2em;
     }
 
     #startFreeJ2ME {
-        font-size: 3.5vw;
+        font-size: 1.2em;
     }
 
     #commandBar 
@@ -475,8 +482,12 @@ h2 {
 }
 
 @media only screen and (min-width: 720px) {
+    h2 {
+        font-size: 1.2em;
+    }
+
     p {
-        font-size: 2.5vw;
+        font-size: 1.2em;
     }
 
     .contentDiv {
@@ -488,20 +499,20 @@ h2 {
     }
 
     .loaderButton {
-        font-size: 2.5vw;
+        font-size: 1em;
     }
 
     .selector {
-        font-size: 2.25vw;
+        font-size: 1em;
     }
 
     .jarRes 
     {
-        font-size: 2.5vw;
+        font-size: 1em;
     }
 
     #startFreeJ2ME {
-        font-size: 3vw;
+        font-size: 1.2em;
     }
 
     #commandBar 
@@ -538,8 +549,12 @@ h2 {
 
 /* Large devices (laptops/desktops, 992px and up) */
 @media only screen and (min-width: 900px) {
+    h2 {
+        font-size: 1.3em;
+    }
+
     p {
-        font-size: 1.8vw;
+        font-size: 1.3em;
     }
 
     .contentDiv {
@@ -551,20 +566,20 @@ h2 {
     }
 
     .loaderButton {
-        font-size: 2vw;
+        font-size: 1.3em;
     }
 
     .selector {
-        font-size: 1.8vw;
+        font-size: 1.3em;
     }
 
     .jarRes 
     {
-        font-size: 2vw;
+        font-size: 1.3em;
     }
 
     #startFreeJ2ME {
-        font-size: 2.25vw;
+        font-size: 1.5em;
     }
 
     #commandBar 
@@ -602,8 +617,12 @@ h2 {
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
 @media only screen and (min-width: 1200px) {
+    h2 {
+        font-size: 1.5em;
+    }
+
     p {
-        font-size: 1.5vw;
+        font-size: 1.5em;
     }
 
     .contentDiv {
@@ -615,20 +634,20 @@ h2 {
     }
 
     .loaderButton {
-        font-size: 1.75vw;
+        font-size: 1.5em;
     }
 
     .selector {
-        font-size: 1.5vw;
+        font-size: 1.5em;
     }
 
     .jarRes 
     {
-        font-size: 1.75vw;
+        font-size: 1.5em;
     }
 
     #startFreeJ2ME {
-        font-size: 2vw;
+        font-size: 1.75em;
     }
 
     #commandBar 
