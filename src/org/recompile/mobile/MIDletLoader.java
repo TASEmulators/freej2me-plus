@@ -403,47 +403,56 @@ public class MIDletLoader extends URLClassLoader
 		boolean hasMIDlet = false;
         String currentKey = null;
         StringBuilder currentValue = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(is, charset)))
+        try
 		{
-            String line;
-            while ((line = br.readLine()) != null) 
-			{
-				if (line.trim().isEmpty()) { continue; }
-                if (line.startsWith(" ")) { currentValue.append(line, 1, line.length()); } 
-				else 
-				{
-                    if (currentKey != null) 
-					{
-						if (currentKey.contains("MIDlet-")) { hasMIDlet = true; }
-						// Only add a new key-value pair if the key doesn't already exist (set by the JAD file)
-                        if(!keyValueMap.containsKey(currentKey)) 
-						{
-							keyValueMap.put(currentKey, currentValue.toString().trim());  
+			BufferedReader br = new BufferedReader(new InputStreamReader(is, charset));
+			try {
+				String line;
+				while ((line = br.readLine()) != null) {
+					if (line.trim().isEmpty()) {
+						continue;
+					}
+					if (line.startsWith(" ")) {
+						currentValue.append(line, 1, line.length());
+					} else {
+						if (currentKey != null) {
+							if (currentKey.contains("MIDlet-")) {
+								hasMIDlet = true;
+							}
+							// Only add a new key-value pair if the key doesn't already exist (set by the JAD file)
+							if (!keyValueMap.containsKey(currentKey)) {
+								keyValueMap.put(currentKey, currentValue.toString().trim());
+							} else {
+								Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey));
+							}
+							currentValue.setLength(0);
 						}
-						else { Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey)); }
-                        currentValue.setLength(0);
-                    }
 
-                    int colonIndex = line.indexOf(':');
+						int colonIndex = line.indexOf(':');
 
-                    if (colonIndex != -1) 
-					{
-                        currentKey = line.substring(0, colonIndex).trim();
-                        currentValue.append(line.substring(colonIndex + 1).trim());
-                    }
-                }
-            }
-            if (currentKey != null) 
-			{
-				if(!keyValueMap.containsKey(currentKey)) { keyValueMap.put(currentKey, currentValue.toString().trim());  }
-				else { Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey)); }
+						if (colonIndex != -1) {
+							currentKey = line.substring(0, colonIndex).trim();
+							currentValue.append(line.substring(colonIndex + 1).trim());
+						}
+					}
+				}
+				if (currentKey != null) {
+					if (!keyValueMap.containsKey(currentKey)) {
+						keyValueMap.put(currentKey, currentValue.toString().trim());
+					} else {
+						Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey));
+					}
+				}
+
+				if (keyValueMap.containsKey("MIDlet-1")) {
+					hasMIDlet = true;
+				}
+
+				// If no MIDlet was found above, we'll try loading this jar as a DoJa file, which has an accompanying .jam descriptor (this is fine because if a jad is present, it's loaded before this method is even called)
+				Mobile.isDoJa = !hasMIDlet;
+			} finally {
+				br.close();
 			}
-
-			if(keyValueMap.containsKey("MIDlet-1")) { hasMIDlet = true; }
-
-			// If no MIDlet was found above, we'll try loading this jar as a DoJa file, which has an accompanying .jam descriptor (this is fine because if a jad is present, it's loaded before this method is even called)
-			Mobile.isDoJa = !hasMIDlet;
-			br.close();
         }
 		catch (IOException e) 
 		{
@@ -1204,7 +1213,7 @@ public class MIDletLoader extends URLClassLoader
 			}
 
 			private static final boolean ENABLE_EXCEPTION_DEBUG = false;
-			private final HashSet<Label> catchLabels = new HashSet<>();
+			private final HashSet<Label> catchLabels = new HashSet<Label>();
 
 			@Override
 			public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {

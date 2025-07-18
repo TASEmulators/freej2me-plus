@@ -698,8 +698,14 @@ public class MobilePlatform
 					return false;
 				}
 
-				try (InputStream targetStream = new FileInputStream(preparedFileName)) {
-					MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties, jadCharset);
+				InputStream targetStream = null;
+				try {
+					targetStream = new FileInputStream(preparedFileName);
+					try {
+						MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties, jadCharset);
+					} finally {
+						targetStream.close();
+					}
 				} catch (IOException e) {
 					Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load Jad data: " + e.getMessage());
 					return false;
