@@ -17,16 +17,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <signal.h>
-#include <stdarg.h>
 #ifdef __linux__
-#include <sys/types.h>
-#include <sys/wait.h>
-#elif _WIN32
-#include <windows.h>
-#include <tlhelp32.h>
+    #include <unistd.h>
+    #include <sys/types.h>
+    #include <sys/wait.h>
+#elif defined(_WIN32)
+    #include <windows.h>
+    #include <tlhelp32.h>
+    #include <direct.h>
+	#include <compat/strl.h>
+    #include <io.h>
+    #define getcwd _getcwd
+    #ifndef PATH_MAX
+        #define PATH_MAX MAX_PATH
+    #endif
 #endif
 #include "freej2me_libretro.h"
 #include <file/file_path.h>
@@ -778,11 +785,15 @@ bool retro_load_game(const struct retro_game_info *info)
 	/* Tell java app to load and run game */
 	char romPath[PATH_MAX_LENGTH];
 
-#ifdef __linux__
-	realpath(info->path, romPath);
-#elif _WIN32
-	_fullpath(romPath, info->path, PATH_MAX_LENGTH);
-#endif
+char cwd[PATH_MAX_LENGTH] = {0};
+if (getcwd(cwd, sizeof(cwd)))
+    {
+        fill_pathname_resolve_relative(romPath, cwd, info->path, PATH_MAX_LENGTH);
+    }
+else
+    {
+        strlcpy(romPath, info->path, PATH_MAX_LENGTH);
+    }
 
 	len = strlen(romPath);
 	log_fn(RETRO_LOG_INFO, "Loading actual jar app from %s\n", romPath);
