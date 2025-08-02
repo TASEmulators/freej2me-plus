@@ -6,8 +6,8 @@ const keyValues = {
     k0: 0, k1: 0, k2: 0, k3: 0, k4: 0,
     k5: 0, k6: 0, k7: 0, k8: 0, k9: 0,
     ka: 0, kb: 0, ku: 0, kd: 0, kl: 0,
-    kr: 0, kc: 0, ls: 0, rs: 0, ff: 0,
-    ro: 0, pa: 0
+    kr: 0, kc: 0, ls: 0, rs: 0, cl: 0,
+    ff: 0, ro: 0, pa: 0
 };
 
 const originalConsoleLog = console.log;
@@ -246,6 +246,7 @@ async function startFreeJ2ME()
     
     // Add the jar's binary and often optional descriptor data to CheerpJ (unless it's doja, in which case both descriptor and scratchpad must be sent)
     cheerpOSAddStringFile("/str/app."+fileType, binaryData);
+    cheerpOSAddStringFile("/str/FreeJ2MEExternalKeyEvents.txt", "");
     if(descriptorData !== null) { cheerpOSAddStringFile("/str/app."+descriptorType, descriptorData); }
     if(scratchpadData !== null) { cheerpOSAddStringFile("/str/app.sp", scratchpadData); }
     
