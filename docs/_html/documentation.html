@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+        <title>J2ME APIs Documentation</title>
+        <meta charset="UTF-8">
+        <meta name="description" content="J2ME APIs Documentation">
+        <meta name="keywords" content="Java, J2ME, Documentation">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="apple-touch-icon" sizes="57x57" href="../icons/apple-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="../icons/apple-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="../icons/apple-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="../icons/apple-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="../icons/apple-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="../icons/apple-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="../icons/apple-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="../icons/apple-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../icons/apple-icon-180x180.png">
+        <link rel="icon" type="image/png" sizes="192x192"  href="../icons/android-icon-192x192.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="../icons/favicon-96x96.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="../icons/favicon-16x16.png">
+        <link rel="manifest" href="../icons/manifest.json">
+        <meta name="msapplication-TileColor" content="#ffffff">
+        <meta name="msapplication-TileImage" content="../icons/ms-icon-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+
+        <style>
+            body {
+                width: 100vw;
+                margin: 0;
+                display: block;
+                background-color: #1a1a1aff;
+                overflow-x: hidden;
+                overflow-y: hidden;
+            }
+
+            #buttonpane {
+                height: 6vh;
+                width: 100vw;
+                background-color: #222222;
+                opacity: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .footerdiv {
+                position: relative;
+                border-top: 6px solid #0066ffff;
+                background-color: #1a1a1aff;
+                box-shadow: 0px 0px 16px #444;
+                z-index: 4;
+                padding: 25px;
+                padding-bottom: 3px;
+            }
+
+            .footerdiv #footer_top {
+                font-weight: bolder;
+                font-family:'Times New Roman', Times, serif;
+                font-size: 1.85em;
+                color: #0066ffff;
+                text-align: center;
+                margin-bottom: 25px;
+            }
+
+            .footerdiv a {
+                text-decoration: none;
+                color: #ff6600ff;
+            }
+
+            .footerdiv a:hover {
+                color: #0066ffff;
+            }
+
+            .footerdiv #footer_bottom {
+                font-weight: bold;
+                font-family: cursive,sans-serif;
+                font-size: 1.4em;
+                color: #0066ffff;
+                text-align: end;
+                height: 4vh;
+            }
+
+            .navbutton {
+                font-weight: bold;
+                font-family: sans-serif;
+                font-size: 1.2em;
+                color: #0066ffff;
+                background-color: #1a1a1aff;
+                border: 2px solid #0066ffff;
+                transition-duration: 0.2s;
+                border-radius: 4px;
+                height: 80%;
+                margin: 0 1%;
+            }
+
+            .navbutton:hover {
+                color: white;
+                border-color: white;
+                transform: scale(1.1);
+            }
+
+            .navbutton:active {
+                color: #ff6600ff;
+                border-color: #ff6600ff;
+                transform: scale(0.9);
+            }
+
+            #titletext 
+            {
+                font-size: 3em;
+                color: #ff6600ff;
+            }
+
+            #innertitletext 
+            {
+                font-size: 2.5em;
+                color: #0066ffff;
+            }
+
+            iframe {
+                width: calc(100% - 8px);
+                height: calc(80vh - 8px);
+                margin: 0;
+                padding: 0;
+                border: none;
+                overflow: hidden;
+                border: 4px solid #0066ffff;
+                border-radius: 16px;
+            }
+
+        </style>
+
+        <script>
+            function goBackToRoot() { document.getElementById('content_frame').src = './J2ME Documentation/index.html'; }
+            function goBackToMainPage() { window.location.href = '../index.html'; }
+        </script>
+    </head>
+
+    <body>
+
+        <div id="mainpage">
+
+            <div class="pagecontent">
+
+                <div id="buttonpane">
+                    <h1 id="titletext">J2ME </h1><h1 id="innertitletext">Documentation</h1>
+                    <button class="navbutton" onclick="goBackToRoot()">Back to root</button>
+                    <button class="navbutton" onclick="goBackToMainPage()">Back to FreeJ2ME-Plus Main Page</button>
+                </div>
+                
+                <iframe id="content_frame" src="./J2ME Documentation/index.html" scrolling="yes" title="Documentation"></iframe>
+
+                <div class="footerdiv">
+                    <div id="footer_top"><a href="https://github.com/nikita36078/J2ME_Docs">Original Archive by Nikita Shakarun</a></div>
+                    <div id="footer_bottom"><a href="https://github.com/AShiningRay">Webpage developed by AShiningRay - 2025</a></div>
+                </div>
+            </div>
+        </div>  
+    </body>
+<html>

@@ -1,0 +1,9 @@
+java.lang
+javax.microedition.event
+javax.microedition.io
+javax.microedition.lcdui
+javax.microedition.lcdui.game
+javax.microedition.media
+javax.microedition.midlet
+javax.microedition.pki
+javax.microedition.rms

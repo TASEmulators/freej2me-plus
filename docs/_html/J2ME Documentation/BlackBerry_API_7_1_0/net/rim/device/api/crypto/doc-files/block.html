@@ -1,0 +1,370 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Block Ciphers</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Block Ciphers</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<P> This lesson describes how the block ciphers work and how
+they were designed in the Crypto API. It covers Engines, Encryptors and
+Decryptors, and, in general, provides an overview of what is provided in the
+API. Examples of code are given, demonstrating the different ways of using the block ciphers.
+    Finally, the best options for various scenarios are discussed.
+</P>
+
+<p><b>Engines</b></p>
+<p> <A href="../BlockEncryptorEngine.html">Engines</a> allow the developer to directly access algorithms.
+    That is, if one wanted to directly access the DES
+    algorithm by passing in a plaintext byte array and receiving an encrypted byte
+    array, this would be possible with the <A href="../DESEncryptorEngine.html">DESEncryptorEngine</a>.  The engines are
+    provided to allow the developer access to the lowest level of
+    abstraction. Some developers will be comfortable doing all their work at this
+    level, and the engines have been made public for this reason.  Other developers
+    will not feel comfortable at this level and will want to use the <A href="../EncryptorOutputStream.html">Encryptor</a> interface,
+    which is built upon the engines. Both methods for encrypting and decrypting will
+    return identical results.
+</p>
+
+<p><b>Encryptors and Decryptors</b></p>
+<p> The idea behind the <A href="../EncryptorOutputStream.html">encryptors</a> and <A href="../DecryptorInputStream.html">decryptors</a> is to add a stream-based
+    method (built upon Java's InputStream and OutputStream) for performing cryptographic operations.
+    They allow the developer to use the common read and write
+    routines instead of low-level engine functions.  With these encryptors and decryptors,
+    all of the work has been done for the developer, who can simply rely on
+    the read and write calls that are available.  The interface for read and write
+    is consistent with the Java API and should be quite familiar to all
+    developers of Java programs.</p>
+
+<p><b>Encryption with Block Ciphers</b></p>
+<p> The most common question asked about the Crypto API is "How do I encrypt using DES?" to
+    which the answer is "How do you want to encrypt using DES?" Cryptography is a
+    field overflowing with options. For example, to encrypt something without even
+    considering our API, one has to determine which mode to use (ECB, OFB, CFB, CBC, etc)
+    as well as the required security for the application in order to determine which algorithm is
+    appropriate.  All of these options are available in the Crypto API.  Although there are many
+    ways of performing the same function, we tried to accommodate the majority of them
+    into our API.</p>
+
+<p><b>Supported Modes</b></p>
+<p> The Crypto API supports all the standard modes for block encryption:
+    <ul>
+    <li><A href="../BlockEncryptorEngine.html">Electronic Code Book (ECB)</a> - This is the default for all Engine classes
+    <li><A href="../CBCEncryptorEngine.html">Cipher Block Chaining (CBC)</a>
+    <li><A href="../CFBEncryptor.html">Cipher Feedback (CFB)</a>
+    <li><A href="../OFBPseudoRandomSource.html">Output Feedback (OFB)</a></li>
+    </ul>
+    CFB and OFB can be used to convert a block cipher to a stream cipher. Details about
+    this can be found in the <A href = "stream.html">Stream Cipher</a> lesson.
+<P></P>
+
+<p><b>Initialization Vectors</b></p>
+<p> Before discussing the engines and the encryptors and decryptors in detail,
+    it is important to understand what an <A href="../InitializationVector.html">Initialization Vector (IV)</a> is and why they
+    are used with block ciphers. The IV is random information that is used with certain
+    block cipher modes (explained below) to ensure that when the same plaintext message is
+    encrypted twice, it will not result in the same ciphertext message both times.</p>
+
+<p><b>A Sample Encryption using DES</b></p>
+
+<b><i>Note: All Engines operate in ECB mode, which means they take in one block at a time
+and return one block at a time.  There is no chaining or dependence on other blocks for the
+encryption of the ciphertext.  This is not necessarily the most secure mode for encryption; one
+should consider using CBC or one of the other modes available.</i></b>
+
+<p> The straightforward approach to encryption with DES is to use the <A href="../DESEncryptorEngine.html">DESEncryptorEngine</a>,
+    as shown in the following piece of code:
+</p>
+<pre>
+    // Input
+    byte[] input = { (byte)'T', (byte)'e', (byte)'s', (byte)'t',
+                     (byte)'i', (byte)'n', (byte)'g', (byte)'!' };
+
+    // Output
+    byte[] output = new byte[ 8 ];
+
+    byte[] keyData = { (byte)0x01, (byte)0x23, (byte)0x45, (byte)0x67,
+                       (byte)0x89, (byte)0x01, (byte)0x23, (byte)0x45 };
+
+    // Create a new DES key with the given data.
+    DESKey key = new DESKey( keyData );
+
+    // Create engine.
+    DESEncryptorEngine engine = new DESEncryptorEngine( key );
+
+    // Encrypt the input with offset of zero.
+    engine.encrypt( input, 0, output, 0);
+    System.out.println("Ciphertext = " + new String( output ) + ".");
+</pre>
+
+<p> The second approach to encryption with DES is to use an <A href="../BlockEncryptor.html">BlockEncryptor</a> to
+    encrypt a stream of data with DES.  This time CBC mode will be used with
+    the DES engine (which requires use of an initialization vector):
+</p>
+<pre>
+    //Input
+    byte[] input = { (byte)'T', (byte)'h', (byte)'i', (byte)'s',
+                     (byte)' ', (byte)'i', (byte)'s', (byte)' ',
+                     (byte)'a', (byte)' ', (byte)'t', (byte)'e',
+                     (byte)'s', (byte)'t', (byte)'!', (byte)'!' };
+
+    byte[] iv = { (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC,
+                  (byte)0xFB, (byte)0xFA, (byte)0xF9, (byte)0xF8 };
+
+    byte[] keyData = { (byte)0x01, (byte)0x23, (byte)0x45, (byte)0x67,
+                       (byte)0x89, (byte)0x01, (byte)0x23, (byte)0x45 };
+
+    // Create a new DES key with the given data.
+    DESKey key = new DESKey( keyData );
+
+    // Create the DES Engine.
+    DESEncryptorEngine desEngine = new DESEncryptorEngine( key );
+
+    // Create the CBC engine.
+    CBCEncryptorEngine cbcEngine = new CBCEncryptorEngine( desEngine, new InitializationVector( iv ) );
+
+    // Create a stream to hold the encrypted data.
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+    // Now we create the Encryptor using the CBCEncryptorEngine and
+    // the output stream.
+    BlockEncryptor encryptor = new BlockEncryptor( cbcEngine, outputStream );
+
+    // Finally, we can write out the data to encrypt.
+    encryptor.write( input, 0, input.length );
+
+    // We want to close the encryptor and grab the bytes.
+    encryptor.close();
+    byte[] output = outputStream.toByteArray();
+
+    System.out.println("Ciphertext = " + new String( output ) + ".");
+</pre>
+
+<p> The second approach is more verbose and time-consuming to write, but it
+    yields much clearer and more reliable results.  The actual encryption
+    is performed with the call to write. Every other line of code is for setting up or tearing
+    down the encryptors and engines.  The stream-based
+    approach works very well when starting out with a stream (instead of a byte
+    array) for input.  For example, an HTTP stream would be somewhat painful to convert
+    into a byte array just to be encrypted and converted back into a stream.
+    Therefore, each method has its benefits. </p>
+
+<b><p>Decryption with Block Ciphers</b>
+</p>
+<p> Of course, the second most common question about the Crypto API is
+    "How do I decrypt using DES?" to which the answer is "Just like
+    you encrypted using DES." </p>
+
+<p> As before, one can use the engine directly.  In this case it is called <A href="../DESDecryptorEngine.html">DESDecryptorEngine</a>:
+</p>
+<pre>
+    // Input
+    byte[] input = { (byte)0x77, (byte)0xFB, (byte)0xF4, (byte)0x94,
+                     (byte)0xE9, (byte)0x70, (byte)0xDD, (byte)0x0B };
+
+    // Output
+    byte[] output = new byte[ 8 ];
+
+    // Key Data from encryption
+    byte[] keyData = { (byte)0x01, (byte)0x23, (byte)0x45, (byte)0x67,
+                       (byte)0x89, (byte)0x01, (byte)0x23, (byte)0x45 };
+
+    // Create a new DES key with the given data.
+    DESKey key = new DESKey( keyData );
+
+    // Create engine.
+    DESDecryptorEngine engine = new DESDecryptorEngine( key );
+
+    // Decrypt the input with offset of zero.
+    engine.decrypt( input, 0, output, 0);
+
+    System.out.println("Plaintext = " + new String( output ) + ".");
+</pre>
+
+<p> The second approach to decryption with DES is using a <A href="../BlockDecryptor.html">BlockDecryptor</a> to
+    decrypt a stream of data with DES.  This code illustrates DES decryption
+    in CBC mode:
+</p>
+<pre>
+    //Input
+    byte[] input = { (byte)0x58, (byte)0x47, (byte)0x50, (byte)0x34,
+                     (byte)0x9F, (byte)0xEF, (byte)0x0D, (byte)0x77,
+                     (byte)0x31, (byte)0x4E, (byte)0xB7, (byte)0x73,
+                     (byte)0x56, (byte)0xAC, (byte)0x3C, (byte)0xD6 };
+
+    byte[] iv = { (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC,
+                  (byte)0xFB, (byte)0xFA, (byte)0xF9, (byte)0xF8 };
+
+    byte[] output = new byte[ 16 ];
+
+    byte[] keyData = { (byte)0x01, (byte)0x23, (byte)0x45, (byte)0x67,
+                       (byte)0x89, (byte)0x01, (byte)0x23, (byte)0x45 };
+
+    // Create a new DES key with the given data.
+    DESKey key = new DESKey( keyData );
+
+    // Create the DES Engine.
+    DESDecryptorEngine desEngine = new DESDecryptorEngine( key );
+
+    // Create the CBC engine.
+    CBCDecryptorEngine cbcEngine = new CBCDecryptorEngine( desEngine, new InitializationVector( iv ) );
+
+    // Create a stream from the input byte array.
+    ByteArrayInputStream inputStream = new ByteArrayInputStream( input );
+
+    // Now we create the Decryptor using the CBCDecryptorEngine.
+    BlockDecryptor decryptor = new BlockDecryptor( cbcEngine, inputStream );
+
+    // Finally, we can read in the decrypted data.
+    int ret = decryptor.read( output, 0, output.length );
+
+    decryptor.close();
+    inputStream.close();
+
+    System.out.println("Plaintext = " + new String( output ) + ".");
+</pre>
+
+<p><b>Block Formatters and Unformatters</b></p>
+
+<p> There is one last item that should be clarified before leaving this section
+    on encryption and decryption.  Provided with the Crypto API are engines
+    that allow for the padding and encoding of blocks of data.  These are called
+    <A href="../BlockFormatterEngine.html">BlockFormatterEngines</a> and <A href="../BlockUnformatterEngine.html">BlockUnformatterEngines</a>
+    and include the algorithms <A href="../OAEPFormatterEngine.html">OAEP</a>, <A href="../PKCS1FormatterEngine.html">PKCS1</a>,
+    and <A href="../PKCS5FormatterEngine.html">PKCS5</a>.  PKCS5 provides
+    padding, and the others provide block encoding.</p>
+
+<p> A BlockFormatterEngine takes a BlockEncryptorEngine and then uses this
+    engine to encrypt the data after the appropriate encoding or padding has been performed.
+    It should be noticed that BlockEncryptor takes both a BlockEncryptorEngine and a BlockFormatterEngine,
+    so that either can be used with the stream-based method.  Once again under the stream based
+    method, all of the work is done for the developer by read and write calls.</p>
+
+<p> This is an example of how to use a BlockFormatterEngine:
+</p>
+<pre>
+    // Input
+    byte[] input = { 0x00, 0x00, 0x00, 0x00, 0x00  };   // less than 8 bytes!
+
+    // Output
+    byte[] output = new byte[ 8 ];
+
+    // Create a random new DES key.
+    DESKey key = new DESKey();
+
+    // Create engine.
+    DESEncryptorEngine desEngine = new DESEncryptorEngine( key );
+
+    // Create the block encoder engine
+    PKCS5FormatterEngine formatter = new PKCS5FormatterEngine( desEngine );
+
+    // Encode and encrypt the information using PKCS5.
+    // The last boolean argument indicates whether or not this is the last block.
+    formatter.formatAndEncrypt( input, 0, input.length, output, 0, true );
+
+    System.out.println("Ciphertext = " + new String( output ) + ".");
+</pre>
+<p> The second approach to encryption with formatters is to use the formatter to
+    encrypt a stream of data with the formatter.  This time we use DES in CBC mode
+    with PKCS5 padding to make things a little more complicated:
+</p>
+<pre>
+    //Input
+    byte[] input = { (byte)'H', (byte)'e', (byte)'l', (byte)'l',
+                     (byte)'o', (byte)',', (byte)' ', (byte)'w',
+                     (byte)'o', (byte)'r', (byte)'l', (byte)'d',
+                     (byte)'!', (byte)'!' };
+
+    byte[] iv = { (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC,
+                  (byte)0xFB, (byte)0xFA, (byte)0xF9, (byte)0xF8 };
+
+    byte[] keyData = { (byte)0x01, (byte)0x23, (byte)0x45, (byte)0x67,
+                       (byte)0x89, (byte)0x01, (byte)0x23, (byte)0x45 };
+
+    // Create a new DES key with the given data.
+    DESKey key = new DESKey( keyData );
+
+    // Create the DES Engine.
+    DESEncryptorEngine desEngine = new DESEncryptorEngine( key );
+
+    // Create the CBC engine.
+    CBCEncryptorEngine cbcEngine = new CBCEncryptorEngine( desEngine, new InitializationVector( iv ) );
+
+    // Create the PKCS5 Encoder engine.
+    PKCS5FormatterEngine formatter = new PKCS5FormatterEngine( cbcEngine );
+
+    // Create a stream from the input byte array.
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+    // Now we create the Encryptor using the CBCEncryptorEngine.
+    BlockEncryptor encryptor = new BlockEncryptor( formatter, outputStream );
+
+    // Finally, we can write the data to encrypt.
+    encryptor.write( input, 0, input.length );
+
+    // We want to close the output stream and grab the bytes.
+    // NOTE: It is especially important to call close with padding
+    // encoders, as it ensures that the last block is encoded properly.
+    encryptor.close();
+    byte[] output = outputStream.toByteArray();
+
+    System.out.println( "Ciphertext = " + new String( output ) + "." );
+</pre>
+
+<p> The use of a formatter is a very simple extension of the previous
+    methods that have been used to encrypt and decrypt data.  The unformatter side
+    is similar as well:</p>
+<pre>
+    // Output from previous example
+    byte[] output = { (byte)0x58, (byte)0x95, (byte)0xBC, (byte)0xF4,
+                     (byte)0x3F, (byte)0xD8, (byte)0xD8, (byte)0xAD,
+                     (byte)0x80, (byte)0x9A, (byte)0x95, (byte)0x34,
+                     (byte)0xB4, (byte)0xCC, (byte)0x76, (byte)0x79 };
+
+    //Input
+    byte[] input = new byte[14];
+
+    byte[] iv = { (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC,
+                  (byte)0xFB, (byte)0xFA, (byte)0xF9, (byte)0xF8 };
+
+    byte[] keyData = { (byte)0x01, (byte)0x23, (byte)0x45, (byte)0x67,
+                       (byte)0x89, (byte)0x01, (byte)0x23, (byte)0x45 };
+
+    // Create a new DES key with the given data.
+    DESKey key = new DESKey( keyData );
+
+    // Create the DES Engine.
+    DESDecryptorEngine desEngine = new DESDecryptorEngine( key );
+
+    // Create the CBC engine.
+    CBCDecryptorEngine cbcEngine = new CBCDecryptorEngine( desEngine, new InitializationVector( iv ) );
+
+    // Create the PKCS5 Decoder engine.
+    PKCS5UnformatterEngine unformatter = new PKCS5UnformatterEngine( cbcEngine );
+
+    // Create a stream from the input byte array.
+    ByteArrayInputStream inputStream = new ByteArrayInputStream( output );
+
+    // Now we create the Decryptor using the CBCDecryptorEngine.
+    BlockDecryptor decryptor = new BlockDecryptor( unformatter, inputStream );
+
+    // Finally, we can read in the decrypted data.
+    decryptor.read( input, 0, input.length );
+
+    // Close the decryptor and the input stream.
+    decryptor.close();
+    inputStream.close();
+
+    System.out.println("Ciphertext = " + new String( output ) + ".");
+    System.out.println("Plaintext = " + new String( input ) + ".");
+</pre>
+
+</BODY>
+</HTML>

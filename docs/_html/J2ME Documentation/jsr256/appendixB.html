@@ -1,0 +1,627 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <title>Appendix&nbsp;B.&nbsp;Security considerations</title>
+      <meta name="generator" content="DocBook XSL-NS Stylesheets V1.73.2"></meta>
+   </head>
+   <body>
+      <div class="appendix" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h2 class="title"><a id="d4e1"></a>Appendix&nbsp;B.&nbsp;Security considerations
+                  </h2>
+               </div>
+            </div>
+         </div>
+         
+         
+         <p> Because some sensors may reveal sensitive information, access to
+            sensors needs to be protected by the security framework. The sensor
+            access is defined as any attempt by a MIDlet in a MIDlet suite to
+            open the connection to the sensor and retrieve data using the 
+            <code class="literal">SensorConnection</code>
+            interface. Discovery of the
+            sensors is not protected and all the sensors are visible to be
+            found by any MIDlet. 
+            <code class="literal">SensorManager.findSensors()</code>
+            methods return all the
+            matching sensors, but they cannot necessary be opened. The 
+            <code class="literal">Connector.open()</code>
+            and 
+            <code class="literal">PushRegistry.registerConnection()</code>
+            methods throw a 
+            <code class="literal">SecurityException</code>
+            if the application
+            does not have the required permission to use the sensor.
+         </p>
+         
+         <p>Originally the MIDP security model was defined in the MIDP 2.0
+            Specification and the Recommended Security Policy. The JTWI JSR 185
+            Specification defines the policy for the third-party domain
+            ("untrusted domain"). The MSA JSR 248 Specification defines the
+            four domains that the MIDlet suites are categorized to and a
+            recommended policy for them. A MIDlet suite can belong to one of
+            the four domains:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="itemizedlist">
+            <ul type="disc">
+               <li>
+                  
+                  <p> Manufacturer domain</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Operator domain</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Identified third-party domain</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Third-party domain</p>
+                  
+               </li>
+            </ul>
+         </div>
+         <p>
+            
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Sensor permissions
+         </h3>
+         
+         
+         <p>This API specifies three permissions to restrict the usage of
+            some sensors. Some sensors might handle confidential data that the
+            user doesn't want to be exposed. Examples include sensors related
+            to health, or wealth like a heart rate sensor, or scales. Such
+            sensors are considered to be private.
+         </p>
+         
+         <p>Another category of sensors with restricted access are system
+            sensors. System sensors might handle hidden, or protected system
+            resources. Data from these sensors is provided only for trusted
+            applications. These sensors are called protected sensors.
+         </p>
+         
+         
+         <p>Sensors that are not private or protected are understood
+            as public sensors. All these sensor groups, private, protected, and public,
+            require the <code class="literal">javax.microedition.io.Connector.sensor</code> permission
+            to open the connection.
+            
+         </p>
+         
+         
+         <p>The table below defines the names of the three sensor related
+            permissions and the methods that are protected by each
+            permission.
+         </p>
+         
+         <p></p>
+         
+         
+         <p>
+            <a id="dbdoclet.id.d0e43"></a>
+            
+            <span class="bold"><strong>Table&nbsp;B.1.&nbsp;Sensor security
+                  permissions</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="50*"></col>
+                  <col width="50*"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="middle">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Permission name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="middle">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Methods protected by this permission</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="middle">
+                                        
+                        <p>javax.microedition.sensor.PrivateSensor</p>
+                        
+                     </td>
+                     <td align="left" valign="middle">
+                                        
+                        <p>
+                                             <code class="literal">Connector.open()</code>
+                           , 
+                                             <code class="literal">PushRegistry.registerConnection()</code>
+                           
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="middle">
+                                        
+                        <p>javax.microedition.sensor.ProtectedSensor</p>
+                        
+                     </td>
+                     <td align="left" valign="middle">
+                                        
+                        <p>
+                                             <code class="literal">Connector.open()</code>
+                           , 
+                                             <code class="literal">PushRegistry.registerConnection()</code>
+                           
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="middle">
+                                        
+                        <p>javax.microedition.io.Connector.sensor</p>
+                        
+                     </td>
+                     <td align="left" valign="middle">
+                                        
+                        <p>
+                                             <code class="literal">Connector.open()</code>
+                           
+                        </p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The permissions must be placed into some function group. This
+            specification does not mandate any particular function group. This
+            is left to the MSA EG to decide.
+         </p>
+         
+         <p>Each function group lists modes for domains, whether:</p>
+         
+         <p>
+            
+         </p>
+         <div class="orderedlist">
+            <ol type="1">
+               <li>
+                  
+                  <p> Not allowed</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Always allowed</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Ask first time</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Ask every time</p>
+                  
+               </li>
+            </ol>
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>The function group lists also the mode options, which a user can
+            set for trusted/untrusted applications.
+         </p>
+         
+         <p>The permissions of the application are cut from permissions of
+            the application domain and permissions asked in a jad descriptor
+            in:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="itemizedlist">
+            <ul type="disc">
+               <li>
+                  
+                  <p> - MIDlet-Permissions, or/and</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> - MIDlet-Permissions-Opt</p>
+                  
+               </li>
+            </ul>
+         </div>
+         <p>
+            
+         </p>
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            The needed permissions may vary between
+            devices
+         </h3>
+         
+         
+         <p>In different devices the protection of specific sensors may
+            vary. This is problematic for the developers, because they do not
+            know in advance which permissions are required. If, for example,
+            MIDlet-Permissions: javax.microedition.sensor.PrivateSensor is
+            requested, but the application domain does not have rights, the
+            application is not even installed. The solution to this problem
+            could be to use MIDlet-Permissions-Opt instead of
+            MIDlet-Permissions. In this case the application is installed even
+            if the domain didn't have defined rights.
+         </p>
+         
+         <p>Let's take the sensor measuring the quantity "fingerprint" as an
+            example. In some devices it might require
+            "javax.microedition.sensor.PrivateSensor" permission, in some
+            devices it might not. By requesting in a JAD:
+         </p>
+         <pre class="screen">
+    MIDlet-Permissions-Opt: javax.microedition.sensor.PrivateSensor
+</pre>
+         <p>the application is installed in every case - even its domain has
+            not got the required permissions to use the sensor. The installed
+            application might even work, if the private sensor is not essential
+            for that functionality. The application also works fine in the case
+            the sensor is not private, i.e., requesting permissions in vain
+            does not cause harm.
+         </p>
+         
+         	
+         	
+         	
+         	
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">Permission for CDC</h3>
+         			
+         	
+         <p>
+            JSR 256 implementation in CDC and MIDP 3 based environments 
+            requires a permission class to be defined in addition 
+            to the traditional permission names that worked with MIDP 2. 
+            The permission class should be based on the existing permission names already defined in the JSR.
+            
+         </p>
+         
+         	
+         
+         
+         <p>Permissions for CDC and CLDC 1.1.1 implementations use the fine-grained 
+            security permissions based on <code class="literal">java.security.Permission</code>.
+            In this API the only control point is opening the sensor with the
+            call <code class="literal">Connector.open()</code> or push registering the sensor for an automatic launch.
+            Hence only one permission class, <code class="literal">javax.microedition.sensor.SensorProtocolPermission</code>,
+            was defined. If the sensor can be opened, all the actions are allowed thereafter,
+            therefore no actions are listed in the <code class="literal">SensorProtocolPermission</code>.
+            This permission accepts as a name either a valid sensor URI or
+            constants "javax.microedition.sensor.PrivateSensor" / "javax.microedition.sensor.ProtectedSensor".
+            The constants are for granting access to private or protected sensors.
+            
+         </p>
+         
+         		
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="33*"></col>
+                  <col width="33*"></col>
+                  <col width="33*"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th> 
+                        Permission class with different name options
+                         
+                     </th>
+                     <th>
+                         Corresponding named permission 
+                         
+                     </th>
+                     <th>
+                            Methods protected by this permission 
+                         
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td>SensorProtocolPermission(PRIVATE)
+                         
+                     </td>
+                     <td>
+                         javax.microedition.sensor.PrivateSensor,
+                         javax.microedition.io.Connector.sensor
+                         
+                     </td>
+                     <td>
+                         <code class="literal">Connector.open()</code> ,
+                         <code class="literal">PushRegistry.registerConnection()</code>
+                         
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>SensorProtocolPermission(PROTECTED)
+                         
+                     </td>
+                     <td>
+                         javax.microedition.sensor.ProtectedSensor,
+                         javax.microedition.io.Connector.sensor
+                         
+                     </td>
+                     <td>
+                         <code class="literal">Connector.open()</code> ,
+                         <code class="literal">PushRegistry.registerConnection()</code>
+                         
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>SensorProtocolPermission(sensor_url)
+                         
+                     </td>
+                     <td>
+                         javax.microedition.io.Connector.sensor
+                         and when needed:
+                         javax.microedition.sensor.PrivateSensor
+                         and/or
+                         javax.microedition.sensor.ProtectedSensor
+                         
+                     </td>
+                     <td>
+                         
+                         <code class="literal">Connector.open()</code>,
+                         <code class="literal">PushRegistry.registerConnection()</code>
+                          
+                         
+                         
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         		
+         		
+         		
+         
+         <div class="sect2" lang="en">
+            <div class="titlepage">
+               <div>
+                  <div>
+                     <h3 class="title"><a id="d4e129"></a>SensorProtocolPermission
+                     </h3>
+                  </div>
+               </div>
+            </div>
+            
+            <pre class="screen">
+package javax.microedition.sensor;
+
+import java.security.Permission;
+
+import javax.microedition.io.GCFPermission;
+
+/**
+ &lt;p&gt;This class represents an access right to a connection/connections 
+ via the "sensor" protocol. The &lt;code&gt;SensorProtocolPermission&lt;/code&gt; 
+ grants the permission to either sensors measuring a certain quantity 
+ or to private/protected sensors. If the name given is a sensor URI 
+ then the access for sensors pointed by this URI is granted.
+ Because a valid sensor URI always contains a quantity, 
+ &lt;code&gt;SensorProtocolPermissions&lt;/code&gt; constructed with a URI 
+ will always address sensors of one quantity.
+ The sensor URI is defined in {@link SensorConnection}.&lt;/p&gt;
+  
+ &lt;p&gt;{@link #PRIVATE} and {@link #PROTECTED} constants
+ are for private and protected sensors; the access is granted for 
+ the whole group of such sensors. The sensors of the group are most
+ probably measuring different quantities.&lt;/p&gt; 
+ 
+ &lt;p&gt;In the Mobile Sensor API the only security control points  
+ are opening a connection and registering for push, no other methods are protected. 
+ That is why no actions are listed here.&lt;/p&gt;
+ 
+ &lt;p&gt;Note: the sensor URI as a name may refer to one or more sensors, 
+ including private and protected sensors.
+ If the policy prevents opening any of these sensors, the permission
+ must not be granted.&lt;/p&gt;
+ */
+public final class SensorProtocolPermission extends GCFPermission {
+
+     /**
+     *&lt;p&gt;
+     The name for the permission targeted to private sensors.
+     &lt;/p&gt;
+     */
+     public final static String PRIVATE    
+         = "javax.microedition.sensor.PrivateSensor";
+
+    /**
+     *&lt;p&gt;
+     The name for the permission targeted to protected sensor.
+     &lt;/p&gt;
+     */
+     public final static String PROTECTED    
+         = "javax.microedition.sensor.ProtectedSensor";
+
+
+
+    /**
+     &lt;p&gt;The method creates a new &lt;code&gt;SensorProtocolPermission&lt;/code&gt;,
+     the name of which may be:&lt;/p&gt;
+     &lt;ul&gt;
+     &lt;li&gt;the sensor URI&lt;/li&gt;
+     &lt;li&gt;{@link #PRIVATE}&lt;/li&gt;
+     &lt;li&gt;{@link #PROTECTED}&lt;/li&gt;
+     &lt;/ul&gt; 
+     @param name the permission name
+     @throws IllegalArgumentException if the &lt;code&gt;uri&lt;/code&gt; is zero length
+     or not a valid name
+     @throws NullPointerException if &lt;code&gt;uri&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+     */
+    public SensorProtocolPermission(java.lang.String name){
+    	if (name==null)
+    	   throw new NullPointerException(
+		   "SensorProtocolPermission called with a null value");
+    	if (name.length() == 0)
+    	   throw new IllegalArgumentException(
+    	   "SensorProtocolPermission called with a zero-length name");
+    	try{
+    	   SensorManager.findSensors(name);
+    	}catch (IllegalArgumentException e) {
+    	   throw new IllegalArgumentException(
+	   "SensorProtocolPermission called with an invalid name "+name);
+	}
+    			
+    }
+
+
+	/**&lt;p&gt;
+	 The method checks two &lt;code&gt;SensorProtocolPermission&lt;/code&gt; objects 
+	 for equality. Checks that given &lt;i&gt;object&lt;/i&gt; is
+	 a &lt;code&gt;SensorProtocolPermission&lt;/code&gt; and has the same name as this object.&lt;/p&gt;
+	 
+	 @param object the object we are testing for equality with this object.
+	 @return &lt;code&gt;true&lt;/code&gt; if object is a &lt;code&gt;SensorProtocolPermission&lt;/code&gt;, 
+	 and has the same name as this &lt;code&gt;SensorProtocolPermission&lt;/code&gt; object.
+	 */
+	public boolean equals(Object object) {
+		if (object == this)
+			return true;
+		if (! (object instanceof SensorProtocolPermission))	
+			return false;
+		return getName().equals(((SensorProtocolPermission)object).getName());
+	}
+
+	/**&lt;p&gt;
+	 The method returns actions, for this permission 
+	 the method returns always &lt;code&gt;null&lt;/code&gt; since no actions are defined.&lt;/p&gt;
+	 @return &lt;code&gt;null&lt;/code&gt;
+	 */
+	public String getActions()
+	{
+		return null;
+	}
+
+	/**&lt;p&gt;
+	 The method returns the hash code value for this object.
+	 The value returned complies with the requirements of the
+	 the hashCode method of the superclass.&lt;/p&gt;
+	 @return a hash code value for this object.
+	 */
+	public int hashCode() {
+		return this.getName().hashCode();
+	}
+
+	
+	/**&lt;p&gt;
+	 The method checks if this &lt;code&gt;SensorProtocolPermission&lt;/code&gt; 
+	 object "implies" the specified
+	 permission. More specifically, this method returns &lt;code&gt;true&lt;/code&gt; if:&lt;/p&gt;
+	 &lt;ul&gt;
+	 &lt;li&gt;&lt;i&gt;p&lt;/i&gt; is an instanceof &lt;code&gt;SensorProtocolPermission&lt;/code&gt;, and&lt;/li&gt;
+	 &lt;li&gt;&lt;i&gt;p&lt;/i&gt;'s actions return &lt;code&gt;null&lt;/code&gt;, and&lt;/li&gt;
+	 &lt;li&gt;&lt;i&gt;p&lt;/i&gt;'s name equals this object's name, or if&lt;/li&gt;
+	 &lt;li&gt;&lt;i&gt;p&lt;/i&gt;'s sensor URI defines a subset of the category
+	 (private/protected), or if&lt;/li&gt;
+	 &lt;li&gt;&lt;i&gt;p&lt;/i&gt;'s sensor URI defines a subset of sensors of this object's URI&lt;/li&gt;
+	 &lt;/ul&gt;
+	 
+	 @param p the permission to check against.
+	 *
+	 @return &lt;code&gt;true&lt;/code&gt; if the specified permission is implied by this object,
+	 &lt;code&gt;false&lt;/code&gt; if not.
+	 */
+
+	public boolean implies(Permission p) {
+		if (!(p instanceof SensorProtocolPermission)) return false;
+
+
+		// Check of this SensorProtocolPermission's name implies the other's name
+		String name = getName();
+		String name2 = p.getName();
+		if (name.equals(name2)) return true;
+		
+
+		// URI defines a subset of sensors of this object's category (private/protected)
+		String[] categories = {PRIVATE, PROTECTED};
+		SensorInfo[] infos2 = SensorManager.findSensors(name2);
+		for (int i=0; i&lt;categories.length; i++){
+			if (!name.equals(categories[i])) continue;
+			if (name2.equals(categories[i])) return false;
+			
+			for (int j=0; j&lt;infos2.length; j++){
+				String category = null;
+				if (infos2[j].getProperty(SensorInfo.PROP_PERMISSION)!=null){
+					category = (String)infos2[j].getProperty(SensorInfo.PROP_PERMISSION);
+				}
+				if (category == null) return false;
+				if (category.indexOf(categories[i])==-1) return false;	
+			}
+			// true only if sensors were found
+			return (infos2.length&gt;0);
+		}
+		
+		
+		// URI defines a subset of sensors of this object's URI
+		SensorInfo[] infos = SensorManager.findSensors(name);
+		
+		//infos2 must be a subset of infos
+		for (int i=0; i&lt;infos2.length; i++){
+			String tmpUrl2 = infos2[i].getUrl();
+			int j=0;
+			for (; j&lt;infos.length &amp;&amp; !(infos[i].getUrl().equals(tmpUrl2)); j++);
+			if (j==infos.length) return false;
+		}
+		// true only if sensors were found
+		return (infos2.length&gt;0);
+	}
+}
+</pre>
+            </div>
+         
+         
+      </div>
+   </body>
+</html>

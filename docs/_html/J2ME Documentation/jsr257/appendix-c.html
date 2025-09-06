@@ -1,0 +1,60 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix C. Unique identifiers of targets</title>
+   </head>
+   <body>
+      <h1>Appendix C. Unique identifiers of targets</h1>
+      <p>The unique identifier of the target varies between different communication
+         	technologies. This appendix defines the rules that the API implementation
+         	<strong style="text-transform: lowercase">must</strong> follow when constructing the UID for
+         	discovered target.
+      </p>
+      <p>For those <code class="classname">NDEF_TAG</code> target types that support
+         	Canonical Target ID String Presentation (CID) defined in the NFC Forum, that
+         	identifier <strong style="text-transform: lowercase">must</strong> be used. The targets that do
+         	not support CID the return value <strong style="text-transform: lowercase">must</strong> be
+         	according to the following table.
+      </p>
+      <div class="table"><a id="d0e9795"></a><p class="title"><b>Table&nbsp;C.1.&nbsp;UID generation rules</b></p>
+         <div class="table-contents">
+            <table summary="UID generation rules" border="1">
+               <colgroup>
+                  <col></col>
+                  <col></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="left">Communication protocol</th>
+                     <th align="left">UID generation rule</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left">ISO14443-3/4 type A card or tag (e.g. Mifare UltraLight
+                        						   or Mifare DesFire)
+                     </td>
+                     <td align="left">4,7 or 10 UID bytes from the cascade anti-collision procedure</td>
+                  </tr>
+                  <tr>
+                     <td align="left">ISO14443-3/4 type B card or tag</td>
+                     <td align="left">4 PUPI bytes (random) from the initialization procedure</td>
+                  </tr>
+                  <tr>
+                     <td align="left">NFCIP-1 212,424 kbits (e.g. FeliCa card)</td>
+                     <td align="left">8 NFCID2 bytes (2 fixed + 6 random) from the initialization
+                        						   procedure
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left">ISO144443-3 type A tag (e.g. Jewel tag)</td>
+                     <td align="left">4 UID bytes (UID0 to UID3) from RID command</td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div><br class="table-break"></br></body>
+</html>

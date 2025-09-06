@@ -1,0 +1,476 @@
+<HTML>
+<HEAD>
+<TITLE>Creating custom certificate status provider plug-ins</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4"><b>RIM Crypto API: Creating custom certificate status provider plug-ins<b></FONT>
+    </TD>
+</TR>
+</TABLE>
+<p>
+<h3>Architectural Overview</h3>
+<p>
+The RIM Over-the-Air Status API provides efficient and flexible access to over-the-air certificate status protocols (such as OCSP, Online Certificate Status Protocol, RFC 2560) from a wireless device. A key ingredient to this architecture is the proxy model it relies upon. Instead of having the device connect directly (via TCP connections, for example) to status responders on the Internet, a proxy is placed between the device and the status responders. The device sends the appropriate information to the proxy, which can then communicate with as many responders as necessary (simultaneously), and return the appropriate response back to the device. This effectively eliminates the unnecessary overhead the device would have to deal with in communicating directly with responders, and allows the proxy to return just the relevant information back to the device. This is all accomplished using a single-pass (request-response) protocol between the device and proxy, conserving wireless network bandwidth and improving overall response speed.
+<p>
+This architecture supports the concept of multiple provider plug-ins on both the device and the proxy. So, as new (or perhaps custom) protocols are developed, additional providers can be added to the framework and fully integrated with the status API on the device.
+<p>
+Currently, the proxy acts a non-trusted entity (i.e. its responses are not digitally signed). Thus the provider plug-ins are responsible for sending appropriate information back to the device so that responder signatures can be verified.
+<p>
+<strong>Device-Side Operation</strong>
+<p>
+When status is requested from the device, all registered providers are given access to the request. If at least one provider is capable of fetching status for that request, the framework packages the data into a status request and sends it to the proxy to be processed.
+<p>
+A provider on the device is created by extending the CertificateStatusProvider class and implementing the appropriate methods to encode a request and decode the associated response (as returned by a matching provider on the proxy). Given the status request for a particular certificate, it is the responsibility of the device provider to ensure that the necessary information is collected and packaged for transmission to the proxy. For example, most status protocols would require some identification of the certificate in question and its issuer (perhaps by distinguished name or a hash). The device provider would gather and package this information and any other parameters necessary to complete the status request (such as server names).
+<p>
+When the response is received from the proxy provider, the device provider must extract the appropriate fields, verify any signatures in the responder’s response, and inform the status API of the new certificate statuses. The details of this operation are described later.
+<p>
+<strong>Proxy-Side Operation</strong>
+<p>
+On the proxy, certificate status provider plug-ins are created by extending the class <code>ProxyStatusProvider</code> and implementing the <code>processStatusRequest</code> method. In this method, the request data from the device should be extracted from the request, the appropriate status responders should be queried for status, and the response(s) should be collected to be sent back to the device. Additionally, the proxy provider must be able to parse the responder’s response and determine the status of the certificates in question. The proxy status framework must be informed of the response status so that ranking rules can be applied to multiple responses if necessary.
+<p>
+When a request is received by the proxy framework, it is pulled apart and the data for the various providers in the request is collected. The framework then checks for the existence of the appropriate plug-ins on the proxy, and passes the data to the associated providers. All provider processing (as done in <code>processStatusRequest</code>) is done in parallel rather than sequentially.
+<p>
+Since multiple plug-ins are supported, there is the potential for having multiple responses for a given certificate. Thus the proxy makes use of the following simple ranking rules to ensure that for a given certificate, only one response is returned to the device:
+<ul>
+<li>
+If any provider claims that a certificate is revoked, the certificate is considered revoked, and the provider response asserting revoked is returned to the device.
+<li>
+If any provider claims that a certificate is good (and none claim it is revoked), the certificate is considered good, and one of the provider responses asserting good is returned to the device.
+<li>
+If all providers claim that a certificate’s status is unknown, the status is considered unknown, and one of the responses is arbitrarily chosen.
+</ul> 
+<p>
+<strong>Writing Status Provider Plug-ins</strong>
+<p>
+Several steps must be taken to implement matching status provider plug-ins for the device and proxy. The next few sections describe in detail how this is done.
+<p>
+<strong>Creating the Device Provider Class</strong>
+<p>
+All status providers must extend the class <code>CertificateStatusProvider</code> and implement the appropriate methods. For the sake of example, consider a provider called <code>SimpleStatusProvider</code>:
+<p>
+<pre>
+public class SimpleStatusProvider extends CertificateStatusProvider
+{
+    <b>/**
+     * Create the single instance of this provider.
+     */</b>
+    public SimpleStatusProvider()
+    {
+        super( 0x3843b7eae1091a56L ); // hash of SimpleStatusProvider
+    }
+    
+
+    <b>/**
+     * Determines if the specified cert chain is compatible with this provider.
+     */</b>
+    protected boolean checkCompatibility( 
+        Certificate[] certChain, 
+        boolean checkEntireChain )
+    {
+        // . . . 
+    }
+
+
+    <b>/**
+     * Encode the necessary fields for a given certificate status request.
+     */</b>
+    protected void encodeRequest(
+        Certificate[]           certChain, 
+        boolean                 checkEntireChain, 
+        ProviderRequestData     request, 
+        KeyStore                keyStore, 
+        ProviderUiContext       uiContext ) 
+        throws StatusProviderException
+    {
+        // . . .
+    }
+    
+    
+    <b>/**
+     * Decode the response for a given certificate status request.
+     */</b>
+    protected void decodeResponse( 
+        Certificate[]           certChain, 
+        boolean                 checkEntireChain, 
+        ProviderResponseData    response, 
+        KeyStore                keyStore, 
+        ProviderUiContext       uiContext ) 
+        throws StatusProviderException
+    {
+       // . . .
+    }
+
+ }
+</pre>
+<p>
+It is necessary to create a default constructor so that the provider can be instantiated (the constructor in the base class is protected). The base class constructor must be called from this default constructor, and the ID of the provider must be specified. The ID is a long that uniquely identifies the provider among other providers on the device and proxy. Thus, the value should be chosen in such a fashion as to avoid the possibility of a collision. A hash of a fully-qualified class name (including package) is probably best.
+<p>
+The only other methods that must be implemented are <code>checkCompatibility</code>, <code>encodeRequest</code>, and <code>decodeResponse</code>. <code>checkCompatibility</code> is used to determine if a given status provider is compatible with the specified certificate chain (correct certificate types, etc.) and can provide status for it. It should return true if the provider can comment on the chain’s status. 
+<p>
+<code>encodeRequest</code> encodes the information necessary for a given status query. 
+<p>
+Its parameters are straightforward:
+<p>
+<p align = center><table width = 85% border = 1 cellspacing = 1 cellpadding = 4> 
+<tr>
+<td>
+<code>certChain</code>
+</td>
+<td>
+This is the certificate chain as passed into the <code>CertificateStatusRequest</code> object. The first entry is the certificate in question, and additional entries (which may or may not be present) are the issuing CAs up to and possibly including a root certificate.
+</td>
+</tr>
+
+<tr>
+<td>
+<code>checkEntireChain</code>
+</td>
+<td>
+A flag indicating if the status for the entire chain should be requested. This, of course, only makes sense of the rest of the chain is available.
+</td>
+</tr>
+
+<tr>
+<td>
+<code>request</code>
+</td>
+<td>
+Encapsulates the request data fields that will be sent to the proxy for this provider (discussed later).
+</td>
+</tr>
+
+<tr>
+<td>
+<code>keyStore</code>
+</td>
+<td>
+This parameter may reference a Key Store that can be used to search for additional certificates or build up the certificate chain if it is incomplete.
+</td>
+</tr>
+
+<tr>
+<td>
+<code>uiContext</code>
+</td>
+<td>
+Allows providers to prompt the user and log error messages.
+</td>
+</tr>
+
+</table>
+<p>
+The <code>certChain</code>, <code>checkEntireChain</code>, and <code>keyStore</code> parameters are the same as those passed into the <code>CertificateStatusRequest</code> object for this status request. 
+
+The <code>ProviderRequestData</code> parameter is of primary interest here as it is the mechanism for passing data to the proxy. Each provider is given its own <code>ProviderRequestData</code> object when <code>encodeRequest</code> is called.
+<p>
+There are several methods for adding data to this object:
+<p>
+<code>void addGlobalField(int tag, byte[] value)</code> 
+<p>
+	<blockquote>
+This method adds a global field to the request data for this provider. A global field is a piece of data that is considered to apply to the whole request. It may be, for example, the name of a responder to contact for certificate status. Each field is associated with a given integer tag. To access this same field on the proxy, one only needs to know its tag value. The data is simply dealt with as a byte array.
+	</blockquote>
+<p>
+<code>void addCertField(Certificate cert, int tag, byte[] value)</code>
+<p>
+	<blockquote>
+This method adds a data field associated with a particular certificate to the request data for this provider. When a field is added, it is associated with both a particular certificate and a particular integer tag. Thus, different certificates can have data fields with the same tag values. Once again, the data is dealt with as a byte array. 
+	</blockquote>
+<p>
+<code>void setContextObject(Object context)</code>
+<p>
+	<blockquote>
+The method saves an object during the request process so it can once again be accessed when <code>decodeResponse</code> is called. The object is never sent to the proxy. Since only one global instance of a provider is ever created and used by the API, this provides a safe way to preserve state information.
+	</blockquote>
+<p>
+The following code sample illustrates how all of this could be used to encode a certificate status request. For the sake of simplicity, it will be assumed that the status responder used needs the distinguished name of a certificate’s subject and issuer to return status for it. The proxy will also need the URL of the responder. 
+<p>
+<pre>
+protected void encodeRequest(
+    Certificate[]           certChain, 
+    boolean                 checkEntireChain, 
+    ProviderRequestData     request, 
+    KeyStore                keyStore, 
+    ProviderUiContext       uiContext ) 
+    throws StatusProviderException
+{
+    // The tags to identify various data fields
+    final int TAG_RESPONDER_URL     = 1;
+    final int TAG_CERT_SUBJECT      = 1;
+    final int TAG_CERT_ISSUER       = 2;
+    
+    // We only support X509 certificates
+    for( int i = 0; i < certChain.length; ++i ) {
+        if( !( certChain[ i ] instanceof X509Certificate ) ) {
+            uiContext.setErrorMessage( 
+                "SimpleStatusProvider only supports X509 certificates" );
+            throw new StatusProviderException();
+        }
+    }
+        
+    // Build up an incomplete cert chain if chain status is requested,
+    // we have a key store, and the passed-in chain is incomplete
+    if( checkEntireChain && certChain.length < 2 && keyStore != null ) {
+        certChain = CertificateUtilities.buildCertChain( certChain[ 0 ],
+                                                         keyStore );
+    }
+            
+    // We will just be using one default responder URL
+    request.addGlobalField( TAG_RESPONDER_URL, (
+        "http://ors.simplestatusprovider.net" ).getBytes() );
+    
+    // For each certificate, encode the subject and issuer DN's
+    for( int i = 0; i < certChain.length; ++i ) {
+        X509Certificate cert = ( X509Certificate )certChain[ i ];
+        
+        request.addCertField( cert, TAG_CERT_SUBJECT,
+                              cert.getSubject().getEncoding() );
+        
+        request.addCertField( cert, TAG_CERT_ISSUER,
+                              cert.getIssuer().getEncoding() );
+    }
+}
+</pre>
+
+<p>
+
+The first section checks that all certificates in the request are X509 certificates. If any are not, an error message is logged and a <code>StatusProviderException</code> is thrown. This is the standard method for dealing with errors. Next, if the status of the entire chain is to be checked, the chain is incomplete, and a key store is specified, an attempt is made to complete the certificate chain. Finally, the global field for the responder is encoded and the data necessary for the individual certificates is added to the request.
+<p>
+Once the proxy has processed the request successfully, the response will be returned and <code>decodeResponse</code> will be called. The parameters are identical to those in <code>encodeRequest</code> except that a <code>ProviderResponseData</code> object rather than a <code>ProviderRequestData</code> object is given. The contents of <code>ProviderResponseData</code> are set on the proxy and are accessible on the device with the following methods:
+<p>
+<code>byte[] getGlobalField(int tag)</code>
+<p>	
+	<blockquote>
+Returns the global data field with the specified tag.
+	</blockquote>
+<p>
+<code>Enumeration getCertificates()</code>
+<p>
+	<blockquote>
+This method returns the certificates that are present in this response data. The device provider may only access or set the status of certificates found in this enumeration.
+	</blockquote>
+<p>
+<code>byte[] getCertField(Certificate cert, int tag)</code>
+<p>
+	<blockquote>
+Returns the certificate field associated with the specified certificate and tag value.
+	</blockquote>
+<p>
+<code>Object getContextObject()</code>
+<p>
+	<blockquote>
+Returns the context object initially set (on the device) while encoding the request.
+	</blockquote>
+<p>
+<code>void setCertificateStatus(Certificate cert, CertificateStatus status)</code>
+<p>
+	<blockquote>
+This method sets the status of the given certificate so that the framework can later call the listeners and possibly update the key store with this new status. If this method is not called for a certificate, the framework will consider the status unknown.
+	</blockquote>
+<p>
+Using these methods, it is trivial to decode the response from the proxy and set the appropriate certificate statuses. In this example, the proxy returns the signed data and signature from the responder as global fields:
+<p>
+<pre>
+protected void decodeResponse( 
+    Certificate[]           certChain, 
+    boolean                 checkEntireChain, 
+    ProviderResponseData    response, 
+    KeyStore                keyStore, 
+    ProviderUiContext       uiContext ) 
+    throws StatusProviderException
+{
+    final int TAG_RESPONSE      = 1;
+    final int TAG_SIGNATURE     = 2;
+    
+    // Get the response and its signature
+    byte[] responseBytes = response.getGlobalField( TAG_RESPONSE );
+    byte[] signature = response.getGlobalField( TAG_SIGNATURE );
+    
+    // Verify the response; prompt the user if it does not verify
+    // The method verifyResponseSignature( ... ) is assumed to exist
+    if( !verifyResponseSignature( responseBytes, signature ) ) {
+        int code = uiContext.promptUser( "Warning", 
+            "The status response's signature cannot be verified. " +
+            "Do you still wish to accept the returned status?",
+            new String[] { "Accept", "Cancel" },
+            new int[] { 1, 2 } );
+        switch( code ) {
+            case 1:
+                // Accept and continue
+                break;
+            case 2:
+            case ProviderUiContext.NO_UI_AVAILABLE:
+                uiContext.setErrorMessage( 
+                    "The response signature could not be verified." );
+                throw new StatusProviderException();
+        }
+    }
+    
+    // Set the status for each certificate in the response
+    Enumeration certEnum = response.getCertificates();
+    while( certEnum.hasMoreElements() ) {
+        Certificate cert = ( Certificate )certEnum.nextElement();
+        // Assume getResponseStatus( ... ) returns a CertificateStatus for the
+        // given certificate based on the response data
+        response.setCertificateStatus( 
+            cert, getResponseStatus( responseBytes, cert ) );
+    }
+}
+</pre>
+<p>
+The responder’s response and signature are extracted from the proxy response, and an attempt to verify the signature is made. If signature verification fails, the user is prompted and asked whether they still wish to accept the status. The <code>promptUser</code> method is useful if providers reach a state where user interaction is necessary. However, UI is only available if the status request was started as a UI request. Therefore, providers should always check the return value for NO_UI_AVAILABLE. In this case, no dialog is shown to the user.
+<p>
+After signature verification, the statuses for the certificates in the response are extracted. <code>getCertificates</code> is used to determine which certificates the proxy provider produced responses for, and <code>setCertificateStatus</code> is used to set the status of the given certificates. The status must be set on the device using this call for it to be recognized by the framework.
+<p>
+<strong>Creating the Proxy Provider Class</strong>
+<p>
+Creating a proxy status provider plug-in involves extending the class <code>ProxyStatusProvider</code> (located on the proxy itself) and implementing the appropriate methods. The following forms the skeleton for the proxy-side plug-in of our <code>SimpleStatusProvider</code>.
+<p>
+<pre>
+public class SimpleProxyStatusProvider extends ProxyStatusProvider
+{
+   <b> /*
+     * Create the single instance of the plug-in.
+     */</b>
+    public SimpleProxyStatusProvider() 
+    {
+        super( 0x3843b7eae1091a56L );
+    }
+    
+
+  <b>  /*
+     * Process a status request and create the response.
+     */</b>
+    public boolean processStatusRequest( 
+        ProviderRequestData request, 
+        ProviderResponseData response )
+    {
+        // . . .
+        return true;
+    }
+
+}
+</pre>
+<p>
+Much like the device provider, a default constructor that calls the base constructor with the provider ID must be provided. The ID used must match that used on the device. The only other method that must be implemented is <code>processStatusRequest</code>, which takes both a <code>ProviderRequestData</code> and a <code>ProviderResponseData</code> object. All processing necessary to fetch the certificate status is done from this method.
+<p>
+The provider data interfaces are much like those on the device. Any data added to <code>ProviderRequestData</code> on the device becomes available in <code>ProviderRequestData</code> on the proxy with the following methods:
+<p>
+<code>byte[] getGlobalField( int tag )</code>
+<p>
+	<Blockquote>
+Returns the global data field identified by the given tag, as added by the device provider. The tag value for a particular field is the same as that used on the device.
+	</BlockQuote>
+<p>
+<code>int[] getCertIds()</code>
+<p>
+	<Blockquote>
+Returns an array of integer IDs representing the certificates for which data was encoded on the device. When a certificate field is added to the device request data, an integer is associated with each certificate. This, if data for three different certificates were encoded on the device, this method would return three unique integer identifiers for those certificates.
+	</blockquote>
+<p>
+<code>byte[] getCertField( int certId, int tag )</code>
+<p>
+	<blockquote>
+Returns the certificate data field associated with the given certificate ID and tag value. The certificate ID should be one of the integers returned from getCertIds, and the tag is the same tag as used on the device.
+	</blockquote>
+<p>
+Thus, the proxy ProviderRequestData interface is the mirror of that found on the device. 
+<p>
+Any data added to the <code>ProviderResponseData</code> object is collected and sent back to the device to be accessed with its ProviderResponseData interface. <code>ProviderResponseData</code> has the following methods for adding data:
+<p>
+<code>void addGlobalField( int tag, byte[] value )</code>
+<p>
+	<blockquote>
+Adds a global field with the given tag to the response.
+	</blockquote>
+<p>
+<code>void addCertField( int certId, int tag, byte[] value  )</code>
+<p>
+	<blockquote>
+Adds a certificate data field associated with the given certificate ID and tag value to the response. Once again, this certificate ID must be one of the IDs returned by getCertIds. When the device receives the response, all of the certificate fields will be mapped back to the original certificates using these IDs.
+	</blockquote>
+<p>
+<code>void setCertStatus( int certId, int status )</code>
+<p>
+	<blockquote>
+Notifies the proxy framework of the status returned by this provider for the given certificate. This is necessary because raking rules are applied if more that one provider responds for a given certificate. The status integer must be one of the predefined status constants (STATUS_GOOD, STATUS_REVOKED, or STATUS_UNKNOWN).
+	</blockquote>
+<p>
+Given these interfaces, it is possible to complete the sample status provider plug-in for the proxy (this code assumes that a hypothetical class OTARequest is available to open the connection and process and send the request to the status responder):
+<p>
+<pre>
+public boolean processStatusRequest( ProviderRequestData request, 
+                                     ProviderResponseData response )
+{
+    // The field tags used for the device request
+    final int TAG_RESPONDER_URL     = 1;
+    final int TAG_CERT_SUBJECT      = 1;
+    final int TAG_CERT_ISSUER       = 2;
+
+    // Decode the URL for the responder and create the request object
+    String url = new String( request.getGlobalField( TAG_RESPONDER_URL ) );
+    OTARequest otaRequest = new OTARequest( url );
+
+    // Add the data for all certificates
+    int[] certIds = request.getCertIds();
+    for( int i = 0; i < certIds.length; ++i ) {
+        byte[] subject = request.getCertField( certIds[ i ], TAG_CERT_SUBJECT );
+        byte[] issuer = request.getCertField( certIds[ i ], TAG_CERT_ISSUER );
+
+        // Add the certificate to the request
+        otaRequest.addCertificate( subject, issuer );
+    }
+
+    // Query the actual status responder
+    if( !otaRequest.doQuery() ) {
+        // We have an error
+        return false;
+    }
+
+    // The tags used to extract the response and signature on the device
+    final int TAG_RESPONSE          = 1;
+    final int TAG_SIGNATURE         = 2;
+
+    // Encode the response bytes and the signature
+    response.addGlobalField( TAG_RESPONSE, otaRequest.getResponseBytes() );
+    response.addGlobalField( TAG_SIGNATURE, otaRequest.getSignature() );
+
+    // Set the status for each certificate we have status for
+    for( int i = 0; i < certIds.length; ++i ) {
+        byte[] subject = request.getCertField( certIds[ i ], TAG_CERT_SUBJECT );
+        byte[] issuer  = request.getCertField( certIds[ i ], TAG_CERT_ISSUER );
+
+        // Assume getStatus( ... ) returns the status for the given cert
+        response.setCertStatus( 
+            certIds[ i ], 
+            otaRequest.getStatus( subject, issuer ) );
+    }
+
+    // Successful
+    return true;
+}
+</pre>
+<p>
+First, the <code>OTARequest</code> object using the URL sent from the device is created. Next, the subject and issuer for each certificate encoded on the device is extracted and added to <code>otaRequest</code>, providing the necessary information to retrieve status for the certificate identified by those fields. The request is then performed (it is assumed that <code>doQuery</code> opens the appropriate connections, sends the request bytes, waits for a reply, and receives and parses the response bytes.) If an error occurs in this process, the method immediately returns with false, indicating the operation was a failure. Finally, the response bytes and signature returned from the responder are added as global fields to the proxy response, and the status of each certificate in the response is passed to the framework with the <code>setCertStatus</code> method.
+<p>
+<strong>Registering Device and Proxy Providers</strong>
+<p>
+In order for these new providers to be recognized by the status API, they must be registered with both the device and proxy framework. On the device, this is accomplished by calling register in <code>CertificateStatusProvider</code>:
+<p>
+<code>CertificateStatusProvider.register( new SimpleStatusProvider() );</code>
+<p>
+On the proxy, the provider class (in .jar file or other form) must be placed into the extension directory, and the configuration file rimpublic.property must be updated to include the provider in the following configuration line:
+<p>
+<code>
+application.handler.ocsp.StatusProviders = \
+net.rim.statusproviders.SimpleProxyStatusProvider
+</code>
+
+
+
+</body>
+</html>

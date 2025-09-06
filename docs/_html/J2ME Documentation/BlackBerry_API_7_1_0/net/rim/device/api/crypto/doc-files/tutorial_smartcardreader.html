@@ -1,0 +1,175 @@
+<HTML>
+<HEAD>
+<TITLE>RIM SmartCard API: Adding New Smart Card Reader Drivers</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4"><b>RIM Crypto API: Adding New Smart Card Driver Readers</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p>
+This tutorial explains the steps involved in adding a new smart card reader driver to the SmartCard API. A "smart card reader driver" refers to a pair of classes: one class representing a physical smart card reader, and the other class representing a communications session with a physical smart card reader. A new driver is implemented by extending the two abstract classes: <code>SmartCardReader</code> and <code>SmartCardReaderSession</code>.
+<p>
+The following sections outline and illustrate the requirements for each.
+<p>
+<strong>Extending SmartCardReader</strong>
+<p>
+A <code>SmartCardReader</code> object represents a physical smart card reader. The first step in creating a new smart card reader driver is to implement a subclass extending <code>SmartCardReader</code>. The UI functionality is implemented in the base class, and subclasses should not need to do this.
+<p>
+The following code example illustrates the abstract methods that must be implemented.
+<p>
+<pre>
+    public class MySmartCardReader extends SmartCardReader
+    {
+    <b>
+	/**
+	 * This method returns the appropriate subclass of SmartCardReaderSession,
+	 * used to establish a communications session with the smart card reader.
+	 * This method throws SmartCardNoReaderPresentException if the reader is not present or attached, and
+	 * throws SmartCardIOException if there was a communications problem.
+	 **/ </b>
+    	protected SmartCardReaderSession openSessionImpl() throws SmartCardException
+    	{
+            return new RIMSmartCardReaderSession( this );
+    	}
+		<b>
+    	/**
+    	 * This method returns true if the reader is attached, and false otherwise.
+    	 * The implementation of this function must not call openSession().
+    	 **/</b>
+    	public boolean isReaderPresentImpl() throws SmartCardException
+    	{
+            //details specific to each reader
+            //See the documentation for your reader API.
+            return false;
+    	}
+<b>
+	/**
+	 * Returns true if a smartcard is present in the reader, and false otherwise.
+	 * Should return false when there is not reader present.
+	 * The implementation of this function must not call openSession().
+	 **/</b>
+	public boolean isSmartCardPresentImpl() throws SmartCardException
+	{
+            //details specific to each reader
+            //See the documentation for your reader API.
+            return false;
+	}
+<b>
+	/**
+	 * Some readers may recognize when a card is inserted or removed.
+	 * This method may return true if this functionality is supported by the reader,
+	 * and must return false otherwise.
+	 **/</b>
+	public boolean isInsertionRemovalDetectableImpl()
+	{
+            return true;
+	}
+<b>
+	/**
+	 * This method returns a label associated with the kind of smart card reader.
+	 * The string should not include the words "smart card reader", as this method will
+	 * be used to generate strings such as ( "Please insert your %s smart card reader", getLabel() )
+	 **/ </b>
+	public String getLabelImpl()
+	{
+            return "Rim smart card reader";
+	}
+<b>
+	/**
+	 * This method returns the type of the reader, eg "Serial Port".
+   	 * A session does not need to be open to get a valid response from this method.
+	 **/</b>
+	public String getTypeImpl()
+	{
+           return "Serial Port";
+	}
+<b>
+        /**
+         * Allows the driver to indicate if they support displaying settings.
+         * If this method returns true, then the method displaySettings maybe called
+         * to show settings to the user.
+         **/</b>
+        protected boolean isDisplaySettingsAvailableImpl( Object context )
+        {
+            // If the driver supports displaying setting return true, otherwise return false.
+            return true; 
+        }
+<b>
+        /**
+         * Allows the driver to display some settings or properties.
+         * This method will be invoked from the smart card options screen when
+         * the user selects the driver and chooses to view the settings of that driver.
+         * 
+         * This method could be called from the event thread. The driver should not block
+         * the event thread for long periods of time.
+         **/</b>
+        protected void displaySettingsImpl( Object context )
+        {
+           //Display Settings
+        }
+    }
+</pre>
+<P>
+
+<strong>Extending SmartCardReaderSession</strong>
+<p>
+A <code>SmartCardReaderSession</code> object represents a communications session with a physical smartcard reader. Over the communications session, APDUs ("application protocol data units") may be exchanged with the reader and the smart card to provide the desired functionality. A subclass extending <code>SmartCardReaderSession</code> must be implemented when creating a new smart card reader driver.  The subclass may provide any additional functions appropriate to the application. Again, the UI functionality is implemented in the base class, and subclasses should not need to do this.
+<p>
+The following code example illustrates the abstract methods to be implemented.
+<p>
+<pre>
+    public class MySmartCardReaderSession extends SmartCardReaderSession
+    {
+    <b>
+ 	/**
+ 	 * The constructor creates a new SmartCardReaderSession.
+ 	 * Parameter smartCardReader refers to the SmartCardReader object associated with this session.
+	 **/	</b>
+        protected RIMSmartCardReaderSession( SmartCardReader reader )
+	{
+            super( reader );
+	}
+<b>
+	/** This method closes this session with the smart card reader. **/ </b>
+	protected void closeImpl() { //Do any cleanup; details specific to each reader //See the documentation for your reader API. }
+<b>
+  	/**
+   	 * This method transmits an APDU (Application Protocol Data Unit) to the reader, and blocks waiting for a response.
+   	 **/</b>
+	public void sendAPDUImpl( CommandAPDU commandAPDU, ResponseAPDU responseAPDU ) throws SmartCardException
+	{
+    	    //Details specific to each reader.
+    	    //See the documentation for your reader API.
+   	}
+<b>
+  	/**
+   	 * This method returns the AnswerToReset provided by the physical smartcard present in the reader.
+  	 * This method throws SmartCardNoCardPresentException if a smartcard is not found in the reader.
+  	 **/   </b>
+	public AnswerToReset getAnswerToResetImpl() throws SmartCardException
+	{
+	    //Details specific to each reader.
+	    //See the documentation for your reader API.
+            return null;
+	}
+<b> 
+        /** 
+         * Attempts to negotate a new protocol with the smartcard if desired. The reader and the
+         * smartcard should negotiate the best protocol that both support. 
+         * 
+         */</b>
+        public void negotiateProtocolImpl( SmartCardCapabilities cardCapabilities ) throws SmartCardException
+        {
+            //Details specific to each reader.
+            //See the documentation for your reader API.
+        }
+    }
+</pre>
+</body>
+</html>

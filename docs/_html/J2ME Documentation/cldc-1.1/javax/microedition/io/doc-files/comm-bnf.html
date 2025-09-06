@@ -1,0 +1,319 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+
+
+
+    
+  
+  
+  <title>Comm Protocol BNF</title>
+</head>
+
+
+<body>
+
+
+
+<h2>
+BNF Format for comm Protocol URI
+</h2>
+
+
+
+<table border="1">
+
+
+
+  <tbody>
+
+
+    <tr>
+
+
+
+      <td>&lt;comm_connection_string&gt; </td>
+
+
+
+      <td>::= "<strong>comm:</strong>"&lt;port_id&gt;[&lt;options_list&gt;] |&nbsp;"<strong>comm:</strong>"&lt;wildcarded_port_id&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;port_id&gt; </td>
+
+
+
+      <td>::= <i>non-empty string of alphanumeric characters</i> ;<br>
+;<br>
+; Note: the <span style="font-style: italic;">port_id</span> string is case sensitive.<i></i>  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+      <td align="undefined" valign="undefined">&lt;wildcarded_port_id&gt;</td>
+
+
+      <td align="undefined" valign="undefined">::= <span style="font-style: italic;">non-empty string of alphanumeric characters, terminated by "</span>*"</td>
+
+
+    </tr>
+
+
+    <tr>
+
+
+
+      <td>&lt;options_list&gt; </td>
+
+
+
+      <td>::= *(&lt;baud_rate_string&gt;| &lt;bitsperchar&gt;|
+&lt;stopbits&gt;| &lt;parity&gt;|
+&lt;blocking&gt;| &lt;autocts&gt;|
+&lt;autorts&gt;) ;
+      <br>
+
+;<br>
+
+; Note: the <span style="font-style: italic;">options_list</span> string is case sensitive.<br>
+
+; <br>
+
+
+; If an option duplicates a previous option in the
+      <br>
+
+
+; option list, that option overrides the previous
+      option.</td>
+
+
+
+    </tr>
+
+
+
+
+    <tr>
+
+
+
+      <td>&lt;baud_rate_string&gt; </td>
+
+
+
+      <td>::= "<strong>;baudrate=</strong>"&lt;baud_rate&gt;   </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;baud_rate&gt; </td>
+
+
+
+      <td>::= <i>non-empty string of digits</i>   </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;bitsperchar&gt; </td>
+
+
+
+      <td>::= "<strong>;bitsperchar=</strong>"&lt;bit_value&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;bit_value&gt; </td>
+
+
+
+      <td>::= "7" | "8"  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;stopbits&gt; </td>
+
+
+
+      <td>::= "<strong>;stopbits=</strong>"&lt;stop_value&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;stop_value&gt; </td>
+
+
+
+      <td>::= "1" | "2"  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;parity&gt; </td>
+
+
+
+      <td>::= "<strong>;parity=</strong>"&lt;parity_value&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;parity_value&gt; </td>
+
+
+
+      <td>::= "even" | "odd" | "none"  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;blocking&gt; </td>
+
+
+
+      <td>::= "<strong>;blocking=</strong>"&lt;on_off&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;autocts&gt; </td>
+
+
+
+      <td>::= "<strong>;autocts=</strong>"&lt;on_off&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;autorts&gt; </td>
+
+
+
+      <td>::= "<strong>;autorts=</strong>"&lt;on_off&gt;  </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;on_off&gt; </td>
+
+
+
+      <td>::= "on" | "off" </td>
+
+
+
+    </tr>
+
+
+
+  
+  
+  </tbody>
+</table>
+
+
+
+<p>
+Note that, per <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>,
+protocol schemes are case-insensitive.  The above BNF reflects the normalized
+form.
+  </p>
+
+
+</body>
+</html>

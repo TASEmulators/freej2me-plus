@@ -1,0 +1,298 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Adding Encoding Schemes to the Crypto API</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Adding Encoding Schemes to the API</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> Encoding rules determine how cryptographic data such as keys and signatures, along
+    with their associated parameters, are transmitted from one client to another.
+    As the number of available algorithms increases, encoding becomes especially important
+    to avoid confusion.  Significant support for key and signature encoding is present
+    in the Crypto API, but like anything else, the developer may need to add support
+    for some new encoding format.
+</p>
+
+<p><b>How Encoding Works in the API</b></p>
+
+<p> Before attempting to add a new encoding algorithm to the Crypto API, it is necessary to examine
+    how encoding is dealt with in the API.  As an example, consider the following code for encoding
+    a PKCS8 EC private key:
+</p>
+<pre>
+    // Create the crypto system and a private key
+    ECCryptoSystem system = new ECCryptoSystem();
+    ECKeyPair keyPair = new ECKeyPair( system );
+    ECPrivateKey key = (ECPrivateKey)keyPair.getPrivateKey();
+
+    // Now encode the key
+    EncodedKey encodedKey = PrivateKeyEncoder.encode( key, "PKCS8" );
+    byte[] encodedKeyData = encodedKey.getEncodedKey();
+</pre>
+<p> If the key is subsequently decoded, all the necessary information can be extracted from the
+    encoded key, and the programmer need only pass in the encoded key:
+</p>
+<pre>
+    ECPrivateKey decodedKey = (ECPrivateKey)PrivateKeyDecoder.decode( encodedKeyData, "PKCS8" );
+</pre>
+
+<p> This code is representative of the encoding (and decoding) process in general. Encoding a
+    signature or public key is virtually identical, except that <code>SignatureEncoder.encode()</code>
+    or <code>PublicKeyEncoder.encode()</code> would be called.  If the developer wanted to
+    use an X509 encoding scheme instead of PKCS8 in the above example, he or she could have
+    simply passed in the string "X509" with the call to <code>encode()</code>.
+</p>
+
+<p> The simple calls to <code>encode()</code> and <code>decode()</code> are all that are necessary
+    to use the existing encoding schemes. However, the situation is more complex behind the scenes.
+    The API must know which classes and methods to call based on the encoding scheme and algorithm
+    in use.
+</p>
+
+<p><b>Adding Private Key Encoding Algorithms</b></p>
+
+<p> In the case of the above encoding example, the correct class was determined and the appropriate
+    method was called behind the scenes, transparent to the developer. <code>PKCS8_EC_PrivateKeyEncoder</code>
+    is the class that handles encoding for EC private keys under the PKCS8 encoding scheme.  It has an
+    <code>encodeKey()</code> method which is responsible for performing the actual encoding operation on the
+    key data. To add a new encoding algorithm, the developer must simply extend <code>PrivateKeyEncoder</code>,
+    override the appropriate methods (summarized later in this lesson), and register the encoder with the
+    framework by calling <code>PrivateKeyEncoder.add()</code>.
+</p>
+<p> To decode the now-encoded key, the process is a bit more complex.  The key decoder is simply passed a blob
+    of data containing a private key. All that is known is the encoding scheme used; the key could be of any
+    type supported. Therefore, a two-layer model was chosen for decoding operations.  When
+    <code>PrivateKeyDecoder.decode()</code> is called, it checks the encoded key to determine its specific type
+    (through information stored with the key), and then passes the key on to the specific private key decoder,
+    which can perform the actual decoding operation.
+<p> To add a decoder, two classes must be present for the
+    framework: a general decoder class for the scheme (the first layer, which may already exist in the API or
+    may be provided by the developer), and a decoder class for the specific key type (provided by the developer).
+    So, if the scheme is one already supported by the API (ie PKCS8, X509, WTLS), the developer must simply create
+    a class extending the existing base decoder class (such as <code>PKCS8_PrivateKeyDeocder</code>)
+    that provides decoding support for the specific key type desired.
+    Similar to the encoders, <code>decodeKey()</code> must be implemented, and the class must be registered with
+    the framework with a call to <code>add()</code>.
+</p>
+<p> If the encoding scheme is not supported by the API, then the developer must create
+    both a base class for the scheme as well as classes for the specific key types that are to be supported. These
+    classes can be registered with the framework through the <code>PrivateKeyDecoder.add()</code> method.
+</p>
+
+<p><b>Steps for Adding New Encoding Algorithms</b></p>
+
+<p> The above example was for a private key encoder and decoder, but the steps for public key and signature encoders
+    and decoders are very similar. The following tables summarize the steps involved in adding new encoding algorithms:
+</p>
+
+<p><b>Encoders</b></p>
+
+<table width = "100%" cellpadding = "5" >
+<tr bgcolor = "#EEEEEE" >
+    <td><b>Type</b></td>
+    <td><b>Base Class</b></td>
+    <td><b>Encoder Class</b></td>
+    <td><b>Steps Required to Add</b></td>
+</tr>
+<tr valign = "center" bgcolor = "#EEEEEE" >
+    <td> Signature encoder </td>
+    <td> <code><a href = "../encoder/SignatureEncoder.html">SignatureEncoder</a></code> </td>
+    <td>
+        <code>XXXX_SignatureEncoder</code>
+        <p> Extends: <code>SignatureEncoder</code>
+        </p>
+    </td>
+    <td>
+        Create a class extending <code>SignatureEncoder</code>.
+        <p> Implement methods: </p>
+        <p> <code>encodeSignature()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getSignatureAlgorithm()</code></p>
+        <p> Call <code>SignatureEncoder.add()</code> to register class.</p>
+    </td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE">
+    <td> Public key encoder </td>
+    <td> <code><a href = "../encoder/PublicKeyEncoder.html">PublicKeyEncoder</a></code> </td>
+    <td>
+        <code>XXXX_PublicKeyEncoder</code>
+        <p> Extends: <code>PublicKeyEncoder</code>
+        </p>
+    </td>
+    <td>
+        Create a class extending <code>PublicKeyEncoder</code>.
+        <p> Implement methods: </p>
+        <p> <code>encodeKey()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getKeyAlgorithm()</code></p>
+        <p> Call <code>PublicKeyEncoder.add()</code> to register class.</p>
+    </td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE" >
+    <td> Private key encoder </td>
+    <td> <code><a href = "../encoder/PrivateKeyEncoder.html">PrivateKeyEncoder</a></code> </td>
+    <td>
+        <code>XXXX_PrivateKeyEncoder</code>
+        <p> Extends: <code>PrivateKeyEncoder</code>
+        </p>
+    </td>
+    <td>
+        Create a class extending <code>PrivateKeyEncoder</code>.
+        <p> Implement methods: </p>
+        <p> <code>encodeKey()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getKeyAlgorithm()</code></p>
+        <p> Call <code>PrivateKeyEncoder.add()</code> to register class.</p>
+    </td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE" >
+    <td> Symmetric key encoder </td>
+    <td> <code><a href = "../encoder/SymmetricKeyEncoder.html">SymmetricKeyEncoder</a></code> </td>
+    <td>
+        <code>XXXX_SymmetricKeyEncoder</code>
+        <p> Extends: <code>SymmetricKeyEncoder</code>
+        </p>
+    </td>
+    <td>
+        Create a class extending <code>SymmetricKeyEncoder</code>.
+        <p> Implement methods: </p>
+        <p> <code>encodeKey()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getKeyAlgorithm()</code></p>
+        <p> Call <code>SymmetricKeyEncoder.add()</code> to register class.</p>
+    </td>
+</tr>
+</table>
+
+<p><b>Decoders</b></p>
+
+<table width = "100%" cellpadding = "5" >
+<tr bgcolor = "#EEEEEE">
+    <td><b>Type</b></td>
+    <td><b>Base Class</b></td>
+    <td><b>Decoder Class</b></td>
+    <td><b>Steps Required to Add</b></td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE" >
+    <td> Signature decoder </td>
+    <td>
+            <code>X509_SignatureDecoder</code><br>
+            <code>WTLS_SignatureDecoder</code><br>
+            <br>- OR -<br><br>
+            Some class provided by the developer that extends
+            <code><a href = "../encoder/SignatureDecoder.html">SignatureDecoder</a></code>
+        </p>
+     </td>
+    <td>
+        <code>XXXX_SignatureDecoder</code>
+        <p> Extends: One of the base classes from the previous column
+        </p>
+    </td>
+    <td>
+        If this is an unsupported encoding scheme, create a base class extending
+        <code>SignatureDecoder</code> that all specific decoders will subclass. Otherwise,
+        use an existing base class.<br><br>
+
+        Create a class extending the chosen base class.
+        <p> Implement methods (in base class and subclass): </p>
+        <p> <code>decodeSignature()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getSignatureAlgorithm()</code></p>
+        <p> Call <code>SignatureDecoder.add()</code> to register class.</p>
+    </td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE" >
+    <td> Public key decoder </td>
+    <td>
+            <code>X509_PublicKeyDecoder</code><br>
+            <code>WTLS_PublicKeyDecoder</code><br>
+            <br>- OR -<br><br>
+            Some class provided by the developer that extends
+            <code><a href = "../encoder/PublicKeyDecoder.html">PublicKeyDecoder</a></code>
+        </p>
+     </td>
+    <td>
+        <code>XXXX_PublicKeyDecoder</code>
+        <p> Extends: One of the base classes from the previous column
+        </p>
+    </td>
+    <td>
+        If this is an unsupported encoding scheme, create a base class extending
+        <code>PublicKeyDecoder</code> that all specific decoders will subclass. Otherwise,
+        use an existing base class.<br><br>
+
+        Create a class extending the chosen base class.
+        <p> Implement methods (in base class and subclass): </p>
+        <p> <code>decodeKey()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getKeyAlgorithm()</code></p>
+        <p> Call <code>PublicKeyDecoder.add()</code> to register class.</p>
+    </td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE" >
+    <td> Private key decoder </td>
+    <td>
+            <code>PKCS8_PrivateKeyDecoder</code><br>
+            <br>- OR -<br><br>
+            Some class provided by the developer that extends
+            <code><a href = "../encoder/PrivateKeyDecoder.html">PrivateKeyDecoder</a></code>
+        </p>
+     </td>
+    <td>
+        <code>XXXX_PrivateKeyDecoder</code>
+        <p> Extends: One of the base classes from the previous column
+        </p>
+    </td>
+    <td>
+        If this is an unsupported encoding scheme, create a base class extending
+        <code>PrivateKeyDecoder</code> that all specific decoders will subclass. Otherwise,
+        use an existing base class.<br><br>
+
+        Create a class extending the chosen base class.
+        <p> Implement methods (in base class and subclass): </p>
+        <p> <code>decodeKey()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getKeyAlgorithm()</code></p>
+        <p> Call <code>PrivateKeyDecoder.add()</code> to register class.</p>
+    </td>
+</tr>
+<tr valign = "middle" bgcolor = "#EEEEEE" >
+    <td> Symmetric key decoder </td>
+    <td>
+            <code>PKCS8_SymmetricKeyDecoder</code><br>
+            <br>- OR -<br><br>
+            Some class provided by the developer that extends
+            <code><a href = "../encoder/SymmetricKeyDecoder.html">SymmetricKeyDecoder</a></code>
+        </p>
+     </td>
+    <td>
+        <code>XXXX_SymmetricKeyDecoder</code>
+        <p> Extends: One of the base classes from the previous column
+        </p>
+    </td>
+    <td>
+        If this is an unsupported encoding scheme, create a base class extending
+        <code>SymmetricKeyDecoder</code> that all specific decoders will subclass. Otherwise,
+        use an existing base class.<br><br>
+
+        Create a class extending the chosen base class.
+        <p> Implement methods (in base class and subclass): </p>
+        <p> <code>decodeKey()</code><br>
+            <code>getEncodingAlgorithm()</code><br>
+            <code>getKeyAlgorithm()</code></p>
+        <p> Call <code>SymmetricKeyDecoder.add()</code> to register class.</p>
+    </td>
+</tr>
+</table>
+
+
+</BODY>
+</HTML>

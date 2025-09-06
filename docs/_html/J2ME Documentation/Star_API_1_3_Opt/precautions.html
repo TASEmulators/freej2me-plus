@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>
+Star-1.3 注意事項
+</title>
+<LINK REL =stylesheet TYPE=text/css HREF=stylesheet.css TITLE=Style>
+</head>
+
+<body>
+<h1>注意事項</h1>
+
+<H2><a name="mini-precaution">ミニアプリ実行環境に関する注意事項</a></H2>
+
+ミニアプリ実行環境に関する注意事項を以下に示します。
+
+<ul>
+<li> ミニアプリ実行環境では以下の表に示すクラスのクラス定義は存在しません。
+従って、ミニアプリ実行環境では、これらのクラス定義をロードしようとした場合
+java.lang.NoClassDefFoundError や java.lang.ClassNotFoundException
+が発生します。
+</li>
+<li> ミニアプリ実行環境にて取得できる
+com.docomostar.ui.Graphics クラスのインスタンスは、
+com.docomostar.opt.ui.j3d.Graphics3D インタフェース
+および com.docomostar.opt.ui.ogl.GraphicsOGL2 インタフェースを実装していません。
+さらに、実行時の型が com.docomostar.opt.ui.Graphics2 クラスであることもありません。
+</li>
+</ul>
+
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor"><TD>
+<FONT SIZE="+2"><B>ミニアプリ実行環境では存在しないクラス</B></FONT>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.opt.device パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.opt.device.Pulsemeter </LI>
+<LI>com.docomostar.opt.device.CameraPulsemeter </LI>
+<LI>com.docomostar.opt.device.CodeReader2 </LI>
+<LI>com.docomostar.opt.device.FingerprintAuthenticator </LI>
+<LI>com.docomostar.opt.device.GyroData </LI>
+<LI>com.docomostar.opt.device.GyroSensor </LI>
+<LI>com.docomostar.opt.device.IrReceiver </LI>
+<LI>com.docomostar.opt.device.IrReceiverParam </LI>
+<LI>com.docomostar.opt.device.MediaPlayer </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.opt.device.location パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.opt.system パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.opt.system.PhoneSystem2 </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.opt.ui パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.opt.ui.j3d パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.opt.ui.ogl パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+</TABLE>
+
+<p>
+<hr><br>
+<P><B>NTT DOCOMO,INC.</B></P>
+<FONT size="-2"><P>本製品または文書は著作権法により保護されており、その使用、複製、再頒布および逆コンパイルを制限するライセンスのもとにおいて頒布されます。NTTドコモ（その他に許諾者がある場合は当該許諾者も含めて）の書面による事前の許可なく、本製品および関連する文書のいかなる部分も、いかなる方法によっても複製することが禁じられます。フォントを含む第三者のソフトウェアは、著作権法により保護されており、その提供者からライセンスを受けているものです。</P>
+<P>Sun、Sun Microsystems、Java、J2MEおよびJ2SEは、米国およびその他の国における米国 Sun Microsystems,Inc.の商標または登録商標です。サンのロゴマークは、米国 Sun Microsystems, Inc.の登録商標です。</P>
+<P>FeliCaは、ソニー株式会社が開発した非接触ICカードの技術方式です。FeliCaは、ソニー株式会社の登録商標です。</P>
+<P>「ｉモード」、「ｉアプリ／アイアプリ」、「ｉ-αppli」ロゴ、「DoJa」はNTTドコモの商標または登録商標です。</P>
+<P>その他記載された会社名、製品名などは該当する各社の商標または登録商標です。</P></FONT>
+</body>
+</html>

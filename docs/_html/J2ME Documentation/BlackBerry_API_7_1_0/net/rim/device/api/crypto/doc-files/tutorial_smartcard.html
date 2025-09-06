@@ -1,0 +1,372 @@
+<HTML>
+<HEAD>
+<TITLE>RIM SmartCard API: Adding New Smart Card Drivers</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4"><b>Adding New Smart Card Drivers</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p>
+
+This tutorial explains the steps involved when adding a new smart card driver to the SmartCard API.  A “smart card driver” refers to a pair of classes: one class representing a particular type (model) of smart card, and the other class representing a communications session with a physical smart card.  A new driver is implemented by extending the two abstract classes SmartCard and SmartCardSession. 
+<p>
+The following sections outline and illustrate the requirements for each.
+<p>
+<strong>
+
+Extending SmartCard</strong>
+<p>
+A SmartCard object represents the kind (or model) of a physical smartcard, as opposed to unique smartcard. The first step in creating a new smart card driver is to implement a subclass extending <code>SmartCard</code>. The subclass should be implemented Persistable, and should not contain any state information.  
+<p>The UI functionality is implemented in the base class, and subclasses should not need to do this. The following code example illustrates the abstract methods that must be implemented.
+<p>
+<pre>
+    public class MySmartCard extends SmartCard implements Persistable
+    {
+	<b>/** 
+	* The ATR (answer to reset) of the card.
+	* The ATR is the first data block returned to the reader after a card is powered up.  
+	* The ATR contains information about what protocol the card uses, and data identifying the type of card.
+	* The ATR is specified in ISO 7816-3.
+	**/</b>
+	
+	private final static byte[] atrString = { (byte)0x3b, (byte)0x7d, (byte)0x11, (byte)0x00, 
+                                              (byte)0x00, (byte)0x00, (byte)0x31, (byte)0x80, 
+                                              (byte)0x71, (byte)0x8e, (byte)0x64, (byte)0x86, 
+                                              (byte)0xd6, (byte)0x01, (byte)0x00, (byte)0x81, 
+                                              (byte)0x90, (byte)0x00 };
+
+	
+	private final static AnswerToReset _atr = new AnswerToReset( atrString );
+
+	<b>/** 
+	* This method returns the appropriate subclass of SmartCardSession, used to establish a 
+	* communications session with a physical smart card.
+	**/</b>
+    	protected SmartCardSession openSessionImpl( SmartCardReaderSession readerSession ) throws SmartCardException
+    	{
+            return new MySmartCardSession( this, readerSession );
+    	}
+    
+    	<b>/** 
+	*  This method returns true if this SmartCard implementation should be used to 
+	* communicate with a physical smart card having the given AnswerToReset.
+    	**/</b>
+	public boolean checkAnswerToResetImpl( AnswerToReset atr )
+    	{
+            return _atr.equals( atr );
+    	}
+    
+	<b>/**
+	* This method returns a label associated with the kind of smart card.
+	* The string should not include the words "smart card", as this method will
+	* be used to generate strings such as ( "Please insert your %s smart card", getLabel ( ) )
+     	**/</b>
+    	public String getLabelImpl()
+    	{
+            return “RIM sample“;
+    	}
+
+       <b> /**
+         * Allows the driver to indicate if they support displaying settings.
+         */</b>
+        protected boolean isDisplaySettingsAvailableImpl( Object context )
+        {
+            // If the driver supports displaying setting return true, otherwise return false. 
+        }
+
+        <b> /**
+         * Allows the driver to display some settings or properties.
+         * This method will be invoked from the smart card options screen when
+         * the user selects the driver and chooses to view the settings of that driver.
+         * 
+         * This method could be called from the event thread. The driver should not block
+         * the event thread for long periods of time.
+         * 
+         */</b>
+        protected void displaySettingsImpl( Object context )
+        {
+            //Display Settings
+        }
+
+    }
+</pre>
+<p>
+
+<strong>Extending SmartCardSession</strong>
+<p>
+A <code>SmartCardSession</code> object represents a communications session with a physical smartcard.  Over the communications session, APDUs (“application protocol data units”) are exchanged with the smartcard to provide the desired functionality.  A subclass extending <code>SmartCardSession</code> must be implemented when creating a new smart card driver. The subclass may provide any additional functions appropriate to the application. 
+<p>Again, the UI functionality is implemented in the base class, and subclasses should not need to do this.  The following code example illustrates the abstract methods to be implemented. 
+<pre>
+    public class MySmartCardSession extends SmartCardSession
+    {
+	<b>/** 
+	* The constructor creates a new SmartCardSession.
+	* Parameter smartCard refers to the SmartCard object associated with this session.
+	* Parameter readerSession refers to the underlying reader session.
+	**/</b>
+
+	protected MySmartCardSession( SmartCard smartCard, SmartCardReaderSession readerSession )
+	{
+	    super( smartCard, readerSession );
+	}
+
+	<b>/** 
+	* This method closes the session with the smart card. 
+	* Implementations should not close the underlying SmartCardReaderSession, 
+	* but do any cleanup that might
+	* be required for the particular application.
+	**/</b> 
+	protected void closeImpl()
+	{
+	    // Do any cleanup required for your particular application
+	}
+    
+	<b>/** 
+	* This method transmits an APDU to the smartcard, and blocks until a response is received.
+	* (APDUs (Application Protocol Data Units) are 
+	* messages exchanged between card readers and smart cards).
+	**/</b>
+	public void sendAPDUImpl( CommandAPDU commandAPDU, ResponseAPDU responseAPDU ) throws SmartCardException
+	{
+	    SmartCardReaderSession readerSession = getSmartCardReaderSession();
+	    readerSession.sendAPDU( commandAPDU, responseAPDU );
+	}
+    
+	<b>/** 
+	* This method returns the maximum number of login attempts allowed, 
+	* or Integer.MAX_VALUE if unlimited attempts are allowed. 
+	**/</b>
+	protected int getMaxLoginAttemptsImpl() throws SmartCardException
+	{
+	    return MAX_LOGIN_ATTEMPTS;
+	}
+    
+	<b>/** 
+	* Returns the remaining number of login attempts allowed before the smartcard will lock.
+	* Implementation should not bring up UI.
+	*/</b>
+	protected int getRemainingLoginAttemptsImpl() throws SmartCardException
+	{
+	    return getRemainingLoginAttempts( getSmartCardReaderSession() );
+	}
+       
+	<b>/** 
+	* Attempts to log the user into the smartcard with the given password.
+	* return true if the user was successfully logged, or false otherwise.
+	* throws SmartCardLockedException if the smart card is locked.
+	**/</b>
+	protected boolean loginImpl( String password ) throws SmartCardException
+	{
+	    if ( ! securityCheck() ) {
+	        throw new SmartCardAccessDeniedException();
+	    }
+	    return true;
+	}
+  
+	<b>/** 
+	*  This method returns a SmartCardID object, which represents a specific smart card 
+	*  within a family of smart cards.The ID is a unique number identifying this particular
+	*  smartcard.  For example, the ID could be a personnel number.  
+	*  The label is a human readable string that identifies this specific smart card to the user. 
+	*  For example, label could be the name of the card holder.
+	**/</b>
+	public SmartCardID getSmartCardIDImpl() throws SmartCardException
+	{
+	    String id = “smartcard ID string”;
+	    byte [] idBytes = id.getBytes();
+	    long idLong = CRC32.update( -idBytes.length, idBytes, 0, idBytes.length );
+             
+	    String label = “John A Smith”;
+
+	    return new SmartCardID( idLong , label, getSmartCard() );
+	}
+    }
+</pre>
+<p>
+<strong>
+
+Drivers for Smart Cards with Cryptographic Applications
+</strong>
+<p>
+Smart cards are sometimes used to perform cryptographic applications such as public and symmetric key encryption, digital signature creation and verification. Smart cards used for such purposes have some common functionality beyond that for other smart cards.  Much of this additional functionality is provided by the abstract classes <code>CryptoSmartCard</code> and <code>CryptoSmartCardSession</code>, which extend <code>SmartCard</code> and <code>SmartCardSession</code>.  
+<p>
+To create a driver for a new smart card with cryptographic applications, the classes <code>CryptoSmartCard</code> and <code>CryptoSmartCardSession</code> should be extended (instead of directly extending <code>SmartCard</code> and <code>SmartCardSession</code> as above).  All of the abstract methods described above must be implemented, as well as the following additional abstract methods.
+<p>
+<pre>
+
+    public class MyCryptoSmartCard extends CryptoSmartCard implements Persistable
+    {
+        ...
+        ...
+      
+	// This method returns the names of all the algorithms supported by this token, eg "RSA", "DSA". 
+        public String[] getAlgorithms()
+	{
+            return new String [] { "RSA", "DSA" };
+        }
+
+        <b>/** 
+	 *  Returns a crypto token that supports the given algorithm.
+	 *  Crypto tokens are used to store and distribute cryptographic information 
+	 *  Parameter algorithm is a String representing the name of the algorithm. 
+	 *  This method throws NoSuchAlgorithmException if the specified algorithm is invalid, and 
+	 *  throws CryptoTokenException  if there is a token related problem. 
+	 */ </b>
+        public CryptoToken getCryptoToken( String algorithm ) throws NoSuchAlgorithmException, CryptoTokenException
+        {
+            if ( algorithm.equals( "RSA" ) ) {
+                return new MyRSACryptoToken();
+            }
+
+            if ( algorithm.equals("DSA") ) {
+                return new MyDSACryptoToken();
+
+            }
+            throw new NoSuchAlgorithmException();
+	}
+
+     
+    }
+
+    public class MyCryptoSmartCardSession extends CryptoSmartCardSession    
+    {
+        ...
+        ...
+        
+	<b>/** 
+	* Returns an array of <code>KeyStoreData</code> associated with the keys stored on the card.
+        * The array should contain all the private keys (or references to), symmetric keys (or references to), 
+        * public keys and certificates on the card.
+        * If a KeyStoreData contains public keys, they must be valid PublicKeys. 
+        * Public key cryptographic operations will be handled by the device and not by the smartcard.
+        * If the keystore contains certificates, they must be valid Certificates. 
+        * SmartCardException Thrown if an error occurs when communicating with the smart card. 
+        * CryptoTokenException Thrown if there is a token related problem. 
+        * SmartCardSessionClosedException Thrown if this session is closed.
+	**/</b> 
+        protected CryptoSmartCardKeyStoreData[] getKeyStoreDataArrayImpl() throws SmartCardException, CryptoTokenException
+        {
+            try {
+                       
+                // Show a progress dialog to the user as this operation may take a long time.
+   	        displayProgressDialog( WAITING_MSG, 4 );
+            
+  	        // The certificates need to be associated with a particular card.
+                SmartCardID smartCardID = getSmartCardID();
+	            
+                RSACryptoToken token = new MyRSACryptoToken();
+                RSACryptoSystem cryptoSystem = new RSACryptoSystem( token, 1024 );
+                RSAPrivateKey privateKey;
+            
+                CryptoSmartCardKeyStoreData[] keyStoreDataArray = new CryptoSmartCardKeyStoreData[ 3 ];
+
+                // This variable should be replaced by the encoding extracted from the card.  
+                // This can be done using a series of APDU commands.
+		
+ 	        byte[] CERTIFICATE_ENCODING = new byte[] { byte)0x30, (byte)0x82, (byte)0x03, (byte)0x2d};
+                
+		Certificate certificate = null;
+                try {
+                    certificate = new X509Certificate( CERTIFICATE_ENCODING );
+                } catch( CertificateParsingException e ) {
+                    // Should not happen
+                }
+               
+                stepProgressDialog( 1 );
+
+                privateKey = new RSAPrivateKey( cryptoSystem, new MyCryptoTokenData( smartCardID, ID_PKI ) );
+                keyStoreDataArray[ 0 ] = new CryptoSmartCardKeyStoreData( null, ID_CERT, privateKey, null, KeyStore.SECURITY_LEVEL_HIGH, certificate, null, null, 0 ); 
+              
+                stepProgressDialog( 1 );
+
+                privateKey = new RSAPrivateKey( cryptoSystem, new MyCryptoTokenData( smartCardID, SIGNING_PKI ) );
+                keyStoreDataArray[ 1 ] = new CryptoSmartCardKeyStoreData( null, SIGNING_CERT, privateKey, null, KeyStore.SECURITY_LEVEL_HIGH, certificate, null, null, 0 ); 
+
+                stepProgressDialog( 1 );
+
+                privateKey = new RSAPrivateKey( cryptoSystem, new MyCryptoTokenData( smartCardID, ENCRYPTION_PKI ) );
+                keyStoreDataArray[ 2 ] = new CryptoSmartCardKeyStoreData( null, ENCRYPTION_CERT, privateKey, null, KeyStore.SECURITY_LEVEL_HIGH, certificate, null, null, 0 ); 
+
+                stepProgressDialog( 1 );
+             
+                // Sleep so the user sees the last step of the progress dialog move to 100%
+                try {
+                    Thread.sleep( 250 );
+                } catch ( InterruptedException e ) {
+                }
+
+                dismissProgressDialog();
+            
+                return keyStoreDataArray;
+            } catch ( CryptoUnsupportedOperationException e ) {
+            } catch ( UnsupportedCryptoSystemException e ) {
+            } catch ( CryptoTokenException e ) {
+            } 
+
+            throw new SmartCardException();
+        }
+    
+	   
+        /** 
+        * Returns random bytes of data from the smart cards internal RNG.
+        * The number of bytes returned should be less than or equal to maxNumBytes. The calling methods will take care
+        * of calling this method until the correct number of bytes are retrieved.
+        * SmartCardException Thrown if an error occurs when communicating with the smart card. 
+        * SmartCardSessionClosedException Thrown if this session is closed.
+        * SmartCardUnsupportedOperationException Thrown if the card does not support returning random bytes.
+        **/ 
+        protected abstract byte [] getRandomBytesImpl( int maxNumBytes ) throws SmartCardException
+	{
+            // Create a CommandAPDU which your smart card will understand 
+            // Check for response codes specific to your smart card
+
+            if( ( buffer == null ) || ( length < 0 ) || ( offset + length > buffer.length ) ) {
+                throw new IllegalArgumentException();
+            }
+           
+            if ( !isOpen() ) {
+                throw new SmartCardSessionClosedException();
+            }
+        
+            try {
+            
+                int totalBytesRetrieved = 0;
+                byte [] randomBytes;
+        
+                // We need to loop as a smart card driver may return less bytes than are needed.
+                while( totalBytesRetrieved < length ) {
+      
+                    int numBytesNeeded = length - totalBytesRetrieved;
+                    randomBytes = getRandomBytesImpl( numBytesNeeded );
+                
+                    if( ( randomBytes == null ) || ( randomBytes.length == 0 ) ) {
+                        // The card should really be throwing this, but check just in case
+                        // because we don't want to loop forever.
+                        throw new SmartCardUnsupportedOperationException();
+                    }
+                
+                    int numBytesRetrieved = randomBytes.length;
+                
+                    // Don't use more bytes than the user requested.
+                    int numBytesToUse = Math.min( numBytesNeeded, numBytesRetrieved );
+    
+                    System.arraycopy( randomBytes, 0, buffer, offset, numBytesToUse );
+    
+                    totalBytesRetrieved += numBytesToUse;
+                    offset += numBytesToUse;
+                }
+              
+            } finally {
+               dismissProgressDialog();
+            }    
+        }
+    }
+</pre>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+</HEAD>
+<BODY>
+<h2>MIDletセレクタ</h2>
+<hr>
+<p>
+複数のMIDlet（以後「MIDletスイート」と記します）をJARファイルにパッケージした場合、ユーザーがJAM（Java Application Manager）でそのJavaアプリケーションを選択すると、Java実行環境は「MIDletセレクタ」で個々のMIDletをリスト表示してユーザーに選択実行させます。MIDletスイートを作成するには、Jad ファイルに MIDlet-&lt;n&gt;デスクリプタ（n は1から始まる連番）で複数のMIDlet を指定します。ある時点で実行できるのはひとつのMIDletです。 
+</p><p>
+図1にMIDlet セレクタの画面例を示します。 
+</p>
+
+<div align="center">
+<img src="midlet_ui_sample_jp.gif" alt="midlet_ui_sample_jp.gif">
+<p><strong>図1. MIDletセレクタ画面例</strong></p> 
+</div>
+
+<p>
+図1は「UIDemo」「UIDemo2」の2つのMIDletが指定されている場合の例です。
+</p><p>
+図中「MIDletセレクタを終了するコマンド」は移動機メーカー毎にカスタマイズ可能なため、「戻る」以外の文字列が表示される場合があります。
+</p><p>
+EZアプリ Phase1では、実行したMIDletを終了すると、「MIDletスイート」はすべて終了してしまい、ユーザーは再度JAMでのJavaアプリケーション選択から始めなくてはいけませんでした。EZアプリPhase2では、MIDletスイートからひとつのMIDletを選択実行し、そのMIDletを終了してもJAM 画面ではなくMIDletセレクタ画面に戻り、再度別のMIDletを実行できるようになりました。この仕様変更に関連して、MIDletスイートの作成において新たに注意しなくてはいけないことがありますので、EZアプリ 
+Phase2 のMIDletセレクタについて詳細を説明します。 
+</p><p>
+まず、MIDlet セレクタの振る舞いを説明するために、移動機で実行されるプログラムを概略下記の3つに分けます。
+</p>
+<ul>
+ <li>移動機ネイティブプログラム (*1)
+ <li>MIDletセレクタ
+ <li>MIDlet
+</ul>
+
+<small>
+(*1)　ここでの「移動機ネイティブプログラム」の中には、Javaアプリケーションをリスト表示してユーザーに選ばせる、JAMも含みます。JAMはJavaVMを起動し、ユーザーが選択したJavaアプリケーションを実行させます。Javaアプリケーションを実行すると、MIDletスイートに対してはMIDletセレクタが表示されることになります。
+</small>
+
+<p>
+移動機はこれらのプログラムのどれかを実行しています。これらのプログラムの実行状態の遷移を図2に示します。
+</p>
+
+<div align="center">
+<img src="midlet_state_transition_jp.gif" alt="midlet_state_transition_jp.gif">
+<p><strong>図2. MIDletスイート実行状態の遷移</strong></p>
+</div>
+
+<ol>
+ <li><p>移動機ネイティブプログラム（JAM）はユーザーの操作に基いてJava VMを起動し、ユーザーが選択したJavaアプリケーションの実行を要求します。Java実行環境は、実行を要求されたプログラムがMIDletスイートであった場合MIDletセレクタを表示します。</p>
+ <li><p>MIDletセレクタは、JADファイルに記述されているMIDlet-&lt;n&gt;デスクリプタに基きMIDletスイートの個々のMIDletをユーザーにリスト表示し、選択実行させます。選択されたMIDletはstartApp()が呼び出され、実行状態となります。</p>
+ <li><p>MIDletセレクタ画面に戻り、他のMIDletの実行の機会をユーザーに与えるには、実行中のMIDletが自らnotifyPaused()、またはnotifyDestroyed()を呼び出し、それぞれ一時停止状態、または終了することをJava実行環境に通知します。</p>
+ <li><p>MIDletセレクタは、一時停止中のMIDletの有無にかかわらずMIDletスイート中のMIDletをリスト表示し、MIDletの実行、または再開のための操作をユーザーに許します。MIDletセレクタは、ユーザーから実行を要求されたMIDletのstartApp()を呼び出します。</p>
+ <li><p>MIDletが実行中のときに移動機側からJava実行環境に一時停止の要請があったときは、MIDletのpauseApp()が呼び出されます。pauseApp()が正常終了するとJava VM自体が一時停止され、移動機ネイティブプログラムが実行されます。</p>
+ <li><p>移動機側がJava実行環境に再開を要請すると、Java VMは再開され、以前にpauseApp()が呼び出されて一時停止したMIDletはstartApp()が呼び出されて再開されます。これらの過程においてセレクタ画面は表示されません。</p>
+ <li><p>MIDletセレクタが表示されているときに移動機側からJava実行環境に一時停止の要請があったときは、Java VM自体が一時停止され、移動機ネイティブプログラムが実行されます。</p>
+ <li><p>移動機側がJava実行環境に再開を要請すると、Java VMは再開され、MIDletセレクタが表示されます。7、8の過程においてMIDletに対しては何も操作されません。<p>
+ <li><p>すべての状態において、移動機側からJava実行環境に終了の要請があったときは、実行中、および一時停止中のすべてのMIDletに対してdestroyApp()が呼び出されMIDletは終了させられます。そしてJava VM自体が終了し、移動機ネイティブプログラムの実行に移ります。JavaVM自体が終了されるため、再度Javaアプリケーションを実行するには、上記1のステップから始めなくてはなりません。</p>
+</ol>
+
+<p>
+MIDletスイートではなく、ただひとつのMIDletで構成されるJavaアプリケーションの場合、MIDletがnotifyPaused()、またはnotifyDestroyed() を呼び出すとJavaVMは一時停止するか終了します。この場合、MIDlet側で生成した資源について他のMIDletへの影響を考慮する必要はありません。一方、上記3の遷移過程においてはMIDletがnotifyPaused()、またはnotifyDestroyed() を呼び出しても、JavaVM自体は実行されています。資源の解放は自動的には行われません。例えば、MIDletが別スレッドを起動していた場合にJava実行環境がそれらの別スレッドを停止または終了することはありません。従ってnotifyPaused()、またはnotifyDestroyed() を呼び出す前に、MIDlet側で適宜資源の解放を行う必要があります。
+</p><p>
+単一MIDletのJavaアプリケーションかMIDletスイートかにかかわらず、個々のMIDletにとってのライフサイクルは図3に示すものになります。但し、上述したようにnotifyPaused()、またはnotifyDestroyed()において、資源の開放に関する責任が両者で異なります。
+</p>
+
+<div align="center">
+<img src="midlet_life_cycle.gif" alt="midlet_life_cycle.gif">
+<p><strong>図3. MIDletライフサイクル</strong></p>
+</div>
+
+<hr>
+Copyright 2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted. 
+
+</BODY>
+</HTML>

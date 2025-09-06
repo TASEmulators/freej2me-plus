@@ -1,0 +1,469 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix A. Deploying JSR 180 on MIDP 2.0 Platform</title>
+   </head>
+   <body>
+      <h1>Appendix A. Deploying JSR 180 on MIDP 2.0 Platform</h1>
+      <h3>Introduction</h3>
+      <p>
+         			This section provides implementation notes for platform
+         			developers deploying the JSR 180 interfaces on a MIDP 2.0
+         			platform. This section addresses features available in a
+         			MIDP 2.0 device that can be used to enhance SIP
+         			applications.
+         		
+      </p>
+      <p>
+         			In particular, this document describes how to:
+         			
+      </p>
+      <div class="itemizedlist">
+         <ul type="disc">
+            <li>
+               <p>
+                  						use the MIDP 2.0 security features to control
+                  						access to JSR180 capabilities
+                  					
+               </p>
+            </li>
+            <li>
+               <p>
+                  						use the MIDP 2.0 Push mechanism with SIP
+                  						protocol and applications
+                  					
+               </p>
+            </li>
+            <li>
+               <p>
+                  						write applications to remain portable between
+                  						the MIDP 1.0 and MIDP 2.0 platforms
+                  					
+               </p>
+            </li>
+         </ul>
+      </div>
+      <p>
+         		
+      </p>
+      <h3>Security</h3>
+      <p>
+         			To send and receive messages (requests/responses) using this
+         			API, applications MUST be granted a permission to perform
+         			the requested operation. The mechanisms for granting a
+         			permission are implementation dependent.
+         		
+      </p>
+      <div class="sect2" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h3 class="title"><a id="d0e10609"></a>Permissions for Opening Connections
+                  </h3>
+               </div>
+            </div>
+         </div>
+         <p>
+            				The MIDP 2.0 specification defines a mechanism for
+            				granting permissions to use privileged features. This
+            				mechanism is based on a policy mechanism enforced in the
+            				platform implementation. The following permissions are
+            				defined for the JSR 180 functionality, when deployed
+            				with a JSR 118 MIDP 2.0 implementation.
+            			
+         </p>
+         <p>
+            				To open a connection, a MIDlet suite requires an
+            				appropriate permission to access the SIPConnection
+            				implementation. If the permission is not granted, then
+            				Connector.open methods MUST throw a
+            				<code class="classname">SecurityException</code>
+            				. The following table indicates the permission that must
+            				be granted for each protocol.
+            			
+         </p>
+         <div class="table"><a id="d0e10619"></a><p class="title"><b>Table&nbsp;A.1.&nbsp;Permissions mappings</b></p>
+            <div class="table-contents">
+               <table summary="Permissions mappings" border="1">
+                  <colgroup>
+                     <col></col>
+                     <col></col>
+                  </colgroup>
+                  <thead>
+                     <tr>
+                        <th align="left">Permission</th>
+                        <th align="left">Protocol</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     <tr>
+                        <td align="left">
+                           								javax.microedition.io.Connector.sip
+                           							
+                        </td>
+                        <td align="left">sip</td>
+                     </tr>
+                     <tr>
+                        <td align="left">
+                           								javax.microedition.io.Connector.sips
+                           							
+                        </td>
+                        <td align="left">sips</td>
+                     </tr>
+                  </tbody>
+               </table>
+            </div>
+         </div><br class="table-break"></br><p>
+            				Note that ideally the permission granted will probably
+            				allow all subsequent network connections to be made
+            				(open a UDP/TCP/RTP media stream for example). However,
+            				this behavior might vary on different platforms.
+            			
+         </p>
+         <div class="sect3" lang="en">
+            <div class="titlepage">
+               <div>
+                  <div>
+                     <h4 class="title"><a id="d0e10642"></a>CDC Security
+                     </h4>
+                  </div>
+               </div>
+            </div>
+            <p>
+               					On top CDC platform the MIDlet suite requires an
+               					appropriate permission to access the SIPConnection
+               					implementation. The implementations of SIP API on
+               					configurations and profiles that use the fine
+               					grained security permissions based on
+               					java.security.Permission security checks MUST
+               					include classes 
+               					javax.microedition.sip.SipProtocolPermission and javax.microedition.sip.SipsProtocolPermission.
+               				
+            </p>
+            <p>
+               					The permission check MUST be performed when 
+               					<code class="code">Connector.Open</code> method is called with protocol 
+               					scheme sip or sips. If the permission is not granted, then 
+               					Connector.open methods MUST throw a SecurityException. If
+               					the permission is granted all the actions are allowed 
+               					thereafter.</p>
+      <p>See stub implementations <a href="SipProtocolPermission.java">SipProtocolPermission.java</a> and <a href="SipsProtocolPermission.java">SipsProtocolPermission.java</a> for the permission class signature definitions.</p>
+</div>
+      </div>
+      <h3>
+        JSR180 Push Capabilities and SIP Identity Sharing in MIDP 2.0
+      </h3>
+      <p>
+        MIDP 2.0 defines a mechanism to register a MIDlet when a
+        connection notification event is detected. Once the MIDlet
+        has been launched it performs the same I/O operations it
+        would normally use to open a connection and read and write
+        data. For JSR 180 applications this capability allows the
+        application to be launched if a message arrives either while
+        the MIDlet is not running or while another MIDlet is
+        running.
+      </p>
+      <div class="sect2" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h3 class="title"><a id="d0e10659"></a>JSR 180 Push Registration Entry
+                  </h3>
+               </div>
+            </div>
+         </div>
+         <p>
+           Push registrations are either defined in the application
+           descriptor or made dynamically at runtime via
+           PushRegistry. The entry for a SIP protocol will include
+           the connection URI string which identifies the scheme
+           and port number of the inbound message connection. The
+           entry also contains a filter field that designates which
+           senders are permitted to send messages that launch the
+           registered MIDlet. An asterisk ("*") and question mark
+           ("?") can be used in the filter field as wild cards as
+           specified in the MIDP 2.0 specification.
+         </p>
+         <p>
+           For the SIP protocol, the filter field is matched
+           against the URI of the From field in the received
+           message.
+         </p>
+         <p>
+           The URI may also have a media feature tag (MIME type of
+           the application) that associates the MIDlet with the
+           SipConnectionNotifier. See definitions here: "Opening
+           new server connection" and "Routing the incoming
+           request". This media feature tag is compared with the
+           tag included in the received request. This funcionality
+           is based on the SIP Working Group specifications RFC3840
+           [4] and RFC3841 [5].
+         </p>
+         <p>
+           The URI may also include a trasport paramater
+	   (<code>;transport={transport}</code>) as defined in
+	   the specification for interface SipConnection.
+	   When the parameter is omitted, UDP is used as the default for
+	   SIP connections as defined in RFC 3261.
+         </p>
+         <p>
+           As a summary SIP PushRegistry may have following kind of
+           entries:
+            				
+         </p>
+         <div class="itemizedlist">
+            <ul type="disc">
+               <li>
+                  <p>
+                    MIDlet-Push-1: sip:5060,
+                    com.company.sip.SIPExample1, *@operator.com
+                   </p>
+               </li>
+               <li>
+                  <p>
+                    MIDlet-Push-2: sip:5080,
+                    com.company.sip.SIPExample2, *
+                  </p>
+               </li>
+               <li>
+                  <p>
+                    MIDlet-Push-3:
+                    sip:*;type="application/x-chess",
+                    com.company.sip.SIPGame1, *
+                  </p>
+               </li>
+               <li>
+                  <p>
+                    MIDlet-Push-4:
+                    sip:5070;type="application/x-cannons",
+                    com.company.sip.SIPGame2, *
+                  </p>
+               </li>
+               <li>
+                  <p>
+                    MIDlet-Push-5:
+                    sip:5090;type="application/x-snake";transport=tcp,
+                    com.company.sip.SIPGame3, *
+                  </p>
+               </li>
+            </ul>
+         </div>
+         <p>
+            			
+         </p>
+         <p>
+           Furthermore, the MIDlet can register dynamically to the
+           Push Registry when opening the connection by passing the
+           same augmented SIP URI to the Connector. Example:
+         </p><pre class="programlisting">
+	   String midletName = "com.company.sip.SIPExample2";
+	   String serverURI = "sip:5080"; SipConnectionNotifier scn = (SipConnectionNotifier) Connector.open(sURI);
+	   PushRegistry.registerConnection(serverURI, midletName, "*");
+	 </pre><p>
+           Following table defines how the system is routing
+           messages to MIDlets when registered in PushRegistry. It
+           should be noticed that the system requires either port
+           number or at least MIME type for the routing decision.
+         </p>
+         <div class="table"><a id="d0e10690"></a><p class="title"><b>Table&nbsp;A.2.&nbsp;Push registry routing</b></p>
+            <div class="table-contents">
+               <table summary="Push registry routing" border="1">
+                  <colgroup>
+                     <col></col>
+                     <col></col>
+                     <col></col>
+                  </colgroup>
+                  <thead>
+                     <tr>
+                        <th align="left">&nbsp;</th>
+                        <th align="left">Connector SIP URI</th>
+                        <th align="left">
+                           								Request routing and PushRegistry
+                           								functionality
+                           							
+                        </th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     <tr>
+                        <td align="left">1</td>
+                        <td align="left">
+                           								sip:*;type="&lt;MIME_TYPE&gt;"
+                           							
+                        </td>
+                        <td align="left">
+                           								
+                           <div class="itemizedlist">
+                              <ul type="disc">
+                                 <li>
+                                    <p>
+                                       											example:
+                                       											sip:;type="application/x-game"
+                                       										
+                                    </p>
+                                 </li>
+                                 <li>
+                                    <p>
+                                       											share system SIP port
+                                       											(MIDlet does not have to
+                                       											know it)
+                                       										
+                                    </p>
+                                 </li>
+                                 <li>
+                                    <p>
+                                       											route incoming SIP request
+                                       											with MIME type feature tag
+                                       											to this MIDlet and wake it
+                                       											up.
+                                       										
+                                    </p>
+                                 </li>
+                              </ul>
+                           </div>
+                           							
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left">2</td>
+                        <td align="left">
+                           								sip:nnnn[;type="&lt;MIME_TYPE&gt;"]
+                           							
+                        </td>
+                        <td align="left">
+                           								
+                           <div class="itemizedlist">
+                              <ul type="disc">
+                                 <li>
+                                    <p>
+                                       											example:
+                                       											sip:5080;type="application/x-game"
+                                       										
+                                    </p>
+                                 </li>
+                                 <li>
+                                    <p>
+                                       											use dedicated port number
+                                       											nnnn
+                                       										
+                                    </p>
+                                 </li>
+                                 <li>
+                                    <p>
+                                       											route incoming SIP request
+                                       											on port nnnn to this MIDlet
+                                       											and wake it up. If the
+                                       											optional MIME type feature
+                                       											tag is present, route only
+                                       											the requests with the
+                                       											matching tag.
+                                       										
+                                    </p>
+                                 </li>
+                              </ul>
+                           </div>
+                           							
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left">3</td>
+                        <td align="left">sip:</td>
+                        <td align="left">
+                           								
+                           <div class="itemizedlist">
+                              <ul type="disc">
+                                 <li>
+                                    <p>
+                                       											URI "sip:" can not be
+                                       											registered in PushRegistry
+                                       											since both the port number
+                                       											and MIME type are unknown.
+                                       										
+                                    </p>
+                                 </li>
+                              </ul>
+                           </div>
+                           							
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+            </div>
+         </div><br class="table-break"></br><p>
+            				Unlike the initial push connections defined in MIDP 2.0,
+            				the SIP protocol includes an explicit buffering
+            				mechanism where messages are held until processed by
+            				some application that reads and deletes messages. If a
+            				message is delivered to the device and does not pass the
+            				specified filter, the message will be deleted by the
+            				Application Management Software.
+            			
+         </p>
+         <p>
+            				When the application is started in response to a Push
+            				request, the application SHOULD read and process all
+            				messages that are buffered for it. If an application
+            				fails to read and process the messages when started or
+            				if starting of the application is denied (for example,
+            				by the end user), the platform implementation MAY delete
+            				unread messages from the buffer, if it becomes necessary
+            				to do so. For example, the platform implementation may
+            				delete messages when the buffer becomes full.
+            			
+         </p>
+         <p>
+            				Another difference between the JSR180 interface and
+            				other protocol handlers in MIDP 2.0, is that JSR180
+            				includes a SipConnectionNotifier which provides
+            				asynchronous callbacks when messages become available
+            				while the application is running.
+            			
+         </p>
+      </div>
+      <h3>
+         			Portable JSR180 applications between MIDP1.0 and MIDP2.0
+         		
+      </h3>
+      <p>
+         			If permitted by the device security policy, a JSR180
+         			application written for a MIDP 1.0 platform will work
+         			without any modification on a MIDP 2.0 system. This behavior
+         			is defined by the MIDP 2.0 specification of untrusted
+         			applications. MIDP 2.0 also supports the concept of trusted
+         			applications. For these applications, the device can
+         			automatically handle trust decisions based on signed JAR
+         			files and a platform-specific policy mechanism that
+         			associates specific permissions with the signed application.
+         		
+      </p>
+      <p>
+         			The security model also allows for the definition of
+         			user-granted permissions on a one-shot, session or blanket
+         			authorization. In many cases, the platform-dependent policy
+         			for permissions on MIDP 1.0 will be able to be mapped onto
+         			the MIDP 2.0 defined permissions. An application designed to
+         			work only on a MIDP 2.0 device can use the methods in the
+         			PushRegistry class to check if there are active connections
+         			(listConnections) or to add or remove registered connections
+         			at runtime (registerConnection or unregisterConnection).
+         		
+      </p>
+      <p>
+         			An application designed to run portably on MIDP 1.0 or MIDP
+         			2.0 platforms will only use the application descriptor and
+         			attributes in the manifest to describe requested permissions
+         			and push registration entries. See the MIDP 2.0
+         			specification for details about the MIDlet-Permissions and
+         			MIDlet-Push-&lt;n&gt; attributes. On a MIDP 1.0 platforms
+         			these properties will be ignored. On a MIDP 2.0 platform,
+         			these properties will direct the application management
+         			software to perform the necessary checks and registrations
+         			when the application is installed and removed from the
+         			system.
+         		
+      </p>
+   </body>
+</html>

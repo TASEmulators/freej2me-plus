@@ -1,0 +1,55 @@
+file: skipX.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+#------------------------------------------------------------
+# -----  10 files skipped (cross referenced)
+#------------------------------------------------------------
+/javax/wireless/messaging/binarymessage.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/message.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/messageconnection.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/messagelistener.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/messagepart.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/multipartmessage.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/package-frame.html
+    used in 1 file:
+    /overview-frame.html
+
+/javax/wireless/messaging/package-summary.html
+    used in 1 file:
+    /overview-summary.html
+
+/javax/wireless/messaging/sizeexceededexception.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/textmessage.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+

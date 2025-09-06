@@ -1,0 +1,7 @@
+javax.microedition.amms
+javax.microedition.amms.control
+javax.microedition.amms.control.audio3d
+javax.microedition.amms.control.audioeffect
+javax.microedition.amms.control.camera
+javax.microedition.amms.control.imageeffect
+javax.microedition.amms.control.tuner

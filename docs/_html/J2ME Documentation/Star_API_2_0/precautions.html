@@ -1,0 +1,318 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>
+Star-2.0 注意事項
+</title>
+<LINK REL =stylesheet TYPE=text/css HREF=stylesheet.css TITLE=Style>
+</head>
+
+<body>
+<h1>注意事項</h1>
+
+<H2><a name="mini-precaution">ミニアプリ実行環境に関する注意事項</a></H2>
+
+ミニアプリ実行環境に関する注意事項を以下に示します。
+
+<ul>
+<li> ミニアプリ実行環境では以下の表に示すクラスのクラス定義は存在しません。
+従って、ミニアプリ実行環境では、これらのクラス定義をロードしようとした場合
+java.lang.NoClassDefFoundError や java.lang.ClassNotFoundException
+が発生します。
+</li>
+<li> ミニアプリ実行環境にて取得できる
+com.docomostar.ui.Graphics クラスのインスタンスは、
+com.docomostar.ui.graphics3d.Graphics3D インタフェース
+および com.docomostar.ui.ogl.GraphicsOGL インタフェースを実装していません。</li>
+<li> ミニアプリ実行環境にて取得できる
+com.docomostar.io.HttpConnection 実装クラスのインスタンスは、
+com.docomostar.io.DDPConnection インタフェースを実装していません。</li>
+</ul>
+
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
+<TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor"><TD>
+<FONT SIZE="+2"><B>ミニアプリ実行環境では存在しないクラス</B></FONT>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.AudioOutputEvent </LI>
+<LI>com.docomostar.CalledByDTVEvent </LI>
+<LI>com.docomostar.FelicaAdhocEvent </LI>
+<LI>com.docomostar.InvitedEvent </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.device パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.device.BTStateListener </LI>
+<LI>com.docomostar.device.SpeechListener </LI>
+<LI>com.docomostar.device.SpeechResult </LI>
+<LI>com.docomostar.device.Bluetooth </LI>
+<LI>com.docomostar.device.BluetoothConnectionEvent </LI>
+<LI>com.docomostar.device.BluetoothEvent </LI>
+<LI>com.docomostar.device.Camera </LI>
+<LI>com.docomostar.device.CodeReader </LI>
+<LI>com.docomostar.device.DeviceDiscoveryResult </LI>
+<LI>com.docomostar.device.RawImageCapture </LI>
+<LI>com.docomostar.device.RemoteDevice (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.device.SpeechAssistantInformation </LI>
+<LI>com.docomostar.device.SpeechFeatureData </LI>
+<LI>com.docomostar.device.SpeechRecognizer </LI>
+<LI>com.docomostar.device.SpeechResultInformation </LI>
+<LI>com.docomostar.device.SpeechResultNBEST </LI>
+<LI>com.docomostar.device.StorageDevice </LI>
+<LI>com.docomostar.device.TouchDevice </LI>
+<LI>com.docomostar.device.BluetoothException </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.device.felica パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.device.felica.AdhocDataTransfer (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.device.felica.FelicaPushedEvent </LI>
+<LI>com.docomostar.device.felica.ConnectionRefusedException </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.device.gesturereader パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.device.location パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.device.location.AccelerationEventListener </LI>
+<LI>com.docomostar.device.location.TrackingListener (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.device.location.AccelerationData </LI>
+<LI>com.docomostar.device.location.AccelerationSensor </LI>
+<LI>com.docomostar.device.location.Compass </LI>
+<LI>com.docomostar.device.location.GyroData </LI>
+<LI>com.docomostar.device.location.GyroSensor </LI>
+<LI>com.docomostar.device.location.WalkingNavigation </LI>
+<LI>com.docomostar.device.location.WalkingNavigationData </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.fs パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.fs.sd パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.io パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.io.BTConnection </LI>
+<LI>com.docomostar.io.ClientObexConnection </LI>
+<LI>com.docomostar.io.DDPConnection </LI>
+<LI>com.docomostar.io.HDPConnection </LI>
+<LI>com.docomostar.io.ObexConnection </LI>
+<LI>com.docomostar.io.RandomAccessible </LI>
+<LI>com.docomostar.io.ServerObexConnection </LI>
+<LI>com.docomostar.io.SocketConnection </LI>
+<LI>com.docomostar.io.SPPConnection </LI>
+<LI>com.docomostar.io.UDPDatagramConnection </LI>
+<LI>com.docomostar.io.FelicaClientObexConnection </LI>
+<LI>com.docomostar.io.FelicaServerObexConnection </LI>
+<LI>com.docomostar.io.FileDataInput </LI>
+<LI>com.docomostar.io.FileDataOutput </LI>
+<LI>com.docomostar.io.FileEntity </LI>
+<LI>com.docomostar.io.IrClientObexConnection </LI>
+<LI>com.docomostar.io.IrServerObexConnection </LI>
+<LI>com.docomostar.io.MCAPDataEndPoint </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.lang パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.lang.ByteArrayClassLoader </LI>
+<LI>com.docomostar.lang.MemoryManager </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.media パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.media.AvatarData (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.media.MediaMovie (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.media.MediaSound (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.media.EncodedImage </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.media.avcontent パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.net パッケージ</B></FONT>
+<UL>
+<LI>該当なし</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.security パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.system パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.system.ApplicationStore </LI>
+<LI>com.docomostar.system.AutoPositioning </LI>
+<LI>com.docomostar.system.AutoPositioningParam </LI>
+<LI>com.docomostar.system.AvatarStore </LI>
+<LI>com.docomostar.system.Bookmark </LI>
+<LI>com.docomostar.system.CertificateStore </LI>
+<LI>com.docomostar.system.Contents </LI>
+<LI>com.docomostar.system.ContentsDownloader </LI>
+<LI>com.docomostar.system.DataBoxFolder </LI>
+<LI>com.docomostar.system.ImageStore </LI>
+<LI>com.docomostar.system.Invitation </LI>
+<LI>com.docomostar.system.InvitationParam </LI>
+<LI>com.docomostar.system.Message </LI>
+<LI>com.docomostar.system.MessageAgent </LI>
+<LI>com.docomostar.system.MessageDraft </LI>
+<LI>com.docomostar.system.MessageFolderChangedEvent </LI>
+<LI>com.docomostar.system.MessageReceived </LI>
+<LI>com.docomostar.system.MessageSent </LI>
+<LI>com.docomostar.system.MovieStore </LI>
+<LI>com.docomostar.system.NativeMoviePlayer </LI>
+<LI>com.docomostar.system.PhoneBookGroup </LI>
+<LI>com.docomostar.system.PhoneBookParam (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.system.PhoneTheme </LI>
+<LI>com.docomostar.system.ScheduleParam (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.system.SoundStore </LI>
+<LI>com.docomostar.system.Toruca </LI>
+<LI>com.docomostar.system.TorucaStore </LI>
+<LI>com.docomostar.system.ContentsException </LI>
+<LI>com.docomostar.system.InvitationException </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui パッケージ</B></FONT>
+<UL>
+<LI>com.docomostar.ui.Audio3DListener </LI>
+<LI>com.docomostar.ui.Audio3DLocalization </LI>
+<LI>com.docomostar.ui.ComponentListener </LI>
+<LI>com.docomostar.ui.FocusManager </LI>
+<LI>com.docomostar.ui.Interactable </LI>
+<LI>com.docomostar.ui.KeyListener </LI>
+<LI>com.docomostar.ui.LayoutManager </LI>
+<LI>com.docomostar.ui.MediaListener </LI>
+<LI>com.docomostar.ui.MediaPresenter </LI>
+<LI>com.docomostar.ui.SoftKeyListener </LI>
+<LI>com.docomostar.ui.AnchorButton </LI>
+<LI>com.docomostar.ui.Audio3D </LI>
+<LI>com.docomostar.ui.AudioPresenter </LI>
+<LI>com.docomostar.ui.AudioTrackPresenter </LI>
+<LI>com.docomostar.ui.Button </LI>
+<LI>com.docomostar.ui.Component </LI>
+<LI>com.docomostar.ui.Dialog </LI>
+<LI>com.docomostar.ui.HTMLLayout </LI>
+<LI>com.docomostar.ui.ImageButton </LI>
+<LI>com.docomostar.ui.ImageEncoder </LI>
+<LI>com.docomostar.ui.ImageLabel </LI>
+<LI>com.docomostar.ui.Label </LI>
+<LI>com.docomostar.ui.ListBox </LI>
+<LI>com.docomostar.ui.Panel </LI>
+<LI>com.docomostar.ui.Synthesizer </LI>
+<LI>com.docomostar.ui.TextBox </LI>
+<LI>com.docomostar.ui.Ticker </LI>
+<LI>com.docomostar.ui.TouchEventObject (※クラス定義は存在するがフィールド・メソッド宣言は存在しない)</LI>
+<LI>com.docomostar.ui.VisualPresenter </LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.avplayer パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.flashplayer パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.graphics3d パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.ogl パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.ogl.math パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.sound3d パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.ui.util3d パッケージ</B></FONT>
+<UL>
+<LI>全てのクラス・インタフェース</LI>
+</UL>
+</TD></TR>
+
+<TR><TD>
+<FONT SIZE="+1"><B>com.docomostar.util パッケージ</B></FONT>
+<UL>
+<LI>該当なし</LI>
+</UL>
+</TD></TR>
+
+</TABLE>
+
+<p>
+<hr><br>
+<P><B>NTT DOCOMO,INC.</B></P>
+<FONT size="-2"><P>本製品または文書は著作権法により保護されており、その使用、複製、再頒布および逆コンパイルを制限するライセンスのもとにおいて頒布されます。NTTドコモ（その他に許諾者がある場合は当該許諾者も含めて）の書面による事前の許可なく、本製品および関連する文書のいかなる部分も、いかなる方法によっても複製することが禁じられます。フォントを含む第三者のソフトウェアは、著作権法により保護されており、その提供者からライセンスを受けているものです。</P>
+<P>Sun、Sun Microsystems、Java、J2MEおよびJ2SEは、米国およびその他の国における米国 Sun Microsystems,Inc.の商標または登録商標です。サンのロゴマークは、米国 Sun Microsystems, Inc.の登録商標です。</P>
+<P>FeliCaは、ソニー株式会社が開発した非接触ICカードの技術方式です。FeliCaは、ソニー株式会社の登録商標です。</P>
+<P>「ｉモード」、「ｉアプリ／アイアプリ」、「ｉ-αppli」ロゴ、「DoJa」はNTTドコモの商標または登録商標です。</P>
+<P>その他記載された会社名、製品名などは該当する各社の商標または登録商標です。</P></FONT>
+
+</body>
+</html>

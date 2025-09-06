@@ -1,0 +1,214 @@
+<HTML>
+<HEAD>
+<TITLE>Cryptographic algorithm listing</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Cryptographic algorithms</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+<p>
+This document provides information on the different algorithms and functions provided by Research In Motion's Crypto related factories.
+<p>
+Because of memory-related handheld constraints, not all of the supported algorithms are loaded on the device in its default configuration. To maximize performance,
+the handheld can be optimized to include only a minimal set of crypto functionality. Conversely, to increase security, users who wish to use PGP, S/MIME or TLS
+must load a larger set of crypto files on the device.
+<p>
+For organization, and for increased performance, the crypto api has been organized into three .cod or .jar files. The list below describes the algorithms
+that are provided as part of the base install and the algorithms provided in each of the three crypto jar files. All of the crypto jar files
+build on each other. That is, the presence of Crypto 2, ensures that Crypto 1 is already installed on the handheld.
+<p>
+
+
+<table width = "95%" border = 1 align = center>
+<tr bgcolor = silver align = center > <td rowspan=2 colspan=2><b> Factory <b></td> <td colspan=4><b> Algorithms supported in each cod file </b></td></tr>
+
+<tr bgcolor = silver align = center >  <td><b> Bundled with O/S </b></td> <td><b> Crypto 1: WTLS<br>(net_rim_crypto1.cod)</b></td> <td><b> Crypto 2: SSL/TLS<br>(net_rim_crypto2.cod)</b></td> <td><b> Crypto 3: Miscellaneous<br>(net_rim_crypto3.cod)</b></td> </tr>
+
+<tr align = center><td colspan=2> <a name="#DigestFactory"> <b><a href= ../DigestFactory.html>DigestFactory</a></b></td>
+    <td><table>
+        <td><a href= ../SHA1Digest.html>"SHA1"</a></td>
+    </table></td>
+    <td><table>
+        <tr align = center><td><a href= ../MD5Digest.html>"MD5"</a></td></tr>
+        <tr align = center><td><a href= ../SHA256Digest.html>"SHA256"</a></td></tr>
+        <tr align = center><td><a href= ../SHA384Digest.html>"SHA384"</a></td></tr>
+        <tr align = center><td><a href= ../SHA512Digest.html>"SHA512"</a></td></tr>
+        <tr align = center><td><a href= ../NullDigest.html>"Null"</a></td></tr>
+    </table></td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../MD2Digest.html>"MD2"</a></td></tr>
+        <tr align = center><td><a href= ../MD4Digest.html>"MD4"</a></td></tr>
+        <tr align = center><td><a href= ../RIPEMD128Digest.html>"RIPEMD128"</a></td></tr>
+        <tr align = center><td><a href= ../RIPEMD160Digest.html>"RIPEMD160"</a></td></tr>
+    </table></td>
+</tr>
+
+<tr align = center><td colspan=2><a name="#MACFactory"> <b><a href= ../MACFactory.html>MACFactory</a></b>
+<p>The general format of the algorithm string is: <br>"&lt;Algorithm&gt;[/&lt;Parameters&gt;]"
+<p>e.g. "HMAC/SHA1", or "CBCMAC/DES"
+</td>
+    <td><table>
+        <tr align = center><td><a href= ../HMAC.html>"HMAC"</a>&nbsp;(returns&nbsp;HMAC_SHA1)</td></tr>
+        <tr align = center><td><a href= ../HMAC.html>"HMAC_&lt;Digest&gt;"</a></td></tr>
+        <tr align = center><td><a href= ../NullMac.html>"Null"</a></td></tr>
+    </table></td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../CBCMAC.html>"CBCMAC_&lt;BlockEncryptorEngine&gt;"</a></td></tr>
+    </table></td>
+</tr>
+
+<tr align = center><td colspan=2><a name="#SignatureSignerFactory"> <b><a href= ../SignatureSignerFactory.html>SignatureSignerFactory</a></b>
+<p>The general format of the algorithm string is: <br>"&lt;Algorithm&gt;[/&lt;Parameters&gt;]"
+<p>e.g. "DSA/SHA1", or "RSA_PKCS1_V20/MD2"
+</td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../DSASignatureSigner.html>"DSA"</a></td></tr>
+        <tr align = center><td><a href= ../PKCS1SignatureSigner.html>"RSA_PKCS1_V15"</a></td></tr>
+        <tr align = center><td><a href= ../NullSignatureSigner.html>"Null"</a></td></tr>
+    </table></td>
+    <td><table>
+        <tr align = center><td><a href= ../PKCS1SignatureSigner.html>"RSA_PKCS1"</a>&nbsp;(returns&nbsp;RSA_PKCS1_V20)</td></tr>
+        <tr align = center><td><a href= ../PKCS1SignatureSigner.html>"RSA_PKCS1_V20"</a></td></tr>
+    </table></td>
+    <td><table>
+        <tr align = center><td><a href= ../ECDSASignatureSigner.html>"EC"</a>&nbsp;(returns&nbsp;ECDSA)</td></tr>
+        <tr align = center><td><a href= ../ECDSASignatureSigner.html>"ECDSA"</a></td></tr>
+        <tr align = center><td><a href= ../ECNRSignatureSigner.html>"ECNR"</a></td></tr>
+        <tr align = center><td><a href= ../PSSSignatureSigner.html>"RSA_PSS"</a></td></tr>
+        <tr align = center><td><a href= ../X931SignatureSigner.html>"RSA_X931"</a></td></tr>
+    </table></td>
+</tr>
+
+
+<tr align = center><td colspan=2><a name="#SymmetricKeyFactory">  <b><a href= ../SymmetricKeyFactory.html>SymmetricKeyFactory</a></b>
+<p>The general format of the algorithm string is: <br>"&lt;Algorithm&gt;[_&lt;KeyBitLength&gt;]"
+<p>e.g. "TripleDES", or "RC5_64"
+</td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../AESkey.html>"AES"</a></td></tr>
+        <tr align = center><td><a href= ../ARC4key.html>"ARC4"</a></td></tr>
+        <tr align = center><td><a href= ../DESkey.html>"DES"</a></td></tr>
+        <tr align = center><td><a href= ../HMACkey.html>"HMAC"</a></td></tr>
+        <tr align = center><td><a href= ../ARC4key.html>"RC4"</a></td></tr>
+        <tr align = center><td><a href= ../RC5key.html>"RC5"</a></td></tr>
+        <tr align = center><td><a href= ../TripleDESkey.html>"TripleDES"</a></td></tr>
+    </table></td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../CAST128key.html>"CAST128"</a></td></tr>
+        <tr align = center><td><a href= ../RC2key.html>"RC2"</a></td></tr>
+        <tr align = center><td><a href= ../SkipJackkey.html>"Skipjack"</a></td></tr>
+    </table></td>
+</tr>
+
+<tr align = center><td colspan=2><a name="#InitializationVectorFactory">  <b><a href= ../InitializationVectorFactory.html>InitializationVectorFactory</a></b>
+<p>The general format of the algorithm string is: <br>"&lt;Algorithm&gt;[_&lt;KeyBitLength&gt;_&lt;BlockBitLength&gt;]"
+<p>e.g. "TripleDES", or "RC5_64_64"
+</td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../AESkey.html>"AES"</a></td></tr>
+        <tr align = center><td><a href= ../DESkey.html>"DES"</a></td></tr>
+        <tr align = center><td><a href= ../HMACkey.html>"HMAC"</a></td></tr>
+        <tr align = center><td><a href= ../RC5key.html>"RC5"</a></td></tr>
+        <tr align = center><td><a href= ../TripleDESkey.html>"TripleDES"</a></td></tr>
+    </table></td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><a href= ../CAST128key.html>"CAST128"</a></td></tr>
+        <tr align = center><td><a href= ../RC2key.html>"RC2"</a></td></tr>
+        <tr align = center><td><a href= ../SkipJackkey.html>"Skipjack"</a></td></tr>
+    </table></td>
+</tr>
+
+
+<tr align = center><td rowspan=2><a name="#EncryptorDecryptorFactory">  <b><a href= ../EncryptorFactory.html>EncryptorFactory</a> / <a href= ../DecryptorFactory.html>DecryptorFactory</b></a></td>
+    <td>
+        <p><b>Symmetric Key Algorithms</b>
+        <p>The general format of the algorithm string is: <br>"&lt;Cipher&gt;[/&lt;Mode&gt;][/&lt;Padding&gt;]"
+        <p>where &lt;Cipher&gt; is: <br>&lt;Algorithm&gt;[_&lt;KeyBitLength&gt;[_&lt;BlockBitLength&gt;[_&lt;NumberOfRounds&gt;]]].
+        <p>e.g. "TripleDES/CBC/PKCS5", or "RC5_64_64_16/CFB"
+    </td>
+
+
+    <td>&nbsp;</td>
+    <td><table><tr>
+        <td><table>
+            <tr align = center><td><b>Symmetic Key Algorithms</b></td></tr>
+            <tr align = center><td><a href= ../AESEncryptorEngine.html>"AES"</a></td></tr>
+            <tr align = center><td><a href= ../ARC4PseudoRandomSource.html>"ARC4"</a></td></tr>
+            <tr align = center><td><a href= ../ARC4PseudoRandomSource.html>"RC4"</a></td></tr>
+            <tr align = center><td><a href= ../DESEncryptorEngine.html>"DES"</a></td></tr>
+            <tr align = center><td><a href= ../RC5EncryptorEngine.html>"RC5"</a></td></tr>
+            <tr align = center><td><a href= ../TripleDESEncryptorEngine.html>"TripleDES"</a></td></tr>
+
+            <tr align = center><td><b>Modes</b></td></tr>
+            <tr align = center><td>"ECB"</td></tr>
+            <tr align = center><td><a href= ../CBCEncryptorEngine.html>"CBC"</a></td></tr>
+
+            <tr align = center><td><b>Padding</b></td></tr>
+            <tr align = center><td><a href= ../PKCS5FormatterEngine.html>"PKCS5"</a></td></tr>
+        </table></td>
+
+    </table></td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><b>Algorithms</b></td></tr>
+        <tr align = center><td><a href= ../CAST128EncryptorEngine.html>"CAST128"</a></td></tr>
+        <tr align = center><td><a href= ../RC2EncryptorEngine.html>"RC2"</a></td></tr>
+        <tr align = center><td><a href= ../SkipJackEncryptorEngine.html>"Skipjack"</a></td></tr>
+
+        <tr align = center><td><b>Modes</b></td></tr>
+        <tr align = center><td><a href= ../CFBEncryptor.html>"CFB"</a></td></tr>
+        <tr align = center><td><a href= ../CFBEncryptor.html>"CFB8"</a></td></tr>
+        <tr align = center><td><a href= ../OFBPseudoRandomSource.html>"OFB"</a></td></tr>
+
+    </table></td>
+</tr>
+
+
+
+<tr align = center>
+    <td>
+        <p><b>Public Key Algorithms</b>
+        <p>The general format of the algorithm string is: <br>"&lt;Cipher&gt;[/&lt;Parameters&gt;]"
+        <p>e.g. "RSA/PKCS1", or "ECIES/HMAC_SHA1"
+    </td>
+
+
+
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><b>Public Key Algorithms</b></td></tr>
+        <tr align = center><td><a href= ../RSAEncryptorEngine.html>"RSA"</a>&nbsp;(Returns&nbsp;"textbook"&nbsp;RSA if called from the getBlockEncryptorEngine function, otherwise returns RSA with PKCS1 formatting if called from the getEncryptorOutputstream function)</td></tr>
+        <tr align = center><td><a href= ../RSAEncryptorEngine.html>"RSA/&lt;Formatter&gt;"</a></td></tr>
+
+        <tr align = center><td><b>Formatter</b></td></tr>
+        <tr align = center><td><a href= ../PKCS1FormatterEngine.html>"PKCS1"</a></td></tr>
+    </table></td>
+    <td>&nbsp;</td>
+    <td><table>
+        <tr align = center><td><b>Algorithms</b></td></tr>
+        <tr align = center><td><a href= ../ECIESEncryptor.html>"ECIES"</a>&nbsp;(Returns&nbsp;ECIES/HMAC_SHA1)</td></tr>
+        <tr align = center><td><a href= ../ECIESEncryptor.html>"ECIES/&lt;MACAlgorithm&gt;"</a></td></tr>
+        <tr align = center><td><a href= ../ElGamalEncryptorEngine.html>"ElGamal"</a></td></tr>
+
+        <tr align = center><td><b>Formatter</b></td></tr>
+        <tr align = center><td><a href= ../OAEPFormatterEngine.html>"OAEP"</a></td></tr>
+    </table></td>
+</tr>
+
+</table>
+<p></BODY>
+</HTML>

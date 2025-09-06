@@ -1,0 +1,192 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix E. Examples of RFID communication</title>
+   </head>
+   <body>
+      <h1>Appendix E. Examples of RFID communication</h1>
+      <p>This appendix shows two examples how to communicate with RFID tag. In
+         	 the first example the communication is done using <code class="classname">PlainTagConnection</code>
+         	interface. The second example is a reference example of the communication using
+         	target-specific connection provided by the API implementation.
+      </p>
+      <h3><a id="d0e9850"></a>PlainTagConnection example
+      </h3><pre class="programlisting">
+    /**
+	 * RFID reader MIDlet
+     */
+    public class PlainTagMIDlet extends MIDlet implements TargetListener {
+		
+        private DiscoveryManager dm;
+		
+        public PlainTagMIDlet() {
+            // Register TargetListener
+            dm = DiscoveryManager.getInstance();
+            try {
+                dm.addTargetListener(this,TargetType.RFID_TAG);
+            }
+            catch (ContactlessException ce) {
+                // handle exception
+            }
+        }
+		
+        // Target discovered
+        public void targetDetected(TargetProperties[] props) {
+            TargetProperties target = null;
+            // Select target that has the right mapping
+            for (int i = 0; i &lt; props.length; i++) {
+                if (props[i].getMapping().equals("MyMapping")) {
+                    target = props[i];
+                    break;
+                }
+                else {
+                    i++;
+                }
+            }
+            // right target found
+            if (target != null) {
+                // do the communication in separate thread
+                MyThread thread = new MyThread(target);
+                thread.start();
+            }
+        }
+        . . .
+    }
+		
+    /**
+     * RFID reader thread
+     */
+    public class MyThread extends Thread {
+		
+        private TargetProperties target;
+		
+        public MyThread(TargetProperties target) {
+            this.target = target;
+        }
+		
+        public void run() {
+            try {
+                PlainTagConnection pconn =
+                    (PlainTagConnection)Connector.open(target.getUrl());
+                Vector input = new Vector();
+                Vector output = new Vector();
+                String cmd = new String( "read" );
+                Integer sector = new Integer(2);
+                Integer block = new Integer(1);
+                byte[] key = {(byte)0x1, (byte)0x2, (byte)0x3,
+                              (byte)0x4, (byte)0x5, (byte)0x6,
+                              (byte)0x7};
+                byte[] dataRead = new byte[16];
+                byte[] accessBits = new byte[4];
+                input.addElement( cmd );
+                input.addElement( sector );
+                input.addElement( block );
+                input.addElement( key );
+                output.addElement( dataRead );
+                output.addElement( accessBits );
+                output = pconn.transceive(input);
+                pconn.close();
+                // Process the data
+            }
+            catch (IOException ioe) {
+                // Handle exception
+            }
+            catch (ContactlessException ce) {
+                // handle exception
+            }
+        }
+    }
+		
+	</pre><h3><a id="d0e9854"></a>Target-specific connection example
+      </h3>
+      <p>In this example the target-specific connection class used is only an
+         	imaginary example and not specified in this specification. It is only used to
+         	illustrate how the use of target-specific connection classes provided by the
+         	API implementation can make the communication with the RFID tag a bit easier.
+      </p><pre class="programlisting">
+    /**
+     * RFID reader MIDlet
+     */
+    public class PlainTagMIDlet extends MIDlet implements TargetListener {
+		
+        private DiscoveryManager dm;
+		
+        public PlainTagMIDlet() {
+            dm = DiscoveryManager.getInstance();
+            try {
+                dm.addTargetListener(this,TargetType.RFID_TAG);
+            }
+            catch (ContactlessException ce) {
+                // handle exception
+            }
+        }
+		
+        public void targetDetected(TargetProperties[] props) {
+            TargetProperties target = null;
+            if (props.length &gt; 1) {
+                // Multiple targets found, exit
+                return;
+            }
+            target = props[0];
+            // right target found
+            if (target != null) {
+                // do the communication in separate thread
+                MyThread thread = new MyThread(target);
+                thread.start();
+            }
+        }
+        . . .
+    }
+		
+    /**
+     * RFID reader thread
+     */
+    public class MyThread extends Thread {
+		
+        private TargetProperties target;
+		
+        public MyThread(TargetProperties target) {
+            this.target = target;
+        }
+		
+        public void run() {
+            Class[] connections = target.getConnectionNames();
+            Class connClass = null;
+            for (int i = 0; i &lt; connections.length; i++) {
+                if (connections[i].getName().equals
+                        ("com.company.JSRTagConnection")) {
+                    // Right connection name found
+                    connClass = connections[i];
+                    break;
+                }
+                else {
+                    i++;
+                }
+            }
+            if (connClass != null) {
+                try {
+                    JSRTagConnection conn = (JSRTagConnection)
+                    Connector.open(target.getUrl(connClass));
+                    int sector = 2;
+                    int block = 1;
+                    byte[] key = {(byte)0x1, (byte)0x2, (byte)0x3,
+                            (byte)0x4, (byte)0x5, (byte)0x6,(byte)0x7};
+                    byte ret = conn.authenticate(sector, key);
+                    if (ret == 0) {
+                        ret = conn.writeData(block, "Hello world");
+                        String data = conn.readData(block);
+                        // Process the data
+                    }
+                    conn.close();
+                }
+                catch (IOException ioe) {
+                    // Handle exception
+                }
+            }
+        }
+    }	
+	</pre></body>
+</html>

@@ -1,0 +1,13 @@
+java.lang
+java.rmi
+java.security
+java.security.spec
+javacard.framework
+javacard.framework.service
+javacard.security
+javax.crypto
+javax.crypto.spec
+javax.microedition.apdu
+javax.microedition.jcrmi
+javax.microedition.pki
+javax.microedition.securityservice

@@ -1,0 +1,9 @@
+javax.xml
+javax.xml.parsers
+javax.xml.stream
+org.w3c.dom
+org.w3c.dom.events
+org.w3c.dom.views
+org.xml.sax
+org.xml.sax.ext
+org.xml.sax.helpers

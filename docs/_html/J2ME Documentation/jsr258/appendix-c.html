@@ -1,0 +1,236 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix C. Appearance descriptor schema in RELAX NG compact syntax (non-normative)</title>
+   </head>
+   <body>
+      <h1>Appendix C. Appearance descriptor schema in RELAX NG compact syntax (non-normative)</h1>
+      <p>This appendix contains the RELAX NG schema for the appearance descriptor 
+         file format schema in the RELAX NG compact syntax. It is intended to help
+         developers in getting a quick overview of the schema. However, since
+         RELAX NG processors are not required to support the compact syntax,
+         the XML syntax version of the schema is the normative one.
+      </p>
+      <p>The compact syntax schema was generated from the XML syntax schema
+         using James Clark's Trang utility.
+      </p><pre class="programlisting">default namespace = "http://www.jcp.org/jsr258/ns/theme/1.0"
+
+# Using the XML Schema datatype library for basic datatypes
+# like language and date.
+
+# Define the document root element
+start =
+  # Appearance element containing the themes and skins.
+  # The "version" attribute must match the version of the 
+  # Mobile User Interface Customization API specification.
+  element appearance {
+    attribute version { text },
+    # Start of theme definition
+    
+    # An appearance contains zero or more themes
+    
+    # A theme is identified by name, version and vendor attributes
+    element theme {
+      attribute name { text },
+      attribute version { text },
+      attribute vendor { text },
+      # A theme contains a metadata section
+      element themeinfo { metadata },
+      # A theme contains one or more context sections
+      (themecontext+)
+      # context
+      
+    }
+    # theme
+    *,
+    # theme
+    
+    # End of theme definition
+    
+    # Start of skin definition
+    
+    # An appearance contains zero or more skins
+    
+    # A skin is identified by name, version and vendor attributes
+    (element skin {
+       attribute name { text },
+       attribute version { text },
+       attribute vendor { text },
+       attribute application { text },
+       # A skin contains a metadata section
+       element skininfo { metadata },
+       # A skin contains one or more context sections
+       (skincontext+)
+       # context
+       
+     }
+     # skin
+     *)
+    # skin
+    
+    # End of skin definition
+    
+  }
+  # appearance
+  
+# Define named patterns referred to from the start element
+
+# Definition of metadata block for themes and skins
+metadata =
+  texts,
+  author,
+  element created { xsd:date },
+  element modified { xsd:date },
+  icon?
+texts =
+  element texts {
+    # The "default" attribute is the default locale of the text.
+    # The value is an RFC 3066 tag like the "xml:lang" attributes
+    # in the title and description elements.
+    attribute default { text },
+    # title and description are localizable
+    element title {
+      attribute xml:lang {
+        xsd:language
+        # RFC 3066 tag
+        
+      },
+      text
+    }+,
+    element description {
+      attribute xml:lang {
+        xsd:language
+        # RFC 3066 tag
+        
+      },
+      text
+    }+
+  }
+  # texts
+  
+author = element author { text }
+icon =
+  element icon {
+    attribute src { xsd:anyURI },
+    attribute type { text }
+  }
+# Theme context
+themecontext =
+  element context {
+    attribute name { text },
+    # Context in a theme has zero or one base section
+    element base { elementOrGroupOrVariant+ }?,
+    # Context in a theme has zero or more toolkit sections
+    element toolkit {
+      attribute name { text },
+      elementOrGroupOrVariant+
+    }*,
+    # Recursive reference to themecontext
+    themecontext*
+  }
+  # context
+  
+# themecontext
+
+# Skin context
+skincontext =
+  element context {
+    attribute name { text },
+    # Context in a skin has zero or one application section
+    element application { elementOrGroup+ }?,
+    # Context in a skin has zero or one base section
+    element base { elementOrGroupOrVariant+ }?,
+    # Context in a skin has zero or more toolkit sections
+    element toolkit {
+      attribute name { text },
+      elementOrGroupOrVariant+
+    }*,
+    # Recursive reference to skincontext
+    skincontext*
+  }
+  # context
+  
+# skincontext
+
+# Standalone element or an element group or variant group in theme or skin
+elementOrGroupOrVariant =
+  standaloneElement | elementGroup | variantGroup
+# Standalone element or an element group in the application specific 
+# section of a skin
+elementOrGroup = standaloneElement | elementGroup
+# Standalone element
+standaloneElement =
+  element element {
+    # standalone element always has both feature and role
+    featureAndRoleAttributes,
+    kind,
+    # (type src) | value
+    (typeAndSrcAttributes
+     | attribute value { text }),
+    presentation
+  }
+# Feature and role go together
+featureAndRoleAttributes =
+  attribute feature { text },
+  attribute role { text }
+# Type and src go together
+typeAndSrcAttributes =
+  attribute type { text },
+  attribute src { text }
+# Presentation attribute
+presentation = attribute presentation { text }?
+# Kind attribute
+kind =
+  attribute kind {
+    "graphic"
+    | "sound"
+    | "video"
+    | "color"
+    | "integer"
+    | "float"
+    | "string"
+    | "font"
+  }
+# An element group with elements and/or groups inside
+elementGroup =
+  element group {
+    featureAndRoleAttributes,
+    presentation,
+    standaloneElement*,
+    # Recursive reference to elementGroup
+    elementGroup*
+  }
+# A variant group with at least one variant specific element or group
+variantGroup =
+  element variant {
+    featureAndRoleAttributes,
+    (standaloneVariantElement | variantElementGroup)+
+  }
+# Standalone variant element
+standaloneVariantElement =
+  element element {
+    # Standalone variant element has no feature or role
+    kind,
+    presentation,
+    # (type src) | value
+    (typeAndSrcAttributes
+     | attribute value { text })
+  }
+# A variant element group with elements and/or groups inside
+variantElementGroup =
+  element group {
+    # Variant element group never has feature nor role
+    presentation,
+    standaloneElement*,
+    # Recursive reference to elementGroup 
+    # (note: not variantElementGroup!), so that the feature 
+    # and role are allowed in the nested groups
+    elementGroup*
+  }
+
+          </pre></body>
+</html>

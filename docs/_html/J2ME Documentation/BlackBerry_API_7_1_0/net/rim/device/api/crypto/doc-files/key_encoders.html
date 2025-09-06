@@ -1,0 +1,88 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Key Encoders and Decoders</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Key Encoders and Decoders</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> Encoded keys have the advantage that they can be transmitted as
+    a complete package (including any required system parameters) without
+    any doubt as to how they should be decoded.  In other words, when
+    a standard format is agreed upon, numerous key types and encodings
+    can be used without concern of confusion.
+<p>
+
+<p><b>Encoding and Decoding an RSA Private Key using PKCS8</b></p>
+
+<p> Encoding and decoding keys is straightforward in the Crypto API.  Two
+    classes have been provided, <a href = "../encoder/PublicKeyEncoder.html">PublicKeyEncoder</a>
+    and <a href="../encoder/PrivateKeyEncoder.html">PrivateKeyEncoder</a>, which handle all the encoding and decoding
+    details.  A common private key encoding scheme is the PKCS8 format.  The
+    following code demonstrates how to encode and decode RSA private keys
+    using PKCS8:
+</p>
+
+<pre>
+    // Create a new RSA crypto system for key generation
+    RSACryptoSystem cryptoSystem = new RSACryptoSystem();
+
+    // The key pair will hold the RSA keys
+    RSAKeyPair keyPair = new RSAKeyPair( cryptoSystem);
+
+    RSAPrivateKey privateKey = keyPair.getRSAPrivateKey();
+
+    // Now encode the key using the PrivateKeyEncoder class
+    EncodedKey encodedKey = PrivateKeyEncoder.encode( privateKey, "PKCS8" );
+    byte[] encodedKeyData = encodedKey.getEncodedKey();
+</pre>
+
+<p>
+    This encoded key can then be decoded in a similar manner (using the key
+    just encoded above):
+</p>
+
+<pre>
+    RSAPrivateKey decodedKey = ( RSAPrivateKey ) PrivateKeyDecoder.decode( encodedKeyData, "PKCS8" );
+</pre>
+
+
+<p><b>Encoding and Decoding an EC Public Key using X.509</b></p>
+
+<p> Likewise, encoding an elliptic curve public key with X.509 would be done in the
+    following manner:
+
+<pre>
+    // Create a new EC crypto system for key generation
+    ECCryptoSystem cryptoSystem = new ECCryptoSystem();
+
+    // The key pair will hold the EC keys
+    ECKeyPair keyPair = new ECKeyPair( cryptoSystem);
+
+    ECPublicKey publicKey = keyPair.getECPublicKey();
+
+    // Now encode the key using the PublicKeyEncoder class
+    EncodedKey encodedKey = PublicKeyEncoder.encode( publicKey, "X509" );
+    byte[] encodedKeyData = encodedKey.getEncodedKey();
+</pre>
+
+<p> The key could then be subsequently decoded: </p>
+
+<pre>
+    ECPublicKey decodedKey = ( ECPublicKey ) PublicKeyDecoder.decode( encodedKeyData, "X509" );
+</pre>
+
+
+<p> See <a href = "encoders.html">Supported Encoding Schemes</a> for more sepcific information
+    on the encoding schemes supported by the Crypto API.
+</p>
+
+</body>
+</html>

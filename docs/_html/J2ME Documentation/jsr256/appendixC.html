@@ -1,0 +1,352 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <title>Appendix&nbsp;C.&nbsp;Automatic launch</title>
+      <meta name="generator" content="DocBook XSL-NS Stylesheets V1.73.2"></meta>
+   </head>
+   <body>
+      <div class="appendix" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h2 class="title"><a id="d4e1"></a>Appendix&nbsp;C.&nbsp;Automatic launch
+                  </h2>
+               </div>
+            </div>
+         </div>
+         
+         
+         <p> If the 
+            <span class="emphasis"><em>Mobile Sensor API</em></span>
+            
+            is implemented on top of the MIDP 2.0, the 
+            <code class="literal">PushRegistry</code>
+            is used for registering applications
+            for automatic launch. The 
+            <code class="literal">PushRegistry</code>
+            
+            maintains a list of registrations. When the application is
+            registered, the sensor URL containing the conditions for launch is
+            specified together with the application to be launched. The
+            application management software (AMS) monitors the defined sensors.
+            When the sensor becomes available or one of the monitored
+            conditions is met, the AMS finds the application to be woken up and
+            launches it.
+         </p>
+         
+         <p>The AMS MUST store the data value that caused the automatic
+            launch of the application when the monitored condition was met, as
+            well as the met condition. The validity, uncertainty and timestamp
+            information MUST also be stored. When availability is monitored,
+            there is no special requirement to store any values.
+         </p>
+         
+         <p>The automatic launch by push mechanism may not always mean that
+            the application is immediately started. The user may get a prompt
+            indicating that the application should be launched and the actual
+            launch will happen only once the user confirms to accept it.
+            Whether the user gets a prompt or not depends on the security
+            policy for push. Therefore, the delay between the match in the
+            monitoring and the actual launch of the application may be
+            considerably long. The data values in between the met condition and
+            the first data retrieval method call MUST be discarded. The AMS
+            MUST supply the data value that caused the application launch as a 
+            <code class="literal">ConditionListener.conditionMet()</code>
+            
+            notification to the application when the application opens the 
+            <code class="literal">SensorConnection</code>
+            and registers itself as
+            the 
+            <code class="literal">ConditionListener</code>
+            to monitor the
+            data. The registration is done in the special manner, for
+            example:
+         </p>
+         <pre class="screen">
+    channel.addCondition(this, null);
+</pre>
+         <p>This will cause the pending 
+            <code class="literal">conditionMet()</code>
+            notification to be sent to the 
+            <code class="literal">ConditionListener</code>
+            whatever is the channel or
+            the condition met. Note that the 
+            <code class="literal">conditionMet()</code>
+            notification will be sent only once
+            when the 
+            <code class="literal">addCondition()</code>
+            method with the 
+            <code class="literal">null</code>
+            condition value is called for the
+            first time. After the connection to the sensor is closed, the
+            information is deleted.
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Sensor URL scheme for push
+         </h3>
+         
+         
+         <p>The sensor URL scheme for the 
+            <code class="literal">PushRegistry</code>
+            defined in the description of the 
+            <code class="literal">SensorConnection</code>
+            class reflects the
+            two ways of sensor push:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="orderedlist">
+            <ol type="1">
+               <li>
+                  
+                  <p> Availability-based push. When, for example, the wired sensor is
+                     plugged in or the sensor working over Bluetooth is coming within
+                     the proximity of the device, the application is launched. No
+                     conditions are defined.
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p> Condition-based push. There are conditions defined in the query
+                     part of the URL. The conditions are defined separately for each
+                     channel. The query part means the part starting from the question
+                     mark ("?"). In addition to the availability at least one of the set
+                     conditions has to be met for the application to be launched.
+                  </p>
+                  
+               </li>
+            </ol>
+         </div>
+         <p>
+            
+         </p>
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Availability-based push
+         </h3>
+         
+         
+         <p>"Being available" means that the sensor can be opened and data
+            values read. By using push mechanism, the sensor application can be
+            launched automatically when the sensor becomes available. Some
+            sensors may not support availability-based push. For example, if
+            you have an embedded sensor that is always available,
+            availability-based push is not supported. Whether the sensor
+            supports availability-based push can be found out with the method 
+            <code class="literal">SensorInfo.isAvailabilityPushSupported()</code>
+            .
+         </p>
+         
+         <p>An example of availability-based push is presented below. The
+            MIDlet is registered statically in the JAD:
+         </p>
+         <pre class="screen">
+    MIDlet-Push-1: sensor:humidity,sample.PushApp,*
+    MIDlet-Permissions: javax.microedition.io.PushRegistry
+       
+</pre>
+         <p>The AMS system checks periodically the availability of supported
+            humiditymeters around. When any of these humiditymeters becomes
+            available, the PushApp MIDlet is launched.
+         </p>
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Condition-based push
+         </h3>
+         
+         
+         <p>"Meeting conditions" means that measured value meets one of the
+            set conditions. The conditions are set per channel. After one
+            condition of any channel is met, the registered application is
+            launched. The sensor URL scheme for the 
+            <code class="literal">PushRegistry</code>
+            does not define conditions for
+            channels of an 
+            <code class="literal">Object</code>
+            data type.
+            Whether a sensor supports condition-based push can be found out
+            with the method 
+            <code class="literal">SensorInfo.isConditionPushSupported()</code>
+            .
+         </p>
+         
+         <p>An example of condition-based push is presented below. The
+            MIDlet is registered statically in the JAD:
+         </p>
+         <pre class="screen">
+    MIDlet-Push-1: sensor:RR_interval?channel=RR_interval&amp;limit=240&amp;op=le,
+                   sample.PushApp,*
+    MIDlet-Permissions: javax.microedition.io.PushRegistry,
+		   javax.microedition.sensor.PrivateSensor
+       
+</pre>
+         <p>The AMS system checks periodically the availability of supported
+            <code class="literal">RR_interval</code> sensors around.
+            If a <code class="literal">RR_interval</code> sensor is available, then the
+            defined conditions are checked. If any of the conditions is met,
+            the application is launched. In the example above, the measured
+            value being less than or equal to 240 ms causes the application to
+            be launched.
+         </p>
+         
+         <p></p>
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Push support of a sensor
+         </h3>
+         
+         
+         <p>A sensor MAY support either availability-based or
+            condition-based push, or both, or no push at all. The 
+            <code class="literal">PushRegistry</code>
+            MUST throw a 
+            <code class="literal">ConnectionNotFoundException</code>
+            for the following
+            reasons:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="itemizedlist">
+            <ul type="disc">
+               <li>
+                  
+                  <p> A sensor matching to the given URL is not found and the device
+                     is not capable of supporting sensors of this type.
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p> A sensor is found but it does not support push at all.</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> A sensor is found but it only supports availability-based push
+                     and the URL contains conditions.
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p> A sensor is found but it only supports condition-push and the
+                     URL does not contain conditions.
+                  </p>
+                  
+               </li>
+            </ul>
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>Note that there is also a possibility to register a well formed
+            sensor URL, which is returning a zero-length 
+            <code class="literal">SensorInfo</code>
+            array when it is given as a parameter
+            to the method 
+            <code class="literal">SensorManager.findSensors(URL)</code>
+            . The registration
+            is possible if this type of a sensor is known to be supported in
+            the future.
+         </p>
+         
+         <p>If there are several sensors matching to the URL a 
+            <code class="literal">ConnectionNotFoundException</code>
+            is not thrown unless
+            none of the sensors can accept the URL.
+         </p>
+         
+         
+         <p>
+            The same URL can be registed many times to launch different applications.
+            The implementation may be able to provide data to many
+            applications simultanously and this possibility should not be ruled out
+            by accepting the URL only once. This enhances JSR 118 which says:<code class="literal">
+               "If two MIDlet suites have a static push connection in common,
+               they cannot be installed together and both function correctly.
+               The end user would typically have to uninstall one before being
+               able to successfully install the other."</code>
+            
+         </p>
+         
+         
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Push if only one application can be open
+            at a time
+         </h3>
+         
+         
+         <p>Some devices are only able to support one application being
+            executed at a time. In such devices, if a sensor supports
+            availability-based push, only one URL without conditions can be
+            registered for that sensor. After such URL is registered, attempts
+            to register more URLs MUST cause the registration to fail and an 
+            <code class="literal">IOException</code>
+            to be thrown.
+         </p>
+         
+         <p>If a sensor supports condition-based push, it is possible to
+            register multiple URLs containing conditions. In this case the
+            conditions MUST not overlap. If conditions overlap, the
+            registration MUST fail. There MAY be an implementation-dependent
+            maximum for registrations of URLs with conditions. If
+            availability-based and condition-based pushes are both supported,
+            it's not possible to register URLs without conditions after one URL
+            with conditions is registered.
+         </p>
+         
+         <p>However, if there are several matching sensors, an 
+            <code class="literal">IOException</code>
+            is thrown only if none of the sensors
+            can accept the URL.
+         </p>
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Push if multiple applications can be open
+            simultaneously
+         </h3>
+         
+         
+         <p>Some devices are able to support multiple concurrently executing
+            applications. In such devices, an arbitrary number of applications
+            can be registered per sensor. The implementation SHOULD define a
+            maximum for simultaneous registrations. An 
+            <code class="literal">IOException</code>
+            is thrown at push registration when
+            the maximum number of registrations has been already reached for
+            all the sensors matching the given URL.
+         </p>
+         
+         <p>If multiple registrations per sensor are allowed, all the
+            corresponding applications MUST be launched, either when the sensor
+            becomes available or any of the conditions is met. Until the limit
+            of applications to be executed simultaneously is reached, the
+            implementation MAY decide freely the order in which applications
+            are launched.
+         </p>
+         
+         
+      </div>
+   </body>
+</html>

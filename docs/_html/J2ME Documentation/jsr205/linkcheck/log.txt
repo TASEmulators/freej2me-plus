@@ -1,0 +1,45 @@
+
+Checking links locally in /jdl/javadoc packages/wmapi2.0
+that match: /#
+1 seed: /
+
+Seed:    /
+looking for /(default)
+checking /
+checking /overview-summary.html
+-----    /javax/wireless/messaging/package-summary.html
+checking /index.html
+checking /allclasses-frame.html
+-----    /javax/wireless/messaging/messagepart.html
+-----    /javax/wireless/messaging/messagelistener.html
+-----    /javax/wireless/messaging/message.html
+-----    /javax/wireless/messaging/multipartmessage.html
+-----    /javax/wireless/messaging/messageconnection.html
+-----    /javax/wireless/messaging/textmessage.html
+-----    /javax/wireless/messaging/binarymessage.html
+-----    /javax/wireless/messaging/sizeexceededexception.html
+checking /overview-frame.html
+-----    /javax/wireless/messaging/package-frame.html
+checking /help-doc.html
+checking /allclasses-noframe.html
+checking /cdma_adapter.html
+checking /sms_adapter.html
+checking /cbs_adapter.html
+
+Processing ...
+
+writing files to linkcheck
+wrote 10 txt files
+wrote 7 html files
+wrote index file index.htm
+
+found   2 directories with files
+found   1 default index
+found  19 html files
+found 663 named anchors
+-----  10 files skipped
+
+Linklint found 20 files in 2 directories and checked 10 html files.
+There were no missing files. No files had broken links.
+No errors, no warnings.
+

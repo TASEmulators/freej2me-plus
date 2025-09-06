@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+</HEAD>
+<BODY>
+<h2>JAD ファイル</h2>
+<p>
+JAD ファイルの記述方法の簡単な説明と、MIDP1.0 で定められている必須属性、  
+EZアプリ(Java[TM]) Phase3.0 で定められているオプション属性について説明します。  
+</p>
+<ul>
+ <li><A HREF="#section_jad_overview">JAD ファイルの概要</A>  
+ <li><A HREF="#section_jad_format">JAD ファイルの書式</A>  
+ <li><A HREF="#section_jad_required">必須属性</A>
+ <li><A HREF="#section_jad_option">オプション属性</A>
+</ul>
+MIPD 1.0 で定義されている JAD ファイルの必須属性の一覧を  
+表 1 に示します。  
+<p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align="left"><strong>表1. 必須属性一覧</strong></caption>  
+<tr><th>属性</th><th>内容</th></tr>
+<tr><td><a href="#MIDlet-Name">MIDlet-Name</a></td>
+ <td>アプリケーション名</td></tr>
+<tr><td><a href="#MIDlet-Vendor">MIDlet-Vendor</a></td>
+ <td>アプリケーション提供者</td></tr>
+<tr><td><a href="#MIDlet-Version">MIDlet-Version</a></td>
+ <td>バージョン</td></tr>
+<tr><td><a href="#MIDlet-Jar-URL">MIDlet-Jar-URL</a></td>
+ <td>JARファイル名</td></tr>
+<tr><td><a href="#MIDlet-Jar-Size">MIDlet-Jar-Size</a></td>
+ <td>JARファイルサイズ</td></tr>
+<tr><td><a href="#MIDlet-n">MIDlet-<i>&lt;n&gt;</i></a></td>
+ <td>アプリケーション番号</td></tr>
+<tr><td><a href="#MicroEdition-Profile">MicroEdition-Profile</a></td>
+ <td>Profile</td></tr>
+<tr><td><a href="#MicroEdition-Configuration">MicroEdition-Configuration</a></td>
+ <td>Configuration</td></tr>
+</table>
+<p>
+MIDP 1.0 または EZアプリ(Java[TM])Phase3で定義されている JAD ファイルのオプション属性の一覧を  
+表 2 に示します。  
+</p><p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align="left"><strong>表2. オプション属性一覧</strong></caption>  
+<tr><th>属性</th><th>内容</th></tr>
+<tr><td><a href="#MIDlet-Data-Size">MIDlet-Data-Size</a></td>
+ <td>レコードストア使用量</td></tr>
+<tr><td><a href="#MIDlet-X-Storage-Size">MIDlet-X-Storage-Size</a></td>
+ <td>拡張ストレージ使用量</td></tr>
+<tr><td><a href="#MIDlet-X-Copyright">MIDlet-X-Copyright</a></td>
+ <td>著作権保護</td></tr>
+<tr><td><a href="#MIDlet-X-AutoLaunch">MIDlet-X-AutoLaunch</a></td>
+ <td>自動起動設定条件</td></tr>
+<tr><td><a href="#MIDlet-X-AllowURL">MIDlet-X-AllowURL-<i>&lt;n&gt;</i></a></td>
+ <td>URL</td></tr>
+</table>
+<hr>
+<a name="section_jad_overview"><h3> JAD ファイルの概要 </h3></a>  
+
+<p>
+JAD（Java Application Descriptor）ファイルは、  
+KJX ファイルの一部として JAR（Java Archive）ファイルと共に構成され、  
+アプリケーションの内容、ふるまいなどをテキスト表現で記載しているものです。
+</p><p>
+JAD ファイルに記述する属性には、必ず記述しなければいけない必須属性と、  
+Java アプリケーションの動作に応じて記述するかしないかを選択できるオプション属性の 2 種類があります。  
+</p>
+<a name="#section_jad_format"><h3> JAD ファイルの書式 </h3></a>  
+<p>
+属性は属性名と値から構成され、属性によっては値を複数記述できるものもあります。1 属性 は 1 行に記述します。書式を表 3 に示します。  
+</p><p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align="left"><strong>表 3.JAD ファイルの属性の書式</strong></caption>  
+<tr><th align="left">値を 1 つだけ持つ属性の書式</th><td><i>属性名</i>: <i>値</i></td></tr>  
+<tr><th align="left">値を複数持つ属性の書式</th><td><i>属性名</i>: <i>値</i>,<i>値 </i> …</td></tr>  
+</table>
+<p>
+以下の点に注意してください。
+<ul>
+ <li> 大文字と小文字は区別されます。
+ <li> 「:」直後のスペース文字とタブ文字、  
+	「,」直後のスペース文字だけが認められ、  
+	その他のスペース文字を含む項目は無効になります。
+ <li> 定義として規定されていない値を指定すると、項目ごと無効になります。
+</ul> 
+<A name="section_jad_required"><h3> 必須属性 </h3></A>
+<p>
+MIPD 1.0 で定義されている JAD ファイルの必須属性を以下に示します。   
+</p><p>
+<dl>
+<p>
+<a name="MIDlet-Name"><dt>MIDlet-Name: <i>アプリケーション名</i></dt></a>  
+<p><dd>
+アプリケーション名を記述してください。文字コードはASCIIおよびシフトJISを使用してください。3バイト以上24バイト以内で記述してください。
+
+</dd>
+<p><A name="MIDlet-Vendor"><dt>MIDlet-Vendor: <i>アプリケーションの提供者</i></dt></a>  
+<p><dd>
+アプリケーションの提供者を記述してください。文字コードはASCIIおよびシフトJISを使用してください。3バイト以上24バイト以内で記述してください。
+
+</dd>
+<p><a name="MIDlet-Version"><dt>MIDlet-Version: <i>アプリケーションのバージョン情報</i></dt></a>  
+<p><dd>
+アプリケーションのバージョン情報を記述してください。文字コードはASCIIを使用してください。3バイト以上5バイト以内で「X.X」フォーマットで記述してください。
+
+</dd>
+<p><a name="MIDlet-Jar-URL"><dt>MIDlet-Jar-URL: <i>JARファイル名</i></dt> 
+<p><dd>
+アプリケーションをパッケージしたJARファイル名を記述してください。文字コードはASCIIを使用してください。5バイト以上24バイト以内で記述してください。
+
+</dd>
+<p></a><a name="MIDlet-Jar-Size"><dt>MIDlet-Jar-Size: <i>JAR のファイルサイズ（単位バイト）</i></dt></a> 
+<p><dd>
+JARファイルのファイルサイズを記述してください。KJXファイルのサイズではないことに注意すること。文字コードはASCIIを使用してください。0 〜 99999 で記述してください。 
+</dd>
+<p><a name="MIDlet-n"><dt>MIDlet-<i>&lt;n&gt;</i>: <i>No</i>,<i>タイトル</i>,<i>アイコンファイル名</i>,<i>起動クラス名</i></dt></a> 
+<p><dd>
+JARファイル内に複数のMIDletをパッケージした場合、MIDlet毎のNo、MIDletのタイトル、アイコンファイル名(PNG形式)、起動クラス名(MIDlet class 名)を記述してください。文字コードはASCIIおよびシフトJISを使用してください。<br> 
+例) MIDlet-1: アプリン,aplin.png,aplin 
+</dd>
+<p><a name="MicroEdition-Profile"><dt>MicroEdition-Profile: <i>Profile</i></dt></a>
+<p><dd>
+アプリケーションが動作可能なProfileを記述してください。文字コードはASCIIを使用してください。<br>
+<br>
+<table border=1 cellspacing=0 cellpadding=2>
+<tr><th>Profile値</th><th>意味</th></tr>
+<tr><td>MIDP-1.0</td><td>MIDP1.0対応	</td></tr>
+<tr><td>KDDIP-1.0</td><td>Phase1対応	</td></tr>
+<tr><td>KDDIP-2.0</td><td>Phase2対応	</td></tr>
+<tr><td>KDDIP-2.5</td><td>Phase2.5対応</td></tr>
+<tr><td>KDDIP-3.0</td><td>Phase3対応	</td></tr>
+</table>
+<br>
+プロファイル値は今後 MIDP、KDDI Profile のバージョンアップに伴い、追加される可能性があります。 
+</dd>
+<p><a name="MicroEdition-Configuration"><dt>MicroEdition-Configuration: <i>Configuration</i></dt></a> 
+<p><dd>
+アプリケーションが動作可能な Configuration を記述してください。文字コードはASCIIを使用してください。<br> 
+<br>
+<table border=1 cellspacing=0 cellpadding=2>
+<tr><th>Configuration値</th><th>意味</th></tr>
+<tr><td>CLDC-1.0</td><td>CLDC1.0対応</td></tr>
+</table>
+<br>
+Configuration 値は今後 CDCLのバージョンアップに伴い、追加される可能性があります。 
+</dd>
+</dl>
+<A name="section_jad_option"><h3> オプション属性 </h3></A>
+<p>
+MIDP 1.0 または KDDI Profile Phase3.0 で定義されている JAD ファイルのオプション属性を以下に示します。MIDlet-Data-Size 属性は MIDP 1.0 で定義されています。それ以外のオプション属性は KDDI Profile Phase3.0 で定義されています。 
+</p><p>
+<dl>
+<p><a name="MIDlet-Data-Size"><dt>MIDlet-Data-Size: <i>レコードストア使用量（単位はバイト）</i></dt></a> 
+<p><dd>
+アプリケーションがレコ−ドストアを使用する場合、その使用量を 0 〜 10240（単位はバイト）の範囲で記述してください。<p> 
+レコードストアに関する詳細については、 
+MIPD の javax.microedition.rms.RecordStore クラスの説明を参照してください。 
+</dd>
+<p><a name="MIDlet-X-Storage-Size"><dt>MIDlet-X-Storage-Size: <i>拡張ストレージ使用量（単位はバイト）</i></dt></a> 
+<p><dd>
+アプリケーションが拡張ストレージを使用する場合、その使用量を 0 〜204800（単位はバイト）の範囲で記述してください。<p> 
+拡張ストレージについての詳細は、
+<a href="./storage.html">拡張ストレージアクセス</a>を参照してください。
+</dd>
+<p><a name="MIDlet-X-Copyright"><dt>MIDlet-X-Copyright: ON</dt></a> 
+<p><dd>
+アプリケーションを著作権保護する必要がある場合に記述してください。 
+この項目が記述されていると、KJXファイルに対する著作権フラグとして利用されます。 
+この項目が記述されていない場合、著作権保護の必要なしと解釈されます。
+
+</dd>
+<p><a name="MIDlet-X-AutoLaunch"><dt>MIDlet-X-AutoLaunch: <i>自動起動設定条件</i></dt></a> 
+<p><dd>
+EZアプリ指定起動機能を利用するアプリケーションの自動起動設定条件を記述してください。 
+自動起動設定条件の値には以下の書式で起動時刻と、必要に応じて曜日を指定してください。曜日の指定が無い場合は、毎日起動することになります。
+<ul>
+ <li>時刻<br>
+	「HHMM」で指定してください。設定範囲は、0000 〜 2359。 
+ <li>曜日<br>
+	時刻「HHMM」に続けて曜日指示子を記述してください。<br>
+	<table border=1 cellspacing=0 cellpadding=2>
+	<tr><th>曜日指示子</th><th>意味</th></tr>
+	<tr><td>WKD</td><td>月〜金</td></tr>
+	<tr><td>WKE</td><td>土、日</td></tr>
+	<tr><td>SUN</td><td>日</td></tr>
+	<tr><td>MON</td><td>月</td></tr>
+	<tr><td>TUE</td><td>火</td></tr>
+	<tr><td>WED</td><td>水</td></tr>
+	<tr><td>THU</td><td>木</td></tr>
+	<tr><td>FRI</td><td>金</td></tr>
+	<tr><td>SAT</td><td>土</td></tr>
+	</table>
+</ul>
+<p>
+例）MIDlet-X-AutoLaunch: 1300  （毎日13時00分に起動する）<br> 
+例）MIDlet-X-AutoLaunch: 1200WKE  （土、日曜日の12時00分に起動）<br> 
+例）MIDlet-X-AutoLaunch: 0700WKD,0900WKE （月〜金は7時00分、土日は9時00分に起動） 
+</p><p>
+自動起動条件は、アプリケーションごとに最大5件まで指定することができます。
+</p>
+</dd>
+<p><a name="MIDlet-X-AllowURL"><dt>MIDlet-X-AllowURL-<i>&lt;n&gt;</i>: <i>URL</i></dt></a> 
+<p><dd>
+JavaアプリケーションからHTTP通信機能を利用する場合に、HTTP通信時に接続を許可するURLを記述してください。この項目が記述されていない場合、このJavaアプリケーションからはHTTP通信が利用できません。また、ここで指定されたURL以外のホストとのHTTP通信は利用できません。URLは3つまで指定できます。63バイト以内で記述してください。<p>
+URL は以下の書式で記述してください。 
+<ul>
+ <li>「http://」または「https://」で始まる文字列
+ <li> 最後が「/」で終わる文字列
+</ul>
+<p>
+詳細は <A HREF="./httpconnection_restrictions.html">HTTP接続における制限事項</A> を参照してください。 
+</dd>
+<!--将来拡張用規定ここから
+<p><dt>MIDlet-X-AllowRemovable: ON</dt></p>
+<p><dd>
+ユーザ操作により、外部メモリに移動・コピーしてもよいアプリケーションの場合に記述してください。
+</dd></p>
+将来拡張用規定ここまで-->
+</dl>
+<hr>
+Copyright 2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted.  
+
+</BODY>
+</HTML>

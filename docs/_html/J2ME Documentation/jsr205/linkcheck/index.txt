@@ -1,0 +1,14 @@
+file: index.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+ summary.txt: summary of results
+     log.txt: log of progress
+      dir.txt: found   2 directories with files
+     file.txt: found  20 files
+    fileX.txt: found  20 files (cross referenced)
+    fileF.txt: found  10 files with forward links
+   anchor.txt: found 663 named anchors
+  anchorX.txt: found 663 named anchors (cross referenced)
+  skipped.txt: -----  10 files skipped
+    skipX.txt: -----  10 files skipped (cross referenced)

@@ -1,0 +1,17 @@
+com.siemens.mp
+com.siemens.mp.color_game
+com.siemens.mp.game
+com.siemens.mp.gsm
+com.siemens.mp.io
+com.siemens.mp.lcdui
+com.siemens.mp.m55
+com.siemens.mp.media
+com.siemens.mp.media.control
+com.siemens.mp.ui
+java.io
+java.lang
+java.util
+javax.microedition.io
+javax.microedition.lcdui
+javax.microedition.midlet
+javax.microedition.rms

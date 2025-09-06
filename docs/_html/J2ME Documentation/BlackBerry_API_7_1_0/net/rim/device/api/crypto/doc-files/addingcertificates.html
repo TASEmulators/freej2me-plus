@@ -1,0 +1,59 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Adding New Certificates to the Crypto API</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Adding New Certificates to the API</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> Certificates provide a means of transmitting public keys in a package that can be
+    signed for authenticity by a Certificate Authority (CA) and subsequently verified by
+    a third party.  They ensure that, on the authority of the CA, the public key belongs
+    to the entity claiming ownership.
+</p>
+
+<p><b>Adding Certificates</b></p>
+
+<p> The process of adding certificates to the Crypto API is more involved that simply providing
+    support for another encoding format.  There are several steps that must be taken:
+</p>
+<ul>
+    <li>The <a href = "../certificate/certificate.html"><code>Certificate</code></a>
+         interface must be implemented.</li>
+    <li><code>PublicKeyEncoder</code> and <code>PublicKeyDecoder</code> classes must be provided for
+        the public keys that the new certificate format will use.</li>
+    <li>Signature encoding support must be provided by implementing the appropriate
+        <code>SignatureEncoder</code> and <code>SigantureDecoder</code> classes.</li>
+</ul>
+
+<p> The <code>Certificate</code> class provides the base interface for all certificates and the
+    ability to retrieve the public key, verify the certificate, and check for validity, among
+    other features.  To implement a specific certificate, simply implement the interface and
+    provide all the code necessary to process and format it.  An example of a certificate is
+    the <a href = "../certificate/X509/X509Certificate.html"><code>X509Certificate</code></a>.
+</p>
+
+<p> Since certificates contain public keys, there must be <code>PublicKeyEncoder</code>s and
+    <code>PublicKeyDecoder</code>s associated with the certificate that provide the encoding
+    in the expected format.  An example of such encoders for the X.509 certificate would be the
+    <code>X509_EC_PublicKeyEncoder</code> and <code>X509_EC_PublicKeyDecoder</code> classes.
+    Note that these encoders follow the naming scheme described in <a href = "addingencoding.html">
+    Adding Encoding Schemes to the API</a>, with the algorithm name preceding the rest of the
+    class name with an underscore.  Any given key type that can be used in the certificate must have
+    an associated encoder and decoder for that given encoding algorithm.
+</p>
+
+<p> Finally, signature encoding and decoding classes must be provided for verification of
+    the certificate's signature. Once again, an example is the X.509 implementation of
+    the <code>X509_SignatureEncoder</code> and <code>X509_SignatureDecoder</code> classes.
+</p>
+
+</BODY>
+</HTML>

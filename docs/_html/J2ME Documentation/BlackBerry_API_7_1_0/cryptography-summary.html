@@ -1,0 +1,850 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN""http://www.w3.org/TR/REC-html40/frameset.dtd">
+<!--NewPage-->
+<html
+<head
+<title>
+BlackBerry Java SDK 7.0 API Reference: Cryptography API Overview  
+</title>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+<script type="text/javascript">
+<!--
+// switchMenu - Expand or collapse a code sample div. Takes two arguments:
+// divSample, the id of the div to expand, divList
+function switchMenu(divSample, sourceLink) {
+
+	var el = document.getElementById(divSample).style;
+	if (el.display == 'none') {
+		el.display = 'block';
+		sourceLink.className = 'explink_minus';
+	} else {
+		el.display = 'none';
+		sourceLink.className = 'explink_plus';
+	}
+}
+
+// collapseAll - Collapses all expandable divs and adds the + graphic automatically when the page loads.
+// This is done so that users who do not have JS enabled can still see the code samples.
+function collapseAll() {
+	// Collapse all expandable divs
+	var divsOnPage = document.getElementsByTagName('div');
+	for (var x = 0; x < divsOnPage.length; x++) {
+		if (divsOnPage[x].id.substr(0,3) == "UI_") {
+		
+			divsOnPage[x].style.display = 'none';
+			
+		}
+	}
+	// Change all the expand/collapse links to explink_plus, to show a plus sign beside it
+	var linksOnPage = document.getElementsByTagName('a');
+	for (var y = 0; y < linksOnPage.length; y++) {
+		if (linksOnPage[y].className == "explink") {
+			linksOnPage[y].className = "explink_plus";
+		}
+	}
+}
+//-->
+</script>
+<style type="text/css">
+#api_table
+{  
+  padding: 3px;
+  border: 1px solid #777;
+  font-size: 100%;
+  background-color: #ffffff;
+  border-collapse: collapse;
+  border-spacing: 0px;
+  margin-bottom: 1em;
+  margin-left: 70px;
+}
+
+#api_table td
+{
+	padding: 3px;
+	font-size:90%;
+	border:none;
+}
+
+#api_table_title
+{
+   border:  1px solid;
+   background-color: #eee;
+}
+</style>
+</head>
+<BODY BGCOLOR="white" onLoad="collapseAll();">
+
+<!-- ========== START OF NAVBAR ========== -->
+<a name="navbar_top"><!-- --></A>
+<table border="0" width="100%" cellpadding="1" cellspacing="0">
+<tr>
+<td colspan=2 bgcolor="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="index-files/index-1.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD align="right" Valign="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<tr>
+<TD bgcolor="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD bgcolor="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" TARGET="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="overview-summary.html" TARGET="_top"><B>NO FRAMES</B></A></FONT></TD>
+</TR>
+</TABLE>
+<!-- =========== END OF NAVBAR =========== -->
+<HR>
+<FORM action="https://www.blackberry.com/DocsFeedback/" method="GET" target="_new">
+<INPUT type="hidden" name="title" value="API Reference">
+<INPUT type="hidden" name="source" value="External">
+
+<INPUT type="hidden" name="version" value="7.0.0">
+<INPUT type="hidden" name="classname" value="Cryptography overview">
+<INPUT type="submit" value="Submit Feedback" /></FORM>
+
+<BR>
+
+<!--- <body> -->
+
+<h1 align="center">Cryptography</h1>
+
+<h2>Overview</h2>
+<p>This category contains the packages you can use to perform tasks that involve cryptography. You can
+use this Crypto API to encrypt and decrypt data, work with secure connections, manage cryptographic keys and
+digitally sign and verify data. Support is included for both assymetric (public key) and symmetric (private key) 
+encryption.<p>
+
+<p>The Crypto API includes the following packages:
+
+<TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="" CLASS="CategoryTable">
+<tr BGCOLOR="white" CLASS="TableRowColor">
+<td width="50%" style="border-top:none;">
+<ul>
+<li><a href="javax/microedition/pki/package-summary.html">javax.microedition.pki</a></li>
+<li><a href="net/rim/device/api/crypto/package-summary.html">net.rim.device.api.crypto</a></li>
+<li><a href="net/rim/device/api/crypto/asn1/package-summary.html">net.rim.device.api.crypto.asn1</a></li>
+<li><a href="net/rim/device/api/crypto/certificate/package-summary.html">net.rim.device.api.crypto.certificate</a></li>
+<li><a href="net/rim/device/api/crypto/certificate/status/package-summary.html">net.rim.device.api.crypto.certificate.status</a></li>
+<li><a href="net/rim/device/api/crypto/certificate/wtls/package-summary.html">net.rim.device.api.crypto.certificate.wtls</a></li> 
+<li><a href="net/rim/device/api/crypto/certificate/x509/package-summary.html">net.rim.device.api.crypto.certificate.x509</a></li> 
+<li><a href="net/rim/device/api/crypto/cms/package-summary.html">net.rim.device.api.crypto.cms</a></li> 
+
+</ul>
+</td>
+<td width="50%">
+<ul>
+<li><a href="net/rim/device/api/crypto/encoder/package-summary.html">net.rim.device.api.crypto.encoder</a></li>
+<li><a href="net/rim/device/api/crypto/keystore/package-summary.html">net.rim.device.api.crypto.keystore</a></li>
+<li><a href="net/rim/device/api/crypto/oid/package-summary.html">net.rim.device.api.crypto.oid </a></li>
+<li><a href="net/rim/device/api/crypto/tls/package-summary.html">net.rim.device.api.crypto.tls </a></li>
+<li><a href="net/rim/device/api/crypto/tls/ssl30/package-summary.html">net.rim.device.api.crypto.tls.ssl30</a></li>
+<li><a href="net/rim/device/api/crypto/tls/tls10/package-summary.html">net.rim.device.api.crypto.tls.tls10</a></li>
+<li><a href="net/rim/device/api/crypto/tls/wtls20/package-summary.html">net.rim.device.api.crypto.tls.wtls20</a></li>
+<li><a href="net/rim/device/api/crypto/transcoder/package-summary.html">net.rim.device.api.crypto.transcoder</a></li>
+</ul>
+</td>
+</tr>
+</table>
+
+<p>The API is comprehensive. It is designed to provide you with high level abstractions to achieve a wide range 
+of cryptographic tasks. However, the API is also designed to be flexible. If the task you need to do is not covered
+you can extend the API by implementing your own cryptographic algorithms, encoding schemes, certificates and keystores.
+These <a href = "net/rim/device/api/crypto/doc-files/crypto_ext_startpage.html">tutorials</a> provide walkthroughs describing how to extend the API.</p>
+
+<p>Because the API is large, it is easier to learn and navigate if you view it as a set of smaller component APIs. The next sections
+describe the categories of tasks covered by components of the API.</p>
+
+<h2>Secure Messaging</h2>
+<ul>
+<li><a href="net/rim/device/api/crypto/cms/package-summary.html">net.rim.device.api.crypto.cms</a></li>
+</ul>
+
+This component of the API is RIM's implementation of the Cryptographic Message Syntax (CMS) standard. CMS specifies
+standard cryptographic content types. It describes message and transmission formats for those content types. The S/MIME
+secure internet mail standard is built upon CMS. This API provides types that make it easy to create and manage CMS content types. 
+
+<h2>Secure Connections</h2>
+<ul>
+<li><a href="net/rim/device/api/crypto/tls/ssl30/package-summary.html">net.rim.device.api.crypto.tls.ssl30</a></li>
+<li><a href="net/rim/device/api/crypto/tls/tls10/package-summary.html">net.rim.device.api.crypto.tls.tls10</a></li>
+<li><a href="net/rim/device/api/crypto/tls/wtls20/package-summary.html">net.rim.device.api.crypto.tls.wtls20</a></li>
+<li><a href="net/rim/device/api/crypto/certificate/wtls/package-summary.html">net.rim.device.api.crypto.certificate.wtls</a></li>
+</ul>
+This component of the API lets you work with secure connections. SSL is the well-known protocol invented by Netscape and used in the implementation
+of HTTPS. It is designed to secure data sent over TCP/IP connections. It fits in between TCP/IP and higher level protocols like HTTP, FTP and SMTP. TSL is a standard
+from the IETF meant to replace SSL. It is based on version 3 of SSL and has been widely adopted. WTLS is another protocol that provides secure
+connections, but WTLS is a layer on top of WAP rather than TCP/IP. Securing wireless communications that utilize WAP involves using WTLS between 
+the client device and the WAP gateway and one of SSL or TSL beyond the WAP gateway. None of these three protocols are compatible; interoperation
+requires a translation layer. 
+
+
+<h2>Key Management</h2>
+<h3>Key Store</h3>
+<ul>
+<li><a href="net/rim/device/api/crypto/keystore/package-summary.html">net.rim.device.api.crypto.keystore</a></li>
+</ul>
+A keystore is a database used to store cryptographic keys and digital certificates. This component of the API lets you work with a keystore. 
+
+
+<h3>Key Encoding</h3>
+<ul>
+<li><a href="net/rim/device/api/crypto/encoder/package-summary.html">net.rim.device.api.crypto.encoder</a></li>
+</ul>
+There are various representations or encodings of cryptographic keys. This component of the API lets convert keys from one encoding to 
+another. Encoding should not be confused with encryption. Keys are encoded to provide a standard representation, not to protect their
+identity.  
+
+
+<h2>Crytographic Primitives</h2>
+<ul>
+<li><a href="net/rim/device/api/crypto/package-summary.html">net.rim.device.api.crypto</a></li>
+</ul>
+This is the core component of the API and includes encrypting and decrypting algorithms for both private and public key based cryptography.
+In addition, this component of the API includes data structures and algorithms that support the use of the core encrypting and decrypting 
+algorithms. 
+
+
+<h3>Code Sample: Encoding and decoding a message using TripleDES</h3>
+<p>TripleDES is a popular symmetric key encryption algorithm. The Crypto API makes it easy to use TripleDES to encrypt and decrypt messages.</p>
+<p><a class="explink" onClick="switchMenu('UI_11', this);">Click here for a code sample that demonstrates how to encrypt and decrypt a message.</a></p>
+<div id="UI_11" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+      <td>
+      <pre><span id="support">import java.io.*;
+import net.rim.device.api.crypto.*;
+import net.rim.device.api.util.*;
+import net.rim.device.api.ui.*;
+import net.rim.device.api.ui.component.*;
+import net.rim.device.api.ui.container.*;
+import net.rim.device.api.util.*;
+
+public class EncodeDecodeString extends UiApplication implements FieldChangeListener
+{
+    private ButtonField _encrypt_button;
+    private ButtonField _decrypt_button;
+    private TripleDESKey _key;
+    private TextField _edit_input_string;
+
+    public static void main( String[] args )
+    {
+        EncodeDecodeString theApp = new EncodeDecodeString();
+        theApp.enterEventDispatcher();
+    }
+
+    public void fieldChanged(Field field, int context)
+    {
+        String strCurrentMessage = _edit_input_string.getText();
+        if(field == _encrypt_button)
+        {
+            _edit_input_string.setText(encrypt(strCurrentMessage));
+        }
+        else
+        {
+            _edit_input_string.setText(decrypt(strCurrentMessage));
+        }
+    }
+
+
+    public EncodeDecodeString()
+    {
+        MainScreen screen = new MainScreen();
+        screen.setTitle(new LabelField("Crypto Demo", LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH));
+        
+        _edit_input_string = new BasicEditField("Message:", null, 256, BasicEditField.FILTER_DEFAULT);
+        screen.add(_edit_input_string);
+        
+        _encrypt_button = new ButtonField("Encrypt");
+        _encrypt_button.setChangeListener(this);
+        screen.add(_encrypt_button);
+        
+        _decrypt_button = new ButtonField("Decrypt");
+        _decrypt_button.setChangeListener(this);
+        screen.add(_decrypt_button);
+       
+        pushScreen(screen);
+    }
+
+    public String encrypt(String plaintext)
+    {
+        try 
+        {
+            _key = new TripleDESKey();
+            TripleDESEncryptorEngine encryptionEngine = new TripleDESEncryptorEngine(_key);
+
+            // In most cases, the data that we are going to encrypt will
+            // not fit into the block length of a cipher. When that happens, we must use a padding
+            // algorithm to pad out the last block. We are going to use PKCS5 to do the padding for us.
+            PKCS5FormatterEngine formatterEngine = new PKCS5FormatterEngine( encryptionEngine );
+
+            // Use the byte array output stream to catch the encrypted information.
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            // Create a block encryptor which will help us use the triple des engine.
+            BlockEncryptor encryptor = new BlockEncryptor( formatterEngine, outputStream );
+
+            // Encrypt the actual data.
+            encryptor.write( plaintext.getBytes() );
+
+            // Close the stream. This forces the extra bytes to be padded out if there were
+            // not enough bytes to fill all of the blocks.
+            encryptor.close();
+
+            // Get the actual encrypted data.
+            byte[] encryptedData = outputStream.toByteArray();
+            String strEncrypted = new String(encryptedData);
+            return(strEncrypted);
+
+        } 
+        catch( CryptoTokenException e ) 
+        {
+            System.out.println(e.toString());
+        } 
+        catch (CryptoUnsupportedOperationException e) 
+        {
+            System.out.println(e.toString());
+        } 
+        catch( IOException e ) 
+        {
+            System.out.println(e.toString());
+        }
+        return "error";
+    }
+    
+    
+    public String decrypt(String ciphertext)
+    {
+            try
+            {
+            // We are now going to perform the decryption.  Note that since this is a 
+            // symmetric algorithm we want to use the same key as before.
+            TripleDESDecryptorEngine decryptorEngine = new TripleDESDecryptorEngine(_key);
+
+            // Create the unformatter engine that will remove any of the padding bytes.
+            PKCS5UnformatterEngine unformatterEngine = new PKCS5UnformatterEngine( decryptorEngine );
+
+            // Set up an input stream to hand the encrypted data to the block decryptor.
+            ByteArrayInputStream inputStream = new ByteArrayInputStream( ciphertext.getBytes() );
+
+            // Create the block decryptor passing in the unformatter engine and the 
+            // encrypted data.
+            BlockDecryptor decryptor = new BlockDecryptor( unformatterEngine, inputStream );
+
+            // Now we want to read from the stream. We are going to read the data 10 bytes 
+            // at a time and then add that new data to the decryptedData array.  It is 
+            // important to note that for efficiency one would most likely want to use a 
+            // larger value than 10.  We use a small value so that we can demonstrate 
+            // several iterations through the loop.
+            byte[] temp = new byte[10];
+            DataBuffer db = new DataBuffer();
+            
+            for( ;; ) 
+            {
+                int bytesRead = decryptor.read( temp );
+                if( bytesRead &lt;= 0 )
+                {
+                    // We have run out of information to read, bail out of loop.
+                    break;
+                }
+                db.write(temp, 0, bytesRead);
+            }
+
+            // Now we want to ensure that the decrypted data is the same as the data we 
+            // passed into the encryptor.
+            byte[] decryptedData = db.toArray();
+            String strDecrypted = new String(decryptedData);
+            return(strDecrypted);         
+        } 
+        catch( CryptoTokenException e ) 
+        {
+            System.out.println(e.toString());
+        } 
+        catch (CryptoUnsupportedOperationException e) 
+        {
+            System.out.println(e.toString());
+        } 
+        catch( IOException e ) 
+        {
+            System.out.println(e.toString());
+        }
+        return "error";
+   }
+}</span>	
+</pre>
+</td>
+</tr>
+</table>
+</div>
+
+<h2>Crypto API Architecture</h2>
+<p>The following table presents the components of the Crypto API. It includes links to more reference information about
+each of the component APIs.</p>
+
+<table id="api_table" border width="60%">
+
+<tr>
+   <td id="api_table_title" align=middle colspan = 2><b>Secure Messaging API</b></td>
+   <td id="api_table_title" align=middle colspan = 2><b>Secure Connection API</b></td>
+</tr>
+
+<tr>
+   <td align=middle colspan = 2>
+      <a href="net/rim/device/api/crypto/cms/package-summary.html"><b>CMS API</b></a>
+   </td>
+
+<td colspan = 2>
+
+<table width = 100% border = 0>
+
+<td align=middle >
+     <a href="net/rim/device/api/crypto/tls/tls10/package-summary.html"><b>TLS API</b></a>
+</td>
+
+<td align=middle>
+     <A href="net/rim/device/api/crypto/tls/ssl30/package-summary.html"><b>SSL API</b></a>
+
+</td>
+<td align=middle>
+     <A href="net/rim/device/api/crypto/tls/wtls20/package-summary.html"><b>WTLS API</b></a>
+</td>
+
+</table>
+</td>
+</tr>
+
+
+<tr>
+<td id="api_table_title" align=center colspan=4><b>Key Management API</b></td>
+</tr>
+
+
+<tr>
+
+
+<td align=middle colspan = 2 >
+     <A href="net/rim/device/api/crypto/keystore/package-summary.html"><b>KeyStore API</b></a>
+	<table align=center cellspacing=2 cellpadding=2>
+          <tr>
+        	<TD align=center><A href="net/rim/device/api/crypto/keystore/KeyStore.html">KeyStore</a></TD>
+		<TD align=center><A href="net/rim/device/api/crypto/keystore/DeviceKeyStore.html">DeviceKeyStore</a></TD>
+	</TR>
+	<tr>
+		<TD align=center><A href="net/rim/device/api/crypto/keystore/SyncableRIMKeyStore.html">SyncableRIMKeyStore</a></TD>
+
+		<TD align=center><A href="net/rim/device/api/crypto/keystore/RIMKeyStore.html">RIMKeyStore</a></TD>
+	  </TR>
+	  <tr>
+		<TD align=center><A href="net/rim/device/api/crypto/keystore/PersistableRIMKeyStore.html">PersistableRIMKeyStore</a></TD>
+		<TD align=center><A href="net/rim/device/api/crypto/keystore/TrustedKeyStore.html">TrustedKeyStore</a></TD>
+	  </TR>
+	</table>
+   </TD>
+
+
+
+
+
+ <td align=middle colspan =2>
+   <a href="net/rim/device/api/crypto/encoder/package-summary.html"><b>Encoding API</b></a>
+      <table align=center cellspacing=2 cellpadding=2>
+        <tr>
+		<td><a href="net/rim/device/api/crypto/encoder/PrivateKeyEncoder.html">Private&nbsp;Key&nbsp;Encoders</a></td>
+
+                <td><A href="net/rim/device/api/crypto/encoder/PublicKeyEncoder.html">Public&nbsp;Key&nbsp;Encoders</a></td>
+	</TR>
+	<tr>
+
+                <td><A href="net/rim/device/api/crypto/encoder/SignatureEncoder.html">Signature&nbsp;Encoders</a></td>
+	<td><a href="net/rim/device/api/crypto/encoder/SymmetricKeyEncoder.html">Symmetric&nbsp;Key&nbsp;Encoders</a></td>
+	</tr>
+      </table>
+ </td>
+
+
+
+
+ </TR>
+<tr>
+
+ <td align=middle>
+   <A href="net/rim/device/api/crypto/certificate/package-summary.html"><b>Certificate API</b></a>
+      <table align=center cellspacing=2 cellpadding=2>
+	<tr>
+        	<TD align=center COLSPAN=2><A href="net/rim/device/api/crypto/certificate/Certificate.html">Certificate</a></td>
+
+        	<TD align=center><a href="net/rim/device/api/crypto/certificate/x509/X509Certificate.html">X509</a></td>
+
+	</TR>
+	<tr>
+	<TD align=center COLSPAN=2><A href="net/rim/device/api/crypto/certificate/status/package-summary.html">Status</a></TD>
+	<TD align=center><A href="net/rim/device/api/crypto/certificate/wtls/WTLSCertificate.html">WTLS</a></TD>
+
+	</table>
+ </TD>
+
+
+
+
+<td align=middle colspan = 2>
+   <A href="asn1/package-summary.html"><b>ASN.1 API</b></a>
+      <table align=center cellspacing=2 cellpadding=2>
+	<tr>
+	       <td><A href="net/rim/device/api/crypto/asn1/ASN1InputStream.html">ASN1InputStream</a></TD>
+</TR>
+<tr>
+	       <td><A href="net/rim/device/api/crypto/asn1/ASN1OutputStream.html">ASN1OutputStream</a></TD>
+	</TR>
+<tr>
+	       <td><A href="net/rim/device/api/crypto/asn1/ASN1InputByteArray.html">ASN1InputByteArray</a></TD>
+	</TR>
+      </table>
+ </TD>
+
+<td align=middle >
+   <A href="net/rim/device/api/crypto/oid/package-summary.html"><b>OID API</b></a>
+      <TABLE align=center cellspacing=2 cellpadding=2>
+	<tr>
+	       <td><A href="net/rim/device/api/crypto/oid/OID.html">OID</a></TD>
+	       <td><A href="net/rim/device/api/crypto/oid/OIDs.html">OIDs</a></TD>
+	</TR>
+      </table>
+ </TD>
+
+
+ </TR>
+
+
+<tr>
+<td id="api_table_title" align=center colspan=4><b>Cryptographic Primitives API</b></td>
+</tr>
+
+
+
+<tr>
+ <TD bgcolor=#cccccc align=middle colspan = 3>
+      <TABLE width = 100% cellspacing=1 cellpadding=2 width="60%">
+        <tr>
+      	<TD align=center ><a href = "#SymmetricKey">Symmetric Key Algorithms</a></TD>
+       <TD align=center ><a href = "#PublicKey">Public Key Algorithms</a></TD>
+	</TR>
+
+      </TABLE>
+ </TD>
+
+
+<TD bgcolor=#cccccc  colspan = 1>
+      <TABLE  cellspacing=2 cellpadding=2 align=center border = 0>
+        <tr>
+
+	<TD align = center colspan = 2><b>Miscellaneous</b></TD>
+	</TR>
+	<tr>
+
+	<TD ><a href = "#Misc">Digests</a></TD>
+	<TD><a href = "#Misc">PRNGs</a></TD>
+	</TR>
+      </TABLE>
+ </TD>
+
+</TR>
+
+
+ </TD>
+
+<!------------------------------>
+<!-- Symmetric Key Algorithms -->
+<!------------------------------>
+
+<table id="api_table" width="60%">
+     <tr>
+
+ 		<td id="api_table_title" align=middle COLSPAN=4><a name =SymmetricKey><b>Symmetric Key Algorithms</b></a></td>
+	</tr>
+	<tr>
+        <TD align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/Key.html"><b>Keys</b></a></TD>
+		<TD align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/EncryptorOutputStream.html"><b>Encryptors</b></a></TD>
+		<TD align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/DecryptorInputStream.html"><b>Decryptors</b></a></TD>
+		<TD align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/MAC.html"><b>MACs</b></a></TD>
+
+	</tr>
+
+	<tr>
+		<td width = 100 align=middle ROWSPAN=3 bgcolor=#cccccc>
+
+		   <br><a href="net/rim/device/api/crypto/AESKey.html">AES</a>
+		    <br><a href="net/rim/device/api/crypto/ARC4Key.html">ARC4</a>
+			<br><a href="net/rim/device/api/crypto/CAST128Key.html">Cast128</a>
+
+		    <br><a href="net/rim/device/api/crypto/DESKey.html">DES</a>
+		    <br><a href="net/rim/device/api/crypto/TripleDESKey.html">TripleDES</a>
+
+	            <br><a href="net/rim/device/api/crypto/RC2Key.html">RC2</a>
+		    <br><a href="net/rim/device/api/crypto/RC5Key.html">RC5</a>
+
+            	    <br><a href="net/rim/device/api/crypto/SkipjackKey.html">Skipjack</a>
+		    <br><a href="net/rim/device/api/crypto/HMACKey.html">HMAC</a>
+
+        </td>
+
+	<td align=middle bgcolor=#cccccc>Algorithms
+	<TABLE align=center cellspacing=2 cellpadding=2 border = 0 >
+	<tr>
+	    <td><A href="net/rim/device/api/crypto/AESEncryptorEngine.html">AES</a></td>
+            <td><A href="net/rim/device/api/crypto/ARC4PseudoRandomSource.html">ARC4</a></td>
+	</tr>
+	<tr>
+            <td><A href="net/rim/device/api/crypto/DESEncryptorEngine.html">DES</a></td>
+            <td><A href="net/rim/device/api/crypto/TripleDESEncryptorEngine.html">TripleDES</a></td>
+	</tr>
+	<tr>
+            <td><A href="net/rim/device/api/crypto/RC2EncryptorEngine.html">RC2</a></td>
+            <td><A href="net/rim/device/api/crypto/RC5EncryptorEngine.html">RC5</a></td>
+	</tr>
+	<tr>
+            <td><A href="net/rim/device/api/crypto/SkipjackEncryptorEngine.html">Skipjack</a></td>
+           <td><A href="net/rim/device/api/crypto/Cast128EncryptorEngine.html">CAST128</a></td>
+
+	</tr>
+
+	</table>
+
+        </TD>
+	<TD align=middle bgcolor=#cccccc>
+		    Algorithms
+	<table align=center cellspacing=2 cellpadding=2 border = 0 >
+	<tr>
+	    <td><A href="net/rim/device/api/crypto/AESDecryptorEngine.html">AES</a></td>
+            <td><A href="net/rim/device/api/crypto/ARC4PseudoRandomSource.html">ARC4</a></td>
+	</tr>
+	<tr>
+            <td><A href="net/rim/device/api/crypto/DESDecryptorEngine.html">DES</a></td>
+            <td><A href="net/rim/device/api/crypto/TripleDESDecryptorEngine.html">TripleDES</a></td>
+	</tr>
+	<tr>
+            <td><A href="net/rim/device/api/crypto/RC2DecryptorEngine.html">RC2</a></td>
+            <td><A href="net/rim/device/api/crypto/RC5DecryptorEngine.html">RC5</a></td>
+	</tr>
+	<tr>
+            <td><A href="net/rim/device/api/crypto/SkipjackDecryptorEngine.html">Skipjack</a></td>
+ 	    <td><A href="net/rim/device/api/crypto/Cast128DecryptorEngine.html">CAST128</a></td>
+        </tr>
+
+	</table>
+		</TD>
+
+		<TD width = 80 align=middle ROWSPAN=3 bgcolor=#cccccc>
+		    <A href="net/rim/device/api/crypto/CBCMAC.html">CBCMAC</a>
+            <br><A href="net/rim/device/api/crypto/HMAC.html">HMAC</a>
+		</TD>
+	</TR>
+
+
+	<tr>
+		<TD align=middle bgcolor=#cccccc>
+		    Modes
+		<TABLE align=center cellspacing=2 cellpadding=2 border = 0 >
+		<tr>
+		    <td><a href="net/rim/device/api/crypto/CBCEncryptorEngine.html">CBC</a></td>
+		    <td><a href="net/rim/device/api/crypto/CFBEncryptor.html">CFB</a></td>
+		</tr>
+		<tr>
+		    <td><a href="net/rim/device/api/crypto/OFBPseudoRandomSource.html">OFB</a></td>
+		    <td><a href="net/rim/device/api/crypto/XEncryptorEngine.html">X</a></td>
+		</tr>
+		</table>
+        </TD>
+
+		<TD align=middle bgcolor=#cccccc>
+		    Modes
+		<TABLE align=center cellspacing=2 cellpadding=2 border = 0 >
+		<tr>
+		    <td><a href="net/rim/device/api/crypto/CBCDecryptorEngine.html">CBC</a></td>
+		    <td><a href="net/rim/device/api/crypto/CFBDecryptor.html">CFB</a></td>
+		</tr>
+		<tr>
+		    <td><a href="net/rim/device/api/crypto/OFBPseudoRandomSource.html">OFB</a></td>
+		    <td><a href="net/rim/device/api/crypto/XDecryptorEngine.html">X</a></td>
+		</tr>
+		</table>
+		</TD>
+
+	</TR>
+	<tr>
+		<TD align=middle bgcolor=#cccccc>
+		    Padding
+
+    <br><a href="net/rim/device/api/crypto/PKCS5FormatterEngine.html">PKCS5</a>
+
+
+        </TD>
+		<TD align=middle bgcolor=#cccccc>
+		    Padding
+
+
+  <br><a href="net/rim/device/api/crypto/PKCS5UnformatterEngine.html">PKCS5</a>
+		</TD>
+	</TR>
+</table>
+
+
+
+
+<table id="api_table" width="60%">
+	<tr>
+		<td id="api_table_title" align=middle COLSPAN=6><b><a name=PublicKey>Public Key Algorithms</b></TD>
+	</tr>
+	<tr>
+        <td width = 60 align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/Key.html"><b>Keys</b></a></TD>
+		<td align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/doc-files/KeyAgreement.html"><b>Key Agreement</b></a></TD>
+		<td align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/EncryptorOutputStream.html"><b>Encryptors</b></a></TD>
+		<td align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/DecryptorInputStream.html"><b>Decryptors</b></a></TD>
+		<td align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/SignatureSigner.html"><b>Signers</b></a></TD>
+		<td width = 80 align=middle bgcolor=#cccccc><a href="net/rim/device/api/crypto/SignatureVerifier.html"><b>Verifiers</b></a></TD>
+	</tr>
+	<tr>
+
+		<td align=middle ROWSPAN=3 bgcolor=#cccccc>
+		    <a href="DHKey.html">DH</a>
+		    <br><a href="DSAKey.html">DSA</a>
+		    <br><a href="ECKey.html">EC</a>
+		    <br><a href="KEAKey.html">KEA</a>
+		    <br><a href="RSAKey.html">RSA</a>
+        </td>
+		<td align=middle ROWSPAN=1 bgcolor=#cccccc>
+            <A href="DHKeyAgreement.html">DH</a>
+            <br><A href="ECDHKeyAgreement.html">ECDH</a>
+		    <br><A href="ECMQVKeyAgreement.html">ECMQV</a>
+            <br><A href="KEAKeyAgreement.html">KEA</a>
+        </td>
+		<td width = 100 align=middle ROWSPAN=3 bgcolor=#cccccc>
+            <A href="PKCS1FormatterEngine.html">RSA&nbsp;PKCS1</a>
+            <br><A href="OAEPFormatterEngine.html">RSA&nbsp;OAEP</a>
+            <br><A href="ElGamalEncryptorEngine.html">ElGamal</a>
+        </td>
+		<td width = 100 align=middle ROWSPAN=3 bgcolor=#cccccc>
+            <A href="PKCS1UnformatterEngine.html">RSA&nbsp;PKCS1</a>
+            <br><A href="OAEPUnformatterEngine.html">RSA&nbsp;OAEP</a>
+            <br><A href="ElGamalDecryptorEngine.html">ElGamal</a>
+	    </td>
+		<td width = 100 align=middle ROWSPAN=3 bgcolor=#cccccc>
+		    <A href="DSASignatureSigner.html">DSA</a>
+            <br><A href="ECDSASignatureSigner.html">ECDSA</a>
+            <br><A href="ECNRSignatureSigner.html">ECNR</a>
+            <br><A href="PKCS1SignatureSigner.html">RSA&nbsp;PKCS1</a>
+            <br><A href="PSSSignatureSigner.html">RSA&nbsp;PSS</a>
+    		<br><A href="X931SignatureSigner.html">X9.31</a>
+        </td>
+		<td width = 100 align=middle ROWSPAN=3 bgcolor=#cccccc>
+		    <A href="DSASignatureVerifier.html">DSA</a>
+            <br><A href="ECDSASignatureVerifier.html">ECDSA</a>
+            <br><A href="ECNRSignatureVerifier.html">ECNR</a>
+            <br><A href="PKCS1SignatureVerifier.html">RSA&nbsp;PKCS1</a>
+            <br><A href="PSSSignatureVerifier.html">RSA&nbsp;PSS</a>
+            <br><A href="X931SignatureVerifier.html">X9.31</a>
+		</td>
+
+	</tr>
+	<tr>
+
+		<td align=middle ROWSPAN=2 bgcolor=#cccccc>
+		    KDFs
+            <br><A href="P1363KDF1PseudoRandomSource.html">P1363&nbsp;KDF1</A>
+            <br><A href="X942KDFPseudoRandomSource.html">X9.42&nbsp;KDF</A>
+        </td>
+	</tr>
+
+</table>
+
+
+<table id="api_table" width="60%">
+<tr>
+<td id="api_table_title" align=middle colspan = 2><a name=Misc><b>Miscellaneous</b></a></td>
+</tr>
+
+<tr>
+		<td align=middle  bgcolor=#cccccc><a href="Digest.html"><b>Digests</b></a></td>
+		<td align=middle  bgcolor=#cccccc><a href="PseudoRandomSource.html"><b>PRNGs</b></a></td>
+</tr>
+
+<tr>
+<td bgcolor=#cccccc>
+	<table>
+		<tr>
+			   <td bgcolor=#cccccc ><A href="SHA1Digest.html">SHA1</a></td>
+	   	       <td bgcolor=#cccccc><A href="SHA256Digest.html">SHA256</a></td>
+	  	       <td bgcolor=#cccccc><A href="SHA384Digest.html">SHA384</a></td>
+	
+		</tr>
+	
+		<tr>
+	  	          <td bgcolor=#cccccc><A href="SHA512Digest.html">SHA512</a></td>
+	  	          <td bgcolor=#cccccc><A href="MD2Digest.html">MD2</a></td>
+	    	      <td bgcolor=#cccccc><A href="MD4Digest.html">MD4</a></td>
+		</tr>
+		<tr>
+	         	   <td bgcolor=#cccccc><A href="MD5Digest.html">MD5</a></td>
+	         	   <td bgcolor=#cccccc><A href="RIPEMD128Digest.html">RIPEMD128</a></td>
+	         	   <td bgcolor=#cccccc><A href="RIPEMD160Digest.html">RIPEMD160</a></td>
+		</tr>
+	</table>
+</td>
+
+<td bgcolor=#cccccc>
+<table>
+<tr>
+             <td bgcolor=#cccccc><A href="P1363KDF1PseudoRandomSource.html">P1363&nbsp;KDF1</A></td>
+             <td bgcolor=#cccccc><A href="PKCS1MGF1PseudoRandomSource.html">PKCS1&nbsp;MGF1</A> </td>
+</tr>
+<tr> 
+             <td bgcolor=#cccccc><A href="X942KDFPseudoRandomSource.html">X9.42&nbsp;KDF</A></td>
+             <td bgcolor=#cccccc><A href="PKCS5KDF1PseudoRandomSource.html">PKCS5&nbsp;KDF1</A> </td>
+</tr>
+<tr>
+             <td bgcolor=#cccccc><A href="PKCS5KDF2PseudoRandomSource.html">PKCS5&nbsp;KDF2</A> </td>
+             <td bgcolor=#cccccc><A href="fips186PseudoRandomSource.html">FIPS186&nbsp;PRNG</A> </td>
+</tr>
+<tr>
+             <td bgcolor=#cccccc><A href="RFC2631KDFPseudoRandomSource.html">RFC 2631 KDF</A> </td>
+</tr>
+</td>
+</table>
+</td>
+
+</tr>
+
+
+</table>
+
+<hr/>
+<div id="legalnotice">
+<table cellspacing="0" cellpading="0" width="100%" style="border:none;">
+<tr>
+<td style="border:none;">
+<font size=-1>
+<P>Copyright 1999-2011 Research In Motion Limited. 295 Phillip Street, Waterloo, Ontario, Canada, N2L 3W8. All Rights Reserved.<br>
+Java is a trademark of Oracle America, Inc. in the US and other countries.</p>
+</font>
+</td>
+<td style="text-align:right; border:none;">
+<font size=-1><br>
+<a href="http://www.blackberry.com/legal" target="_blank">Legal</a>
+</font>
+</td>
+</tr>
+</table>
+ </div>
+</body>
+</html>

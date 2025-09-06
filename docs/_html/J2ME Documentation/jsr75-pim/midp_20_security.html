@@ -1,0 +1,169 @@
+<!-- saved from url=(0022)http://internet.e-mail -->
+<html>
+	<head>
+		<title>Recommended Practices for PIM Implementations on JSR 118</title>
+		<meta http-equiv="Content-Language" content="en-us">
+		<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+		<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+		<meta name="ProgId" content="FrontPage.Editor.Document">
+	</head>
+	<body>
+		<h1><font face="Arial">Recommended Practices - Implementation of PIM APIs within JSR 
+				118 Security Models</font></h1>
+		<h2><font face="Arial">Addendum to JSR 75 PIM API Specification</font></h2>
+		<hr>
+		<p><i><b>Copyright © 2003-2004, PalmSource, Inc.&nbsp; All Rights Reserved.</b></i></p>
+		<p><i><b>Version 1.0, Proposed Final Draft, 06/30/2003.</b></i></p>
+		<hr>
+		<h2><font face="Arial">Preface</font></h2>
+		<p>JSR 118 (also known as MIDP 2.0) is a profile that contains its own security 
+			policy.&nbsp; Its security policy is open ended in the sense that optional 
+			packages that are included in an implementation with it are capable of defining 
+			how the optional packages' restricted APIs are used within the MIDP security 
+			model.&nbsp;
+		</p>
+		<p>This addendum is informative. However, all implementations of the JSR 75 PIM 
+			APIs on a MIDP 2.0 implementation are expected to comply with this addendum for 
+			a standardized and consistent security framework.</p>
+		<h2><font face="Arial">Untrusted MIDlet Suites</font></h2>
+		<p>The MIDP 2.0 security policy defines an <i>untrusted MIDlet suite</i> to be "a 
+			MIDlet suite for which the origin and the integrity of the JAR file can NOT be 
+			trusted by the device". Furthermore, the MIDP 2.0 security policy requires that 
+			"untrusted MIDlet suites MUST execute in the untrusted domain using a 
+			restricted environment where access to protected APIs or functions either is 
+			not allowed or is allowed with explicit user permission".</p>
+		<p>In concordance with this security policy, it is defined that untrusted MIDlet 
+			suites that access the protected APIs and functions of the PIM APIs MUST be 
+			subject to explicit confirmation by the user (this is a similar policy 
+			surrounding the use of the <code>http</code> and <code>https</code> protocols). 
+			&nbsp; This mandate conforms to requirements defined in both the PIM security 
+			policy and the MIDP 2.0 security policy.</p>
+		<h2><font face="Arial">Trusted MIDlet Suites</font></h2>
+		<p>The MIDP 2.0 security policy states that "for APIs defined outside of MIDP 2.0 
+			there must be a single document that specifies any necessary permissions and 
+			the behavior of the API when it is implemented on MIDP 2.0".&nbsp; This 
+			document describes the permissions that are applicable to the PIM APIs within 
+			the MIDP 2.0 security model.</p>
+		<h3><font face="Arial">Permissions</font></h3>
+		<p>Permissions are the MIDP 2.0 mechanism by which a MIDlet may request security 
+			access to protected APIs or functions.&nbsp; A MIDlet can request access by 
+			including the permissions in the <code>MIDlet-Permissions</code> and <code>MIDlet-Permissions-Opt</code>
+			attributes in its JAD or manifest.&nbsp; Table 1 defines the permissions 
+			applicable to the PIM APIs, and the API methods that are protected by those 
+			permissions:</p>
+		<p align="center"><i>Table 1: PIM Permissions and Protected Methods</i></p>
+		<table border="1">
+			<tr>
+				<th>
+					Permission</th>
+				<th>
+					Protected API Calls</th>
+			</tr>
+			<tr>
+				<td valign="top"><code>javax.microedition.pim.ContactList.read<br>
+					</code>
+				</td>
+				<td valign="top"><code>javax.microedition.pim.PIM </code>methods:<br>
+					<code>&nbsp;&nbsp; </code><code>openPIMList(PIM.CONTACT_LIST, PIM.READ_ONLY)</code><code><br>
+						&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE)<br>
+						&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.READ_ONLY, java.lang.String)<br>
+						&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE, java.lang.String)<br>
+						&nbsp;&nbsp; listPIMLists(PIM.CONTACT_LIST)</code>
+				</td>
+			</tr>
+			<tr>
+				<td valign="top"><code>javax.microedition.pim.ContactList.write</code></td>
+				<td valign="top"><p><code>javax.microedition.pim.PIM </code>methods:<br>
+						<code>&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.WRITE_ONLY)<br>
+							&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE)<br>
+							&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.WRITE_ONLY, java.lang.String)<br>
+							&nbsp;&nbsp; openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE, java.lang.String)</code></p>
+				</td>
+			</tr>
+			<tr>
+				<td valign="top"><code>javax.microedition.pim.EventList.read</code></td>
+				<td valign="top"><code>javax.microedition.pim.PIM </code>methods:<br>
+					<code>&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.READ_ONLY)<br>
+						&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.READ_WRITE)<br>
+						&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.READ_ONLY, java.lang.String)<br>
+						&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.READ_WRITE, java.lang.String)<br>
+						&nbsp;&nbsp; listPIMLists(PIM.EVENT_LIST)</code>
+				</td>
+			</tr>
+			<tr>
+				<td valign="top"><code>javax.microedition.pim.EventList.write</code></td>
+				<td valign="top"><p><code>javax.microedition.pim.PIM </code>methods:<br>
+						<code>&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.WRITE_ONLY)<br>
+							&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.READ_WRITE)<br>
+							&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.WRITE_ONLY, java.lang.String)<br>
+							&nbsp;&nbsp; openPIMList(PIM.EVENT_LIST, PIM.READ_WRITE, java.lang.String)</code></p>
+				</td>
+			</tr>
+			<tr>
+				<td valign="top"><code>javax.microedition.pim.ToDoList.read</code></td>
+				<td valign="top"><code>javax.microedition.pim.PIM </code>methods:<br>
+					<code>&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.READ_ONLY)<br>
+						&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.READ_WRITE)<br>
+						&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.READ_ONLY, java.lang.String)<br>
+						&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.READ_WRITE, java.lang.String)<br>
+						&nbsp;&nbsp; listPIMLists(PIM.TODO_LIST)</code>
+				</td>
+			</tr>
+			<tr>
+				<td valign="top"><code>javax.microedition.pim.ToDoList.write</code></td>
+				<td valign="top"><code>javax.microedition.pim.PIM </code>methods:<br>
+					<code>&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.WRITE_ONLY)<br>
+						&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.READ_WRITE)<br>
+						&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.WRITE_ONLY, java.lang.String)<br>
+						&nbsp;&nbsp; openPIMList(PIM.TODO_LIST, PIM.READ_WRITE, java.lang.String)</code>
+				</td>
+			</tr>
+		</table>
+		<p>Note that the following protected API calls from the Table 1 require both <code>read</code>
+			and <code>write</code> permissions for their perspective lists:</p>
+		<blockquote>
+			<p><code>openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE)<br>
+					openPIMList(PIM.EVENT_LIST, PIM.READ_WRITE)<br>
+					openPIMList(PIM.TODO_LIST, PIM.READ_WRITE)<br>
+					openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE, java.lang.String)<br>
+					openPIMList(PIM.EVENT_LIST, PIM.READ_WRITE, java.lang.String)<br>
+					openPIMList(PIM.TODO_LIST, PIM.READ_WRITE, java.lang.String) </code>
+			</p>
+		</blockquote>
+		<h3><font face="Arial">Permission Scope</font></h3>
+		<p>It should be noted that the permissions protect API calls, regardless of the 
+			data that is being accessed.&nbsp; For example, a successful grant of 
+			READ_WRITE access to the&nbsp; <code>openPIMList </code>method allows the 
+			application to read/write to any PIM list, not just the PIM list&nbsp; 
+			sepcified by the method's parameter.&nbsp; The parameters of the API calls 
+			(which indicate the data being accessed)&nbsp; is not a factor at all in the 
+			granting of the permissions, as dictated by MIDP 2.0 security 
+			definitions.&nbsp;&nbsp; For this reason, it is recommended that a user 
+			interaction mode of "one-shot" be used when user authorization is required so 
+			that the user is notified on every instance that a PIM list is accessed.</p>
+		<h2><font face="Arial">Implementation Additions</font></h2>
+		<p>This recommended practice specifies security based on API access, consistent 
+			with the MIDP 2.0 security model.&nbsp; Additionally, if an implementation 
+			wishes to have a more granular security model (for example, a model based per 
+			file or directory), then the implementation may provide a more granular 
+			security model as long as all recommended practices from this document and the 
+			MIDP 2.0 security model are also adhered to.&nbsp;</p>
+		<h2><font face="Arial">MIDP 2.0 GSM/UMTS Recommended Security Model</font></h2>
+		<p>The MIDP 2.0 specification additionally includes a recommended practices 
+			document describing the recommended security model for implementing MIDP 2.0 on 
+			GSM/UMTS devices.&nbsp; This section describes how the PIM APIs can be fit into 
+			that recommended security model.&nbsp; Note that this section is for GSM/UMTS 
+			devices only, and is not applicable to MIDP 2.0 implementations on devices not 
+			supporting those protocols.</p>
+		<p>All previously defined recommended practices for the PIM APIs in the MIDP 2.0 
+			security model are also applicable in this instance.</p>
+		<h3><font face="Arial">Function Groups</font></h3>
+		<p>The GSM/UMTS Recommended Security model indicates that permissions should be, 
+			but are not required to be, mapped to a defined function group in the 
+			recommended model for user convenience.&nbsp;&nbsp; This document recommends 
+			that the permissions not be mapped to any of the function groups listed in the 
+			GSM/UMTS Recommended Security, but rather leave it to the implementation to 
+			choose how the permissions are presented to the user and what the default 
+			interaction modes are for the permissions.</p>
+	</body>
+</html>

@@ -1,0 +1,49 @@
+<HTML>
+<HEAD>
+<TITLE>Overview of Cryptography</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4"><b>RIM Crypto API: Overview of Cryptography<b></FONT>
+    </TD>
+</TR>
+</TABLE>
+<p>
+In the scope of electronic data transmission, cryptography is used to provide secure, authenticated communication between a sender and a receiver. It encompasses a wide variety of processes from complex protocols and algorithms to the simple scrambling of letters of text. 
+<p>
+While cryptography is central to the security and integrity of transmitted data, it is important to realize that no protocol is entirely secure. Protocols and algorithms are constantly being assaulted by increasing intelligent criminals with increasingly more powerful computers. Cryptographers are constantly improving routines and algorithms by increasing key sizes and therefore exponentially increasing the amount of work required by the hacker. 
+<p>
+The three main goals of cryptography are:
+<ol>
+<p><li>
+<strong>Confidentiality</strong><p>
+
+The most common use of Cryptography in the business environment is for data encryption. Encryption is the disguising of a message in such a way that its true meaning is shielded until it is deciphered by the intended receiver. There are many different ways to accomplish this. The most common approach is through the use of ciphers.
+In a typical scenario, a message is encoded using a predetermined and agreed upon protocol and cipher. The resulting message, called the ciphertext, is then transmitted to the receiver. Once the message is delivered, the receiver decrypts the message using the agreed upon protocol. 
+<p>
+Many different encryption protocols exist. Some are more secure and more practical than others. Effective protocols provide strong security and ensure complete confidentiality of sensitive user information.<br>
+<p><li>
+<strong>Integrity</strong><p>
+
+Your data is only as secure as the encryption protocol used to encrypt it. Once the protocol has been compromised, an intermediary is free to steal, read, delete, or modify your data. Worse yet, an intermediary user could intrecept the messages and pretend to be the user. Bank accounts could be emptied, credit cards could be used and serious crimes could be committed without the user’s knowledge. For obvious reasons, the ramifications of this are disastrous. It is for this reason that ensuring the integrity of your data is just as important as securing it.
+<p> 
+Data integrity is acheived in modern cryptography by using a hash function to produce a unique “digital fingerprint” of a document. In other words, a complex function is applied to a document to create a unique value. When the message is delivered, the user applies the same hash function to the message. If the resulting values match, then the message likely has not been modified. While even the best hash functions are not guaranteed to produce unique values every time, the chances that two different documents will produce the same value is very highly unlikely.
+<p>
+Different hashing routines exist for use in different scenarios. A common hashing routine is the Message Authentication Code (MAC). MACs, which are described in greater detail later in this document, combine encryption keys and hashing functions to allow users transmit secure, key-dependent hash values. <br>
+<p><li>
+<strong>Authentication</strong><p>
+
+In the event that both the hash function and the encryption protocol are compromised, an intermediary user can not only read confidential data, but also mascerade as somebody else. To prevent this from happening, a system is needed to provide sender authentication. Modern security protocols use a “digital signature” to electronically sign a document to prove that it originated from a specific user. 
+<p>
+One common protocol combines a digital signature along with a private key encryption routine to create a type of digital stamp. In order to decrypt the message, the receiver must decrypt the digital stamp using the sender’s private key. Assuming the sender’s private key has not been compromised, this method assures the authenticity of the digital signature.
+<p>
+The concept of digital signatures is widely used in the software industry today. Digital certificates are often used by software companies to distribute their applications over the Internet.<br>
+
+
+
+
+</body>
+</html>

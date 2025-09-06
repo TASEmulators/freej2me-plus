@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--NewPage-->
+<HTML>
+<HEAD>
+
+    <title>WMA 1.1 Reference Implementation</title>
+
+	<META NAME="keywords" CONTENT="Overview, WMA 2.0 Reference Implementation">
+
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+
+<SCRIPT type="text/javascript">
+function windowTitle()
+{
+    parent.document.title="Overview (WMA 2.0 Reference Implementation)";
+}
+</SCRIPT>
+	
+  </head><body>
+
+<BODY BGCOLOR="white" onload="windowTitle();">
+
+
+<!-- ========= START OF TOP NAVBAR ======= -->
+<A NAME="navbar_top"><!-- --></A>
+<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
+<TR>
+<TD COLSPAN=3 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Overview</B></FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="overview-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+&nbsp;<SCRIPT type="text/javascript">
+  <!--
+  if(window==top) {
+    document.writeln('<A HREF="allclasses-noframe.html"><B>All Classes</B></A>');
+  }
+  //-->
+</SCRIPT>
+<NOSCRIPT>
+  <A HREF="allclasses-noframe.html"><B>All Classes</B></A></NOSCRIPT>
+
+</FONT></TD>
+</TR>
+</TABLE>
+<A NAME="skip-navbar_top"></A>
+<!-- ========= END OF TOP NAVBAR ========= -->
+
+<a name="wp1030757"> </a><h2 class="pAppxNum">
+Appendix &nbsp;  B<br>
+  &nbsp; </h2>
+<a name="wp1030758"> </a><h2 class="pHeading1">
+GSM Cell Broadcast Adapter 
+</h2>
+<a name="wp1030847"> </a><p class="pBody">
+This appendix describes an adapter that uses the messaging API with the GSM Cell Broadcast short message Service (CBS). 
+</p>
+<a name="wp1030849"> </a><p class="pBody">
+The Cell Broadcast service is a unidirectional data service where
+messages are broadcast by a base station and received by every mobile
+station listening to that base station. The Wireless Messaging API is
+used for receiving these messages. </p>
+<a name="wp1030852"> </a><h3 class="pHeading2">
+B.1.0 GSM CBS message structure 
+</h3>
+<a name="wp1030854"> </a><p class="pBody">
+The GSM CBS messages are defined in the GSM 03.41 standard [4]. 
+</p>
+<a name="wp1030856"> </a><p class="pBody">
+The source/type of a CBS message is defined by its Message-Identifier
+field, which is used to choose topics to subscribe to. Applications can
+receive messages of a specific topic by opening a <code class="cCode">MessageConnection</code> with a URL connection string in the format defined below. In the format, Message-Identifier is analogous to a port number. 
+</p>
+<a name="wp1030860"> </a><p class="pBody">
+Cell broadcast messages can be encoded using the same data coding
+schemes as GSM SMS messages (See Character Mapping Table in Appendix A,
+GSM SMS Adapter). The implementation of the API will convert messages
+encoded with the GSM 7-bit alphabet or UCS-2 into <code class="cCode">TextMessage</code> objects and messages encoded in 8-bit binary to <code class="cCode">BinaryMessage</code> objects. 
+</p>
+<a name="wp1030864"> </a><p class="pBody">
+Because the cell broadcast messages do not contain any timestamps, the <code class="cCode">Message.getTimeStamp</code> method MUST always return null for received cell broadcast messages. 
+</p>
+<a name="wp1030867"> </a><h3 class="pHeading2">
+B.2.0 Addressing 
+</h3>
+<a name="wp1030869"> </a><p class="pBody">
+Table B-1 describes the syntax of the URL connection strings that specify the address. 
+</p>
+<a name="wp1031061"> </a><p class="pBody">
+<b class="cBold">Table B-1: Syntax for URL Connection Strings</b> 
+</p>
+<a name="wp1031062"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+</div><div align="left">
+<table id="wp1030935" summary="The following table summarizes 
+the syntax for URL connetcion strings. The cells that 
+span columns are internal headings." border="0" cellpadding="7">
+  <caption></caption>
+<thead>
+<tr align="center">    <th class="sun-verylightblue" scope="col"><a name="wp1030935"> </a><div style="text-align: left;" class="pTableHead">
+String
+</div>
+
+</th>
+    <th class="sun-verylightblue" scope="col"><a name="wp1030937"> </a><p class="pBody">
+Description
+</p>
+</th>
+</tr>
+</thead>
+  <tbody><tr align="left">    <td><a name="wp1030939"> </a><div class="pTableText">
+cbsurl 
+</div>
+</td>
+    <td><a name="wp1030941"> </a><div class="pTableText">
+<code class="cCode">::== "cbs://" </code>address_part 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1030943"> </a><div class="pTableText">
+address_part 
+</div>
+</td>
+    <td><a name="wp1030945"> </a><div class="pTableText">
+<code class="cCode">::== </code>message_identifier_part
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1030947"> </a><div class="pTableText">
+message_identifier_par
+</div>
+</td>
+    <td><a name="wp1030949"> </a><div class="pTableText">
+<code class="cCode">::== ":"</code> digits
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1030951"> </a><div class="pTableText">
+digit 
+</div>
+</td>
+    <td><a name="wp1030953"> </a><div class="pTableText">
+<code class="cCode">::== </code>"0" | "1" | "2" | "3"  | "4" | "5" | "6" | "7" | "8"  | "9" 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1030955"> </a><div class="pTableText">
+digits 
+</div>
+</td>
+    <td><a name="wp1030957"> </a><div class="pTableText">
+<code class="cCode">::== </code>digit | digit digits
+</div>
+</td>
+</tr>
+<tr><td colspan="15"><hr class="pTableHr"></td></tr>
+</tbody></table>
+</div>
+<div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+<a name="wp1030886"> </a><p class="pBody">
+Examples of valid URL connection strings are:
+</p>
+<div class="pPreformatted"><pre class="pPreformatted">    cbs://:3382 <a name="wp1030889"> </a>
+    cbs://:3383 <a name="wp1030891"> </a>
+</pre></div>
+<a name="wp1030893"> </a><p class="pBody">
+In this URL, the message identifier part specifies the message
+identifier of the cell broadcast messages that the application wants to
+receive. </p>
+<a name="wp1030896"> </a><p class="pBody">
+When this adapter is used and the <code class="cCode">Connector.open()</code> method is passed a URL with this syntax, it MUST return an instance implementing the <code class="cCode">javax.wireless.messaging.MessageConnection</code> interface. These <code class="cCode">MessageConnection</code> instances can be used only for receiving messages. Attempts to call the <code class="cCode">send</code> method on these <code class="cCode">MessageConnection</code> instances MUST result in an <code class="cCode">IOException</code> being thrown. 
+</p>
+<a name="wp1030829"> </a><p class="pBody">
+
+</p>
+
+<!-- ======= START OF BOTTOM NAVBAR ====== -->
+<A NAME="navbar_bottom"><!-- --></A>
+<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
+<TR>
+<TD COLSPAN=3 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_bottom_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Overview</B></FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="overview-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+&nbsp;<SCRIPT type="text/javascript">
+  <!--
+  if(window==top) {
+    document.writeln('<A HREF="allclasses-noframe.html"><B>All Classes</B></A>');
+  }
+  //-->
+</SCRIPT>
+<NOSCRIPT>
+  <A HREF="allclasses-noframe.html"><B>All Classes</B></A></NOSCRIPT>
+
+</FONT></TD>
+</TR>
+</TABLE>
+<A NAME="skip-navbar_bottom"></A>
+<!-- ======== END OF BOTTOM NAVBAR ======= -->
+
+<HR>
+<p><address>Copyright (C) 2004 Siemens AG, Germany.       All rights reserved. Use is subject to license terms.</address>
+</BODY>
+</HTML>

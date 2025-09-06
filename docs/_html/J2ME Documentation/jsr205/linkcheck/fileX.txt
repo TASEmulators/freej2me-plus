@@ -1,0 +1,120 @@
+file: fileX.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+#------------------------------------------------------------
+# found   1 default index (cross referenced)
+#------------------------------------------------------------
+/
+[file: /index.html]
+#------------------------------------------------------------
+# found  19 html files (cross referenced)
+#------------------------------------------------------------
+/allclasses-frame.html
+    used in 3 files:
+    /
+    /index.html
+    /overview-frame.html
+
+/allclasses-noframe.html
+    used in 5 files:
+    /cbs_adapter.html
+    /cdma_adapter.html
+    /help-doc.html
+    /overview-summary.html
+    /sms_adapter.html
+
+/cbs_adapter.html
+    used in 2 files:
+    /cbs_adapter.html
+    /overview-summary.html
+
+/cdma_adapter.html
+    used in 2 files:
+    /cdma_adapter.html
+    /overview-summary.html
+
+/help-doc.html
+    used in 5 files:
+    /cbs_adapter.html
+    /cdma_adapter.html
+    /help-doc.html
+    /overview-summary.html
+    /sms_adapter.html
+
+/index.html
+    used in 5 files:
+    /cbs_adapter.html
+    /cdma_adapter.html
+    /help-doc.html
+    /overview-summary.html
+    /sms_adapter.html
+
+/javax/wireless/messaging/binarymessage.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/message.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/messageconnection.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/messagelistener.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/messagepart.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/multipartmessage.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/package-frame.html
+    used in 1 file:
+    /overview-frame.html
+
+/javax/wireless/messaging/package-summary.html
+    used in 1 file:
+    /overview-summary.html
+
+/javax/wireless/messaging/sizeexceededexception.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/javax/wireless/messaging/textmessage.html
+    used in 2 files:
+    /allclasses-frame.html
+    /allclasses-noframe.html
+
+/overview-frame.html
+    used in 2 files:
+    /
+    /index.html
+
+/overview-summary.html
+    used in 7 files:
+    /
+    /cbs_adapter.html
+    /cdma_adapter.html
+    /help-doc.html
+    /index.html
+    /overview-summary.html
+    /sms_adapter.html
+
+/sms_adapter.html
+    used in 2 files:
+    /overview-summary.html
+    /sms_adapter.html
+

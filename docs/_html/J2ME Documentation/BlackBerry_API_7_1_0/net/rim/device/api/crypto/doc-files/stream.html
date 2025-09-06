@@ -1,0 +1,188 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Stream Ciphers</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Stream Ciphers</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> The stream ciphers portion of the Crypto API is based upon the common
+    stream interface in Java, with the familiar read and write function calls used to interact
+    with the stream.  Once a stream cipher is established, all activity is
+    performed by the class on the underlying stream with no intervention
+    or work required by the developer.
+</p>
+<p>
+    This lesson describes the common uses of
+    stream ciphers in the Crypto API and provides sample code for using them.
+    First, the PseudoRandomSource class and its advantages will be discussed.
+    The second part will demonstrate ARC4 (the alleged RC4 algorithm), as this is
+    one of the most common requests.  The final section will show how to use
+    CFB mode for block ciphers.
+</p>
+
+<p><b>Pseudo-Random Sources</b></p>
+<p> A pseudo-random source is essentially a bit stream generator which is initialized with a seed and supplies an arbitrarily
+    long stream of hopefully unpredictable and non-repeating bits.
+</p>
+<p>
+    The <a href="../PseudoRandomSource.html">PseudoRandomSource</a> interface represents a
+    pseudo-random number generator (PRNG).  This interface provides methods for
+    retrieving bytes from the PRNG and resetting the state of the PRNG.
+</p>
+<p><b>Stream Ciphers</b></p>
+    Most Stream Ciphers simple create the ciphertext by exclusive-or'ing the plaintext with a keystream. The keystream is generated from
+    a pseudo-random number generator.
+</p>
+
+<p><b>The ARC4 Stream Cipher</b></p>
+<p> To use the ARC4 algorithm, we need to use an instance of the <a href="../ARC4PseudoRandomSource.html">ARC4PseudoRandomSource</a>
+    class.
+    While ARC4PseudoRandomSource could be used directly to encrypt data, the more flexible and
+    reliable way involves using the <a href="../PRNGEncryptor.html">PRNGEncryptor</a> class, which extends the
+    <a href="../StreamEncryptor.html">StreamEncryptor</a>
+    class.  All encryption can then be done by making simple calls to write.
+    The sample code for this should make the process clear:
+</p>
+<pre>
+    // Input byte array.
+    byte[] plaintext = new byte[128];
+
+    // For now we will just use the Random source to get input bytes when, in
+    // reality, this would be plaintext.  This effectively shows how to use
+    // RandomSource as well.
+    RandomSource.getBytes( plaintext );
+
+    // Print out the plaintext.
+    System.out.println("Plaintext = " + new String( plaintext ) + ".");
+
+    // Now set up the ARC4Key of length 256 bytes.
+    ARC4Key key = new ARC4Key( 256 );
+
+    // Now create the ARC4PseudoRandomSource
+    ARC4PseudoRandomSource source = new ARC4PseudoRandomSource( key );
+
+    // Create the output stream to store the encrypted data
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    // Finally, create the PRNGEncryptor stream encryptor, which uses
+    // the ARC4PseudoRandomSource and an output stream
+    PRNGEncryptor encryptStream = new PRNGEncryptor( source, out );
+
+    // To encrypt, simply call write with the plaintext
+    encryptStream.write( plaintext, 0, plaintext.length );
+    encryptStream.close();
+
+    byte[] ciphertext = out.toByteArray();
+
+    // Print out the ciphertext.
+    System.out.println( "Ciphertext = " + new String(ciphertext) + "." );
+</pre>
+<p> Decryption is similar:</p>
+<pre>
+    // Reload the key to get the ciphertext back to plaintext (decrypt).
+    source = new ARC4PseudoRandomSource( key );
+
+    // Create an input stream with ciphertext as the basis
+    ByteArrayInputStream in = new ByteArrayInputStream( ciphertext );
+
+    // Create an instance of an PRNGDecryptor to decrypt the data
+    PRNGDecryptor decryptStream = new PRNGDecryptor( source, in );
+
+    // Decrypt by reading from the stream and storing
+    // the decrypted data in plaintext
+    decryptStream.read( plaintext, 0, ciphertext.length );
+    decryptStream.close();
+
+    // Print out the plaintext.
+    System.out.println( "Plaintext = " + new String( plaintext ) + "." );
+</pre>
+
+<p><b>Using CFB Mode</b></p>
+<p> <a href="../CFBEncryptor.html">Cipher Feedback (CFB)</a> mode is a common mode used to convert a block cipher to a stream cipher.
+ The following sample code shows how to encrypt using CFB mode:
+</p>
+<pre>
+    // We are going to use DES since it seems to be the most common
+    // symmetric key algorithm used.
+
+    // Setup the input again as random bytes.
+    byte[] input = new byte[128];
+    RandomSource.getBytes( input );
+
+    // Setup the DESKEy.
+    DESKey key = new DESKey();
+
+    // Set up the DESEngine.
+    DESEncryptorEngine engine1 = new DESEncryptorEngine( key );
+
+    // Setup the Initialization vector.
+    byte[] iv1 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+
+    // Set up the output stream.
+    ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+
+    // Setup the encryptor.
+    CFBEncryptor encryptor = new CFBEncryptor( engine1, new InitializationVector( iv1 ), outStream, true );
+
+    // Write out the data to be encrypted.
+    encryptor.write( input, 0, input.length );
+
+    // Close the encryptor stream.
+    encryptor.close();
+
+    // Get the information from the underlying data stream.
+    byte[] output = outStream.toByteArray();
+    outStream.close();
+
+    // Print out the input and the output.
+    System.out.println("Plaintext = " + new String( input ) + ".");
+    System.out.println("Ciphertext = " + new String( output ) + ".");
+</pre>
+
+<p> As is evident, more code is required to establish the infrastructure than is
+    necessary to actually encrypt the data.  CFBEncryptor (or any class that implements
+    StreamEncryptor) takes the data written to it via calls to write(), encrypts it, and
+    writes that encrypted data to the output stream passed into the constructor (stream, in
+    the code above).  This way, the complete, encrypted data can be passed into any desired
+    output stream.
+</p>
+<p>
+    To decrypt data encrypted using CFB, a similar process is followed:
+</p>
+<pre>
+    // Use the same input and output byte array from above.
+    // Also, use the same key as was used above.
+
+    // Set up the DESEngine.
+    DESEncryptorEngine engine2 = new DESEncryptorEngine( key );
+
+    // Set up the Initialization vector.
+    byte[] iv2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+
+    // Set up the output stream.
+    ByteArrayInputStream inStream = new ByteArrayInputStream( output );
+
+    // Set up the encryptor.
+    CFBDecryptor decryptor = new CFBDecryptor( engine2, new InitializationVector( iv2 ), inStream, true );
+
+    // Read in the data to be decrypted.
+    decryptor.read( input, 0, input.length );
+
+    // Close the encryptor stream.
+    decryptor.close();
+    inStream.close();
+
+    // Print out the input and the output.
+    System.out.println("Plaintext = " + new String( input ) + ".");
+</pre>
+
+</BODY>
+</HTML>

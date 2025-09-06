@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+        <title>J2ME APIs Documentation</title>
+        <meta charset="UTF-8">
+        <meta name="description" content="J2ME APIs Documentation">
+        <meta name="keywords" content="Java, J2ME, Documentation">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="apple-touch-icon" sizes="57x57" href="../../icons/apple-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="../../icons/apple-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="../../icons/apple-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="../../icons/apple-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="../../icons/apple-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="../../icons/apple-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="../../icons/apple-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="../../icons/apple-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../../icons/apple-icon-180x180.png">
+        <link rel="icon" type="image/png" sizes="192x192"  href="../../icons/android-icon-192x192.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="../../icons/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="../../icons/favicon-96x96.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="../../icons/favicon-16x16.png">
+        <link rel="manifest" href="../../icons/manifest.json">
+        <meta name="msapplication-TileColor" content="#ffffff">
+        <meta name="msapplication-TileImage" content="../../icons/ms-icon-144x144.png">
+        <meta name="theme-color" content="#ffffff">
+
+        <style>
+            #mainpage {
+                position: relative; /* Ensure positioning for the pseudo-element */
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                color: #222222ff;
+                padding: 1%;
+                overflow: hidden; /* Hide any overflow from the wave */
+            }
+
+            .animbg {
+                position: fixed;
+                width: 210vw;
+                height: 100vh;
+                --mask:
+                    radial-gradient(4.47vw at 50% 6vw,#000 99%,#0000 101%) calc(50% - 4vw) 0/8vw 100%,
+                    radial-gradient(4.47vw at 50% -4vw,#0000 99%,#000 101%) 50% 2vw/8vw 100% repeat-x;
+                -webkit-mask: var(--mask);
+                        mask: var(--mask);
+            }
+
+            #animbg1 {
+                top: 88vh;
+                background-color: #00000077;
+                animation: wave-animation 30s ease-in-out infinite;
+                animation-direction: alternate;
+                backdrop-filter: blur(4px);
+            }
+
+            #animbg2 {
+                top: 90vh;
+                left: 2vw;
+                background-color: #00000077;
+                animation: wave-animation 40s ease-in-out infinite;
+                animation-direction: alternate-reverse;
+            }
+
+            @keyframes wave-animation {
+                0% { transform: translateX(-5vw) translateY(-1vh); }
+                50% { transform: translateX(-100vw) translateY(3vh); }
+                100% { transform: translateX(-5vw) translateY(-1vh); }
+            }
+
+            .wave {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 200%;
+                height: 200%;
+                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23d1e7fd" d="M0,128L30,138.7C60,149,120,171,180,170.7C240,171,300,149,360,144C420,139,480,149,540,170.7C600,192,660,224,720,218.7C780,213,840,171,900,170.7C960,171,1020,213,1080,218.7C1140,224,1200,192,1260,186.7C1320,181,1380,203,1410,213.3L1440,224L1440,0L1410,0C1380,0,1320,0,1260,0C1200,0,1140,0,1080,0C1020,0,960,0,900,0C840,0,780,0,720,0C660,0,600,0,540,0C480,0,420,0,360,0C300,0,240,0,180,0C120,0,60,0,30,0L0,0Z"></path></svg>') repeat-x;
+            }
+            
+            .button-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            button {
+                width: 15%;
+                aspect-ratio: 4 / 3;
+                margin: 0.5%;
+                cursor: pointer;
+                background-color: #1e1e1eff;
+                color: #007bff;
+                border: 4px solid #007bff;
+                border-radius: 5px;
+                font-weight: bold;
+                font-style: italic;
+                font-size: calc(min(3vw, 3vh));
+                transition: 0.3s;
+                box-shadow: 2px 2px 8px black;
+            }
+
+            button:hover {
+                background-color: #0056b3;
+                font-size: calc(min(3.2vw, 3.2vh));
+                color: black;
+                transform: scale(1.2);
+            }
+        </style>
+
+        <script>
+            function loadPage(page) { window.location.href = page; }
+        </script>
+    </head>
+
+    <body>
+        <div id="mainpage">
+            <div class="animbg" id="animbg1"></div>
+            <div class="animbg" id="animbg2"></div>
+            <button onclick="loadPage('BlackBerry_API_7_1_0/index.html')">BlackBerry API 7.1.0</button>
+            <button onclick="loadPage('cldc-1.1/index.html')">CLDC-1.1</button>
+            <button onclick="loadPage('jsr75/index.html')">JSR75 - FileConnection API</button>
+            <button onclick="loadPage('jsr75-pim/index.html')">JSR75 - Personal Information Management API</button>
+            <button onclick="loadPage('jsr82_1.1.1_javadoc/index.html')">JSR82 - Bluetooth API</button>
+            <button onclick="loadPage('jsr120/index.html')">JSR120 - Wireless Messaging API</button>
+            <button onclick="loadPage('jsr135/index.html')">JSR135 - Mobile Media API</button>
+            <button onclick="loadPage('jsr172/index.html')">JSR172 - Web Services Specification</button>
+            <button onclick="loadPage('jsr177/index.html')">JSR177 - Security and Trust Services API</button>
+            <button onclick="loadPage('jsr179-1_1-mrel-javadoc/index.html')">JSR179 - Location API</button>
+            <button onclick="loadPage('jsr184/index.html')">JSR184 - Mobile 3D Graphics (M3G) API</button>
+            <button onclick="loadPage('jsr205/index.html')">JSR205 - Wireless Messaging API 2.0</button>
+            <button onclick="loadPage('jsr211/index.html')">JSR211 - Content Handler API</button>
+            <button onclick="loadPage('jsr226/index.html')">JSR226 - Scalable 2D Vector Graphics (M2G) API</button>
+            <button onclick="loadPage('jsr234-1_1_1-mrel-javadoc/index.html')">JSR234 - Advanced Multimedia Supplements (AMMS) API</button>
+            <button onclick="loadPage('jsr238-spec-fr-1_0/index.html')">JSR238 - Mobile Internationalization API</button>
+            <button onclick="loadPage('jsr256/index.html')">JSR256 - Mobile Sensor API</button>
+            <button onclick="loadPage('jsr257/index.html')">JSR257 - Contactless Communication API</button>
+            <button onclick="loadPage('jsr258/index.html')">JSR258 - Mobile User Interface Customization API</button>
+            <button onclick="loadPage('jsr272/index.html')">JSR272 - Mobile Broadcast Service API for Handheld Terminals API</button>
+            <button onclick="loadPage('jsr280_1.0_spec/index.html')">JSR280 - XML API</button>
+            <button onclick="loadPage('ezplus_2.5/index.html')">KDDI ezplus 2.5</button>
+            <button onclick="loadPage('ezplus_3/index.html')">KDDI ezplus 3.0</button>
+            <button onclick="loadPage('KTF_WIPI_API/index.html')">KTF WIPI API</button>
+            <button onclick="loadPage('LG_MMPP_API/index.html')">LG MMPP API</button>
+            <button onclick="loadPage('Mascot_Capsule_API/index.html')">Mascot Capsule V3 API</button>
+            <button onclick="loadPage('midp-2.0/index.html')">MIDP 2.0 API</button>
+            <button onclick="loadPage('midp-3_0-fr-javadoc/index.html')">MIDP 3.0 API</button>
+            <button onclick="loadPage('Motorola3D_API/index.html')">Motorola 3D API</button>
+            <button onclick="loadPage('Motorola_FunLights_API_1_0/index.html')">Motorola FunLights API</button>
+            <button onclick="loadPage('Motorola_Gaming_API/index.html')">Motorola Gaming API</button>
+            <button onclick="loadPage('Motorola_iDEN_API/index.html')">Motorola iDEN API</button>
+            <button onclick="loadPage('VibeLight/index.html')">Motorola's VibeLight API</button>
+            <button onclick="loadPage('Maps_API/index.html')">Nokia Here Maps API</button>
+            <button onclick="loadPage('Nokia_IAPInfo/index.html')">Nokia IAPInfo API</button>
+            <button onclick="loadPage('nokiainapp/index.html')">Nokia In-App Payment API</button>
+            <button onclick="loadPage('Nokia_In-App_Purchase_API_1.0/index.html')">Nokia In-App Purchase API 1.0</button>
+            <button onclick="loadPage('LocationUtil/index.html')">Nokia LocationUtil API</button>
+            <button onclick="loadPage('Nokia_SMS_API_0_9/index.html')">Nokia SMS API 0.9</button>
+            <button onclick="loadPage('Nokia_UI_API_1_1/index.html')">Nokia UI API 1.1</button>
+            <button onclick="loadPage('nokiaapi2/index.html')">Nokia UI API 2.0</button>
+            <button onclick="loadPage('DoJa_1_0/index.html')">NTT DoCoMo's DoJa API 1.0</button>
+            <button onclick="loadPage('DoJa_2_0/index.html')">NTT DoCoMo's DoJa API 2.0</button>
+            <button onclick="loadPage('DoJa_2_0_Opt/index.html')">NTT DoCoMo's DoJa API 2.0 Optionals</button>
+            <button onclick="loadPage('DoJa_2_5_International/index.html')">NTT DoCoMo's DoJa API 2.5 International</button>
+            <button onclick="loadPage('DoJa_3_0_Opt/index.html')">NTT DoCoMo's DoJa API 3.0 Optionals</button>
+            <button onclick="loadPage('DoJa_3_5_Opt/index.html')">NTT DoCoMo's DoJa API 3.5 Optionals</button>
+            <button onclick="loadPage('DoJa_4_0_Opt/index.html')">NTT DoCoMo's DoJa API 4.0 Optionals</button>
+            <button onclick="loadPage('DoJa_4_1_Opt/index.html')">NTT DoCoMo's DoJa API 4.1 Optionals</button>
+            <button onclick="loadPage('DoJa_5_1/index.html')">NTT DoCoMo's DoJa API 5.1</button>
+            <button onclick="loadPage('DoJa_5_1_Opt/index.html')">NTT DoCoMo's DoJa API 5.0 Optionals</button>
+            <button onclick="loadPage('Star_API_1_0/index.html')">NTT DoCoMo's Star API 1.0</button>
+            <button onclick="loadPage('Star_API_1_0_Opt/index.html')">NTT DoCoMo's Star API 1.0 Optionals</button>
+            <button onclick="loadPage('Star_API_1_1/index.html')">NTT DoCoMo's Star API 1.1</button>
+            <button onclick="loadPage('Star_API_1_1_Opt/index.html')">NTT DoCoMo's Star API 1.1 Optionals</button>
+            <button onclick="loadPage('Star_API_1_2/index.html')">NTT DoCoMo's Star API 1.2</button>
+            <button onclick="loadPage('Star_API_1_2_Opt/index.html')">NTT DoCoMo's Star API 1.2 Optionals</button>
+            <button onclick="loadPage('Star_API_1_3/index.html')">NTT DoCoMo's Star API 1.3</button>
+            <button onclick="loadPage('Star_API_1_3_Opt/index.html')">NTT DoCoMo's Star API 1.3 Optionals</button>
+            <button onclick="loadPage('Star_API_1_5/index.html')">NTT DoCoMo's Star API 1.5</button>
+            <button onclick="loadPage('Star_API_1_5_Opt/index.html')">NTT DoCoMo's Star API 1.5 Optionals</button>
+            <button onclick="loadPage('Star_API_2_0/index.html')">NTT DoCoMo's Star API 2.0</button>
+            <button onclick="loadPage('Star_API_2_0_Opt/index.html')">NTT DoCoMo's Star API 2.0 Optionals</button>
+            <button onclick="loadPage('Samsung_API_1_0/index.html')">Samsung API 1.0</button>
+            <button onclick="loadPage('Siemens_API/index.html')">Siemens API (MIDP 1.0)</button>
+            <button onclick="loadPage('Capuchin/index.html')">Sony Ericsson's Project Capuchin API</button>  
+            <button onclick="loadPage('Vodafone_API_1_0/index.html')">Vodafone API 1.0</button>
+            <button onclick="loadPage('Vodafone_API_2_0/index.html')">Vodafone API 2.0</button>
+        </div>  
+    </body>
+<html>

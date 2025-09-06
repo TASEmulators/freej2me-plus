@@ -1,0 +1,33 @@
+file: file.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+#------------------------------------------------------------
+# found   1 default index
+#------------------------------------------------------------
+/
+[file: /index.html]
+
+#------------------------------------------------------------
+# found  19 html files
+#------------------------------------------------------------
+/allclasses-frame.html
+/allclasses-noframe.html
+/cbs_adapter.html
+/cdma_adapter.html
+/help-doc.html
+/index.html
+/javax/wireless/messaging/binarymessage.html
+/javax/wireless/messaging/message.html
+/javax/wireless/messaging/messageconnection.html
+/javax/wireless/messaging/messagelistener.html
+/javax/wireless/messaging/messagepart.html
+/javax/wireless/messaging/multipartmessage.html
+/javax/wireless/messaging/package-frame.html
+/javax/wireless/messaging/package-summary.html
+/javax/wireless/messaging/sizeexceededexception.html
+/javax/wireless/messaging/textmessage.html
+/overview-frame.html
+/overview-summary.html
+/sms_adapter.html
+

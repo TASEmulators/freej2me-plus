@@ -1,0 +1,516 @@
+<!--
+    Copyright (c) 2008 Sun Microsystems, Inc. All rights reserved.
+    Use is subject to license terms.
+-->
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+  <HEAD>
+    <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+</TITLE><meta name="collection" content="api">
+    <LINK REL ="stylesheet" TYPE="text/css" 
+	  HREF="../../../../stylesheet.css" tppabs="http://java.sun.com/javame/reference/apis/jsr118/stylesheet.css" TITLE="Style">
+    <!-- @(#)PKITrust.html	1.14 02/07/11 -->
+    <!-- Changed by: Gary Adams - SMI Software Development, 15-May-2002 -->
+    <!-- Changed by: Roger Riggs - Sun Microsystems Inc, 10-Jun-2002 -->
+    <!-- Changed by: Gary Adams - SMI Software Development, 07-Aug-2002 -->
+  </HEAD>
+  <BODY>
+    <H1>Trusted MIDlet Suites using X.509 PKI</H1>
+    <P>Signed MIDlet suites may become trusted by authenticating the
+      signer of the MIDlet suite and binding it to a protection domain
+      that will authorize the MIDlet suite to perform protected
+      functions by granting permissions allowed in the protection
+      domain.  The mechanisms defined here allow signing and
+      authentication of MIDlet suites based on X.509 Public Key
+      Infrastructure so the device can verify the signer and trust the
+      MIDlet suite. </P>
+
+    <P>If an implementation of this specification will recognize
+      MIDlet suites signed using PKI as trusted MIDlet suites they
+      MUST be signed and verified according to the formats and
+      processes below.</P>
+
+    <P>The MIDlet suite is protected by signing the JAR.
+      The signature and certificates are added to the application
+      descriptor as attributes.  The device uses them to verify the
+      signature. The device completes the authentication using a
+      root certificate bound to a protection domain on the
+      device. The details of the processes and formats follow.<P>
+
+    <H3>References</H3>
+    <P>MIDP 2.0 devices are expected to operate using standard Internet
+      and wireless protocols and techniques for transport and security. The
+      current mechanisms for securing Internet content is based
+      on existing Internet standards for public key cryptography:</P>
+    <UL>
+      <LI><A HREF="http://www.ietf.org/rfc/rfc2437">[RFC2437] - PKCS
+	    #1 RSA Encryption Version 2.0</A>
+      </LI>
+      <LI><A HREF="http://www.ietf.org/rfc/rfc2459">[RFC2459] - Internet
+	    X.509 Public Key Infrastructure</A>
+      </LI>
+      <LI><A HREF="http://www.ietf.org/rfc/rfc2560">[RFC2560] - 
+	    Online Certificate Status Protocol</A>
+      </LI>
+      <LI> <A
+      HREF="http://www.wapforum.org/what/technical.htm">[WAPCERT] -
+	  WAP-211-WAPCert-20010522-a -
+	  WAP Certificate Profile Specification</A>
+      </LI>
+    </UL>
+
+    <H3><A NAME="definitions">Definition of Terms</A></H3>
+    <P>The terms <EM>Trusted MIDlet suite</EM>, <EM>Permission</EM>, 
+      and <EM>Protection Domain</EM> are defined by
+      <A HREF="Authorization.html#definitions" tppabs="http://java.sun.com/javame/reference/apis/jsr118/javax/microedition/midlet/doc-files/Authorization.html#definitions">Security for MIDP
+      Applications</A>.</P>
+
+    <P>The following additional term is defined:</P>
+    <TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7">
+      <THEAD>
+	<TR>
+	  <TH WIDTH="50%" VALIGN="TOP">Term</TD>
+	  <TH WIDTH="50%" VALIGN="TOP">Definition</TD>
+	</TR>
+      </THEAD>
+
+      <TR>
+	<TD>Protection Domain Root Certificate</TD>
+	<TD>A certificate associated with a protection domain that the
+	  device implicitly trusts to verify and authorize downloaded
+	  MIDlet suites</TD> 
+      </TR>
+
+    </TABLE>
+
+    <H3><A NAME=sign> Signing a MIDlet Suite</A></H3>
+    <P>The security model involves the MIDlet suite, a signer, 
+      and public key certificates.
+      As with any public key system authentication is
+      based on a set of root certificates which are used
+      to verify other certificates.
+      
+      Zero or more root certificates will need to be on the device.
+      Additionally, root certificates may be present in removable
+      media such as SIM(WIM) card/USIM module.
+      Implementations MUST support X.509 Certificates and
+      corresponding algorithms.
+      Devices MAY support additional signing mechanisms
+      and certificate formats.</P>
+    <P>The signer of the MIDlet suite may be the developer or some entity
+      that is responsible for distributing, supporting, and perhaps billing
+      for its use. The signer will need to have a public key
+      certificate that can be validated to one of
+      the protection domain root certificates on the device. The
+      public key is used to verify the signature on the MIDlet suite. The
+      public key is provided as a RSA X.509
+      certificate included in the application descriptor.</P>
+
+
+    <P>Attributes defined within the manifest of the JAR are protected
+      by the signature.  Attributes defined within the application
+      descriptor are not secured.  When an attribute appears in the
+      manifest it <EM>MUST NOT</EM> be overridden by a different value
+      from the application descriptor. For trusted MIDlet suites the
+      value in the application descriptor must be equal to the value of
+      the corresponding attribute in the manifest.  If not, the MIDlet
+      suite MUST NOT be installed. The
+      <CODE>MIDlet.getAppProperty</CODE> method must return the
+      attribute value from the manifest if one is defined.  If not,
+      the value from the application descriptor (if any) is returned.</P>
+    <P>
+      Note that the requirement that attributes values be equal
+      differs from MIDP 1.0 and must be used for applications that are
+      signed and verified by these procedures. For untrusted
+      application descriptors, the MIDP 1.0 rule giving priority to
+      application descriptor attributes over manifest attributes must
+      be followed. </P>
+
+
+    <!-- This is in the style of mandating the process;
+	 should describe what needs to be in the JAD -->
+    <H3>Creating the Signing Certificate</H3>
+    <OL>
+      <LI>The signer will need to be
+	aware of the authorization policy for the device and contact the
+	appropriate certificate authority.
+	For example, the signer may need to send its distinguished
+	name (DN) and public key (normally, packaged in a certificate
+	request) to a certificate authority. 
+      </LI>
+      <LI>The CA creates a RSA X.509 (version 3) certificate 
+	and returns it to the signer.
+      </LI>
+      <LI>If multiple CA's are used then all the signer certificates
+	in the application descriptor MUST contain the same public
+	key.
+      </LI>
+    </OL>
+
+    <H3>Insert Certificates into the application descriptor</H3>
+    <OL>
+      <LI>The certificate path includes the
+	signer certificate and any necessary certificates
+	but omitting the root certificate.
+	The root certificate will be found on the device.
+      </LI>
+      <LI>Each certificate in the path is encoded (using base64
+	but without line breaks)
+	and inserted into the application descriptor as:
+
+	<PRE>MIDlet-Certificate-&lt;n&gt;-&lt;m&gt;: &lt;base64 encoding of a certificate&gt;</PRE>
+	&lt;n&gt;:= a number equal to 1 for first certification path in the
+	descriptor or 1 greater than the previous number for
+	additional certification paths.
+	This defines the sequence in
+	which the certificates are tested to see if the corresponding root
+	certificate is on the device.
+	See the <A HREF="#authen">Authenticating a MIDlet suite</A> section below.
+	<BR>&lt;m&gt;:= a number equal to 1 for the signer's certificate in a
+	certification path or 1 greater than the previous number for any
+	subsequent intermediate certificates.
+      </LI>
+    </OL>
+    <H3>Creating the RSA SHA-1 signature of the JAR</H3>
+    <OL>
+      <LI>The signature of the JAR is created
+	with the signers private key according to the
+	EMSA-PKCS1-v1_5 encoding method of PKCS #1
+	version 2.0 standard[RFC2437].
+      </LI>
+      <LI>The signature is base64 encoded, formatted as a single
+	MIDlet-Jar-RSA-SHA1 attribute without line breaks
+	and inserted in the application descriptor.  
+	<PRE>MIDlet-Jar-RSA-SHA1: &lt;base64 encoding of Jar signature&gt;
+	</PRE>
+      </LI>
+    </OL>
+    <BR>
+    <P>It should be noted that the signer of the MIDlet suite is
+      responsible to its protection domain root certificate owner for
+      protecting the protection domain stake holder's assets and
+      capabilities and, as such, must exercise due-diligence in
+      checking the MIDlet suite before signing it.  In the case where
+      there is a trusted relationship (possibly bound by legal
+      agreements), a protection domain root certificate owner may
+      delegate signing MIDlet suites to a third-party and in some
+      circumstances, the author of the MIDlet.</P>
+    
+    <H3><A NAME="authen">Authenticating a MIDlet Suite</A></H3>
+    <P>When an MIDlet suite is downloaded, the device MUST check if
+      authentication is required. If the attribute
+      <CODE>MIDlet-Jar-RSA-SHA1</CODE> is present in the application
+      descriptor then the
+      JAR MUST be authenticated by verifying the signer
+      certificates and JAR signature as below.</P>
+    <P>Application descriptors without the <CODE>MIDlet-Jar-RSA-SHA1</CODE>
+      attribute are not authenticated but are installed and
+      invoked as untrusted MIDlet suites. </P>
+
+    <H3>Verify Signer Certificate</H3>
+    <P>The certification path
+      consists of the signer certificate from the application
+      descriptor and other certificates as needed up to but not
+      including the root certificate.</P>
+    <OL>
+      <LI>Get the certification path for the signer certificate
+	from the application descriptor attributes
+	<CODE>MIDlet-Certificate-1-&lt;m&gt;</CODE> where &lt;m&gt;
+	starts at 1 and is incremented by 1 until there is no
+	attribute with the given name.
+	The value of each attribute is a base64 encoded certificate
+	that will need to be decoded and parsed.
+      </LI>
+      <LI>Validate the certification path using the basic path validation
+	processes described in RFC2459 using the protection domains as
+	the authoritative source of protection domain root
+	certificates.  Bind the MIDlet suite to the protection domain
+	that contains the protection domain root certificate that
+	validates the first chain from signer to root and proceed
+	with installation.
+      </LI>
+      <LI>If attributes <CODE>MIDlet-Certificate-&lt;n&gt;-&lt;m&gt;</CODE>
+	with <CODE>&lt;n&gt;</CODE>
+	greater than 1 are present and full certification path could
+	not be
+	established after verifying MIDlet-Certificate-&lt;1&gt;-&lt;m&gt;
+	certificates, repeatedly perform steps 1 and 2 for the value &lt;n&gt;
+	greater by 1 than the previous value. 
+	The results of certificate verification are gathered into
+	the Table 1.
+      </LI>
+    </OL>
+
+    <P>Table 1. Actions upon completion of signer certificate verification.</P> 
+
+    <table BORDER="1" CELLSPACING="1" CELLPADDING="7">
+      <tr>
+	<th WIDTH="50%" VALIGN="TOP">Result</th>
+	<th WIDTH="50%" VALIGN="TOP">Action</th>
+      </tr>
+      <tr>
+	<td>Attempted to validate &lt;n&gt;
+	  paths. No public keys of the issuer for the certificate can be found or none of the
+	  certification paths can be validated</td>
+	<td>Authentication fails, JAR Installation is not allowed.</td>
+      </tr>
+      <tr>
+	<td>More than one full certificate
+	  path established and validated</td>
+	<td>Implementation proceeds with the
+	  signature verification using the first successfully verified
+	  certificate path is used for
+	  authentication and authorization. </td>
+      </tr>
+      <tr>
+	<td>Only one full certificate path
+	  established and validated</td>
+	<td>Implementation proceeds with the
+	  signature verification </td>
+      </tr>
+    </table>
+
+    <H3>Verify the MIDlet Suite JAR</H3>
+    <OL>
+      <LI>Get the public key from the verified signer
+	certificate (above).
+      </LI>
+      <LI>Get the <CODE>MIDlet-Jar-RSA-SHA1</CODE>
+	attribute from the application descriptor.
+      </LI>
+      <LI>Decode the attribute value from base64 yielding a PKCS #1
+	signature [RFC2437].
+      </LI>
+      <LI>Use the signer's public key,  signature, and SHA-1
+	digest of the JAR, to verify the signature. If the signature
+	verification fails, reject the application descriptor and MIDlet
+	suite. The implementation MUST NOT install the JAR on failure or
+	allow MIDlets from the MIDlet suite to be invoked. 
+      </LI>
+    </OL>
+
+    <P>Once the steps of verifying the certificate, verifying the
+      signature and verifying the JAR all succeed then the MIDlet
+      suite contents are known to be intact and the identity of the
+      signer is known. 
+      This process must be performed during installation.</P>
+
+    <H4>Summary of MIDlet suite source verification results</H4>
+
+    <P>It is essential that the steps performed to verify the digital
+      signature as described above lead to the proof of the identity
+      of the MIDlet suite signer. The results of the verification have
+      a direct impact on authorization. The
+      following, Table 2, summarizes the states to which the signature
+      verification led and which are further used for
+      authorization at install time.</P>
+
+    <P>Table 2. Summary of MIDlet suite source verification</P>
+
+    <table BORDER="1" CELLSPACING="1" CELLPADDING="7">
+      <thead>
+	<tr>
+	  <th WIDTH="50%"><b>Initial state</b></th>
+	  <th WIDTH="50%"><b>Verification result</b></th>
+	</tr>
+      </thead>
+      <tr>
+	<td>JAD not present, JAR
+	  downloaded</td> 
+	<td>Authentication can not be
+	  performed, may install JAR. MIDlet suite is treated as
+	  untrusted</td> 
+      </tr>
+      <tr>
+	<td>JAD present but is JAR is
+	  unsigned </td> 
+	<td>Authentication can not be
+	  performed, may install JAR. MIDlet suite is treated as
+	  untrusted</td> 
+      </tr>
+      <tr>
+	<td>JAR signed but no root
+	  certificate present in the keystore to validate the certificate
+	  chain</td> 
+	<td>Authentication can not be
+	  performed, JAR installation is not allowed</td> 
+      </tr>
+      <tr>
+	<td>JAR signed, a certificate on the
+	  path is expired</td>
+	<td>Authentication can not be
+	  completed, JAR installation is not allowed</td>
+      </tr>
+      <tr>
+	<td>JAR signed, a certificate
+	  rejected for reasons other than expiration</td>
+	<td>JAD rejected, JAR installation
+	  is not allowed</td>
+      </tr>
+      <tr>
+	<td>JAR signed, certificate path
+	  validated but signature verification fails</td>
+	<td>JAD rejected, JAR installation
+	  is not allowed</td>
+      </tr>
+      <tr>
+	<td>JAR signed, certificate path
+	  validated, signature verified</td>
+	<td>JAR installation is allowed</td>
+      </tr>
+    </table>
+    
+    <H3>Caching of Authentication and Authorization Results</H3>
+    <P>
+      The implementation of the authentication and authorization
+      process may store and transfer the results for subsequent use
+      and MUST ensure that the cached information practically can not
+      be tampered with or otherwise compromised between the
+      time it is computed from the JAR, application descriptor, and
+      authentication information and the authorization information is
+      used.
+    </P>
+    
+    <P>
+      It is essential that the MIDlet suite and security
+      information used to authenticate and authorize a MIDlet suite
+      is not compromised, for example, by use of removable media or
+      other access to MIDlet suite storage that might be corrupted.
+    </P>
+
+
+    <H3>Security in Split-VM Implementations</H3>
+    <P>
+      In environments that make use of a split VM (CLDC 5.4.6), it is
+      possible to implement the security mechanism using JARs but this
+      relies on converting the JAR to the device format when the JAR
+      enters the network while faithfully preserving the semantics of
+      the MIDlet.  Once the conversion has happened, the device format
+      of the application must be secured against tampering and retain
+      its authorized permissions.  This network security is often based
+      on similar digital signature techniques to MIDlet security and
+      it may be the case that this network security infrastructure is
+      already present and active. If and only if this kind of network
+      security infrastructure already exists and it can support all
+      forms of protection required by this specification (and any
+      future JSRs based on this specification), a permissible
+      implementation of MIDlet Suite Security can be based on
+      authenticating and authorizing the device format of the MIDlet
+      since these implementation formats are the actual executable
+      content that will be used on the device.  The details of
+      authenticating and authorizing a device format version of a
+      MIDlet suite are implementation specific and thus not covered by
+      this specification.
+    </P>
+
+    <H2><A NAME=profile>MIDP X.509 Certificate Profile for Trusted
+	  MIDlet Suites</A></H2>
+
+    <P>Secured trusted MIDlet suites utilize the same base
+      certificate profile as does HTTPS.  The profile is based on the
+      WAP Certificate Profile, WAP-211-WAPCert-20010522-a [WAPCert]
+      which is based on RFC2459 Internet X.509 Public Key
+      Infrastructure Certificate and CRL Profile [RFC2459].  Refer to
+      the package documentation for
+      <CODE>javax.microedition.pki</CODE> for details.</P>
+
+    <H3>Certificate Processing for OTA</H3>
+    <P>Devices MUST recognize the key usage extension and when present
+      verify that the extension has the <CODE>digitalSignature</CODE> bit set. 
+      Devices MUST recognize the critical extended key usage extension
+      and when present verify that the extension contains the
+      <CODE>id-kp-codeSigning</CODE> object identifier (see RFC2459
+      sec. 4.2.1.13).</P>
+
+    <P>The application descriptor SHOULD NOT include a self-issued 
+      root certificate in a descriptor certificate chain. However MIDP
+      devices SHOULD treat the certificate as any other in a chain and
+      NOT explicitly reject a chain with a X.509v3 self-issued CA
+      certificate in its chain.</P>
+
+    <H3><A NAME=revocation>Certificate Expiration and Revocation</A></H3>
+    <P>Expiration and revocation of certificates
+      supplied in the application descriptor is checked during the
+      authorization procedure, specifically during certificate path
+      validation. Certificate expiration is checked locally on the
+      device as such information is retrievable from the certificate
+      itself. Certificate expiration verification is an intrinsic and
+      mandatory part of certificate path validation.</P>
+
+    <P>Certificate revocation is a more complex check as it
+      requires sending a request to a server and the decision is made
+      based on the received response. Certificate revocation can be
+      performed if the appropriate mechanism is implemented on the
+      device. Such mechanisms are not part of MIDP implementation and
+      hence do not form a part of MIDP 2.0 security framework.</P>
+
+    <P>If certificate revocation is implemented in the device, it SHOULD
+      support Online Certificate Status protocol (OCSP)
+      [RFC2560]. If other certificate revocation protocols are
+      supported, support for these other protocols may indicate that a
+      certificate has been revoked; in this case, it is permissible to
+      consider the certificate as revoked regardless of the result
+      returned by the OCSP protocol.</P>
+
+    <H3>Examples of MIDlet Suite Signing</H3>
+    <P>There are many ways to structure protection domain root
+      certificates and their associated signing policies.  These
+      examples are provided to illustrate some of the concepts in this
+      specification and are not meant to limit the ways MIDlet PKI
+      signing can be used.  The examples allow MIDlets to be
+      revoked (provided the device supports certificate revocation)
+      but at differing granularities.</P>
+
+
+    <H4>Example 1 - Developer Owns Signing Certificate</H4>
+
+    <P>This encodes the origin of the MIDlet suite into the JAD (via
+      the identity of the signer). If the certificate is revoked,
+      all of the developer's signed MIDlets on every device for every
+      user will have their execution permissions revoked.</P>
+
+    <OL>
+      <LI>Developer creates MIDlet network application</LI>
+
+      <LI>Developer encodes permissions into JAR manifest and creates
+	final MIDlet JAR</LI>
+      
+      <LI>Developer generates a private-public key pair with a
+	signing certificate and has the certificate signed by one or
+	more protection domain root certificates</LI>
+
+      <LI>The developer's certificate is used to sign the MIDlet JAR
+	and create the associated JAD entries</LI>
+
+      <LI>MIDlet JAR can be distributed with a suitably populated JAD
+	and run on a MIDP 2.0 compliant device with the appropriate
+	protection domain root certificate</LI>
+    </OL>
+
+
+    <H4>Example - Protection Domain Stakeholder Owns Signing
+      Certificate</H4>
+    
+    <P>This encodes the signers identity (not the MIDlet suite
+      developer) into the JAD. If the certificate is revoked, all
+      MIDlets signed with this particular certificate will have their
+      execution permissions revoked.</P>
+
+    <OL>
+      <LI>Developer creates MIDlet network application</LI>
+
+      <LI>Developer encodes permissions into JAR manifest and creates
+	final MIDlet JAR</LI>
+
+      <LI>The protection domain stakeholder's signing certificate (not
+	necessarily the root cert) is used to sign the MIDlet JAR and
+	create the associated JAD entries</LI>
+
+      <LI>MIDlet JAR can be distributed with a suitably populated JAD
+	and run on a MIDP 2.0 compliant device with the appropriate
+	protection domain root certificate</LI>
+    </OL>
+
+  </BODY>
+<script language="JavaScript" src="../../../../../../../../js/omi/jsc/s_code_remote.js" tppabs="http://java.sun.com/js/omi/jsc/s_code_remote.js"></script></HTML>

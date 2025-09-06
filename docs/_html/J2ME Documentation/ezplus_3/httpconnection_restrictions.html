@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<STYLE type=text/css>
+<!--
+PRE {
+	FONT-FAMILY: monospace
+;}
+-->
+</STYLE>
+<TITLE></TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+</HEAD>
+<BODY>
+
+<h2>HTTP接続における制限事項</h2>
+<hr>
+
+<h3>JADファイル中の"MIDlet-X-AllowURL-&lt;n&gt;"の指定</h3>
+<p>
+HTTP接続機能を使用するJava アプリケーションは、JADファイル中に "MIDlet-X-AllowURL-&lt;n&gt;"デスクリプタにHTTP接続先のURLを指定する必要があります。記述形式を以下に示します。 
+</p>
+<pre>
+  MIDlet-X-AllowURL-&lt;n&gt;:&lt;url&gt;
+  &lt;n&gt; = 1,2,3
+  &lt;url&gt; = http{s}://&lt;サーバ名&gt;{:&lt;ポート番号&gt;}/{&lt;パス&gt;}*
+  &lt;パス&gt; = &quot;path&quot;/
+</pre>
+<ul>
+ <li>{}は省略可能
+ <li>{}*は、{}内のパターンを複数記述可能（0個も可）
+ <li>url文字列の総数（文字列終端記号は含まず）が63を超えたものは、無効とする
+ <li>url文字列が"http://" or "https://"で始まっていない場合には無効 
+ <li>url文字列の最後が"/"でない場合には無効
+</ul>
+<dl>
+ <dt><b>有効なURL記述例：</b>
+ <dd>
+  <pre>
+  http://www.aplix.com/
+  http://javatest:8080/
+  http://server/path1/path2/
+  </pre>
+ <dt><b>無効なURL記述例：</b>
+ <dd>
+  <pre>
+  http://server
+  http://server/path
+  </pre>
+</dl>
+
+<p>
+"MIDlet-X-AllowURL-&lt;n&gt;"は、&lt;n&gt;を "1"、"2"、"3"としてJADファイル中に3つまで記述可能です。無効な記述は無視されます。例えば、"MIDlet-X-AllowURL-1"と"MIDlet-X-AllowURL-3"の記述があり、"MIDlet-X-AllowURL-2"の記述がない、または無効の場合には、"MIDlet-X-AllowURL-1"と"MIDlet-X-AllowURL-3"のみが指定されたものとみなされます。 
+</p>
+
+<h3>HttpConnection.open()でのURL指定</h3>
+<p>
+MIDPのHTTP接続機能を使用するには以下のようにHttpConnectionを取得します。
+</p>
+<pre>
+HttpConnection hcon = (HttpConnection)Connector.open(&quot;http://servername/path/&quot;)
+</pre>
+<p>
+このとき、Connector.open()に指定するurlのサーバ名およびスラッシュまでの文字列が、JADファイル中のいずれかの"MIDlet-X-AllowURL-&lt;n&gt;" デスクリプタに記述されたURL文字列の前部と完全に一致する必要があります。上記の例では "http"から"servername/"までが完全に一致する必要があります。 
+</p>
+<ul>
+ <li>一致していない場合、Connector.open()はSecurityException例外をスローします。
+ <li>デフォルトポートのポート番号指定も一致していないと無効と判断されます。例えば、"MIDlet-X-AllowURL-&lt;n&gt;"に "http://server/" を指定した場合に Connector.open()にhttp://server:80/を指定すると、SecurityException例外がスローされます。 
+</ul>
+
+<h3>通信頻度制限と通信量制限</h3>
+<p>CDMA 1X WIN対応移動機では、過剰な通信負荷を軽減するために、HTTP接続に対して以下の通信制限がかけられます。
+<ul>
+<li> 通信頻度制限 ： 
+  一定時間内に通信できる回数を制限する。
+<li> 通信量制限 ： 1つのJavaアプリケーションが1日に通信できるデータ量を制限する。 
+</ul>
+<b>通信頻度制限</b>
+<p>HTTP通信が1分間に通信できるのは一定数に制限されます。
+</p><p>
+EZアプリの実行中にこの制限を越えた場合、1回目の通信から1分が経過するまで 
+HttpConnection クラスの openInputStream メソッドは <A HREF="./com/kddi/io/FrequentConnectionException.html"><code>FrequentConnectionException</code></A> を発生します。再度、通信が可能になるまでの待ち時間は <A HREF="./com/kddi/io/FrequentConnectionException.html"><code>FrequentConnectionException</code></A> クラスの <A HREF="./com/kddi/io/FrequentConnectionException.html#getWaitTime()"><CODE>getWaitTime()</CODE></A> メソッドで取得することができます。 
+</p><p>
+<b>通信量制限</b>
+</p><p>
+EZアプリごとに、1日にHTTP通信を利用して送受信できるデータ量が一定量に制限されます。 
+EZアプリ終了後も通信量のデータは保存されますが、 
+翌日のAM1：00になるとリセットされます。
+</p><p>
+EZアプリの実行中にこの制限を越えた場合、通信量の制限を超過したことを通知する画面が表示され、VMが終了します。
+</p><p>
+通信量の制限を超えたEZアプリは、通信量のデータがリセットされるまで、起動することができません。その場合も、通信量の制限を超過したことを通知する画面が表示されます。
+</p>
+<hr>
+Copyright 2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted. 
+
+</BODY>
+</HTML>

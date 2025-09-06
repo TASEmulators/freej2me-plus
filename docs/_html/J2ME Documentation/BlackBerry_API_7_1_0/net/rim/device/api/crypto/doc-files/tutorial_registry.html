@@ -1,0 +1,57 @@
+<HTML>
+<HEAD>
+<TITLE>Securing the RuntimeStore</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4"><b>RIM Crypto API: Securing the RuntimeStore<b></FONT>
+    </TD>
+</TR>
+</TABLE>
+<p>The BlackBerry handheld uses a registry to store common software information on the device. The <code>RuntimeStore</code> class implements the registry functionality by providing a central location and associated operations to allow applications to share information. To ensure the integrity of specific data, the registry maintains a high level of security by coupling the <code>RuntimeStore</code> object with the <code>ControlledAccess</code> object. Using the <code>ControlledAccess</code> object you can supply, along with your registry data, a key to ensure that the data remains secure.
+<p>
+For more information, see the <a href= "../../system/RuntimeStore.html">RuntimeStore</a> object or the <a href= "../../system/ControlledAccess.html">ControlledAccess</a> object.
+<p>
+This tutorial describes the steps involved in adding and retrieving secure data from the RuntimeStore.
+
+
+
+<p>Adding an item into the RuntimeStore involves a key, the item you wish to add, an ID for the item, and a <code>ControlledAccess</code> object. The key is used to protect the item, the <code>ControlledAccess</code> object allows you to secure the item in the registry, and the ID allows you to identify and retrieve the item. In the following example, the key, called "ACME" is created and added to the RuntimeStore. The key instance is created using the <code>get</code> method of the <code>CodeSigningKey</code> class. The name of the key is supplied to return the specified key.
+<p>
+The item is added to the RuntimeStore using the <code>put</code> method of the <code>RuntimeStore</code> object. The <code>put</code> method accepts the ID of the item (this must be unique), and the <code>ControlledAccess</code> object which itself accepts the item to be placed in the registry and the key that will protect it.
+<p>
+The item is now secure within the RuntimeStore and cannot be modified, except by a user who has been signed with the same key.
+
+
+To store something in the RuntimeStore:
+<pre>
+
+    long MY_DATA_ID = 0x33abf322367f9018L;
+    Hashtable myHashtable = new Hashtable();
+    ...
+    // store myHashtable in the RuntimeStore
+    CodeSignKey codeSigningKey = CodeSigningKey.get( "ACME" );   // use the code signing key with signer id of "ACME"
+    RuntimeStore.put( MY_DATA_ID, new ControlledAccess( myHashtable, codeSigningKey );  // wrap myHashtable in a ControlledAccess object
+
+</pre>
+
+<p>
+Retrieving an item from RuntimeStore is much simpler. The following example creates a new RuntimeStore, then uses its <code>get</code> method to return the item associated with the ID. Since the data is protected by a <code>controlledAccess</code> object, the <code>get</code> method accepts the ID associated with the item and the key used to insert the item into the registry, and returns the item.
+
+<pre>
+    Hashtable myHashtable = (Hashtable) RuntimeStore.get( MY_DATA_ID, codeSigningKey );
+</pre>
+
+Since the code signing key is required for the operation, the item can only be modified by another user who has access to the same key used to insert the item.
+<p>
+The following example retrieves an object from the RuntimeStore without the use of the key.
+<pre>
+	Hashtable myHashtable = (Hashtable) RuntimeStore.get( MY_DATA_ID );
+  	// Note: no need to unwrap ControlledAccess
+</pre>
+The object will be retrieved from the RuntimeStore if the user matches a key that is used to protect the object in the RuntimeStore. If either of these methods fail due to an incorrect or missing key, a <code>ControlledAccessException</code> is thrown.
+</body>
+</html>

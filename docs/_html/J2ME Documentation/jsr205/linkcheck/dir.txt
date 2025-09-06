@@ -1,0 +1,10 @@
+file: dir.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+#------------------------------------------------------------
+# found   2 directories with files
+#------------------------------------------------------------
+(root)
+/javax/wireless/messaging
+

@@ -1,0 +1,516 @@
+/* Javadoc style sheet */
+
+/* Define colors, fonts and other style attributes here to override the defaults  */
+
+/* Page properties - general */
+body  {
+	background-color: #1e1e1e;
+	color: #ffffff;
+	font-family: Verdana, Arial, sans-serif;
+	font-size: 90%;
+	right: 22px;
+	padding-right: 10px;
+	padding-left: 10px;
+}
+
+/* Headings */
+h1 {
+	font-size: 21px;
+}
+h2 {
+	font-size: 130%;
+	padding-top: 20px;
+}
+h3 {
+	font-size: 110%;
+	padding-top: 16px;
+}
+h4 {
+	font-size: 100%;
+	padding-top: 7px;
+}
+
+p {
+	margin-left: 0px;
+	margin-top: 7px;
+	margin-bottom: 7px;
+}
+
+ul {
+	
+	margin-top: 0px;
+	margin-bottom: 0px;
+	
+}
+li {
+	margin-top: 0px;
+	margin-bottom: 5px;
+	padding: 0px;
+}
+
+a {
+	color: #00aaff;
+}
+
+a:visited {
+	color: #8eacbf;
+}
+a:hover{
+	color: #8aa540;
+}
+
+dt,dd {
+    font-size: 100%;	
+}
+
+pre, code {
+     font-size:100%;
+}
+
+form {
+	color: #ffffff;
+}
+input {
+	margin-bottom: -10px;
+}
+table {
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-color: #C0C4C8;
+	border-width: 1px;
+	font-size: 100%;
+}
+
+tr{
+	background-color: #1e1e1e;
+}
+
+th{
+	border-top-style: solid;
+	border-right-style: solid;
+	border-bottom-style: solid;
+	border-left-style: solid;
+	border-width: 1px;
+	border-color: #C0C4C8;
+	background-color: #101010;
+}
+
+td{
+	background-color: #1e1e1e;
+	border: none;
+	border-top-style: none;
+	border-right-style: solid;
+	border-bottom-style: solid;
+	border-left-style: solid;
+	border-width: 1px;
+	border-color: #C0C4C8;
+	background-color: #1e1e1e;
+}
+
+hr {
+	border-top-style: solid;
+	border-bottom-style: none;
+	border-right-style: none;
+	border-left-style: none;
+	border-color: #F9F9F9;
+	border-width: 1px;
+}
+
+/* Table colors */
+table.TableHeadingColor     {
+	background-color: #1e1e1e;
+	color: #FFFFFF;
+}
+td.TableHeadingColor {
+	font-size: 14px;
+}
+
+th.TableHeadingColor  {
+	padding: 10px;
+	border: none;
+	font-size: 1.6em;
+	background-color: black;
+	
+}
+
+a.TableHeadingColor {
+	color: #ffffff;
+}
+table.TableHeadingColor tr {
+   /*background-color: #FFFFFF;*/
+}
+.TableSubHeadingColor  {
+	background-color: #e1e3e6;
+} /* Light mauve */
+
+table.TableRowColor  tr{
+	background: #1e1e1e;
+	color: #FFFFFF
+} 
+
+
+th.DetailTableHeadingColor {
+	font-size: 18px;
+}
+
+
+/* Font used in left-hand frame lists */
+.FrameTitleFont   { font-size: 100%; }
+.FrameHeadingFont {
+	font-weight: bold;
+}
+.FrameItemFont    {
+	border: none;
+}
+table.FrameItems {
+	border:none;
+}
+table.FrameItems td {
+	border:none;
+}
+
+/* Example of smaller, sans-serif font in frames */
+/* .FrameItemFont  { font-size: 10pt; font-family: Helvetica, Arial, sans-serif } */
+
+/* Navigation bar fonts and colors */
+td.NavBarCell1 {
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	background-color: #000;
+	font-weight: lighter;
+}
+.NavBarCell1Rev	{ 
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	background-color: #000;
+	color: #fff;
+}
+.NavBarFont1 { 
+font-weight:lighter;
+}
+
+
+.NavBarCell1 a{
+color: #fff; 
+text-decoration: underline;
+font-weight: lighter;
+}
+
+.NavBarFont1Rev	{  }
+
+td.NavBarCell2	{
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 5px;
+	border-top-style: none;
+	border-right-style: solid;
+	border-left-style: solid;
+	border-bottom-style: solid;
+	border-color: #C0C4C8;
+	border-width: 1px;
+	font-weight: lighter;
+
+}
+
+td.NavBarCell3	{
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 5px;
+	border-top-style: none;
+	border-right-style: solid;
+	border-bottom-style: solid;
+	border-left-style: solid;
+	border-width: 1px;
+	border-color: #C0C4C8;
+}
+
+.style1			{
+	color: #165788;
+}
+.style2			{ 
+	font-family: "Courier New", Courier, monospace; 
+	font-size: 100%;
+}
+.backtotop		{
+	color: #165788;
+	font-size:11pt;
+	font-weight:lighter;
+}
+.hlink			{
+	color: #165788;
+	cursor: pointer;
+}
+
+/* Expandable and collapsible links */
+.explink		{
+	color: #165788;
+	cursor: pointer;
+	padding: 0px;
+}
+
+
+
+table.TableSubHeadingColor  tr {
+    background-color: #FFFFFF;
+}
+/* SUMMARY TABLES */
+
+table.SummaryTable {
+   border-top-style: solid;
+   border-right-style: none;
+   border-bottom-style: solid;
+   border-left-style: solid;
+   border-color: #C0C4C8;
+   border-width: 1px;
+}
+
+table.SummaryTable  th {
+	border-top-style: none;
+	border-right-style: solid;
+	border-bottom-style: none;
+	border-left-style: solid;
+	border-width: 1px;
+	border-color: #C0C4C8;
+	font-size: 1.6em;
+}
+
+table.SummaryTable td {
+	border-top-style: solid;
+	border-right-style: solid;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-bottom-width: 1px;
+	border-color: #C0C4C8;
+}
+
+.explink_plus	{
+	color: #165788;
+	cursor: pointer;
+	padding-left: 15px;
+	background: url('images/plus.gif') top left no-repeat;
+}
+.explink_minus	{
+	color: #165788;
+	cursor: pointer;
+	padding-left: 15px;
+	background: url('images/minus.gif') top left no-repeat;
+}
+
+img {
+	background-color: #FFFFFF
+}
+
+/* Code sample style */
+div.codesample {
+	margin-left: 20px;
+	padding: 2px;
+	background-color: none;
+	width: 100%;
+}
+table.codesample   {
+	
+	border: 1px solid #CCC;
+	
+	
+}
+table.codesample  td{
+	border: none;
+	padding: 5px;
+	background-color: #101010;
+	color: #FBFBFB;
+	width: 100%;
+}
+
+.SummaryHeader {
+	font-family: Arial, sans-serif;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+.ClassesList {
+	font-size: 14px;
+}
+.body2 {
+	background-color: #1e1e1e;
+	color: #FFFFFF;
+	right: 22px;
+	padding-right: 20px;
+	padding-left: 30px;
+}
+
+/* style used by category pages */
+.Small {
+	font-size: 90%;
+}
+
+table.Small {
+	border-top-style: solid;
+   border-right-style: none;
+   border-bottom-style: solid;
+   border-left-style: solid;
+   border-color: #C0C4C8;
+   border-width: 1px;
+
+}
+
+table.Small td{
+    border-top-style: solid;
+	border-right-style: solid;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-bottom-width: 1px;
+	border-color: #C0C4C8;
+
+}
+table.Small th{
+	border-top-style: none;
+	border-right-style: solid;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-width: 1px;
+	border-color:#C0C4C8;
+	background-color: #C0C4C8;
+	text-align: left;
+}
+
+.banner {
+   padding: 8px;
+   margin: 10px 0;
+   border: 1px solid #CCC;
+   background-color: #1e1e1e;
+   color: #FFFFFF;
+}
+/* styles for the category overview page */
+table.CategoryTable {
+	border-top-style: solid;
+   border-right-style: none;
+   border-bottom-style: solid;
+   border-left-style: solid;
+   border-color: #C0C4C8;
+   border-width: 1px;
+
+}
+
+table.CategoryTable td{
+    border-top-style: solid;
+	border-right-style: solid;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-bottom-width: 1px;
+	border-color: #C0C4C8;
+
+}
+table.CategoryTable th{
+	border-top-style: none;
+	border-right-style: solid;
+	border-bottom-style: none;
+	border-left-style: none;
+	border-width: 1px;
+	border-color: #C0C4C8;
+	font-size: 1.6em;
+	text-align: left;
+}
+
+.categoryHead {
+    font-size: 1.6em;
+    font-weight: bold;
+}
+
+.categoryLeader {
+    font-size: 1.0em;
+    padding-bottom: 5px;
+}
+
+.drawer {
+	display: none;
+}
+
+.face {
+    padding: 0;
+	border-top: solid 1px #8eacba;
+	background: url(images/drawer-face.jpg) no-repeat left top;
+    height: 45px;
+}
+
+.face a {
+	color: #8eacba;
+    font-size: 1em;
+    margin-top: -3px;
+    cursor: pointer;
+    cursor: hand; /* For IE 5, 5.5 */
+}
+
+.knob{
+	background: url(images/knob-arrow.jpg) no-repeat right -45px; 
+	text-align: center;
+	width: 190px;
+	height: 27 px;
+	padding: 10px 10px 0 0;
+	margin: 0 auto;
+	display: inline-block;
+	font: bold 120%/100% Arial, Helvetica, sans-serif;
+	color: #fff;
+	text-decoration: none;
+}
+
+.index {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 50px;
+}
+.index .column {
+    float: left;
+    width: 49%;
+    margin-bottom: 50px;
+    
+}
+
+#column1, #column2 { margin-left: 20%; }
+
+.index .column li {
+    /*list-style: none;*/
+    list-style: square outside url("images/bullet.jpg");
+    text-align: left;
+}
+
+/* icon navigation in overview-summary.html */
+
+.icon-nav {
+    padding-top: 33px;
+    margin-bottom: 170px;
+    width: 100%;
+}
+
+.icon-nav #category-overview {
+    background: url(./images/cat_ovr.jpg) no-repeat top left;
+}
+.icon-nav #package-index {
+    background: url(./images/pkg_idx.jpg) no-repeat top left;
+}
+
+
+.icon-nav .icon-block{
+    float: left;
+    min-height: 110px;
+    _height:auto !important;
+    _height:110px;
+    max-width: 32%;
+    padding: 0px 10px 10px 55px;
+    margin-right: 30px;
+}
+
+.icon-nav .icon-block p{
+    width: 100%;
+    margin: 0px 0px 0px 20px;
+}
+.icon-nav .icon-block h4{
+	font-size: 16px;
+    margin: -7px 0px 5px 20px;
+}
+

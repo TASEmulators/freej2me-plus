@@ -1,0 +1,333 @@
+<!DOCTYPE html
+	  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>AMMS 1.1 addendum: Advanced Multimedia Supplements Security</title>
+  </head>
+  <body>
+
+    <h1>Advanced Multimedia Supplements Security</h1>
+
+    <h2>Addendum to the Advanced Multimedia Supplements API (JSR-234) version 1.1.1</h2>
+
+    <h2>Preface</h2>
+    
+    <p>
+      This document, <i>Advanced Multimedia Supplements Security</i> is an addendum to the Advanced Multimedia Supplements
+      (JSR-234) version 1.1.1 for the Java<sup>TM</sup> Platform, Micro Edition. The specification is aimed
+      at implementations of the Advanced Multimedia Supplements API, especially with the <i>Mobile
+	Information Device Profile, Version 2.x (JSR-118)</i> and <i>Connected Device Configuration (CDC), Version 1.0 or later</i> specifications.
+	
+      The above
+      specifications can be found at <a href="http://www.jcp.org/jsr/detail/234.jsp">http://www.jcp.org/jsr/detail/234.jsp</a>, 
+      <a href="http://www.jcp.org/jsr/detail/118.jsp">http://www.jcp.org/jsr/detail/118.jsp</a> and
+      <a href="http://www.jcp.org/jsr/detail/36.jsp">http://www.jcp.org/jsr/detail/36.jsp</a>,
+      respectively.</p>
+    
+    
+    <p>The terminology used herein is defined by the above specifications except where noted.
+    </p>
+    
+    <h2>Who Should use this Document</h2>
+
+    <p>
+      The audience for this document is the Java Community Process (JCP) experts, implementers of the Advanced Multimedia Supplements, application developers using MIDP or CDC and the Advanced Multimedia Supplements,
+      service providers deploying MIDP or CDC applications, and wireless operators
+      deploying the infrastructure to support MIDP or CDC devices. This document
+      specifically targets network operators, manufacturers, and service and
+      application providers operating in GSM and UMTS networks.
+    </p>
+
+
+    <h2>Scope of this Document</h2>
+
+    <p>
+      The purpose of this document is to identify the security concerns
+      regarding Advanced Multimedia Supplements and to define the
+      corresponding security policy identifiers (permission names) when it is
+      used in conjunction with MIDP 2.x, or CDC 1.0 or later.
+    </p>
+    <p>
+      This document does not specify what the security framework is or how it
+      functions; they are specified and implemented by the implementing
+      platform, e.g. in MIDP 2.0.
+    </p>
+    <p>
+      Advanced Multimedia Supplements implementations on MIDP 2.x must follow this document.
+      CDC based implementations using the CDC security framework for application security must
+      follow the security defintions for CDC in this document.
+    </p>
+    
+    <h2>References</h2>
+    <ol>
+      <li>
+	Connected Limited Device Configuration (CLDC)
+	<br/>
+	<a href="http://jcp.org/aboutJava/communityprocess/final/jsr030/index.html">
+	  http://jcp.org/aboutJava/communityprocess/final/jsr030/index.html</a>
+	<br/><br/>
+      </li>
+      <li>
+	Mobile Information Device Profile (MIDP)
+	<br/>
+	<a href="http://jcp.org/aboutJava/communityprocess/final/jsr037/index.html">
+	  http://jcp.org/aboutJava/communityprocess/final/jsr037/index.html</a>
+	<br/><br/>
+      </li>
+      <li>
+	Mobile Information Device Profile, Next Generation (MIDP 2.0)
+	<br/>
+	<a href="http://jcp.org/aboutJava/communityprocess/first/jsr118/index.html">
+	  http://jcp.org/aboutJava/communityprocess/first/jsr118/index.html</a>
+	<br/><br/>
+      </li>
+      <li>
+	Security for GSM/UMTS Compliant Devices Recommended Practice.
+	<br/>
+	Addendum to the Mobile Information Device Profile version 2.0. JSR-118 Expert Group, Version
+	1.0, Nov 5, 2002.
+	<br/>
+	<a href="http://jcp.org/aboutJava/communityprocess/first/jsr118/index.html">
+	  http://jcp.org/aboutJava/communityprocess/first/jsr118/index.html</a>
+	<br/><br/>
+      </li>
+      <li>
+	Mobile Media API, version 1.2.
+	<br/>
+	<a href="http://jcp.org/en/jsr/detail?id=135">
+	  http://jcp.org/en/jsr/detail?id=135</a>
+	<br/><br/>
+      </li>
+      <li>
+	Advanded Multimedia Supplements, version 1.1.
+	<br/>
+	<a href="http://jcp.org/en/jsr/detail?id=234">
+	  http://jcp.org/en/jsr/detail?id=234</a>
+	<br/><br/>
+      </li>
+      <li>
+	FileConnection API
+	<br/>
+	PDA Optional Packages for the J2ME&#153; Platform, version 1.0.
+	<br/>
+	<a href="http://jcp.org/aboutJava/communityprocess/final/jsr075/index.html">
+	  http://jcp.org/aboutJava/communityprocess/final/jsr075/index.html</a>
+	<br/><br/>
+      </li>
+      <li>
+	Java Technology for Wireless Industry (JTWI).
+	<br/>
+	<a href="http://jcp.org/en/jsr/detail?id=185">
+	  http://jcp.org/en/jsr/detail?id=185</a>
+	<br/><br/>
+      </li>
+      <li>
+	Connected Device Configuration, version 1.0.
+	<br/>
+	<a href="http://www.jcp.org/jsr/detail/36.jsp">
+	  http://www.jcp.org/jsr/detail/36.jsp</a>
+	<br/><br/>
+      </li>
+      <li>
+	Connected Device Configuration, version 1.1.
+	<br/>
+	<a href="http://www.jcp.org/jsr/detail/218.jsp">
+	  http://www.jcp.org/jsr/detail/218.jsp</a>
+	<br/><br/>
+      </li>
+    </ol>
+    <h1>1. General</h1>
+    
+    <p>
+      The Advanced Multimedia Supplements (AMMS) specification does not define a security framework of its own.
+      Rather, implementations of AMMS are subject to the security mechanisms
+      provided by the underlying profile and configuration, e.g. MIDP 2. Some
+      methods in AMMS are defined such that a <code>SecurityException</code> will be thrown when
+      called without the appropriate security permissions from the caller.
+    </p>
+    
+    <p>
+      An implementation MUST guarantee that:      
+    </p>
+    <ol>
+      <li>
+	the <code>SecurityException</code> is thrown when the caller does not have the appropriate
+	security permissions to execute the method;
+      </li>
+      <li>
+	the method can be
+	used when the appropriate permissions are granted.
+      </li>
+    </ol>
+
+    <h1>2. Security Concerns for Advanced Multimedia Supplements</h1>
+
+    <p>
+      The security of AMMS concerns the use of camera and tuner.
+    </p>
+    <p>
+      In order to perform any security sensitive actions using AMMS the 
+      application MUST be granted the permission to do so. The
+      mechanism to grant the permission is implementation specific and not in the
+      scope of this document.
+    </p>
+
+    <h2>2.1 Permissions for camera in MIDP 2</h2>
+
+    <p>
+      Camera security concerns privacy and storing of images.
+      <code>CameraControl.enableShutterFeedback</code> is used to control the possible
+      audible and visual feedback of taking a picture. In order to disable the
+      shutter feedback the application must be granted the permission to
+      perform the operation. Otherwise, <code>SecurityException</code> is thrown.
+    </p>
+    <p>
+      It should be noted that because of differing local regulations it may
+      not be possible to disable the shutter feedback at all. In those cases
+      <code>MediaException</code> will be thrown.
+      
+    </p>
+
+
+    <p>
+      AMMS permissions for the camera are specified in table 1.
+    </p>
+    <table align="center" border="1" cellpadding="0" width="90%">
+      <caption>Table 1: AMMS permissions for the camera</caption>
+      <tr>
+	<td width="65%">
+	  <b>&nbsp;API call</b>
+	</td>
+	<td>
+	  <b>&nbsp;Permission</b>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>CameraControl.enableShutterFeedback()</code> <br/>
+	</td>
+	<td>
+	  &nbsp;<code>javax.microedition.amms.control.camera.enableShutterFeedback</code><br/>
+	</td>
+      </tr>
+    </table>
+    
+    <p>
+      Security regarding storing of images affects AMMS only indirectly. AMMS does not specify its own
+      permissions for storage but they are handled by the API which is used to store the images. With MIDP,
+      the permissions of the FileConnection API (JSR-75) are used when images are written to the file system.
+    </p>
+    <p>
+      AMMS implementations must follow the security practices of the FileConnection API to store the images
+      when AMMS and FileConnection API exist in the same implementation.
+    </p>
+    <p>
+      Similarly, MMAPI specifies the security practices concerning capture of images in general.
+      Since AMMS uses the MMAPI framework, AMMS implementations do not exist without MMAPI. Images taken by AMMS
+      must follow the image capturing security practices of MMAPI.
+    </p>
+    <p>
+      References to other APIs which may affect AMMS are listed in table 2. Information concerning related
+      permissions can be found from those API specifications.
+    </p>
+
+    <table align="center" border="1" cellpadding="0" width="90%">
+      <caption>Table 2: Other APIs whose security settings may affect AMMS</caption>
+      <tr>
+	<td width="65%">
+	  <b>&nbsp;API call</b>
+	</td>
+	<td>
+	  <b>&nbsp;Related API</b>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>SnapshotControl.setDirectory(java.lang.String directory)</code> <br/>
+	</td>
+	<td>
+	  &nbsp;<code>FileConnection API (JSR-75)</code>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>SnapshotControl.start(int maxShots)</code> <br/>
+	</td>
+	<td>
+	  &nbsp;<code>Mobile Media API (JSR-135)</code>
+	</td>
+      </tr>
+    </table>
+
+    <h2>2.2 Permissions for tuner in MIDP 2</h2>
+    
+    <p>
+      The <code>TunerControl</code> of AMMS allows use of the tuner (usually FM or AM
+      radio). The API allows accessing and setting of the preset channels of
+      the native tuner application. The Java application must be granted
+      permission to set the native presets in order to perform these operations.
+      AMMS permissions for the tuner are specified in table 3.
+    </p>
+
+    <table align="center" border="1" cellpadding="0" width="90%">
+      <caption>Table 3: AMMS permissions for the tuner</caption>
+      <tr>
+	<td width="65%">
+	  <b>&nbsp;API call</b>
+	</td>
+	<td>
+	  <b>&nbsp;Permission</b>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>TunerControl.setPreset(int preset)</code> <br/>
+	  &nbsp;<code>TunerControl.setPreset(int preset, int freq, java.lang.String mod, int stereomode)</code> <br/>
+	  &nbsp;<code>TunerControl.setPresetName(int preset, java.lang.String name)</code> <br/>
+	  
+	</td>
+	<td>
+	  &nbsp;<code>javax.microedition.amms.control.tuner.setPreset</code><br/>
+	</td>
+	</tr>
+    </table>
+
+    <h2>2.3 Permissions for implementations using permission classes</h2>
+    <p>
+      Implementations using security permissions based on <code>java.security.permission</code> must include class
+      <code>javax.microedition.amms.AmmsPermission</code> that extends <code>java.security.BasicPermission</code>. The methods listed below must perform permission checks.
+      </p>
+      <table align="center" border="1" cellpadding="0" width="90%">
+	<caption>Table 4: AMMS security definitions for CDC based implementations</caption>
+	<tr>
+	  <td width="65%">
+	    <b>&nbsp;API call</b>
+	  </td>
+	  <td>
+	    <b>&nbsp;Target in javax.microedition.amms.AmmsPermission</b>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    &nbsp;<code>CameraControl.enableShutterFeedback()</code> <br/>
+	  </td>
+	  <td>
+	    &nbsp;<code>"cameraControl.enableShutterFeedback"</code><br/>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    &nbsp;<code>TunerControl.setPreset(int preset)</code> <br/>
+	    &nbsp;<code>TunerControl.setPreset(int preset, int freq, java.lang.String mod, int stereomode)</code> <br/>
+	    &nbsp;<code>TunerControl.setPresetName(int preset, java.lang.String name)</code> <br/>
+	  </td>
+	  <td>
+	    &nbsp;<code>"tunerControl.setPreset"</code><br/>
+	  </td>
+	</tr>
+      </table>
+    <p>See stub implementation <a href="AmmsPermission.java">AmmsPermission.java</a> for the permission class signature definition.</p>
+
+  </body>
+</html>

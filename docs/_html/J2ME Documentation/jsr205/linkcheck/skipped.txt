@@ -1,0 +1,18 @@
+file: skipped.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+#------------------------------------------------------------
+# -----  10 files skipped
+#------------------------------------------------------------
+/javax/wireless/messaging/binarymessage.html
+/javax/wireless/messaging/message.html
+/javax/wireless/messaging/messageconnection.html
+/javax/wireless/messaging/messagelistener.html
+/javax/wireless/messaging/messagepart.html
+/javax/wireless/messaging/multipartmessage.html
+/javax/wireless/messaging/package-frame.html
+/javax/wireless/messaging/package-summary.html
+/javax/wireless/messaging/sizeexceededexception.html
+/javax/wireless/messaging/textmessage.html
+

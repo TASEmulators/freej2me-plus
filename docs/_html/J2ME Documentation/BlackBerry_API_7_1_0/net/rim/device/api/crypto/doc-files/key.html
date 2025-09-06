@@ -1,0 +1,388 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Keys, CryptoSystems, Certificates and KeyStores</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Keys, CryptoSystems, Certificates and KeyStores</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<P> This tutorial covers several diverse
+    subject areas: keys, cryptosystems, certificates,
+    and keystores. Each of the sections are summarized briefly below:
+</P>
+
+<p><ul>
+    <li><A href="#keys">Keys</A> - private/public keys, key pairs, and symmetric
+  keys. This includes how to create keys and how to manipulate them for the many
+  different applications they have throughout the Crypto API. Remember, the best
+  cryptography is based upon the secrecy of the key (or the private part of the
+  key).
+    <li><A href="#cryptosystems">CryptoSystems</A> - the CryptoSystems are used
+  by all of the key systems for storing parameters for those specific keys.
+  These are described in detail in this section.
+    <li><A href="#certificates">Certificates</A> - the Crypto API provides an
+  extensive certificate framework which is described in this section. This
+  includes X509 certificates as well as others.
+    <li><A href="#keystores">KeyStores</A> - a key store is used to store keys. This lesson will describe
+	  the architecture of the keystore classes and their usefulness.</li></ul>
+<P></P>
+
+<TABLE width = "100%" border = "0" bgcolor = "silver">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "3">
+        <a name="keys"><b>Keys</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p>	Keys provide the security behind any component in the Crypto API.  Today, the standard for cryptography
+	dictates that only the key should provide the security. The concept of "security by obscurity," or hiding
+	details about the algorithm or implementation is not acceptable. That being said, keys are the
+	most important part of the Crypto API as well as one of the simplest parts of the API.  Most of the examples
+	and sample code given throughout the entire tutorial will demonstrate how to create the appropriate keys
+	for each algorithm.</p>
+
+<p> In the Crypto API, <code>Key</code> is an interface. Subinterfaces for various different types of
+	keys can be found extending from the Key interface.  The important subinterfaces to take note of
+	are:
+	<ul>
+		<li><a href="../PublicKey.html">Public Key</a>
+		<p>	The public key provides the concept of a key that can have its contents divulged to anyone.
+			Public keys are used only in asymmetric key cryptography, where the public key and private
+			key are different. In this scenario, the private key contains all of the secret information.</p>
+		<li><a href="../PrivateKey.html">Private Key</a>
+		<p>	As mentioned above, the private key contains all of the secret information in asymmetric key
+			cryptography.  Its contents must be protected.</p>
+		<li><a href="../SymmetricKey.html">Symmetric Key</a>
+		<p>	In symmetric key cryptography the keys for encrypting and decrypting are identical and, hence,
+			symmetric.  In this case, the key must be protected with as much
+			zeal as a private key since all security is based upon this secret.</p></li>
+	</ul>
+
+<p>	The first common question is: "How do I create a new key?" whether that key is an RSA key or a DES key.
+	Below are two code samples that will create an RSA key and a DES key. These
+	examples can be slightly modified to create a DSA key or an AES key.</p>
+
+<p><b>Creating a DES Key</b></p>
+<p> The steps for creating a <a href="../DESKey.html">DES key</a> from scratch as well as from a known key are simple:
+</p><PRE>
+    // uses random data to create the key.
+    DESKey unknownKey = new DESKey();
+
+    // data contains the known key.
+    byte[] data = new byte[ 8 ];
+    DESKey knownKey = new DESKey( data );
+</PRE>
+<P></P>
+   <p>
+<TABLE width = "100%" border = "0" bgcolor = "silver">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "3">
+        <a name="cryptosystems"><b>CryptoSystems</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+<p>Cryptosystems are used by all the public key cryptographic algorithms (e.g. RSA, DSA, ECDSA, etc) to hold public information common to all users within
+a cryptographic community or system. Typically the cryptosystem holds some mathematical numbers that each user's computer must know for the cryptographic
+calculations to succeed.
+<p> The cryptosystems allow the developer to ignore many of the
+    little details involved in using and creating keys.  But,
+    by the same token, they also allow the developer to specify every single
+    possible parameter for the keys.  To be exact, the cryptosystems
+    provide a unique compromise between hiding details when desired and allowing
+    access to those details when required.</p>
+
+<p> The use of the CryptoSystem classes is easy to comprehend,
+    but is very specific to the key system that is being used.  There are several crypto systems defined:
+    <ul>
+    <li><a href="../RSACryptoSystem.html">RSACryptoSystem</a>,
+    <li><a href="../DSACryptoSystem.html">DSACryptoSystem</a>,
+    <li><a href="../ECCryptoSystem.html">ECCrypoSystem</a>,
+    <li><a href="../DHCryptoSystem.html">DHCryptoSystem</a>.
+    </ul>
+    </p>
+
+<p> The <a href="../RSACryptoSystem.html">RSACryptoSystem</a> is the simplest in that it only contains
+    the information for the size of the modulus. Using the RSACryptoSystem is very simple,
+    as demonstrated by the following code:
+</p>
+<pre>
+    RSACryptoSystem rsaCryptoSystem = new RSACryptoSystem(1024);
+</pre>
+<p><b>Creating an RSA keypair</b></p>
+<p>With an RSACryptoSystem, we can create an <a href="../RSAKeyPair.html">RSA keypair</a> with the following code</p>
+<pre>
+    RSAKeyPair rsaKeyPair = new RSAKeyPair( rsaCryptoSystem );
+</pre>
+<p>	One could also get the private and public keys that were just created by:<br>
+<pre>
+    RSAPublicKey rsaPublicKey = rsaKeyPair.getRSAPublicKey();
+    RSAPrivateKey rsaPrivateKey = rsaKeyPair.getRSAPrivateKey();
+</pre>
+<P></P>
+
+<p> Now, to complete the discussion of examples using RSA, a public key with a known
+    n and e will be created:</p>
+<pre>
+    // A key with modulus 1024 bits in length.
+    RSACryptoSystem rsaCryptoSystem = new RSACryptoSystem(1024);
+    // where n and e are byte arrays
+    RSAPublicKey rsaPublicKey = new RSAPublicKey( rsaCryptoSystem, e, n );
+</pre>
+
+<p> Notice that, when creating an existing RSA public key, we have the n and e stored in a byte
+    array format.  This is intended to give developers the most flexibility, as most classes can
+    be converted into a byte array.</p>
+
+
+<p> To create a <a href="../DSACryptoSystem.html">DSACryptoSystem</a>, we need more information.  The DSA
+    key system relies on system parameters that are not typically sent
+    with each message request due to their size. Parties tend to agree
+    on common parameters so that they do not have to be sent every time.  This
+    is where the cryptosystem comes into play.  These constant parameters
+    can be stored in the cryptosystem, representing P, Q and G.
+    Due to the rigorous mathematics involved, this lesson does not explain the
+    meaning of these parameters. For more information, see the
+    <A href="http://www.cacr.math.uwaterloo.ca/hac/">Handbook of Applied Cryptography</A>.
+
+<p> To use the DSACryptoSystem there are two constructors.  The first uses the default parameters
+    (which are shown in the code sample below as byte arrays) and hides the
+    details involved:
+<pre>
+    DSACryptoSystem system = new DSACryptoSystem();
+</pre>
+<p> The other constructor can be used by the developer who wishes to specify the parameters to use.
+    For this example, the constructor is called with what happen to be the default values for
+    p, q and g:
+</p>
+<pre>
+    /* 1024-bit key parameters */
+    private static final byte[] p = new byte[] {
+        (byte)0xfd, (byte)0x7f, (byte)0x53, (byte)0x81, (byte)0x1d, (byte)0x75, (byte)0x12, (byte)0x29,
+        (byte)0x52, (byte)0xdf, (byte)0x4a, (byte)0x9c, (byte)0x2e, (byte)0xec, (byte)0xe4, (byte)0xe7,
+        (byte)0xf6, (byte)0x11, (byte)0xb7, (byte)0x52, (byte)0x3c, (byte)0xef, (byte)0x44, (byte)0x00,
+        (byte)0xc3, (byte)0x1e, (byte)0x3f, (byte)0x80, (byte)0xb6, (byte)0x51, (byte)0x26, (byte)0x69,
+        (byte)0x45, (byte)0x5d, (byte)0x40, (byte)0x22, (byte)0x51, (byte)0xfb, (byte)0x59, (byte)0x3d,
+        (byte)0x8d, (byte)0x58, (byte)0xfa, (byte)0xbf, (byte)0xc5, (byte)0xf5, (byte)0xba, (byte)0x30,
+        (byte)0xf6, (byte)0xcb, (byte)0x9b, (byte)0x55, (byte)0x6c, (byte)0xd7, (byte)0x81, (byte)0x3b,
+        (byte)0x80, (byte)0x1d, (byte)0x34, (byte)0x6f, (byte)0xf2, (byte)0x66, (byte)0x60, (byte)0xb7,
+        (byte)0x6b, (byte)0x99, (byte)0x50, (byte)0xa5, (byte)0xa4, (byte)0x9f, (byte)0x9f, (byte)0xe8,
+        (byte)0x04, (byte)0x7b, (byte)0x10, (byte)0x22, (byte)0xc2, (byte)0x4f, (byte)0xbb, (byte)0xa9,
+        (byte)0xd7, (byte)0xfe, (byte)0xb7, (byte)0xc6, (byte)0x1b, (byte)0xf8, (byte)0x3b, (byte)0x57,
+        (byte)0xe7, (byte)0xc6, (byte)0xa8, (byte)0xa6, (byte)0x15, (byte)0x0f, (byte)0x04, (byte)0xfb,
+        (byte)0x83, (byte)0xf6, (byte)0xd3, (byte)0xc5, (byte)0x1e, (byte)0xc3, (byte)0x02, (byte)0x35,
+        (byte)0x54, (byte)0x13, (byte)0x5a, (byte)0x16, (byte)0x91, (byte)0x32, (byte)0xf6, (byte)0x75,
+        (byte)0xf3, (byte)0xae, (byte)0x2b, (byte)0x61, (byte)0xd7, (byte)0x2a, (byte)0xef, (byte)0xf2,
+        (byte)0x22, (byte)0x03, (byte)0x19, (byte)0x9d, (byte)0xd1, (byte)0x48, (byte)0x01, (byte)0xc7
+    };
+
+    private static final byte[] q = new byte[] {
+        (byte)0x97, (byte)0x60, (byte)0x50, (byte)0x8f, (byte)0x15, (byte)0x23, (byte)0x0b, (byte)0xcc,
+        (byte)0xb2, (byte)0x92, (byte)0xb9, (byte)0x82, (byte)0xa2, (byte)0xeb, (byte)0x84, (byte)0x0b,
+        (byte)0xf0, (byte)0x58, (byte)0x1c, (byte)0xf5
+    };
+
+    private static final byte[] g = new byte[] {
+        (byte)0xf7, (byte)0xe1, (byte)0xa0, (byte)0x85, (byte)0xd6, (byte)0x9b, (byte)0x3d, (byte)0xde,
+        (byte)0xcb, (byte)0xbc, (byte)0xab, (byte)0x5c, (byte)0x36, (byte)0xb8, (byte)0x57, (byte)0xb9,
+        (byte)0x79, (byte)0x94, (byte)0xaf, (byte)0xbb, (byte)0xfa, (byte)0x3a, (byte)0xea, (byte)0x82,
+        (byte)0xf9, (byte)0x57, (byte)0x4c, (byte)0x0b, (byte)0x3d, (byte)0x07, (byte)0x82, (byte)0x67,
+        (byte)0x51, (byte)0x59, (byte)0x57, (byte)0x8e, (byte)0xba, (byte)0xd4, (byte)0x59, (byte)0x4f,
+        (byte)0xe6, (byte)0x71, (byte)0x07, (byte)0x10, (byte)0x81, (byte)0x80, (byte)0xb4, (byte)0x49,
+        (byte)0x16, (byte)0x71, (byte)0x23, (byte)0xe8, (byte)0x4c, (byte)0x28, (byte)0x16, (byte)0x13,
+        (byte)0xb7, (byte)0xcf, (byte)0x09, (byte)0x32, (byte)0x8c, (byte)0xc8, (byte)0xa6, (byte)0xe1,
+        (byte)0x3c, (byte)0x16, (byte)0x7a, (byte)0x8b, (byte)0x54, (byte)0x7c, (byte)0x8d, (byte)0x28,
+        (byte)0xe0, (byte)0xa3, (byte)0xae, (byte)0x1e, (byte)0x2b, (byte)0xb3, (byte)0xa6, (byte)0x75,
+        (byte)0x91, (byte)0x6e, (byte)0xa3, (byte)0x7f, (byte)0x0b, (byte)0xfa, (byte)0x21, (byte)0x35,
+        (byte)0x62, (byte)0xf1, (byte)0xfb, (byte)0x62, (byte)0x7a, (byte)0x01, (byte)0x24, (byte)0x3b,
+        (byte)0xcc, (byte)0xa4, (byte)0xf1, (byte)0xbe, (byte)0xa8, (byte)0x51, (byte)0x90, (byte)0x89,
+        (byte)0xa8, (byte)0x83, (byte)0xdf, (byte)0xe1, (byte)0x5a, (byte)0xe5, (byte)0x9f, (byte)0x06,
+        (byte)0x92, (byte)0x8b, (byte)0x66, (byte)0x5e, (byte)0x80, (byte)0x7b, (byte)0x55, (byte)0x25,
+        (byte)0x64, (byte)0x01, (byte)0x4c, (byte)0x3b, (byte)0xfe, (byte)0xcf, (byte)0x49, (byte)0x2a
+    };
+
+    DSACryptoSystem system = new DSACryptoSystem( p, q, g );
+</pre>
+   <p>
+<TABLE width = "100%" border = "0" bgcolor = "silver">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "3">
+        <a name="certificates"><b>Certificates</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> This is a brief introduction to certificates and their implementation.
+    It is not a definitive guide on using certificates, but is meant to
+    give the reader an idea of what to expect from our certificate
+    implementation.</p>
+
+<p> A certificate is an object that binds an entity's identity to their public key.  The entity can then
+    use this certificate as a way of handing out their public key to anyone who would like to
+    use it.  In order to ensure that a certificate is authentic, it is signed by what's known as
+    a Certificate Authority ( CA ).  The CA is trusted and, since they sign the certificate, the certificate
+    is trusted.  Someone wishing to use a certificate can verify the CA's signature to ensure they
+    are using the correct key.
+</p>
+
+<p> There are several different standards currently available for
+    certificates, two of which will be described. The two
+    implemented at this time are <a href="../certificate/x509/X509Certificate.html">X509</a>, and
+    <a href="../certificate/wtls/WTLSCertificate.html">WTLS</a>
+    because they are the most popular and most common certificate formats available.
+    That being said, there is an easy and simple way for implementing
+    other certificates given our <a href="../certificate/Certificate.html">Certificate</a> interface. Instead of describing
+    these certificates, which have features that are clearly specific to
+    each type of certificate, the general certificate interface will be discussed.
+</p>
+
+<table width = "80%" border = 1 cellspacing = 0 cellpadding = 8 align = center>
+<tr><td bgcolor = "silver" > <FONT face = "Verdana,Arial" color = "white" size = "3"> Certificate Interface
+</tr></td>
+<tr><td>
+<p>
+	The user has a few ways of creating a certificate.  If they are given the encoding of, for example, an X509
+    Certificate, they can create it as follows :<p>
+
+    <pre>
+    byte[] encoding = ...
+    X509Certificate certificate = new X509Certificate( encoding );
+    </pre>
+    You can also create a certificate from its encoding using a Certificate Factory.  Suppose you have the encoding
+    and know that it is a "X509", then you can instantiate the certificate as follows :
+    <pre>
+    InputStream encoding = ...
+    Certificate certificate = CertificateFactory.getInstance( "X509", encoding );
+    </pre>
+    As a side note, the Certificate Factory comes preloaded with knowing how to read X509 and WTLS Certificates.  Other
+    types of certificates can be registered with the certificate factory.  For more discussion of extending the crypto
+    api, please refer to the <a href="crypto_ext_startpage.html">extending the crypto api tutorial.</a>
+    <p>
+    Finally, if you would like to make a new X509 Certificate, the API provides for that feature with the
+    <code>X509Certificate.createCertificate()</code> call.  For example, to create a root certificate ( ie. a
+    certifiate where the issuer and subject are the same ), you could do the following :
+    <pre>
+    RSAKeyPair keyPair = new RSAKeyPair( new RSACryptoSystem() );
+    X509DistinguishedName name = new X509DistinguishedName( "O=ACME Corp., C=Canada" );
+    long keyUsage = KeyUsage.KEY_CERT_SIGN;
+    byte[] serialNumber = new byte[] { (byte)0x01 };
+    long validNotBefore = System.currentTimeMillis();
+    long validNotAfter = validNotBefore + 1000*60*60*24*365;		// add a year of milliseconds
+    X509Certificate root = X509Certificate.createX509Certificate( keyPair, name, keyUsage, serialNumber, null,
+    validNotBefore, validNotAfter );
+    </pre>
+</tr></td>
+<tr><td>
+	The <code>equals()</code> method can be used to determine if one certificate is equal to another.
+    This would typically result in comparing all of the fields internal to the
+    certificate to determine if this were true.<br><br>
+</tr></td>
+<tr><td>
+    The <code>getEncoding()</code> method returns the encoded format of the certificate.  If it were
+    an X509 certificate, getEncoding() would return the X509 encoding of the certificate information.<br><br>
+</tr></td>
+<tr><td>
+    The <code>getPublicKey()</code> method extracts the public key associated with the certificate
+    (every certificate must have a public key associated with it) and returns this
+    key for use. <br><br>
+</tr></td>
+<tr><td>
+    The <code>verify()</code> method is the most useful and important method in this class. Given a certificate,
+    it verifies that certificate with the appropriate means.  For example,
+    with X509 certificates it would check to ensure that the CA's signature was valid and then
+    return the result.<br><br>
+</tr></td>
+<tr><td>
+    The certificate api also supports the concept of certificate chains.  You can create a certificate chain
+    in various ways.
+    <p>
+    The first way is if you have all the certificates as individual objects, then you can just put them in an array :
+    <pre>
+    Certificate endEntity = ...
+    Certificate firstCA = ...
+    Certificate rootCA = ...
+    Certificate[] chain = new Certificate[] { endEntity, firstCA, rootCA };
+    </pre>
+    Or, you can use the build certificate chain utility, found in
+    <a href="../certificate/CertificateUtilities.html">CertificateUtilities</a>.  For example, if you
+    had one of the CAs, in an array of certificates, and the other CA in a key store, you could create the certificate chain
+    as follows :
+    <pre>
+    Certificate endEntity = ...
+    Certificate[] pool = ... ( contains firstCA )
+    KeyStore keyStore = ... ( contains rootCA )
+    Certificate[] chain = CertificateUtilities.buildCertChain( endEntity, pool, keyStore );
+    </pre>
+    Then, you can determine if the chain is trusted ( ie. if you trust one of the certificates in the chain ) with the
+    following :
+    <pre>
+    KeyStore trustedKeyStore = TrustedKeyStore.getInstance();
+    boolean trusted = CertificateUtilities.isCertificateChainTrusted( chain, trustedKeyStore )
+    </pre>
+    or you can try and create a trusted certificate chain directly :
+    <pre>
+    Certificate endEntity = ...
+    Certificate[] pool = ... ( contains firstCA )
+    KeyStore keyStore = ... ( contains rootCA )
+    KeyStore trustedKeyStore = TrustedKeyStore.getInstance();
+    Certificate[] trustedChain = CertificateUtilities.buildTrustedCertChain( endEntity, pool,
+    									     keyStore, trustedKeyStore );
+    </pre>
+</tr></td>
+<tr><td>
+    Another feature supported by the certificate api is that of certificate status.  Each certificate on the handheld
+    can be given a <a href="../certificate/CertificateStatus.html">CertificateStatus</a>.  These indicate if the status
+    of the certificate is good, revoked, or unknown.  All of the status' are mangaged by the
+    <a href="../keystore/CertificateStatusManager.html">CertificateStatusManager</a>.
+</tr></td>
+</table>
+<p>
+   Overall, the Certificate API provides for a wide variety of features and options for the user to explore.
+   <p>
+<TABLE width = "100%" border = "0" bgcolor = "silver">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "3">
+        <a name="keystores"><b>Keystores</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> A key store is a class which helps the developer store
+    keys in an efficient and effective manner on the device.
+    That is what the KeyStore classes accomplish in the Crypto API.
+<p>
+
+<p> These classes are currently made up of three different
+    components.  The first component is the <a href="../keyStore/KeyStore.html">KeyStore</a> interface, which
+    sets the stage for any other key store that is to be
+    implemented for the Crypto API.  It provides functions that
+    will store and retrieve keys and certificates.  It is very similar to the implementation
+    used for Java 1.3, Standard Edition, but there are slight variations for
+    storing specific kinds of keys found in the Crypto API, such
+    as public keys or private keys.</p>
+
+<p> The second component of the KeyStore classes is the <a href="../keyStore/RIMKeyStore.html">RIMKeyStore</a> class.
+    This class is the implementation of the KeyStore interface discussed above
+    and is provided as a default implementation.</p>
+
+<p> The third component of the KeyStore classes is the <a href="../keyStore/TrustedKeyStore.html">TrustedKeyStore</a> class.
+    This class is provides secure storage for trusted certificates and public keys without the possibility
+    of tampering.  The public interface to the class only provides get methods
+    to retrieve the certificates and public keys.  This is incredibly useful for applications
+    such as browsers, where root certificates for all of the CAs are preloaded into the browser.
+    This ability to preload certificates ensures that people can trust the certificates in
+    the browser since they were shipped with the product.</p>
+
+    </BODY>
+    </HTML>

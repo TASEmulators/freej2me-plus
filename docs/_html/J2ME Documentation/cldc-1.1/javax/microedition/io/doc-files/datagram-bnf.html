@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+
+
+
+    
+  
+  
+  <title>Datagram Protocol BNF</title>
+</head>
+
+
+<body>
+
+
+
+<h2>
+BNF Format for datagram Protocol URI
+</h2>
+
+
+
+<table style="width: 710px; height: 184px;" border="1">
+
+
+
+  <tbody>
+
+
+    <tr>
+
+
+
+      <td style="width: 197px;">&lt;datagram_connection_string&gt; </td>
+
+
+
+      <td style="width: 472px;">::= "<strong>datagram://</strong>"&lt;inbound&gt; &nbsp;| "<strong>datagram://</strong>"&lt;outbound&gt; </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+      <td style="width: 197px;" align="undefined" valign="undefined">&lt;inbound&gt;</td>
+
+
+      <td style="width: 472px;" align="undefined" valign="undefined">::= <span style="font-style: italic;">empty string</span> | ":" | ":" &lt;portspec&gt;</td>
+
+
+    </tr>
+
+
+    <tr>
+
+
+      <td style="width: 197px;" align="undefined" valign="undefined">&lt;outbound&gt;</td>
+
+
+      <td style="text-align: left; width: 472px;">::= &lt;host&gt; ":" &lt;portspec&gt;</td>
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td style="width: 197px;">&lt;host&gt; </td>
+
+
+
+      <td style="width: 472px;">::= <i>host name </i>|<i> IP address </i>| &lt;wildcarded_DNS&gt; </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+      <td style="width: 197px;" align="undefined" valign="undefined">&lt;wildcarded_DNS&gt;</td>
+      <td style="width: 472px;" align="undefined" valign="undefined">::= "*" *("."&lt;domainlabel&gt;) ;<br>
+; "*" followed by zero or more internet domain labels, separated by "."</td>
+    </tr>
+    <tr>
+      <td style="width: 197px;" align="undefined" valign="undefined">&lt;domainlabel&gt;</td>
+      <td style="width: 472px;" align="undefined" valign="undefined">::= <span style="font-style: italic;">internet domain label</span></td>
+    </tr>
+    <tr>
+
+
+
+      <td style="width: 197px;">&lt;portspec&gt; </td>
+
+
+
+      <td style="width: 472px;">::= &lt;portnumber&gt;<i><span style="font-style: italic;"><span style="font-style: italic;"></span></span> </i>| &nbsp;&lt;portrange&gt; | "*" </td>
+
+
+
+    </tr>
+
+
+    <tr>
+
+
+      <td style="width: 197px;" align="undefined" valign="undefined">&lt;portnumber&gt;</td>
+
+
+      <td style="width: 472px;" align="undefined" valign="undefined">::= <span style="font-style: italic;">numeric port number</span></td>
+
+
+    </tr>
+
+
+    <tr>
+
+
+      <td style="width: 197px;" align="undefined" valign="undefined">&lt;portrange&gt;</td>
+
+
+      <td style="width: 472px;" align="undefined" valign="undefined">::= &lt;portnumber&gt; "-" |&nbsp;"-" &lt;portnumber&gt; | &lt;portnumber&gt; "-" &lt;portnumber&gt;</td>
+
+
+    </tr>
+
+
+
+  
+  
+  </tbody>
+</table>
+
+
+
+<p>
+Note that, per <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>,
+protocol schemes are case-insensitive.  The above BNF reflects the normalized
+form.
+  </p>
+
+
+</body>
+</html>

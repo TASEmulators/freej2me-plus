@@ -1,0 +1,15 @@
+com.nokia.mid.imagescale
+com.nokia.mid.media
+com.nokia.mid.network
+com.nokia.mid.pim
+com.nokia.mid.setting
+com.nokia.mid.theme
+com.nokia.mid.ui
+com.nokia.mid.ui.frameanimator
+com.nokia.mid.ui.gestures
+com.nokia.mid.ui.locale
+com.nokia.mid.ui.multipointtouch
+com.nokia.mid.ui.orientation
+com.nokia.mid.voip
+com.nokia.notifications
+com.nokia.notifications.installer

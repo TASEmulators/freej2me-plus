@@ -1,0 +1,27 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Extensions to RFC 3986</title>
+  </head>
+
+  <body>
+      <h2>Extensions to RFC 3986</h2>
+
+In order to permit wildcard matching of <code>GCFPermission</code> objects,
+the URI syntax of <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>
+is augmented with the following extensions.  The syntax is given using the
+ABNF notation of <a href="http://www.ietf.org/rfc/rfc2234.txt">RFC 2234</a>.
+
+<h3> Port specification</h3>
+The augmented syntax for the port subcomponent of the URI authority is:
+<pre>
+    port        = portnumber / portrange
+    portnumber  = *DIGIT ; (in range 0-65535)
+    portrange   = "*" / portnumber "-" / "-" portnumber / portnumber "-" portnumber
+</pre>
+
+If the port subcomponent specifies a port range in the form
+<code>portnumber1-portnumber2</code>, then <code>portnumber1</code>
+must be numerically less than or equal to <code>portnumber2</code>.
+  </body>
+</html>

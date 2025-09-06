@@ -243,7 +243,7 @@ body {
     margin-right: 2%;
 }
 
-.info-frame h1 {
+.info-frame h1, .docstextsection h1 {
     text-align: center;
     font-size: 4em;
     margin: 0 auto;
@@ -252,18 +252,57 @@ body {
     font-weight: bolder;
 }
 
-.info-frame p {
+.info-frame p, .docstextsection p {
     font-size: 1.3em;
     font-family:Helvetica, Geneva, Tahoma, sans-serif;
     font-weight: 700;
     color: white;
 }
 
+.docsdiv {
+    position: relative;
+    border-top: 4px solid #007bff;
+    background-color: #1a1a1aff;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    max-height: fit-content;
+    background-image: url('../images/Backgrounds/docs.webp');
+    background-repeat: no-repeat;
+    background-size: 55%;
+    background-position: right;
+    padding: 15px;
+    z-index: 1;
+    color: white;
+}
+
+.docstextsection {
+    position: relative;
+    min-width: 50%;
+    max-width: 50%;
+    margin: 0 0 auto 0;
+}
+
+#buttonarea {
+    position: relative;
+    max-width: fit-content;
+    margin: 0 auto;
+}
+
+#docsbutton {
+    transform: scale(1.25);
+    backdrop-filter: blur(3px);
+}
+
+#docbutton:active 
+{
+    transform: scale(1.0);
+}
+
 .footerdiv {
     position: relative;
     border-top: 12px double #0066ffff;
     background-color: #1a1a1aff;
-    box-shadow: 0px 0px 16px #444;
     z-index: 4;
     padding: 25px;
     padding-bottom: 3px;
@@ -319,10 +358,10 @@ iframe {
     #compat_list_frame {
         height: 1630px;
     }
-    .info-frame h1 {
+    .info-frame h1, .docstextsection h1 {
         font-size: 9vw;
     }
-    .info-frame p {
+    .info-frame p, .docstextsection p {
         font-size: 3vw;
     }
     .firstpane-content {
@@ -342,16 +381,27 @@ iframe {
     #firstpane-content-right p {
         font-size: 3vw;
     }
+    .docsdiv {
+        display: inline-block;
+        background-image: none;
+    }
+    .docstextsection {
+        min-width: 90%;
+        max-width: 90%;
+    }
+    #docsbutton { /* Hack, as the button refuses to center itself when docsDiv is anything other than flex */
+        margin-right: 35%;
+    }
 }
 
 @media only screen and (min-width: 600px) {
     #compat_list_frame {
         height: 1090px;
     }
-    .info-frame h1 {
+    .info-frame h1, .docstextsection h1 {
         font-size: 8vw;
     }
-    .info-frame p {
+    .info-frame p, .docstextsection p {
         font-size: 2.5vw;
     }
     .firstpane-content {
@@ -371,6 +421,15 @@ iframe {
     #firstpane-content-right p {
         font-size: 2.5vw;
     }
+    .docsdiv {
+        display: flex;
+        background-image: url('../images/Backgrounds/docs.webp');
+    }
+    .docstextsection {
+        min-width: 50%;
+        max-width: 50%;
+    }
+
 }
 
 /* Additional queries for the compat list iframe */
@@ -390,10 +449,10 @@ iframe {
     #compat_list_frame {
         height: 1140px;
     }
-    .info-frame h1 {
+    .info-frame h1, .docstextsection h1 {
         font-size: 6vw;
     }
-    .info-frame p {
+    .info-frame p, .docstextsection p {
         font-size: 2vw;
     }
     .firstpane-content {
@@ -430,10 +489,10 @@ iframe {
 
 /* Large devices (laptops/desktops, 992px and up) */
 @media only screen and (min-width: 992px) {
-    .info-frame h1 {
+    .info-frame h1, .docstextsection h1 {
         font-size: 5.5vw;
     }
-    .info-frame p {
+    .info-frame p, .docstextsection p {
         font-size: 1.75vw;
     }
     .firstpane-content {
@@ -461,10 +520,10 @@ iframe {
     #compat_list_frame {
         height: 800px;
     }
-    .info-frame h1 {
+    .info-frame h1, .docstextsection h1 {
         font-size: 4em;
     }
-    .info-frame p {
+    .info-frame p, .docstextsection p {
         font-size: 1.3em;
     }
     .firstpane-content {

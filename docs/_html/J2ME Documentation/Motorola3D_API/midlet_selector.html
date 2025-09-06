@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+<h2>MIDlet Selector</h2>
+<p>
+The JVM for Vodafone handsets is equipped with a MIDlet selector, which lets users choose and run individual MIDlets in a  MIDlet suite.<BR>
+A MIDlet suite is created by packaging multiple MIDlets in a JAR file and designating each of them in the JAD file by the MIDlet attribute "MIDlet-n" (where n is assigned sequentially starting from 1).
+</p><p>
+The MIDlet selector behavior is described here.
+</p>
+
+<ul>
+ <li><a href="#section_mselector_msuit">           1. MIDlet Suite Handling</a>
+ <li><a href="#section_mselector_msuit_transition">2. Display State Transitions in MIDlet Suite Execution</a>
+ <li><a href="#section_mselector_msuit_ctrl">      3. Multiple MIDlet Execution Control (Foreground/Background Switching)</a>
+ <li><a href="#section_mselector_msuit_switching"> 4. Example of Foreground/Background Switching</a>
+</ul>
+
+<hr>
+<a name="section_mselector_msuit"><h3>1. MIDlet Suite Handling</h3></a>
+<p>
+When the JVM is started by the JAM component and the Java application requested to be run is a MIDlet suite, the JVM displays a MIDlet selector with a list of the MIDlets included in the MIDlet suite. After the user chooses one of these MIDlets, the JVM runs it.
+</p><p>
+Figure 1 shows a sample MIDlet selector screen.
+</p>
+
+<div align="center">
+<img src="midlet_ui_sample_en.gif" alt="midlet_ui_sample_en.gif">
+<p><strong>Figure 1. Sample MIDlet Selector Screen</strong></p>
+</div>
+
+<p>
+In the example in Figure 1, the two MIDlets "UIDemo" and "UIDemo2" are designated. 
+In this figure, the text shown as the command for closing the MIDlet selector can be customized by the vendor and does not have to be the same as that shown here.
+</p>
+
+<a name="section_mselector_msuit_transition"><h3>2. Display State Transitions in MIDlet Suite Execution</h3></a>
+<p>
+In explaining the behavior of a MIDlet selector, the program code to be run in the handset is classified generally into the three kinds indicated below.
+</p>
+<ul>
+ <li>Handset native program (JAM component)
+ <li>MIDlet selector
+ <li>MIDlet
+</ul>
+<p>
+One of the above programs is displayed on the handset screen. The display state transitions among these three programs are as shown in Figure 2.
+</p>
+<div align="center">
+<img src="midlet_state_transition_en.gif" alt="midlet_state_transition_en.gif">
+<p><strong>Figure 2. MIDlet Suite State Transitions</strong></p>
+</div>
+<ol>
+ <li><p>The handset native program (JAM component) starts the JVM in response to a user operation, and requests the running of a Java application selected by the user. The JVM  displays a MIDlet selector if the program requested to be run is a MIDlet suite.
+ </p>
+ <li><p>The MIDlet selector displays to the user a list of the individual MIDlets in the MIDlet suite, based on the MIDlet-<n> notation in the JAD file, and has the user select from the list. The selected MIDlet is put in running state by calling its startApp(). 
+ </p>
+ <li><p>To return to the MIDlet selector and give the user a chance to run another MIDlet, either the running MIDlet itself calls notifyPaused() or notifyDestroyed(), notifying the JVM that it has paused or exited, or else it yields the screen display by passing a null object in the Display class setCurrent() method.
+ </p>
+ <li><p>The MIDlet selector lists all the MIDlets in the MIDlet suite, regardless of whether there is a paused MIDlet or one that has yielded the screen display, and allows the user to perform an operation to run or resume a MIDlet. The MIDlet selector calls startApp() of the MIDlet requested by the user to be run.  The MIDlet whose startApp() is called at this point is the one displayed. If a MIDlet exists that has yielded the screen display when another MIDlet is selected, more than one MIDlet will be running concurrently.
+ </p>
+ <li><p>If there is a request by the host system to pause the JVM, the JVM is paused and the handset native program runs. If there is a MIDlet in the foreground before the JVM is paused, the pauseApp() of that MIDlet is called.
+ </p>
+ <li><p>When the host system requests JVM resumption, the JVM resumes running, returning to the display state before it was paused. If the MIDlet selector was displaying before the JVM paused, only the MIDlet selector is displayed. If a MIDlet was showing prior to the pause, startApp() of the displayed MIDlet is called to resume it. 
+ </p>
+ <li><p>In any state, when a JVM exit request comes from the host system, destroyApp() is called for all MIDlets and the MIDlets are terminated. Then the JVM exits and the host native program takes over. Since the JVM exits, before a Java application can be run again it is necessary to start over from the first step above.
+ </p>
+</ol>
+
+<p>
+If a Java application consists of just one MIDlet rather than a MIDlet suite, the JVM pauses or terminates when that MIDlet calls notifyPaused() or notifyDestroyed(). In this case there is no need to be concerned about the effect on other MIDlets of the resources created by this MIDlet. In the transitions noted in 3 above, on the other hand, even if the MIDlet calls notifyPaused() or notifyDestroyed(), the JVM continues running. Freeing of resources does not take place automatically. If, for example, the MIDlets were started in separate threads, in no case will the MIDlet selector pause or terminate those threads. For this reason, proper freeing of resources must be done on the MIDlet side prior to calling notifyDestroyed(). 
+</p><p>
+Whether a Java application is a single MIDlet or a MIDlet suite, the life cycle of each MIDlet is as shown in Figure 3. As noted above, however, the responsibility for freeing of resources in notifyPaused() or notifyDestroyed() is different in each case. Also, a MIDlet is never displayed when it is in Paused or Destroyed state; moreover,  Active state does not necessarily mean that the MIDlet is displayed.
+</p>
+ 
+<div align="center">
+<img src="midlet_life_cycle.gif" alt="midlet_life_cycle.gif">
+<p><strong>Figure 3. MIDlet Life Cycle</strong></p>
+</div>
+
+<a name="section_mselector_msuit_ctrl"><h3>3. Multiple MIDlet Execution Control (Foreground/Background Switching)</h3></a>
+
+<dl>
+ <dt><b>MIDlet Foreground and Background states</b></dt>
+  <dd><p>Using the MIDlet selector it is possible for more than one MIDlet in the MIDlet suite to be running at the same time. Only one MIDlet at a given time, however, can be displayed on the handset screen or accept key input. Being displayed on the screen and able to accept key input is referred to as Foreground state, while not being in that state is called Background state. The status of a MIDlet in Foreground and Background states is summarized in Table 1.
+      </p>
+  <table border=1 width = 80% cellspacing=0 cellpadding=2>
+   <caption align = "left"><strong>Table 1. MIDlet Foreground and Background States</strong></caption>
+    <tr><td><b>Item</b></td><td><b>Foreground</b></td><td><b>Background</b></td></tr>
+    <tr>
+     <td>Screen display and key input</td>
+     <td>Enabled</td>
+     <td>Not enabled</td>
+    </tr>
+    <tr>
+     <td>Value returned by MIDlet "current displayable" isShown() method</td>
+     <td>true</td>
+     <td>false</td>
+    </tr>
+  </table>
+   <p>The MIDlet selector prompts the user to select a MIDlet for running. As a result the MIDlet startApp() is called and it goes to Active state. By means of Displayable object designation in the Display class setCurrent(), a MIDlet can request the JVM to display it on the screen (i.e., to become Foreground). At that point the MIDlet goes to Foreground state.</p>
+   <p>When a MIDlet in Foreground state calls notifyPaused() or notifyDestroyed(), it is no longer in Active state, and instead another MIDlet or the MIDlet selector goes to Foreground state.</p>
+   </dd>
+
+ <dt><b>Occurrence of multiple Active MIDlets</b></dt>
+  <dd><p>A MIDlet in the Foreground can yield the screen display (i.e., go to Background) by designating null in the Display class setCurrent(). As a result, another MIDlet or the MIDlet selector is displayed as the Foreground process. In this case, however, the MIDlet going to Background is still in Active state and can continue processing.
+      </p><p>
+      When the MIDlet selector goes to Foreground, it can have the user select any MIDlet in the MIDlet suite. If the user selects a MIDlet that has yielded the display, the startApp() of that MIDlet is called. If the user selects a different MIDlet, that MIDlet's startApp() is run, as a result of which there will be multiple Active MIDlets. </p>
+  </dd>
+
+ <dt><b>Foreground/Background switching by the MIDlet itself</b></dt>
+  <dd><p>If a MIDlet goes to Foreground while there is already at least one Active MIDlet, which of the MIDlets gets the Foreground depends on the MIDlet behavior. The following MIDlet actions govern MIDlet Foreground/Background switching.
+      </p>
+      <ul>
+       <li><p>The Foreground MIDlet calls notifyPaused() or notifyDestroyed(), going from Active state to Paused or Destroyed state.</p>
+       <li><p>A Paused MIDlet calls resumeRequest() and goes to Active state.</p>
+       <li><p>The Foreground MIDlet calls Display.setCurrent(null) and requests to be allowed to yield the display (going to Background).</p>
+      </ul>
+      <p>
+      If a MIDlet takes any of the above actions, the JVM decides which MIDlet will be the next to have the Foreground by the following procedure.
+      </p>
+      <ol>
+       <li><p>It searches for the MIDlet going to Foreground or requesting the Foreground in the reverse order of their starting.
+           </p>
+       <li><p>If a MIDlet meeting the search condition in 1. above has the Foreground and there is also another MIDlet that has gone to Active state by calling resumeRequest(), the latter MIDlet newly goes to Foreground. Otherwise the search in 1. continues.
+           </p>
+       <li><p>If a MIDlet meeting the search condition in 1. above is in Background and requesting the Foreground, that MIDlet gets the Foreground.
+           </p>
+      </ol>
+      <p>If there is no MIDlet found in steps 1. through 3. above, the MIDlet selector screen takes the Foreground.
+      </p>
+      <p>When a Foreground/Background switch occurs, if the "current displayable" of a MIDlet to be switched is an instance of Canvas class or its subclass, then for that instance showNotify() is called for the MIDlet going to Foreground and hideNotify() for the MIDlet switched to Background.
+           </p>
+      <p>During the time the Foreground MIDlet is displaying a CommandMenuList or Alert, Foreground/Background switching does not take place even when one of the above factors occurs. In the case of a MIDlet going to Active state during this interval by resumeRequest(), startApp() is executed even as it remains in the Background.
+           </p>
+      <p>When a Paused MIDlet calls resumeRequest(), startApp() will always be called; but it should be noted that the MIDlet will not necessarily go to the Foreground as a result. If the search in 1. above first finds another MIDlet requesting the Foreground, that MIDlet will get the Foreground.
+           </p>
+      <p>If one of the above switching factors occurs while the MIDlet selector screen is being displayed, Foreground/Background switching does not take place. For a Background MIDlet to be switched to Foreground while the MIDlet selector is displayed, the user must choose that MIDlet on the MIDlet selector.
+           </p>
+  </dd>
+</dl>       
+ 
+<a name="section_mselector_msuit_switching"><h3>4. Example of Foreground/Background Switching</h3></a>
+<p>
+Figure 4 shows an example of Foreground/Background switching between MIDlets.
+</p>
+ 
+<div align="center">
+<img src="midlet_switching_sample_en.gif" alt="midlet_switching_sample_en.gif">
+<p><strong>Figure 4. Foreground/Background Switching Between MIDlets</strong></p>
+</div>
+
+<small>
+Note 1:	MIDlet-1 is switched because it requested the Foreground. <br>
+Note 2:	MIDlet-1 and MIDlet-2 both requested the Foreground. However, since MIDlet-2, the first candidate to issue the request, is already Foreground at this time, and MIDlet-1 executed a resumeRequest() moving it to Active state, MIDlet-1 gets the Foreground. MIDlet-2 goes to Background while its Foreground request is still pending.<br>
+Note 3:	MIDlet-2 is switched because it requested the Foreground. <br>
+</small>
+
+<hr>
+Copyright 2002,2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted.
+
+</BODY>

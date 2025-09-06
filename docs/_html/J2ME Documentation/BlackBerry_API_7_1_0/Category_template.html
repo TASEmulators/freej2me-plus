@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN""http://www.w3.org/TR/REC-html40/frameset.dtd">
+<HTML>
+<HEAD>
+<TITLE>
+BlackBerry Java SDK <version> API Reference: <!-- Insert the name of the overview -->
+</TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+<script type="text/javascript">
+<!--
+// switchMenu - Expand or collapse a code sample div. Takes two arguments:
+// divSample, the id of the div to expand, divList
+function switchMenu(divSample, sourceLink) {
+
+	var el = document.getElementById(divSample).style;
+	if (el.display == 'none') {
+		el.display = 'block';
+		sourceLink.className = 'explink_minus';
+	} else {
+		el.display = 'none';
+		sourceLink.className = 'explink_plus';
+	}
+}
+// collapseAll - Collapses all expandable divs and adds the + graphic automatically when the page loads.
+// This is done so that users who do not have JS enabled can still see the code samples.
+function collapseAll() {
+	// Collapse all expandable divs
+	var divsOnPage = document.getElementsByTagName('div');
+	for (var x = 0; x < divsOnPage.length; x++) {
+		if (divsOnPage[x].id.substr(0,3) == "UI_") {
+		
+			divsOnPage[x].style.display = 'none';
+			
+		}
+	}
+	// Change all the expand/collapse links to explink_plus, to show a plus sign beside it
+	var linksOnPage = document.getElementsByTagName('a');
+	for (var y = 0; y < linksOnPage.length; y++) {
+		if (linksOnPage[y].className == "explink") {
+			linksOnPage[y].className = "explink_plus";
+		}
+	}
+}
+//-->
+</script>
+
+</HEAD>
+<BODY BGCOLOR="white" onLoad="collapseAll();">
+
+<!-- =========== START OF NAVBAR ========== -->
+<!-- DO NOT EDIT -->
+<A NAME="navbar_top"><!-- --></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0">
+<TR>
+<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="index-files/index-1.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" TARGET="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="UI-summary.html" TARGET="_top"><B>NO FRAMES</B></A></FONT></TD>
+</TR>
+</TABLE>
+<!-- =========== END OF NAVBAR =========== -->
+<HR>
+<FORM action="https://www.blackberry.com/DocsFeedback/" method="GET" target="_new">
+<INPUT type="hidden" name="title" value="API Reference">
+<INPUT type="hidden" name="source" value="External">
+
+<INPUT type="hidden" name="version" value="x.x.x"><!--Replace x.x.x with the version of the API -->
+<INPUT type="hidden" name="classname" value="Xxx overview"> <!-- Replace xxx with the name of the overview -->
+<INPUT type="submit" value="Submit Feedback" /></FORM>
+
+<BR>
+
+<!-- =========== START OF BODY =========== -->
+
+<!-- =========== HEADINGS =========== -->
+<h1 align="center"><!--Insert the title of the overview. There should only be one H1 in the overview. --><a name="UI_TOP"></a></h1>
+<h2><!-- second heading in a section --><span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h2>
+<h3><!-- third heading in a section --></h3>
+<h4><!-- fourth heading in a section --> </h4>
+<!-- =========== BODY TEXT =========== -->
+<p><!-- paragraph text --></p>
+<ul>
+  <li><!-- List items --></li>
+</ul>
+<p><a href="http://www.somedomain.com" target="_blank"><!-- when linking to a page outside of the javadocs, use the target attribute --></a>
+<p><img src="images/MyImage.jpg" width="" height="" alt="some descriptive text"><!-- Place images in the images folder. Include alt text and sizing information. --></p>
+<!-- =========== TABLES ========= -->
+<!-- To insert a table, use the Small class. If necessary, change the widths. -->
+<table class="Small" width="745" CELLPADDING="3" CELLSPACING="0" summary="">
+  <tr>
+    <th width="234" scope="col"><!-- HEADING TEXT --></th>
+    <th width="495" scope="col"><!-- HEADING TEXT --></th>
+  </tr>
+  <tr>
+    <td valign="top"><!-- TABEL BODY --></td>
+    <td valign="top"><!-- TABLE BODY --></td>
+  </tr>
+</table>
+<!-- =========== CODE =========== -->
+<!-- inline code  -->
+<p><span class="style2"><!-- Apply the style2 class when you want the text to appear like <code> --></span></p>
+<!-- code samples -->
+<!-- To insert a expand/collapse code sample, use the following structure-->
+<p><a class="explink" onClick="switchMenu('UI_11', this);">Click for code sample: <!-- give a short description of the code sample--></a></p>
+<div id="UI_11" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support"><!-- Insert your code sample --></span></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<!-- To insert a code sample that doesn't expand/collapse (i.e. short code sample), use the following structure -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support"><!-- Insert your code sample --></span></pre>
+		</td>
+	</tr>
+</table>
+<!-- =========== END OF BODY ============== -->
+<!-- =========== START OF FOOTER ============== -->
+<!-- DO NOT CHANGE -->
+<HR>
+<div id="legalnotice">
+<table cellspacing="0" cellpading="0" width="100%" style="border:none;">
+<tr>
+<td style="border:none;">
+<font size=-1>
+<P>Copyright 1999-2011 Research In Motion Limited. 295 Phillip Street, Waterloo, Ontario, Canada, N2L 3W8. All Rights Reserved.<br>
+Java is a trademark of Oracle America, Inc. in the US and other countries.</p>
+</font>
+</td>
+<td style="text-align:right; border:none;">
+<font size=-1><br>
+<a href="http://www.blackberry.com/legal" target="_blank">Legal</a>
+</font>
+</td>
+</tr>
+</table>
+ </div>
+ <!-- ============= END OF FOOTER =========== -->
+</BODY>
+</HTML>

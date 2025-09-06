@@ -1,0 +1,5 @@
+javax.microedition.contactless
+javax.microedition.contactless.ndef
+javax.microedition.contactless.rf
+javax.microedition.contactless.sc
+javax.microedition.contactless.visual

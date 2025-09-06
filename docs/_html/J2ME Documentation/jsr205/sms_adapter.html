@@ -1,0 +1,2744 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--NewPage-->
+<HTML>
+<HEAD>
+
+    <title>WMA 1.1 Reference Implementation</title>
+
+	<META NAME="keywords" CONTENT="Overview, WMA 2.0 Reference Implementation">
+
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+
+<SCRIPT type="text/javascript">
+function windowTitle()
+{
+    parent.document.title="Overview (WMA 2.0 Reference Implementation)";
+}
+</SCRIPT>
+	
+  </head><body>
+
+<BODY BGCOLOR="white" onload="windowTitle();">
+
+
+<!-- ========= START OF TOP NAVBAR ======= -->
+<A NAME="navbar_top"><!-- --></A>
+<A HREF="#skip-navbar_top" title="Skip navigation links"></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
+<TR>
+<TD COLSPAN=3 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Overview</B></FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="overview-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+&nbsp;<SCRIPT type="text/javascript">
+  <!--
+  if(window==top) {
+    document.writeln('<A HREF="allclasses-noframe.html"><B>All Classes</B></A>');
+  }
+  //-->
+</SCRIPT>
+<NOSCRIPT>
+  <A HREF="allclasses-noframe.html"><B>All Classes</B></A></NOSCRIPT>
+
+</FONT></TD>
+</TR>
+</TABLE>
+<A NAME="skip-navbar_top"></A>
+<!-- ========= END OF TOP NAVBAR ========= -->
+
+<a name="wp1030757"> </a><h2 class="pAppxNum">
+Appendix &nbsp;  A<br>
+  &nbsp; </h2>
+<a name="wp1030758"> </a><h2 class="pHeading1">
+GSM SMS Adapter  
+</h2>
+<a name="wp1031067"> </a><p class="pBody">
+This appendix describes an adapter that uses the messaging API with the GSM Short Message Service. 
+</p>
+<a name="wp1031069"> </a><h3 class="pHeading2">
+A.1.0 GSM SMS Message Structure 
+</h3>
+<a name="wp1031071"> </a><p class="pBody">
+The GSM SMS messages are defined in the GSM 03.40 standard [1]. The
+message consists of a fixed header and a field called TP-User-Data. The
+TP-User-Data field carries the payload of the short message and
+optional header information that is not part of the fixed header. This
+optional header information is contained in a field called
+User-Data-Header. The presence of optional header information in the
+TP-User-Data field is indicated by a separate field that is part of the
+fixed header. </p>
+<a name="wp1031076"> </a><p class="pBody">
+The TP-User-Data can use different encodings depending on the type of
+the payload content. Possible encodings are a 7-bit alphabet defined in
+the GSM 03.38 standard, 8-bit binary data, or 16-bit UCS-2 alphabet. </p>
+<a name="wp1031079"> </a><h3 class="pHeading2">
+A.1.1 Message Payload Length
+</h3>
+<a name="wp1031081"> </a><p class="pBody">
+The maximum length of the SMS protocol message payload depends on the
+encoding and whether there are optional headers present in the
+TP-User-Data field. If the optional header information specifies a port
+number, then the payload which fits into the SMS protocol message will
+be smaller. Typically, the message is displayed to the end user.
+However, this Java API supports the use of port numbers to specify a
+Java application as the message target. </p>
+<a name="wp1031086"> </a><p class="pBody">
+The messages that the Java application sends can be too long to fit in
+a single SMS protocol message. In this case, the implementation MUST
+use the concatenation feature specified in sections 9.2.3.24.1 and
+9.2.3.24.8 of the GSM 03.40 standard [1]. This feature can be used to
+split the message payload given to the Java API into multiple SMS
+protocol messages. Similarly, when receiving messages, the
+implementation MUST automatically concatenate the received SMS protocol
+messages and pass the fully reassembled payload to the application via
+the API. </p>
+<a name="wp1031092"> </a><h3 class="pHeading2">
+A.1.2 Message Payload Concatenation
+</h3>
+<a name="wp1031094"> </a><p class="pBody">
+The GSM 03.40 standard [1] specifies two mechanisms for the
+concatenation, specified in sections 9.2.3.24.1 and 9.2.3.24.8. They
+differ in the length of the reference number. For messages that are
+sent, the implementation can use either mechanism. For received
+messages, implementations MUST accept messages with both mechanisms. </p>
+<a name="wp1031098"> </a><p class="pBody">
+Note: Depending on which mechanism is used for sending messages, the
+maximum length of the payload of a single SMS protocol message differs
+by one character/byte. For concatenation to work, regardless of which
+mechanism is used by the implementation, applications are recommended
+to assume the 16-bit reference number length when estimating how many
+SMS protocol messages it will take to send a given message. The lengths
+in Table A-1 below are calculated assuming the 16-bit reference number
+length. </p>
+<a name="wp1031103"> </a><p class="pBody">
+Implementations of this API MUST support at least 3 SMS protocol
+messages to be received and concatenated together. Similarly, for
+sending, messages that can be sent with up to 3 SMS protocol messages
+MUST be supported. Depending on the implementation, these limits may be
+higher. However, applications are advised not to send messages that
+will take up more than 3 SMS protocol messages, unless they have reason
+to assume that the recipient will be able to handle a larger number.
+The <code class="cCode">MessageConnection.numberOfSegments </code>method allows the application to check how many SMS protocol messages a given message will use when sent.
+</p>
+<a name="wp1031110"> </a><p class="pBody">
+<b class="cBold">Table A-1: Number of SMS protocol messages needed for different payload lengths</b>  
+</p>
+<a name="wp1031111"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+</div><div align="left">
+<table id="wp1031951" summary="The following table summarizes 
+the number of SMS protocol messages needed for different payload lengths. The cells that 
+span columns are internal headings." border="0" cellpadding="7">
+  <caption></caption>
+<thead>
+<tr align="center">    <th class="sun-verylightblue" scope="col"><a name="wp1031951"> </a><div style="text-align: left;" class="pTableHead">
+Optional Headers Encoding
+</div>
+
+</th>
+    <th class="sun-lightblue" scope="col" colspan="2" rowspan="1"><a name="wp1031953"> </a><div style="text-align: left;" class="pTableHead">
+No port number present (message to be displayed to the end user)
+</div>
+
+</th>
+    <th class="sun-lightblue" scope="col" colspan="2" rowspan="1"><a name="wp1032091"> </a><div style="text-align: left;" class="pTableHead">
+Port number present (message targeted at an application)
+</div>
+
+</th>
+</tr>
+</thead>
+  <tbody><tr align="left">    <td><a name="wp1031961"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1031963"> </a><div class="pTableText">
+Length
+</div>
+</td>
+    <td><a name="wp1031965"> </a><div class="pTableText">
+SMS messages
+</div>
+</td>
+    <td><a name="wp1031967"> </a><div class="pTableText">
+Length
+</div>
+</td>
+    <td><a name="wp1031969"> </a><div class="pTableText">
+SMS messages
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1031971"> </a><div class="pTableText">
+GSM 7-bit alphabet 
+</div>
+</td>
+    <td><a name="wp1031973"> </a><div class="pTableText">
+0-160 chars 
+</div>
+</td>
+    <td><a name="wp1031975"> </a><div class="pTableText">
+1
+</div>
+</td>
+    <td><a name="wp1031977"> </a><div class="pTableText">
+0-152 chars
+</div>
+</td>
+    <td><a name="wp1031979"> </a><div class="pTableText">
+1
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1031981"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1031983"> </a><div class="pTableText">
+161-304 chars 
+</div>
+</td>
+    <td><a name="wp1031985"> </a><div class="pTableText">
+2
+</div>
+</td>
+    <td><a name="wp1031987"> </a><div class="pTableText">
+153-290 chars 
+</div>
+</td>
+    <td><a name="wp1031989"> </a><div class="pTableText">
+2 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1031991"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1031993"> </a><div class="pTableText">
+305-456 chars
+</div>
+</td>
+    <td><a name="wp1031995"> </a><div class="pTableText">
+3
+</div>
+</td>
+    <td><a name="wp1031997"> </a><div class="pTableText">
+291-435 chars
+</div>
+</td>
+    <td><a name="wp1031999"> </a><div class="pTableText">
+3
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1032001"> </a><div class="pTableText">
+8-bit binary data
+</div>
+</td>
+    <td><a name="wp1032003"> </a><div class="pTableText">
+0-140 bytes
+</div>
+</td>
+    <td><a name="wp1032005"> </a><div class="pTableText">
+1
+</div>
+</td>
+    <td><a name="wp1032007"> </a><div class="pTableText">
+0-133 bytes
+</div>
+</td>
+    <td><a name="wp1032009"> </a><div class="pTableText">
+1
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1032011"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1032013"> </a><div class="pTableText">
+41-266 bytes 
+</div>
+</td>
+    <td><a name="wp1032015"> </a><div class="pTableText">
+2
+</div>
+</td>
+    <td><a name="wp1032017"> </a><div class="pTableText">
+134-254 bytes
+</div>
+</td>
+    <td><a name="wp1032019"> </a><div class="pTableText">
+2
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1032021"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1032023"> </a><div class="pTableText">
+267-399 bytes
+</div>
+</td>
+    <td><a name="wp1032025"> </a><div class="pTableText">
+3
+</div>
+</td>
+    <td><a name="wp1032027"> </a><div class="pTableText">
+255-381 bytes
+</div>
+</td>
+    <td><a name="wp1032029"> </a><div class="pTableText">
+3
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1032031"> </a><div class="pTableText">
+UCS-2 alphabet 
+</div>
+</td>
+    <td><a name="wp1032033"> </a><div class="pTableText">
+0-70 chars
+</div>
+</td>
+    <td><a name="wp1032035"> </a><div class="pTableText">
+1
+</div>
+</td>
+    <td><a name="wp1032037"> </a><div class="pTableText">
+0-66 chars
+</div>
+</td>
+    <td><a name="wp1032039"> </a><div class="pTableText">
+1
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1032041"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1032043"> </a><div class="pTableText">
+71-132 chars
+</div>
+</td>
+    <td><a name="wp1032045"> </a><div class="pTableText">
+2
+</div>
+</td>
+    <td><a name="wp1032047"> </a><div class="pTableText">
+67-126 chars
+</div>
+</td>
+    <td><a name="wp1032049"> </a><div class="pTableText">
+2
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1032051"> </a><div class="pTableText">
+&nbsp;
+</div>
+</td>
+    <td><a name="wp1032053"> </a><div class="pTableText">
+133-198 chars
+</div>
+</td>
+    <td><a name="wp1032055"> </a><div class="pTableText">
+3
+</div>
+</td>
+    <td><a name="wp1032057"> </a><div class="pTableText">
+127-189 chars
+</div>
+</td>
+    <td><a name="wp1032059"> </a><div class="pTableText">
+3
+</div>
+</td>
+</tr>
+<tr><td colspan="15"><hr class="pTableHr"></td></tr>
+</tbody></table>
+</div>
+<div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+<a name="wp1031120"> </a><p class="pBody">
+Table A-1 assumes for the GSM 7-bit alphabet that only characters that
+can be encoded with a single septet are used. If a character that
+encodes into two septets (using the escape code to the extension table)
+is used, it counts as two characters in this length calculation. </p>
+<a name="wp1031173"> </a><p class="pBody">
+Note: the values in Table A-1 include a concatenation header in all
+messages, when the message can not be sent in a single SMS protocol
+message. </p>
+<a name="wp1031176"> </a><p class="pBody">
+<b class="cBold">Character Mapping Table</b> 
+</p>
+<a name="wp1034281"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+<a name="wp1034282"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+ 
+</div>
+<a name="wp1034283"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+</div><div align="left">
+<table id="wp1033075" summary="The following table summarizes 
+character mapping for GSM 7-bit and UCS 2-bit alphabets. The cells that 
+span columns are internal headings." border="0" cellpadding="7">
+  <caption></caption>
+<thead>
+<tr align="center">    <th class="sun-verylightblue" scope="col"><a name="wp1033075"> </a><div style="text-align: left;" class="pTableHead">
+GSM 7-bit 
+</div>
+
+</th>
+    <th class="sun-verylightblue" scope="col"><a name="wp1033077"> </a><div style="text-align: left;" class="pTableHead">
+UCS-2 
+</div>
+
+</th>
+    <th class="sun-verylightblue" scope="col"><a name="wp1033079"> </a><div style="text-align: left;" class="pTableHead">
+Character name 
+</div>
+
+</th>
+</tr>
+</thead>
+  <tbody><tr align="left">    <td><a name="wp1033081"> </a><div class="pTableText">
+ 0x00 
+</div>
+</td>
+    <td><a name="wp1033083"> </a><div class="pTableText">
+0x0040 
+</div>
+</td>
+    <td><a name="wp1033085"> </a><div class="pTableText">
+COMMERCIAL AT 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033087"> </a><div class="pTableText">
+ 0x01 
+</div>
+</td>
+    <td><a name="wp1033089"> </a><div class="pTableText">
+0x00a3 
+</div>
+</td>
+    <td><a name="wp1033091"> </a><div class="pTableText">
+POUND SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033093"> </a><div class="pTableText">
+ 0x02 
+</div>
+</td>
+    <td><a name="wp1033095"> </a><div class="pTableText">
+0x0024 
+</div>
+</td>
+    <td><a name="wp1033097"> </a><div class="pTableText">
+DOLLAR SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033099"> </a><div class="pTableText">
+ 0x03 
+</div>
+</td>
+    <td><a name="wp1033101"> </a><div class="pTableText">
+0x00a5 
+</div>
+</td>
+    <td><a name="wp1033103"> </a><div class="pTableText">
+YEN SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033105"> </a><div class="pTableText">
+ 0x04 
+</div>
+</td>
+    <td><a name="wp1033107"> </a><div class="pTableText">
+0x00e8 
+</div>
+</td>
+    <td><a name="wp1033109"> </a><div class="pTableText">
+LATIN SMALL LETTER E WITH GRAVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033111"> </a><div class="pTableText">
+ 0x05 
+</div>
+</td>
+    <td><a name="wp1033113"> </a><div class="pTableText">
+0x00e9
+</div>
+</td>
+    <td><a name="wp1033115"> </a><div class="pTableText">
+LATIN SMALL LETTER E WITH ACUTE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033117"> </a><div class="pTableText">
+ 0x06 
+</div>
+</td>
+    <td><a name="wp1033119"> </a><div class="pTableText">
+ 0x00f9 
+</div>
+</td>
+    <td><a name="wp1033121"> </a><div class="pTableText">
+LATIN SMALL LETTER U WITH GRAVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033123"> </a><div class="pTableText">
+ 0x07 
+</div>
+</td>
+    <td><a name="wp1033125"> </a><div class="pTableText">
+0x00ec 
+</div>
+</td>
+    <td><a name="wp1033127"> </a><div class="pTableText">
+LATIN SMALL LETTER I WITH GRAVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033129"> </a><div class="pTableText">
+ 0x08  
+</div>
+</td>
+    <td><a name="wp1033131"> </a><div class="pTableText">
+0x00f2
+</div>
+</td>
+    <td><a name="wp1033133"> </a><div class="pTableText">
+LATIN SMALL LETTER O WITH GRAVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033135"> </a><div class="pTableText">
+ 0x09 
+</div>
+</td>
+    <td><a name="wp1033137"> </a><div class="pTableText">
+0x00c7 
+</div>
+</td>
+    <td><a name="wp1033139"> </a><div class="pTableText">
+LATIN CAPITAL LETTER C WITH CEDILLA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033141"> </a><div class="pTableText">
+ 0x0a 
+</div>
+</td>
+    <td><a name="wp1033143"> </a><div class="pTableText">
+0x000a
+</div>
+</td>
+    <td><a name="wp1033145"> </a><div class="pTableText">
+control: line feed 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033147"> </a><div class="pTableText">
+ 0x0b 
+</div>
+</td>
+    <td><a name="wp1033149"> </a><div class="pTableText">
+ 0x00d8 
+</div>
+</td>
+    <td><a name="wp1033151"> </a><div class="pTableText">
+LATIN CAPITAL LETTER O WITH STROKE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033153"> </a><div class="pTableText">
+ 0x0c 
+</div>
+</td>
+    <td><a name="wp1033155"> </a><div class="pTableText">
+ 0x00f8 
+</div>
+</td>
+    <td><a name="wp1033157"> </a><div class="pTableText">
+LATIN SMALL LETTER O WITH  STROKE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033159"> </a><div class="pTableText">
+ 0x0d 
+</div>
+</td>
+    <td><a name="wp1033161"> </a><div class="pTableText">
+0x000d 
+</div>
+</td>
+    <td><a name="wp1033163"> </a><div class="pTableText">
+control: carriage return 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033165"> </a><div class="pTableText">
+ 0x0e 
+</div>
+</td>
+    <td><a name="wp1033167"> </a><div class="pTableText">
+0x00c5 
+</div>
+</td>
+    <td><a name="wp1033169"> </a><div class="pTableText">
+LATIN CAPITAL LETTER A WITH RING ABOVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033171"> </a><div class="pTableText">
+ 0x0f 
+</div>
+</td>
+    <td><a name="wp1033173"> </a><div class="pTableText">
+0x00e5 
+</div>
+</td>
+    <td><a name="wp1033175"> </a><div class="pTableText">
+LATIN SMALL LETTER A WITH RING ABOVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033177"> </a><div class="pTableText">
+ 0x10 
+</div>
+</td>
+    <td><a name="wp1033179"> </a><div class="pTableText">
+0x0394 
+</div>
+</td>
+    <td><a name="wp1033181"> </a><div class="pTableText">
+GREEK CAPITAL LETTER DELTA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033183"> </a><div class="pTableText">
+ 0x11
+</div>
+</td>
+    <td><a name="wp1033185"> </a><div class="pTableText">
+0x005f 
+</div>
+</td>
+    <td><a name="wp1033187"> </a><div class="pTableText">
+LOW LINE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033189"> </a><div class="pTableText">
+ 0x12 
+</div>
+</td>
+    <td><a name="wp1033191"> </a><div class="pTableText">
+0x03a6 
+</div>
+</td>
+    <td><a name="wp1033193"> </a><div class="pTableText">
+GREEK CAPITAL LETTER PHI 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033195"> </a><div class="pTableText">
+ 0x13 
+</div>
+</td>
+    <td><a name="wp1033197"> </a><div class="pTableText">
+0x0393 
+</div>
+</td>
+    <td><a name="wp1033199"> </a><div class="pTableText">
+GREEK CAPITAL LETTER GAMMA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033201"> </a><div class="pTableText">
+ 0x14 
+</div>
+</td>
+    <td><a name="wp1033203"> </a><div class="pTableText">
+0x039b 
+</div>
+</td>
+    <td><a name="wp1033205"> </a><div class="pTableText">
+GREEK CAPITAL LETTER LAMDA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033207"> </a><div class="pTableText">
+ 0x15 
+</div>
+</td>
+    <td><a name="wp1033209"> </a><div class="pTableText">
+0x03a9 
+</div>
+</td>
+    <td><a name="wp1033211"> </a><div class="pTableText">
+GREEK CAPITAL LETTER OMEGA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033213"> </a><div class="pTableText">
+ 0x16 
+</div>
+</td>
+    <td><a name="wp1033215"> </a><div class="pTableText">
+0x03a0 
+</div>
+</td>
+    <td><a name="wp1033217"> </a><div class="pTableText">
+GREEK CAPITAL LETTER PI 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033219"> </a><div class="pTableText">
+ 0x17 
+</div>
+</td>
+    <td><a name="wp1033221"> </a><div class="pTableText">
+0x03a8 
+</div>
+</td>
+    <td><a name="wp1033223"> </a><div class="pTableText">
+GREEK CAPITAL LETTER PSI 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033225"> </a><div class="pTableText">
+ 0x18
+</div>
+</td>
+    <td><a name="wp1033227"> </a><div class="pTableText">
+0x03a3 
+</div>
+</td>
+    <td><a name="wp1033229"> </a><div class="pTableText">
+GREEK CAPITAL LETTER SIGMA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033231"> </a><div class="pTableText">
+ 0x19 
+</div>
+</td>
+    <td><a name="wp1033233"> </a><div class="pTableText">
+0x0398 
+</div>
+</td>
+    <td><a name="wp1033235"> </a><div class="pTableText">
+GREEK CAPITAL LETTER THETA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033237"> </a><div class="pTableText">
+ 0x1a 
+</div>
+</td>
+    <td><a name="wp1033239"> </a><div class="pTableText">
+0x039e 
+</div>
+</td>
+    <td><a name="wp1033241"> </a><div class="pTableText">
+GREEK CAPITAL LETTER XI 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033243"> </a><div class="pTableText">
+ 0x1b 
+</div>
+</td>
+    <td><a name="wp1033245"> </a><div class="pTableText">
+xxx
+</div>
+</td>
+    <td><a name="wp1033247"> </a><div class="pTableText">
+escape to extension table 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033249"> </a><div class="pTableText">
+ 0x1c 
+</div>
+</td>
+    <td><a name="wp1033251"> </a><div class="pTableText">
+0x00c6
+</div>
+</td>
+    <td><a name="wp1033253"> </a><div class="pTableText">
+LATIN CAPITAL LETTER AE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033255"> </a><div class="pTableText">
+ 0x1d 
+</div>
+</td>
+    <td><a name="wp1033257"> </a><div class="pTableText">
+0x00e6 
+</div>
+</td>
+    <td><a name="wp1033259"> </a><div class="pTableText">
+LATIN SMALL LETTER AE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033261"> </a><div class="pTableText">
+ 0x1e 
+</div>
+</td>
+    <td><a name="wp1033263"> </a><div class="pTableText">
+0x00df 
+</div>
+</td>
+    <td><a name="wp1033265"> </a><div class="pTableText">
+LATIN SMALL LETTER SHARP S 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033267"> </a><div class="pTableText">
+ 0x1f 
+</div>
+</td>
+    <td><a name="wp1033269"> </a><div class="pTableText">
+0x00c9 
+</div>
+</td>
+    <td><a name="wp1033271"> </a><div class="pTableText">
+LATIN CAPITAL LETTER E WITH ACUTE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033273"> </a><div class="pTableText">
+ 0x20 
+</div>
+</td>
+    <td><a name="wp1033275"> </a><div class="pTableText">
+0x0020 
+</div>
+</td>
+    <td><a name="wp1033277"> </a><div class="pTableText">
+SPACE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033279"> </a><div class="pTableText">
+ 0x21 
+</div>
+</td>
+    <td><a name="wp1033281"> </a><div class="pTableText">
+0x0021
+</div>
+</td>
+    <td><a name="wp1033283"> </a><div class="pTableText">
+EXCLAMATION MARK 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033285"> </a><div class="pTableText">
+ 0x22 
+</div>
+</td>
+    <td><a name="wp1033287"> </a><div class="pTableText">
+0x0022 
+</div>
+</td>
+    <td><a name="wp1033289"> </a><div class="pTableText">
+QUOTATION MARK 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033291"> </a><div class="pTableText">
+ 0x23 
+</div>
+</td>
+    <td><a name="wp1033293"> </a><div class="pTableText">
+0x0023 
+</div>
+</td>
+    <td><a name="wp1033295"> </a><div class="pTableText">
+NUMBER SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033297"> </a><div class="pTableText">
+ 0x24 
+</div>
+</td>
+    <td><a name="wp1033299"> </a><div class="pTableText">
+0x00a4 
+</div>
+</td>
+    <td><a name="wp1033301"> </a><div class="pTableText">
+CURRENCY SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033303"> </a><div class="pTableText">
+ 0x25 
+</div>
+</td>
+    <td><a name="wp1033305"> </a><div class="pTableText">
+0x0025 
+</div>
+</td>
+    <td><a name="wp1033307"> </a><div class="pTableText">
+PERCENT SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033309"> </a><div class="pTableText">
+ 0x26 
+</div>
+</td>
+    <td><a name="wp1033311"> </a><div class="pTableText">
+0x0026 
+</div>
+</td>
+    <td><a name="wp1033313"> </a><div class="pTableText">
+AMPERSAND 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033315"> </a><div class="pTableText">
+ 0x27 
+</div>
+</td>
+    <td><a name="wp1033317"> </a><div class="pTableText">
+0x0027 
+</div>
+</td>
+    <td><a name="wp1033319"> </a><div class="pTableText">
+APOSTROPHE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033321"> </a><div class="pTableText">
+ 0x28 
+</div>
+</td>
+    <td><a name="wp1033323"> </a><div class="pTableText">
+0x0028 
+</div>
+</td>
+    <td><a name="wp1033325"> </a><div class="pTableText">
+LEFT PARENTHESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033327"> </a><div class="pTableText">
+ 0x29 
+</div>
+</td>
+    <td><a name="wp1033329"> </a><div class="pTableText">
+0x0029 
+</div>
+</td>
+    <td><a name="wp1033331"> </a><div class="pTableText">
+RIGHT PARENTHESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033333"> </a><div class="pTableText">
+ 0x2a 
+</div>
+</td>
+    <td><a name="wp1033335"> </a><div class="pTableText">
+0x002a 
+</div>
+</td>
+    <td><a name="wp1033337"> </a><div class="pTableText">
+ASTERISK 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033339"> </a><div class="pTableText">
+ 0x2b 
+</div>
+</td>
+    <td><a name="wp1033341"> </a><div class="pTableText">
+0x002b 
+</div>
+</td>
+    <td><a name="wp1033343"> </a><div class="pTableText">
+PLUS SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033345"> </a><div class="pTableText">
+ 0x2c 
+</div>
+</td>
+    <td><a name="wp1033347"> </a><div class="pTableText">
+0x002c 
+</div>
+</td>
+    <td><a name="wp1033349"> </a><div class="pTableText">
+COMMA 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033351"> </a><div class="pTableText">
+ 0x2d 
+</div>
+</td>
+    <td><a name="wp1033353"> </a><div class="pTableText">
+0x002d 
+</div>
+</td>
+    <td><a name="wp1033355"> </a><div class="pTableText">
+HYPHEN-MINUS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033357"> </a><div class="pTableText">
+ 0x2e 
+</div>
+</td>
+    <td><a name="wp1033359"> </a><div class="pTableText">
+0x002e 
+</div>
+</td>
+    <td><a name="wp1033361"> </a><div class="pTableText">
+FULL STOP 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033363"> </a><div class="pTableText">
+ 0x2f 
+</div>
+</td>
+    <td><a name="wp1033365"> </a><div class="pTableText">
+0x002f 
+</div>
+</td>
+    <td><a name="wp1033367"> </a><div class="pTableText">
+SOLIDUS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033369"> </a><div class="pTableText">
+ 0x30 
+</div>
+</td>
+    <td><a name="wp1033371"> </a><div class="pTableText">
+0x0030 
+</div>
+</td>
+    <td><a name="wp1033373"> </a><div class="pTableText">
+DIGIT ZERO 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033375"> </a><div class="pTableText">
+ 0x31 
+</div>
+</td>
+    <td><a name="wp1033377"> </a><div class="pTableText">
+0x0031 
+</div>
+</td>
+    <td><a name="wp1033379"> </a><div class="pTableText">
+DIGIT ONE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033381"> </a><div class="pTableText">
+ 0x32 
+</div>
+</td>
+    <td><a name="wp1033383"> </a><div class="pTableText">
+0x0032 
+</div>
+</td>
+    <td><a name="wp1033385"> </a><div class="pTableText">
+DIGIT TWO 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033387"> </a><div class="pTableText">
+ 0x33 
+</div>
+</td>
+    <td><a name="wp1033389"> </a><div class="pTableText">
+0x0033 
+</div>
+</td>
+    <td><a name="wp1033391"> </a><div class="pTableText">
+DIGIT THREE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033393"> </a><div class="pTableText">
+ 0x34 
+</div>
+</td>
+    <td><a name="wp1033395"> </a><div class="pTableText">
+0x0034 
+</div>
+</td>
+    <td><a name="wp1033397"> </a><div class="pTableText">
+DIGIT FOUR 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033399"> </a><div class="pTableText">
+ 0x35 
+</div>
+</td>
+    <td><a name="wp1033401"> </a><div class="pTableText">
+0x0035 
+</div>
+</td>
+    <td><a name="wp1033403"> </a><div class="pTableText">
+DIGIT FIVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033405"> </a><div class="pTableText">
+ 0x36 
+</div>
+</td>
+    <td><a name="wp1033407"> </a><div class="pTableText">
+0x0036 
+</div>
+</td>
+    <td><a name="wp1033409"> </a><div class="pTableText">
+DIGIT SIX 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033411"> </a><div class="pTableText">
+ 0x37 
+</div>
+</td>
+    <td><a name="wp1033413"> </a><div class="pTableText">
+0x0037 
+</div>
+</td>
+    <td><a name="wp1033415"> </a><div class="pTableText">
+DIGIT SEVEN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033417"> </a><div class="pTableText">
+ 0x38 
+</div>
+</td>
+    <td><a name="wp1033419"> </a><div class="pTableText">
+0x0038 
+</div>
+</td>
+    <td><a name="wp1033421"> </a><div class="pTableText">
+DIGIT EIGHT 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033423"> </a><div class="pTableText">
+ 0x39 
+</div>
+</td>
+    <td><a name="wp1033425"> </a><div class="pTableText">
+0x0039 
+</div>
+</td>
+    <td><a name="wp1033427"> </a><div class="pTableText">
+DIGIT NINE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033429"> </a><div class="pTableText">
+ 0x3a 
+</div>
+</td>
+    <td><a name="wp1033431"> </a><div class="pTableText">
+0x003a 
+</div>
+</td>
+    <td><a name="wp1033433"> </a><div class="pTableText">
+COLON 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033435"> </a><div class="pTableText">
+ 0x3b 
+</div>
+</td>
+    <td><a name="wp1033437"> </a><div class="pTableText">
+0x003b 
+</div>
+</td>
+    <td><a name="wp1033439"> </a><div class="pTableText">
+SEMICOLON 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033441"> </a><div class="pTableText">
+ 0x3c 
+</div>
+</td>
+    <td><a name="wp1033443"> </a><div class="pTableText">
+0x003c 
+</div>
+</td>
+    <td><a name="wp1033445"> </a><div class="pTableText">
+LESS-THAN SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033447"> </a><div class="pTableText">
+ 0x3d 
+</div>
+</td>
+    <td><a name="wp1033449"> </a><div class="pTableText">
+0x003d 
+</div>
+</td>
+    <td><a name="wp1033451"> </a><div class="pTableText">
+EQUALS SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033453"> </a><div class="pTableText">
+ 0x3e 
+</div>
+</td>
+    <td><a name="wp1033455"> </a><div class="pTableText">
+0x003e 
+</div>
+</td>
+    <td><a name="wp1033457"> </a><div class="pTableText">
+GREATER-THAN SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033459"> </a><div class="pTableText">
+ 0x3f 
+</div>
+</td>
+    <td><a name="wp1033461"> </a><div class="pTableText">
+0x003f 
+</div>
+</td>
+    <td><a name="wp1033463"> </a><div class="pTableText">
+QUESTION MARK 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033465"> </a><div class="pTableText">
+ 0x40 
+</div>
+</td>
+    <td><a name="wp1033467"> </a><div class="pTableText">
+0x00a1 
+</div>
+</td>
+    <td><a name="wp1033469"> </a><div class="pTableText">
+INVERTED EXCLAMATION MARK 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033471"> </a><div class="pTableText">
+ 0x41 
+</div>
+</td>
+    <td><a name="wp1033473"> </a><div class="pTableText">
+0x0041 
+</div>
+</td>
+    <td><a name="wp1033475"> </a><div class="pTableText">
+LATIN CAPITAL LETTER A 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033477"> </a><div class="pTableText">
+ 0x42 
+</div>
+</td>
+    <td><a name="wp1033479"> </a><div class="pTableText">
+0x0042 
+</div>
+</td>
+    <td><a name="wp1033481"> </a><div class="pTableText">
+LATIN CAPITAL LETTER B 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033483"> </a><div class="pTableText">
+ 0x43 
+</div>
+</td>
+    <td><a name="wp1033485"> </a><div class="pTableText">
+0x0043 
+</div>
+</td>
+    <td><a name="wp1033487"> </a><div class="pTableText">
+LATIN CAPITAL LETTER C 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033489"> </a><div class="pTableText">
+ 0x44 
+</div>
+</td>
+    <td><a name="wp1033491"> </a><div class="pTableText">
+0x0044 
+</div>
+</td>
+    <td><a name="wp1033493"> </a><div class="pTableText">
+LATIN CAPITAL LETTER D 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033495"> </a><div class="pTableText">
+ 0x45 
+</div>
+</td>
+    <td><a name="wp1033497"> </a><div class="pTableText">
+0x0045 
+</div>
+</td>
+    <td><a name="wp1033499"> </a><div class="pTableText">
+LATIN CAPITAL LETTER E 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033501"> </a><div class="pTableText">
+ 0x46 
+</div>
+</td>
+    <td><a name="wp1033503"> </a><div class="pTableText">
+0x0046 
+</div>
+</td>
+    <td><a name="wp1033505"> </a><div class="pTableText">
+LATIN CAPITAL LETTER F 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033507"> </a><div class="pTableText">
+ 0x47 
+</div>
+</td>
+    <td><a name="wp1033509"> </a><div class="pTableText">
+0x0047 
+</div>
+</td>
+    <td><a name="wp1033511"> </a><div class="pTableText">
+LATIN CAPITAL LETTER G 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033513"> </a><div class="pTableText">
+ 0x48 
+</div>
+</td>
+    <td><a name="wp1033515"> </a><div class="pTableText">
+0x0048 
+</div>
+</td>
+    <td><a name="wp1033517"> </a><div class="pTableText">
+LATIN CAPITAL LETTER H 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033519"> </a><div class="pTableText">
+ 0x49 
+</div>
+</td>
+    <td><a name="wp1033521"> </a><div class="pTableText">
+0x0049 
+</div>
+</td>
+    <td><a name="wp1033523"> </a><div class="pTableText">
+LATIN CAPITAL LETTER I 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033525"> </a><div class="pTableText">
+ 0x4a 
+</div>
+</td>
+    <td><a name="wp1033527"> </a><div class="pTableText">
+0x004a 
+</div>
+</td>
+    <td><a name="wp1033529"> </a><div class="pTableText">
+LATIN CAPITAL LETTER J 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033531"> </a><div class="pTableText">
+ 0x4b 
+</div>
+</td>
+    <td><a name="wp1033533"> </a><div class="pTableText">
+0x004b 
+</div>
+</td>
+    <td><a name="wp1033535"> </a><div class="pTableText">
+LATIN CAPITAL LETTER K 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033537"> </a><div class="pTableText">
+ 0x4c 
+</div>
+</td>
+    <td><a name="wp1033539"> </a><div class="pTableText">
+0x004c 
+</div>
+</td>
+    <td><a name="wp1033541"> </a><div class="pTableText">
+LATIN CAPITAL LETTER L 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033543"> </a><div class="pTableText">
+ 0x4d 
+</div>
+</td>
+    <td><a name="wp1033545"> </a><div class="pTableText">
+0x004d 
+</div>
+</td>
+    <td><a name="wp1033547"> </a><div class="pTableText">
+LATIN CAPITAL LETTER M 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033549"> </a><div class="pTableText">
+ 0x4e 
+</div>
+</td>
+    <td><a name="wp1033551"> </a><div class="pTableText">
+0x004e 
+</div>
+</td>
+    <td><a name="wp1033553"> </a><div class="pTableText">
+LATIN CAPITAL LETTER N 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033555"> </a><div class="pTableText">
+ 0x4f 
+</div>
+</td>
+    <td><a name="wp1033557"> </a><div class="pTableText">
+0x004f 
+</div>
+</td>
+    <td><a name="wp1033559"> </a><div class="pTableText">
+LATIN CAPITAL LETTER O 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033561"> </a><div class="pTableText">
+ 0x50 
+</div>
+</td>
+    <td><a name="wp1033563"> </a><div class="pTableText">
+0x0050 
+</div>
+</td>
+    <td><a name="wp1033565"> </a><div class="pTableText">
+LATIN CAPITAL LETTER P 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033567"> </a><div class="pTableText">
+ 0x51 
+</div>
+</td>
+    <td><a name="wp1033569"> </a><div class="pTableText">
+0x0051 
+</div>
+</td>
+    <td><a name="wp1033571"> </a><div class="pTableText">
+LATIN CAPITAL LETTER Q 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033573"> </a><div class="pTableText">
+0x52 
+</div>
+</td>
+    <td><a name="wp1033575"> </a><div class="pTableText">
+0x0052 
+</div>
+</td>
+    <td><a name="wp1033577"> </a><div class="pTableText">
+LATIN CAPITAL LETTER R 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033579"> </a><div class="pTableText">
+0x53 
+</div>
+</td>
+    <td><a name="wp1033581"> </a><div class="pTableText">
+0x0053 
+</div>
+</td>
+    <td><a name="wp1033583"> </a><div class="pTableText">
+LATIN CAPITAL LETTER S 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033585"> </a><div class="pTableText">
+0x54 
+</div>
+</td>
+    <td><a name="wp1033587"> </a><div class="pTableText">
+0x0054 
+</div>
+</td>
+    <td><a name="wp1033589"> </a><div class="pTableText">
+LATIN CAPITAL LETTER T 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033591"> </a><div class="pTableText">
+0x55 
+</div>
+</td>
+    <td><a name="wp1033593"> </a><div class="pTableText">
+0x0055 
+</div>
+</td>
+    <td><a name="wp1033595"> </a><div class="pTableText">
+LATIN CAPITAL LETTER U 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033597"> </a><div class="pTableText">
+0x56 
+</div>
+</td>
+    <td><a name="wp1033599"> </a><div class="pTableText">
+0x0056 
+</div>
+</td>
+    <td><a name="wp1033601"> </a><div class="pTableText">
+LATIN CAPITAL LETTER V 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033603"> </a><div class="pTableText">
+0x57 
+</div>
+</td>
+    <td><a name="wp1033605"> </a><div class="pTableText">
+0x0057 
+</div>
+</td>
+    <td><a name="wp1033607"> </a><div class="pTableText">
+LATIN CAPITAL LETTER W 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033609"> </a><div class="pTableText">
+0x58 
+</div>
+</td>
+    <td><a name="wp1033611"> </a><div class="pTableText">
+0x0058 
+</div>
+</td>
+    <td><a name="wp1033613"> </a><div class="pTableText">
+LATIN CAPITAL LETTER X 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033615"> </a><div class="pTableText">
+0x59 
+</div>
+</td>
+    <td><a name="wp1033617"> </a><div class="pTableText">
+0x0059 
+</div>
+</td>
+    <td><a name="wp1033619"> </a><div class="pTableText">
+LATIN CAPITAL LETTER Y 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033621"> </a><div class="pTableText">
+0x5a 
+</div>
+</td>
+    <td><a name="wp1033623"> </a><div class="pTableText">
+0x005a 
+</div>
+</td>
+    <td><a name="wp1033625"> </a><div class="pTableText">
+LATIN CAPITAL LETTER Z 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033627"> </a><div class="pTableText">
+0x5b 
+</div>
+</td>
+    <td><a name="wp1033629"> </a><div class="pTableText">
+0x00c4 
+</div>
+</td>
+    <td><a name="wp1033631"> </a><div class="pTableText">
+LATIN CAPITAL LETTER A WITH DIARESIS
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033633"> </a><div class="pTableText">
+0x5c 
+</div>
+</td>
+    <td><a name="wp1033635"> </a><div class="pTableText">
+0x00d6 
+</div>
+</td>
+    <td><a name="wp1033637"> </a><div class="pTableText">
+LATIN CAPITAL LETTER O WITH  DIARESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033639"> </a><div class="pTableText">
+ 0x5d 
+</div>
+</td>
+    <td><a name="wp1033641"> </a><div class="pTableText">
+0x00d1 
+</div>
+</td>
+    <td><a name="wp1033643"> </a><div class="pTableText">
+LATIN CAPITAL LETTER N WITH TILDE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033645"> </a><div class="pTableText">
+ 0x5e 
+</div>
+</td>
+    <td><a name="wp1033647"> </a><div class="pTableText">
+0x00dc 
+</div>
+</td>
+    <td><a name="wp1033649"> </a><div class="pTableText">
+LATIN CAPITAL LETTER U WITH DIARESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033651"> </a><div class="pTableText">
+ 0x5f 
+</div>
+</td>
+    <td><a name="wp1033653"> </a><div class="pTableText">
+0x00a7 
+</div>
+</td>
+    <td><a name="wp1033655"> </a><div class="pTableText">
+SECTION SIGN 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033657"> </a><div class="pTableText">
+ 0x60 
+</div>
+</td>
+    <td><a name="wp1033659"> </a><div class="pTableText">
+0x00bf 
+</div>
+</td>
+    <td><a name="wp1033661"> </a><div class="pTableText">
+INVERTED QUESTION MARK 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033663"> </a><div class="pTableText">
+ 0x61 
+</div>
+</td>
+    <td><a name="wp1033665"> </a><div class="pTableText">
+0x0061 
+</div>
+</td>
+    <td><a name="wp1033667"> </a><div class="pTableText">
+LATIN SMALL LETTER A 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033669"> </a><div class="pTableText">
+ 0x62 
+</div>
+</td>
+    <td><a name="wp1033671"> </a><div class="pTableText">
+0x0062 
+</div>
+</td>
+    <td><a name="wp1033673"> </a><div class="pTableText">
+LATIN SMALL LETTER B 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033675"> </a><div class="pTableText">
+ 0x63 
+</div>
+</td>
+    <td><a name="wp1033677"> </a><div class="pTableText">
+0x0063 
+</div>
+</td>
+    <td><a name="wp1033679"> </a><div class="pTableText">
+LATIN SMALL LETTER C 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033681"> </a><div class="pTableText">
+ 0x64 
+</div>
+</td>
+    <td><a name="wp1033683"> </a><div class="pTableText">
+0x0064 
+</div>
+</td>
+    <td><a name="wp1033685"> </a><div class="pTableText">
+LATIN SMALL LETTER D 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033687"> </a><div class="pTableText">
+ 0x65 
+</div>
+</td>
+    <td><a name="wp1033689"> </a><div class="pTableText">
+0x0065 
+</div>
+</td>
+    <td><a name="wp1033691"> </a><div class="pTableText">
+LATIN SMALL LETTER E 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033693"> </a><div class="pTableText">
+ 0x66 
+</div>
+</td>
+    <td><a name="wp1033695"> </a><div class="pTableText">
+0x0066 
+</div>
+</td>
+    <td><a name="wp1033697"> </a><div class="pTableText">
+LATIN SMALL LETTER F 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033699"> </a><div class="pTableText">
+ 0x67 
+</div>
+</td>
+    <td><a name="wp1033701"> </a><div class="pTableText">
+0x0067 
+</div>
+</td>
+    <td><a name="wp1033703"> </a><div class="pTableText">
+LATIN SMALL LETTER G 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033705"> </a><div class="pTableText">
+ 0x68 
+</div>
+</td>
+    <td><a name="wp1033707"> </a><div class="pTableText">
+0x0068 
+</div>
+</td>
+    <td><a name="wp1033709"> </a><div class="pTableText">
+LATIN SMALL LETTER H 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033711"> </a><div class="pTableText">
+ 0x69 
+</div>
+</td>
+    <td><a name="wp1033713"> </a><div class="pTableText">
+0x0069 
+</div>
+</td>
+    <td><a name="wp1033715"> </a><div class="pTableText">
+LATIN SMALL LETTER I 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033717"> </a><div class="pTableText">
+ 0x6a 
+</div>
+</td>
+    <td><a name="wp1033719"> </a><div class="pTableText">
+0x006a 
+</div>
+</td>
+    <td><a name="wp1033721"> </a><div class="pTableText">
+LATIN SMALL LETTER J 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033723"> </a><div class="pTableText">
+ 0x6b 
+</div>
+</td>
+    <td><a name="wp1033725"> </a><div class="pTableText">
+0x006b 
+</div>
+</td>
+    <td><a name="wp1033727"> </a><div class="pTableText">
+LATIN SMALL LETTER K 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033729"> </a><div class="pTableText">
+ 0x6c 
+</div>
+</td>
+    <td><a name="wp1033731"> </a><div class="pTableText">
+0x006c 
+</div>
+</td>
+    <td><a name="wp1033733"> </a><div class="pTableText">
+LATIN SMALL LETTER L 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033735"> </a><div class="pTableText">
+ 0x6d 
+</div>
+</td>
+    <td><a name="wp1033737"> </a><div class="pTableText">
+0x006d 
+</div>
+</td>
+    <td><a name="wp1033739"> </a><div class="pTableText">
+LATIN SMALL LETTER M 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033741"> </a><div class="pTableText">
+ 0x6e 
+</div>
+</td>
+    <td><a name="wp1033743"> </a><div class="pTableText">
+0x006e 
+</div>
+</td>
+    <td><a name="wp1033745"> </a><div class="pTableText">
+LATIN SMALL LETTER N 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033747"> </a><div class="pTableText">
+ 0x6f 
+</div>
+</td>
+    <td><a name="wp1033749"> </a><div class="pTableText">
+0x006f 
+</div>
+</td>
+    <td><a name="wp1033751"> </a><div class="pTableText">
+LATIN SMALL LETTER O 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033753"> </a><div class="pTableText">
+ 0x70 
+</div>
+</td>
+    <td><a name="wp1033755"> </a><div class="pTableText">
+0x0070 
+</div>
+</td>
+    <td><a name="wp1033757"> </a><div class="pTableText">
+LATIN SMALL LETTER P 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033759"> </a><div class="pTableText">
+ 0x71 
+</div>
+</td>
+    <td><a name="wp1033761"> </a><div class="pTableText">
+0x0071 
+</div>
+</td>
+    <td><a name="wp1033763"> </a><div class="pTableText">
+LATIN SMALL LETTER Q 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033765"> </a><div class="pTableText">
+ 0x72 
+</div>
+</td>
+    <td><a name="wp1033767"> </a><div class="pTableText">
+0x0072 
+</div>
+</td>
+    <td><a name="wp1033769"> </a><div class="pTableText">
+LATIN SMALL LETTER R 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033771"> </a><div class="pTableText">
+ 0x73 
+</div>
+</td>
+    <td><a name="wp1033773"> </a><div class="pTableText">
+0x0073 
+</div>
+</td>
+    <td><a name="wp1033775"> </a><div class="pTableText">
+LATIN SMALL LETTER S 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033777"> </a><div class="pTableText">
+ 0x74 
+</div>
+</td>
+    <td><a name="wp1033779"> </a><div class="pTableText">
+0x0074 
+</div>
+</td>
+    <td><a name="wp1033781"> </a><div class="pTableText">
+LATIN SMALL LETTER T 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033783"> </a><div class="pTableText">
+ 0x75 
+</div>
+</td>
+    <td><a name="wp1033785"> </a><div class="pTableText">
+0x0075 
+</div>
+</td>
+    <td><a name="wp1033787"> </a><div class="pTableText">
+LATIN SMALL LETTER U 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033789"> </a><div class="pTableText">
+ 0x76 
+</div>
+</td>
+    <td><a name="wp1033791"> </a><div class="pTableText">
+0x0076 
+</div>
+</td>
+    <td><a name="wp1033793"> </a><div class="pTableText">
+LATIN SMALL LETTER V 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033795"> </a><div class="pTableText">
+ 0x77 
+</div>
+</td>
+    <td><a name="wp1033797"> </a><div class="pTableText">
+0x0077 
+</div>
+</td>
+    <td><a name="wp1033799"> </a><div class="pTableText">
+LATIN SMALL LETTER W 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033801"> </a><div class="pTableText">
+ 0x78 
+</div>
+</td>
+    <td><a name="wp1033803"> </a><div class="pTableText">
+0x0078 
+</div>
+</td>
+    <td><a name="wp1033805"> </a><div class="pTableText">
+LATIN SMALL LETTER X 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033807"> </a><div class="pTableText">
+ 0x79 
+</div>
+</td>
+    <td><a name="wp1033809"> </a><div class="pTableText">
+0x0079 
+</div>
+</td>
+    <td><a name="wp1033811"> </a><div class="pTableText">
+LATIN SMALL LETTER Y 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033813"> </a><div class="pTableText">
+ 0x7a 
+</div>
+</td>
+    <td><a name="wp1033815"> </a><div class="pTableText">
+0x007a 
+</div>
+</td>
+    <td><a name="wp1033817"> </a><div class="pTableText">
+LATIN SMALL LETTER Z 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033819"> </a><div class="pTableText">
+ 0x7b 
+</div>
+</td>
+    <td><a name="wp1033821"> </a><div class="pTableText">
+0x00e4 
+</div>
+</td>
+    <td><a name="wp1033823"> </a><div class="pTableText">
+LATIN SMALL LETTER A WITH DIARESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033825"> </a><div class="pTableText">
+ 0x7c 
+</div>
+</td>
+    <td><a name="wp1033827"> </a><div class="pTableText">
+0x00f6 
+</div>
+</td>
+    <td><a name="wp1033829"> </a><div class="pTableText">
+LATIN SMALL LETTER O WITH  DIARESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033831"> </a><div class="pTableText">
+ 0x7d 
+</div>
+</td>
+    <td><a name="wp1033833"> </a><div class="pTableText">
+0x00f1 
+</div>
+</td>
+    <td><a name="wp1033835"> </a><div class="pTableText">
+LATIN SMALL LETTER N WITH TILDE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033837"> </a><div class="pTableText">
+ 0x7e 
+</div>
+</td>
+    <td><a name="wp1033839"> </a><div class="pTableText">
+0x00fc 
+</div>
+</td>
+    <td><a name="wp1033841"> </a><div class="pTableText">
+LATIN SMALL LETTER U WITH DIARESIS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033843"> </a><div class="pTableText">
+ 0x7f 
+</div>
+</td>
+    <td><a name="wp1033845"> </a><div class="pTableText">
+0x00e0 
+</div>
+</td>
+    <td><a name="wp1033847"> </a><div class="pTableText">
+LATIN SMALL LETTER A WITH  GRAVE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033849"> </a><div class="pTableText">
+ 0x1b 0x14 
+</div>
+</td>
+    <td><a name="wp1033851"> </a><div class="pTableText">
+0x005e 
+</div>
+</td>
+    <td><a name="wp1033853"> </a><div class="pTableText">
+CIRCUMFLEX ACCENT 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033855"> </a><div class="pTableText">
+ 0x1b 0x28 
+</div>
+</td>
+    <td><a name="wp1033857"> </a><div class="pTableText">
+0x007b 
+</div>
+</td>
+    <td><a name="wp1033859"> </a><div class="pTableText">
+LEFT CURLY BRACKET 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033861"> </a><div class="pTableText">
+ 0x1b 0x29 
+</div>
+</td>
+    <td><a name="wp1033863"> </a><div class="pTableText">
+0x007d 
+</div>
+</td>
+    <td><a name="wp1033865"> </a><div class="pTableText">
+RIGHT CURLY BRACKET 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033867"> </a><div class="pTableText">
+ 0x1b 0x2f
+</div>
+</td>
+    <td><a name="wp1033869"> </a><div class="pTableText">
+0x005c 
+</div>
+</td>
+    <td><a name="wp1033871"> </a><div class="pTableText">
+REVERSE SOLIDUS 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033873"> </a><div class="pTableText">
+ 0x1b 0x3c 
+</div>
+</td>
+    <td><a name="wp1033875"> </a><div class="pTableText">
+0x005b 
+</div>
+</td>
+    <td><a name="wp1033877"> </a><div class="pTableText">
+LEFT SQUARE BRACKET 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033879"> </a><div class="pTableText">
+ 0x1b 0x3d 
+</div>
+</td>
+    <td><a name="wp1033881"> </a><div class="pTableText">
+ 0x007e 
+</div>
+</td>
+    <td><a name="wp1033883"> </a><div class="pTableText">
+TILDE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033885"> </a><div class="pTableText">
+ 0x1b 0x3e 
+</div>
+</td>
+    <td><a name="wp1033887"> </a><div class="pTableText">
+ 0x005d 
+</div>
+</td>
+    <td><a name="wp1033889"> </a><div class="pTableText">
+RIGHT SQUARE BRACKET 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033891"> </a><div class="pTableText">
+ 0x1b 0x40 
+</div>
+</td>
+    <td><a name="wp1033893"> </a><div class="pTableText">
+ 0x007c 
+</div>
+</td>
+    <td><a name="wp1033895"> </a><div class="pTableText">
+VERTICAL LINE 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033897"> </a><div class="pTableText">
+ 0x1b 0x65 
+</div>
+</td>
+    <td><a name="wp1033899"> </a><div class="pTableText">
+ 0x20ac 
+</div>
+</td>
+    <td><a name="wp1033901"> </a><div class="pTableText">
+EURO SIGN 
+</div>
+</td>
+</tr>
+<tr><td colspan="15"><hr class="pTableHr"></td></tr>
+</tbody></table>
+</div>
+<div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+<a name="wp1034284"> </a><p class="pBody">
+The GSM 7-bit characters that use the escape code for a two septet
+combination are represented in this table with the hexadecimal
+representations of the two septets separately. In the encoded messages,
+the septets are encoded together with no extra alignment to octet
+boundaries. </p>
+<a name="wp1031617"> </a><h3 class="pHeading2">
+A.2.0 Message Addressing 
+</h3>
+<a name="wp1031619"> </a><p class="pBody">
+The syntax of the URL connection strings that specify the address are described in Table A-2. 
+</p>
+<a name="wp1031621"> </a><p class="pBody">
+<b class="cBold">Table A-2: Connection Strings for Message Addresses </b> 
+</p>
+<a name="wp1034285"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+ </div><div align="left">
+<table id="wp1033926" summary="The following table summarizes 
+connetcion strings for message addresses. The cells that 
+span columns are internal headings." border="0" cellpadding="7">
+  <caption></caption>
+<thead>
+<tr align="center">    <th class="sun-verylightblue" scope="col"><a name="wp1033926"> </a><div style="text-align: left;" class="pTableHead">
+String
+</div>
+
+</th>
+    <th class="sun-verylightblue" scope="col"><a name="wp1033928"> </a><div style="text-align: left;" class="pTableHead">
+Definition
+</div>
+
+</th>
+</tr>
+</thead>
+  <tbody><tr align="left">    <td><a name="wp1033930"> </a><div class="pTableText">
+ smsurl
+</div>
+</td>
+    <td><a name="wp1033932"> </a><div class="pTableText">
+ ::== "sms://" address_part 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033934"> </a><div class="pTableText">
+ address_part 
+</div>
+</td>
+    <td><a name="wp1033936"> </a><div class="pTableText">
+::== foreign_host_address | local_host_address 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033938"> </a><div class="pTableText">
+ local_host_address 
+</div>
+</td>
+    <td><a name="wp1033940"> </a><div class="pTableText">
+::== port_number_part 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033942"> </a><div class="pTableText">
+ port_number_part 
+</div>
+</td>
+    <td><a name="wp1033944"> </a><div class="pTableText">
+::== ":" digits 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033946"> </a><div class="pTableText">
+ foreign_host_address 
+</div>
+</td>
+    <td><a name="wp1033948"> </a><div class="pTableText">
+::== msisdn | msisdn port_number_part 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033950"> </a><div class="pTableText">
+ msisdn 
+</div>
+</td>
+    <td><a name="wp1033952"> </a><div class="pTableText">
+::== "+" digits | digits 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033954"> </a><div class="pTableText">
+ digit 
+</div>
+</td>
+    <td><a name="wp1033956"> </a><div class="pTableText">
+ ::== "0" | "1" | "2" | "3"  | "4" | "5" | "6" | "7" | "8" | "9" 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1033958"> </a><div class="pTableText">
+ digits
+</div>
+</td>
+    <td><a name="wp1033960"> </a><div class="pTableText">
+::== digit | digit digits 
+</div>
+</td>
+</tr>
+<tr><td colspan="15"><hr class="pTableHr"></td></tr>
+</tbody></table>
+</div>
+<div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+<a name="wp1031644"> </a><p class="pBody">
+Examples of valid URL connection strings are: 
+</p>
+<div style="color: rgb(0, 0, 0); font-size: 8pt; font-style: normal; font-variant: normal; font-weight: normal; margin-bottom: 0pt; margin-right: 0pt; margin-top: 0pt; text-align: left; text-decoration: none; text-transform: none;" class="pPreformattedIndent">
+sms://+358401234567 
+</div><a name="wp1031647"> </a>
+
+<div style="color: rgb(0, 0, 0); font-size: 8pt; font-style: normal; font-variant: normal; font-weight: normal; margin-bottom: 0pt; margin-right: 0pt; margin-top: 0pt; text-align: left; text-decoration: none; text-transform: none;" class="pPreformattedIndent">
+sms://+358401234567:6578 
+</div><a name="wp1031649"> </a>
+
+<div style="color: rgb(0, 0, 0); font-size: 8pt; font-style: normal; font-variant: normal; font-weight: normal; margin-bottom: 0pt; margin-right: 0pt; margin-top: 0pt; text-align: left; text-decoration: none; text-transform: none;" class="pPreformattedIndent">
+sms://:3381 
+</div><a name="wp1031651"> </a>
+
+<a name="wp1031653"> </a><p class="pBody">
+When this adapter is used and the <code class="cCode">Connector.open()</code> method is passed a URL with this syntax, it MUST return an instance implementing the <code class="cCode">javax.wireless.messaging.MessageConnection</code> interface. 
+</p>
+<a name="wp1031656"> </a><h4 class="pHeading3">
+A.2.1 Specifying Recipient Addresses
+</h4>
+<a name="wp1031658"> </a><p class="pBody">
+In this URL connection string, the MSISDN part identifies the recipient
+phone number and the port number part of the application port number
+address as specified in the GSM 3.40 SMS specification [1] (sections
+9.2.3.24.3 and 9.2.3.24.4). The same mechanism is used, for example,
+for the WAP WDP messages. </p>
+<a name="wp1031662"> </a><p class="pBody">
+When the port number is present in the address, the TP-User-Data of the
+SMS MUST contain a User-Data-Header with the Application port
+addressing scheme information element. </p>
+<a name="wp1031665"> </a><p class="pBody">
+When the recipient address does not contain a port number, the
+TP-User-Data MUST NOT contain the Application port addressing header.
+Java applications cannot receive this kind of message, but it will be
+handled as usual in the recipient device; for example, text messages
+will be displayed to the end user. </p>
+<a name="wp1031669"> </a><h4 class="pHeading3">
+A.2.2 Client Mode and Server Mode Connections
+</h4>
+<a name="wp1031671"> </a><p class="pBody">
+Messages can be sent using this API via client or server type <code class="cCode">MessageConnection</code>s. When a message identifying a port number is sent from a server type <code class="cCode">MessageConnection</code>, the originating port number in the message is set to the port number of the <code class="cCode">MessageConnection</code>. This allows the recipient to send a response to the message that will be received by this <code class="cCode">MessageConnection</code>. 
+</p>
+<a name="wp1031676"> </a><p class="pBody">
+However, when a client type <code class="cCode">MessageConnection</code>
+is used for sending a message with a port number, the originating port
+number is set to an implementation-specific value and any possible
+messages received to this port number are not delivered to the <code class="cCode">MessageConnection</code>. 
+</p>
+<a name="wp1031680"> </a><p class="pBody">
+Thus, only the server mode <code class="cCode">MessageConnection</code>s
+can be used for receiving messages. Any messages to which the other
+party is expected to respond should be sent using the appropriate
+server mode <code class="cCode">MessageConnection</code>. 
+</p>
+<a name="wp1031683"> </a><h4 class="pHeading3">
+A.2.3 Handling Received Messages
+</h4>
+<a name="wp1031685"> </a><p class="pBody">
+When SMS messages are received by an application, they are removed from the SIM/ME memory where they may have been stored.
+</p>
+<a name="wp1031686"> </a><p class="pBody">
+If the message information MUST be stored more persistently, then the
+application is responsible for saving it. For example, the application
+could could save the message information by using the RMS facility of
+the MIDP API or any other available mechanism. </p>
+<a name="wp1034407"> </a><p class="pBody">
+The GSM SMS protocol does not guarantee to preserve the ordering when
+multiple messages are sent. When a large message is split into multiple
+GSM SMS sections as specified in A.1.2, ordering is handled correctly
+when they are automatically concatenated back into a single <code class="cCode">Message</code> object. If the application sends multiple <code class="cCode">Messages</code>
+to the same recipient, they might not be delivered in the correct
+order. The application must be written so that it is able to deal with
+this issue appropriately. However, even when the ordering may change
+during the delivery in the network, the implementation MUST guarantee
+that the messages are delivered to the application in the same order as
+they were received by the implementation of the recipient terminal.
+</p>
+<a name="wp1031689"> </a><h3 class="pHeading2">
+A.3.0 Short Message Service Center Address
+</h3>
+<a name="wp1031691"> </a><p class="pBody">Applications might need to
+obtain the Short Message Service Center (SMSC) address to decide which
+recipient number to use. For example, the application might need to do
+this because it is using service numbers for application servers which
+might not be consistent in all networks and SMSCs. </p>
+<a name="wp1031695"> </a><p class="pBody">
+The SMSC address used for sending the messages MUST be made available using <code class="cCode">System.getProperty </code>with the property name described in Table A-3. 
+</p>
+<a name="wp1031698"> </a><p class="pBody">
+<b class="cBold">Table A-3: Property Name and Description for SMSC Addresses </b> 
+</p>
+<a name="wp1034286"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+ </div><div align="left">
+<table id="wp1034262" summary="The following table summarizes 
+the property names and descriptions for SMSC addresses. The cells that 
+span columns are internal headings." border="0" cellpadding="7">
+  <caption></caption>
+<thead>
+<tr align="center">    <th class="sun-verylightblue" scope="col"><a name="wp1034262"> </a><div style="text-align: left;" class="pTableHead">
+Property name
+</div>
+
+</th>
+    <th class="sun-verylightblue" scope="col"><a name="wp1034264"> </a><div style="text-align: left;" class="pTableHead">
+Description
+</div>
+
+</th>
+</tr>
+</thead>
+  <tbody><tr align="left">    <td><a name="wp1034266"> </a><div class="pTableText">
+<code class="cCode">wireless.messaging.sms.smsc</code>
+</div>
+</td>
+    <td><a name="wp1034268"> </a><div class="pTableText">
+The address of the SMS expressed using the syntax expressed by the msisdn item of thefollowing BNF definition: 
+</div>
+<a name="wp1034269"> </a><div class="pTableText">
+<code class="cCode">msisdn ::== "+" digits | digits </code>
+</div>
+<a name="wp1034270"> </a><div class="pTableText">
+<code class="cCode">digit ::== "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" |"8" | "9" </code>
+</div>
+<a name="wp1034271"> </a><div class="pTableText">
+<code class="cCode">digits ::== digit | digit digits</code>
+</div>
+</td>
+</tr>
+<tr><td colspan="15"><hr class="pTableHr"></td></tr>
+</tbody></table>
+</div>
+<div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+<a name="wp1031712"> </a><h3 class="pHeading2">
+A.4.0 Using Port Numbers 
+</h3>
+<a name="wp1031714"> </a><p class="pBody">
+The receiving application in a device is identified with the port number included in the message. When opening the server mode <code class="cCode">MessageConnection</code>, the application specifies the port number that it will use for receiving messages. 
+</p>
+<a name="wp1031717"> </a><p class="pBody">
+The first application to allocate a given port number will get it. If
+other applications try to allocate the same port number while it is
+being used by the first application, an IOException will be thrown when
+they attempt to open the <code class="cCode">MessageConnection</code>.
+The same rule applies if a port number is being used by a system
+application in the device. In this case, the Java applications will not
+be able to use that port number. </p>
+<a name="wp1031722"> </a><p class="pBody">
+As specified in the GSM 03.40 standard [1], the port numbers are split
+into ranges. The IANA (Internet Assigned Numbers Authority) controls
+one of the ranges. If an application author wants to ensure that an
+application can always use a specific port number value, then it can be
+registered with IANA. Otherwise, the author can pick a number at random
+from the freely usable range and hope that the same number is not used
+by another application that might be installed in the same device. This
+is exactly the same way that port numbers are currently used with TCP
+and UDP in the Internet. </p>
+<a name="wp1031728"> </a><h3 class="pHeading2">
+A.5.0 Message Types 
+</h3>
+<a name="wp1031730"> </a><p class="pBody">
+SMS messages can be sent using the <code class="cCode">TextMessage</code> or the <code class="cCode">BinaryMessage</code>
+message type of the API. The encodings used in the SMS protocol are
+defined in the GSM 03.38 standard (Part 4 SMS Data Coding Scheme) [2]. </p>
+<a name="wp1031733"> </a><p class="pBody">
+When the application uses the <code class="cCode">TextMessage</code>
+type, the TP-Data-Coding-Scheme in the SMS MUST indicate the GSM
+default 7-bit alphabet or UCS-2. The TP-User-Data MUST be encoded
+appropriately using the chosen alphabet. The 7-bit alphabet MUST be
+used for encoding if the String that is given by the application only
+contains characters that are present in the GSM 7-bit alphabet. If the
+String given by the application contains at least one character that is
+not present in the GSM 7-bit alphabet, the UCS-2 encoding MUST be used.
+</p>
+<a name="wp1031739"> </a><p class="pBody">
+When the application uses the <code class="cCode">BinaryMessage</code>, the TP-Data-Coding-Scheme in the SMS MUST indicate 8-bit data. 
+</p>
+<a name="wp1031741"> </a><p class="pBody">
+The application is responsible for ensuring that the message payload
+fits in an SMS message when encoded as defined in this specification.
+If the application tries to send a message with a payload that is too
+long, the <code class="cCode">MessageConnection.send()</code> method will throw an <code class="cCode">IllegalArgumentException</code>
+and the message will not be sent. This specification contains the
+information that applications need to determine the maximum payload for
+the message type they are trying to send. </p>
+<a name="wp1031746"> </a><p class="pBody">
+All messages sent via this API MUST be sent as Class 1 messages GSM
+3.40 SMS specification [1], Section 9.2.3.9 "TP-Protocol-Identifier". </p>
+<a name="wp1031749"> </a><h3 class="pHeading2">
+A.6.0 Restrictions on Port Numbers for SMS Messages
+</h3>
+<a name="wp1031751"> </a><p class="pBody">
+For security reasons, Java applications are not allowed to send SMS
+messages to the port numbers listed in Table A-4. Implementations MUST
+throw a <code class="cCode">SecurityException</code> in the <code class="cCode">MessageConnection.send()</code> method if an application tries to send a message to any of these port numbers. 
+</p>
+<a name="wp1031755"> </a><p class="pBody">
+<b class="cBold">Table A-4: Port Numbers Restricted to SMS Messages </b> 
+</p>
+<a name="wp1034287"> </a><div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+ </div><div align="left">
+<table id="wp1034134" summary="The following table summarizes 
+the port numbers restricted to SMS addresses. The cells that 
+span columns are internal headings." border="0" cellpadding="7">
+  <caption></caption>
+<thead>
+<tr align="center">    <th class="sun-verylightblue" scope="col"><a name="wp1034134"> </a><div style="text-align: left;" class="pTableHead">
+Port number
+</div>
+
+</th>
+    <th class="sun-verylightblue" scope="col"><a name="wp1034136"> </a><div style="text-align: left;" class="pTableHead">
+Description
+</div>
+
+</th>
+</tr>
+</thead>
+  <tbody><tr align="left">    <td><a name="wp1034138"> </a><div class="pTableText">
+ 2805
+</div>
+</td>
+    <td><a name="wp1034140"> </a><div class="pTableText">
+WAP WTA secure connection-less session service
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034142"> </a><div class="pTableText">
+ 2923
+</div>
+</td>
+    <td><a name="wp1034144"> </a><div class="pTableText">
+WAP WTA secure session service
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034146"> </a><div class="pTableText">
+ 2948
+</div>
+</td>
+    <td><a name="wp1034148"> </a><div class="pTableText">
+WAP Push connectionless session service (client side)
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034150"> </a><div class="pTableText">
+ 2949
+</div>
+</td>
+    <td><a name="wp1034152"> </a><div class="pTableText">
+WAP Push secure connectionless session service (client side)
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034154"> </a><div class="pTableText">
+ 5502
+</div>
+</td>
+    <td><a name="wp1034156"> </a><div class="pTableText">
+Service Card reader 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034158"> </a><div class="pTableText">
+ 5503
+</div>
+</td>
+    <td><a name="wp1034160"> </a><div class="pTableText">
+Internet access configuration reader 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034162"> </a><div class="pTableText">
+ 5508
+</div>
+</td>
+    <td><a name="wp1034164"> </a><div class="pTableText">
+Dynamic Menu Control Protocol 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034166"> </a><div class="pTableText">
+ 5511
+</div>
+</td>
+    <td><a name="wp1034168"> </a><div class="pTableText">
+Message Access Protocol 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034170"> </a><div class="pTableText">
+ 5512
+</div>
+</td>
+    <td><a name="wp1034172"> </a><div class="pTableText">
+Simple Email Notification 
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034174"> </a><div class="pTableText">
+ 9200
+</div>
+</td>
+    <td><a name="wp1034176"> </a><div class="pTableText">
+WAP connectionless session service
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034178"> </a><div class="pTableText">
+ 9201
+</div>
+</td>
+    <td><a name="wp1034180"> </a><div class="pTableText">
+WAP session service
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034182"> </a><div class="pTableText">
+ 9202
+</div>
+</td>
+    <td><a name="wp1034184"> </a><div class="pTableText">
+WAP secure connectionless session service
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034186"> </a><div class="pTableText">
+ 9203
+</div>
+</td>
+    <td><a name="wp1034188"> </a><div class="pTableText">
+WAP secure session service
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034190"> </a><div class="pTableText">
+ 9207
+</div>
+</td>
+    <td><a name="wp1034192"> </a><div class="pTableText">
+WAP vCal Secure
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034194"> </a><div class="pTableText">
+ 49996
+</div>
+</td>
+    <td><a name="wp1034196"> </a><div class="pTableText">
+SyncML OTA configuration
+</div>
+</td>
+</tr>
+  <tr align="left">    <td><a name="wp1034198"> </a><div class="pTableText">
+ 49999
+</div>
+</td>
+    <td><a name="wp1034200"> </a><div class="pTableText">
+WAP OTA configuration  
+</div>
+</td>
+</tr>
+<tr><td colspan="15"><hr class="pTableHr"></td></tr>
+</tbody></table>
+</div>
+<div style="margin: 0pt; color: rgb(0, 0, 0); font-size: 6pt; font-style: normal; font-variant: normal; font-weight: normal; text-align: left; text-decoration: none; text-indent: 0pt; text-transform: none;">
+
+</div>
+
+<!-- ======= START OF BOTTOM NAVBAR ====== -->
+<A NAME="navbar_bottom"><!-- --></A>
+<A HREF="#skip-navbar_bottom" title="Skip navigation links"></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0" SUMMARY="">
+<TR>
+<TD COLSPAN=3 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_bottom_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3" SUMMARY="">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev"><B>Overview</B></FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" target="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="overview-summary.html" target="_top"><B>NO FRAMES</B></A>  &nbsp;
+&nbsp;<SCRIPT type="text/javascript">
+  <!--
+  if(window==top) {
+    document.writeln('<A HREF="allclasses-noframe.html"><B>All Classes</B></A>');
+  }
+  //-->
+</SCRIPT>
+<NOSCRIPT>
+  <A HREF="allclasses-noframe.html"><B>All Classes</B></A></NOSCRIPT>
+
+</FONT></TD>
+</TR>
+</TABLE>
+<A NAME="skip-navbar_bottom"></A>
+<!-- ======== END OF BOTTOM NAVBAR ======= -->
+
+<HR>
+<p><address>Copyright (C) 2004 Siemens AG, Germany.       All rights reserved. Use is subject to license terms.</address>
+</BODY>
+</HTML>

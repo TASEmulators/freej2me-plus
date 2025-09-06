@@ -1,0 +1,835 @@
+<HTML>
+<HEAD>
+<TITLE>Encoders: Formats and Structures</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Encoder API</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p>
+	The RIM Encoder API allows the user to encode and decode keys/signatures for transport and storage.
+	This document outlines the encoding methods supported by this API and describes the formats that
+	each encoder produces.
+</p>
+<p>
+	This document consists of the following parts :
+</p>
+
+
+<table width = "95%" border = 1 cellpadding = 8 cellspacing = 0 align = center >
+<tr><td bgcolor = "#CCCCFF">
+<p><a href="#sig_encoder">Signature Encoders</a></p>
+</td>
+</tr>
+<p>
+<tr>
+<td>
+<code>
+	<a href="#X509_sig_encoder">X509 Signature Encoders:</a>
+	<p>
+	<a href="#X509_sig_encoder_RSA">RSA</a>, <a href="#X509_sig_encoder_DSA">DSA</a>, <a href="#X509_sig_encoder_ECDSA">ECDSA</a>
+</code>
+</tr>
+</td>
+
+<tr>
+<td>
+<code>
+	<a href="#CMS_sig_encoder">CMS Signature Encoders</a>
+</code>
+</tr>
+</td>
+<tr>
+<td>
+<code>
+	<a href="#WTLS_sig_encoder">WTLS Signature Encoders</a>
+</code>
+</td>
+</tr>
+</table>
+<p>
+
+
+
+<table width = "95%" border = 1 cellpadding = 8 cellspacing = 0 align = center >
+<tr><td bgcolor = "#CCCCFF">
+<p><a href="#pubkey_encoder">Public Key Encoders</a></p>
+</td>
+</tr>
+<p>
+<tr>
+<td>
+<code>
+    <a href="#X509_pubkey_encoder">X509 Public Key Encoders:</a>
+	<p>
+	<a href="#X509_pubkey_encoder_RSA">RSA</a>, <a href="#X509_pubkey_encoder_DSA">DSA</a>, <a href="#X509_pubkey_encoder_DH">DH</a>, <a href="#X509_pubkey_encoder_EC">EC</a>
+
+</code>
+</tr>
+</td>
+
+<tr>
+<td>
+<code>
+	<a href="#WTLS_pubkey_encoder">WTLS Public Key Encoders</a>
+</code>
+</tr>
+</td>
+<tr>
+<td>
+<code>
+	<a href="#MSCAPI_pubkey_encoder">Microsoft Crypto API Public Key Encoders:</a>
+</code>
+<p>
+<code>
+	<a href="#MSCAPI_pubkey_encoder_RSA">RSA</a>, <a href="#MSCAPI_pubkey_encoder_DSA">DSA</a>, <a href="#MSCAPI_pubkey_encoder_DH">DH</a>
+</code>
+</td>
+</tr>
+</table>
+<p>
+
+
+<table width = "95%" border = 1 cellpadding = 8 cellspacing = 0 align = center >
+<tr><td bgcolor = "#CCCCFF">
+<p><a href="#privkey_encoder">Private Key Encoders</a></p>
+</td>
+</tr>
+<p>
+<tr>
+<td>
+<code>
+	<a href="#PKCS8_privkey_encoder">PKCS8 Private Key Encoders:</a>
+	<p>
+	<a href="#PKCS8_privkey_encoder_RSA">RSA</a>, <a href="#PKCS8_privkey_encoder_DSA">DSA</a>, <a href="#PKCS8_privkey_encoder_DH">DH</a>, <a href="#PKCS8_privkey_encoder_EC">EC</a>
+
+</code>
+</tr>
+</td>
+
+<tr>
+<td>
+<code>
+	<a href="#MSCAPI_privkey_encoder">Microsoft Crypto API Private Key Encoders:</a>
+</code>
+<p>
+<code>
+	<a href="#MSCAPI_privkey_encoder_RSA">RSA</a>, <a href="#MSCAPI_privkey_encoder_DSA">DSA</a>, <a href="#MSCAPI_privkey_encoder_DH">DH</a>
+
+</code>
+
+</td>
+</tr>
+</table>
+<p>
+
+<table width = "95%" border = 1 cellpadding = 8 cellspacing = 0 align = center >
+<tr><td bgcolor = "#CCCCFF">
+<p><a href="#symmetrickey_encoder">Symmetric Key Encoders</a></p>
+</td>
+</tr>
+<p>
+<tr>
+<td>
+<code>
+	<a href="#symmetrickey_encoder">Symmetric Key Encoders</a>
+</code>
+</tr>
+</td>
+
+
+</table>
+<p>
+
+
+
+
+
+<hr>
+
+<p><b><a name="#sig_encoder">Signature Encoders</b></p>
+
+<p><b><a name="#X509_sig_encoder">X509 Signature Encoders</b></p>
+<p>
+	The algorithms that X509 specifies are RSA, DSA, and ECDSA. The signature formats for each algorithm are given by
+	their ASN.1 structure descriptions.  The X509 Signature Encoder can be specified with the "X509" string.
+</p>
+
+	<p><b><a name="#X509_sig_encoder_DSA">"DSA"</b></p>
+<pre>
+	is defined by the following ASN.1 structure :
+
+		Signature Value ::= SEQUENCE {
+			r	INTEGER,
+			s 	INTEGER
+		}
+
+	and is specified by the following OID :
+
+		id-dsa-with-sha1 ::= OBJECT IDENTIFIER {
+			iso(1) member-body(2) us(840) x9-57(10040)
+			x9algorithm(4) 3
+		}
+</pre>
+
+	<p><b><a name="#X509_sig_encoder_ECDSA">"ECDSA"</b></p>
+<pre>
+	is defined by the following ASN.1 structure :
+
+		Signature Value ::= SEQUENCE {
+			r	INTEGER,
+			s	INTEGER
+		}
+
+	and is specified by the following OID :
+
+		ecdsa-with-SHA1 ::= OBJECT IDENTIFIER {
+			iso(1) member-body(2) us(840) ansi-x9-62(10045)
+			signatures(4) 1
+		}
+</pre>
+
+	<p><b><a name="#X509_sig_encoder_RSA">"RSA"</b></p>
+<pre>
+	is defined by the following ASN.1 structure :
+
+		Signature Value ::= BIT STRING
+
+	and is specified by the following OIDs :
+
+    		md2WithRSAEncryption ::= OBJECT IDENTIFIER {
+    			iso(1) member-body(2) us(840) rsadsi(113549)
+    			pkcs(1) pkcs-1(1) 2
+    		}
+
+    		md5WithRSAEncryption ::= OBJECT IDENTIFIER {
+    			iso(1) member-body(2) us(840) rsadsi(113549)
+    			pkcs(1) pkcs-1(1) 4
+    		}
+
+    		sha1WithRSAEncryption ::= OBJECT IDENTIFIER {
+    			iso(1) member-body(2) us(840) rsadsi(113549)
+    			pkcs(1) pkcs-1(1) 5
+    		}
+
+    		idRSASSA-PSS ::= OBJECT IDENTIFIER {
+    			iso(1) member-body(2) us(840) rsadsi(113549)
+    			pkcs(1) pkcs-1(1) 10
+    		}
+
+</pre>
+<p><b><a name="#CMS_sig_encoder">CMS Signature Encoders</b></p>
+<p>
+	The algorithms that CMS are the same as X509.  In fact, the format is very similar except for how it is written
+	into a CMS message ( the signature is written as an OCTET STRING rather than a BIT STRING).
+	The CMS Signature Encoder can be specified with the "CMS" string.
+</p>
+
+<p><b><a name="#WTLS_sig_encoder">WTLS Signature Encoders</b></p>
+
+<p>
+	The RIM Crypto API supports WTLS signatures with the RSA, DSA and ECDSA Algorithms.  It can be specified with
+	the "WTLS" string.
+</p>
+
+<hr>
+
+<p><b><a name="#pubkey_encoder">Public Key Encoders</b></p>
+
+<p><b><a name="#X509_pubkey_encoder">X509 Public Key Encoders</b></p>
+<p>
+	The algorithms that X509
+	will encode are RSA, DSA, DH, and EC.  This algorithm can be chosen with the "X509" string.
+	The public key formats are based on the following ASN.1 structure :
+</p>
+<pre>
+		SubjectPublicKeyInfo ::= SEQUENCE {
+			algorithm		AlgorithmIdentifier,
+			subjectPublicKey	BIT STRING
+		}
+
+		where an AlgorithmIdentifier is defined as
+
+		AlgorithmIdentifier ::= SEQUENCE {
+			algorithm	OBJECT IDENTIFIER,
+			parameters	ANY DEFINED BY algorithm OPTIONAL
+		}
+</pre>
+
+<p>
+	Each algorithm specifies the values stored in the AlgorithmIdentifier and the subjectPublicKey.
+</p>
+<p>
+	<b><a name="#X509_pubkey_encoder_RSA">"RSA"</b>
+</p>
+<pre>
+	never specifies any parameters in the algorithm identifier but
+	uses, as its OID :
+
+		rsaEncryption ::= { pkcs-1 1 }
+
+	with subjectPublicKey ::= BIT STRING of the following structure :
+
+		RSAPublicKey ::= SEQUENCE {
+			modulus		INTEGER, -- n --
+			publicExponent	INTEGER  -- e --
+		}
+</pre>
+<p>
+	<b><a name="#X509_pubkey_encoder_DSA">"DSA"</b>
+</p>
+<pre>
+	sometimes specifies parameters in the algorithm identifier and
+	uses, as its OID :
+
+		id-dsa ::= { iso(1) member-body(2) us(840) x9-57(10040)
+			     x9cm(4) 1 }
+
+		and parameters
+
+		Dss-Parm ::= SEQUENCE {
+			p	INTEGER,
+			q	INTEGER,
+			g	INTEGER
+		}
+
+	with subjectPublicKey ::= BIT STRING of the following structure :
+
+		DSAPublicKey ::= INTEGER -- public key, Y
+</pre>
+<p>
+	<b><a name="#X509_pubkey_encoder_DH">"DH"</b>
+</p>
+<pre>
+	sometimes specifies parameters in the algorithm identifier and
+	uses, as its OID :
+
+		dhpublicnumber ::= { iso(1) member-body(2) us(840)
+				     ansi-x942(10046) member-type(2) 1 }
+
+		and parameters
+
+		DomainParameters ::= SEQUENCE {
+			p	INTEGER, -- odd prime p = jq+1
+			g	INTEGER, -- generator g
+			q	INTEGER  -- factor of p-1
+		}
+
+		X509 also optionally supports the parameters j and
+		validationParms but the RIM Encoders API does not
+		support them at this time
+
+	with subjectPublicKey ::= BIT STRING of the following structure :
+
+		DHPublicKey ::= INTEGER -- public key, y = g^x mod p
+</pre>
+<p>
+	<b><a name="#X509_pubkey_encoder_EC">"EC"</b>
+</p>
+<pre>
+	sometimes specifies parameters in the algorithm identifier
+	and uses, as its OID :
+
+		id-ecPublicKey ::= { ansi-X9-62 keyType(2) 1 }
+
+		and parameters
+
+		ecpkParameters ::= CHOICE {
+			ecParameters	ECParameters,
+			namedCurve	OBJECT IDENTIFIER,
+			implicitlyCA	NULL
+		}
+
+		The RIM Encoder API only supports the namedCurve option with
+		the following curves supported :
+
+			secp160r1 ::= { ellipticCurve 8 }
+					-- a 160 bit prime order curve
+			secp192r1 ::= { 1.2.840.10045.3.1.1 }
+			 		-- a 192 bit prime order curve
+			secp224r1 ::= { ellipticCurve 33 }
+			 		-- a 224 bit prime order curve
+			secp256r1 ::= { 1.2.840.10045.3.1.7 }
+					-- a 256 bit prime order curve
+			secp384r1 ::= { ellipticCurve 34 }
+					-- a 384 bit prime order curve
+			secp521r1 ::= { ellipticCurve 35 }
+					-- a 521 bit prime order curve
+			sect163k1 ::= { ellipticCurve 1 }
+					-- a 163 bit koblitz curve
+			sect163r1 ::= { ellipticCurve 2 }
+					-- a 163 bit random curve
+			sect163r2 ::= { ellipticCurve 15 }
+					-- a 163 bit random curve
+			sect233k1 ::= { ellipticCurve 26 }
+					-- a 233 bit koblitz curve
+			sect233r1 ::= { ellipticCurve 27 }
+					-- a 233 bit random curve
+			sect239k1 ::= { ellipticCurve 3 }
+					-- a 239 bit koblitz curve
+			sect283k1 ::= { ellipticCurve 16 }
+					-- a 283 bit koblitz curve
+			sect283r1 ::= { ellipticCurve 17 }
+					-- a 283 bit random curve
+			sect409k1 ::= { ellipticCurve 36 }
+					-- a 409 bit koblitz curve
+			sect409r1 ::= { ellipticCurve 37 }
+					-- a 409 bit random curve
+			sect571k1 ::= { ellipticCurve 38 }
+					-- a 571 bit koblitz curve
+			sect571r1 ::= { ellipticCurve 39 }
+					-- a 571 bit random curve
+    			c2pnd163v1::= { c-TwoCurve 1 }
+    					-- the WTLS 5 curve
+
+
+		where ellipticCurve ::= { iso(1) identified-organization(3)
+					  ceriticom(132) curve(0) }
+		and  c-TwoCurve ::= { iso(1) member-body(2) us(840)
+					  ansi-X9-62(10045) curves(3)
+                                          characteristicTwo(0) }
+
+
+	with subjectPublicKey ::= BIT STRING of the following structure :
+
+		ECPublicKey ::= OCTET STRING -- the public ec point
+
+	where the contents of the OCTET STRING are mapped to the contents
+	of the BIT STRING by least significant byte to least significant byte
+	and so on.
+</pre>
+<p><b><a name="#WTLS_pubkey_encoder">WTLS Public Key Encoders</b></p>
+
+<p>
+	The RIM Crypto API supports WTLS Public Key encoding of RSA, DSA, EC public keys.  It can be chosen by using the
+	"WTLS" string.
+</p>
+<p><b><a name="#MSCAPI_pubkey_encoder">Microsoft Crypto API Public Key Encoders</b></p>
+
+<p>
+	The RIM Crypto API supports Microsoft Crypto API public key encodings of RSA, DSA and DH private keys.  It
+	can be chosen by using the "MSCAPI" string.
+</p>
+<p>
+	<b><a name="#MSCAPI_pubkey_encoder_RSA">"RSA"</b>
+</p>
+<pre>
+	has the form :
+
+        BLOBHEADER blobheader;
+        RSAPUBKEY rsapubkey;
+        BYTE modulus[rsapubkey.bitlen/8];
+
+	where :
+
+        typedef struct _PUBLICKEYSTRUC {
+            BYTE   bType;    // PublicKEYBLOB = 0x06
+            BYTE   bVersion; // Version number of the key BLOB format.
+            		     // This currently must always have a value of 0x02.
+            WORD   reserved; // reserved for future use. Must be set to zero.
+            ALG_ID aiKeyAlg;
+        } BLOBHEADER
+
+        typedef struct _RSAPUBKEY {
+            DWORD magic; // = RSA1 (0x31415352) for Public keys
+            DWORD bitlen;
+            DWORD pubexp;
+        } RSAPUBKEY;
+</pre>
+
+<p>
+	<b><a name="#MSCAPI_pubkey_encoder_DSA">"DSA"</b>
+</p>
+<pre>
+	has the form :
+
+        BLOBHEADER blobheader;
+        DSAPubKEY_VER3 DSApubkeyver3;
+        BYTE p[DSApubkeyver3.bitlenP/8];
+        BYTE q[DSApubkeyver3.bitlenQ/8];
+        BYTE g[DSApubkeyver3.bitlenP/8];
+        BYTE j[DSApubkeyver3.bitlenJ/8];
+        BYTE y[DSApubkeyver3.bitlenP/8];
+
+	where :
+
+        typedef struct _PUBLICKEYSTRUC {
+            BYTE   bType;    // PublicKEYBLOB = 0x06
+            BYTE   bVersion; // Version number of the key BLOB format.
+            		     // This currently must always have a value of 0x02.
+            WORD   reserved; // reserved for future use. Must be set to zero.
+            ALG_ID aiKeyAlg;
+        } BLOBHEADER
+
+        typedef struct _DSSSEED {
+            DWORD counter; = 0xffffffff for this case so seed isn't included
+            BYTE seed[20];
+        }
+
+        typedef struct _DSAPRIVKEY_VER3 {
+            DWORD magic; // = DSS3 (0x33535344) for Public keys
+            DWORD bitlenP;
+            DWORD bitlenQ;
+            DWORD bitlenJ;
+            DSSEED DSSSeed;
+        } DSAPUBKEY;
+</pre>
+
+<p>
+	<b><a name="#MSCAPI_pubkey_encoder_DH">"DH"</b>
+</p>
+<pre>
+	has the form :
+
+        BLOBHEADER blobheader;
+        DHpubKEY_VER3 dhpubkeyver3;
+        BYTE p[dhpubkeyver3.bitlenP/8];
+        BYTE q[dhpubkeyver3.bitlenQ/8];
+        BYTE g[dhpubkeyver3.bitlenP/8];
+        BYTE j[dhpubkeyver3.bitlenJ/8];
+        BYTE y[dhpubkeyver3.bitlenP/8];
+
+	where :
+
+        typedef struct _PUBLICKEYSTRUC {
+            BYTE   bType;    // PublicKEYBLOB = 0x06
+            BYTE   bVersion; // Version number of the key BLOB format.
+            		     // This currently must always have a value of 0x02.
+            WORD   reserved; // reserved for future use. Must be set to zero.
+            ALG_ID aiKeyAlg;
+        } BLOBHEADER
+
+        typedef struct _DSSSEED {
+            DWORD counter; = 0xffffffff for this case so seed isn't included
+            BYTE seed[20];
+        }
+
+        typedef struct _DHPRIVKEY_VER3 {
+            DWORD magic; // = DH3 (0x33484400) for Public keys
+            DWORD bitlenP;
+            DWORD bitlenQ;
+            DWORD bitlenJ;
+            DSSEED DSSSeed;
+        } DHPUBKEY;
+</pre>
+
+<hr>
+
+<p><b><a name="#privkey_encoder">Private Key Encoders</b></p>
+
+<p><b><a name="#PKCS8_privkey_encoder">PKCS8 Private Key Encoders</b></p>
+
+<p>
+	The algorithms that PKCS8
+	will encode are RSA, DSA, DH, and EC.  It can be chosen by using the "PKCS8" string.
+	The private key formats are based on the following ASN.1 structure :
+</p>
+<pre>
+		PrivateKeyInfo ::= SEQUENCE {
+			version			Version, -- INTEGER 0 --
+			privateKeyAlgorithm	PrivateKeyAlgorithmIdentifier,
+			privateKey		PrivateKey,
+			attributes[0]		IMPLICIT Attributes OPTIONAL
+		}
+
+		where the privateKeyAlgorithmIdentifier is an AlgorithmIdentifier as defined as
+
+		AlgorithmIdentifier ::= SEQUENCE {
+			algorithm		OBJECT IDENTIFIER,
+			parameters		ANY DEFINED BY algorithm OPTIONAL
+		}
+
+</pre>
+<p>
+ 	Each algorithm specifies the values stored in the privateKeyAlgorithm, privateKey and attributes.  RIM does
+	not currently support the encrypted private-key information format also specified in PKCS8.  In addition, the
+	attributes field is not used by any algorithm currently supported by RIM.
+</p>
+<p>
+	<b><a name="#PKCS8_privkey_encoder_RSA">"RSA"</b>
+</p>
+<pre>
+	never specifies any parameters in the algorithm identifier
+	but uses, as its OID :
+
+		rsaEncryption ::= { pkcs-1 1 }
+
+	and defines privateKey as :
+
+		RSAPrivateKey ::= SEQUENCE {
+			version		VERSION, -- INTEGER 0 --
+			modulus		INTEGER, -- n --
+			publicExponent	INTEGER, -- e --
+			privateExponent	INTEGER, -- d --
+			prime1		INTEGER, -- p --
+			prime2		INTEGER, -- q --
+			exponent1	INTEGER, -- d mod (p-1) --
+			exponent2	INTEGER, -- d mod (q-1) --
+			coefficient	INTEGER, -- (q^-1) mod p --
+		}
+</pre>
+<p>
+	<b><a name="#PKCS8_privkey_encoder_DSA">"DSA"</b>
+</p>
+<pre>
+	sometimes specifies parameters in the algorithm identifier
+	and uses, as its OID :
+
+		id-dsa ::= { iso(1) member-body(2) us(840)
+			     x9-57(10040) x9cm(4) 1 }
+
+		and parameters
+
+		Dss-Parm ::= SEQUENCE {
+			p	INTEGER,
+			q	INTEGER,
+			g	INTEGER
+		}
+
+	with privateKey of the following structure :
+
+		DSAPrivateKey ::= INTEGER -- private key, x
+</pre>
+<p>
+	<b><a name="#PKCS8_privkey_encoder_DH">"DH"</b>
+</p>
+<pre>
+	sometimes specifies parameters in the algorithm identifier and
+	uses, as its OID :
+
+		dhpublicnumber ::= { iso(1) member-body(2) us(840)
+				     ansi-x942(10046) member-type(2) 1 }
+
+		and parameters
+
+		DomainParameters ::= SEQUENCE {
+			p		   INTEGER, -- odd prime p = jq+1
+			g		   INTEGER, -- generator g
+			privateValueLength INTEGER -- OPTIONAL
+		}
+
+		X509 also optionally supports the parameters j and
+		validationParms but the RIM Encoders API does not
+		support them at this time
+
+	with privateKey of the following structure :
+
+		DHPrivateKey ::= INTEGER -- private key, x
+</pre>
+<p>
+	<b><a name="#PKCS8_privkey_encoder_EC">"EC"</b>
+</p>
+<pre>
+	sometimes specifies parameters in the algorithm identifier and
+	uses, as its OID :
+
+		id-ecPublicKey ::= { ansi-X9-62 keyType(2) 1 }
+
+		and parameters
+
+		ecpkParameters ::= CHOICE {
+			ecParameters	ECParameters,
+			namedCurve	OBJECT IDENTIFIER,
+			implicitlyCA	NULL
+		}
+
+		The RIM Encoder API only supports the namedCurve option
+		with the following curves supported :
+
+			secp160r1 ::= { ellipticCurve 8 }
+					-- a 160 bit prime order curve
+			secp192r1 ::= { 1.2.840.10045.3.1.1 }
+			 		-- a 192 bit prime order curve
+			secp224r1 ::= { ellipticCurve 33 }
+			 		-- a 224 bit prime order curve
+			secp256r1 ::= { 1.2.840.10045.3.1.7 }
+					-- a 256 bit prime order curve
+			secp384r1 ::= { ellipticCurve 34 }
+					-- a 384 bit prime order curve
+			secp521r1 ::= { ellipticCurve 35 }
+					-- a 521 bit prime order curve
+			sect163k1 ::= { ellipticCurve 1 }
+					-- a 163 bit koblitz curve
+			sect163r1 ::= { ellipticCurve 2 }
+					-- a 163 bit random curve
+			sect163r2 ::= { ellipticCurve 15 }
+					-- a 163 bit random curve
+			sect233k1 ::= { ellipticCurve 26 }
+					-- a 233 bit koblitz curve
+			sect233r1 ::= { ellipticCurve 27 }
+					-- a 233 bit random curve
+			sect239k1 ::= { ellipticCurve 3 }
+					-- a 239 bit koblitz curve
+			sect283k1 ::= { ellipticCurve 16 }
+					-- a 283 bit koblitz curve
+			sect283r1 ::= { ellipticCurve 17 }
+					-- a 283 bit random curve
+			sect409k1 ::= { ellipticCurve 36 }
+					-- a 409 bit koblitz curve
+			sect409r1 ::= { ellipticCurve 37 }
+					-- a 409 bit random curve
+			sect571k1 ::= { ellipticCurve 38 }
+					-- a 571 bit koblitz curve
+			sect571r1 ::= { ellipticCurve 39 }
+					-- a 571 bit random curve
+    			c2pnd163v1::= { c-TwoCurve 1 }
+    					-- the WTLS 5 curve
+
+		where ellipticCurve ::= { iso(1) identified-organization(3)
+					  ceriticom(132) curve(0) }
+		and  c-TwoCurve ::= { iso(1) member-body(2) us(840)
+					  ansi-X9-62(10045) curves(3)
+                                          characteristicTwo(0) }
+
+	with privateKey of the following structure :
+
+		ECPrivateKey ::= SEQUENCE {
+			version	INTEGER -- { ecPrivkeyVer1(1) },
+			privateKey	OCTET STRING,
+			parameters	[0] Parameters OPTIONAL,
+			publicKey	[1] BIT STRING OPTIONAL
+		}
+
+		But since the parameters are included in the algorithm
+		identifier (if necessary) then they MUST not be included
+		in the private key (and aren't in the RIM implementation).
+		The public key will be included if it is provided,
+		otherwise it will be omitted.
+</pre>
+<p><b><a name="#MSCAPI_privkey_encoder">Microsoft Crypto API Private Key Encoders</b></p>
+
+<p>
+	The RIM Crypto API supports Microsoft Crypto API private key encodings of RSA, DSA and DH private keys.  It
+	can be chosen by using the "MSCAPI" string.
+</p>
+<p>
+	<b><a name="#MSCAPI_privkey_encoder_RSA">"RSA"</b>
+</p>
+<pre>
+	has the form :
+
+	BLOBHEADER blobheader;
+	RSAPUBKEY rsapubkey;
+	BYTE modulus[rsapubkey.bitlen/8];
+	BYTE prime1[rsapubkey.bitlen/16];
+	BYTE prime2[rsapubkey.bitlen/16];
+	BYTE exponent1[rsapubkey.bitlen/16];
+	BYTE exponent2[rsapubkey.bitlen/16];
+	BYTE coefficient[rsapubkey.bitlen/16];
+	BYTE privateExponent[rsapubkey.bitlen/8];
+
+	where :
+
+        typedef struct _PUBLICKEYSTRUC {
+            BYTE   bType;    // Must have a value of PRIVATEKEYBLOB = 0x07
+            BYTE   bVersion; // Version number of the key BLOB format.
+            		     // This currently must always have a value of 0x02.
+            WORD   reserved; // reserved for future use. Must be set to zero.
+            ALG_ID aiKeyAlg;
+        } BLOBHEADER
+
+        typedef struct _RSAPUBKEY {
+            DWORD magic; // = RSA2 (0x32415352) for private keys
+            DWORD bitlen;
+            DWORD pubexp;
+        } RSAPUBKEY;
+</pre>
+
+<p>
+	<b><a name="#MSCAPI_privkey_encoder_DSA">"DSA"</b>
+</p>
+<pre>
+	has the form :
+
+        BLOBHEADER blobheader;
+        DSAPRIVKEY_VER3 DSAprivkeyver3;
+        BYTE p[DSAprivkeyver3.bitlenP/8];
+        BYTE q[DSAprivkeyver3.bitlenQ/8];
+        BYTE g[DSAprivkeyver3.bitlenP/8];
+        BYTE j[DSAprivkeyver3.bitlenJ/8];
+        BYTE y[DSAprivkeyver3.bitlenP/8];
+        BYTE x[DSAprivkeyver3.bitlenX/8];
+
+	where :
+
+        typedef struct _PUBLICKEYSTRUC {
+            BYTE   bType;    // PRIVATEKEYBLOB = 0x07
+            BYTE   bVersion; // 0x02.
+            WORD   reserved; // reserved for future use. Must be set to zero.
+            ALG_ID aiKeyAlg;
+        } BLOBHEADER
+
+        typedef struct _DSSSEED {
+            DWORD counter; = 0xffffffff for this case so seed isn't included
+            BYTE seed[20];
+        }
+
+        typedef struct _DSAPRIVKEY_VER3 {
+            DWORD magic; // = DSS4 (0x34535344) for private keys
+            DWORD bitlenP;
+            DWORD bitlenQ;
+            DWORD bitlenJ;
+            DWORD bitlenX;
+            DSSEED DSSSeed;
+        } DSAPUBKEY;
+</pre>
+
+<p>
+	<b><a name="#MSCAPI_privkey_encoder_DH">"DH"</b>
+</p>
+<pre>
+	has the form :
+
+        BLOBHEADER blobheader;
+        DHPRIVKEY_VER3 dhprivkeyver3;
+        BYTE p[dhprivkeyver3.bitlenP/8];
+        BYTE q[dhprivkeyver3.bitlenQ/8];
+        BYTE g[dhprivkeyver3.bitlenP/8];
+        BYTE j[dhprivkeyver3.bitlenJ/8];
+        BYTE y[dhprivkeyver3.bitlenP/8];
+        BYTE x[dhprivkeyver3.bitlenX/8];
+
+	where:
+
+        typedef struct _PUBLICKEYSTRUC {
+            BYTE   bType;    // PRIVATEKEYBLOB = 0x07
+            BYTE   bVersion; // Version number of the key BLOB format.
+            	             // This currently must always have a value of 0x02.
+            WORD   reserved; // reserved for future use. Must be set to zero.
+            ALG_ID aiKeyAlg;
+        } BLOBHEADER
+
+        typedef struct _DSSSEED {
+            DWORD counter; = 0xffffffff for this case so seed isn't included
+            BYTE seed[20];
+        }
+
+        typedef struct _DHPRIVKEY_VER3 {
+            DWORD magic; // = DH4 (0x34484400) for private keys
+            DWORD bitlenP;
+            DWORD bitlenQ;
+            DWORD bitlenJ;
+            DWORD bitlenX;
+            DSSEED DSSSeed;
+        } DHPUBKEY;
+</pre>
+
+<hr>
+<p><b><a name="#symmetrickey_encoder">Symmetric Key Encoders</b></p>
+
+<p>
+	Currently the RIM Crypto API supports on an internal symmetric key encoding scheme.  This scheme
+	is modeled after the PKCS8 private key encoding scheme.  It is the default encoder for symmetric keys and can
+	be specified with the "PKCS8" string.
+</p>
+
+
+</BODY>
+</HTML>

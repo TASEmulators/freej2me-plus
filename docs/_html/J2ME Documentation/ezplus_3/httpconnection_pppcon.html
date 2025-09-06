@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<STYLE type=text/css>
+<!--
+PRE {
+	FONT-FAMILY: monospace
+;}
+-->
+</STYLE>
+<TITLE></TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+</HEAD>
+<BODY>
+
+<h2>HTTP接続終了後におけるPPP接続の制御　＜Phase2.5＞</h2>
+<hr>
+
+<p>
+移動機によっては、PPP接続のオーバーヘッドを無くすために、HTTP接続終了後もPPP接続をある期間は維持している場合があります。通常、PPP接続をしている期間は電話の着信ができません。
+</p><p>
+HTTP接続終了後のPPP接続を強制的に切断して、電話の着信を可能にするには、HttpResourceクラスのスタティックメソッドshutdown()を呼び出してください。HttpConnection のclose()を呼び出した後に呼び出す必要があります。この順番を守らないと、HttpResource.shutdown()は異常終了します。 
+</p>
+
+<hr>
+Copyright 2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted. 
+
+</BODY>
+</HTML>

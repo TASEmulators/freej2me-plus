@@ -1,0 +1,268 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Adding New Algorithms to the Crypto API</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Adding New Algorithms to the API</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> While a broad set of encryption algorithms are provided with the Crypto API, a situation may
+    arise in which a developer wishes to add a new algorithm to the API.  This tutorial examines
+    the issues involved in extending the Crypto API when adding new engines.
+</p>
+
+<p><b>Engines: The Powerhouses of Encryption</b></p>
+
+<p> When using the encryption and decryption features of the API, it is usually not necessary to
+    call the encryptor and decryptor engines directly, as the streaming classes that wrap their
+    functionality at a higher level provide a much more convenient interface.  However, when adding
+    a new algorithm to the API, understanding the interface and the workings of an engine becomes vital.
+</p>
+
+<p><b>Block Engines</b></p>
+
+<p> To understand what is necessary to add a new algorithm, let us consider the example of adding a new
+    symmetric key block encryption algorithm, with the appropriate keys and engines, to the Crypto API.  First,
+    it is valuable to examine the base interfaces <code>BlockEncryptorEngine</code> and
+    <code>SymmetricKeyEncryptorEngine</code>:
+</p>
+<pre>
+    public interface BlockEncryptorEngine
+    {
+        /*
+         * Encrypts a block of the given plaintext into a block of ciphertext.
+         */
+        void encrypt(
+            byte[] plaintext, int plaintextOffset,
+            byte[] ciphertext, int ciphertextOffset ) throws CryptoTokenException;
+
+        /*
+         * Returns the block length of the engine in bytes.
+         */
+        int getBlockLength();
+
+        /*
+         * Returns the name of this algorithm, eg "DES".
+         */
+        String getAlgorithm();
+    }
+
+    public interface SymmetricKeyEncryptorEngine extends BlockEncryptorEngine
+    {
+    }
+</pre>
+
+<p> There exist similar interfaces for decryption: <code>BlockDecryptorEngine</code> and
+    <code>SymmetricKeyDecryptorEngine</code>.
+</p>
+
+<p> All blocked-based symmetric key encryption engines must implement the <code>SymmetricKeyEncryptorEngine</code>
+    interface.  Although this interface simply wraps <code>BlockEncryptorEngine</code>, it provides an extra level of
+    type safety, ensuring that methods that can only take a public key encryption engine cannot take
+    a symmetric key encryption engine, or vice versa.  The only methods that must be implemented are
+    <code>encrypt()</code>, <code>getBlockLength()</code> and <code>getAlgorithm()</code>.  Of course, to be useful, the engine must have
+    a key, which could be passed into a constructor.
+</p>
+
+<p><b>Implementing a new Symmetric Key</b></p>
+
+<p> To implement a new symmetric key, one must simply implement the <code>SymmetricKey</code> interface:
+</p>
+<pre>
+    public interface SymmetricKey extends Key
+    {
+        /*
+         * Returns the length of the key in bytes.
+         */
+        int getLength() throws CryptoTokenException, CryptoUnsupportedOperationException;
+
+        /*
+         * Returns a copy of the byte array representing the key.
+         */
+        byte[] getData() throws CryptoTokenException, CryptoUnsupportedOperationException;
+    }
+</pre>
+
+<p> For our example, we want to implement a  hypothetical engine, <code>UncrackableEncryptorEngine</code>.
+    A good place to start is by implementing the symmetric key:
+</p>
+<pre>
+    public class UncrackableKey implements SymmetricKey
+    {
+        private static final int KEY_LENGTH = 8;
+
+        private byte[] _keyData;
+
+        public UncrackableKey( byte[] keyData )
+        {
+            _keyData = new byte[ keyData.length ];
+            System.arraycopy( keyData, 0, _keyData, 0, keyData.length );
+        }
+
+        public int getLength()
+        {
+            return KEY_LENGTH;
+        }
+
+        public byte[] getData()
+        {
+            return Arrays.copy( _keyData );
+        }
+
+        public String getAlgorithm()
+        {
+            return "Uncrackable";
+        }
+    }
+</pre>
+
+<p> This key has a length of 8 bytes (64 bits) and can be initialized by passing the data into the constructor
+    in the form of a byte array.
+</p>
+
+<p><b>Implementing new Encryptor and Decryptor Engines</b></p>
+
+<p> Now we are ready to implement the encryptor engine itself.  For simplicity, this engine will take in plaintext
+    and XOR each block with the key, producing ciphertext:
+</p>
+<pre>
+    public class UncrackableEncryptorEngine implements SymmetricKeyEncryptorEngine
+    {
+        private static final int BLOCK_LENGTH = 8;
+        private byte[] _keyData;
+        private int    _keyLength;
+
+        public UncrackableEncryptorEngine( UncrackableKey key )
+        {
+            _keyData = key.getData();
+            _keyLength = key.getLength();
+        }
+
+        public void encrypt( byte[] plaintext, int plaintextOffset,
+                             byte[] ciphertext, int ciphertextOffset )
+        {
+            for( int i = 0; i < BLOCK_LENGTH; ++i )
+            {
+                ciphertext[ ciphertextOffset++ ] = (byte)(plaintext[ plaintextOffset++ ] ^ _keyData[ i % _keyLength ]);
+            }
+        }
+
+        public int getBlockLength()
+        {
+            return BLOCK_LENGTH;
+        }
+
+        public String getAlgorithm()
+        {
+            return "Uncrackable";
+        }
+
+    }
+</pre>
+
+<p> Likewise, we can implement the associated decryptor engine by implementing the
+    <code>SymmetricKeyDecryptorEngine</code> interface:
+</p>
+<pre>
+    public class UncrackableDecryptorEngine implements SymmetricKeyDecryptorEngine
+    {
+        private static final int BLOCK_LENGTH = 8;
+        private byte[] _keyData;
+        private int    _keyLength;
+
+        public UncrackableDecryptorEngine( UncrackableKey key )
+        {
+            _keyData = key.getData();
+            _keyLength = key.getLength();
+        }
+
+        public void decrypt( byte[] ciphertext, int ciphertextOffset,
+                             byte[] plaintext, int plaintextOffset )
+        {
+            for( int i = 0; i < BLOCK_LENGTH; ++i )
+            {
+                plaintext[ plaintextOffset++ ] = (byte)(ciphertext[ ciphertextOffset++ ] ^ _keyData[ i % _keyLength ]);
+            }
+        }
+
+        public int getBlockLength()
+        {
+            return BLOCK_LENGTH;
+        }
+
+        public String getAlgorithm()
+        {
+            return "Uncrackable";
+        }
+
+    }
+</pre>
+
+<p><b>Using the New Engine</b></p>
+
+<p> Now our engines are implemented and ready to use. Although they could be used directly at the engine level,
+    they will most commonly be used with <code>BlockEncryptorEngine</code> and <code>BlockDecryptorEngine</code>.
+    The design of the Crypto API allows these new engines to be dropped into any location that can accept
+    a <code>BlockEncryptorEngine</code> or <code>SymmetricKeyEncryptorEngine</code>.
+</p>
+
+<p> This code will use the new engines with the streaming classes to encrypt and decrypt a message:
+</p>
+<pre>
+    // Get some random data for the symmetric key
+    byte[] keyData = RandomSource.getBytes( 8 );
+
+    byte[] message = { 'H', 'E', 'L', 'L', 'O', '!', '!', '!' };
+
+    // Create the symmetric key
+    UncrackableKey key = new UncrackableKey( keyData );
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    // Create an encryptor engine
+    BlockEncryptor encryptor = new BlockEncryptor(new UncrackableEncryptorEngine( key ), out);
+
+    // Encrypt the message and close the stream
+    try
+    {
+        encryptor.write( message );
+        encryptor.close();
+    }
+    catch (IOException e) {}
+
+    ByteArrayInputStream in = new ByteArrayInputStream( out.toByteArray() );
+
+    // Create a decryptor engine
+    BlockDecryptor decryptor = new BlockDecryptor(new UncrackableDecryptorEngine( key ), in);
+
+    byte[] plaintext = new byte[ message.length ];
+
+    // Decrypt the plaintext
+    try
+    {
+        decryptor.read( plaintext );
+        decryptor.close();
+    }
+    catch (IOException e) {}
+</pre>
+
+<p><b>Implementing other Encryption Algorithms (Public Key and Stream Encryptors)</b></p>
+
+<p> A similar process is followed for the implementation of new stream ciphers
+    (<a href = "../StreamEncryptor.html"><code>StreamEncryptor</code></a> and
+    <a href = "../StreamDecryptor.html"><code>StreamDecryptor</code></a>) and public-key
+    encryption algorithms
+    (<a href = "../PublicKeyEncryptorEngine.html"><code>PublicKeyEncryptorEngine</code></a> and
+    <a href = "../PrivateKeyDecryptorEngine.html"><code>PrivateKeyDecryptorEngine</code></a>).
+    The appropriate classes must be implemented and the necessary methods provided.
+</p>
+
+</BODY>
+</HTML>

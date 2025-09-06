@@ -1,0 +1,408 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN""http://www.w3.org/TR/REC-html40/frameset.dtd">
+<HTML>
+<HEAD>
+<TITLE>
+BlackBerry Java SDK 7.0 API Reference: Multimedia Overview
+</TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+<script type="text/javascript">
+<!--
+// switchMenu - Expand or collapse a code sample div. Takes two arguments:
+// divSample, the id of the div to expand, divList
+function switchMenu(divSample, sourceLink) {
+
+	var el = document.getElementById(divSample).style;
+	if (el.display == 'none') {
+		el.display = 'block';
+		sourceLink.className = 'explink_minus';
+	} else {
+		el.display = 'none';
+		sourceLink.className = 'explink_plus';
+	}
+}
+// collapseAll - Collapses all expandable divs and adds the + graphic automatically when the page loads.
+// This is done so that users who do not have JS enabled can still see the code samples.
+function collapseAll() {
+	// Collapse all expandable divs
+	var divsOnPage = document.getElementsByTagName('div');
+	for (var x = 0; x < divsOnPage.length; x++) {
+		if (divsOnPage[x].id.substr(0,3) == "CS_") {
+		
+			divsOnPage[x].style.display = 'none';
+			
+		}
+	}
+	// Change all the expand/collapse links to explink_plus, to show a plus sign beside it
+	var linksOnPage = document.getElementsByTagName('a');
+	for (var y = 0; y < linksOnPage.length; y++) {
+		if (linksOnPage[y].className == "explink") {
+			linksOnPage[y].className = "explink_plus";
+		}
+	}
+}
+//-->
+</script>
+
+</HEAD>
+<BODY BGCOLOR="white" onLoad="collapseAll();">
+
+<!-- =========== START OF NAVBAR ========== -->
+<!-- DO NOT EDIT -->
+<A NAME="navbar_top"><!-- --></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0">
+<TR>
+<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="index-all.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" TARGET="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="UI-summary.html" TARGET="_top"><B>NO FRAMES</B></A></FONT></TD>
+</TR>
+</TABLE>
+<!-- =========== END OF NAVBAR =========== -->
+<HR>
+<FORM action="https://www.blackberry.com/DocsFeedback/" method="GET" target="_new">
+<INPUT type="hidden" name="title" value="API Reference">
+<INPUT type="hidden" name="source" value="External">
+
+<INPUT type="hidden" name="version" value="7.0.0">
+<INPUT type="hidden" name="classname" value="Multimedia overview">
+<INPUT type="submit" value="Submit Feedback" /></FORM>
+
+<BR>
+
+<!-- =========== START OF BODY =========== -->
+<h1 align="center">Multimedia<a name="MM_TOP"></a></h1>
+
+<h2>Overview</h2>
+<p>This document describes how to use the multimedia capabilities of the BlackBerry&reg;  device. It includes the following sections:
+<ul>
+  <li><a href="#MM_1">The media player</a> </li>
+  <li><a href="#MM_2">Supported audio formats</a></li>
+  <li><a href="#MM_3">Play audio</a></li>
+  <li><a href="#MM_4">Record audio</a></li>
+  <li><a href="#MM_5">Play video</a></li>
+  <li><a href="#MM_6">Record video</a></li>
+
+</ul>
+
+<h2><a name="MM_1"></a>The media player<span class="style4"><a href="#MM_TOP" class="backtotop">[back to top]</a></span></h2>
+
+<p>To record and play media in your BlackBerry device application, you must use the <a href="javax/microedition/media/Player.html">Player</a> class, which is  located in the <a href="javax/microedition/media/package-summary.html">javax.microedition.media</a> package, and its related resources.</p>
+
+<p>To create an instance of a Player class, you must invoke <a href="javax/microedition/media/Manager.html#createPlayer(java.io.InputStream, java.lang.String)">createPlayer()</a> in the <a href="javax/microedition/media/Manager.html">javax.microedition.media.Manager</a> class.</p>
+
+<p>When the Player is first created using one of the createPlayer() methods, it is in an UNREALIZED state. Before you can have access to the associated metadata or controls for the Player, you must invoke the Player object's <a href="javax/microedition/media/Player.html#realize()">realize()</a> method. This method transitions the Player to a REALIZED state. </p>
+
+<p>In the REALIZED state, the Player class provides access to associated resources that control playback and recording. You can use the Player object's <a href="javax/microedition/media/Controllable.html#getControl(java.lang.String)">getControl()</a> and <a href="javax/microedition/media/Controllable.html#getControls()">getControls()</a> methods (inherited from <a href="javax/microedition/media/Controllable.html">Controllable</a>), passing in a String specifying the <a href="javax/microedition/media/Control.html">Control</a> object that you require. You can find the available controls for your media player in the <a href="javax/microedition/media/control/package-summary.html">javax.microedition.media.control</a> package.</p>
+
+<p>Before your application closes, you must invoke the Player object's <a href="javax/microedition/media/Player.html#close()">close()</a> method to deallocate any resources the Player has created. You can also do this at any time to free up memory or resources. After you invoke close(), you can no longer use the Player.</p>
+
+<p>For more information about the states of a Player object and how to transition between them, see the API reference for the Player class.</p>
+
+<h2><a name="MM_2"></a>Supported audio formats<span class="style4"><a href="#MM_TOP" class="backtotop">[back to top]</a></span></h2>
+
+<p>Before you begin playing and recording audio, here is a list of audio formats supported by most BlackBerry devices running OS 4.2 or later:</p>
+
+<ul>
+    <li>WAV (PCM)</li>
+    <li>MP3</li>
+    <li>AMR (AMR/AMR-NB)</li>
+    <li>AAC (AAC+, AAC-LC, eAAC+) (except for the BlackBerry® 8700 Series)</li>
+    <li>WMA (v9 and v10 Pro) (except for some models from the BlackBerry 8700 Series, BlackBerry® 8800 Series, BlackBerry® 8100 Series, and BlackBerry® 8300 Series)</li>
+    <li>MIDI (GM, GM2, SP-MIDI)</li>
+    <li>SP-MIDI</li>
+</ul>
+<br>    
+<p>BlackBerry devices that are running BlackBerry Device Software 5.0 or later also support the following audio formats:</p>
+
+<ul>
+    <li>FLAC</li>
+    <li>Vorbis</li>
+</ul>
+
+<h2><a name="MM_3"></a>Play audio<span class="style4"><a href="#MM_TOP" class="backtotop">[back to top]</a></span></h2>
+
+<ol>
+    <li>Create a <a href="javax/microedition/media/Player.html">Player</a> object by invoking the <a href="javax/microedition/media/Manager.html#createPlayer(java.lang.String)">createPlayer(String)</a> method in the <a href="javax/microedition/media/package-summary.html">javax.microedition.media</a> class, passing in the location of the audio file to play.</li>
+    <li>Invoke the Player object's <a href="javax/microedition/media/Player.html#realize()">realize()</a> method to access the <a href="javax/microedition/media/Control.html">Control</a> resources. Note that invoking <a href="javax/microedition/media/Player.html#start()">Player.start()</a> implicitly performs all necessary state transitions. In this example, we explicitly invoke both realize() and <a href="javax/microedition/media/Player.html#prefetch()">prefetch()</a> to demonstrate how to explicitly initialize the Player object before starting playback.</li>
+    <li>To control an aspect of the playback, retrieve the appropriate <a href="javax/microedition/media/Control.html">Control</a> object. The following code sample demonstrates how to retrieve the <a href="javax/microedition/media/control/VolumeControl.html">VolumeControl</a> control to set the volume level.</li>
+    <li>To start the playback, invoke the Player object's start() method.</li>
+    <li>To pause the playback, invoke the Player object's <a href="javax/microedition/media/Player.html#stop()">stop()</a> method.</li>
+</ol>
+
+<p>Before your application closes, you must invoke the Player object's <a href="javax/microedition/media/Player.html#close()">close()</a> method to deallocate any resources the Player has created.</p>
+
+<p><a class="explink" onClick="switchMenu('CS_1', this);">Click for code sample: Playing an audio file</a></p>
+<div id="CS_1" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support"> try {
+     Player p = Manager.createPlayer("http://abc.wav");
+     p.realize();
+     VolumeControl volume = (VolumeControl) p.getControl("VolumeControl");
+     volume.setLevel(30);
+     p.prefetch();
+     p.start();
+ } 
+ catch (MediaException pe) {
+ } 
+ catch (IOException ioe) {
+ } </span></pre>
+		</td>
+	</tr>
+</table>
+</div>
+
+<h2><a name="MM_4"></a>Record audio<span class="style4"><a href="#MM_TOP" class="backtotop">[back to top]</a></span></h2>
+
+<p>To start recording audio on a BlackBerry device using the device's microphone, follow these steps:</p>
+<ol>
+    <li>Create a new <a href="javax/microedition/media/Player.html">Player</a> object specifying the appropriate protocol for file encoding.</li>
+    <li>Invoke the Player object's <a href="javax/microedition/media/Player.html#realize()">realize()</a> method to access the Control resources.</li>
+    <li>To access the recording functionality, retrieve the <a href="javax/microedition/media/control/RecordControl.html">RecordControl</a> object associated with the Player object.</li>
+    <li>To set the location of the recorded file, invoke the RecordControl object's <a href="javax/microedition/media/control/RecordControl.html#setRecordLocation(java.lang.String)">setRecordLocation()</a> or <a href="javax/microedition/media/control/RecordControl.html#setRecordStream(java.io.OutputStream)">setRecordStream()</a> method.</li>
+    <li>Start recording by invoking the RecordControl objects' <a href="javax/microedition/media/control/RecordControl.html#startRecord()">startRecord()</a> method and the Player object's <a href="javax/microedition/media/Player.html#start()">start()</a> method.</li>
+</ol>
+
+<p><a class="explink" onClick="switchMenu('CS_2', this);">Click for code sample: Starting recording audio to a file</a></p>
+<div id="CS_2" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">try {
+    Player player = javax.microedition.media.Manager.createPlayer("capture://audio?encoding=audio/amr");
+                        
+    player.realize();
+                    
+    RecordControl recordControl = (RecordControl) player.getControl( "RecordControl" );
+    recordControl.setRecordLocation( "file:///store/home/user/AudioRecordingTest.amr" );
+                    
+    recordControl.startRecord();
+    player.start();
+ }  
+ catch( IOException e ) {
+ } 
+ catch( MediaException e ) {
+ }</span></pre>
+		</td>
+	</tr>
+</table>
+</div>
+ 
+<p>To stop recording and save your file, follow these steps:</p>
+
+<ol>
+    <li>To release the Player object's resources, invoke the Player object's <a href="javax/microedition/media/Player.html#close()">close()</a> method.</li> 
+    <li>To stop the recording, invoke the RecordControl object's <a href="javax/microedition/media/control/RecordControl.html#stopRecord()">stopRecord()</a> method.</li>
+    <li>To save the recording to the specified file, invoke the RecordControl object's <a href="javax/microedition/media/control/RecordControl.html#commit()">commit()</a> method.</li>
+</ol>
+
+<p><a class="explink" onClick="switchMenu('CS_3', this);">Click for code sample: Stopping an audio recording and saving it to a file</a></p>
+<div id="CS_3" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">if (player != null) {
+    player.close();
+    player = null;
+}
+
+if (recordControl != null) {
+    recordControl.stopRecord();
+                    
+    try {
+        recordControl.commit();
+    } 
+    catch (Exception e) {
+    }
+    recordControl = null;
+}</span></pre>
+		</td>
+	</tr>
+</table>
+</div>  
+
+<h2><a name="MM_5"></a>Play video<span class="style4"><a href="#MM_TOP" class="backtotop">[back to top]</a></span></h2>
+
+<ol>
+    <li>Create a <a href="javax/microedition/media/Player.html">Player</a> object by invoking the <a href="javax/microedition/media/Manager.html#createPlayer(java.lang.String)">createPlayer(String)</a> method in the <a href="javax/microedition/media/package-summary.html">javax.microedition.media</a> class, passing in the location of the video file to play.</li>
+    <li>Invoke the Player object's <a href="javax/microedition/media/Player.html#realize()">realize()</a> method to access the <a href="javax/microedition/media/Control.html">Control</a> resources.</li> 
+    <li>Invoke the Player object's <a href="javax/microedition/media/Controllable.html#getControl(java.lang.String)">getControl()</a> method, passing in the String "VideoControl", to retrieve the <a href="javax/microedition/media/control/VideoControl.html">VideoControl</a> object that is associated with the Player.</li>
+    <li>Invoke the VideoControl object's <a href="javax/microedition/media/control/VideoControl.html#initDisplayMode(int, java.lang.Object)">initDisplayMode()</a> method. In the following code sample we will use the <a href="javax/microedition/media/control/GUIControl.html#USE_GUI_PRIMITIVE">USE_GUI_PRIMITIVE MODE</a>, and so the second parameter of  initDisplayMode() is a String that specifies the object that displays the video ("net.rim.device.api.ui.Field"). The initDisplayMethod() method returns a Field object.</li>
+    <li>Invoke your Mananger objects's add() method to add the returned Field object to your Screen or Manager. This is the same as adding any other component to your UI.</li>
+    <li>To control an aspect of the video playback, retrieve the appropriate Control object. The following code sample demonstrates how to set the volume level of the playback.</li>
+    <li>To start the playback, invoke the Player object's <a href="javax/microedition/media/Player.html#start()">start()</a> method.</li>
+    <li>To pause the playback, invoke the Player object's <a href="javax/microedition/media/Player.html#stop()">stop()</a> method.</li>
+</ol>
+
+<p>When your application closes, invoke the Player object's <a href="javax/microedition/media/Player.html#close()">close()</a> method to deallocate any resources that the Player has created.</p>
+
+<p><a class="explink" onClick="switchMenu('CS_4', this);">Click for code sample: Playing a video file</a></p>
+<div id="CS_4" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">try
+ {
+    Player videoPlayer = javax.microedition.media.Manager.createPlayer("http://);
+    videoPlayer.realize();
+    // Set up the playback
+    VideoControl videoControl = (VideoControl) _videoPlayer.getControl("VideoControl");
+    Field vField = (Field) _videoControl.initDisplayMode(VideoControl.USE_GUI_PRIMITIVE, "net.rim.device.api.ui.Field");
+    add(vField);
+
+    VolumeControl volume = (VolumeControl) videoPlayer.getControl("VolumeControl");
+    volume.setLevel(30);
+ }
+            
+ catch( Exception e )
+ {
+    Dialog.alert("Exception while initializing the playback video player\n\n" + e);  
+ }</span></pre>
+		</td>
+	</tr>
+</table>
+</div>
+
+<h2><a name="MM_6"></a>Record video<span class="style4"><a href="#MM_TOP" class="backtotop">[back to top]</a></span></h2>
+
+<p>To start recording video to a file in your BlackBerry application, follow these steps:</p>
+
+<ol>
+    <li>Create a new <a href="javax/microedition/media/Player.html">Player</a> object specifying the appropriate protocol for file encoding.</li>
+    <li>Invoke the Player object's <a href="javax/microedition/media/Player.html#realize()">realize()</a> method to access the <a href="javax/microedition/media/Control.html">Control</a> resources.</li>
+    <li>Invoke the Player object's <a href="javax/microedition/media/Controllable.html#getControl(java.lang.String)">getControl()</a> method, passing in the String "VideoControl", to retrieve the <a href="javax/microedition/media/control/VideoControl.html">VideoControl</a> object that is associated with this Player object.</li>
+    <li>Invoke the VideoControl object's <a href="javax/microedition/media/control/VideoControl.html#initDisplayMode(int, java.lang.Object)">initDisplayMode()</a> method. In the following code sample, we will use the <a href="javax/microedition/media/control/GUIControl.html#USE_GUI_PRIMITIVE">USE_GUI_PRIMITIVE MODE</a>, and so the second parameter of the initDisplayMode() method will be a String specifying the Object displaying the video ("net.rim.device.api.ui.Field"). The initDisplayMethod() returns a Field object.</li>
+    <li>Invoke your Mananger object's add() method to add the returned Field object to your Screen or Manager. This is the same as adding any component to your UI.</li>
+    <li>To access the recording functionality, retrieve the <a href="javax/microedition/media/control/RecordControl.html">RecordControl</a> object that is associated with the Player object.</li>
+    <li>To set the location of the recorded file, invoke the RecordControl object's <a href="javax/microedition/media/control/RecordControl.html#setRecordLocation(java.lang.String)">setRecordLocation()</a> method.</li>
+    <li>Start recording by invoking the RecordControl object's <a href="javax/microedition/media/Player.html#start()">start()</a> method and the Player object's <a href="javax/microedition/media/Player.html#start()">start()</a> method.</li>
+</ol>
+
+<p><a class="explink" onClick="switchMenu('CS_5', this);">Click for code sample: Starting a vide recording</a></p>
+<div id="CS_5" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">try
+    {         
+        Player player = javax.microedition.media.Manager.createPlayer("capture://video?encoding=video/sbv");
+        player.realize0();
+
+        VideoControl videoControl = (VideoControl) _player.getControl("VideoControl");
+        RecordControl recordControl = (RecordControl) _player.getControl("RecordControl");
+
+        // Initialize the video display
+        Field videoField = (Field) videoControl.initDisplayMode(VideoControl.USE_GUI_PRIMITIVE, "net.rim.device.api.ui.Field");            
+            
+        try
+        {
+            videoControl.setDisplaySize( Display.getWidth(), Display.getHeight() );
+        }
+        catch( MediaException me )
+        {
+            // setDisplaySize is not supported
+        }
+            
+        add(videoField);
+            
+        recordControl.setRecordLocation("file:///store/home/user/VideoRecordingTest.sbv");
+        recordControl.startRecord();
+        player.start();
+            
+    }
+    catch( Exception e )
+    {
+        // Dispose of the player if it was created
+        if( _player != null )
+        {
+            _player.close();
+        }
+        _player = null;
+
+        deleteAll();
+        removeAllMenuItems();
+            
+        VideoRecordingDemo.errorDialog(e.toString());
+    }   
+}</span></pre>
+		</td>
+	</tr>
+</table>
+</div>
+
+<p>To stop recording and save your file, follow these steps:</p>
+
+<ol> 
+    <li>To release the Player object's resources, invoke the Player object's <a href="javax/microedition/media/Player.html#close()">close()</a> method.</li> 
+    <li>To stop the recording, invoke the RecordControl object's <a href="javax/microedition/media/control/RecordControl.html#stopRecord()">stopRecord()</a> method.</li>
+    <li>To save the recording to the specified file, invoke the RecordControl object's <a href="javax/microedition/media/control/RecordControl.html#commit()">commit()</a> method.</li>
+</ol>
+
+<p><a class="explink" onClick="switchMenu('CS_6', this);">Click for code sample: Stopping a video recording and saving it</a></p>
+<div id="CS_6" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">if (player != null) {
+    player.close();
+    player = null;
+}
+
+if (recordControl != null) {
+    recordControl.stopRecord();
+                    
+    try {
+        recordControl.commit();
+    } 
+    catch (Exception e) {
+    }
+    recordControl = null;
+}</span></pre>
+		</td>
+	</tr>
+</table>
+</div>
+
+<HR>
+<div id="legalnotice">
+<table cellspacing="0" cellpading="0" width="100%" style="border:none;">
+<tr>
+<td style="border:none;">
+<font size=-1>
+<P>Copyright 1999-2011 Research In Motion Limited. 295 Phillip Street, Waterloo, Ontario, Canada, N2L 3W8. All Rights Reserved.<br>
+Java is a trademark of Oracle America, Inc. in the US and other countries.</p>
+</font>
+</td>
+<td style="text-align:right; border:none;">
+<font size=-1><br>
+<a href="http://www.blackberry.com/legal" target="_blank">Legal</a>
+</font>
+</td>
+</tr>
+</table>
+ </div>
+ </BODY>
+</HTML>

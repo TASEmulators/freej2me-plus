@@ -1,0 +1,13 @@
+file: summary.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+Linklint found 20 files in 2 directories and checked 10 html files.
+There were no missing files. No files had broken links.
+No errors, no warnings.
+
+found   2 directories with files
+found   1 default index
+found  19 html files
+found 663 named anchors
+-----  10 files skipped

@@ -1,0 +1,89 @@
+file: fileF.txt
+date: Mon, 28 Sep 2009 14:01:42 (local)
+Linklint version: 2.3.5
+
+#------------------------------------------------------------
+# found  10 files with forward links
+#------------------------------------------------------------
+/
+[file: /index.html]
+    contains 3 links:
+    /allclasses-frame.html
+    /overview-frame.html
+    /overview-summary.html
+
+/allclasses-frame.html
+    contains 8 links:
+    /javax/wireless/messaging/binarymessage.html
+    /javax/wireless/messaging/message.html
+    /javax/wireless/messaging/messageconnection.html
+    /javax/wireless/messaging/messagelistener.html
+    /javax/wireless/messaging/messagepart.html
+    /javax/wireless/messaging/multipartmessage.html
+    /javax/wireless/messaging/sizeexceededexception.html
+    /javax/wireless/messaging/textmessage.html
+
+/allclasses-noframe.html
+    contains 8 links:
+    /javax/wireless/messaging/binarymessage.html
+    /javax/wireless/messaging/message.html
+    /javax/wireless/messaging/messageconnection.html
+    /javax/wireless/messaging/messagelistener.html
+    /javax/wireless/messaging/messagepart.html
+    /javax/wireless/messaging/multipartmessage.html
+    /javax/wireless/messaging/sizeexceededexception.html
+    /javax/wireless/messaging/textmessage.html
+
+/cbs_adapter.html
+    contains 5 links:
+    /allclasses-noframe.html
+    /cbs_adapter.html
+    /help-doc.html
+    /index.html
+    /overview-summary.html
+
+/cdma_adapter.html
+    contains 5 links:
+    /allclasses-noframe.html
+    /cdma_adapter.html
+    /help-doc.html
+    /index.html
+    /overview-summary.html
+
+/help-doc.html
+    contains 4 links:
+    /allclasses-noframe.html
+    /help-doc.html
+    /index.html
+    /overview-summary.html
+
+/index.html
+    contains 3 links:
+    /allclasses-frame.html
+    /overview-frame.html
+    /overview-summary.html
+
+/overview-frame.html
+    contains 2 links:
+    /allclasses-frame.html
+    /javax/wireless/messaging/package-frame.html
+
+/overview-summary.html
+    contains 8 links:
+    /allclasses-noframe.html
+    /cbs_adapter.html
+    /cdma_adapter.html
+    /help-doc.html
+    /index.html
+    /javax/wireless/messaging/package-summary.html
+    /overview-summary.html
+    /sms_adapter.html
+
+/sms_adapter.html
+    contains 5 links:
+    /allclasses-noframe.html
+    /help-doc.html
+    /index.html
+    /overview-summary.html
+    /sms_adapter.html
+

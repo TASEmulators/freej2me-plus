@@ -1,0 +1,194 @@
+<HTML>
+<HEAD>
+<TITLE>Getting Started with the RIM Crypto API</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4"><b>RIM Crypto API: Getting Started<b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<P>
+  This lesson provides a quick introduction to the RIM Crypto API and explains
+  some of the important concepts used in it. We also attempt to answer the
+  beginner's most common questions. For more detailed information,
+  please see the other lessons with the specific question you have
+  in mind.</P>
+
+<p>     The first part of this lesson consists of a general introduction to the structure
+        of the Crypto API.  Below you will find the major sections that are encompassed by the
+        API. Along with each of these are diagrams and explanations of how the components
+        fit together in their appropriate sections.</P>
+
+<p>The major components of the API are: </p>
+
+<ul>
+ <li> <a href = "#key">Keys</a>, <a href = "#keyencoders">Encoders and Decoders</a></li>
+ <li> <a href = "#digest">Digests and Message Authentication Codes (MACs)</a></li>
+ <li> <a href = "#signature">Signatures</a>, <a href = "#signatureencoders">Encoders and Decoders</a></li>
+ <li> Ciphers (for <a href = "#encrypt">Encrypting</a> and <a href="#decrypt">Decrypting</a> data) </li>
+ <li> <a href = "#randomsources">Random and Pseudo Random Sources</a></li>
+ <li><a href="#exception">Exceptions</a></li>
+</ul>
+
+<p align = "center"><img border=0 src="legend.gif" vspace=75></p>
+
+<br>
+<hr size=1 width="100%" align=center>
+
+<p><a name="key"><b>Keys</b></a></p>
+<p align = "center"><img border=0 id="_x0000_i1026" src="Key.gif" vspace=75></p>
+
+<p> Keys provide the security for most if not all of the cryptographic applications
+    in existence today.  With that thought in mind, the creation, handling, and storage
+    of keys is a fundamental requirement of any cryptographic API.  In this tutorial we will
+    describe how keys are created, handled, and stored.  Additionally, this lesson
+    discusses how to use Certificates, CryptoSystems, and KeyStores.
+    The entire lesson can be found <A href="key.html">here.
+</p>
+
+
+<hr size=1 width="100%" align=center>
+
+<p><a name = "keyencoders"></a><b>Encoding and Decoding Keys</b></p>
+<p align = center><img border = 0 id = "_x0000_i1040" src = "Key Encoders.gif" vspace = 75></p>
+<p> Encoding public and private keys provides a convenient, consistent method for
+    packaging and transmitting these keys, including any other required parameters.  In other
+    words, if the package format is agreed upon, transmitting keys from one application
+    to another, or one location to another, becomes a simple matter.  Read the entire tutorial
+    on key encoding and decoding <a href = "Key Encoders.html">here</a>.
+</p>
+
+<hr size=1 width="100%" align=center>
+
+<p><a name="digest"><b>Digests and MACs</b></a></p>
+<p align = "center"><img border=0 id="_x0000_i1028" src="Digest%20and%20MAC.gif"
+vspace=75 align=center></p>
+
+<p> Digests and MACs provide incredibly useful and important functions in the Crypto API.
+    A digest can be used as a secure hash function to "shrink" down a large amount of data
+    into a small, unique identifier.  A MAC, or Message Authentication Code, is used to verify
+    that the information passed through the MAC has not been changed or modified.  It is
+    essentially a keyed hash function.  The use of this key and a secure hash function
+    ensures that data is not modified without permission.  This component provides the concept
+    of data integrity.</p>
+
+<p> There is an entire lesson devoted to using digests and MACs that can be found <A href="digest.html">here.
+</p>
+
+<hr size=1 width="100%" align=center>
+
+
+<p><a name="signature"><b>Signatures</b></a><br>
+<p align = "center"><img border=0 id="_x0000_i1030" src=Signature.gif
+vspace=75 align=middle></p>
+<p> Signatures provide a way for verifying data origin authentication and identity authentication.
+    That is, we can use signatures to be sure that a message could have only come from a certain entity.
+    Signatures are typically only used with a public/private key scheme.  The private key is used to
+    "prove" to others that only that entity could have signed the information.  This assumes
+    that only the entity knows the private key.  This is a very important concept.</P>
+
+<p> Again, signatures have an entire lesson devoted to usage and the different
+    signatures available that can be found <A href="signatures.html">here.</p>
+
+<hr size=1 width="100%" align=center>
+
+<p><a name = "signatureencoders"></a><b>Encoding and Decoding Signatures</b></p>
+<p align = "center"><img border = 0 id = "_x0000_i1038" src = "Signature Encoders.gif" vspace=75 align = middle></p>
+<p> Signature encoding provides the same benefits as key encoding.  A signature signed
+    and encoded in a given format can be read and verified by anyone who knows the format
+    and the algorithm.  Transmission and verification of multiple encoding formats and algorithms
+    becomes simple once the package format is agreed upon.  Encoding signatures is dealt with
+    in the <a href = "signatures.html">Signature</a> tutorial.
+</p>
+
+<hr size=1 width="100%" align=center>
+
+<p><a name="encrypt"><b>Encrypting Data</b></a></p>
+<p align = "center"><img border=0 id="_x0000_i1032"
+src="EncryptorOutputStream.gif" vspace=75></p>
+
+<p> The EncryptorOutputStream diagram that is shown above describes the framework involved in encrypting data using the Crypto API. As you can see, the API is very flexible giving developers the option to encrypt either streams or blocks of data.</P>
+
+<p> All of the engines and encryptors using streams are explained in the block cipher lesson
+    of this tutorial.  See it <A href="block.html">here.</P>
+
+<hr size=1 width="100%" align=center>
+
+<p><a name="decrypt"><b>Decrypting Data</b></a><p>
+<p align = "center"><img border=0 id="_x0000_i1034"
+src="DecryptorInputStream.gif" vspace=75></p>
+
+<p> Similar to how the encrypting data portion was explained (see <a href="#encrypt">here for details</a>), the
+    API provides the ability to directly or indirectly decrypt data.  Directly, one can use the engines
+    to decrypt the data, but this becomes more complicated when padding and other features are used. Indirectly,
+    one can use the DecryptorInputStream to perform all of this automatically.</P>
+
+<p> All of the engines and decryptors using streams are explained in the block cipher lesson
+    of this tutorial.  See it <A href="block.html">here.</a></P>
+
+<hr size=1 width="100%" align=center>
+
+<p><a name="randomsources"><b>Random and Pseudo Random Sources</b></a></p>
+<p align = "center"><img border=0 id="_x0000_i1042"
+src="RandomSources.gif" vspace=75 align=middle></p>
+
+<p> <a href = "../RandomSource.html">RandomSource</a> provides a cryptographically secure source of randomness suitable for key generation.
+    Randomness is frequently harvested from several device sources and pooled. An example of using
+    <a href = "../RandomSource.html">RandomSource</a>
+    can be found in the code for the <a href = "digest.html">Digest and MAC</a> tutorial.
+    <p>
+    <a href = "../PseudoRandomSource.html">PseudoRandomSource</a> provides an arbitrarily long sequence of random looking bytes from
+    a finite seed. It is typically used to create the keystream of a stream cipher. The <a href = "../FIPS186PseudoRandomSource.html">FIPS186PseudoRandomSource</a> implements the pseudo-random number generator (PRNG) specified in FIPS186. This is used in the Crypto API to generate random numbers for DSA.
+    See <a href = "stream.html">Stream Ciphers</a> for examples using
+    <a href = "../PseudoRandomSource.html">PseudoRandomSource</a>.
+
+<hr size=1 width="100%" align=center>
+
+<p><a name="exception"><b>Exceptions</b></a></p>
+<p align = "center"><img border=0 id="_x0000_i1036"
+src="CryptoException%20and%20CryptoIOException.gif" vspace=75 align=middle></p>
+
+<p> Exceptions are very simple.  The two main exceptions are <a href = "../CryptoException.html">CryptoException</a>
+    and <a href = "../CryptoIOException.html">CryptoIOException</a>.
+    A CryptoException (and its subclasses) will occur when any errors occur during most uses of the
+    Crypto API.  Some of the exceptions clearly show what error caused that exception to be thrown.
+    The CryptoException will always be the general exception thrown when one of the specific subclasses
+    does not suit the error.</P>
+
+<p> The CryptoIOException is an IOException that contains a CryptoException. Some stream related classes, e.g. EncryptorOutputStream, can only throw
+    an IOException. If a CryptoException is raised, it is wrapped inside a CryptoIOException and rethrown.</P>
+<p>
+<strong>Understanding exceptions</strong><p>
+Any logic errors in your code which are not detected at compile time, will cause the program to fail during runtime. To prevent this, the Java programming language incorporates exceptions. Exceptions occur or are “thrown” when an error occurs during runtime. These exceptions must be caught by encasing your code within a try and catch complex. This way, if an error occurs during a particular code segment, it can be caught or trapped and dealt with, while allowing the adjacent code to continue executing.
+<p>
+While exceptions are an important part of programming in Java, a more detailed discussion of them is outside the scope of this document. Below is a description of the exceptions common to the Crypto API.
+The crypto API contains two main exception classes: CryptoException and CryptoIOException. A CryptoException (and its subclasses) occurs when an error is encountered by a member of the crypto API. The exceptions contain a toString method that allows you to output a string containing a description of the error.
+<p>
+In most examples, the exceptions are used to output the error text to the console of the BlackBerry JDE. For example, the following lines output the string associated with the exception to the console. This way, when the program executes and the desired output is not achieved, you can check the log to determine if an exception was thrown.
+<pre>
+try
+   {
+
+	//*Crypto Body
+
+    } catch( IOException e ) {
+     System.out.println(e.toString());
+    } catch( CryptoTokenException e ) {
+     System.out.println(e.toString());
+    }
+</pre>
+<p>
+The crypto code is encased within a try structure. This allows each exception to be “caught” by the exception handler. Most of the exceptions show a description of the error caused that exception to be thrown. The CryptoException is the default exception and thrown when one of the specific subclasses does not suit the error. Examples of crypto exceptions are InvalidKeyPairException, InvalidKeyFormatException and InvalidSignatureFormatException.
+<p>
+The CryptoIOException is a unique exception in that it is only thrown when an IOException has occurred within a crypto member. For example, if an error occurs and an IOException is thrown within an EncryptorOutputStream, a CryptoIOException will be thrown instead of the IOException. The CryptoIOException is then handled separately from the IOException, to allow you to debug your crypto applications with greater ease.
+<p>
+For more information on the <a href="../CryptoException.html">CryptoException</a> and the <a href="../CryptoIOException.html">CryptoIOException</a>, see the Javadocs.
+
+
+</BODY>
+</HTML>

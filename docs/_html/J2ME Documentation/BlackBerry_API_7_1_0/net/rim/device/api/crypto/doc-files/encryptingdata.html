@@ -1,0 +1,227 @@
+<HTML>
+<HEAD>
+<TITLE>Encrypting and decrypting data</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Encrypting and decrypting data</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+<p>
+The RIM Crypto API contains a variety of different encryption protocols, modes and algorithms to help you create an effective layer of security for your custom BlackBerry application. This section of the document describes the Crypto API and provides detailed examples of how to use the algorithms contained within it.
+<p>
+The RIM Crypto API is a very flexible development framework that allows you to accomplish the same task using different levels of abstraction. For example, you can encrypt a block of data at the lowest level of abstraction using a simple encryption algorithm without specifying the details of the encryption itself. Or, you can use a factory class, for example the EncryptorFactory, to encode a stream of data while specifying all details of the encryption itself. The Factory class takes as inputs all relevant encryption details such as a String representing the encryption algorithm, an object representing the input, the Outputstream and an initialization vector used to create randomness. Using this class, the user simply needs to create the new object, supply the arguments and the encryption is taken care of.
+<p>
+The code samples provided below illustrate the various levels of abstraction provided within the API. That is, the examples use different processes to accomplish the same task. For example, the <code>TripleDESEncryptorEngine</code> class and the EncryptorFactory class are both described below.You should consider the needs of your application and the experience of your developers before you consider which method to choose. Developers who are comfortable with cryptographic techniques and who need to further customize their software solution may wish to use a low-level encryption routine (ie. the <code>TripleDESEncryptorEngine</code>), whereas developers with little or no cryptographic experience may choose to implement their solution using the EncryptorFactory class.
+<p>
+<strong>Understanding the sample application, cryptodemo.Java</strong><p>
+The following example, which is provided in its entirety in the BlackBerry JDE, illustrates the use of the Triple-DES encryption algorithm. The project, called cryptodemo, encrypts and decrypts a string of text and compares the resulting text string with the original input.
+<p>
+For information on using the BlackBerry JDE, refer to the document The BlackBerry Java Development Environment.
+<p>
+Note: To access the RIM Crypto API, be sure to include the following Import statement in the header of your class file. This line of code imports the crypto library and allows your application to access the classes within it.<p>
+<pre>
+import net.rim.device.api.crypto.*;
+</pre>
+<p>
+<b>Block cipher data encryption and decryption</b><p>
+<code>Cryptodemo.Java</code> provides an example of block cipher encryption and decryption. Block cipher encryption is a type of encryption mode. The mode defines the process in which the individual bytes of plaintext are encrypted to ciphertext. Block cipher encryption encrypts individual blocks of a data one at a time such that a block of plaintext will always encrypt to the same block of ciphertext provided the same key is used.<p>
+The RIM Crypto API supports the following types of block cipher encryption:
+<ul>
+<li>Electronic Code Book (ECB)
+(The default mode for all Engine classes)
+<li>Cipher Block Chaining (CBC)
+<li>Cipher Feedback (CFB)
+<li>Output Feedback (OFB)
+<li> X
+</ul>
+<p>
+There are a number of issues to consider when determining which block cipher mode to choose. While ECB, the default mode for all engine classes, is by far the most straightforward and easy to understand, it is also more susceptible to attack than the other modes. On the other hand CBC is more secure than ECB mode, but can be more prone to developer error. Each mode has its benefits and drawbacks, you should choose the mode that best suits the needs of your application.<p>
+The sample application uses ECB mode. Since it is the default mode, it does not need to be specified by the developer. For more information on Block Ciphers, see the <a href="block.html">Block Ciphers</a> tutorial.
+<p>
+<b>Encrypting data using the EncryptorEngine class</b>
+<p>
+CryptoDemo.Java uses the TripleDESEncryptorEngine to encrypt the following string "Using the crypto API is as easy as pie". The Triple-DES encryption algorithm is very strong and very easy to use since it is based on the pre-existing DES standard. It has proven to be very reliable and it’s longer key length makes it more resistant to attacks.
+The first step in encrypting the data is to create the key. The following line of code creates a new TripleDESKey.
+<pre>
+	// Create the new TripleDESKey.  This creates a new random TripleDESKey.
+		TripleDESKey key = new TripleDESKey();
+</pre>
+<p>
+The key value is generated from a random function and is stored in a variable called “key”. The <code>TripleDESKey</code> class has nine constructors that allow you to specify details of the key creation. The constructor used above uses a pseudo-random function to create a Triple-DES encryption key.
+For more information on the <code>TripleDESKey</code> class and other Crypto API classes, please refer to the Javadocs.
+<p>
+Once the key is created, the encryption engine must be created. The following line creates the encryption engine.
+<pre>
+	// Create the encryption engine for encrypting the data.
+		TripleDESEncryptorEngine encryptionEngine = new TripleDESEncryptorEngine( key );
+</pre>
+<p>
+The encryption engine, in this case a TripleDESEncryptorEngine class, is used at the lowest level of abstraction to encrypt the plaintext of the message. The <code>TripleDESEncryptorEngine</code> class accepts an object of type Triple-DES key as its argument.
+<p>
+Once the details of the encryption algorithm have been decided, the format of the input and output must be specified. In the sample program, this is accomplished using the PKCS5FormatterEngine class. The PKCS5FormatterEngine class is used to format the input of the encryption algorithm on a block by block basis. The block length is specified by the encryptor engine.
+<pre>
+	PKCS5FormatterEngine formatterEngine = new PKCS5FormatterEngine( encryptionEngine );
+
+	// Use the byte array output stream to catch the encrypted information.
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+</pre>
+<p>
+The first line above, creates an instance of the PKCS5FormatterEngine class. It accepts the encryptor engine, which specifies the block length and the low level encryption details, as an argument. The second line creates an instance of a ByteArrayOutputStream class that stores the output of the process, called the ciphertext.
+<p>
+Finally, after the details of the encryption protocol and input and output have been addressed, we can encrypt the data. This is accomplished in the sample program using the BlockEncryptor class. Any data that is written to the output stream is acted on by the block cipher.
+<pre>
+	BlockEncryptor encryptor = new BlockEncryptor( formatterEngine, outputStream );
+	// Encrypt the actual data.
+		encryptor.write( message.getBytes() );
+
+	// Close the stream.
+		encryptor.close();
+
+		byte[] encryptedData = outputStream.toByteArray();
+</pre>
+<p>
+The default mode for all block ciphers is Electronic Code Book mode (ECB) where each block is encrypted/decrypted separately and independently from all other blocks.
+
+<b>Note:</b>	For the block cipher algorithm classes, each block is encrypted one block at a time.;
+<p>
+After the data is encrypted, the close() method of the BlockEncryptor class is called to close the encryption stream. After the message is encrypted, the resulting ciphertext is stored in the variable outputStream. The original string has now been succesfully encrypted and is then copied to a new byte array called encryptedData. This byte array will now be used to decrypt the data.
+<p>
+<b>Decrypting data using the DecryptorEngine class</b>
+<p>
+Because this is a symmetric algorithm, the decryption process is very similar to the encryption process. In the code sample below, the decryption engine is created by calling the TripleDESDecryptorEngine class constructor with the same TripleDESKey created earlier as its only argument. This is very crucial to the success of the process since only the key used to encrypt the data can be used to decrypt the data. Because this is only a sample application, the details of key distribution and security are not addressed.
+<pre>
+	// Note that since this is a symmetric algorithm we want to use the same key as before.
+		TripleDESDecryptorEngine decryptorEngine = new TripleDESDecryptorEngine( key );
+</pre>
+<p>
+Like the encryption routine, the following lines specify the input and output of the algorithm. The unformatter engine is used to remove the padding placed on the data by the formatter engine. The inputstream is created by creating a new ByteArrayInputStream object using the encryptedData byte array as an argument.
+<pre>
+	// Create the unformatter engine that will remove any of the padding bytes.
+		PKCS5UnformatterEngine unformatterEngine = new PKCS5UnformatterEngine( decryptorEngine );
+
+	// Set up an input stream to hand the encrypted data into the block decryptor.
+		ByteArrayInputStream inputStream = new ByteArrayInputStream( encryptedData );
+</pre>
+<p>
+Finally, the decryptor is created by specifying the unformatter engine and the input stream as arguments. This object, of type BlockDecryptor, is then used to decrypt the ciphertext original message.
+<p>
+<pre>
+	// Create the block decryptor passing in the unformatter engine and the encrypted data.
+		BlockDecryptor decryptor = new BlockDecryptor( unformatterEngine, inputStream );
+</pre>
+<p>
+Once the decryptor is created, it can be used to decrypt the ciphertext of the message. Decrypting the message however, is more difficult than encrypting it since the ciphertext may contain extra padding. The following example uses a loop that reads from the inputstream and exits when it reads the first empty block of data.
+<pre>
+	byte[] temp = new byte[10];
+            	byte[] decryptedData = new byte[0];
+           	 for( ;; ) {
+             		 int bytesRead = decryptor.read( temp );
+		 	if( bytesRead <= 0 ) {
+                    	// We have run out of information to read.
+                    	// Bail.
+                   	 break;
+               	 }
+               	 int length = decryptedData.length;
+               	net.rim.vm.array.resize( decryptedData, length + bytesRead );
+                	System.arraycopy( temp, 0, decryptedData, length, bytesRead );
+            	}
+</pre>
+<p>
+The data is decrypted by calling the read method of the decryptor object and specifying a new byte array, in this case called temp, as its argument. The new array is used to store the resulting plaintext.
+Once the ciphertext is decrypted, it is copied to a new byte array. The new array, decryptedData, is first resized based on the amount of bytes read during the for loop and then filled with the plaintext from the byte array stored in the variable temp. This way, assuming the decryption was successful, the new byte array will contain only the plaintext of the original message.
+<p>
+The sample application also uses a try block that surrounds the encryption and decryption routines to capture any exceptions that might occur. Most encryption and decryption algorithms in the RIM Crypto API throw exceptions. A more detailed discussion of the crypto API exceptions will be included below.
+<p>
+The above classes provide a simple example of using the RIM Crypto API to encrypt and decrypt data. CryptoDemo.Java is available in its entirety as a sample application in the samples.jdw workspace of the BlackBerry JDE. You are encouraged to use and modify the application as a way of becoming more familiar with the Crypto API.<p>
+<b>Stream cipher data encryption and decryption</b>
+<p>
+A second approach to encrypting and decrypting data is stream cipher mode. Stream cipher encryption (and decryption) operates on a stream of data one bit or byte at a time. With a stream cipher, each individual byte of plaintext will encrypt to a different byte of ciphertext every time it is encrypted as long as a different initialization vector is used.
+<p>
+The RIM Crypto API supports the following stream cipher modes:
+<ul>
+<li>Cipher Feedback (CFB)
+<li>Output Feedback (OFB)
+<li>X (whitening)
+</ul>
+<p>
+The stream ciphers implemented in the RIM Crypto API are based on the common stream interface in Java. Familiar read() and write() function calls are used to interact with the data stream. Once a stream cipher is established, all activity is performed by the class on the underlying data stream with no extra intervention or work required by the developer.
+<p>
+The following example encrypts a string of text using a stream cipher.
+<pre>
+public StreamEncryptor()
+    {
+
+    // Input byte array.
+    String message = new String("This is the Plaintext");
+    byte[] plaintext = message.getBytes();
+    String out = new String( plaintext ) ;
+	// Print out the plaintext.
+    System.out.println("Plaintext = " + out + ".");
+</pre>
+<p>
+Below, an <code>ARC4Key</code> is created with a length of 256 bytes. Once the key is created, an object of type <code>Arc4PsuedoRandomSource</code> is created using the key to seed an arbitrarily long stream of hopefully unpredictable and non-repeating bits. The <code>PseudoRandomSource</code> class is an abstract class that represents a pseudo-random number generator (PRNG). This class provides methods for retrieving bytes from the PRNG and resetting the state of the PRNG.
+<pre>
+try
+   {
+	ARC4Key key = new ARC4Key( 256 );
+    ARC4PseudoRandomSource encryptSource = new ARC4PseudoRandomSource ( key );
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+</pre>
+<p>
+Next, a <code>PRNGEncryptorStream</code> class is instantiated using the random data created previously and an Outputstream. The encryptor stream, stored in a variable called stream, is then used to encrypt the data by calling the Java <code>write()</code> function. Once the data is encrypted, the plaintext of the message and the corresponding ciphertext is displayed in the console of the BlackBerry JDE.
+<pre>
+    //Create the PRNGEncryptor stream encryptor, which uses
+    // the ARC4PseudoRandomSource and an output stream
+    PRNGEncryptor stream = new PRNGEncryptor ( encryptSource, out );
+
+    // To encrypt, simply call write with the plaintext
+    stream.write( plaintext, 0, plaintext.length );
+    stream.close();
+
+    byte[] ciphertext = out.toByteArray();
+    System.out.println ( "Ciphertext = " + ciphertext + "." );
+
+    }  catch( IOException e ) {
+     System.out.println(e.toString());
+    } catch( CryptoTokenException e ) {
+     System.out.println(e.toString());
+    }
+}
+</pre>
+<p>
+It’s no surprise that decrypting data using a stream cipher is just as simple as encrypting it. The following example illustrates the decryption of the data. The examples assumes the original ciphertext and random data source are available to the receiver.
+Below the inputstream is created using the ciphertext byte array as an argument. Once the inputstream is created, the <code>PRNGDecryptor</code> stream is instantiated and the ciphertext is decrypted.
+<pre>
+
+    ByteArrayInputStream in = new ByteArrayInputStream( ciphertext );
+
+    // Create an instance of an PRNGDecryptor to decrypt the data
+    ARC4PseudoRandomSource decryptSource = new ARC4PseudoRandomSource ( key );
+    PRNGDecryptor stream = new PRNGDecryptor( decryptSource, in );
+
+    // Decrypt by reading from the stream and storing
+    // the decrypted data in plaintext
+    stream.read( plaintext, 0, ciphertext.length );
+    stream.close();
+
+    }  catch( IOException e ) {
+     System.out.println(e.toString());
+    } catch( CryptoTokenException e ) {
+     System.out.println(e.toString());
+    }
+}
+</pre>
+<p>
+For more information on Stream Ciphers, see the <a href="stream.html">Stream Ciphers</a> tutorial.
+
+<p>
+The previous examples illustrate just some of the many different modes and protocols supported by the RIM Crypto API. The encryptor engines allow you to manipulate the low level details of encrypting and decrypting data. While the engines provide an effective means to encrypt and decrypt data, the details of their implementation may be confusing to some. Furthermore, the abstraction provided by the engines may not be appropriate for the intended application. In short, engines are powerful and highly customizable but may not always be the most effective way to meet your cryptographic needs.
+
+</body>
+</html>

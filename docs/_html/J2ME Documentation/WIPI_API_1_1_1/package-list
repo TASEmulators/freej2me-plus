@@ -1,0 +1,11 @@
+java.io
+java.lang
+java.util
+org.kwis.msf.core
+org.kwis.msf.io
+org.kwis.msp.db
+org.kwis.msp.handset
+org.kwis.msp.io
+org.kwis.msp.lcdui
+org.kwis.msp.lwc
+org.kwis.msp.media

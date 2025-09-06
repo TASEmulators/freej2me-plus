@@ -1,0 +1,297 @@
+<!--
+    Copyright (c) 2008 Sun Microsystems, Inc. All rights reserved.
+    Use is subject to license terms.
+-->
+
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="GENERATOR" content="XEmacs">
+    <meta name="Author" content="Antti Rantalahti">
+    <title>MMAPI 1.1 addendum: Multimedia Security v1.0</title>
+<meta name="collection" content="api">
+  </head>
+  <body>
+
+    <h1>Multimedia Security</h1>
+
+    <h2>Addendum to the Mobile Media API (JSR135) version 1.2</h2>
+
+    <p><i>
+	Version 1.2  1 March 2006
+      </i></p>
+
+    <h2>Preface</h2>
+
+<p>This document, <i>Multimedia Security</i> is an addendum to the Mobile Media API
+      (JSR-135) version 1.2 for the Java TM 2 Platform. The specification is aimed
+      for implementations of the Mobile Media API, with the 
+      <i>Mobile Information Device Profile, Version 2.0 (JSR-118)</i> and the
+      <i>Connected Device Configuration, Version 1.0 (JSR-36)</i> specification.
+      The above specifications can be found at 
+      <a href="http://www.jcp.org/jsr/detail/135.jsp">http://www.jcp.org/jsr/detail/135.jsp</a>, 
+      <a href="http://www.jcp.org/jsr/detail/118.jsp">http://www.jcp.org/jsr/detail/118.jsp</a>,
+      and <a href="http://www.jcp.org/jsr/detail/36.jsp">http://www.jcp.org/jsr/detail/36.jsp</a> 
+      respectively.</p>
+    
+    <p>The terminology used herein is defined by the above specifications except where noted.
+    </p>
+    
+    <h2>Who Should use this Document</h2>
+
+    <p>
+      The audience for
+      this document is the Java Community Process (JCP) Expert Group that defined the
+      Mobile Media API specifications, implementers of the MIDP or CDC/FP and the
+      Mobile Media API, application developers using the MIDP or CDC/FP and the Mobile Media
+      API, service providers deploying MMAPI applications, and wireless operators
+      deploying the infrastructure to support MIDP and CDC/FP devices. This document
+      specifically targets network operators, manufacturers, and service and
+      application providers operating in GSM and UMTS networks.</p>
+
+
+    <h2>Scope of this Document</h2>
+
+    <p>
+      This addendum is informative in a way that implementing profile will specify what
+      security framework is used and how it is implemented. Special interest
+      is on MIDP 2.0 for which it is specified that MMAPI implementations on top of
+      MIDP 2.0 must follow this document.
+      The behavior of the security of a MMAPI implementation for CDC is also specified.
+
+      The purpose of this document is to:
+    </p>
+
+    <ul>
+      <li>
+	Define the security framework for Mobile Media API
+      <li>
+	Define the security policy identifiers for the Mobile Media API when
+	used together with MIDP 2.0
+      <li>
+	Define the security Permissions for the Mobile Media API
+	when used together with CDC 1.0 or later
+    </ul>
+    
+    <h2>References</h2>
+    <ol>
+      <li>
+	Connected Limited Device Configuration (CLDC)
+	<br>
+	<a href="http://jcp.org/en/jsr/detail?id=30">
+	  http://jcp.org/en/jsr/detail?id=30</a>
+	<br><br>
+      <li>
+	Mobile Information Device Profile (MIDP)
+	<br>
+	<a href="http://jcp.org/en/jsr/detail?id=37">
+	  http://jcp.org/en/jsr/detail?id=37</a>
+	<br><br>
+      <li>
+	Mobile Information Device Profile, Next Generation (MIDP 2.0)
+	<br>
+	<a href="http://jcp.org/en/jsr/detail?id=118">
+	  http://jcp.org/en/jsr/detail?id=118</a>
+	<br><br>
+      <li>
+	Security for GSM/UMTS Compliant Devices Recommended Practice.
+	<br>
+	Addendum to the Mobile Information Device Profile version 2.0. JSR-118 Expert Group, Version
+	1.0, Nov 5, 2002.
+	<br>
+	<a href="http://jcp.org/en/jsr/detail?id=118">
+	  http://jcp.org/en/jsr/detail?id=118</a>
+	<br><br>
+      <li>
+	Mobile Media API, version 1.0.
+	<br>
+	<a href="http://jcp.org/en/jsr/detail?id=135">
+	  http://jcp.org/en/jsr/detail?id=135</a>
+	<br><br>
+      <li>
+	Java Technology for Wireless Industry (JTWI).
+	<br>
+	<a href="http://jcp.org/en/jsr/detail?id=185">
+	  http://jcp.org/en/jsr/detail?id=185</a>
+	<br><br>
+      <li>
+	Connected Device Configuration 1.0 (CDC)
+	<br>
+	<a href="http://www.jcp.org/jsr/detail/36.jsp">
+	  http://www.jcp.org/jsr/detail/36.jsp</a>
+	<br><br>
+    </ol>
+    <h1>1. General</span></h1>
+
+    <p>
+      The Mobile Media API (MMAPI) specification does not define a security framework of its own.
+      Rather, implementations of MMAPI are subject to the security mechanisms
+      provided by the underlying profile and configuration, e.g. MIDP 2.0 or CDC. Some
+      methods in MMAPI are defined such that a SecurityException will be thrown when
+      called without the appropriate security permissions from the caller.
+    </p>
+    
+    <p>
+      An implementation MUST guarantee that:      
+    <ol>
+      <li>
+	the SecurityException is thrown when the caller does not have the appropriate
+	security permissions to execute the method;
+      <li>
+	the method can be
+	used when the appropriate permissions are granted.
+    </ol>
+  </p>
+    
+    <p>
+      Access to the MMAPI properties that can be queried by 
+      System.getProperty(String key) is never security constrained.
+    </p>
+
+    <h1>2. Security Concerns for Mobile Media API</h1>
+
+    <p>
+      The security concerns of the MMAPI can be divided into areas of recording, network access
+      and access to local data stores. In order to perform any actions on those
+      areas using MMAPI the application MUST be granted the permission to do so. The
+      mechanism to grant the permission is implementation specific and not in the
+      scope of this document.
+    </p>
+
+    <h2>2.1 Permissions for recording</h2>
+
+    <p>
+      Recording in MMAPI
+      include recording of audio and video and capturing of still images with the
+      camera. The security issue in recording is the concern about user's privacy.
+      Application silently accessing recording functionality could be used e.g. to
+      record and distribute private conversations of the user. Therefore methods for
+      recording and image capturing must be granted the appropriate permission.</p>
+
+    <h3>Permissions for MIDP implementations of MMAPI</h3>
+    <p>MMAPI implementations on the MIDP and compatible profiles must perform
+      the permission checks in these methods:</p>
+    <table border=1 cellpadding=0 width="100%">
+      <tr>
+	<td>
+	  <b>&nbsp;API call</b>
+	</td>
+	<td>
+	  <b>&nbsp;Permission</b>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>RecordControl.setRecordLocation(String locator)</code> <br>
+	  &nbsp;<code>RecordControl.setRecordStream(OutputStream stream)</code> <br>
+	  &nbsp;<code>VideoControl.getSnapshot(String type)</code>
+	</td>
+	<td>
+	  &nbsp;<code>javax.microedition.media.control.RecordControl</code><br>
+	  &nbsp;<code>javax.microedition.media.control.RecordControl</code><br>
+	  &nbsp;<code>javax.microedition.media.control.VideoControl.getSnapshot</code>
+	</td>
+      </tr>
+    </table>
+
+    <h3>Permissions for CDC implementations of MMAPI</h3>
+    <p>MMAPI implementations on configurations and profiles that use
+      the fine grained security permissions based on 
+      <tt>java.security.Permission</tt> security checks must include 
+      the class <tt><a href=PlayerPermission.html>javax.microedition.media.PlayerPermission</a></tt>
+      and the methods below must perform permission checks:</p>
+
+    <table border=1 cellpadding=0 width="100%">
+      <tr>
+	<td>
+	  <b>&nbsp;API call</b>
+	</td>
+	<td>
+	  <b>&nbsp;Action in javax.microedition.media.PlayerPermission</b>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>RecordControl.setRecordLocation(String locator)</code> <br>
+	  &nbsp;<code>RecordControl.setRecordStream(OutputStream stream)</code> <br>
+	  &nbsp;<code>VideoControl.getSnapshot(String type)</code>
+	</td>
+	<td>
+	  &nbsp;<code>"record"</code><br>
+	  &nbsp;<code>"record"</code><br>
+	  &nbsp;<code>"snapshot"</code>
+	</td>
+      </tr>
+    </table>
+    
+    <h2>2.2 Other Permissions</h2>
+    
+    <p>
+      There are other than media recording related security issues when MMAPI is used.
+      Those issues are related to accessing resources either locally or over the network.
+
+      Media player can be initialized by a locator pointing to a content that can reside
+      on a network server or it could be on some local storage. Reading data over the network
+      requires use of the network connection that may have security policy in place. An access to
+      a local data storage may have security policies in place as well.
+    </p>
+    <p>
+      Implementation of MMAPI must follow the security
+      practices that are in place for accessing those resources. For example, when a Player is created to
+      play content on a HTTP server, MMAPI implemented on top of MIDP 2.0 must follow the MIDP 2.0 security practices for network access.
+    </p>
+    <p>
+      MMAPI implemented on CDC must conform to the security requirements
+      of the CDC configuration.
+      When a locator is used to access media the MMAPI implementation must
+      throw a <tt>SecurityException</tt> under the same conditions as
+      would an access by the Generic Connection Framework.
+      
+    </p>
+
+    <p>
+      Below is a list of MMAPI methods which can throw a SecurityException for non-media related security violations.
+      They can potentially have other than media recording security policies attached to them.
+    </p>
+    <table border=1 cellpadding=0>
+      <tr>
+	<td>
+	  <b>&nbsp;API call</b>
+	</td>
+      </tr>
+      <tr>
+	<td>
+	  &nbsp;<code>Manager.createPlayer(String locator)</code> <br>
+	  &nbsp;<code>Manager.createPlayer(InputStream stream, String type)</code> <br>
+	  &nbsp;<code>Manager.createPlayer(DataSource source)</code> <br>
+	  <br>
+	  &nbsp;<code>Player.realize()</code> <br>
+	  &nbsp;<code>Player.prefetch()</code> <br>
+	  &nbsp;<code>Player.start()</code> <br>
+	  <br>
+	  &nbsp;<code>DataSource.start()</code> <br>
+	  &nbsp;<code>DataSource.connect()</code> <br>
+	  <br>
+	  &nbsp;<code>RecordControl.setRecordLocation(String locator)</code> <br>
+	</td>
+      </tr>
+    </table>
+
+    <p>
+      When playback is started one of the methods Manager.createPlayer, Player.realize, Player.prefetch and Player.start
+      must throw the SecurityException if there's no permission to open the connection. Because of the multi-stage
+      initialization of Players it is not possible to
+      specify which method exactly must do that.
+    </p>
+
+    <p>
+      Notice that  <code>RecordControl.setRecordLocation</code> method also has a security permission
+      for media recording. Therefore, it is possible that this method call can result in two separate
+      security checks. 
+    </p>
+  </div>
+    
+    
+  </body>
+</html>

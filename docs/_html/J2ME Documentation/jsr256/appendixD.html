@@ -1,0 +1,480 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <title>Appendix&nbsp;D.&nbsp;Code examples</title>
+      <meta name="generator" content="DocBook XSL-NS Stylesheets V1.73.2"></meta>
+   </head>
+   <body>
+      <div class="appendix" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h2 class="title"><a id="d4e1"></a>Appendix&nbsp;D.&nbsp;Code examples
+                  </h2>
+               </div>
+            </div>
+         </div>
+         
+         
+         <p> The 
+            <code class="literal">SensorConnection</code>
+            represents a
+            connection to the real sensor device. After having been opened, the 
+            <code class="literal">SensorConnection</code>
+            can be used to get
+            the data from the sensor. The 
+            <code class="literal">SensorConnection</code>
+            is a Generic Conncetion Framework
+            (GCF) Connection. The following code example illustrates how to
+            start synchronous data fetching by first opening the sensor by
+            giving a sensor URL as a parameter, and then calling method 
+            <code class="literal">getData()</code>
+            .
+         </p>
+         <pre class="screen">
+    SensorConnection thermometer = 
+        (SensorConnection)Connector.open("sensor:temperature");
+    Data[] data = thermometer.getData(1);
+   
+</pre>
+         <p>The measured data is returned as an array of 
+            <code class="literal">Data</code>
+            objects, where each 
+            <code class="literal">Data</code>
+            object encapsulates the data of one channel. The
+            channel is a way to structure the data. If the sensor is measuring
+            just one property, there is only one channel. This is the case, for
+            example, with the thermometer. The length of the returned 
+            <code class="literal">Data</code>
+            object array with this sensor is always
+            one. The measured value can be obtained in the following way:
+         </p>
+         <pre class="screen">
+    double value = data[0].getDoubleValues()[0];
+</pre>
+         <p>However, a 3D compass has three channels:</p>
+         <pre class="screen">
+   
+    SensorConnection compass = 
+        (SensorConnection)Connector.open("sensor:direction");
+    Data[] data = compass.getData(1);
+    for (int i=0, l=data.lenght; i&lt;l; i++){
+         double value = data[i].getDoubleValues()[0];
+         System.out.println("channel = "+
+         data[i].getChannelInfo().getName()+", value=" + value);
+    }
+
+</pre>
+         <p>Sample output:</p>
+         <pre class="screen">
+    channel = heading, value = 108.1
+    channel = pitch, value = 5.2
+    channel = roll, value = -10.3
+
+</pre>
+         <p>In addition to getting the data, it is possible to monitor it.
+            Various conditions - limits and ranges - can be set. When the
+            condition is met, the application implementing the 
+            <code class="literal">ConditionListener</code>
+            interface is notified. The
+            conditions are defined separately for each channel.
+         </p>
+         
+         <p>The 
+            <code class="literal">SensorManager</code>
+            manages sensors. It
+            has two tasks:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="orderedlist">
+            <ol type="1">
+               <li>
+                  
+                  <p> finding the desired sensor</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> listening for the availability of a given sensor</p>
+                  
+               </li>
+            </ol>
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>Searching for a sensor can be based on a quantity, and/or a
+            context type, or the sensor URL. The quantity defines what the
+            sensor is measuring, for example: temperature, humidity, or
+            direction. The context type defines where the measurement is taken.
+            The valid values for the context type are listed below:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="itemizedlist">
+            <ul type="disc">
+               <li>
+                  
+                  <p>
+                     <code class="literal">SensorInfo.CONTEXT_TYPE_AMBIENT</code>
+                     
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p>
+                     <code class="literal">SensorInfo.CONTEXT_TYPE_DEVICE</code>
+                     
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p>
+                     <code class="literal">SensorInfo.CONTEXT_TYPE_USER</code>
+                     
+                  </p>
+                  
+               </li>
+            </ul>
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>The returned 
+            <code class="literal">SensorInfo</code>
+            array lists
+            the found sensors. The 
+            <code class="literal">SensorInfo</code>
+            
+            encapsulates sensor specific information such as the model, the
+            version, and the channels of the sensor.
+         </p>
+         
+         <p>The 
+            <code class="literal">SensorManager</code>
+            periodically
+            checks the registered sensors and notifies their registered 
+            <code class="literal">SensorListener</code>
+            objects of changes in the
+            availability of the sensor. Also the MIDP 
+            <code class="literal">PushRegistry</code>
+            needs to periodically check the
+            registered sensors. Registration for the 
+            <code class="literal">PushRegistry</code>
+            is based on a sensor URL. The URL
+            offers two alternatives:
+         </p>
+         
+         <p>
+            
+         </p>
+         <div class="orderedlist">
+            <ol type="1">
+               <li>
+                  
+                  <p> listening for the availability of the sensor</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> monitoring the data of the sensor (limit and range
+                     conditions)
+                  </p>
+                  
+               </li>
+            </ol>
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>When a sensor becomes available, or one of the set conditions is
+            met, the registered sensor application is launched.
+         </p>
+         
+         <p>The 
+            <code class="literal">Sniffer MIDlet</code>
+            below
+            demonstrates the use of 
+            <span class="emphasis"><em>Mobile Sensor
+                  API</em></span>
+            . The MIDlet finds every sensor of the device and
+            shows how to get data synchronously, asynchronously, and using
+            conditions. Imported classes and comments are omitted for
+            brevity.
+         </p>
+         <pre class="screen">
+public class Sniffer extends MIDlet implements Runnable,
+CommandListener, DataListener, ConditionListener {
+    private Display display;
+    private Form form;
+    private boolean isPaused;
+    private Command nextCommand = new Command("Next sensor",Command.ITEM,1);
+    private Command exitCommand = new Command("Exit",Command.EXIT,1);
+    private static Data[] data;
+    private static SensorConnection sensor = null;
+    private static SensorInfo[] infos;
+    private static int index = 0;
+    private static boolean isReady = false;
+    private StringItem syncStringItem;
+    private StringItem asyncStringItem;
+    private StringItem condStringItem;
+    private StringItem sensorStringItem;
+    private static final int BUFFER_SIZE = 10;
+
+    private static final ObjectCondition COND =
+        new ObjectCondition(
+            new Object(){public boolean equals(Object o){return true;}});
+    private static final LimitCondition COND1 =
+        new LimitCondition(0, Condition.OP_GREATER_THAN_OR_EQUALS);
+    private static final LimitCondition COND2 =
+        new LimitCondition(0, Condition.OP_LESS_THAN_OR_EQUALS);
+
+    public Sniffer() {
+        display = Display.getDisplay(this);
+        form = new Form("Sensor Sniffer");
+        form.addCommand(nextCommand);
+        form.addCommand(exitCommand);
+        form.setCommandListener(this);
+        sensorStringItem = new StringItem("Sensor","");
+        form.append(sensorStringItem);
+        syncStringItem = new StringItem("Sync","");
+        form.append(syncStringItem);
+        asyncStringItem = new StringItem("Async" , "");
+        form.append(asyncStringItem);
+        condStringItem = new StringItem("Cond" , "");
+        form.append(condStringItem);
+        display.setCurrent(form);
+        infos = SensorManager.findSensors(null, null);
+        readSensor(index);
+        index = (index&gt;=infos.length-1)? 0 : index+1;
+    }
+    public void startApp() { isPaused = false; }
+    
+    public void commandAction(Command command, Displayable screen) {
+        if (isPaused()) return;
+        // next command
+        if (command == nextCommand) {
+            readSensor(index);
+            index = (index&gt;=infos.length-1)? 0 : index+1;
+            return;
+        }
+        // exit command
+        if (command == exitCommand){
+            destroyApp(false);
+            notifyDestroyed();
+        }
+    }
+
+    public void conditionMet(SensorConnection sensor, Data d,
+                             Condition condition) {
+        data = new Data[]{d};
+        setReady(true);
+    }
+    
+    public void dataReceived(SensorConnection sensor, Data[] d,
+                             boolean isDataLost) {
+        data = d;
+        setReady(true);
+    }
+    
+    public void destroyApp(boolean par) {isPaused = true;}
+
+    public boolean isPaused() {return isPaused;}
+    
+    public synchronized boolean isReady() {return isReady;}
+
+    public void pauseApp() {isPaused = true;}
+
+    private void print(StringItem stringItem, Data[] d){
+        StringBuffer channelBuffer = new StringBuffer();
+        for (int i=0, l=d.length; i&lt;l; i++){
+            ChannelInfo cInfo = d[i].getChannelInfo();
+            int dataType = cInfo.getDataType();
+            String valueString="";
+            switch(dataType){
+                case ChannelInfo.TYPE_DOUBLE:
+                {
+                    double[] values = d[i].getDoubleValues();
+                    int l2 = values.length;
+                    valueString = l2 &gt; 0 ?
+                        resolved(cInfo, values[l2-1]) : null;
+                    break;
+                }
+                case ChannelInfo.TYPE_INT:
+                {
+                    int[] values = d[i].getIntValues();
+                    int l2 = values.length;
+                    valueString = l2 &gt; 0 ?
+                        resolved(cInfo, values[l2-1]) : null;
+                    break;
+                }
+                case ChannelInfo.TYPE_OBJECT:
+                {
+                    Object[] values = d[i].getObjectValues();
+                    int l2 = values.length;
+                    valueString = l2 &gt; 0 ?
+                        values[l2-1].toString() : null;
+                    break;
+                }
+            }
+            String channelString =
+                cInfo.getName()+": "+valueString + "\n";
+            channelBuffer.append(channelString);
+            System.out.println(" "+channelString);
+        }
+        stringItem.setText(channelBuffer.toString());
+    }
+    
+    private String resolved(ChannelInfo channelInfo, double value){
+        int scalingFactor = channelInfo.getScale();
+        double resolver = 1;
+        for (int i=0,l=Math.abs(scalingFactor); i&lt;l; i++){
+            resolver = scalingFactor&gt;0? resolver*10 : resolver/10 ;
+        }
+        return "" + value * resolver + " " + channelInfo.getUnit();
+    }
+
+    //Async/sync data retrieval and condition mechanism demonstrated
+    public void run() {
+        // sync
+        try{
+            data = sensor.getData(BUFFER_SIZE);
+        }catch(Exception e){
+            e.printStackTrace();
+            System.out.println("Couldn't read data from the sensor "+
+                sensor.getSensorInfo().getUrl());
+        }
+        print(syncStringItem, data);
+        setReady(false);
+        
+        // async
+        sensor.setDataListener(this, BUFFER_SIZE);
+        while(!isReady()){
+            try{
+                wait();
+            }catch(Exception e){}
+        }
+        sensor.removeDataListener();
+        print(asyncStringItem, data);
+        setReady(false);
+        
+        // condition
+        addConditions();
+        while(!isReady()){
+            try{
+                wait();
+            }catch(Exception e){}
+        }
+        removeConditions();
+        print(condStringItem, data);
+        setReady(false);
+        
+        try{
+            sensor.close();
+        }catch(Exception e2){
+            e2.printStackTrace();
+            System.out.println("Exception while closing the sensor");
+        }
+    }
+    
+    public void readSensor(int index){
+        if (infos.length&lt;index-1) return;
+        SensorInfo info = infos[index];
+        String url = info.getUrl();
+        System.out.println("Sensor: "+url);
+        sensorStringItem.setText(url);
+        syncStringItem.setText("");
+        asyncStringItem.setText("");
+        condStringItem.setText("");
+        try{
+            sensor = (SensorConnection)Connector.open(url);
+        }catch(SecurityException se){
+            System.out.println("No permission to use the sensor!");
+            return;
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            System.out.println("Couldn't open sensor " + url);
+            return;
+        }
+        new Thread(this).start();
+    }
+    
+    private void addConditions(){
+        ChannelInfo[] cInfos = sensor.getSensorInfo().getChannelInfos();
+        for (int i=0,l=cInfos.length; i&lt;l; i++){
+            Channel channel = sensor.getChannel(cInfos[i]);
+            if (cInfos[i].getDataType() == ChannelInfo.TYPE_OBJECT){
+                channel.addCondition(this, COND);
+                continue;
+            }
+            channel.addCondition(this, COND1);
+            channel.addCondition(this, COND2);
+        }
+    }
+
+    private void removeConditions(){
+        ChannelInfo[] cInfos = sensor.getSensorInfo().getChannelInfos();
+        for (int i=0,l=cInfos.length; i&lt;l; i++){
+            Channel channel = sensor.getChannel(cInfos[i]);
+            channel.removeAllConditions();
+        }
+    }
+        
+    private synchronized void setReady(boolean isReady){
+        Sniffer.isReady = isReady;
+        notify();
+    }
+}
+</pre>
+         <p>In the constructor the row:</p>
+         <pre class="screen">
+        infos = SensorManager.findSensors(null, null);
+</pre>
+         <p>finds all the sensors and assigns them to the variable 
+            <code class="literal">infos</code>
+            . The "Find sensor" command handles one
+            sensor at a time and then increments the 
+            <code class="literal">index</code>
+            by 1. All the found sensors can be handled
+            in sequence by pressing the "Find sensor" button in a row. The 
+            <code class="literal">index</code>
+            is reset to value of 0 after all
+            the sensors are handled, hence the loop is never-ending.
+         </p>
+         
+         <p>In the condition-based data retrieval mode the first data value
+            is ensured to meet the condition. If the data type of the channel
+            is numeric (int/double) then two overlapping 
+            <code class="literal">LimitCondition</code>
+            objects are set. Those two
+            conditions cover the whole range of values. If the data type of the
+            channel is 
+            <code class="literal">TYPE_OBJECT</code>
+            then a special
+            anonymous 
+            <code class="literal">Object</code>
+            is used as a limit.
+            Its 
+            <code class="literal">equals()</code>
+            method is overridden to
+            return always 
+            <code class="literal">true</code>
+            .
+         </p>
+         
+      </div>
+   </body>
+</html>

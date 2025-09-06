@@ -1,0 +1,174 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+   
+      <title>Appendix A. LocationPermission</title>
+   </head>
+   <body>
+      <h1>Appendix A. LocationPermission</h1>
+      <p xmlns="http://www.w3.org/1999/xhtml">This appendix provides the skeleton of the
+         	<code class="classname">LocationPermission</code> class, containing the API
+         	signatures and documentation.
+      </p><pre xmlns="http://www.w3.org/1999/xhtml" class="programlisting">
+		package javax.microedition.location;
+
+import java.security.Permission;
+
+/**
+ * &lt;p&gt;This class controls the access to the protected functionality in Location
+ * API. The following table defines the protected methods and the permission
+ * name and action parameters needed to access these methods.&lt;/p&gt;
+ * 
+ * &lt;table border='1'&gt;
+ *  &lt;caption&gt;&lt;code&gt;name&lt;/code&gt; and &lt;code&gt;actions&lt;/code&gt; parameters in
+ *           LocationPermission&lt;/caption&gt;
+ *  &lt;thead&gt;
+ *      &lt;tr&gt;
+ *          &lt;th&gt;API call&lt;/th&gt;
+ *          &lt;th&gt;Name parameter in &lt;code&gt;LocationPermission&lt;/code&gt;&lt;/th&gt;
+ *          &lt;th&gt;Actions parameters in &lt;code&gt;LocationPermission&lt;/code&gt;&lt;/th&gt;
+ *      &lt;/tr&gt;
+ *  &lt;/thead&gt;
+ *  &lt;tbody&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;LocationProvider.getLocation()&lt;/code&gt;,
+ *              &lt;code&gt;LocationProvider.setLocationListener()&lt;/code&gt;,
+ *              &lt;code&gt;LocationProvider.getLastKnownLocation()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"location"&lt;/td&gt;
+ *          &lt;td&gt;"location"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;LocationProvider.addProximityListener()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"proximity_listener"&lt;/td&gt;
+ *          &lt;td&gt;"proximity"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;Orientation.getOrientation()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"orientation"&lt;/td&gt;
+ *          &lt;td&gt;"orientation"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;LandmarkStore.getInstance()&lt;/code&gt;,
+ *              &lt;code&gt;LandmarkStore.listLandmarkStores()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"landmark_store"&lt;/td&gt;
+ *          &lt;td&gt;"read"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;LandmarkStore.addLandmark()&lt;/code&gt;,
+ *              &lt;code&gt;LandmarkStore.deleteLandmark()&lt;/code&gt;,
+ *              &lt;code&gt;LandmarkStore.removeLandmarkFromCategory()&lt;/code&gt;,
+ *              &lt;code&gt;LandmarkStore.updateLandmark()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"landmark_store"&lt;/td&gt;
+ *          &lt;td&gt;"write"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;LandmarkStore.addCategory()&lt;/code&gt;,
+ *              &lt;code&gt;LandmarkStore.deleteCategory()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"landmark_store"&lt;/td&gt;
+ *          &lt;td&gt;"category"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *      &lt;tr&gt;
+ *          &lt;td&gt;&lt;code&gt;LandmarkStore.createLandmarkStore()&lt;/code&gt;,
+ *              &lt;code&gt;LandmarkStore.deleteLandmarkStore()&lt;/code&gt;&lt;/td&gt;
+ *          &lt;td&gt;"landmark_store"&lt;/td&gt;
+ *          &lt;td&gt;"management"&lt;/td&gt;
+ *      &lt;/tr&gt;
+ *  &lt;/tbody&gt;
+ * &lt;/table&gt;
+ * 
+ * @author Nokia Corporation
+ * @version 1.1
+ */
+public final class LocationPermission extends Permission {
+
+    /**
+     * &lt;p&gt;Creates a new &lt;code&gt;LocationPermission&lt;/code&gt; object with the specified
+     * name and actions. The &lt;code&gt;name&lt;/code&gt; parameter is the class to which
+     * the permissions apply. Possible &lt;code&gt;name&lt;/code&gt; values are "location",
+     * "orientation", "proximity_listener" and "landmark_store". Parameter
+     * &lt;code&gt;actions&lt;/code&gt; contains a comma separated list of actions granted to
+     * the class specified by the &lt;code&gt;name&lt;/code&gt; parameter. Possible action
+     * values are "location", "orientation", "proximity", "read", "write", "category"
+     * and "management". The possible combinations between names and actions
+     * are defined in the class description. If the same action is given in the
+     * &lt;code&gt;actions&lt;/code&gt; multiple times, additional entries are ignored.&lt;/p&gt;
+     * 
+     * @param name the functionality to which the permission applies
+     * @param actions a comma separated list of actions
+     * @throws NullPointerException if &lt;code&gt;name&lt;/code&gt; or &lt;code&gt;actions&lt;/code&gt;
+     *                  is &lt;code&gt;null&lt;/code&gt;
+     * @throws IllegalArgumentException if &lt;code&gt;name&lt;/code&gt; and &lt;code&gt;actions&lt;/code&gt;
+     *                  combination is not according to table in the class description
+     */
+    public LocationPermission(String name, String actions) {
+        super(name);
+    }
+
+    /**
+     * &lt;p&gt;Checks if this &lt;code&gt;LocationPermission&lt;/code&gt; object "implies" the
+     * specified permission.&lt;/p&gt;
+     * 
+     * &lt;p&gt;The method returns &lt;code&gt;true&lt;/code&gt; if:&lt;/p&gt;
+     * 
+     * &lt;ul&gt;
+     *  &lt;li&gt;&lt;code&gt;p&lt;/code&gt; is an instance of &lt;code&gt;LocationPermission&lt;/code&gt;,&lt;/li&gt;
+     *  &lt;li&gt;&lt;code&gt;p&lt;/code&gt;'s name is equal to the name of this object, and&lt;/li&gt;
+     *  &lt;li&gt;&lt;code&gt;p&lt;/code&gt;'s actions are a proper subset of this object's actions&lt;/li&gt;
+     * &lt;/ul&gt; 
+     * 
+     * @param p the permission to check against
+     * @return &lt;code&gt;true&lt;/code&gt; if the specified permission is implied by this
+     *              object, &lt;code&gt;false&lt;/code&gt; if not
+     */
+    public boolean implies(Permission p) {
+        return false;
+    }
+
+    /**
+     * &lt;p&gt;Checks two &lt;code&gt;LocationPermission&lt;/code&gt; objects for equality. Checks
+     * that &lt;code&gt;obj&lt;/code&gt; is a &lt;code&gt;LocationPermission&lt;/code&gt; and has the same
+     * name and actions as this object.&lt;/p&gt;
+     * 
+     * @param obj the object we are testing for equality with this object
+     * @return &lt;code&gt;true&lt;/code&gt; if &lt;code&gt;obj&lt;/code&gt; is equal to this object,
+     *              else &lt;code&gt;false&lt;/code&gt;
+     */
+    public boolean equals(Object obj) {
+        return false;
+    }
+
+    /**
+     * &lt;p&gt;Returns the hash code value for this object.&lt;/p&gt; 
+     * 
+     * @return this object's hash code
+     */
+    public int hashCode() {
+        return 0;
+    }
+
+    /**
+     * &lt;p&gt;Returns the canonical string representation of the current actions. 
+     * Actions are separated with a comma. The actions for different names are
+     * defined in the table in the class description. For the
+     * &lt;code&gt;"landmark_store"&lt;/code&gt; name the actions
+     * &lt;span class="keyword"&gt;must&lt;/span&gt; be returned in the following order: 
+     * &lt;code&gt;read&lt;/code&gt;, &lt;code&gt;write&lt;/code&gt;, &lt;code&gt;category&lt;/code&gt;,
+     * &lt;code&gt;management&lt;/code&gt;.&lt;/p&gt;
+     * 
+     * &lt;p&gt;If this &lt;code&gt;LocationPermission&lt;/code&gt; allows reading and writing
+     * landmarks but not management of categories of landmark stores, a call to
+     * &lt;code&gt;getActions&lt;/code&gt; will return the string "read,write".&lt;/p&gt;
+     * 
+     * @return the canonical string representation of the actions 
+     */
+    public String getActions() {
+        return null;
+    }
+
+}
+
+	</pre></body>
+</html>

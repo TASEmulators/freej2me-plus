@@ -1,0 +1,3739 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <title>Appendix&nbsp;E.&nbsp;Sensor definitions</title>
+      <meta name="generator" content="DocBook XSL-NS Stylesheets V1.73.2"></meta>
+   </head>
+   <body>
+      <div class="appendix" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h2 class="title"><a id="d4e1"></a>Appendix&nbsp;E.&nbsp;Sensor definitions
+                  </h2>
+               </div>
+            </div>
+         </div>
+         	
+         	
+         <p> Sensor definitions mean information that is
+            needed in populating a 
+            <code class="literal">SensorInfo</code>
+            and a 
+            <code class="literal">ChannelInfo</code>
+            objects. All the information cannot be
+            defined, because it is vendor specific. This appendix will describe
+            some of the needed information such as a data type, a unit, and
+            measurement rates. The example sensors are selected based on
+            expected popularity and frequency. Needed quantities and context
+            types are given in Appendix A. Finding sensors.
+         </p>
+         <p>The goal of these recommendations is to help in unifying the
+            sensor implementations accross different manufacturer
+            platforms.
+         </p>
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            An accelerometer
+         </h3>
+         <p>An accelerometer is measuring acceleration of the device. The
+            context type is 
+            <code class="literal">SensorInfo.CONTEXT_TYPE_USER</code>
+            , because
+            the acceleration is caused by the user moving the device.
+         </p>
+         <p>
+            <span class="bold"><strong>Table E.1. Parameter values with the
+                  measurement range [-2g,2g]</strong></span>
+            
+         </p>
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="100"></col>
+                  <col width="80"></col>
+                  <col width="50"></col>
+                  <col width="150"></col>
+                  <col width="130"></col>
+                  <col width="107"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="left" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Resolution</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> axis_x</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-19.61, +19.61]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8-bit/12-bit</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m/s^2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> axis_y</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-19.61, +19.61]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8-bit/12-bit</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m/s^2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> axis_z</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-19.61, +19.61]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8-bit/12-bit</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m/s^2</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         <p>
+            <span class="bold"><strong>Table E.2. Parameter values with the
+                  measurement range [-6g,6g]</strong></span>
+            
+         </p>
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="100"></col>
+                  <col width="80"></col>
+                  <col width="50"></col>
+                  <col width="150"></col>
+                  <col width="130"></col>
+                  <col width="107"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Resolution</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> axis_x</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-58.84, +58.84]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8-bit/12-bit</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m/s^2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> axis_y</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-58.84, +58.84]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8-bit/12-bit</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m/s^2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> axis_z</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-58.84, +58.84]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8-bit/12-bit</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m/s^2</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         <p>
+            The accelerometer is a public sensor and does not require
+            permissions.
+         </p>
+         <div class="sect2" lang="en">
+            <div class="titlepage">
+               <div>
+                  <div>
+                     <h3 class="title"><a id="d4e153"></a>Axes of a phone with an accelerometer
+                     </h3>
+                  </div>
+               </div>
+            </div>
+            <div class="informaltable">
+               
+               <table border="0">
+                  <colgroup>
+                     <col width="200"></col>
+                     <col width="350"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td>
+                                    
+                           <p>
+                                                
+                           </p>
+                           <div class="itemizedlist">
+                              <ul type="disc">
+                                 <li>
+                                                          
+                                    <p> The x and y axis define a plane called the phone main plane.
+                                       The direction of z axis is perpendicular to the phone main
+                                       plane
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                                          
+                                    <p> -x is to the left from the phone, +x is to the right. In the
+                                       stationary position x is positive if the phone is lying down on the
+                                       side with the display to the left and number pad to the right
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                                          
+                                    <p> -y is down, +y is up. In the stationary position y is positive
+                                       if the phone is standing straight up with display up on a
+                                       table.
+                                    </p>
+                                    
+                                 </li>
+                                 <li>
+                                                          
+                                    <p> -z is away from the user, +z towards the user. In stationary
+                                       position z is positive if the phone is lying on a table with the
+                                       display upwards.
+                                    </p>
+                                    
+                                 </li>
+                              </ul>
+                           </div>
+                           <p>
+                              
+                           </p>
+                           
+                        </td>
+                        <td rowspan="5" align="left" valign="top">
+                                           
+                           <p>
+                                                
+                           </p>
+                           <div class="informalfigure">
+                                                  
+                              <div class="mediaobject"><img src="javax/microedition/sensor/doc-files/monodisplay.png"></img></div>
+                              
+                           </div>
+                           <p>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+            <p>Figure E.1: A mono-display
+               device and its co-ordinate axes
+            </p>
+         </div>
+         <div class="sect2" lang="en">
+            <div class="titlepage">
+               <div>
+                  <div>
+                     <h3 class="title"><a id="d4e179"></a>Necessary configurations of an accelerometer: an example
+                     </h3>
+                  </div>
+               </div>
+            </div>
+            <p>
+               <span class="bold"><strong>Table E.3. ChannelInfo information of
+                     axis_x:</strong></span>
+               
+            </p>
+            <div class="informaltable">
+               
+               <table border="1">
+                  <colgroup>
+                     <col width="150"></col>
+                     <col width="347"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td align="center" valign="top">
+                                    
+                           <p>
+                                                <span class="bold"><strong>Field</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                        <td align="center" valign="top">
+                                           
+                           <p>
+                                                <span class="bold"><strong>Value</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Name</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "axis_x"</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Accuracy</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 0.025</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Data type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> ChannelInfo.TYPE_DOUBLE</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Measurement range</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 
+                              [-19.61,19.61],[-58.84,58.84]
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Resolution</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 0.01 in
+                              [-19.61,19.61]; 0.003 in [-58.84,58.84]
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Unit</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "m/s^2"</p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+            <p>
+               <span class="bold"><strong>Table E.4. ChannelInfo information of
+                     axis_y:</strong></span>
+               
+            </p>
+            <div class="informaltable">
+               
+               <table border="1">
+                  <colgroup>
+                     <col width="150"></col>
+                     <col width="347"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td align="center" valign="top">
+                                    
+                           <p>
+                                                <span class="bold"><strong>Field</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                        <td align="center" valign="top">
+                                           
+                           <p>
+                                                <span class="bold"><strong>Value</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Name</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "axis_y"</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Accuracy</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 0.025</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Data type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> ChannelInfo.TYPE_DOUBLE</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Measurement range</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 
+                              [-19.61,19.61],[-58.84,58.84]
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Resolution</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 0.01 in
+                              [-19.61,19.61]; 0.003 in [-58.84,58.84]
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Unit</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "m/s^2"</p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+            <p>
+               <span class="bold"><strong>Table E.5. ChannelInfo information of
+                     axis_z:</strong></span>
+               
+            </p>
+            <div class="informaltable">
+               
+               <table border="1">
+                  <colgroup>
+                     <col width="150"></col>
+                     <col width="347"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td align="center" valign="top">
+                                    
+                           <p>
+                                                <span class="bold"><strong>Field</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                        <td align="center" valign="top">
+                                           
+                           <p>
+                                                <span class="bold"><strong>Value</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Name</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "axis_z"</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Accuracy</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 0.025</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Data type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> ChannelInfo.TYPE_DOUBLE</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Measurement range</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 
+                              [-19.61,19.61],[-58.84,58.84]
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Resolution</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> 0.01 in
+                              [-19.61,19.61]; 0.003 in [-58.84,58.84]
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Unit</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "m/s^2"</p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+            <p>
+               <span class="bold"><strong>Table E.6. SensorInfo of an
+                     accelerometer:</strong></span>
+               
+            </p>
+            <div class="informaltable">
+               
+               <table border="1">
+                  <colgroup>
+                     <col width="150"></col>
+                     <col width="400"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td align="center" valign="top">
+                                    
+                           <p>
+                                                <span class="bold"><strong>Field</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                        <td align="center" valign="top">
+                                           
+                           <p>
+                                                <span class="bold"><strong>Value</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Quantity</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "acceleration"</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Context type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> SensorInfo.CONTEXT_TYPE_USER</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Connection type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> SensorInfo.CONN_EMBEDDED</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Model</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> vendor specific (e.g.
+                              "LinearAccelerometerA")
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> URL</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "sensor:acceleration;contextType=user;model=LinearAccelerometerA"</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                           
+                           <p> Description</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                           
+                           <p> "acceleration sensor.
+                              axis_x channel gives acceleration in x axis direction, where move
+                              to left gives negative values and to right positive values. axis_y
+                              channel gives acceleration in y axis direction, where move upwards
+                              gives positive value and downwards negative value. Axis_z channel
+                              gives acceleration in z axis direction, where move toward the user
+                              is positive and away is negative. The sensor is always on."
+                           </p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+         </div>
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            An ambient light sensor
+         </h3>
+         
+         
+         <p>An ambient light sensor measures the
+            intensity of the ambient light, as the total luminous flux incident
+            on a surface. A used unit is lux (lx).
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.7. Sensor information of an
+                  "ambient_light" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> ambient_light</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,65535]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> lx</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The largest value of the measurement range
+            achieved with the available 16 bits is:
+         </p>
+         
+         <p>2^16 -1 = 65536 -1 =65535</p>
+         
+         <p>The ambient light sensor is a public sensor
+            and does not require permissions.
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A battery charge sensor
+         </h3>
+         
+         
+         <p>The battery charge sensor measures the battery charge level of
+            the device. It shall represent the charge level as a percentage of
+            the maximum charge level of the battery:
+         </p>
+         
+         <p>0% =empty, 100% = full.</p>
+         
+         <p>
+            <span class="bold"><strong>Table E.8. Sensor information of a
+                  "battery_charge" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="140"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> battery_charge</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,100]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> %</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The battery charge sensor is a public sensor
+            and requires no permissions.
+         </p>
+         
+         	
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A charger state sensor
+         </h3>
+         
+         
+         <p>This sensor indicates if the device is
+            connected to a charger or not:
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.9. Sensor information of a
+                  "charger_state" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> charger_state</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,1]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> boolean</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>A "not charged" state equals 0.</p>
+         
+         <p>A "charged" state equals 1.</p>
+         
+         <p>Accuracy is -1, and thus uncertainty values
+            are always 0.
+         </p>
+         
+         <p>The "charger_state" sensor is a public sensor
+            and does not require permissions.
+         </p>
+         
+         	
+         	
+         		
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A double tap sensor
+         </h3>
+         
+         
+         <p>This sensor indicates if the device is double tapped
+            and also the direction of tapping:
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.10. Sensor information of a
+                  "double_tap" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p>double_tap</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [1,63]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p>int</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>1 equals axis_x plus direction</p>
+         
+         <p>2 equals axis_x minus direction</p>
+         
+         <p>3 equals axis_x direction unknown</p>
+         
+         <p>4 equals axis_y plus direction</p>
+         
+         <p>8 equals axis_y minus direction</p>
+         
+         <p>12 equals axis_y direction unknown</p>
+         
+         <p>16 equals axis_z plus direction</p>
+         
+         <p>32 equals axis_z minus direction</p>
+         
+         <p>48 equals axis_z direction unknown</p>
+         
+         <p>63 equals direction unknown</p>
+         
+         <p>Figure E.2. illustrates the axes and directions. The "double_tap" sensor is a public sensor
+            and does not require permissions.
+         </p>
+         
+         	
+         	
+         	
+         	
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A fingerprint sensor
+         </h3>
+         
+         
+         <p>The fingerprint sensor is used to identify
+            the user. The data from the sensor can be offered in various
+            formats. It can be low level information, such as a byte array, or
+            more processed data, such as an identity. The Object type to be
+            returned is not specified.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.11. Sensor information of a
+                  "fingerprint" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="165"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> id</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Object</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> id</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> finger_id</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [-5,5]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> finger_id</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The id Object must be unique. Every finger
+            must also have a unique id since several fingerprints can be saved
+            for one user.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.12. Finger ids:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="165"></col>
+                  <col width="100"></col>
+               </colgroup>
+               <tbody>
+                  <tr>
+                     <td align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Finger</strong></span>
+                           
+                        </p>
+                        
+                     </td>
+                     <td align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>id</strong></span>
+                           
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Left
+                           little finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -5</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Left
+                           ring finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -4</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Left
+                           middle finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -3</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Left
+                           index finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Left
+                           thumb
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -1</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Not
+                           identified
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Right
+                           thumb
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 1</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Right
+                           index finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Right
+                           middle finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 3</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Right
+                           ring finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 4</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> Right
+                           little finger
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 5</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>To be able to report errors in data reading, following codes are
+            to be used. The fingerprint sensor does not have to support all the
+            error codes defined, but MUST NOT define a new error code whose
+            meaning overlaps with any of the codes listed here. The fingerprint
+            sensor MAY also define a new proprietary error code if the desired
+            error type is missing.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.13. Error codes:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="200"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Error code
+                                 as int value</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Meaning</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 1</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> The
+                           data is not from a live finger
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 2</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was swept too fast
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 3</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was swept too slowly
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 4</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           position was too far in the left
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 5</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           position was too far in the right
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 6</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was positioned too close to the top of the sensor
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 7</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was positioned too close to the bottom of the sensor
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 8</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was pressed too lightly
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 9</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was pressed too heavily
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 10</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was rotated too much during measurement
+                        </p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> 11</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> Finger
+                           was swept in skew angle
+                        </p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The
+            fingerprint sensor is a private sensor and requires permission javax.microedition.sensor.PrivateSensor.
+         </p>
+         
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A flip state sensor
+         </h3>
+         
+         
+         <p>The flip state sensor indicates the state of the flip of the
+            device: open or closed. The two states are applicable to devices
+            that can have 2 different physical states, for example, a clamshell
+            type device.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.14. Sensor information of a
+                  "flip_state" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> flip_state</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,1]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> boolean</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The closed state equals 0</p>
+         
+         <p>The opened state equals 1</p>
+         
+         <p>Accuracy is -1, and thus uncertainty is
+            always 0.
+         </p>
+         
+         <p>The flip state sensor is a public sensor and
+            requires no permissions.
+         </p>
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A heart rate and RR interval
+            sensors
+         </h3>
+         
+         
+         <p>Two types of sensors measuring heart rate are
+            defined:
+         </p>
+         
+         <div class="orderedlist">
+            <ol type="1">
+               <li>
+                  
+                  <p>
+                     <code class="literal">heart_rate</code>
+                     
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p>
+                     <code class="literal">RR_interval</code>
+                     
+                  </p>
+                  
+               </li>
+            </ol>
+         </div>
+         
+         <p>
+            The 
+            <code class="literal">heart_rate</code>
+            sensor is giving data as averaged beats
+            per minute.
+         </p>
+         
+         <p> 
+            <span class="bold"><strong>Table E.15. Sensor information of a
+                  "heart_rate" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> heart_rate</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,240]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> bpm</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>For more serious health application it is
+            important to measure, for example, RR interval changes; RR
+            intervals can be got with the 
+            <code class="literal">RR_interval</code>
+            sensor.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.16. Sensor information of a
+                  "RR_interval" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> RR_interval</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> -3</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,10000]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> s</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>In normal cases the range for RR intervals is [250ms, 2500ms].</p>
+         
+         <p>Both the 
+            <code class="literal">heart_rate</code>
+            and 
+            <code class="literal">RR_interval</code>
+            sensors are
+            private sensors and require permission javax.microedition.sensor.PrivateSensor.
+         </p>
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A network field intensity sensor (a
+            signal strength sensor)
+         </h3>
+         
+         
+         <p>The network field intensity sensor measures the strength of the
+            current network connection. The quality or strength of the current
+            network signal is expressed as a percentage: 0 =no signal, 100 =best signal
+         </p>
+         
+         <p>The actual field intensity values are measured in dBm units.
+            When converting dBm to % value, the result must comply with the
+            number of bars shown in the device screen.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.17. Sensor information of a
+                  "network_field_intensity" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="151"></col>
+                  <col width="109"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="159"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> network_field_intensity</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,100]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> %</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The
+            network field intensity sensor is a public sensor and requires no
+            permissions.
+         </p>
+         
+         <div class="sect2" lang="en">
+            <div class="titlepage">
+               <div>
+                  <div>
+                     <h3 class="title"><a id="d4e925"></a>Necessary configurations of a network field intensity sensor:
+                        an example
+                     </h3>
+                  </div>
+               </div>
+            </div>
+            
+            
+            <p>
+               <span class="bold"><strong>Table E.18. ChannelInfo of a
+                     "network_field_intensity" sensor:</strong></span>
+               
+            </p>
+            
+            <div class="informaltable">
+               
+               <table border="1">
+                  <colgroup>
+                     <col width="150"></col>
+                     <col width="400"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td align="center" valign="top">
+                                      
+                           <p>
+                                                  <span class="bold"><strong>Field</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                        <td align="center" valign="top">
+                                             
+                           <p>
+                                                  <span class="bold"><strong>Value</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Name</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> 
+                              "network_field_intensity"
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Accuracy</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> 0.02</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Data type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> ChannelInfo.TYPE_INT</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Measurement range</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> [0,100]</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Resolution</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> 1</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Unit</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> "%"</p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+            
+            <p>
+               <span class="bold"><strong>Table E.19. SensorInfo of a
+                     "network_field_intensity" sensor:</strong></span>
+               
+            </p>
+            
+            <div class="informaltable">
+               
+               <table border="1">
+                  <colgroup>
+                     <col width="150"></col>
+                     <col width="400"></col>
+                  </colgroup>
+                  <tbody>
+                     <tr>
+                        <td align="center" valign="top">
+                                      
+                           <p>
+                                                  <span class="bold"><strong>Field</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                        <td align="center" valign="top">
+                                             
+                           <p>
+                                                  <span class="bold"><strong>Value</strong></span>
+                              
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Quantity</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> 
+                              "network_field_intensity"
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Context type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> SensorInfo.CONTEXT_TYPE_DEVICE</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Connection type</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> SensorInfo.CONN_EMBEDDED</p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Model</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> vendor specific (e.g.
+                              "generic2")
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> URL</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> 
+                              "sensor:network_field_intensity;contextType=device;model=generic2"
+                           </p>
+                           
+                        </td>
+                     </tr>
+                     <tr>
+                        <td align="left" valign="top">
+                                             
+                           <p> Description</p>
+                           
+                        </td>
+                        <td align="left" valign="top">
+                                             
+                           <p> 
+                              "network_field_intensity sensor. network_field_intensity channel
+                              gives signal strength of the used network. The sensor is always
+                              on."
+                           </p>
+                           
+                        </td>
+                     </tr>
+                  </tbody>
+               </table>
+               
+            </div>
+            
+         </div>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">A proximity sensor</h3>
+         
+         
+         <p>The proximity sensor is a sensor giving the distance between the
+            person and the device. An accuracy and a measurement range varies a
+            lot depending on technique used, whether for example optical,
+            capacitive, or pyroelectric.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.20. Sensor information of a "proximity"
+                  sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> proximity</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> double</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,2.5]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> m</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>
+            The proximity sensor is a public sensor and does not require
+            permissions. 
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">An orientation sensor</h3>
+         
+         
+         <p>The orientation sensor provides coarse-grained information of an
+            orientation of a device. The information can be used to detect, for
+            example, a switch from a portrait to a landscape orientation.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.21. Sensor information of an
+                  "orientation" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> orientation</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,32]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> unit</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The predefined states are:</p>
+         
+         <p>
+            
+         </p>
+         <div class="informalfigure">
+            
+            <div class="mediaobject"><img src="javax/microedition/sensor/doc-files/orientationImg.png"></img></div>
+            
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>Figure E.3: Orientation states, the phone in A is in upright position.</p>
+         
+         <p>
+            <span class="bold"><strong>Table E.22. The data value constants of
+                  orientation:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="118"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Orientation</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Value</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> undefined</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> A</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 1</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> B</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 2</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> C</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 3</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> D</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 4</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> E</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 5</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> F</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 6</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The orientation sensor is a public sensor and
+            does not require permissions.
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A rotation sensor
+         </h3>
+         
+         
+         <p>A rotation sensor provides a very detailed information about the
+            orientation of the device. When an accelerometer was handled, the
+            x, y, and z directions were fixed. Rotations are done around these
+            axes accordingly. Games and UI elements can use a rotation sensor
+            as an input modality.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.23. Information of a "rot_x"
+                  channel:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> rot_x</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,359]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> degree</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>
+            
+         </p>
+         <div class="informalfigure">
+            
+            <div class="mediaobject"><img src="javax/microedition/sensor/doc-files/rotationXImg.png"></img></div>
+            
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>Figure E.4: Rotation
+            around x axis and corresponding "rot_x" channel data values.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.24. Information of a "rot_y"
+                  channel:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> rot_y</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,359]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> degree</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>
+            
+         </p>
+         <div class="informalfigure">
+            
+            <div class="mediaobject"><img src="javax/microedition/sensor/doc-files/rotationYImg.png"></img></div>
+            
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>Figure E.5: Rotation
+            around y axis and corresponding "rot_y" channel data values.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.25. Information of a "rot_z"
+                  channel:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="118"></col>
+                  <col width="94"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="125"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> rot_z</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,359]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> degree</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         
+         
+         
+         <p>
+            
+         </p>
+         <div class="informalfigure">
+            
+            <div class="mediaobject"><img src="javax/microedition/sensor/doc-files/rotationZImg.png"></img></div>
+            
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>Figure E.6: Rotation
+            around z axis and corresponding "rot_z" channel data values.
+         </p>
+         
+         <p>Data value equals 0, when it cannot be defined. In the case of
+            an accelerometer, the rotation value cannot be defined when the
+            corresponding axis is parallel to the gravitational force or the
+            device is in free fall. In the case of the magnetometer, it is
+            difficult to measure values, when the axis is parallel to the
+            magnetic field. Validity must be set on to get information about
+            invalid values. Setting is done by calling 
+            <code class="literal">SensorConnection.getData()</code>
+            / 
+            <code class="literal">SensorConnection.setDataListener()</code>
+            with 
+            <code class="literal">isValidityIncluded</code>
+            as 
+            <code class="literal">true</code>
+            .
+         </p>
+         
+         <p>The rotation sensor is a public sensor and
+            does not require permissions.
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A sound level setting sensor
+         </h3>
+         
+         
+         <p>The sound level sensor represents the current sound level
+            setting of the device as a percentage of the maximum sound volume
+            setting:
+         </p>
+         
+         <p>0 =MUTE, 100 = MAX</p>
+         
+         <p>
+            <span class="bold"><strong>Table E.26. Sensor information of a
+                  "sound_level_setting" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="158"></col>
+                  <col width="109"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="159"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> sound_level_setting</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,100]</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> %</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The sound level setting sensor is a public
+            sensor and does not require permissions.
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            A step counter
+         </h3>
+         
+         
+         <p>The step counter provides the count of taken steps cumulatively.
+            The count is reset when the data retrieval is restarted. In the
+            asynchronous mode, the 
+            <code class="literal">DataListener</code>
+            is notified by
+            each step. In the synchronous mode, the current sum of steps is
+            returned immediately.
+         </p>
+         
+         <p>
+            <span class="bold"><strong>Table E.27. Sensor information of a
+                  "step_count" sensor:</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="158"></col>
+                  <col width="109"></col>
+                  <col width="94"></col>
+                  <col width="120"></col>
+                  <col width="159"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="center" valign="top">
+                                 
+                        <p>
+                                             <span class="bold"><strong>Channel
+                                 name</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Data
+                                 type</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Scale</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>MeasurementRange</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th align="center" valign="top">
+                                        
+                        <p>
+                                             <span class="bold"><strong>Symbol of
+                                 the unit</strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left" valign="top">
+                                        
+                        <p> step_count</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> int</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> 0</p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> [0,
+                                             <code class="literal">Integer.MAX_VALUE</code>]
+                        </p>
+                        
+                     </td>
+                     <td align="left" valign="top">
+                                        
+                        <p> unit</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         <p>The step counter is a public sensor and does
+            not require permissions.
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Boolean value sensors
+         </h3>
+         
+         
+         <p>If the sensor is returning boolean-type
+            values, such as "on"/"off", "active"/"idle" or 
+            <code class="literal">true</code>
+            /
+            <code class="literal">false</code>
+            , it must instead of using 
+            <code class="literal">Boolean</code>
+            objects, use 
+            <code class="literal">int</code>
+            values and 
+            <code class="literal">boolean</code>
+            unit.
+         </p>
+         
+         <p>The value of 0 indicates "off","idle", and 
+            <code class="literal">false</code>
+            , whereas the value of 1 indicates "on",
+            "active", and 
+            <code class="literal">true</code>
+            .
+         </p>
+         
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Car related sensors
+         </h3>
+         
+         
+         <p>JSR 298 defines the set of car related
+            sensors, please refer to the Telematics API for Java ME
+            specification (JSR 298) for more information. The specification can
+            be downloaded from 
+            <a class="link" href="http://www.jcp.org/en/jsr/detail?id=298">JSR 298 web page</a>
+            .
+         </p>
+         
+         <p>The subset of JSR 256 has been borrowed for JSR 298 to avoid
+            overlapping functionality. The subset contains the core
+            functionality to fetch data from a sensor. The other way to do this
+            is to have both the JSR 256 and JSR 298 implemented in the same
+            device. The car related sensors have a 
+            <code class="literal">SensorInfo.CONTEXT_TYPE_VEHICLE</code>
+            context type.
+         </p>
+         
+         
+      </div>
+   </body>
+</html>

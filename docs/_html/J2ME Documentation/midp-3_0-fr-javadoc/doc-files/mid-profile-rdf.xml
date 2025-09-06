@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rdf:RDF [
+    <!ENTITY ns-rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+    <!ENTITY ns-rdfs 'http://www.w3.org/2000/01/rdf-schema#'>
+    <!ENTITY ns-prf  'http://www.openmobilealliance.org/tech/profiles/UAPROF/ccppschema-20070511#'>
+    <!ENTITY prf-dt  'http://www.openmobilealliance.org/tech/profiles/UAPROF/xmlschema-20030226#'>
+    <!ENTITY xsd     'http://www.w3.org/2001/XMLSchema#'>
+    <!ENTITY ns-midf 'http://opensource.motorola.com/midp3/midprofile#'>
+]>
+
+<rdf:RDF
+  xmlns      = '&ns-rdf;'
+  xmlns:rdf  = '&ns-rdf;'
+  xmlns:rdfs = '&ns-rdfs;'
+  xmlns:prf  = '&ns-prf;'
+  xmlns:midf = '&ns-midf'>
+             
+    <rdf:Description rdf:ID='MIDProfile'>
+        <rdf:type rdf:resource='&ns-rdfs;Class'/>
+        <rdfs:subClassOf rdf:resource='&ns-prf;Component'/>
+        <rdfs:label>MIDProfile</rdfs:label>
+        <rdfs:comment>
+            Description: A platform based on MIDP.
+        </rdfs:comment>
+    </rdf:Description>
+    
+    <rdf:Description rdf:ID='MIDSharedLibrary'>
+        <rdf:type rdf:resource='&ns-rdf;Property'/>
+        <rdf:type rdf:resource='&ns-rdf;Bag'/>
+        <rdfs:domain rdf:resource='#MIDProfile'/>
+        <rdfs:label>MIDShareLibrary</rdfs:label>
+        <rdfs:comment>
+            Description: A MIDP Shared Library described by name, vendor, version,
+                         and JAR hash. 
+                         The values are separated by ";" (semi-colon).
+            Type: 	  Literal (Bag) String with multiple fields.
+            Resolution:   Append
+            Examples:     "QSort; BigCo; 1.1"
+        </rdfs:comment>
+    </rdf:Description>
+    
+    <rdf:Description rdf:ID='MIDSystemProperty'>
+        <rdf:type rdf:resource='&ns-rdf;Property'/>
+        <rdf:type rdf:resource='&ns-rdf;Bag'/>
+        <rdfs:domain rdf:resource='#MIDProfile'/>
+        <rdfs:label>MIDSystemProperty</rdfs:label>
+        <rdfs:comment>
+             Description: A System property defined by the platform.
+             Type:        Literal (Bag) String String
+             Resolution:  Append
+             Examples:    "microedition.locale fr-FR", "microedition.profiles MIDP-3.0"
+        </rdfs:comment>
+    </rdf:Description>
+        
+    <rdf:Description rdf:ID='SecurityDomain'>
+        <rdf:type rdf:resource='&ns-rdf;Property'/>
+        <rdf:type rdf:resource='&ns-rdf;Bag'/>
+        <rdfs:domain rdf:resource='#MIDProfile'/>
+        <rdfs:label>SecurityDomain</rdfs:label>
+        <rdfs:comment>
+            Description: A security domain is a property with values for 
+                         Domain Name, Certificate Subject and Certificate hash. 
+                         For each root certificate, a separate entry is required.
+            Type:        Literal (Bag) String String String
+            Resolution:  Append
+            Examples:    "Operator XYZCorp,Inc.  a23438fd8e8a8a8a8a8a8aaaaaaa" 
+        </rdfs:comment>
+    </rdf:Description>    
+    
+    <rdf:Description rdf:ID='Certificate'>
+        <rdf:type rdf:resource='&ns-rdf;Property'/>
+        <rdf:type rdf:resource='&ns-rdf;Bag'/>
+        <rdfs:domain rdf:resource='#MIDProfile'/>
+        <rdfs:label>Certificate</rdfs:label>
+        <rdfs:comment>
+            Description: A certificate identified by an alias and its hash
+                         used for access authorization.
+                         For each certificate, a separate entry is required.
+            Type:        Literal (Bag) String String
+            Resolution:  Append
+            Examples:    "XYZCorp  a23248fd8e8a8a929a8aaaaaaa" 
+        </rdfs:comment>
+    </rdf:Description>
+    
+    <rdf:Description rdf:ID='PushProtocols'>
+        <rdf:type rdf:resource='&ns-rdf;Property'/>
+        <rdf:type rdf:resource='&ns-rdf;Bag'/>
+        <rdfs:domain rdf:resource='#MIDProfile' />
+        <rdfs:label>PushProtocols</rdfs:label>
+        <rdfs:comment>
+            Description: The list of push protocols supported by MIDP.
+            Type:        Literal (Bag) String
+            Resolution:  Append
+            Examples:    "sms", "socket" 
+        </rdfs:comment>
+    </rdf:Description>
+</rdf:RDF>

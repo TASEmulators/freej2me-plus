@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>URI Normalization</title>
+  </head>
+
+  <body>
+      <h2>URI Normalization</h2>
+
+<code>GCFPermission</code> URI strings are normalized per the rules of
+<a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a> plus the
+additional procedures described below.
+
+<h3><u>Protocol Scheme</u></h3>
+Note that, per <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>,
+the protocol scheme component of a URI is considered case-insensitive,
+and is normalized to lower case.
+
+<h3><u>Host Name</u></h3>
+Note that, per <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>,
+any host name component of a URI is considered case-insensitive,
+and is normalized to lower case.
+
+<h3><u>IP Address</u></h3>
+Note that, per <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>,
+any IP address component of a URI is considered case-insensitive,
+and is normalized to lower case.
+<p>
+In addition, IPv6 addresses are normalized by removing leading zeros and
+converting the address to uncompressed form.
+
+<h3><u>Port Specification</u></h3>
+The <code>GCFPermission</code>
+<a href="rfc3986-extensions.html">extensions</a> to the URI syntax of
+<a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a> permit
+the specification of a port range or single port number.
+
+<h4>Port range</h4>
+If a port range is stated or implied in the URI string, the URI is normalized
+to explicitly state both the lower and upper bounds to the range, with leading
+zeros removed, separated by the "-" character.  (A port range
+with identical upper and lower bounds is treated as a single port number;
+see below.)  For example:
+<pre>
+    "ssl://www.example.com:*" =&gt; "ssl://www.example.com:0-65535"
+    "socket://www.example.com:-1024" =&gt; "socket://www.example.com:0-1024"
+    "socket://www.example.com:08000-" =&gt; "socket://www.example.com:8000-65535"
+    "datagram//:" =&gt; "datagram://:1024-65535"
+</pre>
+
+
+<h4>Port number</h4>
+If a single port number is stated or implied in the port specification of the
+URI string, the URI is normalized according to the following rules:
+<ul>
+<li> <b>If a protocol-specific default port is stated or implied</b> : The port number is omitted.
+<li> <b>Otherwise</b> : The port number is stated with leading zeros removed.
+</ul>
+
+For example:
+<pre>
+    "http://www.example.com/" =&gt; "http://www.example.com/"
+    "http://www.example.com:80" =&gt; "http://www.example.com/"
+    "http://www.example.com:08080" =&gt; "http://www.example.com:8080/"
+    "http://www.example.com:8080-8080" =&gt; "http://www.example.com:8080/"
+</pre>
+
+
+<h3><u>CommProtocolPermission URIs</u></h3>
+<code>CommProtocolPermission</code> URI strings are normalized according
+to the following rules:
+<ul>
+<li> If a parameter appears more than once in the options list,
+the URI is normalized to include only the last occurrence of the parameter. 
+<li> Parameters in the options list are normalized to the following order:
+<em>baudrate, bitsperchar, stopbits, parity, blocking, autocts, autorts.</em>
+</ul>
+
+For example:
+<pre>
+    "comm:port1;baudrate=300;baudrate=600" =&gt; "comm:port1;baudrate=600"
+    "comm:port1;stopbits=1;baudrate=300" =&gt; "comm:port1;baudrate=300;stopbits=1"
+</pre>
+
+
+<h3><u>FileProtocolPermission URIs</u></h3>
+<code>FileProtocolPermission</code> URI strings are all normalized to the form:
+<pre>
+    file://{pathname}
+</pre>
+
+For example:
+<pre>
+    "file:/etc/hosts" =&gt; "file:///etc/hosts"
+    "file://localhost/etc/hosts" =&gt; "file:///etc/hosts"
+</pre>
+
+  </body>
+</html>

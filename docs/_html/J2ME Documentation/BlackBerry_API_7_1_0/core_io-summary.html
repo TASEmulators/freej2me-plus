@@ -1,0 +1,586 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN""http://www.w3.org/TR/REC-html40/frameset.dtd">
+<!--NewPage-->
+<HTML>
+<HEAD>
+<TITLE>
+BlackBerry Java SDK 7.0 API Reference: Network Connections
+</TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+<script type="text/javascript">
+<!--
+// switchMenu - Expand or collapse a code sample div. Takes two arguments:
+// divSample, the id of the div to expand, divList
+function switchMenu(divSample, sourceLink) {
+   var el = document.getElementById(divSample).style;
+   if (el.display == 'none') {
+      el.display = 'block';
+      sourceLink.className = 'explink_minus';
+   } else {
+      el.display = 'none';
+      sourceLink.className = 'explink_plus';
+   }
+}
+
+// collapseAll - Collapses all expandable divs and adds the + graphic automatically when the page loads.
+// This is done so that users who do not have JS enabled can still see the code samples.
+function collapseAll() {
+   // Collapse all expandable divs
+   var divsOnPage = document.getElementsByTagName('div');
+   for (var x = 0; x < divsOnPage.length; x++) {
+      if (divsOnPage[x].id.substr(0,3) == "IO_") {
+         divsOnPage[x].style.display = 'none';
+      }
+   }
+
+   // Change all the expand/collapse links to hlink_plus, to show a plus sign beside it
+   var linksOnPage = document.getElementsByTagName('a');
+   for (var y = 0; y < linksOnPage.length; y++) {
+      if (linksOnPage[y].className == "explink") {
+         linksOnPage[y].className = "explink_plus";
+      }
+   }
+}
+//-->
+</script>
+
+</HEAD>
+<BODY BGCOLOR="white" onLoad="collapseAll();">
+
+<!-- ========== START OF NAVBAR ========== -->
+<A NAME="navbar_top"><!-- --></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0">
+<TR>
+<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <FONT CLASS="NavBarFont1">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="index-files/index-1.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" TARGET="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="UI-summary.html" TARGET="_top"><B>NO FRAMES</B></A></FONT></TD>
+</TR>
+</TABLE>
+<!-- =========== END OF NAVBAR =========== -->
+<HR>
+<FORM action="https://www.blackberry.com/DocsFeedback/" method="GET" target="_new">
+<INPUT type="hidden" name="title" value="API Reference">
+<INPUT type="hidden" name="source" value="External">
+
+<INPUT type="hidden" name="version" value="7.0.0">
+<INPUT type="hidden" name="classname" value="Network Connections overview">
+<INPUT type="submit" value="Submit Feedback" /></FORM>
+
+<BR>
+
+<!--- <body> -->
+
+<body>
+<h1 align="center">Network Connections<a name="UI_TOP"></a></h1>
+
+<h2>Overview</h2>
+<p>
+This category contains the packages you can use to manage input and output (I/O) data streams for Java applications on
+a BlackBerry&trade; device. The APIs in this category provide a wide range of functionality. You can use them to connect and work
+with everything from a MicroSD form factor smart card to an enterprise LDAP service. This category includes the implementation of the Generic
+Connection Framework (GCF). It also includes the Network API, which builds upon the GCF to make it easier to determine which transport types
+are available and to establish network connections over those transport types. 
+</p>
+
+<h3>Generic Connection Framework (GCF)<a name="IO_GCF" id="IO_GCF"></a></h3>
+<p>Packages: 
+<span class="style2">
+<a href="javax/microedition/io/package-summary.html">javax.microedition.io</a>,
+<a href="java/io/package-summary.html">java.io</a>
+</span></p>
+
+<p>
+The GCF is an easy-to-use, extensible framework that lets you create connections and perform input and output operations. Although the GCF was originally created because
+the standard Java connection libraries were too large to implement on mobile devices, it's simplicity has made it a popular choice for I/O tasks on non-mobile devices. In
+fact, JSR 197 describes its implementation in J2SE.
+</p>
+
+<p>
+Every connection you make using the GCF starts with the connection factory, which is implemented by the <a href="javax/microedition/io/Connector.html">Connector</a> class.
+You call <code>Connector.open()</code> to create any type of supported connection. The first parameter to <code>Connector.open()</code> is a URI 
+(as described in <a href="http://www.ietf.org/rfc/rfc2396.txt?number=2396">RFC 2396</a>)
+that specifies the type of connection to make, the endpoint to connect to and optional connection configuration details. When the connection is 
+established, a connection interface that corresponds to the type of connection that was created is returned from the call to <code>Connector.open()</code>.
+You cast the returned connection interface to the appropriate connection subtype according to the URI you specified. 
+</p>
+
+<p>
+The URI's used by the GCF are comprised of three parts:
+<hr>
+<code>(scheme) : (hierarchical location information) ; (additional information)</code>
+<hr>
+</p>
+<p>
+ The <code>(scheme)</code> indicates the protocol to use to establish the connection. The <code>(hierarchical location information)</code> describes
+ the endpoint of the connection. And the <code>(additional information)</code> is used to provide additional configuration details if they are needed.
+</p>
+<p> 
+For example, in the following code snippet, the <code>http</code> protocol is specified along with an IP address to indicate the 
+connection endpoint. Then <code>interface=wifi</code> is included to specify that the WiFi radio should be used to initiate the connection. Because 
+the <code>http</code> protocol was specified, you can cast the returned connection to an <code>HTTPConnection</code> interface.
+</p>
+<table class="codesample">
+  <tr>
+    <td><code>HTTPConnection conn = (HTTPConnection) Connector.open("http://127.0.0.1;interface=wifi");</code></td>
+  </tr>
+</table>
+</p>
+
+<p>
+<table style="background-color:#C0C0C0">
+<tr><td style="background-color:#EDF0F4">
+<b>Important:</b> Many of the operations you can perform with the connections provided by the GCF can block. Do not attempt to work with these connections
+on the event thread. If you do, your application will lock. Create a non-event thread to work over these connections. To learn how to create a non-event
+thread and how to update the UI from such a thread, refer to the <a href="UI-summary.html">User Interface</a> API category overview. 
+</td></tr>
+</table>
+</p>
+
+<p>
+The following table lists the type of connections you can make using the GCF, the scheme to use in the URI and the type of Connection interface
+that is returned by <code>Connector.open()</code>.
+</p>
+
+<!------------------------------->
+<!-- GCF connection type table -->
+<!------------------------------->
+<table class="Small" summary="Table showing types of Connection interfaces returned when listed URL Schemes are specified">
+<tr><th>Type of connection</th><th>URI scheme</th><th>Connection interface returned</th></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>Network</b></td></tr>
+<tr><td>HTTP</td><td>http</td>
+<td><a href="javax/microedition/io/HttpConnection.html" class="style2">HttpConnection</a> or <a href="net/rim/device/api/io/http/HttpServerConnection.html" class="style2">HttpServerConnection</a></td></tr>
+<tr><td>Secure HTTP</td><td>shttp</td><td><a href="javax/microedition/io/HttpsConnection.html" class="style2">HttpsConnection</a></td></tr>
+<tr><td>UDP</td><td>datagram</td><td><a href="javax/microedition/io/UDPDatagramConnection.html" class="style2">UDPDatagramConnection</td></tr>
+<tr><td>Socket</td><td>socket</td><td><a href="javax/microedition/io/SocketConnection.html" class="style2">SocketConnection</td></tr>
+<tr><td>Server Socket</td><td>socketserver</td><td><a href="javax/microedition/io/ServerSocketConnection.html" class="style2">ServerSocketConnection</td></tr>
+<tr><td>Secure Socket</td><td>ssl, tls</td><td><a href="javax/microedition/io/SecureConnection.html" class="style2">SecureConnection</td></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>File</b></td></tr>
+<tr><td>File</td><td>file</td>
+<td><a href="javax/microedition/io/file/FileConnection.html" class="style2">FileConnection</a> or <a href="net/rim/device/api/io/file/ExtendedFileConnection.html" class="style2">ExtendedFileConnection</a></td></tr>
+<tr><td></td><td></td><td></td></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>Bluetooth</b></td></tr>
+<tr><td>Bluetooth Serial Port Profile (BTSPP)</td><td>btspp</td>
+<td><a href="javax/microedition/io/SocketConnection.html" class="style2">SocketConnection</a> or <a href="javax/microedition/io/ServerSocketConnection.html" class="style2">ServerSocketConnection</td></td></tr>
+<tr><td>L2CAP</td><td>btl2cap</td><td><a href="javax\bluetooth\L2CAPConnection.html" class="style2">L2CAPConnection</a></td></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>Messages</b></td></tr>
+<tr><td>Short Messaging Service (SMS)</td><td>sms</td><td><a href="javax/microedition/io/MessageConnection.html" class="style2">MessageConnection</a></td></tr>
+<tr><td>Multimedia Messaging Service (MMS)</td><td>mms</td><td><a href="javax/microedition/io/MessageConnection.html" class="style2">MessageConnection</a></td></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>Serial Port</b></td></tr>
+<tr><td>Logical Serial Port</td><td>comm</td><td><a href="javax/microedition/io/CommConnection.html" class="style2">CommConnection</a></td></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>Java Card</b></td></tr>
+<tr><td>Java Card RMI</td><td>jcrmi</td><td><a href="javax/microedition/jcrmi/JavaCardRMIConnection.html" class="style2">JavaCardRMIConnection</a></td></tr>
+<tr><td colspan="3" style="background-color:#CFECEC"><b>Smart Card Applications</b></td></tr>
+<tr><td>Application Protocol Data Unit (APDU)</td><td>apdu</td><td><a href="javax/microedition/apdu/APDUConnection.html" class="style2">APDUConnection</a></td></tr>
+<tr><td></td><td></td><td></td></tr>
+</table>
+
+<p>
+After you use <code>Connector.open()</code> to retrieve the connection interface for the connection you want to work with, you use methods on the interface to create an input
+or output stream class to enable you to send or receive data over the connection. The stream classes are defined in the <a href="java/io/package-summary.html">java.io</a> package.
+</p>
+
+<p>
+In some cases, you can cast a returned connection interface to a super interface of the ones listed in the table above. Typically, that will result in an 
+interface with less features. For examples of this, see the samples in the <a href="javax/microedition/io/HttpConnection.html" class="style2">HttpConnection</a>
+reference topic.
+</p> 
+
+
+<h4>Network</h4>
+<p>
+Although the GCF provides a uniform, simple syntax for establishing connections, it does not abstract away the fact that there are many ways a
+BlackBerry device can make a network connection. Many devices have a WiFi radio as well as a cellular radio and connections can be made directly or through BES, 
+BIS or WAP proxies. The <code>(Additional Information)</code> component of the connection URI is used to specify which of these many transport possibilites
+should be used to establish a connection. The large number of transport possibilities help ensure that BlackBerry connectivity is robust for end users. But 
+because the capabilities and operating environment of each BlackBerry device is potentially different, you must first probe those device capabilities and 
+environmental factors before you can construct an appropriate connection URI. This can be a challenging task.
+</p>
+<p>
+The following table lists parameters that can be specified in the <code>(additional information)</code> component of network-related connection URIs. 
+</p>
+
+<p>
+<table class="Small">
+<tr><th>Parameter</th><th>Description</th></tr>
+<tr><td><code>deviceside</code></td><td>Specifies whether the connection should be made directly (true) or through a proxy (false)</td></tr>
+<tr><td><code>interface</code></td><td>Can be set to <code>WiFi</code> to force a connection to use a WiFi radio</td></tr>
+<tr><td><code>ConnectionUID</code></td><td>The UID of the service record for the WAP 2.0 gateway through which to connect. WPTCP is the CID of this service record. 
+You can use the <a href="net/rim/device/api/servicebook/ServiceBook.html">ServiceBook</a> class to search for it by its CID. Useful only if a direct TCP connection is made by specifying <code>deviceside=true</code>.</td></tr>
+<tr><td><code>WapGatewayAPN</code></td><td>WAP Gateway Access Point Name</td></tr>
+<tr><td><code>WapGatewayIP</code></td><td>WAP Gateway IP address</td></tr>
+<tr><td><code>WapGatewayPort</code></td><td>WAP Gateway port</td></tr>
+<tr><td><code>WapSourceIP</code></td><td>WAP Source IP address</td></tr>
+<tr><td><code>WapSourcePort</code></td><td>WAP Source port</td></tr>
+<tr><td><code>WapEnableWTLS</code></td><td>Overrides the default use of WTLS on the device. If this parameter is not specified, then the WAP 
+HTTP stack will determine whether to load WTLS based on the WAP gateway port number. Port 9203 is the secure port number of WAP gateways. If this parameter 
+set to <code>true</code> then WTLS is used. If the parameter is set to <code>false</code> then WTLS is not used. 
+</td></tr>
+<tr><td><code>TunnelAuthUsername</code></td><td>User name for APN session</td></tr>
+<tr><td><code>TunnelAuthPassword</code></td><td>Password for APN session</td></tr>
+</table>
+</p>
+
+<p>
+To learn more about how to use these parameters, see the <a href="javax/microedition/io/Connector.html">Connector</a> interface reference topic and the developer
+videos referred to below.
+</p>
+
+<p>
+Although you have the option of writing probing code and constructing the connection URI yourself, if you are working with http, https, socket, ssl or
+tls network connections, you can use the <a href="#IO_net">Network API</a> which makes it easy to probe for available transports and looks after the details of 
+establishing an appropriate connection.
+</p> 
+<p>
+To learn more about the various transports available to BlackBerry devices and how to construct corresponding connection URIs, watch the following developer
+library videos: <a href="http://www.blackberry.com/DevMediaLibrary/view.do?name=NetworkingTransports">Network Transports</a> and 
+<a href="http://www.blackberry.com/DevMediaLibrary/view.do?name=NetworkingTransportsII">Network Transports II</a>.
+
+<h4>File</h4>
+<p>
+Unlike other GCF connection types, if you create a file <code>Connection</code> interface using <code>Connector.open()</code>, it can refer to a non-existant endpoint.
+If the specified endpoint doesn't exist, you can use <a href="javax/microedition/io/file/FileConnection.html#create()">FileConnection.create()</a> to create the file. The
+endpoint can also refer to and allow you to manage directories. You cannot use this mechanism to connect to files that are considered private, like system files for example. 
+</p>
+<p>
+If you want to prevent a file from being read on another device, you can enable Digital Rights Management (DRM) by casting the interface returned by <code>Connector.open()</code> to an
+<a href="net/rim/device/api/io/file/ExtendedFileConnection.html">ExtendedFileConnection</a> interface. This will let you call the 
+<a href="net/rim/device/api/io/file/ExtendedFileConnection.html#enableDRMForwardLock()">ExtendedFileConnection.enableDRMForwardLock()</a> to enable DRM. The 
+<code>ExtendedFileConnection</code> also lets you encrypt files using a <code>CodeSigningKey</code>.
+</p>
+
+<p>
+There is no <code>(additional information)</code> to specify in a <code>FileConnection</code> URI. However, the <code>(hierarchical location information)</code>
+is BlackBerry device specific. Use the following strings for the <code>(hierarchical location information)</code> component of the URI:
+</p>
+<p>
+<table class="Small">
+<tr><th>Description</th><th>Location information</th></tr>
+<tr><td>MicroSD card</td><td>///SDCard</td></tr>
+<tr><td>Device Memory</td><td>///store</td></tr>
+</table>
+</p>
+<p>
+Be sure to including a trailing slash ('/') when specifying a <code>FileConnection</code> URI that refers to a directory. Otherwise, the API interpret that the
+URI is referring to a non-existent file.
+</p>
+
+
+
+<h4>Serial Port</h4>
+<p>The <a href="javax/microedition/io/CommConnection.html" class="style2">CommConnection</a> interface represents a logical serial interface. This does not
+necessarily correspond to a physical RS-232 serial port. The following <code>(additional information)</code> can be provided in the connection URI as a series
+of <code>name=value</code> pairs, separated by apersands (&amp;).
+</p>
+<p>
+<table class="Small" summary="Table showing optional parameters for logical serial port connection type">
+<tr><th>Parameter</th><th>Default</th><th>Description</th></tr>
+<tr><td>baudrate</td><td>device dependent</td><td>The speed of the port</td></tr>
+<tr><td>bitsperchar</td><td>8</td><td>The number bits per character(7 or 8).</td></tr>
+<tr><td>stopbits</td><td>1</td><td>The number of stop bits per char(1 or 2)</td></tr>
+<tr><td>parity</td><td>none</td><td>The parity can be odd, even, or none.</td></tr>
+<tr><td>blocking</td><td>on</td><td>If on, wait for a full buffer when reading.</td></tr>
+<tr><td>autocts</td><td>on</td><td> If on, wait for the CTS line to be on before writing.  </td></tr>
+<tr><td>autorts</td><td>on</td><td>If on, turn on the RTS line when the input buffer is not full. If off, the RTS line is always on.</td></tr>
+</table>
+</p>
+
+
+
+<h3>The Network API<a name="IO_net" id="IO_NET"></a></h3>
+<p>
+Package: 
+<span class="style2">
+<a href="net/rim/device/api/io/transport/package-summary.html">net.rim.device.api.io.transport</a>
+</span>
+</p>
+
+<p>
+The Network API is designed to make it easy to create <code>http</code>, <code>https</code>, <code>socket</code>, <code>ssl</code> and <code>tls</code> connections. 
+As described above, you have to perform two tasks to create a network connection on a BlackBerry device: probe and connect. The Network API includes classes that correspond
+to each of these tasks. The <a href="net/rim/device/api/io/transport/TransportInfo.html">TransportInfo</a>
+class helps you probe and the <a href="net/rim/device/api/io/transport/ConnectionFactory.html">ConnectionFactory</a> helps you create connections.
+</p>
+<p>
+You can use the <a href="net/rim/device/api/io/transport/TransportInfo.html#getAvailableTransportTypes()">TransportInfo.getAvailableTransportTypes()</a> method to 
+determine which transport types are supported by a device. Then you can use 
+the <a href="net/rim/device/api/io/transport/TransportInfo.html#isTransportAvailable(int, java.lang.String)">TransportInfo.isTransportAvailable()</a> method to determine
+whether the device is currently capable of using the supplied transport type. Finally, you can test the coverage of the transport type by using 
+<a href="net/rim/device/api/io/transport/TransportInfo.html#hasSufficientCoverage(int)">TransportInfo.hasSufficientCoverage()</a>. After that sequence of probing calls,
+you know what transports are available and whether the device is in coverage for your transport of choice.
+</p>
+<p>
+The following table lists the transport types for which you can probe.
+</p>
+<p>
+<table class="Small">
+<tr><th>Transport type</th><th>Static integer constant</th></tr>
+<tr><td>BlackBerry Internet Service (BIS)</td><td><a href="net/rim/device/api/io/transport/TransportInfo.html#TRANSPORT_BIS_B">TransportInfo.TRANSPORT_BIS_B</a></td></tr>
+<tr><td>Mobile Data System (MDS)</td><td><a href="net/rim/device/api/io/transport/TransportInfo.html#TRANSPORT_BIS_B">TransportInfo.TRANSPORT_MDS</a></td></tr>
+<tr><td>TCP Cellular</td><td><a href="net/rim/device/api/io/transport/TransportInfo.html#TRANSPORT_TCP_CELLULAR">TransportInfo.TRANSPORT_TCP_CELLULAR</a></td></tr>
+<tr><td>WiFi</td><td><a href="net/rim/device/api/io/transport/TransportInfo.html#TRANSPORT_TCP_WIFI">TransportInfo.TRANSPORT_WIFI</a></td></tr>
+<tr><td>WAP 1.0/1.1</td><td><a href="net/rim/device/api/io/transport/TransportInfo.html#TRANSPORT_WAP">TransportInfo.TRANSPORT_WAP</a></td></tr>
+<tr><td>WAP 2.0</td><td><a href="net/rim/device/api/io/transport/TransportInfo.html#TRANSPORT_WAP2">TransportInfo.TRANSPORT_WAP2</a></td></tr>
+</table> 
+</p>
+
+<p>
+<table style="background-color:#C0C0C0">
+<tr><td style="background-color:#EDF0F4">
+<b>Important:</b> The Network API does not make connection creation thread safe. You must not call <a href="net/rim/device/api/io/transport/ConnectionFactory.html#getConnection(java.lang.String)">ConnectionFactory.getConnection()</a>
+on the event thread. If you do, your application will lock. Create a non-event thread when calling this method to create a connection. To learn how to create a non-event
+thread and how to update the UI from such a thread, refer to the <a href="UI-summary.html">User Interface</a> API category overview. 
+</td></tr>
+</table>
+</p>
+
+<p>The simplest way to use the <a href="net/rim/device/api/io/transport/ConnectionFactory.html">ConnectionFactory</a> class to create a connection is to call
+the <a href="net/rim/device/api/io/transport/ConnectionFactory.html#getConnection(java.lang.String)">ConnectionFactory.getConnection()</a> method, specifying only
+the URL to connect to. The method will return a <a href="net/rim/device/api/io/transport/ConnectionDescriptor.html">ConnectionDescriptor</a> object from which 
+you can call <a href="net/rim/device/api/io/transport/ConnectionDescriptor.html#getConnection()">ConnectionDescriptor.getConnection()</a> to retrieve a 
+<code>Connection</code> object which you can cast to an appropriate subobject.
+</p>
+<p>
+If you take this approach, the <code>Connection</code> object returned by <code>ConnectionDescriptor</code> corresponds to the <b>first</b> transport type
+that was available on the device. You can instead provide preferred transport types by using the 
+<a href="net/rim/device/api/io/transport/ConnectionFactory.html#setPreferredTransportTypes(int[])">ConnectionFactory.setPreferredTransportTypes()</a> method. You
+can also use the <a href="net/rim/device/api/io/transport/ConnectionFactory.html#setDisallowedTransportTypes(int[])">ConnectionFactory.setDisallowedTransportTypes()</a>
+method to prohibit the factory from considering specified transport types.
+</p>
+
+
+<h3>Lightweight Directory Access Protocol (LDAP)<a name="IO_LDAP" id="IO_LDAP"></a></h3>
+<p>Package: <span class="style2"><a href="net/rim/device/api/ldap/package-summary.html">net.rim.device.api.ldap</a></span></p>
+<p>
+LDAP is a protocol that lets you interact with directory services. Directory services provide access to information in hierachical databases. One of the key uses of 
+directory services is for storage of data in an enterprise networking environnment. Products like Microsoft Active Directory and Novell Open Enterprise Server store account
+information in directory databases and provide LDAP directory services to work with that data.
+</p> 
+
+<p>
+You can create an application on a BlackBerry device that communicates with an LDAP directory service. The API provides an interface to the LDAP component of the 
+Mobile Data Service (MDS).
+</p>
+
+<p><a class="explink" onClick="switchMenu('IO_1', this);">Click for code sample: Make an LDAP query.</a></p>
+<div id="IO_1">
+<table class="codesample">
+  <tr>
+    <td>
+    <pre>
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.container.MainScreen;
+import net.rim.device.api.ldap.*;
+import java.util.Enumeration;
+
+
+public class LDAPClient extends UiApplication 
+{
+  public static void main(String[] args) 
+  {
+    LDAPClient app = new LDAPClient();
+    app.enterEventDispatcher();
+  }
+      
+  LDAPClient()
+  {
+    HomeScreen scr = new HomeScreen();
+    this.pushScreen(scr);
+  }
+}
+
+class HomeScreen extends MainScreen
+{
+    public HomeScreen()
+    {
+        LDAPQuery query = new LDAPQuery();
+        try
+        {
+          query.setHost("ldap.rim.net",389,"ou=people,o=rim.net");
+          query.setScope(LDAPQuery.LDAP_SCOPE_SUB);
+          query.addAttribute("mail");
+          query.addFilter("givenname","Dean");
+          query.start();
+          Enumeration results = query.getResults();
+          if (query.getErrorCode() != LDAPQuery.LDAP_SUCCESS) 
+          {
+            // An error occured, so we should report an error
+          }
+          while (results.hasMoreElements()) 
+          {
+            LDAPEntry entry = (LDAPEntry)results.nextElement();
+            Enumeration attributes = entry.getAttributes();
+
+              while (attributes.hasMoreElements()) 
+              {
+                LDAPAttribute attribute = (LDAPAttribute)attributes.nextElement();
+                Enumeration   values    = attribute.getValues();
+
+                  while (values.hasMoreElements()) 
+                  {
+                     Object value = values.nextElement();
+                     if (value instanceof String) 
+                     {
+                        // we got a String value.
+                     }
+                     else 
+                     {
+                        // we got a byte array
+                     }
+                  }
+              }
+           }
+        }
+        catch(LDAPException e)
+        {
+            //handle exception
+        }
+      }
+  }</pre>
+  </td>
+</tr>
+</table>
+</div>
+
+
+<h3>Smart card and smart card reader connections<a name="IO_smartcard" id="IO_smartcard"></a></h3>
+<b>Smart cards and smart card readers</b>
+<p>
+Packages: 
+<span class="style2">
+<a href="net/rim/device/api/smartcard/package-summary.html">net.rim.device.api.smartcard</a>,
+</span>
+</p>
+<p>
+You connect to a smart card or smart card reader by creating a smart card session or a smart card reader session. You create these sessions by calling
+static methods on the corresponding factory classes: <a href="net/rim/device/api/smartcard/SmartCardFactory.html">SmartCardFactory</a> or
+<a href="net/rim/device/api/smartcard/SmartCardReaderFactory.html">SmartCardReaderFactory</a>. Both types of session objects support a <code>sendAPDU()</code>
+ method which sends an APDU and blocks until it receives a response APDU.
+</p>
+
+<p><a class="explink" onClick="switchMenu('IO_2', this);">Click for code sample: Establish smart card session</a></p>
+<div id="IO_2">
+<table class="codesample">
+  <tr>
+    <td>
+    <pre>
+import net.rim.device.api.ui.*;
+import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.container.MainScreen;
+import net.rim.device.api.smartcard.*;
+
+
+public class SmartCardConnect extends UiApplication 
+{
+   public static void main(String args[])
+   {
+      SmartCardConnect app = new SmartCardConnect();
+      app.enterEventDispatcher();
+   }
+   
+   public SmartCardConnect()
+   {
+      HomeScreen hs = new HomeScreen();
+      pushScreen(hs);
+   }
+
+}
+
+class HomeScreen extends MainScreen
+{
+   public HomeScreen()
+   {   
+      add(new LabelField("Smart card connection sample."));
+   }
+   
+   protected void makeMenu(Menu menu,int instance)
+   {
+      super.makeMenu(menu,instance);
+      menu.add(new MenuItem("Log on to smart card",1,1)
+      {
+         public void run()
+         {
+            SmartCard sc;
+            SmartCardSession session;
+            try
+            {
+               sc = SmartCardFactory.chooseSmartCard();
+               session = SmartCardFactory.getSmartCardSession(sc);
+               session.loginPrompt(null,SmartCardSession.UNKNOWN_OPERATION);
+            }
+            catch(Exception e)
+            {
+               Dialog.alert("Exception:" + e.getMessage());
+            }
+         
+         }
+      });
+   }
+}</pre>
+  </td>
+</tr>
+</table>
+</div>
+
+
+<b>Javacards</b>
+<p>
+Packages: 
+<span class="style2">
+<a href="javax/microedition/apdu/package-summary.html">javax.microedition.apdu</a>,
+<a href="javax/microedition/jcrmi/package-summary.html">javax.microedition.jcrmi</a>,
+<a href="javacard/framework/package-summary.html">javacard.framework</a>,
+<a href="javacard/framework/service/package-summary.html">javacard.framework.service</a>,
+<a href="javacard/security/package-summary.html">javacard.security</a>
+</span>
+</p>
+<p>
+You can use the types in <code>javax.microedition.jcrmi</code> to connect to and communicate with applications running on a virtual machine on
+a Java Card. All of the implemented types in <code>javacard.framework</code>, <code>javacard.framework.service</code> and <code>javacard.security</code>
+are exceptions and are made available so you can appropriately handle any exceptions that originate from an application you are communicating with on
+a Java Card.
+</p>
+
+<HR>
+<div id="legalnotice">
+<table cellspacing="0" cellpading="0" width="100%" style="border:none;">
+<tr>
+<td style="border:none;">
+<font size=-1>
+<P>Copyright 1999-2011 Research In Motion Limited. 295 Phillip Street, Waterloo, Ontario, Canada, N2L 3W8. All Rights Reserved.<br>
+Java is a trademark of Oracle America, Inc. in the US and other countries.</p>
+</font>
+</td>
+<td style="text-align:right; border:none;">
+<font size=-1><br>
+<a href="http://www.blackberry.com/legal" target="_blank">Legal</a>
+</font>
+</td>
+</tr>
+</table>
+ </div>
+</BODY>
+</HTML>

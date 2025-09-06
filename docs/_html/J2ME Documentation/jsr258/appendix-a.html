@@ -1,0 +1,898 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix A. Sample code (non-normative)</title>
+   </head>
+   <body>
+      <h1>Appendix A. Sample code (non-normative)</h1>
+      <p>This non-normative appendix contains sample code that uses the
+         Mobile User Interface Customization API.
+      </p>
+      <div class="example"><a id="d0e18645"></a><p class="title"><b>Example&nbsp;A.1.&nbsp;Using the <code class="classname">ThemeManager</code> API and
+                       implementing the <code class="interfacename">ThemeListener</code>
+                       interface</b></p>
+         <div class="example-contents"><pre class="programlisting">import javax.microedition.midlet.*;
+import javax.microedition.lcdui.*;
+
+import javax.microedition.theme.*;
+
+/*
+ * Shows how to list, activate and query themes installed in
+ * the system in a MIDP environment. Retrieves the theme names 
+ * and adds them to an LCDUI List component. The user can select
+ * a theme from the list and activate it using a Command. Also
+ * shows how to implement a ThemeListener to get notifications
+ * about theme-related events. 
+ */
+public class SimpleThemeSample extends MIDlet 
+        implements CommandListener, ThemeListener {
+    private Display display = null;      // the display for this MIDlet
+    private Command exitCommand;
+    private List themeList;              // list of locations
+
+    private ThemeManager themeManager;
+    private String[] themeNames; 
+
+    public SimpleThemeSample() {
+        themeManager = ThemeManager.getInstance();
+        if (themeManager != null) {
+        	System.out.println("Got ThemeManager instance");
+        }
+        themeNames = themeManager.getThemes();
+        
+        // register for theme-related notifications
+        themeManager.addThemeListener(this);        
+        System.out.println("INFO: Registered as theme event listener");
+
+        display = Display.getDisplay(this);
+        exitCommand = new Command("Exit", Command.EXIT, 1);
+        
+        themeList = new List("Themes:", List.IMPLICIT, null, null);
+        themeList.setCommandListener(this);
+        themeList.addCommand(exitCommand);
+
+        String[] themeNames = themeManager.getThemes();
+        if (themeNames.length != 0) {
+            System.out.println("INFO: number of themes reported by ThemeManager = " 
+        	        + themeNames.length);
+            for (int i = 0; i &lt; themeNames.length; i++) {
+                try {
+                    Theme theme = themeManager.getTheme(themeNames[i]);
+                    // use our helper method (see below) to get the title
+                    themeList.append(getThemeTitle(theme.getMetadata()), null);
+                }
+                catch (ThemeNotFoundException tnfe) {
+                    System.err.println(tnfe);
+                }
+            }
+            System.out.println("INFO: theme titles added to list");
+        }
+	}
+
+    protected void startApp() throws MIDletStateChangeException {
+        display.setCurrent(themeList);        
+    }
+
+    protected void pauseApp() {
+        System.out.println("INFO: pauseApp() called");
+    }
+
+    protected void destroyApp(boolean p0) {
+        System.out.println("INFO: destroyApp() called, argument = " + p0);
+    }
+
+    /* Helper method to exit the MIDlet. */
+    private void exit() {
+        destroyApp(true);
+        notifyDestroyed();
+    }
+    
+    // CommandListener implementation
+    public void commandAction(Command cmd, Displayable d) {
+        if (d == themeList) {
+            if (cmd == exitCommand) {
+                exit();
+            }
+        }
+        else if (cmd == List.SELECT_COMMAND) {
+            int i = themeList.getSelectedIndex();
+            
+            String name = themeNames[i];
+            try {
+            	themeManager.activateTheme(name);
+            }
+            catch (ThemeException e) {
+            	System.out.println("Cannot activate theme " + e.getName());
+            }
+        }
+    }
+    
+    /*
+     * Methods that implement the ThemeListener interface.
+     */
+    public void themeActivated(Theme newTheme, Theme oldTheme) {
+        System.out.println("INFO: Theme activated: " 
+                + getThemeTitle(newTheme.getMetadata()));
+    }
+
+    public void themeModified(Theme t) {
+        System.out.println("INFO: Theme modified: " 
+                + getThemeTitle(t.getMetadata()));
+    }
+
+    public void themeRemoved(String name, ThemeMetadata info) {
+        System.out.println("INFO: Removed theme " + name
+            + ", titled " + getThemeTitle(info));
+    }
+
+    public void themeCreated(Theme t) {
+        System.out.println("INFO: Theme created: " + getThemeTitle(t.getMetadata()));
+    }
+
+    /*
+     * Gets the localized title of the theme. Attempts to get the title
+     * for the system locale. If there is no title for that locale,
+     * the getTitle method of ThemeMetadata will automatically return
+     * the title of the theme's default locale.
+     */
+    private String getThemeTitle(ThemeMetadata metadata) {
+        String systemLocale = System.getProperty("microedition.locale");
+        String themeDefaultLocale = metadata.getDefaultLocale();
+        System.out.println("system locale = " + systemLocale);
+        System.out.println("theme default locale = " + themeDefaultLocale);
+        String title = metadata.getTitle(systemLocale);
+        return title;
+    }
+}
+
+          </pre></div>
+      </div><br class="example-break"></br><div class="example"><a id="d0e18657"></a><p class="title"><b>Example&nbsp;A.2.&nbsp;Using the <code class="classname">ThemeManager</code> API with
+                           a MIDP <code class="classname">CustomItem</code> subclass.</b></p>
+         <div class="example-contents"><pre class="programlisting">import javax.microedition.lcdui.*;
+import javax.microedition.midlet.*;
+import java.util.*;
+import javax.microedition.theme.*;
+
+public class CustomSample extends MIDlet implements CommandListener {
+    private Display display;
+    private Form mainForm;
+    private Command exitCommand;
+   
+    public CustomSample() {
+        System.out.println("ENTER CustomSample constructor");
+        
+        Form mainForm = new Form("CustomItem sample" );
+        System.out.println("form created");
+
+        MultiColumnTable table = new MultiColumnTable("Table 1");
+        System.out.println("table created");
+        mainForm.append(table);
+
+        exitCommand = new Command("Exit", Command.EXIT, 1); 
+        mainForm.addCommand(exitCommand);
+        mainForm.setCommandListener(this);
+
+        System.out.println("LEAVE CustomSample constructor");
+    }
+
+    protected void startApp() {
+        if (display == null) { 
+            display = Display.getDisplay(this);
+            display.setCurrent(mainForm);
+            System.out.println("form set as current");
+        }
+    }
+
+    protected void destroyApp(boolean unconditional) {
+        System.out.println("destroyApp");
+    }
+
+    public void exit() {
+        destroyApp(true);
+        notifyDestroyed();
+    }
+
+    protected void pauseApp() {
+    }
+
+    public void commandAction(Command c, Displayable d) {
+        if (c == exitCommand) {
+            System.out.println("got exit command");
+            exit();
+        }
+    }
+}
+
+          </pre><pre class="programlisting">import javax.microedition.lcdui.*;
+import javax.microedition.theme.*;
+
+public class MultiColumnTable extends CustomItem implements ThemeListener {
+    private ThemeManager themeManager;
+    
+    private static final String LCDUI_TOOLKIT_NAME = "midp20lcdui";
+    
+    public MultiColumnTable(String label) {
+    	super(label);
+    	
+        System.out.println("ENTER MultiColumnTable constructor");
+        
+        themeManager = ThemeManager.getInstance();
+        System.out.println("got ThemeManager instance");
+        
+        // Cache some resources from the theme we need for painting.
+        // If something has changed, fetch them again.
+        getPaintResources();
+
+        System.out.println("LEAVE MultiColumnTable constructor");
+    }
+
+    public int getMinContentHeight(){
+        return 100;
+    }
+
+    public int getMinContentWidth(){
+        return 100;
+    }
+
+    public int getPrefContentHeight(int width) {
+        return getMinContentHeight();
+    }
+
+    public int getPrefContentWidth(int height) {
+        return getMinContentWidth();
+    }
+
+    protected void showNotify() {
+        System.out.println("CustomItem showNotify() called, expecting paint() calls soon");
+    }
+    
+    private Element listHighlight;
+    
+    private void getPaintResources() {
+        System.out.println("ENTER getPaintResources");
+        // Get what we need for painting from the theme.
+        
+        Theme activeTheme = themeManager.getActiveTheme();
+        System.out.println("Got theme reference: name = " 
+            + activeTheme.getName() + " version = " + activeTheme.getVersion()
+            + " vendor = " + activeTheme.getVendor());
+            
+        try {
+            // We use the LCDUI list item highlight to paint our own cursor
+            listHighlight = activeTheme.getToolkitElement(
+                "list", "itemHighlight", LCDUI_TOOLKIT_NAME);
+            System.out.println("got element: feature=" + listHighlight.getFeature()
+                + " role=" + listHighlight.getRole()
+                + " kind=" + listHighlight.getKind());
+        }
+        catch (ElementNotFoundException e) {
+            System.err.println("Element not found: "
+                    + "feature = " + e.getFeature() + ", " 
+                    + "role = " + e.getRole());
+        }
+        // Now listHighlight can be used for painting
+        
+        System.out.println("LEAVE getPaintResources");
+    }
+    
+    private ElementRenderer renderer;
+
+    private String[] items = { "apples", "oranges", "lemons", "pears" };
+    private int index = 2;  // -1 if nothing highlighted, otherwise &gt;= 0
+    
+    public void paint(Graphics g, int width, int height) {
+        System.out.println("ENTER paint");
+        
+        g.setColor(0xff0000);
+        g.fillRect(0, 0, width, height);
+        
+        if (renderer == null) {
+            renderer = new ElementRenderer();
+        }
+        
+        for (int i = 0; i &lt; items.length; ++i) {
+            g.drawString(items[i], 0, i * 20, Graphics.TOP | Graphics.LEFT);
+        }
+
+        if (index &gt;= 0) {  // something highlighted, need to paint cursor        
+            if (listHighlight != null) {
+                renderer.renderElement(listHighlight, g, 
+                    0, index * 20, width, 20);
+            }
+        }
+
+        System.out.println("LEAVE paint");
+    }
+
+    private String getThemeTitle(ThemeMetadata metadata) {
+        String systemLocale = System.getProperty("microedition.locale");
+        String themeDefaultLocale = metadata.getDefaultLocale();
+        System.out.println("system locale = " + systemLocale);
+        System.out.println("theme default locale = " + themeDefaultLocale);
+        String title = metadata.getTitle(systemLocale);
+        return title;
+    }
+    
+    public void themeCreated(Theme t) {
+        // not interesting to a custom item
+    }
+    
+	public void themeActivated(Theme newTheme, Theme oldTheme) {
+        System.out.println("Theme changed from " 
+                + getThemeTitle(oldTheme.getMetadata())
+                + " to " + getThemeTitle(newTheme.getMetadata()));
+
+        // Another theme has been activated, definitely repaint.
+        getPaintResources();
+        invalidate();
+        repaint();
+	}
+
+	public void themeRemoved(String name, ThemeMetadata info) {
+    	System.out.println("Removed theme : " + name);
+    	System.out.println("Title = " + getThemeTitle(info));
+        // if removal of this theme affects us, then repaint
+	}
+
+	public void themeModified(Theme t) {
+        ThemeMetadata metadata = t.getMetadata();
+    	System.out.println("Theme modified: " + getThemeTitle(metadata));
+
+    	// The current theme has been changed, fetch resources and repaint
+        getPaintResources();
+        repaint();
+	}
+}
+
+          </pre><pre class="programlisting">import javax.microedition.lcdui.*;
+import javax.microedition.theme.*;
+import java.util.Hashtable;
+import java.util.Enumeration;
+
+import javax.microedition.m2g.*;
+
+public class ElementRenderer {
+        
+    public ElementRenderer() {
+    }
+    
+    public void renderElement(Element element, Graphics g, 
+            int left, int right, int width, int height) {
+        System.out.println("ENTER renderElement");
+        
+        String feature = element.getFeature();
+        String role = element.getRole();
+        String kind = element.getKind();
+        
+        System.out.println("feature = " + feature + ", role = " + role + ", kind = " + kind);
+        
+        if (element instanceof ColorElement) {
+            // Paint the area with the solid color found in the element
+            
+            ColorElement colorElement = (ColorElement) element;
+            int color = colorElement.getColor();
+            System.out.println("color = " + Integer.toHexString(color));
+            
+            g.setColor(color);
+            g.fillRect(left, right, width, height);
+        }
+        else if (element instanceof MediaElement) {
+            // Render the media element if possible
+
+            MediaElement mediaElement = (MediaElement) element;
+            MediaObject mediaObject = mediaElement.getMediaObject();
+            String mediaType = mediaObject.getMediaType();
+            System.out.println("media type = " + mediaType);
+            
+            String[] kinds = Capabilities.getSupportedKinds(feature, role);
+            // should getSupportedKinds also throw ElementNotFoundException?
+            
+            System.out.println("Supported kinds for feature=" + feature + ", role=" + role);
+            for (int i = 0; i &lt; kinds.length; ++i) {
+                System.out.print(kinds[i] + ": ");
+                
+                // changed in v0.14
+                try {
+                    String[] mimeTypes = Capabilities.getSupportedMediaTypes(feature, role, kinds[i]);
+                    for (int m = 0; m &lt; mimeTypes.length; ++m) {
+                        System.out.print(mimeTypes[m] + " ");
+                    }
+                }
+                catch (ElementNotFoundException enfe) {
+                    System.out.println(enfe + ": " + enfe.getMessage() + " (feature=" + enfe.getFeature()
+                        + ", role=" + enfe.getRole());
+                }
+                    
+                
+                System.out.println();
+            }
+            
+            if (mediaType.equals("image/png") || mediaType.equals("image/bmp")) {
+                byte[] imageData = mediaObject.getData();
+                        
+                Image image = Image.createImage(imageData, 0, imageData.length);
+                
+                // Create an image of the size we are allowed to use
+                Image imageToDraw = Image.createImage(width, height);
+                Graphics imageGraphics = imageToDraw.getGraphics();
+                
+                // Draw as much of the original image from the element that
+                // fits in the "container".
+                imageGraphics.drawImage(image, 0, 0, Graphics.TOP | Graphics.LEFT);
+                
+                g.drawImage(imageToDraw, left, right, Graphics.TOP | Graphics.LEFT);
+            }
+        }
+        else if (element instanceof ElementGroup) {
+            System.out.println("element group information:");
+            
+            ElementGroup group = (ElementGroup) element;
+            int count = group.getElementCount();
+            System.out.println("number of elements = " + count);
+            
+            int memberNumber = 0;
+            Enumeration members = group.getElements();
+            while (members.hasMoreElements()) {
+                Element member = (Element) members.nextElement();
+                System.out.println("member #" + memberNumber 
+                    + ": kind = " + member.getKind()
+                    + ", role = " + member.getRole());
+                if (member instanceof ElementGroup) {
+                    System.out.println("ElementGroup");
+                }
+                else if (member instanceof ColorElement) {
+                    int color = ((Integer) member.getContent()).intValue();
+                    System.out.println("ColorElement, color = " + Integer.toHexString(color));
+                }
+                else if (member instanceof MediaElement) {
+                    System.out.print("MediaElement, ");
+
+                    MediaElement mediaElement = (MediaElement) element;
+                    MediaObject mediaObject = mediaElement.getMediaObject();
+                    String mediaType = mediaObject.getMediaType();
+                    System.out.println("media type = " + mediaType);
+                }
+                else {
+                    System.out.print("plain element, information: ");
+                    
+                    if (kind.equals(Element.KIND_STRING)) {
+                        String text = (String) element.getContent();
+                        System.out.print("text = " + text);
+                    }
+                    else if (kind.equals(Element.KIND_INTEGER)) {
+                        int value = ((Integer) element.getContent()).intValue();
+                        System.out.print("integer, value = " + value);
+                    }
+                    else if (kind.equals(Element.KIND_FLOAT)) {
+                        float value = ((Float) element.getContent()).floatValue();
+                        System.out.print("float, value = " + value);
+                    }
+                    else if (kind.equals(Element.KIND_VIDEO)) {
+                        System.out.print("video");
+                    }
+                    else if (kind.equals(Element.KIND_SOUND)) {
+                        System.out.print("sound");
+                    }
+                    else if (kind.equals(Element.KIND_GRAPHIC)) {
+                        System.out.print("graphic, but shouldn't this be a MediaElement?");    
+                    }
+                    else if (kind.equals(Element.KIND_FONT)) {
+                        System.out.print("font");                        
+                    }
+                    else {
+                        System.out.print("can't determine element type");
+                    }
+                    System.out.println();
+                }
+                        
+                ++memberNumber;                    
+            }
+        }
+        else if (element instanceof FontElement) {
+            System.out.println("can't handle fonts yet");
+        }
+        else {
+            if (kind.equals(Element.KIND_STRING)) {
+                String text = (String) element.getContent();
+                g.drawString(text, left, right, Graphics.LEFT | Graphics.TOP);
+            }
+            else if (kind.equals(Element.KIND_INTEGER) || kind.equals(Element.KIND_FLOAT)) {
+                System.out.println("won't render integer or float elements");
+            }
+        }
+    
+        System.out.println("LEAVE renderElement");
+    }
+}
+
+
+          </pre></div>
+      </div><br class="example-break"></br><div class="example"><a id="d0e18672"></a><p class="title"><b>Example&nbsp;A.3.&nbsp;Using the <code class="classname">SkinManager</code> class
+                         and the <code class="interfacename">SkinListener</code> interface</b></p>
+         <div class="example-contents"><pre class="programlisting">import javax.microedition.lcdui.*;
+import javax.microedition.midlet.*;
+import javax.microedition.theme.*;
+
+/**
+ * Creates an instance of SkinManager and uses it to find out
+ * about the skins for a specific application.
+ */
+public class SkinSample extends MIDlet 
+        implements CommandListener, SkinListener {
+    private Display display;
+    private Command exitCommand;
+    private SkinManager skinManager;
+    private List skinList;
+    
+    public SkinSample() {
+        display = Display.getDisplay(this);
+
+        exitCommand = new Command("Exit", Command.EXIT, 1); 
+
+        skinList = new List("My skins:", List.IMPLICIT, null, null);
+        skinList.setCommandListener(this);
+        skinList.addCommand(exitCommand);
+
+        skinManager = SkinManager.getInstance("SkinSample:1.0:com.nokia");
+    }
+    
+    protected void startApp() throws MIDletStateChangeException {
+        // Get a list of this application's skins
+        String[] skinNames = skinManager.getSkins();
+        if (skinNames.length != 0) {
+            System.out.println("INFO: SkinManager reports " 
+                    + skinNames.length + " skins");
+            for (int i = 0; i &lt; skinNames.length; i++) {
+                try {
+                    Skin skin = skinManager.getSkin(skinNames[i]);
+                    // use our helper method (see below) to get the title
+                    skinList.append(getSkinTitle(skin.getMetadata()), null);
+                }
+                catch (SkinNotFoundException snfe) {
+                    System.err.println(snfe.getMessage());
+                    System.err.println("skin name = " + snfe.getName());
+                    System.err.println("target application = " + snfe.getApplication());
+                }
+            }
+            System.out.println("INFO: skin titles added to list");
+        }
+    }
+
+    protected void init(){
+        display.setCurrent(skinList);
+    }
+
+    protected void destroyApp(boolean unconditional)
+                       throws MIDletStateChangeException {
+        exit();
+    }
+
+    public void exit() {
+        notifyDestroyed();
+    }
+
+    protected void pauseApp() {
+    }
+
+    public void commandAction(Command c, Displayable d) {
+        if (c == exitCommand) {
+            exit();
+        }
+    }
+
+	public void skinActivated(Skin newSkin, Skin oldSkin) {
+        // new skin activated, repaint
+	}
+
+	public void skinCreated(Skin skin) {
+        // skin created, no need to repaint yet
+	}
+
+	public void skinRemoved(String skin, ThemeMetadata info) {
+        // maybe trigger activation of another skin
+	}
+    
+    public void skinModified(Skin skin) {
+        // modified, repaint
+    }
+    
+    private String getSkinTitle(ThemeMetadata metadata) {
+        String systemLocale = System.getProperty("microedition.locale");
+        String defaultLocale = metadata.getDefaultLocale();
+        System.out.println("system locale = " + systemLocale);
+        System.out.println("theme default locale = " + defaultLocale);
+        String title = metadata.getTitle(systemLocale);
+        return title;
+    }
+}
+
+          </pre></div>
+      </div><br class="example-break"></br><div class="example"><a id="d0e18683"></a><p class="title"><b>Example&nbsp;A.4.&nbsp;Using the <code class="classname">Capabilities</code> class
+               to find out about the implementation</b></p>
+         <div class="example-contents"><pre class="programlisting">import javax.microedition.midlet.*;
+import java.util.*;
+import javax.microedition.theme.*;
+
+/**
+ * Exercises the JSR 258 Capabilities class.
+ * NOTE: Based on JSR 258 API v0.21 (Final Release Candidate 2).
+ */
+public class CapabilitiesTest extends MIDlet {
+    
+    public CapabilitiesTest() {
+        String apiVersion = System.getProperty("microedition.theme.version");
+        System.out.print("Mobile User Interface Customization API ");
+        if (apiVersion != null) {
+            System.out.println("found, version " + apiVersion);
+        }
+        else {
+            System.out.println("not found!");
+            return;
+        }
+
+        dumpSystemProperties();        
+                
+        
+        ThemeManager themeManager = ThemeManager.getInstance();
+        
+        // List the themes available:
+        String[] themeNames = themeManager.getThemes();
+        System.out.println("Themes available in the system:");
+        for (int i = 0; i &lt; themeNames.length; ++i) {
+            System.out.println(themeNames[i]);
+        }
+        
+        
+        String[] toolkitNames = ToolkitCapabilities.getSupportedToolkits();
+        System.out.println("UI toolkits supported by this implementation:");
+        for (int i = 0; i &lt; toolkitNames.length; ++i) {
+            System.out.print(toolkitNames[i] + " ");
+        }
+        System.out.println();
+
+        try {
+            Theme systemDefaultTheme = 
+                themeManager.getTheme(ThemeManager.SYSTEM_DEFAULT_THEME);
+            System.out.println("Theme name = " + systemDefaultTheme.getName());
+            System.out.println("Theme version = " + systemDefaultTheme.getVersion());
+            System.out.println("Theme vendor = " + systemDefaultTheme.getVendor());
+            
+            ThemeMetadata metadata = systemDefaultTheme.getMetadata();
+            System.out.println("Theme description = " 
+                + metadata.getDescription(metadata.getDefaultLocale()));
+            System.out.println("Theme created = " 
+                + metadata.getCreated());
+            System.out.println("Theme last modified = " 
+                + metadata.getModified());
+                
+            for (int i = 0; i &lt; toolkitNames.length; ++i) {
+                testToolkit(systemDefaultTheme, toolkitNames[i]);
+            }
+
+            System.out.println("Features of '" + systemDefaultTheme.getName() + "'");            
+            Enumeration features = systemDefaultTheme.getFeatures();
+            while (features.hasMoreElements()) {
+                String feature = (String) features.nextElement();
+                dumpFeatureRolesOfTheme(systemDefaultTheme, feature);
+            }
+            System.out.println();
+            
+            // Try to get the system default theme by using 
+            // getName, getVersion and getVendor.
+            //String name = systemDefaultTheme.getName();
+            //String version = systemDefaultTheme.getVersion();
+            //String vendor = systemDefaultTheme.getVendor();
+            //systemDefaultTheme = themeManager.getTheme(name + ":" + version + ":" + vendor);
+            //System.out.println("OK, got system default theme using name, version, vendor");
+            // Fails predictably, because the system default theme is only accessible
+            // by using "_default_" exactly. 
+            
+            // Test some other theme, not just the system default
+            Theme grind2Theme = themeManager.getTheme("GrindII:12.30:com.nokia.phones.platform.s60");
+            System.out.println("Theme name = " + grind2Theme.getName());
+            System.out.println("Theme version = " + grind2Theme.getVersion());
+            System.out.println("Theme vendor = " + grind2Theme.getVendor());
+            
+            for (int i = 0; i &lt; toolkitNames.length; ++i) {
+                testToolkit(grind2Theme, toolkitNames[i]);
+            }
+            
+        }
+        catch (ThemeNotFoundException tnfe) {
+            System.err.println(tnfe);
+        }
+    }
+
+    private void dumpSystemProperties() {
+        String property = null;
+        
+        System.out.print("Name of customization impl. platform = ");
+        property = System.getProperty("microedition.theme.platform");
+        if (property != null) {
+            System.out.println(property);
+        }
+        else {
+            System.out.println("*** not found ***");
+        }
+
+        System.out.print("Modify supported = "); 
+        property = System.getProperty("microedition.theme.modifysupported");
+        if (property != null) {
+            System.out.println(property);
+        }
+        else {
+            System.out.println("*** not found ***");
+        }
+            
+        System.out.print("Application-specific base and toolkit elements supported = "); 
+        property = System.getProperty("microedition.theme.applicationspecific");
+        if (property != null) {
+            System.out.println(property);
+        }
+        else {
+            System.out.println("*** not found ***");
+        }
+            
+        System.out.print("Customization policy enabled: ");
+        if (Capabilities.isCustomizationPolicyEnabled()) {
+            System.out.print("Yes");
+        }
+        else {
+            System.out.println("No");
+        }
+        System.out.println();
+
+        
+    }
+    
+    private void testToolkit(Theme theme, String toolkitName) {
+        System.out.println("**** start testToolkit");
+        System.out.println("Exercising toolkit '" + toolkitName + "'");
+
+        try {
+            Enumeration toolkitFeatures = theme.getToolkitFeatures(toolkitName);
+            while (toolkitFeatures.hasMoreElements()) {
+                String feature = (String) toolkitFeatures.nextElement();
+                
+                Enumeration roles = theme.getToolkitFeatureRoles(feature, toolkitName);
+                while (roles.hasMoreElements()) {
+                    String role = (String) roles.nextElement();
+                    
+                    try {
+                        Element element = theme.getToolkitElement(feature, role, toolkitName);
+                        
+                        boolean isCust = ToolkitCapabilities.isElementCustomizable(
+                            feature, role, toolkitName);
+                            
+                        System.out.println(
+                            "Element: feature = " + element.getFeature()
+                          + ", role = " + element.getRole()
+                          + ", customizable = " + (isCust ? "yes" : "no"));
+                    }
+                    catch (ElementNotFoundException enfe) {
+                        System.err.println(enfe);
+                    }
+                    
+                    
+                }
+            }
+        }
+        catch (ThemeException te) {
+            System.err.println(te);
+        }
+        
+        System.out.println("**** end testToolkit");
+    }
+    
+    private void dumpFeatureRolesOfTheme(Theme theme, String feature) {
+        //System.out.println("**** start dumpFeatureRolesOfTheme"); 
+        String role = "null";
+        
+        System.out.println();
+        System.out.print("feature = " + feature); 
+
+        try {
+            Enumeration roles = theme.getFeatureRoles(feature);
+            //System.out.println("Roles for feature '" + feature + "':");
+            System.out.println(", roles = ");
+            
+            while (roles.hasMoreElements()) {
+                String theRole = (String) roles.nextElement();
+                role = theRole;
+                System.out.print(theRole);
+    
+                String[] kinds = Capabilities.getSupportedKinds(feature, role);
+                System.out.print("(");
+                for (int i = 0; i &lt; kinds.length; ++i) {
+                    try {                    
+                        System.out.print(kinds[i] + "(");
+    
+                        if (kinds[i].equals("group")) {
+                            ElementGroup group = (ElementGroup) theme.getElement(feature, role);
+                            int count = group.getElementCount();
+                            System.out.print(count + " elements");
+                        }
+                        else {
+                            if (kinds[i].equals("color")) {
+                                ColorElement elem = (ColorElement) theme.getElement(feature, role);
+                                
+                                System.out.print("#" + Integer.toHexString(elem.getColor()));
+                            }
+                            else if (kinds[i].equals("string")) {
+                                Element elem = theme.getElement(feature, role);
+                                System.out.print("'" + (String) elem.getContent() + "'");
+                            }
+                            else if (kinds[i].equals("integer")) {
+                                Element elem = theme.getElement(feature, role);
+                                System.out.print("'" + ((Integer) elem.getContent()).intValue() + "'");
+                                
+                            }
+                            else if (kinds[i].equals("float")) {
+                                Element elem = theme.getElement(feature, role);
+                                System.out.print("'" + ((Float) elem.getContent()).floatValue() + "'");
+                            }
+                            else if (kinds[i].equals("font")) {
+                                FontElement elem = (FontElement) theme.getElement(feature, role);
+                                
+                                System.out.print(elem.getName() + "|" + elem.getSize() + "|" + elem.getStyle());
+                                // TODO: unwrap the style flags for printing
+                                
+                                Object content = elem.getContent();
+                                if (content != null) {
+                                    System.out.print("&lt;&lt;font data exists&gt;&gt;");
+                                }
+                            }
+                            else {
+                                try {            
+                                    String[] mimeTypes = 
+                                        Capabilities.getSupportedMediaTypes(
+                                            feature, role, kinds[i]);
+                                    for (int m = 0; m &lt; mimeTypes.length; ++m) {
+                                        System.out.print(mimeTypes[m] + " ");
+                                    }
+                                }
+                                catch (ElementNotFoundException enfe) {
+                                    System.out.println(enfe + ": " + enfe.getMessage() 
+                                        + " (feature=" + enfe.getFeature()
+                                        + ", role=" + enfe.getRole());
+                                }
+                            }
+                        }
+                    }
+                    catch (ElementNotFoundException enfe) {
+                        System.err.println(enfe);
+                    }
+                    System.out.print(")");
+                }
+                System.out.print(")");
+                System.out.println();
+            }
+        }
+        catch (ThemeException te) {
+            System.err.println(te);
+        }
+
+        //System.out.println("**** end dumpFeatureRolesOfTheme"); 
+    }
+
+        
+    protected void startApp() throws MIDletStateChangeException {
+    }
+
+    protected void pauseApp() {
+    }
+
+    protected void destroyApp(boolean arg0) 
+            throws MIDletStateChangeException {
+        System.out.println("MIDlet shutting down");
+    }
+}
+
+
+          </pre></div>
+      </div><br class="example-break"></br></body>
+</html>

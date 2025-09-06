@@ -1,0 +1,1210 @@
+<HTML><HEAD>
+<TITLE>Crypto API Sample Code -  Copyright Research In Motion Limited, 1998-2001 </TITLE></HEAD>
+<BODY><pre> 
+public class CryptoSample
+{
+    
+    <font color=green>// <a name="#sampleDESEncryption"><b>sampleDESEncryption</b></a></font>
+    private static int sampleDESEncryption( byte[] secretKey, byte[] plainText, byte[] cipherText )
+        throws CryptoTokenException, CryptoUnsupportedOperationException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font></font>
+        DESKey key = new DESKey( secretKey );
+                
+        <font color=green>// Create a new instance of the DES encryptor engine, passing in the newly </font>
+        <font color=green>// created key</font>
+        DESEncryptorEngine engine = new DESEncryptorEngine( key );
+        <font color=green>// Encrypt one block (8 bytes) of plainText into cipherText</font>
+        engine.encrypt( plainText, 0, cipherText, 0 );
+    
+        <font color=green>// Return the block size of the engine</font>
+        return engine.getBlockLength();
+    }    
+           
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>       
+
+    
+    <font color=green>// <a name="#sampleDESDecryption"><b>sampleDESDecryption</b></a></font>
+    private static int sampleDESDecryption( byte[] secretKey, byte[] cipherText, byte[] plainText )
+        throws CryptoTokenException, CryptoUnsupportedOperationException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );   
+
+        <font color=green>// Create a new instance of the DES decryptor engine, passing in the newly </font>
+        <font color=green>// created key</font>
+        DESDecryptorEngine engine = new DESDecryptorEngine( key );
+        
+        <font color=green>// Decrypt one block (8 bytes) of cipherText into plainText</font>
+        engine.decrypt( cipherText, 0, plainText, 0 );
+    
+        <font color=green>// Return the block size of the engine</font>
+        return engine.getBlockLength();
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+   
+ 
+    <font color=green>// <a name="#sampleSkipjackEncryption"><b>sampleSkipjackEncryption</b></a></font>
+    public static int sampleSkipjackEncryption( byte[] secretKey, byte[] plainText, byte[] cipherText )
+        throws CryptoTokenException, CryptoUnsupportedOperationException
+    {
+        <font color=green>// Create a new Skipjack key based on the bytes in the secretKey array</font></font>
+        SkipjackKey key = new SkipjackKey( secretKey );
+                
+        <font color=green>// Create a new instance of the Skipjack encryptor engine, passing in the newly </font>
+        <font color=green>// created key</font>
+        SkipjackEncryptorEngine engine = new SkipjackEncryptorEngine( key );
+        
+        <font color=green>// Encrypt one block of plainText into cipherText</font>
+        engine.encrypt( plainText, 0, cipherText, 0 );
+    
+        <font color=green>// Return the block size of the engine</font>
+        return engine.getBlockLength();
+    }    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+          
+    <font color=green>// <a name="#sampleSkipjackDecryption"><b>sampleSkipjackDecryption</b></a></font>
+    public static int sampleSkipjackDecryption( byte[] secretKey, byte[] cipherText, byte[] plainText )
+        throws CryptoTokenException, CryptoUnsupportedOperationException
+    {
+        <font color=green>// Create a new Skipjack key based on the bytes in the secretKey array</font>
+        SkipjackKey key = new SkipjackKey( secretKey );   
+
+        <font color=green>// Create a new instance of the Skipjack decryptor engine, passing in the newly </font>
+        <font color=green>// created key</font>
+        SkipjackDecryptorEngine engine = new SkipjackDecryptorEngine( key );
+        
+        <font color=green>// Decrypt one block of cipherText into plainText</font>
+        engine.decrypt( cipherText, 0, plainText, 0 );
+    
+        <font color=green>// Return the block size of the engine</font>
+        return engine.getBlockLength();
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+           
+    <font color=green>// <a name="#sampleTripleDESEncryption"><b>sampleTripleDESEncryption</b></a></font>
+    private static int sampleTripleDESEncryption( byte[] secretKey, byte[] plainText, byte[] cipherText )
+        throws CryptoTokenException, CryptoUnsupportedOperationException
+    {
+        <font color=green>// Create a new Triple-DES key based on the 24 bytes in the secretKey array</font>
+        TripleDESKey key = new TripleDESKey( secretKey );
+                
+        <font color=green>// Create a new instance of the Triple-DES encryptor engine, passing in the newly </font>
+        <font color=green>// created key</font>
+        TripleDESEncryptorEngine engine = new TripleDESEncryptorEngine( key );
+        
+        <font color=green>// Encrypt one block (8 bytes) of plainText into cipherText</font>
+        engine.encrypt( plainText, 0, cipherText, 0 );
+    
+        <font color=green>// Return the block size of the engine</font>
+        return engine.getBlockLength();
+    }    
+           
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+  
+         
+    <font color=green>// <a name="#sampleTripleDESDecryption"><b>sampleTripleDESDecryption</b></a></font>
+    private static int sampleTripleDESDecryption( byte[] secretKey, byte[] cipherText, byte[] plainText )
+        throws CryptoTokenException, CryptoUnsupportedOperationException
+    {
+        <font color=green>// Create a new Triple-DES key based on the 24 bytes in the secretKey array</font>
+        TripleDESKey key = new TripleDESKey( secretKey );   
+
+        <font color=green>// Create a new instance of the Triple-DES decryptor engine, passing in the newly</font>
+        <font color=green>// created key</font>
+        TripleDESDecryptorEngine engine = new TripleDESDecryptorEngine( key );
+        
+        <font color=green>// Decrypt one block (8 bytes) of cipherText into plainText</font>
+        engine.decrypt( cipherText, 0, plainText, 0 );
+    
+        <font color=green>// Return the block size of the engine</font>
+        return engine.getBlockLength();
+    }
+         
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>   
+   
+       
+    <font color=green>// <a name="#sampleDESCBCEncryption"><b>sampleDESCBCEncryption</b></a></font>
+    private static int sampleDESCBCEncryption( 
+        byte[] secretKey, byte[] initVector, byte[] plainText, byte[] cipherText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+        
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Create a new instance of a BlockEncryptor passing in an instance of a CBC encryptor engine</font>
+        <font color=green>// (containing an instance of a DES encryptor engine), the initialization vector, and the</font>
+        <font color=green>// output stream</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor( 
+            new CBCEncryptorEngine( new DESEncryptorEngine( key ), iv ), out );
+        
+        <font color=green>// Write dataLength bytes from plainText to the CFB encryptor stream</font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and return the length</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }    
+   
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>          
+ 
+          
+    <font color=green>// <a name="#sampleDESCBCDecryption"><b>sampleDESCBCDecryption</b></a></font>
+    private static int sampleDESCBCDecryption
+        ( byte[] secretKey, byte[] initVector, byte[] cipherText, byte[] plainText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );   
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+                
+        <font color=green>// Create a new instance of a BlockDecryptor passing in an instance of a CBC decryptor engine</font>
+        <font color=green>// (containing an instance of a DES decryptor engine), the initialization vector, and</font>
+        <font color=green>// the input stream</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor(
+            new CBCDecryptorEngine( new DESDecryptorEngine( key ), iv ), in );
+        
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the actual number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+         
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>   
+          
+    <font color=green>// <a name="#sampleDESCFBEncryption"><b>sampleDESCFBEncryption</b></a></font>
+    private static int sampleDESCFBEncryption( 
+        byte[] secretKey, byte[] initVector, byte[] plainText, byte[] cipherText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv 
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  = new InitializationVector( initVector );
+        
+
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Now create a new instance of the CFB stream encryptor, passing in the  </font>
+        <font color=green>// the initialization vector, an instance of a DES encryptor engine, and</font>
+        <font color=green>// the output stream</font>
+        CFBEncryptor cryptoStream = new CFBEncryptor(
+            new DESEncryptorEngine( key ), iv, out );
+                
+        <font color=green>// Write dataLength bytes from plainText to the CFB encryptor stream</font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and return the length</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }
+      
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+     
+    <font color=green>// <a name="#sampleDESCFBDecryption"><b>sampleDESCFBDecryption</b></a></font>
+    private static int sampleDESCFBDecryption(
+        byte[] secretKey, byte[] initVector, byte[] cipherText, byte[] plainText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+        
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Now create a new instance of the CFB stream decryptor, passing in the</font>
+        <font color=green>// the initialization vector, an instance of a DES encryptor engine, and</font>
+        <font color=green>// the input stream</font>
+        CFBDecryptor cryptoStream = new CFBDecryptor(
+            new DESEncryptorEngine( key ), iv, in );
+            
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleDESCTREncryption"><b>sampleDESCTREncryption</b></a></font>
+    private static int sampleDESCTREncryption( 
+        byte[] secretKey, byte[] initVector, byte[] plainText, byte[] cipherText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+        
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Now create a new instance of the PRNGEncryptor (pseudorandom number generator</font>
+        <font color=green>// encryptor) and pass in an CTR pseudorandom source along with the DES engine,</font>
+        <font color=green>// initialization vector, and output stream</font>
+        PRNGEncryptor cryptoStream = new PRNGEncryptor( 
+            new CTRPseudoRandomSource( new DESEncryptorEngine( key ), iv ),
+            out );
+                
+        <font color=green>// Write dataLength bytes from plainText to the CTR encryptor stream     </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and return the length</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleDESCTRDecryption"><b>sampleDESCTRDecryption</b></a></font>
+    private static int sampleDESCTRDecryption(
+        byte[] secretKey, byte[] initVector, byte[] cipherText, byte[] plainText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+        
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Now create a new instance of the PRNGDecryptor (pseudorandom number generator</font>
+        <font color=green>// decryptor) and pass in an CTR pseudorandom source along with the DES engine,</font>
+        <font color=green>// initialization vector, and input stream</font>
+        PRNGDecryptor cryptoStream = new PRNGDecryptor( 
+            new CTRPseudoRandomSource( new DESEncryptorEngine( key ), iv ),
+            in );
+            
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the actual number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleDESOFBEncryption"><b>sampleDESOFBEncryption</b></a></font>
+    private static int sampleDESOFBEncryption( 
+        byte[] secretKey, byte[] initVector, byte[] plainText, byte[] cipherText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+        
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Now create a new instance of the PRNGEncryptor (pseudorandom number generator</font>
+        <font color=green>// encryptor) and pass in an OFB pseudorandom source along with the DES engine,</font>
+        <font color=green>// initialization vector, and output stream</font>
+        PRNGEncryptor cryptoStream = new PRNGEncryptor( 
+            new OFBPseudoRandomSource( new DESEncryptorEngine( key ), iv ),
+            out );
+                
+        <font color=green>// Write dataLength bytes from plainText to the OFB encryptor stream     </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and return the length</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleDESOFBDecryption"><b>sampleDESOFBDecryption</b></a></font>
+    private static int sampleDESOFBDecryption(
+        byte[] secretKey, byte[] initVector, byte[] cipherText, byte[] plainText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new initialization vector using the 8 bytes in initVector</font>
+        InitializationVector iv = new InitializationVector( initVector );
+        
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Now create a new instance of the PRNGDecryptor (pseudorandom number generator</font>
+        <font color=green>// decryptor) and pass in an OFB pseudorandom source along with the DES engine,</font>
+        <font color=green>// initialization vector, and input stream</font>
+        PRNGDecryptor cryptoStream = new PRNGDecryptor( 
+            new OFBPseudoRandomSource( new DESEncryptorEngine( key ), iv ),
+            in );
+            
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the actual number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleDESPKCS5Encryption"><b>sampleDESPKCS5Encryption</b></a></font>
+    private static int sampleDESPKCS5Encryption( 
+        byte[] secretKey, byte[] plainText, byte[] cipherText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+                
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Now create a new instance of a block encryptor, passing in a</font>
+        <font color=green>// PKCS5 encoder with a DES encryptor engine and the output stream</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor( 
+            new PKCS5FormatterEngine( new DESEncryptorEngine( key ) ),
+            out );
+               
+        <font color=green>// Write dataLength bytes from plainText to the encryptor stream, </font>
+        <font color=green>// closing when finnished allow for padding</font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and</font>
+        <font color=green>// return the length of the encrypted data (since padding may</font>
+        <font color=green>// change the length)</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleDESPKCS5Decryption"><b>sampleDESPKCS5Decryption</b></a></font>
+    private static int sampleDESPKCS5Decryption( 
+        byte[] secretKey, byte[] cipherText, byte[] plainText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );        
+                
+        <font color=green>// Now create a new instance of a block encryptor, passing in a</font>
+        <font color=green>// PKCS5 encoder with a DES encryptor engine and the output stream</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor( 
+            new PKCS5UnformatterEngine( new DESDecryptorEngine( key ) ),
+            in );
+               
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the actual number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleDESXEncryption"><b>sampleDESXEncryption</b></a></font>
+    private static int sampleDESXEncryption( 
+        byte[] secretKey, byte[] preWhiten, byte[] postWhiten, byte[] plainText, 
+        byte[] cipherText, int dataLength ) throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );
+        
+        <font color=green>// Create new 8-byte initialization vectors for pre- and post- whitening</font>
+        InitializationVector preIv = new InitializationVector( preWhiten );
+        InitializationVector postIv = new InitializationVector( postWhiten );
+        
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Create a new instance of a BlockEncryptor passing in an instance of an X encryptor engine</font>
+        <font color=green>// (containing an instance of a DES encryptor engine), the pre- and post- whitening vectors,</font>
+        <font color=green>// and the output stream</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor( 
+            new XEncryptorEngine( new DESEncryptorEngine( key ), preIv, postIv ), out );
+        
+        <font color=green>// Write dataLength bytes from plainText to the X encryptor stream     </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and return the length</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }    
+           
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+  
+         
+    <font color=green>// <a name="#sampleDESXDecryption"><b>sampleDESXDecryption</b></a></font>
+    private static int sampleDESXDecryption(
+        byte[] secretKey, byte[] preWhiten, byte[] postWhiten, byte[] cipherText, 
+        byte[] plainText, int dataLength ) throws CryptoException, IOException
+    {
+        <font color=green>// Create a new DES key based on the 8 bytes in the secretKey array</font>
+        DESKey key = new DESKey( secretKey );   
+        
+        <font color=green>// Create new 8-byte initialization vectors for pre- and post- whitening</font>
+        InitializationVector preIv = new InitializationVector( preWhiten );
+        InitializationVector postIv = new InitializationVector( postWhiten );
+        
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+                
+        <font color=green>// Create a new instance of a BlockDecryptor passing in an instance of an X decryptor engine</font>
+        <font color=green>// (containing an instance of a DES decryptor engine), the pre- and post- whitening vectors,</font>
+        <font color=green>// and the input stream</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor(
+            new XDecryptorEngine( new DESDecryptorEngine( key ), preIv, postIv ), in );
+        
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the actual number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleARC4Encryption"><b>sampleARC4Encryption</b></a></font>
+    private static int sampleARC4Encryption( 
+        byte[] secretKey, byte[] plainText, byte[] cipherText, int dataLength ) throws CryptoException, IOException
+    {
+        <font color=green>// Create a new ARC4 key based on the bytes in the secretKey array</font>
+        ARC4Key key = new ARC4Key( secretKey );
+        
+        <font color=green>// Create a new byte array output stream for use in encryption</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+                
+        <font color=green>// Now create a new instance of the PRNGEncryptor (pseudorandom number generator</font>
+        <font color=green>// encryptor) and pass in an ARC4 pseudorandom source along with the output stream</font>
+        PRNGEncryptor cryptoStream = new PRNGEncryptor( 
+            new ARC4PseudoRandomSource( key ), out );
+                
+        <font color=green>// Write dataLength bytes from plainText to the ARC4 encryptor stream     </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Now copy the encrypted bytes from out into cipherText and return the length</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+    
+    <font color=green>// <a name="#sampleARC4Decryption"><b>sampleARC4Decryption</b></a></font>
+    private static int sampleARC4Decryption( 
+        byte[] secretKey, byte[] cipherText, byte[] plainText, int dataLength ) throws CryptoException, IOException
+    {
+        <font color=green>// Create a new ARC4 key based on the bytes in the secretKey array</font>
+        ARC4Key key = new ARC4Key( secretKey );
+        
+        <font color=green>// Create a new byte array input stream based on the first dataLength bytes in cipherText</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Now create a new instance of the PRNGDecryptor (pseudorandom number generator</font>
+        <font color=green>// decryptor) and pass in an ARC4 pseudorandom source along with the input stream</font>
+        PRNGDecryptor cryptoStream = new PRNGDecryptor( 
+            new ARC4PseudoRandomSource( key ), in );
+            
+        <font color=green>// Read from the decryptor stream and place the decrypted bytes in plainText,</font>
+        <font color=green>// returning the actual number of bytes read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleRSAEncryption"><b>sampleRSAEncryption</b></a></font>
+    private static int sampleRSAEncryption( 
+        int keyBitLength, byte[] e, byte[] n, byte[] plainText, byte[] cipherText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// First, it is necessary to create an RSA crypto system in order</font>
+        <font color=green>// to specify the bit size of the key</font>
+        RSACryptoSystem cryptoSystem = new RSACryptoSystem( keyBitLength );
+        
+        <font color=green>// Now create the public key for encryption</font>
+        RSAPublicKey publicKey = new RSAPublicKey( cryptoSystem, e, n );
+        
+        <font color=green>// Create the output stream to store the encrypted data</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+        
+        <font color=green>// Finally, create the block encryptor, passing in a new instance of</font>
+        <font color=green>// an RSA encryptor engine</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor(
+            new RSAEncryptorEngine( publicKey ), out );
+        
+        <font color=green>// Write the plaintext to the RSA encryption stream        </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        
+        <font color=green>// Copy the encrypted data from the output stream to the ciphertext</font>
+        <font color=green>// buffer and return the number of bytes actually in the buffer</font>
+        int finalLength = out.size();
+        System.arraycopy( cipherText, 0, out.getByteArray(), 0, finalLength );
+        return finalLength;
+    }
+    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleRSADecryption"><b>sampleRSADecryption</b></a></font>
+    private static int sampleRSADecryption( 
+        int keyBitLength, byte[] d, byte[] p, byte[] q, byte[] cipherText, byte[] plainText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// First, it is necessary to create an RSA crypto system in order</font>
+        <font color=green>// to specify the bit size of the key</font>
+        RSACryptoSystem cryptoSystem = new RSACryptoSystem( keyBitLength );
+        
+        <font color=green>// Now create the private key for decryption</font>
+        RSAPrivateKey privateKey = new RSAPrivateKey( cryptoSystem, d, p, q );
+        
+        <font color=green>// Create an input stream containing the ciphertext</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Finally, create the block decryptor, passing in a new instance of</font>
+        <font color=green>// an RSA decryptor engine</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor(
+            new RSADecryptorEngine( privateKey ), in );
+        
+        <font color=green>// Read the decrypted data from the RSA decryptor stream and return</font>
+        <font color=green>// the number of bytes of plaintext</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleRSAPKCS1Encryption"><b>sampleRSAPKCS1Encryption</b></a></font>
+    private static int sampleRSAPKCS1Encryption( 
+        int keyBitLength, byte[] e, byte[] n, byte[] plainText, byte[] cipherText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// First, it is necessary to create an RSA crypto system in order</font>
+        <font color=green>// to specify the bit size of the key</font>
+        RSACryptoSystem cryptoSystem = new RSACryptoSystem( keyBitLength );
+        
+        <font color=green>// Now create the public key for encryption</font>
+        RSAPublicKey publicKey = new RSAPublicKey( cryptoSystem, e, n );
+        
+        <font color=green>// Create the output stream to store the encrypted data</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+        
+        <font color=green>// Finally, create the block encryptor, passing in a new instance of</font>
+        <font color=green>// a PKCS1 encoder engine containing an RSA encryptor engine</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor( 
+            new PKCS1FormatterEngine( new RSAEncryptorEngine( publicKey ) ), out );
+        
+        <font color=green>// Write the plaintext to the RSA encryption stream        </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        cryptoStream.close();
+        
+        <font color=green>// Copy the encrypted data from the output stream to the ciphertext</font>
+        <font color=green>// buffer and return the number of bytes actually in the buffer</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }
+    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+  
+  
+    <font color=green>// <a name="#sampleRSAPKCS1Decryption"><b>sampleRSAPKCS1Decryption</b></a></font>
+    private static int sampleRSAPKCS1Decryption( 
+        int keyBitLength, byte[] d, byte[] p, byte[] q, byte[] cipherText, byte[] plainText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// First, it is necessary to create an RSA crypto system in order</font>
+        <font color=green>// to specify the bit size of the key</font>
+        RSACryptoSystem cryptoSystem = new RSACryptoSystem( keyBitLength );
+        
+        <font color=green>// Now create the private key for decryption</font>
+        RSAPrivateKey privateKey = new RSAPrivateKey( cryptoSystem, d, p, q );
+        
+        <font color=green>// Create an input stream containing the ciphertext</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Finally, create the block decryptor, passing in a new instance of</font>
+        <font color=green>// a PKCS1 decoder engine containing an RSA decryptor engine</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor( 
+            new PKCS1UnformatterEngine( new RSADecryptorEngine( privateKey ) ), in );
+        
+        <font color=green>// Read the decrypted data from the RSA decryptor stream and return</font>
+        <font color=green>// the number of bytes of plaintext</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+  
+    <font color=green>// <a name="#sampleRSAOAEPEncryption"><b>sampleRSAOAEPEncryption</b></a></font>
+    private static int sampleRSAOAEPEncryption( 
+        int keyBitLength, byte[] e, byte[] n, byte[] plainText, byte[] cipherText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// First, it is necessary to create an RSA crypto system in order</font>
+        <font color=green>// to specify the bit size of the key</font>
+        RSACryptoSystem cryptoSystem = new RSACryptoSystem( keyBitLength );
+        
+        <font color=green>// Now create the public key for encryption</font>
+        RSAPublicKey publicKey = new RSAPublicKey( cryptoSystem, e, n );
+        
+        <font color=green>// Create the output stream to store the encrypted data</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+        
+        <font color=green>// Finally, create the block encryptor, passing in a new instance of</font>
+        <font color=green>// an OAEP encoder engine containing an RSA encryptor engine</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor( 
+            new OAEPFormatterEngine( new RSAEncryptorEngine( publicKey ) ), out );
+        
+        <font color=green>// Write the plaintext to the RSA encryption stream        </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        
+        <font color=green>// Copy the encrypted data from the output stream to the ciphertext</font>
+        <font color=green>// buffer and return the number of bytes actually in the buffer</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }
+    
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleRSAOAEPDecryption"><b>sampleRSAOAEPDecryption</b></a></font>
+    private static int sampleRSAOAEPDecryption( 
+        int keyBitLength, byte[] d, byte[] p, byte[] q, byte[] cipherText, byte[] plainText, int dataLength ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// First, it is necessary to create an RSA crypto system in order</font>
+        <font color=green>// to specify the bit size of the key</font>
+        RSACryptoSystem cryptoSystem = new RSACryptoSystem( keyBitLength );
+        
+        <font color=green>// Now create the private key for decryption</font>
+        RSAPrivateKey privateKey = new RSAPrivateKey( cryptoSystem, d, p, q );
+        
+        <font color=green>// Create an input stream containing the ciphertext</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Finally, create the block decryptor, passing in a new instance of</font>
+        <font color=green>// a OAEP decoder engine containing an RSA decryptor engine</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor( 
+            new OAEPUnformatterEngine( new RSADecryptorEngine( privateKey ) ), in );
+        
+        <font color=green>// Read the decrypted data from the RSA decryptor stream and return</font>
+        <font color=green>// the number of bytes of plaintext</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+    
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleAESEncryption"><b>sampleAESEncryption</b></a></font>
+    private static int sampleAESEncryption(
+        byte[] secretKey, int keyLength, int blockLength, byte[] plainText, byte[] cipherText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// First create the AES key based on the bytes in secretKey using </font>
+        <font color=green>// keyLength bits as the length</font>
+        AESKey key = new AESKey( secretKey, keyLength );
+        
+        <font color=green>// Create the output stream to store the encrypted data</font>
+        NoCopyByteArrayOutputStream out = new NoCopyByteArrayOutputStream();
+        
+        <font color=green>// Now create the block encryptor and pass in a new instance</font>
+        <font color=green>// of an AES encryptor engine with the specified block length</font>
+        BlockEncryptor cryptoStream = new BlockEncryptor(
+            new AESEncryptorEngine( key ), out );
+            
+        <font color=green>// Write the plaintext to the AES encryption stream        </font>
+        cryptoStream.write( plainText, 0, dataLength );
+        
+        <font color=green>// Copy the encrypted data from the output stream to the ciphertext</font>
+        <font color=green>// buffer and return the number of bytes actually in the buffer</font>
+        int finalLength = out.size();
+        System.arraycopy( out.getByteArray(), 0, cipherText, 0, finalLength );
+        return finalLength;
+    }
+   
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>   
+   
+ 
+    <font color=green>// <a name="#sampleAESDecryption"><b>sampleAESDecryption</b></a></font>
+    private static int sampleAESDecryption(
+        byte[] secretKey, int keyLength, int blockLength, byte[] cipherText, byte[] plainText, int dataLength )
+        throws CryptoException, IOException
+    {
+        <font color=green>// First create the AES key based on the bytes in secretKey using </font>
+        <font color=green>// keyLength bits as the length</font>
+        AESKey key = new AESKey( secretKey, keyLength );
+        
+        <font color=green>// Create the input stream based on the ciphertext</font>
+        ByteArrayInputStream in = new ByteArrayInputStream( cipherText, 0, dataLength );
+        
+        <font color=green>// Now create the block decryptor and pass in a new instance</font>
+        <font color=green>// of an AES decryptor engine with the specified block length</font>
+        BlockDecryptor cryptoStream = new BlockDecryptor(
+            new AESDecryptorEngine( key ), in );
+            
+        <font color=green>// Read the decrypted text from the AES decryptor stream and</font>
+        <font color=green>// return the actual length read</font>
+        return cryptoStream.read( plainText, 0, dataLength );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+  
+  
+    <font color=green>// <a name="#sampleMD2Digest"><b>sampleMD2Digest</b></a></font>
+    private static int sampleMD2Digest( byte[] plainText, byte[] digestData ) throws CryptoException, IOException
+    {
+        <font color=green>// Create an instance of the digest algorithm</font>
+        MD2Digest digest = new MD2Digest();
+        
+        <font color=green>// Create the digest output stream for easy use</font>
+        DigestOutputStream digestStream = new DigestOutputStream( digest, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        digestStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        digest.getDigest( digestData, 0 );
+        return digest.getDigestLength();
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleMD4Digest"><b>sampleMD4Digest</b></a></font>
+    private static int sampleMD4Digest( byte[] plainText, byte[] digestData ) throws CryptoException, IOException
+    {
+        <font color=green>// Create an instance of the digest algorithm</font>
+        MD4Digest digest = new MD4Digest();
+        
+        <font color=green>// Create the digest output stream for easy use</font>
+        DigestOutputStream digestStream = new DigestOutputStream( digest, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        digestStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        digest.getDigest( digestData, 0 );
+        return digest.getDigestLength();
+    }        
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+  
+  <font color=green>// <a name="#sampleMD5Digest"><b>sampleMD5Digest</b></a>        </font>
+    private static int sampleMD5Digest( byte[] plainText, byte[] digestData ) throws CryptoException, IOException
+    {
+        
+        <font color=green>// Create an instance of the digest algorithm</font>
+        MD5Digest digest = new MD5Digest();
+        
+        <font color=green>// Create the digest output stream for easy use</font>
+        DigestOutputStream digestStream = new DigestOutputStream( digest, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        digestStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        digest.getDigest( digestData, 0 );
+        return digest.getDigestLength();
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleRIPEMD128Digest"><b>sampleRIPEMD128Digest</b></a></font>
+    private static int sampleRIPEMD128Digest( byte[] hashKey, byte[] plainText, byte[] digestData )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of the digest algorithm</font>
+        RIPEMD128Digest digest = new RIPEMD128Digest();
+        
+        <font color=green>// Create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream(
+            new HMAC( key, digest ), null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        digest.getDigest( digestData, 0 );
+        return digest.getDigestLength();
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleRIPEMD160Digest"><b>sampleRIPEMD160Digest</b></a></font>
+    private static int sampleRIPEMD160Digest( byte[] hashKey, byte[] plainText, byte[] digestData )
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of the digest algorithm</font>
+        RIPEMD160Digest digest = new RIPEMD160Digest();
+        
+        <font color=green>// Create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream(
+            new HMAC( key, digest ), null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        digest.getDigest( digestData, 0 );
+        return digest.getDigestLength();
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+    
+
+    <font color=green>// <a name="#sampleSHA1MAC"><b>sampleSHA1MAC</b></a></font>
+    private static int sampleSHA1HMAC( byte[] hashKey, byte[] plainText, byte[] digestData ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of an HMAC</font>
+        HMAC hMac = new HMAC( key, new SHA1Digest() );
+        
+        <font color=green>// Now create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream( hMac, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        hMac.getMAC( digestData, 0 );
+        return hMac.getLength();
+    } 
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleSHA224MAC"><b>sampleSHA224MAC</b></a></font>
+    private static int sampleSHA224HMAC( byte[] hashKey, byte[] plainText, byte[] digestData ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of an HMAC</font>
+        HMAC hMac = new HMAC( key, new SHA224Digest() );
+        
+        <font color=green>// Now create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream( hMac, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        hMac.getMAC( digestData, 0 );
+        return hMac.getLength();
+    } 
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleSHA256MAC"><b>sampleSHA256MAC</b></a></font>
+    private static int sampleSHA256HMAC( byte[] hashKey, byte[] plainText, byte[] digestData ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of an HMAC</font>
+        HMAC hMac = new HMAC( key, new SHA256Digest() );
+        
+        <font color=green>// Now create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream( hMac, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        hMac.getMAC( digestData, 0 );
+        return hMac.getLength();
+    } 
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+  
+    <font color=green>// <a name="#sampleSHA384MAC"><b>sampleSHA384MAC</b></a></font>
+    private static int sampleSHA384HMAC( byte[] hashKey, byte[] plainText, byte[] digestData ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of an HMAC</font>
+        HMAC hMac = new HMAC( key, new SHA384Digest() );
+        
+        <font color=green>// Now create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream( hMac, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        hMac.getMAC( digestData, 0 );
+        return hMac.getLength();
+    }                      
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleSHA512MAC"><b>sampleSHA512MAC</b></a></font>
+    private static int sampleSHA512HMAC( byte[] hashKey, byte[] plainText, byte[] digestData ) 
+        throws CryptoException, IOException
+    {
+        <font color=green>// Create the keyed hash function key</font>
+        HMACKey key = new HMACKey( hashKey );
+
+        <font color=green>// Create an instance of an HMAC</font>
+        HMAC hMac = new HMAC( key, new SHA512Digest() );
+        
+        <font color=green>// Now create the MAC output stream for easy use</font>
+        MACOutputStream macStream = new MACOutputStream( hMac, null );
+                
+        <font color=green>// Write the text to the stream</font>
+        macStream.write( plainText );
+        
+        <font color=green>// Copy the digest data to the digestData byte array and</font>
+        <font color=green>// return the length</font>
+        hMac.getMAC( digestData, 0 );
+        return hMac.getLength();
+    }        
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#samplePRNG"><b>samplePRNG</b></a></font>
+    public static boolean samplePRNG( PseudoRandomSource source )
+        throws CryptoTokenException
+    {
+        return testForRandomness( source.getBytes( 2500 + 1 ) );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+ 
+   
+    <font color=green>// <a name="#sampleRandomSource"><b>sampleRandomSource</b></a></font>
+    public static boolean sampleRandomSource()
+    {
+        return testForRandomness( RandomSource.getBytes( 2500 + 1 ) );
+    }
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleForRandomness"><b>sampleForRandomness</b></a></font>
+    private static boolean sampleForRandomness( byte[] buffer )
+    {
+        <font color=green>// Use a buffer with 20000 bits (+1 byte to simplify runs test code)</font>
+        if( buffer.length < 2500 + 1 ) {
+            throw new IllegalArgumentException();
+        }
+        
+        boolean pass = true;
+    
+        <font color=green>// Do the monobit and poker tests</font>
+        int ones = 0;
+        int nibbles[] = { 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 };
+        
+        for( int i = 0; i < 2500; ++i ) {
+            
+            <font color=green>// Need to and the byte in buffer with 0xff</font>
+            <font color=green>// to convert to an int properly</font>
+            int b = buffer[ i ] & 0xff;
+        
+            for( int j = 0; j < 8; ++j ) {
+               ones += ( b >> j ) & 1;
+            }
+           
+            nibbles[ b & 0xf ]++;
+            nibbles[ b >> 4  ]++;
+        }
+        
+        <font color=green>// The test is passed if 9,654 < X < 10,346</font>
+        pass &= 9654 < ones && ones < 10346;    
+        
+        long sum = 0;
+        
+        for( int i = 0; i < 16; ++i ) {
+           sum += nibbles[ i ] * nibbles[ i ];
+        }
+        
+        long x100 = ( 16 * sum ) / 50 - 500000; 
+        
+        <font color=green>// The test is passed if 1.03 < X < 57.4</font>
+        pass &= 103 < x100 && x100 < 5740;   
+        
+        <font color=green>// Do the runs test</font>
+        int runs[][] = { { 0, 0,0,0,0,0, 0 }, { 0, 0,0,0,0,0, 0 } };
+        int bit;
+        int previous_bit;
+        int count;
+        
+        <font color=green>// make last byte different from last bit</font>
+        buffer[ 2500 ] = ( byte ) ( ( buffer[ 2499 ] >> 7 ) - 1 );   
+        previous_bit = buffer[ 0 ] & 1;
+        count = 1;
+        
+        for( int i = 1; i < 20000; ++i ) {
+    
+            bit = ( buffer[ i / 8 ] >> i % 8 ) & 1;
+    
+            if( bit == previous_bit ) {
+                count++;
+            }
+            else {
+                if( count >= 34 ) {
+                    pass = false;
+                    break;
+                }
+                else if( count <= 5 ) {
+                    runs[ previous_bit ][ count ]++;
+                }
+                else {
+                    runs[ previous_bit ][ 6 ]++;
+                }
+            
+                previous_bit = bit;U:\Developer Program\Games
+
+                count = 1;
+            }
+        }
+        
+        <font color=green>// Determine if it passed the test</font>
+        pass &= 2267 < runs[0][1] && runs[0][1] < 2733; 
+        pass &= 1079 < runs[0][2] && runs[0][2] < 1421; 
+        pass &=  502 < runs[0][3] && runs[0][3] <  748; 
+        pass &=  223 < runs[0][4] && runs[0][4] <  402; 
+        pass &=   90 < runs[0][5] && runs[0][5] <  223; 
+        pass &=   90 < runs[0][6] && runs[0][6] <  223;
+       
+        pass &= 2267 < runs[1][1] && runs[1][1] < 2733; 
+        pass &= 1079 < runs[1][2] && runs[1][2] < 1421; 
+        pass &=  502 < runs[1][3] && runs[1][3] <  748; 
+        pass &=  223 < runs[1][4] && runs[1][4] <  402; 
+        pass &=   90 < runs[1][5] && runs[1][5] <  223; 
+        pass &=   90 < runs[1][6] && runs[1][6] <  223;
+           
+        <font color=green>// Now return with the test results</font>
+        return pass;
+    }
+    
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+    <font color=green>// <a name="#sampleRSAPKCS1SignatureSigner"><b>sampleRSAPKCS1SignatureSigner</b></a></font>
+    public static boolean testRSAPKCS1SignatureSigner()
+        throws CryptoTokenException, CryptoUnsupportedOperationException, UnsupportedCryptoSystemException
+    {
+        RSAPublicKey publicKey;
+        RSAPrivateKey privateKey;
+        
+        try {
+            RSACryptoSystem cryptoSystem = new RSACryptoSystem( RSA_MODULUS_BYTE_LENGTH * 8 );
+    
+            <font color=green>// Create a public key using the crypto system, E and N</font>
+            publicKey = new RSAPublicKey( cryptoSystem, RSA_E,
+            RSA_N );
+            <font color=green>// Create a private key using the crypto system, D, P and Q</font>
+            privateKey = new RSAPrivateKey( cryptoSystem, RSA_D, RSA_P, RSA_Q );
+        }    
+        catch( InvalidKeyException e ) {
+            return false;
+        }
+        
+        <font color=green>// Creates the signature signer using the private key and digest</font>
+        PKCS1SignatureSigner signer = new PKCS1SignatureSigner( privateKey, new SHA1Digest() );
+        <font color=green>// Adds additional data to the digest</font>
+        signer.update( RSA_PKCS1_MESSAGE, 0, RSA_PKCS1_MESSAGE.length );
+
+        byte signature[] = new byte[ signer.getLength() ];
+        <font color=green>// Signs the new encrypted  signature</font>
+        signer.sign( signature, 0 );
+        
+        <font color=green>// Creates a signature verifier object</font>
+        PKCS1SignatureVerifier verifier = new PKCS1SignatureVerifier( publicKey, new SHA1Digest(), 
+                                                                      signature, 0 );
+        <font color=green>// Adds he additional data to the digest</font>
+        verifier.update( RSA_PKCS1_MESSAGE, 0, RSA_PKCS1_MESSAGE.length );
+        <font color=green>// Set the Flag </font>
+        boolean passedTest = true;
+        
+        <font color=green>// Verifiy the signature, store the result</font>
+        passedTest &= verifier.verify();
+        <font color=green>// Compare arrays </font>
+        passedTest &= Arrays.equals( signature, RSA_PKCS1_SIGNATURE );
+        
+        return passedTest;
+    }
+
+
+<a href="javascript:history.go(-1);"><b><--Back</b> (to the class definition)</a>  
+
+
+</pre></BODY></HTML></font>

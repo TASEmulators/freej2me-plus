@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+</HEAD>
+<BODY>
+<h2>拡張ストレージアクセス　＜Phase3＞</h2>
+<p>
+「拡張ストレージ」とは、アプリケーションごとに独立で使用できる単一のファイルです。他の Java アプリケ−ションから参照・操作されることはありません。  
+<ul>
+<li><A HREF="#section_storage_create">拡張ストレージの作成</A>
+<li><A HREF="#section_storage_read">拡張ストレージの読み込み</A>
+<li><A HREF="#section_storage_write">拡張ストレージへの書き込み</A>
+<li><A HREF="#section_storage_notice">注意事項</A>
+</A>
+</ul>
+<DL>
+<DD> 
+ <p></DD>
+</DL>
+<hr>
+<A name="section_storage_create"><h3> 拡張ストレージの作成 </h3></a>
+<p>
+拡張ストレージを作成するには、JAD ファイルのキーワードとして  
+<BLOCKQUOTE><code>
+MIDlet-X-Storage-Size: <i>サイズ</i>  
+</code></BLOCKQUOTE>
+の書式で拡張ストレージのサイズをバイト単位で指定してください。指定したサイズ分を 0x00（16進数）で初期化されたファイルが作成されます。指定可能な最大サイズは 204,800 バイトです。<p>  
+<A NAME="section_storage_read"><h3> 拡張ストレージの読み込み </h3></A>
+<p>
+拡張ストレージを読み込むには、Connector クラスのスタティックメソッド open() に "storage:" スキームの url を指定して得られた StreamConnection オブジェクトに対して openInputStream() メソッドを呼び出します。  
+openInputStream() は成功すると、CLDC の InputStream オブジェクトを返します。取得された InputStream オブジェクトのメソッドで拡張ストレージ内のデータを読み込みます。  
+以下に例を示します。
+<BLOCKQUOTE><code><pre>
+byte[] buf = new byte[100];
+StreemConnection conn = Connector.open(&quot;storage:&quot;, Connector.READ);
+InputStream in = conn.openInputStream();
+in.read(buf);
+in.close();
+conn.close();
+</pre></code></BLOCKQUOTE>
+データの読み込みが終わったら InputStream の close() と StreemConnection の close() を呼び出してください。<p>  
+また、StreamConnection オブジェクトを生成せずに直接 Connector クラスの openInputStream() メソッドに "storage:" スキームの url を指定して InputStreem オブジェクトを生成することもできます。以下に例を示します。  
+<BLOCKQUOTE><code><pre>
+byte[] buf = new byte[100];
+InputStream in = Connector.openInputStream(&quot;storage:&quot;);
+in.read(buf);
+in.close();
+</pre></code></BLOCKQUOTE>
+データの読み込みが終わったら InputStream の close() を呼び出してください。<p>  
+実際の拡張ストレージの読み込みは openInputStream() メソッド内で行われます。そのため、実際に拡張ストレージのデータの読み込み中に音声着信などで中断すると、openInputStream() で例外 IOException が発生します。  
+</p>
+<A NAME="section_storage_write"><h3> 拡張ストレージへの書き込み </h3></A>
+<p>
+拡張ストレージに書き込むには、Connector クラスのスタティックメソッド open() に "storage:" スキームの url を指定して得られた StreamConnection オブジェクトに対して openOutputStream() メソッドを呼び出します。  
+openOutputStream() は成功すると、MIDPの OutputStream オブジェクトを返します。取得された OutputStream オブジェクトのメソッドで拡張ストレージ内のデータを書き込みます。  
+以下に例を示します。
+<BLOCKQUOTE><code><pre>
+byte[] buf = new byte[100];
+StreemConnection conn = Connector.open(&quot;storage:&quot;, Connector.WRITE);
+OutputStream out = conn.openOutputStream();
+out.write(buf);
+out.close();
+conn.close();
+</pre></code></BLOCKQUOTE>
+データの書き込みが終わったら OutputStream の close() と StreemConnection の close() を呼び出してください。<p>  
+また、StreamConnection オブジェクトを生成せずに直接 Connector クラスのメソッド openOutputStream() メソッドに "storage:" スキームの url を指定して OutputStreem オブジェクトを生成することもできます。以下に例を示します。  
+<BLOCKQUOTE><code><pre>
+byte[] buf = new byte[100];
+OutputStream out = Connector.openOutputStream(&quot;storage:&quot;);
+out.write(buf);
+out.close();
+</pre></code></BLOCKQUOTE>
+データの書き込みが終わったら OutputStream の close() を呼び出してください。<p>write() メソッドで書き込まれたファイルの内容はメモリ上に蓄積され、実際の拡張ストレージへの書き込みは OutputStream の close() メソッド内で一括で行われます。そのため、実際に拡張ストレージのデータの書き込み中に音声着信などで中断すると、write() メソッドではなく close() メソッドで例外 IOException が発生します。  
+なお、実際の書き込み時に音声着信などで中断してエラーが発生した場合、VM 内で何度か書き込み処理を繰り返すため、close() メソッドで例外 IOException が発生することは非常に稀です。  
+</p>
+<A NAME="section_storage_notice"><h3> 注意事項 </h3></A>
+<p>
+拡張ストレージの実際の書き込み時に音声着信などで中断してエラーが発生した場合、VM 内で何度か書き込み処理を繰り返しますが、稀に、それでも書き込めない場合があります。その場合はエラーになり、拡張ストレージは書き込む前の状態に戻るか、削除されます。  
+書き込む前の状態に戻るか削除されるかは、移動機に依存します。
+</p><p>
+書き込みの失敗でファイルが削除された場合、拡張ストレージの内容は破棄され、  
+再度、拡張ストレージにアクセスする際に 0x00（16進数）で初期化されたファイルが再作成されますが、稀にデータフォルダの容量が足りないなどの理由でファイルの再作成が失敗しエラーメッセージが表示されることがあります。  
+</p>
+<hr>
+Copyright 2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted.  
+
+</BODY>
+</HTML>

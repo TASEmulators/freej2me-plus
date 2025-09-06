@@ -1,0 +1,170 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Digests and MACs</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Digests and MACs</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<p> The RIM Crypto API was designed in such a way that a developer
+    can easily use digests and MACs (Message
+    Authentication Codes) and access their contents.  Unlike many
+    of the encryption topics covered so far in this tutorial, they are
+    relatively straightforward and easy to understand. This lesson describes
+    the digests and MACs found in the API and
+    provides code examples that show how to use them effectively.
+</p>
+
+<p><b>Digests</b></p>
+<P>Digests are used to convert an arbitrary long piece of input data to a fixed size hash or digest. Strong digest algorithms make it hard to find two inputs that hash
+to the same output, and make it hard to find an input that hashes to a particular digest value.
+<p> The most commonly used hash function in North America
+    is SHA-1, whose digest length is 160 bits. Recently, the NSA has developed
+    a successor to SHA-1 called SHA-2.  SHA-2 has variable digest bit lengths of 256, 384 and 512 bits.
+    These lengths match the security level of the upcoming release of the AES
+    candidate (which is to replace DES).  We have implemented SHA-1 (in the class
+    <code>SHA1Digest</code>), as well as all three variants of SHA-2 (in the classes
+    <code>SHA256Digest</code>, <code>SHA384Digest</code> and <code>SHA512Digest</code>).
+    The following example demonstrates how to use these classes.
+</p>
+<pre>
+    // Instantiate any of the different types of SHA
+    SHA1Digest digest160 = new SHA1Digest();
+    SHA256Digest digest256 = new SHA256Digest();
+    SHA384Digest digest384 = new SHA384Digest();
+    SHA512Digest digest512 = new SHA512Digest();
+
+    // Now we will simply use the SHA-1 algorithm to illustrate
+    // how the rest of the functions work.
+    byte[] data = new byte[128];
+    RandomSource.getBytes( data );
+
+    // Update the contents of the hash function
+    // (This is the data that gets hashed)
+    digest160.update( data );
+    digest160.update( data, 10, 15 );
+
+    // Now get the hash value.
+    byte[] digestValue = digest160.getDigest();
+</pre>
+<p> We could also have retrieved the hash value using the following code:
+</p>
+<pre>
+    byte[] hashValue = new byte[digest160.getDigestLength()];
+    digest160.getDigest( hashValue, 0 );
+</pre>
+<p> There is another, perhaps even easier way to use digests.  This involves the use
+    of the streaming support provided by <a href="../DigestInputStream.html">DigestInputStream</a> and <a href="../DigestOutputStream.html">DigestOutputStream</a>.
+    Simply create an instance of a digest input or output stream, and pass an instance of
+    a digest algorithm into the constructor:
+</p>
+<pre>
+    // Create a SHA digest with the default length (160-bit).
+    SHA1Digest digest = new SHA1Digest();
+
+    // Now create a new DigestOutputStream.  Passing in a null value
+    // for the OutputStream parameter means that this stream will
+    // not pass the data written to it into another output stream; we
+    // simply want to use the digest functionality.
+    DigestOutputStream out = new DigestOutputStream( digest, null );
+
+    // A call to write will also update the digest (assuming data exists
+    // and contains the message)
+    out.write( data );
+
+    // Now get the hash value.
+    byte[] digestValue = digest.getDigest();
+</pre>
+
+<p> This same method can be used for <a href="../DigestInputStream.html">DigestInputStream</a>, except that the data read from the
+    input stream (passed into DigestInputStream) is passed through the digest algorithm.
+</p>
+
+<p><b>Support for Other Digests</b></p>
+
+<p> The interface for all of the other digests in the API is the same.
+    While SHA is the most common, the Crypto API supports
+    the following hash algorithms:
+    <UL>
+    <LI> <a href="../MD2Digest.html">MD2 Digest</a>
+    <LI> <a href="../MD4Digest.html">MD4 Digest</a>
+    <LI> <a href="../MD5Digest.html">MD5 Digest</a>
+    <LI> <a href="../SHA1Digest.html">SHA-1 Digest</a>
+    <LI> <a href="../SHA256Digest.html">SHA-256 Digest</a>, <a href="../SHA384Digest.html">SHA-384 Digest</a>, <a href="../SHA512Digest.html">SHA-512 Digest</a>
+    <LI> <a href="../RIPEMD128Digest.html">RIPEMD-128 Digest</a>, <a href="../RIPEMD160Digest.html">RIPEMD-160 Digest</a>
+    </UL>
+</p>
+
+<p><b>Message Authentication Codes (MACs)</b></p>
+<p> <a href="../MAC.html">MACs</a> are essentially keyed hash functions.  That is, a key
+    is required for the creation of the hash value as well as for the
+    verification of that particular hash value.  The MAC functionality in
+    the Crypto API builds upon the digest interface, providing this
+    additional functionality.
+<p>
+The Crypto API supports the following MACs:
+<ul>
+<li> <a href="../CBCMAC.html">CBC MAC</a>
+<li> <a href="../HMAC.html">HMAC</a>
+<li> <a href="../NullMAC.html">Null MAC</a>
+</UL>
+
+</P>
+<p> The <a href="../HMAC.html">HMAC</a> class implements the MAC interface and allows for easy use of
+    keyed hash functions.  The code required to use an HMAC is very similar
+    to that for digests, except that a key is required to generate the hash:
+</p>
+<pre>
+    // We need to create an HMAC key, which can be an array
+    // of data of any length.  In most cases, a length equal
+    // to the bit size of the digest is recommended.  Random
+    // data will be used here.
+    byte[] keyData = new byte[ 20 ];
+    RandomSource.getBytes( keyData );
+
+    // Create the key
+    HMACKey key = new HMACKey( keyData );
+
+    // Create the SHA digest
+    SHA1Digest digest = new SHA1Digest();
+
+    // Now an HMAC can be created, passing in the key and the
+    // SHA digest. Any instance of a digest can be used here.
+    HMAC hMac = new HMAC( key, digest );
+
+    // The HMAC can be updated much like a digest
+    hMac.update( data );
+    hMac.update( data, 10, 15 );
+
+    // Now get the MAC value.
+    byte[] macValue = hMac.getMAC();
+</pre>
+
+<p> There is also streaming support for HMACs.  Assuming the HMAC object above has been created,
+    a <a href="../MACOutputStream.html">MACOutputStream</a> could be used:
+
+<pre>
+    // Create the MAC output stream, once again passing in null for
+    // the OutputStream in order to just use the MAC functionality
+    MACOutputStream out = new MACOutputStream( hMac, null );
+
+    // A call to write will also update the MAC (assuming data exists
+    // and contains the message)
+    out.write( data );
+
+    // Now get the MAC value.
+    byte[] macValue = hMac.getMAC();
+</pre>
+
+<p> Once again, a <a href="../MACInputStream.html">MACInputStream</a> class exists, which can be used in a similar fashion.
+</p>
+
+</BODY>
+</HTML>

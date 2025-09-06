@@ -1,0 +1,1775 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>M3G File Format</title>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <link rel="stylesheet" type="text/css" href="stylesheet.css"
+ title="Style">
+</head>
+<body bgcolor="#ffffff">
+<center>
+<h1>File Format for Mobile 3D Graphics API</h1>
+</center>
+<hr>
+<h2 class="SectionTitle">Abstract</h2>
+This specification defines a 3D Graphics File Format that complements
+the
+Mobile 3D Graphics API (M3G). The file format is provided as a compact
+and standardised way of populating a scene graph.
+<br>
+<hr>
+<h2 class="SectionTitle">Contents</h2>
+<ul type="disc">
+  <li> <a href="#ImportantNotes">1 Important Notes</a></li>
+  <li> <a href="#MimeType">2 MIME Type and File Extension</a></li>
+  <li> <a href="#DataTypes">3 Data Types</a></li>
+  <ul type="disc">
+    <li> <a href="#FundamentalDataTypes">3.1 Fundamental Data Types</a></li>
+    <li> <a href="#CompoundDataTypes">3.2 Compound Data Types</a></li>
+  </ul>
+  <li> <a href="#FileStructure">4 File Structure</a></li>
+  <li> <a href="#FileIdentifier">5 File Identifier</a></li>
+  <li> <a href="#Section">6 Section</a></li>
+  <ul type="disc">
+    <li> <a href="#CompressionScheme">6.1 CompressionScheme</a></li>
+    <li> <a href="#TotalSectionLength">6.2 TotalSectionLength</a></li>
+    <li> <a href="#UncompressedLength">6.3 UncompressedLength</a></li>
+    <li> <a href="#Objects">6.4 Objects</a></li>
+    <li> <a href="#Checksum">6.5 Checksum</a></li>
+  </ul>
+  <li> <a href="#ObjectStructure">7 Object Structure</a></li>
+  <ul type="disc">
+    <li> <a href="#ObjectType">7.1 ObjectType</a></li>
+    <li> <a href="#ObjectLength">7.2 Length</a></li>
+    <li> <a href="#ObjectData">7.3 Data</a></li>
+  </ul>
+  <li> <a href="#ObjectOrdering">8 Object Ordering</a></li>
+  <ul type="disc">
+    <li> <a href="#ObjectReferences">8.1 Object References</a></li>
+    <li> <a href="#SharedObjects">8.2 Shared Objects</a></li>
+    <li> <a href="#SubtreeLoading">8.3 Subtree Loading</a></li>
+  </ul>
+  <li> <a href="#ErrorHandling">9 Error Handling</a></li>
+  <li> <a href="#SpecialObjectData">10 Special Object Data</a></li>
+  <ul type="disc">
+    <li> <a href="#Header">10.1 Header Object</a></li>
+    <li> <a href="#ExternalReference">10.2 External Reference</a></li>
+  </ul>
+  <li> <a href="#PerClassData">11 Per-Class Data</a></li>
+  <ul type="disc">
+    <li> <a href="#AnimationController">11.1 AnimationController</a></li>
+    <li> <a href="#AnimationTrack">11.2 AnimationTrack</a></li>
+    <li> <a href="#Appearance">11.3 Appearance</a></li>
+    <li> <a href="#Background">11.4 Background</a></li>
+    <li> <a href="#Camera">11.5 Camera</a></li>
+    <li> <a href="#CompositingMode">11.6 CompositingMode</a></li>
+    <li> <a href="#Fog">11.7 Fog</a></li>
+    <li> <a href="#Graphics3D">11.8 Graphics3D</a></li>
+    <li> <a href="#Group">11.9 Group</a></li>
+    <li> <a href="#Image2D">11.10 Image2D</a></li>
+    <li> <a href="#IndexBuffer">11.11 IndexBuffer</a></li>
+    <li> <a href="#KeyframeSequence">11.12 KeyframeSequence</a></li>
+    <li> <a href="#Light">11.13 Light</a></li>
+    <li> <a href="#Loader">11.14 Loader</a></li>
+    <li> <a href="#Material">11.15 Material</a></li>
+    <li> <a href="#Mesh">11.16 Mesh</a></li>
+    <li> <a href="#MorphingMesh">11.17 MorphingMesh</a></li>
+    <li> <a href="#Node">11.18 Node</a></li>
+    <li> <a href="#Object3D">11.19 Object3D</a></li>
+    <li> <a href="#PolygonMode">11.20 PolygonMode</a></li>
+    <li> <a href="#RayIntersection">11.21 RayIntersection</a></li>
+    <li> <a href="#SkinnedMesh">11.22 SkinnedMesh</a></li>
+    <li> <a href="#Sprite">11.23 Sprite</a></li>
+    <li> <a href="#Texture2D">11.24 Texture2D</a></li>
+    <li> <a href="#Transform">11.25 Transform</a></li>
+    <li> <a href="#Transformable">11.26 Transformable</a></li>
+    <li> <a href="#TriangleStripArray">11.27 TriangleStripArray</a></li>
+    <li> <a href="#VertexArray">11.28 VertexArray</a></li>
+    <li> <a href="#VertexBuffer">11.29 VertexBuffer</a></li>
+    <li> <a href="#World">11.30 World</a></li>
+  </ul>
+  <li> <a href="#ObjectTypeValues">12 ObjectType Values</a></li>
+</ul>
+<hr>
+<h2 class="SectionTitle"><a name="ImportantNotes"></a>1 Important Notes</h2>
+The data here are <i>not</i> serialized by Java's own serialization
+mechanism.
+They are serialized by the M3G serialization mechanism, which produces
+and loads data streams conforming to the M3G file format specification.
+<p>For more details of the mechanisms for loading a M3G compliant file,
+please refer to the documentation for the
+<a href="javax/microedition/m3g/Loader.html">Loader</a>
+class.
+</p>
+<h2 class="SectionTitle"><a name="MimeType"></a>2 MIME Type and File
+Extension</h2>
+The MIME type for this file format is <tt>application/m3g</tt>. The
+file
+extension (for systems that do not support MIME type queries) is <tt>.m3g</tt>,
+to match the lowest level name in the package hierarchy.
+<h2 class="SectionTitle"><a name="DataTypes"></a>3 Data Types</h2>
+<h3>
+<a name="FundamentalDataTypes"></a>3.1 Fundamental Data Types</h3>
+There are several data types which are regarded as fundamental. These
+are
+as follows:
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" width="90%"
+ class="Table">
+    <caption><!-- <caption align=top>&nbsp;</caption> --><br>
+    </caption><tbody>
+      <tr>
+        <th width="20%">
+        <div class="TableHead">Type Name</div>
+        </th>
+        <th width="80%">
+        <div class="TableHead">Description</div>
+        </th>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>Byte</tt></div>
+        </td>
+        <td>
+        <div class="TableText">A single, unsigned 8-bit byte.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>Int16</tt></div>
+        </td>
+        <td>
+        <div class="TableText">A signed 16 bit value, stored as two
+bytes, lower
+byte first.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>UInt16</tt></div>
+        </td>
+        <td>
+        <div class="TableText">An unsigned 16 bit value, stored as two
+bytes, lower
+byte first.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>Int32</tt></div>
+        </td>
+        <td>
+        <div class="TableText">A signed 32 bit value, stored as four
+bytes, lowest
+byte first.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>UInt32</tt></div>
+        </td>
+        <td>
+        <div class="TableText">An unsigned 32 bit value, stored as four
+bytes,
+lowest byte first.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>Float32</tt></div>
+        </td>
+        <td>
+        <div class="TableText">A single precision floating point value,
+in 32-bit
+format as defined by IEEE-754. This is stored as four bytes, with the
+least
+significant byte of the mantissa first, and the exponent byte last. <br>
+Note that only normal numeric values and positive 0 can be stored.
+Special values such as denormals, infinities, NaNs, negative 0, and
+indefinite
+values are disallowed and must be treated as errors.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>String</tt></div>
+        </td>
+        <td>
+        <div class="TableText">A null-terminated Unicode string, coded
+as UTF-8.</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><tt>Boolean</tt></div>
+        </td>
+        <td>
+        <div class="TableText">A single byte with the value 0 (false)
+or 1 (true).
+Other values are disallowed and must be treated as errors.</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+<h3>
+<a name="CompoundDataTypes"></a>3.2 Compound Data Types</h3>
+In order to avoid having to repeatedly specify sequences of the same
+types
+many times, some compound data types are defined for convenience. The
+composition
+of these is listed to show both their makeup and the order in which the
+simple elements are to be serialized. These are as follows:
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" width="90%"
+ class="Table">
+    <caption><!-- <caption align=top>&nbsp;</caption> --><br>
+    </caption><tbody>
+      <tr>
+        <th width="20%">
+        <div class="TableHead">Type Name</div>
+        </th>
+        <th width="60%">
+        <div class="TableHead">Description</div>
+        </th>
+        <th width="20%">
+        <div class="TableHead">Composition</div>
+        </th>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText">Vector3D</div>
+        </td>
+        <td>
+        <div class="TableText">A 3D vector.</div>
+        </td>
+        <td><tt>Float32 x;</tt> <br>
+        <tt>Float32 y;</tt> <br>
+        <tt>Float32 z;</tt></td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText">Matrix</div>
+        </td>
+        <td>
+        <div class="TableText">A 4x4 generalized matrix. The 16
+elements of the
+matrix are output in the same order as they are retrieved using the API
+Transform.get method. In other words, in this order:
+        <blockquote>
+          <pre>&nbsp; 0&nbsp; 1&nbsp; 2&nbsp; 3<br>&nbsp; 4&nbsp; 5&nbsp; 6&nbsp; 7<br>&nbsp; 8&nbsp; 9&nbsp; 10 11<br>&nbsp; 12 13 14 15</pre>
+        </blockquote>
+        </div>
+        </td>
+        <td><tt>Float32 elements[16];</tt></td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText">ColorRGB</div>
+        </td>
+        <td>
+        <div class="TableText">A color, with no alpha information. Each
+component
+is scaled so that 0x00 is 0.0, and 0xFF is 1.0.</div>
+        </td>
+        <td><tt>Byte red;</tt> <br>
+        <tt>Byte green;</tt> <br>
+        <tt>Byte blue;</tt></td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText">ColorRGBA</div>
+        </td>
+        <td>
+        <div class="TableText">A color, with alpha information. Each
+component
+is scaled so that 0x00 is 0.0, and 0xFF is 1.0. The alpha value is
+scaled
+so that 0x00 is completely transparent, and 0xFF is completely opaque.</div>
+        </td>
+        <td><tt>Byte red;</tt> <br>
+        <tt>Byte green;</tt> <br>
+        <tt>Byte blue;</tt> <br>
+        <tt>Byte alpha;</tt></td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText">ObjectIndex</div>
+        </td>
+        <td>
+        <div class="TableText">The index of a previously encountered
+object in
+the file. Although this is serialized as a single unsigned integer, it
+is included in the compound type list because of the additional
+semantic
+information embodied in its type. A value of 0 is reserved to indicate
+a null reference; actual object indices start from 1. Object indices
+must
+refer only to null or to an object which has already been created
+during
+the input deserialization of a file - they must be less than or equal
+to
+the index of the object in which they appear. Other values are
+disallowed
+and must be treated as errors.</div>
+        </td>
+        <td><tt>UInt32 index;</tt></td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><i>Type</i>[]</div>
+        </td>
+        <td>
+        <div class="TableText">A variable-length array of any type is
+always output
+in a counted form, with the count first. Each element is then output in
+index order, starting from 0. The last element has index (count-1). If
+the array is empty, then only a 0 count is output.</div>
+        </td>
+        <td><tt>UInt32 count;</tt> <br>
+        <i>Type</i> <tt>arrayValue[0];</tt> <br>
+        <i>Type</i> <tt>arrayValue[1];</tt> <br>
+        <i>...etc.</i></td>
+      </tr>
+      <tr>
+        <td>
+        <div class="TableText"><i>Type</i>[<i>count</i>]</div>
+        </td>
+        <td>
+        <div class="TableText">Arrays with an explicit length are
+either always
+have the same constant number of elements, or this count is specified
+elsewhere,
+so only the elements are output. Each element is then output in index
+order,
+starting from 0. The last element has index (length-1). If the array is
+empty, then nothing is output.</div>
+        </td>
+        <td><i>Type</i> <tt>arrayValue[0];</tt> <br>
+        <i>Type</i> <tt>arrayValue[1];</tt> <br>
+        <i>...etc.</i></td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+<h2 class="SectionTitle">
+<a name="FileStructure"></a>4 File Structure</h2>
+The file consists of the file identifier, followed by one or more
+sections.
+Thus the overall file structure looks like this:
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" class="Table">
+    <tbody>
+      <tr>
+        <td>&nbsp;</td>
+        <td>File Identifier</td>
+      </tr>
+      <tr>
+        <td>Section 0</td>
+        <td>File Header Object</td>
+      </tr>
+      <tr>
+        <td>Section 1</td>
+        <td>External Reference Objects</td>
+      </tr>
+      <tr>
+        <td>Section 2</td>
+        <td>Scene Objects</td>
+      </tr>
+      <tr>
+        <td>Section 3</td>
+        <td>Scene Objects</td>
+      </tr>
+      <tr>
+        <td>...</td>
+        <td>...</td>
+      </tr>
+      <tr>
+        <td>Section <i>n</i></td>
+        <td>Scene Objects</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+The reason for having different sections is that some of the objects,
+such
+as the mesh objects, should be compressed to reduce file size, whereas
+other objects, such as the header object, should not be compressed. The
+header object must be kept uncompressed since it should be easy to read
+quickly.
+<p>The first section, Section 0, must be present, must be uncompressed
+and must contain only the header object. This object contains
+information
+about the file as a whole, and is discussed in detail in
+<a href="#HeaderObject">Section
+10.1</a>.
+</p>
+<p>If there are external references in the file, then these must all
+appear
+in a single section immediately following the header section. This
+section
+may be compressed or uncompressed. External references allow scenes to
+be built up from a collection of separate files, and are discussed in
+detail
+in
+<a href="#ExternalReference">Section 10.2</a>.
+</p>
+<p>Following these are an unspecified number of sections containing
+scene
+objects.
+</p>
+<p>The file must contain the header section, plus at least one other
+non-empty
+section (containing at least one object). It is possible to have a file
+consisting solely of external references, or solely of scene objects.
+</p>
+<p>A file containing no objects at all is not a valid M3G file, and
+must
+be treated as an error.
+</p>
+<h2 class="SectionTitle"><a name="FileIdentifier"></a>5 File Identifier</h2>
+The file identifier is a unique set of bytes that will differentiate
+the
+file from other types of files. It consists of 12 bytes, as follows:
+<blockquote>
+  <pre>Byte[12] FileIdentifier = { 0xAB, 0x4A, 0x53, 0x52, 0x31, 0x38, 0x34, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A }</pre>
+</blockquote>
+This can also be expressed using C-style character definitions as:
+<blockquote>
+  <pre>Byte[12] FileIdentifier = { '&laquo;', 'J', 'S', 'R', '1', '8', '4', '&raquo;', '\r', '\n', '\x1A', '\n' }</pre>
+</blockquote>
+The rationale behind the choice values in the identifier is based on
+the
+rationale for the identifier in the PNG specification. This identifier
+both identifies the file as a M3G file and provides for immediate
+detection
+of common file-transfer problems.
+<ul>
+  <li>Byte [0] is chosen as a non-ASCII value to reduce the probability
+that
+a text file may be misrecognized as a M3G file.</li>
+  <li>Byte [0] also catches bad file transfers that clear bit 7.</li>
+  <li>Bytes [1..6] identify the format, and are the ascii values for
+the
+string
+"JSR184".</li>
+  <li>Byte [7] is for aesthetic balance with byte 1 (they are a
+matching pair
+of double-angle quotation marks).</li>
+  <li>Bytes [8..9] form a CR-LF sequence which catches bad file
+transfers
+that
+alter newline sequences.</li>
+  <li>Byte [10] is a control-Z character, which stops file display
+under
+MS-DOS,
+and further reduces the chance that a text file will be falsely
+recognised.</li>
+  <li>Byte [11] is a final line feed, which checks for the inverse of
+the
+CR-LF
+translation problem.</li>
+</ul>
+A decoder may further verify that the next byte is 0 (this is the first
+byte of the mandatory uncompressed header section). This will catch bad
+transfers that drop or alter zero bytes.
+<h2 class="orphan" class="SectionTitle"><a name="Section"></a>6 Section</h2>
+A section is a data container for one or more objects. The section
+header
+determines if the objects are compressed or not, how much object data
+there
+is, and also contains a checksum.
+<p>In this document, we will talk about "sections that are compressed"
+and "sections that are uncompressed". In reality, we will mean
+"sections
+where the objects are compressed", and "sections where the objects are
+uncompressed".
+</p>
+<p>Each section has the following structure:
+</p>
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;                      CompressionScheme<br>UInt32                      TotalSectionLength<br>UInt32                      UncompressedLength<br>Byte[<span
+ class="new">TotalSectionLength-13</span>] Objects<br>UInt32                      Checksum</pre>
+</blockquote>
+We will now go through the individual parts of the section.
+<h3><a name="CompressionScheme"></a>6.1 CompressionScheme</h3>
+This field tells how the <tt>Objects</tt> field in this section is
+compressed.
+It also specifies what checksum algorithm is used. Currently, only the
+Adler32 checksum is mandatory. Compression only applies to the <tt>Object</tt>
+data, and not to the other fields in the section.
+<p><tt>CompressionScheme</tt> must be one of the following values:
+</p>
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" class="Table">
+    <tbody>
+      <tr>
+        <td>0</td>
+        <td>Uncompressed, Adler32 Checksum</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>ZLib compression, 32 k buffer size, Adler32 Checksum</td>
+      </tr>
+      <tr>
+        <td>2...255</td>
+        <td>Reserved</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+Example:
+<blockquote>
+  <pre>Byte CompressionScheme = 1;</pre>
+</blockquote>
+indicates that the <tt>Objects</tt> field in the section is compressed
+using zlib with 32 k buffer size.
+<p>The values 2...255 are reserved for future releases and are
+disallowed.
+A loader that follows the specification must report an error if they
+are
+found.
+</p>
+<h3><a name="TotalSectionLength"></a>6.2 TotalSectionLength</h3>
+This is the total length of the section in bytes; from the start of
+this
+section to the start of the next section.
+<p>Example:
+</p>
+<blockquote>
+  <pre>UInt32 TotalSectionLength = 2056</pre>
+</blockquote>
+indicates that this section, including the <tt>CompressionScheme</tt>,
+<tt>TotalSectionLength</tt>,
+<tt>UncompressedLength</tt>,
+<tt>Objects</tt>
+and <tt>Checksum</tt> fields, will be 2056 bytes in length.
+<h3><a name="UncompressedLength"></a>6.3 UncompressedLength</h3>
+Knowing the size of the decompressed data ahead of time can be used to
+make Zlib inflation much easier and less memory hungry. Therefore, the
+size of the compressed part of the section (in bytes) before
+compression
+(or after decompression) is serialized as part of the section
+information.
+Since it is only the <tt>Objects</tt> field that can be compressed,
+<tt>UncompressedLength</tt>
+contains the length of the <tt>Objects</tt> field after decompression.
+If no compression is specified for this section, this equals the actual
+number of bytes serialized in the <tt>Objects</tt> array.
+<p>A value of 0 in this field is legal - the section is simply ignored.
+However, it is recommended that any process that creates a file should
+check for 0 length sections and eliminate them to reduce file size.
+</p>
+<p>Example:
+</p>
+<blockquote>
+  <pre>UInt32 UncompressedLength = 4560</pre>
+</blockquote>
+Means that in this section, after decompression, the <tt>Objects</tt>
+field
+is 4560 bytes in length.
+<h3><a name="Objects"></a>6.4 Objects</h3>
+The objects in each section are serialized as an array of bytes, one
+after
+the other. This array of bytes will either be compressed (if
+CompressionScheme
+is 1) or it will be uncompressed. If it is compressed, it is compressed
+as a single chunk of data, not as separate objects. Zero bits must be
+padded
+in the end to make the <tt>Objects</tt> field byte aligned.
+<p>The structure of each individual object's data is documented in <a
+ href="#SpecialObjectData">Section
+10</a> and <a href="#PerClassData">Section 11</a>.
+</p>
+<h3><a name="Checksum"></a>6.5 Checksum</h3>
+To be able to verify that the section was correctly loaded, there is a
+32-bit checksum of all the data in the section. The checksum algorithm
+is specified by the <tt>CompressionScheme</tt> field. Currently, only
+the
+Adler32 checksum is mandatory. The checksum is calculated using all
+preceding
+bytes in the section, i.e. the
+<tt>CompressionScheme</tt>,<tt>TotalSectionLength</tt>,
+<tt>UncompressedLength</tt>,
+and the actual serialized data in the <tt>Objects</tt> field (i.e. in
+its
+compressed form if compression is specified).
+<p>Example:
+</p>
+<blockquote>
+  <pre>UInt32 Checksum = 0xffe806a3</pre>
+</blockquote>
+On limited devices, we might not be able to afford to load an entire
+section
+before interpreting it. Thus the loader may start interpreting the
+objects
+before knowing that the section as a whole is correct. However, the
+checksums
+are still useful in that we at least know afterwards that there was an
+otherwise undetected error if the checksums differed.
+<p>Even on a system that can afford to load an entire section before
+loading
+it, it is possible to have errors in the file. The content creation
+program
+can have a defect, the transmission of the file could be error-prone,
+or
+the file could have been altered as part of a deliberate attack on the
+device. Thus it is important that the loader tries to detect errors
+also
+in files that have correct checksums.
+</p>
+<p>The loader implementation may decide not to compute (and/or check)
+the
+checksum. Thus, a file with erroneous checksums is not guaranteed to be
+rejected. However, a file with erroneous checksums is not a M3G
+compliant
+file and must not pass a strict verification test.
+</p>
+<h2 class="SectionTitle"><a name="ObjectStructure"></a>7 Object
+Structure</h2>
+The object data stored in each section is first decompressed and then
+interpreted
+as a sequence of objects. This separates the act of decompression from
+the interpretation of the data. All data documented in this section is
+assumed already to be in its uncompressed form.
+<p>Each object in the file represents one object in the scene graph
+tree,
+and is stored in a chunk. The structure of an object chunk is as
+follows:
+</p>
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;        ObjectType<br>UInt32        Length<br>Byte[<span
+ class="new">Length</span>]  Data<br></pre>
+</blockquote>
+<h3><a name="ObjectType"></a>7.1 ObjectType</h3>
+This field describes what type of object has been serialized. For
+instance, we could have a Camera node, a Mesh node or a Texture2D
+object. <a href="#ObjectTypeValues">Section 12</a> includes a table
+that shows the correspondence between ObjectType values and the actual
+object types. The ObjectType field must hold a valid value as defined
+in Section 12. The reserved object types (values 23..254) must be
+treated as errors.
+<p>The values 0 and 0xFF are special: 0 represents the header object,
+and
+0xFF represents an external reference.
+</p>
+<p>Example:
+</p>
+<blockquote>
+  <pre>Byte ObjectType = 14</pre>
+</blockquote>
+This means that the current object is a <tt>Mesh</tt> object (see
+<a href="#ObjectTypeValues">Section
+12</a>).
+<h3><a name="ObjectLength"></a>7.2 Length</h3>
+This contains the length of the Data array, in bytes. Note that a value
+of 0 in this field may be legal; some objects require no additional
+data
+over and above their mere presence.
+<p>Example:
+</p>
+<blockquote>
+  <pre>UInt32 Length = 2032</pre>
+</blockquote>
+indicates that the <tt>Data</tt> field of this object spans 2032 bytes
+in the (decompressed) file.
+<h3><a name="ObjectData"></a>7.3 Data</h3>
+This is data that is specific for the object. It is up to the loader
+to interpret this data according to the object type and populate the
+object accordingly. Detailed information on the data for each object
+type is documented in <a href="#SpecialObjectData">Section 10</a> and
+<a href="#PerClassData">Section 11</a>.
+<p>For instance, if the object just contained a single color, the Data
+would be a 3 byte long array, where the first byte represents the red
+component, the second byte the green component, and the third byte the
+blue component.
+</p>
+<p>Attempts to read off the end of an object's data are disallowed and
+must be signalled as errors. An example of this would be an object with
+a reported length of 32 bytes, but which internally specifies an array
+with 65537 members.
+</p>
+<p>Conversely, the deserialization code for each object may also check
+that each byte of the data belongs to a valid interpretation.
+Additional bytes after the end of an object's valid data are
+disallowed. This condition may be difficult to determine on the target
+platform, but any file which contains "extra" data in object chunks is
+not a M3G compliant file and must not pass a strict verification test.
+</p>
+<h2 class="SectionTitle"><a name="ObjectOrdering"></a>8 Object Ordering</h2>
+All the objects in the scene graph are serialized in leaf-first order,
+or reference based order as it is also called. Before serializing a
+specific object, all other objects referenced by that object must
+already have been serialized. Objects may refer to themselves if this
+is allowed by the scene data structures.
+<p>By definition, the root of the tree will be sent last.<br>
+</p>
+<p class="new">Note that cycles are not allowed in the file
+format. There is one special case where they <span
+ style="font-style: italic;">are</span> allowed in the run-time scene
+graph, namely Node alignment. Before a scene graph containing cyclic
+references can be written into a file, the cycles must be broken. This
+can be done by inserting dummy target nodes as children of the original
+alignment targets. For example, if a leaf node is aligned to the World,
+an empty Group with an identity transformation is inserted as a child
+of the World, and the alignment redirected to that.<br>
+</p>
+<p><span class="new">Given a scene graph with no cycles, it is
+possible to use a "leaves first" strategy for output</span> - start
+by serializing all the objects that do not reference other objects,
+and then all the objects that refer to the objects already sent, and
+so it continues until all objects are sent.
+</p>
+<p>Alternatively, a "depth first" strategy can be used, where each
+object recursively applies the following procedure, to build up a
+table of references in the correct order. (It is assumed that the
+table is initially empty.)
+</p>
+<blockquote>
+  <pre>BuildReferenceTable:<br><br>for each reference in this object,<br>&nbsp;&nbsp;&nbsp; call BuildReferenceTable on the referred object<br><br>if this object is not already in the reference table,<br>&nbsp;&nbsp;&nbsp; append this object to the reference table.</pre>
+</blockquote>
+Each object can then be serialized from the reference table in order.
+<p>For example, assume that we have the following tree structure:
+</p>
+<center>
+<p><img src="./javax/microedition/m3g/doc-files/FileFormat-8-1.png"
+ alt="Tree with node A as root, B under A, C and D under B, E under A again, and F under E"
+ height="199" width="433"></p>
+</center>
+<p>One valid ordering of the objects is C D F B E A. This is the
+ordering that occurs if the "leaves first" method is used. Note that
+other leaf-first orderings are also valid, for instance F D C E B A.
+</p>
+<p>The "depth-first" method produces valid orderings where interior
+nodes in the graph may be sent before all the leaves have been
+sent. An ordering produced by the depth-first method discussed above
+might be C D B F E A.
+</p>
+<p>The only important thing is that any objects referenced by a
+particular object are sent before the object itself.
+</p>
+<p>With this flexibility, the ordering of references can be forced by
+the file creator if this is advantageous. For example, if we wish
+textures to be sent in a separate section that is uncompressed. Thus,
+if we have the following tree:
+</p>
+<center>
+<p><img src="./javax/microedition/m3g/doc-files/FileFormat-8-2.png"
+ alt="Tree with node A as root, B under A, T1 and D under B, E under A again, and T2 under E"
+ height="199" width="433"></p>
+</center>
+<p>where T1 and T2 are textures, we can send the scene graph using,
+for instance:
+</p>
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" class="Table">
+    <tbody>
+      <tr>
+        <td>Identifier</td>
+        <td>&nbsp;</td>
+        <td>File Identifier (see <a href="#FileIdentifier">Section 5</a>)</td>
+      </tr>
+      <tr>
+        <td>Section 0</td>
+        <td>Uncompressed</td>
+        <td>File Header Object</td>
+      </tr>
+      <tr>
+        <td>Section 1</td>
+        <td>Uncompressed</td>
+        <td>T1 T2</td>
+      </tr>
+      <tr>
+        <td>Section 2</td>
+        <td>Compressed</td>
+        <td>D B E A</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+Other orderings are also possible, for instance:
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" class="Table">
+    <tbody>
+      <tr>
+        <td>Identifier</td>
+        <td>&nbsp;</td>
+        <td>File Identifier (see <a href="#FileIdentifier">Section 5</a>)</td>
+      </tr>
+      <tr>
+        <td>Section 0</td>
+        <td>Uncompressed</td>
+        <td>File Header Object</td>
+      </tr>
+      <tr>
+        <td>Section 1</td>
+        <td>Uncompressed</td>
+        <td>T1 T2</td>
+      </tr>
+      <tr>
+        <td>Section 2</td>
+        <td>Compressed</td>
+        <td>D E B A</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+or even (with a naive file creator):
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" class="Table">
+    <tbody>
+      <tr>
+        <td>Identifier</td>
+        <td>&nbsp;</td>
+        <td>File Identifier (see <a href="#FileIdentifier">Section 5</a>)</td>
+      </tr>
+      <tr>
+        <td>Section 0</td>
+        <td>Uncompressed</td>
+        <td>File Header Object</td>
+      </tr>
+      <tr>
+        <td>Section 1</td>
+        <td>Uncompressed</td>
+        <td>T1</td>
+      </tr>
+      <tr>
+        <td>Section 2</td>
+        <td>Compressed</td>
+        <td>D</td>
+      </tr>
+      <tr>
+        <td>Section 3</td>
+        <td>Uncompressed</td>
+        <td>T2</td>
+      </tr>
+      <tr>
+        <td>Section 4</td>
+        <td>Compressed</td>
+        <td>B E A</td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+Because multiple root-level objects are allowed in the file format,
+there is no obvious end point in the data. In order that the loader
+can determine that the file has ended, the total length of the file is
+stored in the header. Reading from the file is ended when the total
+number of bytes is reached. At this point, any objects not yet linked
+into the scene graph are treated as root-level objects and returned to
+the application.
+<h3><a name="ObjectReferences"></a>8.1 Object References</h3>
+Each object serialized, including the header object, is given an
+index, in order, starting from 1. The 0 index is used to indicate a
+null reference. This index is unrelated to the user ID for an object.
+<p>A reference to an object is serialized as an integer containing its
+index within the file. The serialization order constraint can be
+expressed as follows:
+</p>
+<p>For an object with index <b>i</b>, a reference index <b>r</b>
+within it is only valid if <b>r</b> &lt;= <b>i</b>. Invalid reference
+indices must be treated as an error.
+</p>
+<p>An object reference must refer to an object of a valid type for the
+reference involved. For example, the reference from an Appearance
+object to a Material object must actually refer to a Material object.
+If the referred object type is incorrect, this must be treated as an
+error.
+</p>
+<h3><a name="SharedObjects"></a>8.2 Shared Objects</h3>
+Shared objects are handled the same way as normal objects. We only
+need to make sure that a shared object is sent before both of the
+objects that reference it.
+<p>For instance, for the following tree of references, where X is a
+shared object
+</p>
+<center>
+<p><img src="./javax/microedition/m3g/doc-files/FileFormat-8-3.png"
+ alt="Tree with node A as root, B under A, X and D under B, E under A again, and X shared under E"
+ height="199" width="237"></p>
+</center>
+<p>A possible ordering would be D X B E A. Both the leaves-first and
+the depth-first algorithms described above will generate valid
+orderings.
+</p>
+<h3><a name="SubtreeLoading"></a>8.3 Subtree Loading</h3>
+With reference based order, it will be more difficult to load an
+arbitrary
+subtree from a file than with, e.g., root-first order. However, it is
+still
+possible, using two passes of the file. Assume that the subtree is
+defined
+as "object number X and all its children". In the first pass, only the
+node references are decoded, and an empty tree of the complete scene
+graph
+is created. From this graph, we find node X and make a list of all its
+descendants in the subtree. During the second pass, we simply load all
+the objects in the list. The last object that was loaded will be the
+root
+of the subtree.
+<p>In the case where rewinding the stream is not possible, it is also
+possible to do subtree loading in just one pass. This is achieved by
+loading everything up until the root node of the desired subtree, and
+then letting the garbage collection remove everything that is not
+referred to by the subtree. However, such an implementation would
+consume more memory than the two-pass implementation above. In the
+worst case, this is no different from loading the entire scene. For
+example, if the file contains a 3D map of the whole world and all you
+want is a specific house, you may still need to load the entire world
+and then delete everything but the house, if the house is the last
+object in the file.
+</p>
+<h2 class="SectionTitle"><a name="ErrorHandling"></a>9 Error Handling</h2>
+There are several points at which an error may be detected. These
+include,
+but are not limited to:
+<ul>
+  <li>Memory exhaustion</li>
+  <li>Missing or malformed file identifier</li>
+  <li>Invalid section type</li>
+  <li>Invalid file, section, or object length</li>
+  <li>Invalid section checksum</li>
+  <li>Invalid object type</li>
+  <li>Extra or missing object data</li>
+  <li>Invalid object reference</li>
+  <li>Invalid enumeration value</li>
+  <li>Invalid boolean value</li>
+  <li>Invalid floating point value</li>
+  <li>Values out of range for property</li>
+  <li>Attempt to read past end of stream</li>
+  <li>Aborted download</li>
+  <li>Error in external reference</li>
+</ul>
+In particular, if values read from the loaded file would cause an
+<i>immediate</i> exception when passed to the API (e.g. all the
+attenuation parameters on a light are 0.0, or an image is too large
+for the implementation to handle), then this must be treated as an
+error.
+<p>If combinations of values are read that may cause a <i>deferred</i>
+exception, (e.g. a material and light are both present, but there are
+no
+normals specified), then this must <i>not</i> be treated as an error
+by
+the Loader. The application must be given the opportunity to take
+action
+after loading, in order to avoid these exceptions.
+</p>
+<p>If any kind of error is detected during loading, the required
+action is for the Loader to abort this download, and that of any
+pending external references, clear up any temporary data structures,
+and throw an exception. If this file is being used as an external
+reference, then this is also treated as an error in the file that is
+attempting to load it. (This definition is, of course, recursive.)
+</p>
+<p>The practical upshot of this is that any error detected in any of
+the files that may make up a world being loaded must result in a safe
+abort of the loading process and the throwing of a single exception to
+the main application.
+</p>
+<p>It is up to the application what action, if any, is taken in the
+event of a loading error. Options range from an apologetic alert to
+the user ("Download failed!"), up through sophisticated error recovery
+schemes involving alternate file locations, or even different content
+in extreme cases.
+</p>
+<h2 class="SectionTitle"><a name="SpecialObjectData"></a>10 Special
+Object Data</h2>
+The data for the "special" object types is documented here.
+<h3><a name="Header"></a>10.1 Header Object</h3>
+Object Type: 00
+<br>
+Superclass data: <i>none</i>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte[2] VersionNumber<br>Boolean hasExternalReferences<br>UInt32&nbsp; TotalFileSize<br>UInt32&nbsp; ApproximateContentSize<br>String&nbsp; AuthoringField</pre>
+</blockquote>
+There must be exactly one Header object in a file, and it must be the
+only object in the first section of the file, which in turn must be
+uncompressed. Due to its position in the file, it will always be
+assigned object index 1.
+<p><tt>VersionNumber</tt> is a unique version number identifying
+variants
+of the file fomat. Only one variant is currently specified: version
+number
+1.0. This must be indicated by <tt>VersionNumber = {1, 0}</tt>. The
+first
+number is major revision number, followed by minor revision.
+</p>
+<p><tt>hasExternalReferences</tt> is a boolean that describes whether
+this file is self-contained or includes URIs for other files, such as
+textures or geometries. If this is <tt>false</tt>, the file is
+self-contained. If it is <tt>true</tt>, then it indicates that the
+immediately following section of the file will contain the external
+reference objects needed to specify these external links. See <a
+ href="#ExternalReference">Section 10.2</a> for more details.
+</p>
+<p><tt>TotalFileSize</tt> is the total size of the file, from the
+start to the end. It will be used in the loading, so it must be
+correct. (That is, it is not a hint.) For example, a file of size 6783
+would define this field as <tt>TotalFileSize = 6783</tt>.
+</p>
+<p><tt>ApproximateContentSize</tt> contains the total number of bytes
+required to dowload the entire scene, including external links such as
+textures and geometry. This is provided as a hint, so that the user
+can know how much data he/she will pay for before loading the entire
+scene. The <tt>ApproximateContentSize</tt> field is also necessary in
+order to produce a good progress bar during the loading of the scene.
+</p>
+<p>It should be noted that this information is only a hint. For
+instance, the file sizes of the objects that this file is linked to
+might have changed. Due to this, it is called "approximate" content
+size. Note that <tt>ApproximateContentSize</tt> should be equal to
+<tt>TotalFileSize</tt> if <tt>ExternalFiles</tt> is false.
+</p>
+<p>For example, a file of 6083 bytes, with an external reference to
+another file of 10700 bytes would set <tt>ApproximateContentSize =
+16783</tt>.
+</p>
+<p><tt>AuthoringField</tt> consists of a single nul-terminated UTF-8
+string. The content of the string is not defined, and may include any
+information that the authoring environment wishes to place into
+it. Its most common purpose is mainly to make it possible to put a
+copyright note on the file, for example: <tt>AuthoringField =
+"Blast4Fun (C) 2003 Extreme Games Inc."</tt>
+</p>
+<p>Note that if the string just contains numbers and letters from the
+English alphabet, the UTF-8 encoding will be the same as ASCII
+encoding.
+</p>
+<h3><a name="ExternalReference"></a>10.2 External Reference</h3>
+ObjectType: 0xFF (255)
+<br>
+Superclass data: <i>none</i>
+<br>
+Followed by:
+<blockquote>
+  <pre>String&nbsp; URI</pre>
+</blockquote>
+Instead of storing an object in-place, it is possible to have an
+external reference, in the form of a URI. This is stored in the object
+data as a single, nul-terminated UTF-8 string.
+<p>Relative URIs are relative to the file in which they are found, as
+usual. For example, a URI of
+"http://www.gamesforfun.com/objs/redcar.m3g",
+indicates another file in the M3G file format, at an absolute address,
+and
+"bluecartexture.png" indicates a PNG file in the same location as the
+current file.
+</p>
+<p>If an external reference cannot be loaded, this will result in an
+error, causing the parent file to be "unloadable".
+</p>
+<p>Loops of external references (e.g. file A references file B which in
+turn references file A again) are illegal and will result in a loading
+error.
+</p>
+<p>The loader must only indicate that the loading of a file is complete
+when all external references within it have also been successfully
+loaded
+and the references type checked.
+</p>
+<p>External references may appear only within their own section within
+the file. If present, this appears immediately after the file header
+section. It may be compressed or uncompressed.
+</p>
+<p>In order to facilitate type checking of external references, loading
+of the externally referenced file must complete before reading any
+objects
+which could refer to it. This is one of the main reasons for ensuring
+that
+external references are in their own section, which occurs before
+sections
+containing objects of other types. For example, if the external
+reference
+is referred to as if it were an Appearance object, then the check that
+it is indeed an Appearance can occur only after loading the referred
+file.
+</p>
+<p>External reference loading must support both M3G and PNG file types
+in order to satisfy the specification. An external reference to any
+other type of file must be treated as an error. To stress the point,
+even if a particular format (e.g., JPEG) is otherwise supported by
+the Loader, it must still reject any M3G files that reference JPEG
+images.
+</p>
+<p>For M3G format files, the external reference must be able to load
+another M3G format file containing a single root-level object. If more
+than one root-level object is defined, then the first root-level
+object will be used, and the other objects and their descendants
+discarded.
+</p>
+<p>For PNG format files, the external reference must be able to
+reference a valid PNG file, in which case the object created is a
+single instance of Image2D.
+</p>
+<p>In all cases, once loading completes, the single root-level object
+loaded from the file effectively replaces the external reference
+object in the object index table. References to that index will then
+nominate the root-level object.
+</p>
+<h2 class="SectionTitle"><a name="PerClassData"></a>11 Per-Class Data</h2>
+The data for each class in the API is now presented in alphabetical
+order. Where a class is a subclass, the superclass's data is always
+output first, and this information is taken to be part of the data for
+the class as a whole.
+<p>Classes without a serialized form (e.g. Graphics3D) are shown here
+for completeness, but are indicated as "not a serializable class".
+</p>
+<p>Detailed information about each field is not given - it should be
+assumed that the data have the same meanings as those assigned in the
+API. Where data is serialized in a form which is different from the
+way it is specified in the API, this alternate form is documented
+here.
+</p>
+<p>Any values which would be invalid as arguments to the corresponding
+methods in the API are also invalid in the file and must be reported as
+errors. For example, a negative value in the light attenuation fields
+is
+disallowed by the API and is therefore also disallowed in the file
+format.
+</p>
+<h3><a name="AnimationController"></a>11.1 AnimationController</h3>
+ObjectType: 01
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; speed;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; weight;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; activeIntervalStart;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; activeIntervalEnd;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; referenceSequenceTime;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; referenceWorldTime;</pre>
+</blockquote>
+<h3>
+<a name="AnimationTrack"></a>11.2 AnimationTrack</h3>
+ObjectType: 02
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex&nbsp;&nbsp; keyframeSequence;<br>ObjectIndex&nbsp;&nbsp; animationController;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; propertyID;</pre>
+</blockquote>
+The <tt>propertyID</tt> field must hold a valid <a
+ href="javax/microedition/m3g/AnimationTrack.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="Appearance"></a>11.3 Appearance</h3>
+ObjectType: 03
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; layer;<br>ObjectIndex&nbsp;&nbsp; compositingMode;<br>ObjectIndex&nbsp;&nbsp; fog;<br>ObjectIndex&nbsp;&nbsp; polygonMode;<br>ObjectIndex&nbsp;&nbsp; material;<br>ObjectIndex[] textures;</pre>
+</blockquote>
+These are simply references to each of the objects aggregated together
+to form an appearance.
+<p>There are as many texture objects in the textures array as there are
+active texture units for this appearance. The texture units are loaded
+sequentially from unit 0. If the implementation supports more texture
+units
+than are specified, these are left in their default, inactive state,
+with
+a null texture.
+</p>
+<p>If more textures are specified than are supported by the
+implementation,
+then this must be treated as an error, as it would be in the API. The
+application
+can then decide on an appropriate course of action to handle this case.
+</p>
+<h3><a name="Background"></a>11.4 Background</h3>
+ObjectType: 04
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ColorRGBA&nbsp;&nbsp;&nbsp;&nbsp; backgroundColor;<br>ObjectIndex&nbsp;&nbsp; backgroundImage;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; backgroundImageModeX;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; backgroundImageModeY;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropX;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropY;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropWidth;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropHeight;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; depthClearEnabled;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; colorClearEnabled;</pre>
+</blockquote>
+The <tt>backgroundImageModeX</tt> and <tt>backgroundImageModeY</tt>
+fields
+must each hold a valid <a
+ href="javax/microedition/m3g/Background.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="Camera"></a>11.5 Camera</h3>
+ObjectType: 05
+<br>
+Superclass data: <a href="#Node">Node</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; projectionType;<br><br><i>IF projectionType==GENERIC, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Matrix&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; projectionMatrix;<br><br><i>ELSE<br><br></i>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fovy;<br>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AspectRatio;<br>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; near;<br>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; far;<br><br><i>END</i></pre>
+</blockquote>
+The <tt>projectionType</tt> field must hold a valid <a
+ href="javax/microedition/m3g/Camera.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="CompositingMode"></a>11.6 CompositingMode</h3>
+ObjectType: 06
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; depthTestEnabled;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; depthWriteEnabled;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; colorWriteEnabled;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; alphaWriteEnabled;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; blending;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; alphaThreshold;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; depthOffsetFactor;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; depthOffsetUnits;</pre>
+</blockquote>
+The <tt>blending</tt> field must hold a valid <a
+ href="javax/microedition/m3g/CompositingMode.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<p>The <tt>alphaThreshold</tt> field is stored as a byte to save
+space.
+It is mapped so that 0x00 is equivalent to 0.0 (completely
+transparent),
+and 0xFF is equivalent to 1.0 (completely opaque).
+</p>
+<h3><a name="Fog"></a>11.7 Fog</h3>
+ObjectType: 07
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ColorRGB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; color;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mode;<br><br><i>IF mode==EXPONENTIAL, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; density;<br><br><i>ELSE IF mode==LINEAR, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; near;<br>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; far;<br><br><i>END</i>
+
+  </pre>
+</blockquote>
+The <tt>mode</tt> field must hold a valid <a
+ href="javax/microedition/m3g/Fog.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="Graphics3D"></a>11.8 Graphics3D</h3>
+<i>Not a serializable class.</i>
+<h3><a name="Group"></a>11.9 Group</h3>
+ObjectType: 09
+<br>
+Superclass data: <a href="#Node">Node</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex[] children;</pre>
+</blockquote>
+<h3>
+<a name="Image2D"></a>11.10 Image2D</h3>
+ObjectType: 10
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; format;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; isMutable;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; width;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; height;<br><br><i>IF isMutable==false, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Byte[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; palette;<br>&nbsp;&nbsp;&nbsp; Byte[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pixels;</pre>
+  <i>END</i></blockquote>
+The <tt>format</tt> field must hold a valid <a
+ href="javax/microedition/m3g/Image2D.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<p>For a palettised format, the <tt>pixels</tt> array contains a
+single
+palette index per pixel, and the <tt>palette</tt> array will contain
+up
+to 256 entries, each consisting of a pixel specifier appropriate to the
+format chosen.
+</p>
+<p>For a non-palettised format, the <tt>palette</tt> array will be
+empty,
+and the <tt>pixels</tt> array contains a pixel specifier appropriate
+to
+the format chosen.
+</p>
+<p>In a pixel specifier, each byte is scaled such that 0 represents the
+value 0.0 and 255 represents the value 1.0. The different formats
+require
+different data to be serialized, as follows:
+</p>
+<ul>
+  <li>ALPHA: a single byte per pixel, representing pixel opacity.</li>
+  <li>LUMINANCE: a single byte per pixel, representing pixel luminance.</li>
+  <li>LUMINANCE_ALPHA: two bytes per pixel. The first represents
+luminance,
+the
+second alpha.</li>
+  <li>RGB: three bytes per pixel, representing red, green and blue
+respectively.</li>
+  <li>RGBA: four bytes per pixel, representing red, green, blue and
+alpha
+respectively.</li>
+</ul>
+The meaning of the components is given in the documentation for the <a
+ href="javax/microedition/m3g/Image2D.html">Image2D</a>
+class.
+<h3><a name="IndexBuffer"></a>11.11 IndexBuffer</h3>
+ObjectType: <i>none (abstract base class)</i>
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by: <i>no data (abstract class)</i>
+<h3><a name="KeyframeSequence"></a>11.12 KeyframeSequence</h3>
+ObjectType: 19
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; interpolation;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; repeatMode;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; encoding;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; duration;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; validRangeFirst;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; validRangeLast;<br><br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; componentCount;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; keyframeCount;<br><br><i>IF encoding == 0<br><br>&nbsp;&nbsp;&nbsp; FOR each key frame...<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+ class="new">UInt32</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; time;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Float32[componentCount] vectorValue;<br><br><i>&nbsp;&nbsp;&nbsp; END<br><br>ELSE IF encoding == 1<br><br></i>&nbsp;&nbsp;&nbsp; Float32[componentCount] vectorBias;<br>&nbsp;&nbsp;&nbsp; Float32[componentCount] vectorScale;<br><br><i>&nbsp;&nbsp;&nbsp; FOR each key frame...<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+ class="new">UInt32</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; time;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Byte[componentCount] vectorValue;<br><br><i>&nbsp;&nbsp;&nbsp; END<br><br>ELSE IF encoding == 2<br><br></i>&nbsp;&nbsp;&nbsp; Float32[componentCount] vectorBias;<br>&nbsp;&nbsp;&nbsp; Float32[componentCount] vectorScale;<br><br><i>&nbsp;&nbsp;&nbsp; FOR each key frame...<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span
+ class="new">UInt32</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; time;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UInt16[componentCount] vectorValue;<br><br><i>&nbsp;&nbsp;&nbsp; END<br><br>END</i></pre>
+</blockquote>
+The <tt>interpolation</tt> and <tt>repeatMode</tt> fields must each
+hold
+a valid
+<a href="javax/microedition/m3g/KeyframeSequence.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<p>All of the <tt>vectorValue</tt> arrays are the same size, so a
+separate
+count is stored outside the individual keyframe's data rather than with
+each array.
+</p>
+<p>The <tt>encoding</tt> field indicates the encoding scheme to be
+used
+for the keyframe data. Only the nominated values above are allowed.
+Other
+values must be treated as errors.
+</p>
+<ul>
+  <li>Encoding 0 indicates that the values are stored "raw" as floats.</li>
+  <li>Encodings 1 and 2 indicate that the values are quantized to 1 or
+2
+bytes.
+For each component, a bias and scale are calculated from the sequence
+of
+values for that component. The bias is the mimimum value, the scale is
+the maximum value minus the minimum value. The raw values are then
+converted
+to a value 0..1 by subtracting the bias and dividing by the scale.
+These
+raw values are then quantized into the range of a Byte or UInt16 by
+multiplying
+by 255 or 65535 respectively. The converse operation restores the
+original
+value from the quantized values.</li>
+</ul>
+<h3>
+<a name="Light"></a>11.13 Light</h3>
+ObjectType: 12
+<br>
+Superclass data: <a href="#Node">Node</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; attenuationConstant;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; attenuationLinear;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; attenuationQuadratic;<br>ColorRGB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; color;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mode;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; intensity;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; spotAngle;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; spotExponent;</pre>
+</blockquote>
+The <tt>mode</tt> field must hold a valid <a
+ href="javax/microedition/m3g/Light.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="Loader"></a>11.14 Loader</h3>
+<i>Not a serializable class.</i>
+<h3><a name="Material"></a>11.15 Material</h3>
+ObjectType: 13
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ColorRGB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ambientColor;<br>ColorRGBA&nbsp;&nbsp;&nbsp;&nbsp; diffuseColor;<br>ColorRGB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; emissiveColor;<br>ColorRGB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; specularColor;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; shininess;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vertexColorTrackingEnabled;</pre>
+</blockquote>
+<h3 class="orphan"><a name="Mesh"></a>11.16 Mesh</h3>
+ObjectType: 14
+<br>
+Superclass data: <a href="#Node">Node</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex&nbsp;&nbsp; vertexBuffer;<br><br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; submeshCount;<br><br><i>FOR each submesh...<br><br></i>&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; indexBuffer;<br>&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; appearance;<br><br><i>END</i></pre>
+</blockquote>
+<h3>
+<a name="MorphingMesh"></a>11.17 MorphingMesh</h3>
+ObjectType: 15
+<br>
+Superclass data: <a href="#Mesh">Mesh</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; morphTargetCount;<br><br><i>FOR each target buffer...<br><br></i>&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; morphTarget;<br>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; initialWeight;<br><br><i>END</i></pre>
+</blockquote>
+<h3>
+<a name="Node"></a>11.18 Node</h3>
+ObjectType: <i>none (abstract base class)</i>
+<br>
+Superclass data: <a href="#Transformable">Transformable</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enableRendering;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enablePicking;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; alphaFactor;<br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scope;<br><br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hasAlignment;<br><br><i>IF hasAlignment==TRUE, THEN<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; zTarget;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; yTarget;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; zReference;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; yReference;<br><br><i>END</i></pre>
+</blockquote>
+The <tt>zTarget</tt> and <tt>yTarget</tt> fields must each hold a
+valid
+<a href="javax/microedition/m3g/Node.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<p>The <tt>alphaFactor</tt> field is stored as a byte to save space.
+It
+is mapped so that 0x00 is equivalent to 0.0 (fully transparent), and
+255
+is equivalent to 1.0 (fully opaque).
+</p>
+<p>If the <tt>hasAlignment</tt> field is <tt>false</tt>, the omitted
+fields
+are initialized to their default values.
+</p>
+<h3><a name="Object3D"></a>11.19 Object3D</h3>
+ObjectType: <i>none (abstract base class)</i>
+<br>
+Superclass data: <i>none</i>
+<br>
+Followed by:
+<blockquote>
+  <pre>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; userID;<br><br>ObjectIndex[]&nbsp;&nbsp;&nbsp; animationTracks;<br><br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; userParameterCount;<br><br><i>FOR each user parameter...<br><br></i>&nbsp;&nbsp;&nbsp; UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; parameterID;<br>&nbsp;&nbsp;&nbsp; Byte[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; parameterValue;<br><br><i>END</i>
+
+  </pre>
+</blockquote>
+The userID field may be any value.
+<p>The user parameter data contains enough data to create a
+<tt>java.util.Hashtable</tt> object. This contains key/value pairs,
+with the key being the <tt>parameterID</tt>, and the value being the
+<tt>parameterValue</tt> byte array. The meanings of the IDs, and the
+contents of the byte arrays, are defined by the application and may
+have any value.
+</p>
+<p>The behaviour of the <tt>java.util.Hashtable</tt> class does not
+allow multiple objects with the same key. Therefore, duplicate
+<tt>parameterID</tt> values are not allowed and must be reported as an
+error.
+</p>
+<p>If an object has no user parameters, the
+<tt>userParameterCount</tt> field must be 0. In this case, the user
+object in the resulting Object3D instance must be set to
+<tt>null</tt>, rather than indicating a Hashtable object with no
+content. The Hashtable containing the parameters, if it exists, can be
+retrieved through the API using the <a
+ href="javax/microedition/m3g/Object3D.html#getUserObject%28%29">getUserObject</a>
+method.
+</p>
+<h3><a name="PolygonMode"></a>11.20 PolygonMode</h3>
+ObjectType: 08
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; culling;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; shading;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; winding;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; twoSidedLightingEnabled;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; localCameraLightingEnabled;<br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; perspectiveCorrectionEnabled;</pre>
+</blockquote>
+The <tt>culling</tt>, <tt>shading</tt> and <tt>winding</tt> fields
+must
+each hold a valid <a
+ href="javax/microedition/m3g/PolygonMode.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="RayIntersection"></a>11.21 RayIntersection</h3>
+<i>Not a serializable class.</i>
+<h3><a name="SkinnedMesh"></a>11.22 SkinnedMesh</h3>
+ObjectType: 16
+<br>
+Superclass data: <a href="#Mesh">Mesh</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex&nbsp;&nbsp; skeleton;<br><br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; transformReferenceCount;<br><br><i>FOR each bone reference...<br><br></i>&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; transformNode;<br>&nbsp;&nbsp;&nbsp; UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; firstVertex;<br>&nbsp;&nbsp;&nbsp; UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vertexCount;<br>&nbsp;&nbsp;&nbsp; Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; weight;<br><br><i>END</i></pre>
+</blockquote>
+<h3>
+<a name="Sprite"></a>11.23 Sprite</h3>
+ObjectType: 18
+<br>
+Superclass data: <a href="#Node">Node</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex&nbsp;&nbsp; image;<br>ObjectIndex&nbsp;&nbsp; appearance;<br><br>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; isScaled;<br><br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropX;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropY;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropWidth;<br>Int32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cropHeight;</pre>
+</blockquote>
+<h3>
+<a name="Texture2D"></a>11.24 Texture2D</h3>
+ObjectType: 17
+<br>
+Superclass data: <a href="#Transformable">Transformable</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex&nbsp;&nbsp; image;<br><br>ColorRGB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; blendColor;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; blending;<br><br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; wrappingS;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; wrappingT;<br><br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; levelFilter;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; imageFilter;</pre>
+</blockquote>
+The <tt>levelFilter</tt>, <tt>imageFilter</tt>, <tt>wrappingS</tt>, <tt>wrappingT</tt>,
+and <tt>blending</tt> fields must each hold a valid
+<a href="javax/microedition/m3g/Texture2D.html#field_summary">enumerated
+value</a>, as specified in the class definition. Other values must be
+treated
+as errors.
+<h3><a name="Transform"></a>11.25 Transform</h3>
+<i>Not a serializable class.</i>
+<h3><a name="Transformable"></a>11.26 Transformable</h3>
+ObjectType: <i>none (abstract base class)</i>
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hasComponentTransform;<br><br><i>IF hasComponentTransform==TRUE, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Vector3D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; translation;<br>&nbsp;&nbsp;&nbsp; Vector3D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scale;<br>&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; orientationAngle;<br>&nbsp;&nbsp;&nbsp; Vector3D&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; orientationAxis;<br><br><i>END<br><br></i>Boolean&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hasGeneralTransform;<br><br><i>IF hasGeneralTransform==TRUE, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Matrix&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; transform;<br><br><i>END</i></pre>
+</blockquote>
+If either <tt>hasComponentTransform</tt> or <tt>hasGeneralTransform</tt>
+is <tt>false</tt>, the omitted fields will be initialized to their
+default
+values (equivalent to an identity transform in both cases).
+<h3><a name="TriangleStripArray"></a>11.27 TriangleStripArray</h3>
+ObjectType: 11
+<br>
+Superclass data: <a href="#IndexBuffer">IndexBuffer</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; encoding;<br><br><i>IF encoding == 0, THEN<br><br></i>&nbsp;&nbsp;&nbsp; UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; startIndex;<br><br><i>ELSE IF encoding == 1, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; startIndex;<br><br><i>ELSE IF encoding == 2, THEN<br><br></i>&nbsp;&nbsp;&nbsp; UInt16&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; startIndex;<br><br><i>ELSE IF encoding == 128, THEN<br><br></i>&nbsp;&nbsp;&nbsp; UInt32[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; indices;<br><br><i>ELSE IF encoding == 129, THEN<br><br></i>&nbsp;&nbsp;&nbsp; Byte[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; indices;<br><br><i>ELSE IF encoding == 130, THEN<br><br></i>&nbsp;&nbsp;&nbsp; UInt16[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; indices;<br><br><i>END<br><br></i>UInt32[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stripLengths;</pre>
+</blockquote>
+Bit 7 of the <tt>encoding</tt> field is equivalent to the <tt>explicit</tt>
+property on the index buffer, and will be 1 if the index buffer was
+constructed
+with explicit indices, or 0 if constructed with implicit indices. The
+other
+bits indicate the width of each index field. 0 indicates that the "raw"
+integer values are written, 1 indicates that a single byte will
+suffice,
+and 2 indicates that a 16 bit integer is sufficient to hold all the
+given
+index values. Values for the
+<tt>encoding</tt> field other than those explicitly
+nominated above are not allowed and must be treated as errors.
+<h3><a name="VertexArray"></a>11.28 VertexArray</h3>
+ObjectType: 20
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; componentSize;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; componentCount;<br>Byte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; encoding;<br><br>UInt16&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vertexCount;<br><br><i>FOR each vertex...<br><br></i>&nbsp;&nbsp;&nbsp; <i>IF componentSize==1, THEN<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i>IF encoding==0, THEN<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Byte[componentCount] components;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i>ELSE IF encoding==1, THEN<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Byte[componentCount] componentDeltas;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i>END<br><br></i>&nbsp;&nbsp;&nbsp; <i>ELSE<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i>IF encoding==0, THEN<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Int16[componentCount] components;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i>ELSE IF encoding==1, THEN<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Int16[componentCount] componentDeltas;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i>END<br><br></i>&nbsp;&nbsp;&nbsp; <i>END<br><br>END</i>
+
+  </pre>
+</blockquote>
+The <tt>componentSize</tt> and <tt>componentCount</tt> fields must
+each
+hold a <a
+ href="javax/microedition/m3g/VertexArray.html#VertexArray%28int,%20int,%20int%29">valid
+value</a>, as specified in the constructor definition. Other values
+must
+be treated as errors.
+<p>The <tt>encoding</tt> field indicates the encoding scheme to be
+used
+for the keyframe data. Only the nominated values above are allowed.
+Other
+values must be treated as errors.
+</p>
+<ul>
+  <li>Encoding 0 indicates that the values are stored "raw" as bytes or
+16
+bit
+integers.</li>
+  <li>Encoding 1 indicates that the values are stored as differences
+from the
+previous value. Each component is treated separately, so that the
+difference
+is taken from the corresponding component in the previous vertex. For
+the
+first vertex, the previous value is taken to be 0. Decoding proceeds by
+initializing an accumulator to 0 for each component, and adding each
+value
+to the accumulator. In order that the deltas can be represented within
+the same number of bits as the raw values, the accumulators should be
+the
+same length as the values required (i.e. 8 or 16 bites) and be allowed
+to overflow. This also means that the accumulation is not dependent on
+the signed or unsigned nature of the deltas. (For example, the 8-bit
+sequence
+0, 127, 126 can equally well be represented using deltas of 0, 127, -1
+or 0, 127, 255.)</li>
+</ul>
+<h3>
+<a name="VertexBuffer"></a>11.29 VertexBuffer</h3>
+ObjectType: 21
+<br>
+Superclass data: <a href="#Object3D">Object3D</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ColorRGBA&nbsp;&nbsp;&nbsp;&nbsp; defaultColor;<br><br>ObjectIndex&nbsp;&nbsp; positions;<br>Float32[3]&nbsp;&nbsp;&nbsp; positionBias;<br>Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; positionScale;<br><br>ObjectIndex&nbsp;&nbsp; normals;<br>ObjectIndex&nbsp;&nbsp; colors;<br><br>UInt32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; texcoordArrayCount;<br><br><i>FOR each texture coordinate array...<br><br></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectIndex&nbsp;&nbsp; texCoords;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Float32[3]&nbsp;&nbsp;&nbsp; texCoordBias;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Float32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; texCoordScale;<br><br><i>END</i></pre>
+</blockquote>
+If a texture coordinate array has only two components, the
+corresponding
+<tt>texCoordBias[2]</tt>
+element must be 0.0.
+<p>Null texture coordinate arrays are never serialized, regardless of
+their
+position. A single texture coordinate array will therefore always be
+serialized
+as belonging to texturing unit 0, regardless of its original unit it
+was
+assigned to.
+</p>
+<p>There are as many references in the texture coordinates array as
+there
+are active texture units for this geometry. The texture coordinate
+references
+are loaded sequentially from texture unit 0. If the implementation
+supports
+more texture units than are specified, these are left in their default,
+inactive state, with a null texture coordinate reference and an
+undefined
+bias and scale.
+</p>
+<p>If more texture coordinate references are specified than are
+supported
+by the implementation, then this must be treated as an error, as it
+would
+be in the API. The application can then decide on an appropriate course
+of action to handle this case.
+</p>
+<h3><a name="World"></a>11.30 World</h3>
+ObjectType: 22
+<br>
+Superclass data: <a href="#Group">Group</a>
+<br>
+Followed by:
+<blockquote>
+  <pre>ObjectIndex&nbsp;&nbsp; activeCamera;<br>ObjectIndex&nbsp;&nbsp; background;</pre>
+</blockquote>
+<h2 class="SectionTitle">
+<a name="ObjectTypeValues"></a>12 ObjectType Values</h2>
+This list shows what object type a specific ObjectType value
+maps to.
+<blockquote>&nbsp;
+  <table border="1" cellspacing="0" cellpadding="3" class="Table">
+    <tbody>
+      <tr>
+        <td><b>ObjectType value</b></td>
+        <td><b>Object Type</b></td>
+      </tr>
+      <tr>
+        <td>00</td>
+        <td><a href="#Header">Header Object</a></td>
+      </tr>
+      <tr>
+        <td>01</td>
+        <td><a href="#AnimationController">AnimationController</a></td>
+      </tr>
+      <tr>
+        <td>02</td>
+        <td><a href="#AnimationTrack">AnimationTrack</a></td>
+      </tr>
+      <tr>
+        <td>03</td>
+        <td><a href="#Appearance">Appearance</a></td>
+      </tr>
+      <tr>
+        <td>04</td>
+        <td><a href="#Background">Background</a></td>
+      </tr>
+      <tr>
+        <td>05</td>
+        <td><a href="#Camera">Camera</a></td>
+      </tr>
+      <tr>
+        <td>06</td>
+        <td><a href="#CompositingMode">CompositingMode</a></td>
+      </tr>
+      <tr>
+        <td>07</td>
+        <td><a href="#Fog">Fog</a></td>
+      </tr>
+      <tr>
+        <td>08</td>
+        <td><a href="#PolygonMode">PolygonMode</a></td>
+      </tr>
+      <tr>
+        <td>09</td>
+        <td><a href="#Group">Group</a></td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><a href="#Image2D">Image2D</a></td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><a href="#TriangleStripArray">TriangleStripArray</a></td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td><a href="#Light">Light</a></td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td><a href="#Material">Material</a></td>
+      </tr>
+      <tr>
+        <td>14</td>
+        <td><a href="#Mesh">Mesh</a></td>
+      </tr>
+      <tr>
+        <td>15</td>
+        <td><a href="#MorphingMesh">MorphingMesh</a></td>
+      </tr>
+      <tr>
+        <td>16</td>
+        <td><a href="#SkinnedMesh">SkinnedMesh</a></td>
+      </tr>
+      <tr>
+        <td>17</td>
+        <td><a href="#Texture2D">Texture2D</a></td>
+      </tr>
+      <tr>
+        <td>18</td>
+        <td><a href="#Sprite">Sprite</a></td>
+      </tr>
+      <tr>
+        <td>19</td>
+        <td><a href="#KeyframeSequence">KeyframeSequence</a></td>
+      </tr>
+      <tr>
+        <td>20</td>
+        <td><a href="#VertexArray">VertexArray</a></td>
+      </tr>
+      <tr>
+        <td>21</td>
+        <td><a href="#VertexBuffer">VertexBuffer</a></td>
+      </tr>
+      <tr>
+        <td>22</td>
+        <td><a href="#World">World</a></td>
+      </tr>
+      <tr>
+        <td>23 ... 254</td>
+        <td>Reserved for use in future versions of the file format</td>
+      </tr>
+      <tr>
+        <td>255</td>
+        <td><a href="#ExternalReference">External Reference</a></td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
+Note that Object3D, Transformable, Node, and IndexBuffer are abstract
+classes
+and cannot be instantiated directly. They therefore do not appear in
+this
+list.
+<br>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix B. Launching applications with MIDP 2.x PushRegistry</title>
+   </head>
+   <body>
+      <h1>Appendix B. Launching applications with MIDP 2.x PushRegistry</h1>
+      <p>In order to minimize memory consumption in the device and to improve
+         	usability of the RF applications, this specifications provides means for starting
+         	applications based on events on RFID hardware. This means that when a target
+         	of requested type or target containing the requested NDEF record appears in
+         	the proximity of the device, applications registered for this event are started.
+      </p>
+      <p>There are several ways to provide this functionality. <code class="classname">PushRegistry</code>
+         	defined in the MIDP 2.x specification is the most suitable way and it is well
+         	known in the developer community. The nature of RFID based communication has
+         	to be taken into account when using <code class="classname">PushRegistry</code>. Even
+         	though application is started based on discovered contactless target, the target
+         	may not be available anymore when the application tries to open a connection
+         	to it. In this case, the <code class="classname">Connector.open</code> method throws
+         	an <code class="classname">IOException</code>. Following chapters describe how the
+         	application startup based on RFID events is done using MIDP 2.x
+         	<code class="classname">PushRegistry</code>.
+      </p>
+      <h3><a id="d0e9671"></a>NFC Forum NDEF record push
+      </h3>
+      <p>This specification provides application startup based on targets that
+         	have NFC Forum NDEF records. Registration for startup is based on the record
+         	type name and format of the NDEF record. There can be one application for each
+         	record type name and format pair registered for startup at a time. If data on
+         	the target contains more than one NDEF record, the startup is based on the
+         	record type name and format of the first matching record in the data.
+      </p>
+      <p>When a target is discovered, the application management software checks
+         	the <code class="classname">PushRegistry</code> entries. If there is an entry for the
+         	NDEF record type name and format in the target, the application having that
+         	entry is started. If there is no <code class="classname">PushRegistry</code> entry,
+         	notification about discovered NDEF record is sent to the registered application
+         	that has set the <code class="classname">NDEFRecordListener</code> for that NDEF record
+         	type.
+      </p>
+      <div class="table"><a id="d0e9686"></a><p class="title"><b>Table&nbsp;B.1.&nbsp;NDEF record push URL in BNF format</b></p>
+         <div class="table-contents">
+            <table summary="NDEF record push URL in BNF format" border="1">
+               <colgroup>
+                  <col></col>
+                  <col></col>
+               </colgroup>
+               <tbody>
+                  <tr>
+                     <td align="left">&lt;ndef url&gt;</td>
+                     <td align="left">::= "ndef:"&lt;record_type_format&gt;?name=&lt;record_type_string&gt;</td>
+                  </tr>
+                  <tr>
+                     <td align="left">&lt;record_type_format&gt;</td>
+                     <td align="left">::= "rtd" | "external_rtd" | "mime" | "uri"</td>
+                  </tr>
+                  <tr>
+                     <td align="left">&lt;record_type_string&gt;</td>
+                     <td align="left">::= String of US_ASCII characters, the fully qualified
+                        						   name of the record type
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div><br class="table-break"></br><p>Below are two examples of possible URLs for NDEF record push.</p><pre class="programlisting">ndef:rtd?name=urn:nfc:wkt:Sp</pre><p>This URL registers an application to be started when tag containing
+         	Smart Poster RTD is discovered.
+      </p><pre class="programlisting">ndef:mime?name=text/x-uri</pre><p>This registers an application to be started when tag containing an URL
+         	is discovered.
+      </p>
+      <h3><a id="d0e9716"></a>Secure element push (card emulation mode)
+      </h3>
+      <p>Application startup through <code class="classname">PushRegistry</code> is also
+         	provided for smart card target. In card emulation mode the smart card contains
+         	valuables, such as bus ticket that are read from an external contactless reader.
+         	An application can request startup when a transaction with the external secure
+         	element is completed.
+      </p>
+      <div class="table"><a id="d0e9723"></a><p class="title"><b>Table&nbsp;B.2.&nbsp;Secure element push URL in BNF format</b></p>
+         <div class="table-contents">
+            <table summary="Secure element push URL in BNF format" border="1">
+               <colgroup>
+                  <col></col>
+                  <col></col>
+               </colgroup>
+               <tbody>
+                  <tr>
+                     <td align="left">&lt;secure element url&gt;</td>
+                     <td align="left">::= "secure-element:"[&lt;slot_number&gt;]?aid=&lt;aid_string&gt;</td>
+                  </tr>
+                  <tr>
+                     <td align="left">&lt;slot_number&gt;</td>
+                     <td align="left">::= Number identifying the smart card slot for the secure element. The number must be as defined in JSR 177 except for slot number 0. For slot number 0 the number must be omitted. This provides compatibility with implementations based on specification version 1.1 that only support one (default) slot for the secure element.
+                     </td>
+                  </tr>
+                  <tr>
+                     <td align="left">&lt;aid_string&gt;</td>
+                     <td align="left">::= String of numerical characters. Identifier is the
+                        						   aid defined in ISO7816-5 specification. Masks can be used.
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div><br class="table-break"></br><p>There might be several applications interested in implementing the
+         	<code class="classname">TransactionListener</code> interface to receive
+         	<code class="classname">externalTransactionDetected</code> notifications. When transaction
+         	has actually happened and there is a <code class="classname">PushRegistry</code> entry
+         	for that particular smart card application identifier, the application having
+         	the <code class="classname">PushRegistry</code> entry will be started and it receives
+         	the <code class="classname">externalTransactionDetected</code> notification. Notification
+         	will also be sent to all other applications that have registered the
+         	<code class="classname">TransactionListener</code> with the
+         	<code class="classname">DiscoveryManager</code> methods.
+      </p>
+      <h3><a id="d0e9761"></a>Implementation notes
+      </h3>
+      <p>Unlike the push connections defined in JSR 118 for MIDP 2.x, the protocol
+         	defined in this specification includes a mechanism where the notification about
+         	discovered targets is held until it is processed by the started application.
+      </p>
+      <p>When the application is started in response to a Push message, the application
+         	<strong style="text-transform: lowercase">should</strong> immediately register
+         	<code class="classname">NDEFRecordListener</code> to receive notifications about
+         	discovered NDEF record. This guarantees that the application will receive the
+         	<code class="classname">ndefRecordDetected</code> notifications right away. If an
+         	application fails to register the listeners when started, the platform
+         	implementation may delete notifications that have been stored, if it becomes
+         	necessary to do so.
+      </p>
+   </body>
+</html>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+	 xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	 xmlns:prf="http://www.openmobilealliance.org/tech/profiles/UAPROF/ccppschema-20021212#"
+         xmlns:midf="http://opensource.motorola.com/midp3/midprofile#">
+    <rdf:Description rdf:ID="Profile">
+        <prf:component>
+            <rdf:Description rdf:ID="MIDProfile">
+                <rdf:type rdf:resource="http://opensource.motorola.com/midp3/midprofile#MIDProfile"/>
+                
+                <!-- System properties combined from all APIs  -->
+                <midf:SystemProperty>
+                    <rdf:Bag>
+                        <rdf:li>microedition.media.version 1.2</rdf:li>
+                        <rdf:li>audio.encodings encoding=pcm&rate=11025&bits=16&channels=1</rdf:li>
+                        <rdf:li>microedition.deviceid imei:490154203237518</rdf:li>
+                        <rdf:li>microedition.subscriberid imsi:310150123456789</rdf:li>
+                        <rdf:li>microedition.locale zh-CN-Hans</rdf:li>
+                        <rdf:li>microedition.profiles MIDP-3.0</rdf:li>
+                    </rdf:Bag>
+                </midf:SystemProperty>
+                
+                <!-- Shared Libraries present on the device.  -->
+                <midf:MIDSharedLibrary>
+                    <rdf:Bag>
+                        <rdf:li>QSort MWV 1.1  hash8</rdf:li>
+                    </rdf:Bag>
+                </midf:MIDSharedLibrary>
+                
+                <!-- Supported Push Protocols -->
+                <midf:PushProtocols>
+                    <rdf:Bag>
+                        <rdf:li>sms</rdf:li>
+                        <rdf:li>socket</rdf:li>
+                        <rdf:li>datagram</rdf:li>
+                    </rdf:Bag>
+                </midf:PushProtocols>
+                
+                <!-- Security Domains and their root certificates -->
+                <midf:SecurityDomain>
+                    <rdf:Bag>
+                        <rdf:li>Operator Alias1 hash1</rdf:li>
+                        <rdf:li>Manufacturer Alias2 hash2</rdf:li>
+                        <rdf:li>Identified Alias3 hash3</rdf:li>
+                        <rdf:li>Identified Alias4 hash4</rdf:li>
+                    </rdf:Bag>
+                </midf:SecurityDomain>
+                
+                <!-- Certificates used for access authorization -->
+                <midf:Certificates>
+                    <rdf:Bag>
+                        <rdf:li>Alias5 hash5</rdf:li>
+                        <rdf:li>Alias6 hash6</rdf:li>
+                    </rdf:Bag>
+                </midf:Certificates>
+            </rdf:Description>
+        </prf:component>
+    </rdf:Description>
+</rdf:RDF>

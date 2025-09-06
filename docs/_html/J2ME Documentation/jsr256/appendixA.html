@@ -1,0 +1,891 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <title>Appendix&nbsp;A.&nbsp;Finding sensors</title>
+      <meta name="generator" content="DocBook XSL-NS Stylesheets V1.73.2"></meta>
+   </head>
+   <body>
+      <div class="appendix" lang="en">
+         <div class="titlepage">
+            <div>
+               <div>
+                  <h2 class="title"><a id="d4e1"></a>Appendix&nbsp;A.&nbsp;Finding sensors
+                  </h2>
+               </div>
+            </div>
+         </div>
+         
+         
+         <p> In order to find the desired sensor, there needs to be a way to
+            specify what kind of sensor the application is looking for. In this
+            API there are two qualifiers for this purpose: the quantity and the
+            context type. They form the basis of the sensor ontology of this
+            API. The application can use either one independently or specify
+            both. When used together, the both must match.
+         </p>
+         
+         <p>Context types categorize sensors into four groups:</p>
+         
+         <p>
+            
+         </p>
+         <div class="orderedlist">
+            <ol type="1">
+               <li>
+                  
+                  <p> ambient, sensors measuring some ambient property of the
+                     environment
+                  </p>
+                  
+               </li>
+               <li>
+                  
+                  <p> device, sensors measuring properties related to the device</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> user, sensors measuring some function of the user</p>
+                  
+               </li>
+               <li>
+                  
+                  <p> vehicle, sensors measuring properties related to a vehicle</p>
+                  
+               </li>
+            </ol>
+         </div>
+         <p>
+            
+         </p>
+         
+         <p>By using context types, it is possible to find, for example,
+            user-related sensors for fitness, or ambient sensors for smart home
+            controlling. Although the granularity of this level does not
+            qualify the sensors very precisely, still in some cases it provides
+            the way to make the distinction, for example, cf. air thermometer
+            (ambient) / clinical thermometer (user).
+         </p>
+         
+         <p>The quantity provides a more precise qualifier. The unit and the
+            quantity has a close relation. Some quantities are listed in tables
+            of 
+            <code class="literal">Unit</code>
+            class. When the quantity and
+            context type is known, it is often easy to guess the full purpose
+            of the sensor. Some examples are given here:
+         </p>
+         <pre class="screen">
+    Quantity: electric_current + context type: ambient = 
+    sensor measuring electric current, amperemeter
+
+    Quantity: catalytic_activity + contex type: ambient =
+    sensor measuring catalytic activity
+    
+</pre>
+         	  
+         <h3 xmlns="" xmlns:db="http://docbook.org/ns/docbook" xmlns:xi="http://www.w3.org/2001/XInclude">
+            
+            Sensor examples
+         </h3>
+         
+         
+         <p>To help the user to find the sensor, some ready made
+            combinations and the sensor following from the definition, are
+            presented here.
+         </p>
+         
+         <p>
+            <a id="dbdoclet.id.d0e32"></a>
+            
+            <span class="bold"><strong>Table&nbsp;A.1.&nbsp; Examples of defining
+                  sensors with quantity and context type</strong></span>
+            
+         </p>
+         
+         <div class="informaltable">
+            
+            <table border="1">
+               <colgroup>
+                  <col width="33*"></col>
+                  <col width="33*"></col>
+                  <col width="33*"></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th>
+                                 
+                        <p>
+                                             <span class="bold"><strong>
+                                                     <span class="bold"><strong>Sensor</strong></span>
+                                 </strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th>
+                                        
+                        <p>
+                                             <span class="bold"><strong>
+                                                     <span class="bold"><strong>Quantity</strong></span>
+                                 </strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                     <th>
+                                        
+                        <p>
+                                             <span class="bold"><strong>
+                                                     <span class="bold"><strong>Context
+                                       type</strong></span>
+                                 </strong></span>
+                           
+                        </p>
+                        
+                     </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td>
+                                        
+                        <p> accelerometer</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> acceleration</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> alcometer</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> alcohol</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> altimeter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> altitude</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> ambient light sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient_light</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> amperemeter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> electric_current</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> anemometer</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> wind_speed</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> barometer</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> pressure</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> battery charge level sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> battery_charge</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> blood pressure meter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> blood_pressure</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> clinical thermometer</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> temperature</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> clock, time gauge</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> time</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> compass</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> direction</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> fingerprint sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> fingerprint</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> flip state sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> flip_state</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> GPS</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> location</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> heart rate sensor/RR interval</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> heart_rate/RR_inteval</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> humiditymeter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> humidity</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> illuminance sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> illuminance</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> "is charged" sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> is_charged</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> joystick</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> direction_of_motion</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> keyboard</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> character</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> luminance sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> luminance</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> microphone</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> sound_intensity</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> milometer</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> length</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> mouse</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> direction_of_motion</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> network field intensity indicator</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> network_field_intensity</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> orientation sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> orientation</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> power sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> power</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> proximity sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> proximity</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> radiation sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> absorbed_dose</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> respiration sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> respiration</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> rotation sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> rotation</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> scales</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> mass</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> sensor measuring user's blood glucose level</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> blood_glucose_level</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> sensor measuring user's blood oxygen saturation</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> blood_oxygen_saturation</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> sensor measuring user's fat percentage</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> body_fat_percentage</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> sensor measuring user's gestures</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> gesture</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> skin conductance sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> skin_conductance</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> step counter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> step_count</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> teslameter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> magnetic_flux_density</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> thermometer for air</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> temperature</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> ambient</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> tilt angle sensor</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> angle</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> device</p>
+                        
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                                        
+                        <p> velocimeter</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> velocity</p>
+                        
+                     </td>
+                     <td>
+                                        
+                        <p> user</p>
+                        
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+            
+         </div>
+         
+         
+      </div>
+   </body>
+</html>

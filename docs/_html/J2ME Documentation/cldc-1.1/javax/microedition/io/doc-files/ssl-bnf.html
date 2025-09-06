@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+
+
+  
+  
+  <title>SSL Protocol BNF</title>
+</head>
+
+
+<body>
+
+
+
+<h2>
+BNF Format for ssl Protocol URI
+</h2>
+
+
+
+<table border="1">
+
+
+
+  <tbody>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;ssl_connection_string&gt; </td>
+
+
+
+      <td>::= "<strong>ssl://</strong>"&lt;hostport&gt; </td>
+
+
+
+    </tr>
+
+
+
+
+    <tr>
+
+
+
+      <td align="undefined" valign="undefined">&lt;hostport&gt;</td>
+
+
+
+      <td align="undefined" valign="undefined">::=
+&lt;host&gt;":"&lt;portspec&gt;</td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td>&lt;host&gt; </td>
+
+
+
+      <td>::= <i>host name </i>|<i> IP address&nbsp;</i>| &lt;wildcarded_DNS&gt;
+      </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+      <td align="undefined" valign="undefined">&lt;wildcarded_DNS&gt;</td>
+
+      <td align="undefined" valign="undefined">::= "*" *("."&lt;domainlabel&gt;) ;<br>
+
+; "*" followed by zero or more internet domain labels, separated by "."</td>
+
+    </tr>
+
+    <tr>
+
+      <td align="undefined" valign="undefined">&lt;domainlabel&gt;</td>
+
+      <td align="undefined" valign="undefined">::= <span style="font-style: italic;">internet domain label</span></td>
+
+    </tr>
+
+    <tr>
+
+
+
+      <td>&lt;portspec&gt; </td>
+
+
+
+      <td>::= &lt;portnumber&gt;<i><span style="font-style: italic;"><span style="font-style: italic;"></span></span> </i>|
+&nbsp;&lt;portrange&gt; | "*" </td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td align="undefined" valign="undefined">&lt;portnumber&gt;</td>
+
+
+
+      <td align="undefined" valign="undefined">::= <span style="font-style: italic;">numeric port number</span></td>
+
+
+
+    </tr>
+
+
+
+    <tr>
+
+
+
+      <td align="undefined" valign="undefined">&lt;portrange&gt;</td>
+
+
+
+      <td align="undefined" valign="undefined">::=
+&lt;portnumber&gt;"-" | "-"&lt;portnumber&gt; |
+&lt;portnumber&gt;"-"&lt;portnumber&gt;</td>
+
+
+
+    </tr>
+
+
+
+  
+  
+  </tbody>
+</table>
+
+
+
+<p>Note that, per <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>,
+protocol schemes are case-insensitive. The above BNF reflects the
+normalized
+form. </p>
+
+
+
+</body>
+</html>

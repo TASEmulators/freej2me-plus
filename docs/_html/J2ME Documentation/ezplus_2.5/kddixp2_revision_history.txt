@@ -1,0 +1,325 @@
+KDDI Profile Phase2.5 (KDDI MIDP 拡張プロファイル) 
+Javadoc 更新履歴
+
+Copyright 1997-2002 Aplix Corporation. All rights reserved.  
+
+===========================================================
+revision 2.01.00　2002.6.07->　revision 2.01.01　2002.06.21
+===========================================================
+HttpResource クラス
+・shutdown() の説明からセキュリティレベルの制限を削除。
+
+-----------------------------------------------------------
+EventManager クラス
+・一時中断中に待ち受けイベントがあった場合、再開後の動作は
+  MIDlet#startApp() → イベントの順になる説明を追加。
+・MIDlet suite は単一 MIDlet で構成するように説明を追加。
+・Ｃメールには ezplus 通信は含まずの説明を追加。
+
+-----------------------------------------------------------
+CMailEventListener, CMailEvent クラス
+・Ｃメールには ezplus 通信は含まずの説明を追加。
+
+-----------------------------------------------------------
+MediaPlayerBox クラス
+・unsetResource() メソッドは、プレイヤーを停止してかからコー
+  ルする説明を追加。
+
+===========================================================
+revision 2.00.00　2002.5.15->　revision 2.01.00　2002.06.07
+===========================================================
+com.kddi.matiuke 以下のパッケージ
+・新規追加
+
+-----------------------------------------------------------
+AudioPhrase クラス
+・コンストラクタで発生する IllegalArgumentException 例外に
+  Phrase 生成に失敗した時の説明を追加。
+
+-----------------------------------------------------------
+Phrase クラス
+・コンストラクタで発生する IllegalArgumentException 例外に
+  Phrase 生成に失敗した時の説明を追加。
+
+===========================================================
+revision 1.01.01　2002.2.20->　revision 2.00.00　2002.5.15
+===========================================================
+com.jblend.media 以下のパッケージ
+・新規追加
+
+-----------------------------------------------------------
+ScdpConnectionインターフェース
+・ページ先頭の概要説明を修正
+　a) 複数のファイルを同時にオープンは不可
+　b) プログラム例に IOException の catch を追加
+　c) 同名ファイルの上書きは不可
+　d) 書き込み時、flush 後の write, flush は不可
+　e) データを書き込まずにファイルを閉じた場合、ファイルは作
+　   成されない 
+
+===========================================================
+revision 1.01.00　2001.11.1->　revision 1.01.01　2002.2.20 
+===========================================================
+PhoneSystemクラス
+・getID() メソッドで返す端末の型番を下記のように修正。
+　修正前："KDDI-" + メーカーコード２ケタ + 機種コード２ケタ
+　修正後：メーカーコード２ケタ + 機種コード２ケタ
+
+===========================================================
+revision 1.00.00　2001.9.25->　revision 1.01.00　2001.11.1 
+===========================================================
+GpsLocationクラス
+・getLocation() の使用方法を示すサンプルコードを追加
+
+-----------------------------------------------------------
+SMAFPlayerクラス
+・再生するデータタイプ（「dev4anm」などの　disposition type）
+ のリストを更新
+
+-----------------------------------------------------------
+CMXPlayerクラス
+・再生するデータタイプ（「dev3anp」などの　disposition type）
+ のリストを更新
+
+-----------------------------------------------------------
+HttpResourceクラス　新規追加
+
+===========================================================
+revision 1.10.00　2001.6.26　(Phase 1) 
+->　revision 1.00.00　2001.9.25 (Phase 2)
+===========================================================
+新規追加クラス・インタフェース
+
+　ScdpConnectionインタフェース
+　PhoneConnectionインタフェース
+　IMAP4MailConnectionインタフェース
+　GpsLocationクラス
+　DeviceNotSupportedExceptionクラス
+　BrowserConnectionインタフェース
+
+
+QcelpPlayerクラスも追加されていますが、ezplusのプログラマは
+このクラス仕様を理解する必要はありません。
+
+-----------------------------------------------------------
+MediaPlayerInterface
+MediaPlayerBox
+
+・public void play(int count)
+　再生繰り返し回数指定可能なplay()メソッドを追加
+
+・public void setTempo(int tempo)
+　tempoパラメータの説明追加
+　「指定した値が 85 以下の場合は 85 に、115 以上の場合は 
+　115 になります。」
+
+・public void setPitch(int pitch)
+　pitchパラメータの説明追加
+　「指定した値が -6 以下の場合は -6 に、6 以上の場合は 6 に
+　なります。」
+　
+・public void setVolume(int volume)
+　volumeパラメータの説明追加
+　「指定した値が 0 以下の場合は 0 に、100 以上の場合は 100 
+　になります。 」
+
+MediaPlayer、SMAFPLayer、CMXPLayerも同様な変更がなされていま
+すが、ezplusのプログラマはこれらのクラス仕様を理解する必要
+はありません。
+-----------------------------------------------------------
+Profile
+
+・クラスの説明追加
+　「セキュリティレベル A のアプリケーションのみ、利用できま
+　す。」 
+
+-----------------------------------------------------------
+PhoneSystem
+
+・下記のメソッドを追加
+　static int getDisplayBacklightStatus() 
+    移動機のディスプレイバックライトの現在の状態を取得します。 
+　static void offDisplayBacklight() 
+    移動機のディスプレイバックライトを消灯します。 
+　static void onDisplayBacklight() 
+    移動機のディスプレイバックライトを点灯します。 
+
+・public static void onVibration(int pattern,
+                               int timeout)
+　パラメータに関する説明を追加
+　
+　　pattern - 振動パターン（PATTERNn）。無効な値を指定すると何もしません。
+　　timeout - 振動時間（ミリ秒）。0 以下の場合は offVibration() と等価、
+　　　　　　　MAX_TIMEOUT を越える場合は MAX_TIMEOUT を指定したのと同じ
+　　　　　　　になります。
+
+・public static void onVibration(int timeout)
+　パラメータに関する説明を追加
+
+　パラメータ: 
+　　timeout - 振動時間（ミリ秒）。0 以下の場合は offVibration() と
+　　　　　　　等価、MAX_TIMEOUT を越える場合は MAX_TIMEOUT を指定し
+　　　　　　　たのと同じになります。
+
+・public static void onIncallLed(int color,
+                               int pattern,
+                               int timeout)
+　パラメータに関する説明を追加
+
+　パラメータ: 
+　　color - 　点灯LEDカラー指定。（COLOR_XXXX）。無効な値を指定すると何
+　　　　　　　もしない。
+　　pattern - 明滅パターン（PATTERNn）。無効な値を指定すると何もしない。
+　　timeout - 動作時間（ミリ秒）。0 以下の場合は offIncallLed() と等価、
+　　　　　　　MAX_TIMEOUT を越える場合には MAX_TIMEOUT を指定したのと同じ
+　　　　　　　になります。
+
+
+・public static void onIncallLed(int color,
+                               int timeout)
+　パラメータに関する説明を追加
+
+　パラメータ: 
+　　color - 点灯 LED カラー指定（COLOR_XXXX）。無効な値を指定すると何も
+　　　　　　しない。
+　　timeout - 点灯時間（ミリ秒）。0 以下の場合は offIncallLed() と等価、
+　　　　　　　MAX_TIMEOUT を越える場合には MAX_TIMEOUT を指定したのと同じ
+　　　　　　　になります。
+
+・public static java.lang.String getID()
+　戻り値の仕様を変更
+　 
+　旧：英数字４ケタ（メーカーコード２ケタ + 端末種類１ケタ + 機種コード１ケタ）
+　新："KDDI-" + メーカーコード２ケタ + 機種コード２ケタ
+
+-----------------------------------------------------------
+MediaPlayerInterface
+
+・hide(), show()は使用を推奨せず、Display.setCurrent() を使う
+　旨の説明を追加
+
+-----------------------------------------------------------
+MediaPlayerBox
+
+・hide(), show()は使用を推奨せず、Display.setCurrent() を使う
+　旨の説明を追加
+
+・public MediaResource getResource()
+　戻り値の説明として下記を追加
+　　「メディアリソースが対応付けられていない場合は null。」
+
+-----------------------------------------------------------
+Location
+
+・説明訂正
+　旧：位置情報の取得
+　新：基地局方式による位置情報取得のためのクラスです。
+
+-----------------------------------------------------------
+DeviceController
+
+　旧：拡張デバイス名deviceName を引数にgetInstance()を呼び出
+　　　すと、 別途規定するパッケージに属するdeviceName クラス
+　　　を実体化する。 
+
+　新：拡張デバイス名deviceName を引数にgetInstance()を呼び出す
+　　　と、 別途規定するパッケージに属するdeviceName クラスを取
+　　　得します。 指定したデバイスをサポートしていない場合、 
+　　　DeviceNotSupportedException を送出します。 
+
+・メーカ拡張デバイスを識別するための識別子の最小値の定義を追加
+　
+　protected static int baseID 
+          デバイスIDの最小値 
+
+・static DeviceController getInstance
+         (java.lang.String deviceName) 
+
+　下記の説明を追加
+　「拡張デバイス制御クラスのインスタンスを取得します。 
+　 このインスタンスは、デバイスの種類ごとに唯一のインス
+　 タンスとなります。」
+
+　例外発生条件の説明として下記を追加
+　「DeviceNotSupportedException - 指定したデバイスをサポート
+　　していない移動機で送出。」
+　
+・下記メーカ拡張デバイス用メソッドを追加
+
+　protected  int getAttributeNative(int id, int attr) 
+          デバイス属性の取得。 
+　protected  void setAttributeNative(int id, int attr, int value) 
+          デバイス属性の設定。 
+
+-----------------------------------------------------------
+DataFolderConnection
+
+・ファイルタイプを指定するための下記のフィールド定義を追加
+
+　static int FILE_TYPE_ANIME 
+          ファイル属性：アニメ。 
+　static int FILE_TYPE_ETC 
+          ファイル属性：その他（ezplusアプリなどオープンでき
+          ないものは含まない）。
+　static int FILE_TYPE_KARAOKE 
+          ファイル属性：カラオケ。 
+　static int FILE_TYPE_MELODY 
+          ファイル属性：メロディ。 
+
+
+・public java.lang.String[] getList()
+
+  説明変更
+  旧：呼び出し側のセキュリティレベルに応じて、取得できる
+       ファイルの種類を制限する。
+  新：ディレクトリ以外の全ファイルリストを取得する
+
+・新規にメソッド追加
+
+　public java.lang.String[] getList(int type)
+　指定したタイプに応じたファイルリストを取得する。
+
+-----------------------------------------------------------
+CMailConnection
+
+・javax.microedition.io.Connector.open()に指定する、電話番号
+　文字列"cmail://[tel-no]"の説明として下記を追加。
+
+　tel-noは数字、空白、'P'、'-'から成る。それ以外が指定された
+　ら IllegalArgumentExceptionが発生する。
+
+・public void setNickName(java.lang.String nickname)
+　例外発生条件に関する説明を追加。
+　
+　「ニックネームが最大長を超えた場合には、 
+　IllegalArgumentExceptionが発生する。」
+
+・public void setMessage(java.lang.String message)
+　例外発生条件に関する説明を追加。
+　
+　「メッセージが最大長を超えた場合には、
+　 IllegalArgumentExceptionが発生する。」
+
+-----------------------------------------------------------
+CallHistory
+
+・説明追加
+
+　「セキュリティレベル A のアプリケーションのみ、利用できま
+　す。 」
+
+-----------------------------------------------------------
+AddressBook
+
+・説明追加
+
+　「アドレス帳に登録してある電話番号や電子メールアドレスを取
+　り出して、 アプリケーションに渡すことができます。 
+
+・下記メソッドを追加
+
+　public static PersonalInfo getTelNo()
+　public static PersonalInfo getEmailAddress()
+                                    
+===========================================================
+以上

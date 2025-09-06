@@ -1,0 +1,209 @@
+<HTML>
+<HEAD>
+<TITLE>Lesson: Signatures</TITLE>
+</HEAD>
+<BODY BGCOLOR="white">
+
+<TABLE width = "100%" border = "0" bgcolor = "blue">
+<TR>
+    <TD>
+    <FONT face = "Verdana,Arial" color = "white" size = "4">
+        <b>RIM Crypto API: Signatures</b></FONT>
+    </TD>
+</TR>
+</TABLE>
+
+<P> This lesson describes the most common uses of Signatures in the Crypto API
+    and provides some code examples that demonstrate how to use the Signature classes in these
+    cases. Additionally, this lesson describes how signatures can be
+    used with both streams and byte arrays.</P>
+
+
+
+<p> A signature can include one or more mathematical values, depending on the signing algorithm used. Therefore, an encoding scheme
+    is needed. A <a href="../SignatureSigner.html">SignatureSigner</a> combines the message to be signed and the signer's private key to yield the mathematical
+    values that make up a signature.
+    A <a href="../encoder/SignatureEncoder.html">SignatureEncoder</a> then encodes these mathematical values into a byte array for transmission or storage.
+
+<p><b>Using a DSA Signature Signer</b></p>
+
+<p> Provided below is sample code that shows how to set up and use a signature
+    signer.  A signature signer is the interface that will be used for all signing
+    in the Crypto API.  The sample code will use the DSA algorithm since this is the
+    most common signing algorithm in use.  The method for DSA signing can be
+    applied to RSA and the other algorithms provided as well.
+<pre>
+    // Create key pair
+    DSACryptoSystem cryptoSystem = new DSACryptoSystem();
+    DSAKeyPair keyPair = new DSAKeyPair( cryptoSystem );
+    DSAPrivateKey privateKey = keyPair.getDSAPrivateKey();
+
+    // The message to be signed
+    String message = new String("Jeans are on sale");
+
+    // Create the signer itself.
+    SignatureSigner signer = new DSASignatureSigner( privateKey );
+    signer.update( message.getBytes() );
+
+    // Create an X509 signature.
+    EncodedSignature signature = SignatureEncoder.encode( signer, "X509" );
+
+    // Get the data of the signature.
+    byte[] signatureData = signature.getEncodedSignature();         // bytes
+    String encodingAlgorithm = signature.getEncodingAlgorithm();    // "X509"
+</pre>
+
+<p> Now that we have signed the data we want to verify the signature
+    (<a href = "../SignatureVerifier.html">SignatureVerifier</a>).  Below you will
+    find code that will verify the signature generated above.
+<pre>
+    // Retrieve public key.
+    DSAPublicKey publicKey = keyPair.getDSAPublicKey();
+
+    // Decode the signature.
+    DecodedSignature decodedSignature = SignatureDecoder.decode( signatureData, "X509" );
+
+    // Get signature verifier.
+    SignatureVerifier verifier = decodedSignature.getVerifier(publicKey);
+
+    // Enter message to be verified.
+    verifier.update( message.getBytes() );
+
+    // Verify the signature.
+    boolean verified = verifier.verify();
+
+    // Print out result.
+    System.out.println("Signature was verified " + verified + ".");
+</pre>
+
+<p><b>Using Signature Streams with an ECDSA Signature Signer</b></p>
+
+<p> Now that we know how to use the SignatureSigner and the SignatureVerifier,
+    we want to see how we can use these components with a signature stream.
+    The signature stream (<a href = "../SignatureSignerOutputStream.html">SignatureSignerOutputStream</a>)
+    allows for us to simply write data to the stream
+    and when we close the stream the signature will be appended to the stream.
+    The following code sample demonstrates how to use the signature stream.
+<pre>
+    // Generate a key pair that we will use for signing (and eventually for verifying)
+    ECKeyPair keyPair = new ECKeyPair( new ECCryptoSystem() );
+
+    // Get the private key for use with the signature signer.
+    ECPrivateKey privateKey = keyPair.getECPrivateKey();
+
+    // Create the signature signer.  We will use ECDSA.
+    ECDSASignatureSigner signer = new ECDSASignatureSigner( privateKey, new MD5Digest() );
+
+    // Create the output stream that we will use as the underlying stream.
+    // For this example we will simply use a byte array output stream.
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+    // Create the SignatureSignerOutputStream
+    SignatureSignerOutputStream signerStream = new SignatureSignerOutputStream( signer, outputStream );
+
+    // Now we want to write out the data to be signed.
+    String info = new String("Everyone should own a pair of Jabroni jeans.");
+
+    // Sign this information.
+    signerStream.write( info.getBytes() );
+
+    // Declare the byte arrays for r and s which represent the signature.
+    byte[] r = new byte[signer.getRLength()];
+    byte[] s = new byte[signer.getSLength()];
+    signer.sign( r, 0, s, 0 );
+
+    // Close the output stream (upper layer).
+    signerStream.close();
+
+    // Get the stream contents for later.
+    byte[] contents = outputStream.toByteArray();
+
+    // Close the underlying output stream.
+    outputStream.close();
+</pre>
+
+<p> Now we want to use the
+    <a href = "../SignatureVerifierInputStream.html">SignatureVerifierInputStream</a>
+    to verify the signature that we sent to output in the
+    previous example.  The following code sample
+    shows how to verify the signature that was generated using a signature
+    output stream.
+<pre>
+    // Get the public key from the key pair we created in the last example.
+    ECPublicKey publicKey = keyPair.getECPublicKey();
+
+    // Set up the ECDSASignatureVerifier
+    ECDSASignatureVerifier verifier = new ECDSASignatureVerifier( publicKey, new MD5Digest(), r, 0, s, 0 );
+
+    // Set up the input stream (using contents from above).
+    ByteArrayInputStream inputStream = new ByteArrayInputStream( contents );
+
+    // Use this to set up the SignatureVerifierInputStream
+    SignatureVerifierInputStream verifierStream = new SignatureVerifierInputStream( verifier, inputStream );
+
+    // Read the data from the stream.
+    byte[] data = new byte[verifierStream.available()];
+    verifierStream.read( data );
+
+    // Use the verifier to check if the signature is correct.
+    boolean result = verifier.verify();
+
+    // Print out the result.
+    System.out.println("Signature verification was " + result + ".");
+</pre>
+
+<p><b>Using an RSA Signature Signer</b></p>
+
+<p> RSA signatures have the added requirement that messages be encoded by a formatter
+    (see <a href = "../PKCS1SignatureSigner.html">PKCS1SignatureSigner</a>,
+    <a href = "../PSSSignatureSigner.html">PSSSignatureSigner</a>). The formatters
+    are used in a similar way to the <code>SignatureSigner</code>s.  The following code illustrates the use of
+    <code>PSSSignatureSigner</code> and <code>PSSSignatureVerifier</code>:
+</p>
+<pre>
+    // The message to be signed
+    String message = "Everyone should own a pair of Jabroni jeans.";
+
+    // Make the necessary RSA key pair for signing and verifying
+    RSACryptoSystem cryptoSystem = new RSACryptoSystem();
+    RSAKeyPair keyPair = new RSAKeyPair( cryptoSystem );
+
+    // Create the digest and the salt value
+    SHA1Digest digest = new SHA1Digest();
+    byte[] salt = RandomSource.getBytes( digest.getDigestLength() );
+
+    // Create the RSASignatureSigner passing in a digest algorithm
+    // and PSS signature formatter
+    PSSSignatureSigner signer = new PSSSignatureSigner(
+        keyPair.getRSAPrivateKey(), digest, salt );
+
+    // For this example, simply use the signature signer directly,
+    // even though we could pass it into a stream as before
+    signer.update( message.getBytes() );
+
+    // Finally, we need to encode the signature using X509
+    EncodedSignature encSignature = SignatureEncoder.encode( signer, "X509" );
+</pre>
+<p> The following examples demonstrates how to Decode and verify the signature (assuming the encoded
+    signature and RSA key pair from above still exist): </p>
+<pre>
+    // Decode the encoded signature
+    DecodedSignature decodedSignature = SignatureDecoder.decode( encSignature.getEncodedSignature(), "X509" );
+
+    SignatureVerifier verifier = decodedSignature.getVerifier( keyPair.getPublicKey() );
+
+    // Give the verifier the message string
+    verifier.update( message.getBytes() );
+
+    // Now see if it verifies
+    if( verifier.verify() == true ) {
+        System.out.println( "Signature verifies." );
+    }
+    else {
+        System.out.println( "Signature does not verify." );
+    }
+</pre>
+
+
+</BODY>
+</HTML>

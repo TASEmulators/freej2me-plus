@@ -1,0 +1,151 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix B. Recommended security practices for Java ME configurations and profiles</title>
+   </head>
+   <body>
+      <h1>Appendix B. Recommended security practices for Java ME configurations and profiles</h1>
+      <p>This appendix contains the recommended security practices for JSR 258
+         implementations in Java ME configurations and profiles.
+      </p>
+      <h3>Mobile Information Device Profile (MIDP) 2.0 (JSR 118)</h3>
+      <p>The security permissions protect modifications made to the device's
+         themes. Listing themes and getting information about them is allowed for 
+         all applications.
+      </p>
+      <p>According to the MIDP 2.0 Recommended Security Policy (see 
+         reference [MIDP]) and 
+         later, related specifications such as Java Technology for the Wireless
+         Industry (JTWI, JSR 185) and Mobile Service Architecture for CLDC (MSA, JSR 248),
+         the permissions <strong style="text-transform: lowercase">must</strong> be placed in some
+         function group. The name and semantics of the function group will be
+         decided by future MSA work.
+      </p>
+      <p>The following table defines the MIDP 2.0 permissions and the
+         methods protected by them. Note that these permissions <strong style="text-transform: lowercase">must</strong>
+         be used with MIDP in both CLDC and CDC environments. Other profiles
+         implemented on top of CDC <strong style="text-transform: lowercase">must</strong> use
+         the CDC permission classes defined below in the section pertaining
+         to CDC.
+      </p>
+      <table border="1" id="d0e18714">
+         <caption>Table&nbsp;B.1.&nbsp;MIDP 2.0 permissions and protected methods for Mobile User Interface
+            Customization API
+         </caption>
+         <thead>
+            <tr>
+                                   
+               <th>Permission name</th>
+                                   
+               <th>Methods protected by the permission</th>
+                               
+            </tr>
+         </thead>
+         <tbody>
+            <tr>
+                                   
+               <td>javax.microedition.theme.manage</td>
+                                   
+               <td>
+                                          
+                  <p><code class="literal">ThemeManager#removeTheme(String)</code></p>
+                                          
+                  <p><code class="literal">ThemeManager#createTheme(String)</code></p>
+                                          
+                  <p><code class="literal">SkinManager#removeSkin(String)</code></p>
+                                          
+                  <p><code class="literal">SkinManager#createSkin(String)</code></p>
+                                      
+               </td>
+                               
+            </tr>
+            <tr>
+                                   
+               <td>javax.microedition.theme.modify</td>
+                                   
+               <td>
+                                          
+                  <p><code class="literal">Theme#updateElement(String, String)</code></p>
+                                          
+                  <p><code class="literal">Theme#updateToolkitElement(String, String, String)</code></p>
+                                          
+                  <p><code class="literal">Skin#updateApplicationElement(String, String)</code></p>
+                                          
+                  <p><code class="literal">Theme#commit()</code></p>
+                                      
+               </td>
+                               
+            </tr>
+         </tbody>
+      </table>
+      <h3>Connected Device Configuration (CDC)</h3>
+      <p>For implementations of the Mobile User Interface Customization API 
+         on top of the Connected Device
+         Configuration certain security sensitive methods 
+         <strong style="text-transform: lowercase">must</strong> be protected
+         by security permissions.
+      </p>
+      <p>This section defines permission classes suitable for use in profiles
+         implemented on top of the CDC. The table below lists these permission 
+         classes and the methods protected by them. All permission classes
+         are named permissions and <strong style="text-transform: lowercase">must</strong> be
+         direct subclasses of 
+         <code class="classname">java.security.BasicPermission</code>.
+      </p>
+      <table border="1" id="d0e18791">
+         <caption>Table&nbsp;B.2.&nbsp;CDC security permissions for the Mobile User Interface
+            Customization API
+         </caption>
+         <thead>
+            <tr>
+                                   
+               <td>Permission class name</td>
+                                   
+               <td>Methods protected by the permission class</td>
+                               
+            </tr>
+         </thead>
+         <tbody>
+            <tr>
+                                   
+               <td>javax.microedition.theme.ManagePermission</td>
+                                   
+               <td>
+                                          
+                  <p><code class="literal">ThemeManager#removeTheme(String)</code></p>
+                                          
+                  <p><code class="literal">ThemeManager#createTheme(String)</code></p>
+                                          
+                  <p><code class="literal">SkinManager#removeSkin(String)</code></p>
+                                          
+                  <p><code class="literal">SkinManager#createSkin(String)</code></p>
+                                      
+               </td>
+                               
+            </tr>
+            <tr>
+                                   
+               <td>javax.microedition.theme.ModifyPermission</td>
+                                   
+               <td>
+                                          
+                  <p><code class="literal">Theme#updateElement(String, String)</code></p>
+                                          
+                  <p><code class="literal">Theme#updateToolkitElement(String, String, String)</code></p>
+                                          
+                  <p><code class="literal">Skin#updateApplicationElement(String, String)</code></p>
+                                          
+                  <p><code class="literal">Theme#commit()</code></p>
+                                      
+               </td>
+                               
+            </tr>
+         </tbody>
+      </table>
+      <p>See stub implementations <a href="ManagePermission.java">ManagePermission.java</a> and <a href="ModifyPermission.java">ModifyPermission.java</a> for the permission class signature definitions.</p>
+   </body>
+</html>

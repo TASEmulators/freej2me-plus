@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<META http-equiv="Content-Style-Type" content="text/css">
+<STYLE type=text/css>
+<!--
+PRE {
+	FONT-FAMILY: monospace
+;}
+-->
+</STYLE>
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+
+<h2>Getting a Response on HttpConnection</h2>
+<hr>
+<p>
+In a typical sequence using the HttpConnection interface for server communication by means of the HTTP GET method, after opening an HttpConnection using Connector.open(), openInputStream() is used to get an InputStream for reading the response data from the server, and getResponseCode() is used to get the response data status code. Then InputStream and HttpConnection are closed to break the HTTP connection.
+</p><p>
+On the other hand, when using an original specification for transactions in which the response from the server is not checked, there is a tendency simply to write send data to HttpConnection and then close the HTTP connection without requesting any response-related information. An example of such a program is shown below.
+</p>
+<pre>
+
+HttpConnection hc;
+OutputStream os;
+byte[] data;
+    . . .                       // Set send data in data parameter
+    hc = (HttpConnection)Connector.open( "http://..." );  
+                                // Get HttpConnection
+    os = hc.openOutputStream(); // Get OutputStream
+    os.write( data );           // Write send data to OutputStream
+    os.close();                 // Close OutputStream
+                                // (No information is requested here about the result)
+    hc.close();                 // Close HttpConnection
+
+</pre>
+
+<p>
+In the example above, send data is simply written to OutputStream, then OutputStream and HttpConnection are closed. In this sequence there is no guarantee that HttpConnection actually performed any HTTP communication. In HTTP communication, even if response data is not received, the getResponseCode() method should still be used to confirm the response from the server, just as in ordinary HTTP communication processing. An example is given below.
+</p>
+<pre>
+
+HttpConnection hc;
+OutputStream os;
+byte[] data;
+int rc;                         // HTTP response code
+. . .                           // Set send data in data parameter
+    hc = (HttpConnection)Connector.open( "http://..." );  
+                                // Get HttpConnection
+    os = hc.openOutputStream(); // Get OutputStream
+    os.write( data );           // Write send data to OutputStream
+    os.close();                 // Close OutputStream
+    rc = hc.getResponseCode()   // Get the response code. Here HTTP communication takes place.
+    hc.close();                 // Close HttpConnection
+</pre>
+
+<hr>
+Copyright 2002,2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted.
+
+</BODY>
+</HTML>

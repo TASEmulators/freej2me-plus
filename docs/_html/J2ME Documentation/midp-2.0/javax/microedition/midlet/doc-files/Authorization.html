@@ -1,0 +1,587 @@
+<!--
+    Copyright (c) 2008 Sun Microsystems, Inc. All rights reserved.
+    Use is subject to license terms.
+-->
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+  <HEAD>
+    <META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+</TITLE><meta name="collection" content="api">
+    <LINK REL ="stylesheet" TYPE="text/css" 
+	  HREF="../../../../stylesheet.css" tppabs="http://java.sun.com/javame/reference/apis/jsr118/stylesheet.css" TITLE="Style">
+    <!-- @(#)Authorization.html	1.29 02/07/11 -->
+    <!-- Changed by: Roger Riggs - Sun Microsystems Inc, 22-Mar-2002 -->
+    <!-- Changed by: Gary Adams - SMI Software Development,
+    11-Mar-2002 -->
+    <!-- Changed by: Roger Riggs - Sun Microsystems Inc, 11-Jul-2002 -->
+    <!-- Changed by: Gary Adams - SMI Software Development, 07-Aug-2002 -->
+    <!-- Changed by: Roger Riggs - Sun Microsystems Inc, 03-Sep-2002 -->
+  </HEAD>
+  <BODY>
+    <H1>Security for MIDP Applications</H1>
+    <P>The MIDP 1.0 specification constrained each MIDlet suite to
+      operate in a sandbox wherein all of the APIs available to the
+      MIDlets would prevent access to sensitive APIs or functions of the
+      device.  That sandbox concept is used in this specification and
+      all untrusted MIDlet suites are subject to its limitations.
+      Every implementation of this specification MUST support running
+      untrusted MIDlet suites. </P>
+
+    <P>MIDP 2.0 introduces the concept of trusted applications that
+      may be permitted to use APIs that are considered sensitive and
+      are restricted.  If and when a device determines that a MIDlet
+      suite can be trusted then access is allowed as indicated by the
+      domain policy.  The Trusted MIDlet Suite Security section below
+      describes the concepts. Any MIDlet suite that
+      is not trusted by the device MUST be run as untrusted. 
+      If errors occur in the process of verifying that a MIDlet suite 
+      is trusted then the MIDlet suite MUST be rejected. </P> 
+
+    <H2><A name="untrusted">Untrusted MIDlet Suites</A></H2>
+
+    <P>An untrusted MIDlet suite is a MIDlet suite for which the
+      origin and the integrity of the JAR file can NOT be
+      trusted by the device. 
+
+      Untrusted MIDlet suites MUST execute in the untrusted domain
+      using a restricted
+      environment where access to protected APIs or functions either
+      is not allowed or is allowed with explicit user permission.
+
+      Any MIDP 1.0 compliant MIDlet suite MUST be able to run in an
+      implementation of this specification as untrusted.
+
+      Any APIs or functions of this specification which are not
+      security sensitive, having no permissions defined for them, are
+      implicitly accessible by both trusted and untrusted MIDlet
+      suites.
+
+      Untrusted MIDlet suites do not request permissions explicitly in
+      the JAR manifest or application descriptor.
+    </P>
+
+    <P>The untrusted domain for untrusted MIDlet suites MUST
+      allow, without explicit confirmation by the user, access to:</P>
+
+    <TABLE BORDER="1" CELLSPACING="1" CELLPADDING="5">
+      <THEAD>
+	<TR>
+	  <TH WIDTH="60%">API</TD>
+	  <TH WIDTH="40%">Description</TD>
+	</TR>
+      </THEAD>
+      <TR>
+	<TD><CODE>javax.microedition.rms</CODE></TD>
+	<TD>RMS APIs </TD> 
+      </TR>
+
+      <TR>
+	<TD><CODE>javax.microedition.midlet</CODE></TD>
+	<TD>MIDlet Lifecycle APIs </TD> 
+      </TR>
+
+      <TR>
+	<TD><CODE>javax.microedition.lcdui</CODE></TD>
+	<TD>User Interface APIs </TD>
+      </TR>
+	
+      <TR>
+	<TD><CODE>javax.microedition.lcdui.game</CODE></TD>
+	<TD>The Game APIs </TD>
+      </TR>
+      <TR>
+	<TD><CODE>javax.microedition.media</CODE><BR>
+	<CODE>javax.microedition.media.control</CODE></TD>
+	<TD>The multi-media APIs for playback of sound </TD>
+      </TR>
+    </TABLE>
+
+    <P>The untrusted domain for untrusted MIDlet suites MUST
+      allow, with explicit confirmation by the user, access to protected 
+      APIs or functions:</P>
+
+    <TABLE BORDER="1" CELLSPACING="1" CELLPADDING="5">
+      <THEAD>
+	<TR>
+	  <TH WIDTH="60%">API</TD>
+	  <TH WIDTH="40%">Protocol</TD>
+	</TR>
+      </THEAD>
+      <TBODY>
+      <TR>
+	<TD><CODE>javax.microedition.io.HttpConnection</CODE>
+	</TD><TD><CODE>http</CODE></TD>
+      </TR>
+      <TR>
+	<TD><CODE>javax.microedition.io.HttpsConnection</CODE>
+	</TD>
+	<TD><CODE>https</CODE></TD>
+      </TR>
+      </TBODY>
+    </TABLE>
+
+
+    <H2><A name="trusted">Trusted MIDlet Suite Security</A></H2>
+    <P>Security for Trusted MIDlet suites is based on protection domains.
+      Each protection domain defines the permissions that may be
+      granted to a MIDlet suite in that domain. The protection domain
+      owner specifies how the device identifies and verifies that it
+      can trust a MIDlet suite and bind it to a protection domain with
+      the permissions that authorize access to protected APIs or
+      functions. The mechanisms the device uses to identify and trust
+      MIDlet suites are defined separately to allow them to be
+      selected appropriately to the device, network, and business
+      case.</P>
+
+    <P>The <A HREF="PKITrust.html" tppabs="http://java.sun.com/javame/reference/apis/jsr118/javax/microedition/midlet/doc-files/PKITrust.html">
+	     Trusted MIDlet Suites Using X.509 PKI</A> describes a
+      mechanism for identifying trusted MIDlet suites though signing
+      and verification. If an implementation of this specification
+      will recognize MIDlet suites signed using PKI as trusted MIDlet
+      suites they must be signed and verified according to the formats
+      and processes specified in Trusted MIDlet Using X.509 PKI.</P>
+
+    <H3><A NAME="definitions">Definition of Terms</A></H3>
+    <TABLE BORDER="1" CELLSPACING="1" CELLPADDING="7">
+      <THEAD>
+	<TR>
+	  <TH VALIGN="TOP">Term</TD>
+	  <TH  VALIGN="TOP">Definition</TD>
+	</TR>
+      </THEAD>
+
+      <TR>
+	<TD>Protection Domain</TD>
+	<TD>A set of <em>Allowed</em> and <em>User</em> permissions
+	  that may be granted to a MIDlet suite</TD>
+      </TR>
+
+      <TR>
+	<TD>Permission</TD>
+	<TD>A named permission defined by an API or function to
+	  prevent it from being used without authorization</TD>
+      </TR>
+
+      <TR>
+	<TD>Trusted MIDlet Suite </TD>
+	<TD>A MIDlet suite for which the authentication and the integrity of
+	  JAR file can be trusted by the device and
+	  bound to a protection domain</TD>
+      </TR>
+
+    </TABLE>
+
+    <H2><A NAME="base">Authorization Model</A></H2>
+    <P>The basic authorization of a MIDlet suite is established by the
+      relationships between the following elements: 
+    </P>
+    <UL>
+      <LI>A protection domain consisting of a set of
+	<em>Allowed</em> and <em>User</em> permissions
+      </LI>
+
+      <LI>A set of permissions requested by the MIDlet suite  in
+	  <code>MIDlet-Permissions</code> and
+	  <code>MIDlet-Permissions-Opt</code> attributes
+
+      </LI>
+
+      <LI>A set of permissions for each protected API or function on the
+	device which is a union of all permissions defined by every
+	API on the device for protected functions
+      </LI>
+      <LI>The user who may be asked to grant permissions
+      </LI>
+    </UL>
+    <H3>Assumptions</H3>
+    <UL>
+      <LI>MIDlets do not need to be aware of the
+	security policy except for security exceptions that may occur when
+	using APIs.
+      </LI>
+
+      <LI>A MIDlet suite is subject to a single
+	protection domain and its permissible actions.
+      </LI>
+
+      <LI>The internal representation of protection domains and
+	permissions is implementation specific.
+      </LI>
+
+      <LI>
+	The details of how authentication results and configuration
+	settings are presented to the user in the user interface are
+	implementation dependent and are outside the scope of this
+	specification.
+      </LI>
+
+      <LI>The device must protect the security policy and protection
+	domain information stored in the device from viewing or
+	modification except by authorized parties.
+      </LI>
+
+      <LI>If the security policy for a device is static and disallows
+	use of some functions of the security framework then the
+	implementation of unused and inaccessible security functions
+	may be removed.
+      </LI>
+
+      <LI>Security policy allows an implementation to restrict access
+	but MUST NOT be used to avoid implementing
+	functionality. For example, unimplemented protocols under the
+	Generic Connection framework MUST throw
+	<CODE>ConnectionNotFoundException</CODE>.
+      </LI>
+    </UL>
+
+    
+    <H3><A NAME=perm>Permissions</A></H3>
+    <P>Permissions are the means to protect
+      access to APIs or functions which require explicit authorization
+      before being invoked. Permissions described in this section only
+      refer to those APIs and functions which need security protection
+      and do not refer to other APIs which can be accessed by
+      both trusted and untrusted MIDlet suites and do not need
+      explicit permission.
+
+      Permissions are checked by the implementation prior to
+      the invocation of the protected function.
+    </P>
+
+    <P>The names of permissions have a hierarchical
+      organization similar to Java package names.  The names of
+      permissions are case sensitive. All of the permissions for
+      an API MUST use the prefix that
+      is the same as the package name of the API.  
+      If the permission is for a function of a specific class in the
+      package then the permission MUST include the package and classname.
+      The set of valid characters for permissions is the same as that
+      for package and class names.
+      The conventions for use of capitalization in package names
+      SHOULD be used for permission names.
+      For example, <CODE>javax.microedition.io</CODE>.
+      Following the permission name, whether by package or class, additional
+      modifiers may be appended with a separator of
+      &quot;.&quot; (Unicode U+002E).
+    </P>
+    <P>
+      Each API in this specification that provides access to a
+      protected function will define the permissions.  For APIs
+      defined outside of MIDP 2.0 there must be a single document that
+      specifies any necessary permissions and the behavior of the API
+      when it is implemented on MIDP 2.0.
+    </P>
+
+    <H3>Permissions for Protected Functions</H3>
+
+    <P>Each function (or entire API) which was identified as protected
+      must have its permission name defined in the class or package
+      documentation for the API.</P>
+
+    <P>Refer to the documentation of the
+      <CODE>javax.microedition.io</CODE> package for permissions on
+      all Generic Connection schemes defined in this specification.
+      All APIs and functions within this specification that do not
+      explicitly define permissions MUST be made available to all
+      trusted and untrusted MIDlet suites.</P>
+
+    <H3>Requesting Permissions for a MIDlet Suite</H3>
+    <P>A MIDlet suite that requires access to protected APIs or
+      functions must request the corresponding permissions.
+      Permissions requested can be required by listing the permissions
+      in the attribute <CODE>MIDlet-Permissions</CODE>. These
+      permissions are critical to the function of the MIDlet suite and
+      it will not operate correctly without them.</P>
+
+    <P>If the MIDlet suite can function correctly with or
+      without particular permission(s) it should request them
+      using the <CODE>MIDlet-Permissions-Opt</CODE> attribute.
+      The MIDlet suite is able to run
+      with reduced functionality (for example, as a single player game  
+      instead of a net game) without these non-critical permissions
+      and MUST be installed and run.</P> 
+
+    <P>The <CODE>MIDlet-Permissions</CODE> and
+      <CODE>MIDlet-Permissions-Opt</CODE> attributes contain a list of
+      one or more permissions. 
+      Multiple permissions are separated by a comma (Unicode U+002C).
+      Leading and trailing whitespace (Unicode U+0020) and tabs (Unicode
+      U+0009) are ignored.</P> 
+
+
+    <H3>Permissions on the Device</H3>
+    <P>Each device that implements this specification and any other
+      Java APIs will have a total set of permissions referring to
+      protected APIs and functions. It is the union of all permissions
+      defined by every protected function or API on the device.
+    </P>
+
+    
+    <H3><A NAME=domain>Protection Domain</A></H3>
+
+    <P>A protection domain defines a set of permissions and related
+      interaction modes.  A protection domain consists of:</P>
+
+    <UL>
+      <LI>a set of permissions that should be allowed (<EM>Allowed</EM>)
+      </LI>
+      <LI>a set of permissions that the user may authorize (<EM>User</EM>);
+	each with its user interaction mode</LI>
+    </UL>
+
+    <P>Within a protection domain each permission may be either
+      <EM>allowed</EM> or <EM>user</EM> but not both.
+    </P>
+
+    <P>The <em>Allowed</em> permissions are any
+      permissions which explicitly allow access to a given protected
+      API or function on the basis of MIDlet suite being associated with the
+      protection domain.  <em>Allowed</em> permissions do not require
+      any user interaction.</P>
+
+    <P>The <em>User</em> permissions are any permissions for a
+      protected API or function on the basis of MIDlet suite being
+      bound to the protection domain and will allow access to
+      protected API or function after the prompt given to the user and
+      explicit user permission being granted.</P>
+
+
+    <H3>User Permission Interaction Modes</H3>
+    <P>A User Permission is defined to allow the user to deny
+      permission or to grant permission to a specific API with one
+      of the following interaction modes:
+    </P>
+    <UL>
+      <LI>"<CODE>blanket</CODE>" is valid for every invocation of an
+	API by a MIDlet suite until it is uninstalled or the
+	permission is changed by the user.
+	
+      </LI>
+      <LI>"<CODE>session</CODE>" is valid from the invocation of a
+	MIDlet suite until it terminates.  "<CODE>session</CODE>"
+	mode MUST prompt the user on or before the first invocation 
+	of the API or function which is protected.  When the user re-invokes
+	the MIDlet suite the prompt MUST be repeated.
+      </LI>
+      <LI>"<CODE>oneshot</CODE>" MUST prompt the user on each
+	invocation of the API or function which is protected.
+      </LI>
+    </UL>
+
+    <P>The choice of user permission interaction modes is driven by
+      the security policy and the device implementation. Each user
+      permission has a default interaction mode and a set of other
+      available interaction modes. The user SHOULD be presented with a
+      choice of interaction modes.  The default interaction mode may
+      be offered if it is supplied. The user MUST always be able to
+      deny permission.
+    </P>
+
+    <P>If and when prompted, the user SHOULD be provided with a user
+      friendly description of the requested permissions sufficient to
+      make a well-informed choice.
+    </P>
+
+    <P>The range of blanket to oneshot action permission modes
+      represents a tradeoff between usability and user notification
+      and should behave smoothly and consistently with the human
+      interface of the device.
+    </P>
+
+
+    <H3><A NAME=grant>Granting Permissions to Trusted MIDlet Suites</A></H3>
+    <P>Authorization of trusted MIDlet suites uses protection
+      domain information, permissions on the device, and permissions
+      requested in the MIDlet suite. Permissions in the domain are
+      <em>Allowed</em> or <em>User</em>. Permissions requested by the
+      application are either critical or non-critical.</P>
+
+    <P>To establish the permissions granted to a trusted MIDlet suite
+      when it is to be invoked all of the following MUST be true: 
+    </P>
+    <UL>
+      <LI>The MIDlet suite must have been bound to a protection domain.
+      </LI>
+      <LI>The requested critical permissions are retrieved from the
+	attributes <CODE>MIDlet-Permissions</CODE>
+        and non-critical permissions from
+        <CODE>MIDlet-Permissions-Opt</CODE>.
+	If these attributes appear in the application descriptor they
+	MUST be identical to corresponding attributes in the manifest.
+	If they are not identical, the MIDlet suite MUST NOT be
+	installed or invoked.
+      </LI>
+      <LI>If any of the requested permissions are unknown to the
+	device and are not marked as critical
+	then they are removed from the requested permissions.
+      </LI>
+      <LI>If any of the requested permissions
+	are unknown to the device and marked as critical,
+	the MIDlet suite MUST NOT be installed or invoked.</LI> 
+      <LI>If any of the requested
+	permissions are not present in the protection domain
+	(<em>Allowed</em> or <em>User</em>) permission sets
+	and the requested permission was marked as critical
+	then the MIDlet suite does not have sufficient authorization and
+	MUST NOT be installed or invoked. 
+      </LI>
+      <LI>If any of the requested permissions are not present in the
+	protection domain (<em>Allowed</em> or <em>User</em>) permission sets,
+	and the requested permissions are not
+	marked as critical, the application MUST still be installed
+	and MUST be able to be invoked by the user. 
+      </LI>
+      <LI>If any of the requested
+	permissions match the <EM>User</EM> permissions of the
+	protection domain then 
+	the user MUST explicitly provide authorization to grant those
+	permissions to the MIDlet suite. The implementation is
+	responsible for making the request to the user and getting the
+	response to allow or deny the request.
+      </LI>
+      <LI>The permissions granted to the
+	MIDlet suite are the intersection of the requested permissions with
+	the union of the allowed and user granted permissions.
+      </LI>
+      <LI>During execution, any protected APIs MUST check for the
+	appropriate permissions and throw a
+	<CODE>SecurityException</CODE> if the permission has not been
+	granted.
+      </LI>
+    </UL>
+
+    <P>The successful result of
+      authorization is that the MIDlet suite is granted access to
+      protected APIs or functions for which it requested permissions.</P>
+
+    <H3><A NAME="policyfile">Example External Domain Policy Format</A></H3>
+    <P>An external representation for protection domains allows 
+      clear communication between developers, operators and
+      manufacturers. This format is provided only as an example. There
+      is no requirement for an implementation of 
+      this specification to use this format.  The
+      policy file character set is UTF-8 encoding of Unicode to
+      support any language.  The policy file syntax is based on the
+      JAR manifest format.
+    </P>
+
+    <P>A policy consists of the definitions of domains and aliases.
+      Each domain consists of the definition of granted permissions
+      and user permissions.
+      Aliases permit groups of named permissions to be reused in more
+      than one domain and helps keep the policy compact.
+      Aliases may only be defined and used within a single policy file.
+      References to an alias MUST follow the definition of the alias
+      in the policy file.
+    </P>
+
+    <P>A domain is defined with a domain identifier and a sequence of
+      permissions. The domain identifier is implementation specific.
+      Each permission line begins with
+      "<CODE>allow</CODE>" or user permissions "<CODE>blanket</CODE>",
+      "<CODE>session</CODE>", or "<CODE>oneshot</CODE>" to indicate
+      the interaction level for the list of permissions that follow.
+      User permissions may also include a default mode.
+      Multiple permission lines are allowed.  The permissions are
+      processed in order and if a permission occurs multiple times
+      within a domain only the last definition of the permission is
+      used. It is not recommended that permissions appear more than
+      once.
+    </P>
+
+    <P>BNF Syntax:</P>
+    <PRE>
+    policy_file = 1*(directive)
+
+    directive = (domain_def | alias_def) [newlines]
+
+    domain_def = "domain:" *WS domain_id *WS newlines
+                 1*permission
+
+    domain_id = 1*&lt;any Unicode char and continuation, but not newline&gt;
+
+    permission = permision_level ":" api_names newlines
+
+    api_names: *WS alias_or_name *(*WS "," *WS alias_or_name) *WS
+
+    alias_or_name = alias_ref | api_name
+
+    alias_ref = &lt;alias_name from a previous alias_def in the same policy_file&gt;
+
+    permission_level = allow | user_permission_levels
+
+    user_permision_levels = highest_level ["(" default_level ")"]
+
+    highest_level = user_permission_level
+
+    default_level = user_permision_level ; cannot be greater the highest_level
+
+    user_permission_level = blanket | session | oneshot 
+
+    allow = "allow" ; allow access without asking the user.
+
+    blanket = "blanket" ; Allow access, do not ask again.
+                        ; Include session and oneshot when asking.
+
+    session = "session" ; Allow access, ask again at next MIDlet suite startup.
+                        ; Include oneshot when asking.
+
+    oneshot = "oneshot" ; Allow access, ask again at next use.
+                          ; If no default provided, default is to deny access.
+
+    alias_def = "alias:" *WS alias_name 1*WS alias_api_names
+
+    alias_api_names =  api_name
+                        *(*WS "," *WS api_name) *WS newlines
+
+    alias_name = java_name
+
+    api_name = java_class_name
+
+    WS = continuation | SP | HT
+
+    continuation = newline SP
+
+    newlines = 1*newline  ; allow blank lines to be ignored
+
+    newline = CR LF | LF | CR &lt;not followed by LF&gt;
+
+    CR = &lt;Unicode carriage return (U+000D)&gt;
+
+    LF = &lt;Unicode linefeed (U+000A)&gt;
+
+    SP = &lt;Unicode space (U+0020)&gt;
+
+    HT = &lt;Unicode horizontal-tab (U+0009)&gt;
+
+    java_name = 1*&lt;characters allowed in a java_class_name except for "."&gt;
+
+    java_class_name = 1*&lt;characters allowed in a Java class name&gt;
+
+    </PRE>
+
+    <P>Example policy file:</P>
+    <PRE>
+    domain: O="MIDlet Underwriters, Inc.", C=US
+    allow: javax.microedition.io.HttpConnection
+    oneshot(oneshot): javax.microedition.io.CommConnection
+
+    alias: client_connections javax.microedition.io.SocketConnection,
+      javax.microedition.io.SecureConnection,
+      javax.microedition.io.HttpConnection,
+      javax.microedition.io.HttpsConnection
+
+    domain: O=Acme Wireless, OU=Software Assurance
+    allow: client_connections
+    allow: javax.microedition.io.ServerSocketConnection,
+      javax.microedition.io.UDPDatagramConnection
+    oneshot(oneshot): javax.microedition.io.CommConnection
+
+    domain: allnet
+    blanket(session): client_connections
+    oneshot: javax.microedition.io.CommConnection
+    </PRE>
+
+  </BODY>
+<script language="JavaScript" src="../../../../../../../../js/omi/jsc/s_code_remote.js" tppabs="http://java.sun.com/js/omi/jsc/s_code_remote.js"></script></HTML>

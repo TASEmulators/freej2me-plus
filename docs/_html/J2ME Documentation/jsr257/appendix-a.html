@@ -1,0 +1,662 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   
+      <title>Appendix A. Security</title>
+   </head>
+   <body>
+      <h1>Appendix A. Security</h1>
+      <p>This appendix defines the permissions to protect the access to the RFID
+         	hardware. Permissions are checked by the platform prior to the access of the 
+         	protected function. Some methods in this API are defined to throw a 
+         	<code class="classname">SecurityException</code> if the caller does not have the 
+         	permissions needed to perform the action. This <strong style="text-transform: lowercase">must</strong>
+         	be enforced by an appropriate security framework in the platform.
+      </p>
+      <h3><a id="d0e9489"></a>Using the MIDP 2.x Security Framework
+      </h3>
+      <p>Originally the MIDP security model was defined in the MIDP 2.x Specification
+         	and the Recommended Security Policy. The Java Technology for the Wireless Industry
+         	(JTWI), JSR 185 Specification defines the policy for the third-party domain
+         	("untrusted domain"). The Mobile Service Architecture (MSA) makes the four
+         	protection domains defined in the MIDP 2.x mandatory and defines the recommended
+         	security policies for the domains. A MIDlet suite can belong to one of the four 
+         	domains:
+      </p>
+      <div class="itemizedlist">
+         <ul type="disc">
+            <li>
+               <p>Manufacturer domain</p>
+            </li>
+            <li>
+               <p>Operator domain</p>
+            </li>
+            <li>
+               <p>Identified third-party domain</p>
+            </li>
+            <li>
+               <p>Third-party domain</p>
+            </li>
+         </ul>
+      </div>
+      <p>If this API is implemented on the MIDP 2.x platform, the security framework
+         	of MIDP 2.x <strong style="text-transform: lowercase">must</strong> be used as defined below.
+      </p>
+      <p>The table below defines the names of the permissions used and the methods
+         	that are protected by that permission.
+      </p>
+      <div class="table"><a id="d0e9513"></a><p class="title"><b>Table&nbsp;A.1.&nbsp;Permissions in MIDP 2.x security framework</b></p>
+         <div class="table-contents">
+            <table summary="Permissions in MIDP 2.x security framework" border="1">
+               <colgroup>
+                  <col></col>
+                  <col></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="left">Permission name</th>
+                     <th align="left">Methods protected by this permission</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left">javax.microedition.contactless.DiscoveryManager</td>
+                     <td align="left">DiscoveryManager.getInstance()</td>
+                  </tr>
+                  <tr>
+                     <td align="left">javax.microedition.contactless.ndef.NDEFTagConnection.write</td>
+                     <td align="left">ContactlessConnection.write(NDEFMessage message)</td>
+                  </tr>
+                  <tr>
+                     <td align="left">javax.microedition.io.Connector.ndef</td>
+                     <td align="left">opening NDEFTagConnection</td>
+                  </tr>
+                  <tr>
+                     <td align="left">javax.microedition.io.Connector.rf</td>
+                     <td align="left">opening PlainTagConnection</td>
+                  </tr>
+                  <tr>
+                     <td align="left">javax.microedition.io.Connector.sc</td>
+                     <td align="left">opening ISO14443Connection</td>
+                  </tr>
+                  <tr>
+                     <td align="left">javax.microedition.io.Connector.vtag</td>
+                     <td align="left">opening VisualTagConnection</td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div><br class="table-break"></br><p>The permissions <strong style="text-transform: lowercase">must</strong> be placed into some
+         	function group. This specification does not mandate any particular function
+         	group. This is left to the Mobile Service Architecture work to decide.
+      </p>
+      <h3><a id="d0e9559"></a>Security on top of CDC configuration
+      </h3>
+      <p>Since the <span class="emphasis"><em>Contactless Communication API</em></span> can be
+         	implemented on top of CDC configuration or in devices with MIDP 3 profile,
+         	this appendix defines the security permissions for that environment.
+      </p>
+      <p>The implementations of <span class="emphasis"><em>Contactless Communication API</em></span>
+         	on configurations and profiles that use the fine grained security permissions
+         	based on <code class="classname">java.security.Permission</code> security checks
+         	<strong style="text-transform: lowercase">must</strong> include corresponding permission classes
+         	defined in this specification. The table below lists the methods that 
+         	<strong style="text-transform: lowercase">must</strong> perform permission checks and the required
+         	permission classes.
+      </p>
+      <div class="table"><a id="d0e9580"></a><p class="title"><b>Table&nbsp;A.2.&nbsp;Class based permissions</b></p>
+         <div class="table-contents">
+            <table summary="Class based permissions" border="1">
+               <colgroup>
+                  <col></col>
+                  <col></col>
+               </colgroup>
+               <thead>
+                  <tr>
+                     <th align="left">API call</th>
+                     <th align="left">Required permission class</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td align="left">DiscoveryManager.getInstance()</td>
+                     <td align="left"><code class="classname">ContactlessPermission("discoveryManager.getInstance")</code></td>
+                  </tr>
+                  <tr>
+                     <td align="left">NDEFTagConnection.write(NDEFMessage message)</td>
+                     <td align="left"><code class="classname">ContactlessPermission("ndef.write")</code></td>
+                  </tr>
+                  <tr>
+                     <td align="left">Opening NDEFTagConnection</td>
+                     <td align="left"><code class="classname">NDEFProtocolPermission</code></td>
+                  </tr>
+                  <tr>
+                     <td align="left">Opening PlainTagConnection</td>
+                     <td align="left"><code class="classname">RFProtocolPermission</code></td>
+                  </tr>
+                  <tr>
+                     <td align="left">Opening ISO14443Connection</td>
+                     <td align="left"><code class="classname">SCProtocolPermission</code></td>
+                  </tr>
+                  <tr>
+                     <td align="left">Opening VisualTagConnection</td>
+                     <td align="left"><code class="classname">VTagProtocolPermission</code></td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div><br class="table-break"></br><p>Below are the listings of the permission classes defined in this
+         	specification.
+      </p>
+      <h4><a id="d0e9629"></a>ContactlessPermission
+      </h4><pre class="programlisting">
+        package javax.microedition.contactless;
+
+import java.security.BasicPermission;
+/**
+ * &lt;p&gt;This permission class represents access rights to general functionality of
+ * Contactless Communication API. Separate permission classes are defined for the
+ * protocols used to open the connections to contactless targets. These
+ * permission classes can be found from the separate target packages.&lt;/p&gt;
+ * 
+ * &lt;p&gt;A &lt;code&gt;ContactlessPermission&lt;/code&gt; contains a name (also referred to as 
+ * a "target name") but no actions list. The protected API calls and 
+ * corresponding target names are:&lt;/p&gt;
+ * 
+ * &lt;p&gt;API call: &lt;code&gt;DiscoveryManager.getInstance&lt;/code&gt;&lt;br&gt;
+ *     Permission target name: &lt;code&gt;discoveryManager.getInstance&lt;/code&gt;&lt;/p&gt;
+ * 
+ * &lt;p&gt;API call: &lt;code&gt;NDEFTagConnection.write&lt;/code&gt;&lt;br&gt;
+ *     Permission target name: &lt;code&gt;ndef.write&lt;/code&gt;&lt;/p&gt;
+ *
+ * &lt;table border=1 cellpadding=5 summary="API call, permission target name"&gt;
+ * 	&lt;tr&gt;
+ * 		&lt;th&gt;API call checking the permission&lt;/th&gt;
+ * 		&lt;th&gt;Permission target name&lt;/th&gt;
+ * 	&lt;/tr&gt;
+ *	&lt;tr&gt;
+ * 		&lt;td&gt;DiscoveryManager.getInstance&lt;/td&gt;
+ * 		&lt;td&gt;discoveryManager.getInstance&lt;/td&gt;
+ * 	&lt;/tr&gt;
+ *  &lt;tr&gt;
+ *  	&lt;td&gt;NDEFTagConnection.write&lt;/td&gt;
+ *  	&lt;td&gt;ndef.write&lt;/td&gt;
+ *  &lt;/tr&gt;
+ * &lt;/table&gt;
+ * 
+ * &lt;p&gt;As defined for &lt;code&gt;BasicPermission&lt;/code&gt; the naming follows the
+ * hierarchical property naming convention. An asterisk may appear by itself, or
+ * if immediately preceded by a "." may appear at the end of the name, to signify
+ * a wildcard match.&lt;/p&gt;
+ * 
+ * &lt;p&gt;The action string is unused.&lt;/p&gt; 
+ *
+ * @author Nokia Corporation
+ * @version 1.1
+ */
+public class ContactlessPermission extends BasicPermission {
+
+	/**
+	 * &lt;p&gt;Creates a new &lt;code&gt;ContactlessPermission&lt;/code&gt; instance with the
+	 * specified name. The name string should conform to the specification given
+	 * in the class description and follow the naming conventions described in
+	 * &lt;code&gt;BasicPermission&lt;/code&gt; class.&lt;/p&gt;
+	 *  
+	 * @param name the name of the permission
+	 * @throws NullPointerException if &lt;code&gt;name&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+	 * @throws IllegalArgumentException if &lt;code&gt;name&lt;/code&gt; is an empty string
+	 */
+	public ContactlessPermission(String name) {
+	}
+	
+	/**
+	 * &lt;p&gt;Creates a new &lt;code&gt;ContactlessPermission&lt;/code&gt; instance with the
+	 * specified name. The name string should conform to the specification given
+	 * in the class description and follow the naming conventions described in
+	 * &lt;code&gt;BasicPermission&lt;/code&gt; class. The &lt;code&gt;actions&lt;/code&gt; parameter is
+	 * unused and should be &lt;code&gt;null&lt;/code&gt;.&lt;/p&gt;
+	 * 
+	 * @param name the name of the permission
+	 * @param actions ignored
+	 * @throws NullPointerException if &lt;code&gt;name&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+	 * @throws IllegalArgumentException if &lt;code&gt;name&lt;/code&gt; is an empty string
+	 */
+	public ContactlessPermission(String name, String actions) {
+	}
+	
+}
+
+    </pre><h4><a id="d0e9633"></a>NDEFProtocolPermission
+      </h4><pre class="programlisting">
+        package javax.microedition.contactless.ndef;
+
+import java.security.Permission;
+import java.security.PermissionCollection;
+
+import javax.microedition.io.GCFPermission;
+
+/**
+ * &lt;p&gt;This class represents access rights to connections via the "ndef" protocol.
+ * An &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; consists of a URI string but no actions
+ * list.&lt;/p&gt;
+ *
+ * &lt;p&gt;The URI takes the following general form:&lt;/p&gt;
+ * 
+ * &lt;pre&gt;ndef://{address_part}&lt;/pre&gt;
+ * 
+ * &lt;p&gt;The value of the &lt;code&gt;{address_part}&lt;/code&gt; field is implementation specific.
+ * This is because the URI is not visible to the application before an actual
+ * target is available. The &lt;code&gt;{address_part}&lt;/code&gt; field may also end with
+ * an asterisk. An asterisk indicates a match with any address that begins with
+ * the part left from the asterisk and is followed by zero or more additional
+ * characters. The asterisk alone matches all addresses.&lt;/p&gt;
+ *  
+ * @author Nokia Corporation
+ * @version 1.1
+ */
+public final class NDEFProtocolPermission extends GCFPermission {
+
+	/**
+	 * &lt;p&gt;Constructs &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; with the specified URI as
+	 * its name. The URI string &lt;span class="keyword"&gt;should&lt;/span&gt; conform to the
+	 * specification given above.&lt;/p&gt;
+	 * 
+	 * @param uri the URI string
+	 * @throws IllegalArgumentException if &lt;code&gt;uri&lt;/code&gt; is malformed
+	 * @throws NullPointerException if &lt;code&gt;uri&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+	 */
+	public NDEFProtocolPermission(String uri) {
+	}
+
+	/**
+	 * &lt;p&gt;Checks if the &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; object "implies" the
+	 * specified permission. To determine whether this object implies another
+	 * permission, &lt;code&gt;p&lt;/code&gt;, this method checks that the following is
+	 * true and returns &lt;code&gt;false&lt;/code&gt; if it is not:&lt;/p&gt;
+	 * 
+	 * &lt;ul&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt; is an instanceof &lt;code&gt;NDEFProtocolPermission&lt;/code&gt;,
+	 * 		and&lt;/li&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt;'s name equals or (in the case of wildcards) is
+	 * 		implied by this object's name.&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param p the permission to check against
+	 * @return &lt;code&gt;true&lt;/code&gt; if the specified permission &lt;code&gt;p&lt;/code&gt; is
+	 * 				implied by this object, &lt;code&gt;false&lt;/code&gt; if not
+	 */
+	public boolean implies(Permission p) {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns the canonical string representation of the actions. Since there
+	 * are no actions defined for &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; an
+	 * empty string "" is returned.&lt;/p&gt;
+	 * 
+	 * @return an empty string ""
+	 */
+	public String getActions() {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns a new &lt;code&gt;PermissionCollection&lt;/code&gt; for storing
+	 * &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; objects.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;code&gt;NDEFProtocolPermission&lt;/code&gt; object &lt;span class="keyword"&gt;must&lt;/span&gt;
+	 * be stored in a manner that allows them to be inserted into the collection
+	 * in any order, but that also enables the &lt;code&gt;PermissionCollection.implies&lt;/code&gt;
+	 * method to be implemented in an effective (and consistent) manner.&lt;/p&gt;
+	 * 
+	 * @return a new &lt;code&gt;PermissionCollection&lt;/code&gt; object suitable for storing
+	 * 				&lt;code&gt;NDEFProtocolPermission&lt;/code&gt; objects
+	 */
+	public PermissionCollection newPermissionCollection() {
+	}
+	
+	/**
+	 * &lt;p&gt;Checks two &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; objects for equality.&lt;/p&gt;
+	 * 
+	 * @param obj the object whose equality with this object is tested
+	 * @return &lt;code&gt;true&lt;/code&gt; if &lt;code&gt;obj&lt;/code&gt; is a
+	 * 		   &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; and has the same URI string
+	 *  	   as this &lt;code&gt;NDEFProtocolPermission&lt;/code&gt; object
+	 */
+	public boolean equals(Object obj) {
+	}
+
+	/**
+	 * &lt;p&gt;Returns the hash code value for this object.&lt;/p&gt;
+	 * 
+	 * @return the hash code value for this object
+	 */
+	public int hashCode() {
+	}
+	
+}
+
+    </pre><h4><a id="d0e9637"></a>RFProtocolPermission
+      </h4><pre class="programlisting">
+        package javax.microedition.contactless.rf;
+
+import java.security.Permission;
+import java.security.PermissionCollection;
+
+import javax.microedition.io.GCFPermission;
+
+/**
+ * &lt;p&gt;This class represents access rights to connections via the "rf" protocol.
+ * A &lt;code&gt;RFProtocolPermission&lt;/code&gt; consists of a URI string but no actions
+ * list.&lt;/p&gt;
+ *
+ * &lt;p&gt;The URI takes the following general form:&lt;/p&gt;
+ * 
+ * &lt;pre&gt;rf://{address_part}&lt;/pre&gt;
+ * 
+ * &lt;p&gt;The value of the &lt;code&gt;{address_part}&lt;/code&gt; field is implementation specific.
+ * This is because the URI is not visible to the application before an actual
+ * target is available. The &lt;code&gt;{address_part}&lt;/code&gt; field may also end with
+ * an asterisk. An asterisk indicates a match with any address that begins with
+ * the part left from the asterisk and is followed by zero or more additional
+ * characters. The asterisk alone matches all addresses.&lt;/p&gt;
+ * 
+ * @author Nokia Corporation
+ * @version 1.1
+ */
+public final class RFProtocolPermission extends GCFPermission {
+
+	/**
+	 * &lt;p&gt;Constructs &lt;code&gt;RFProtocolPermission&lt;/code&gt; with the specified URI.
+	 * The URI string &lt;span class="keyword"&gt;should&lt;/span&gt; conform to the
+	 * specification given above.&lt;/p&gt;
+	 * 
+	 * @param uri the URI for the protocol
+	 * @throws IllegalArgumentException if &lt;code&gt;uri&lt;/code&gt; is malformed
+	 * @throws NullPointerException if &lt;code&gt;uri&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+	 */
+	public RFProtocolPermission(String uri) {
+	}
+
+	/**
+	 * &lt;p&gt;Checks if the &lt;code&gt;RFProtocolPermission&lt;/code&gt; object "implies" the
+	 * specified permission. To determine whether this object implies another
+	 * permission, &lt;code&gt;p&lt;/code&gt;, this method checks that the following is
+	 * true and returns &lt;code&gt;false&lt;/code&gt; if it is not:&lt;/p&gt;
+	 * 
+	 * &lt;ul&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt; is an instanceof &lt;code&gt;RFProtocolPermission&lt;/code&gt;, and&lt;/li&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt;'s name equals or (in the case of wildcards) is implied by
+	 *      this object's name.&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param p the permission to check against
+	 * @return &lt;code&gt;true&lt;/code&gt; if the specified permission &lt;code&gt;p&lt;/code&gt; is
+	 * 				implied by this object, &lt;code&gt;false&lt;/code&gt; if not
+	 */
+	public boolean implies(Permission p) {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns the canonical string representation of the actions. Since there
+	 * are no actions defined for &lt;code&gt;RFProtocolPermission&lt;/code&gt; an
+	 * empty string "" is returned.&lt;/p&gt;
+	 * 
+	 * @return an empty string ""
+	 */
+	public String getActions() {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns a new &lt;code&gt;PermissionCollection&lt;/code&gt; for storing
+	 * &lt;code&gt;RFProtocolPermission&lt;/code&gt; objects.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;code&gt;RFProtocolPermission&lt;/code&gt; object &lt;span class="keyword"&gt;must&lt;/span&gt;
+	 * be stored in a manner that allows them to be inserted into the collection
+	 * in any order, but that also enables the &lt;code&gt;PermissionCollection.implies&lt;/code&gt;
+	 * method to be implemented in an effective (and consistent) manner.&lt;/p&gt;
+	 * 
+	 * @return a new &lt;code&gt;PermissionCollection&lt;/code&gt; object suitable for storing
+	 * 				&lt;code&gt;RFProtocolPermission&lt;/code&gt; objects
+	 */
+	public PermissionCollection newPermissionCollection() {
+	}
+	
+	/**
+	 * &lt;p&gt;Checks two &lt;code&gt;RFProtocolPermission&lt;/code&gt; objects for equality.&lt;/p&gt;
+	 * 
+	 * @param obj the object whose equality with this object is tested
+	 * @return &lt;code&gt;true&lt;/code&gt; if &lt;code&gt;obj&lt;/code&gt; is a
+	 * 		   &lt;code&gt;RFProtocolPermission&lt;/code&gt; and has the same URI string as
+	 * 		   this &lt;code&gt;RFProtocolPermission&lt;/code&gt; object
+	 */
+	public boolean equals(Object obj) {
+	}
+
+	/**
+	 * &lt;p&gt;Returns the hash code value for this object.&lt;/p&gt;
+	 * 
+	 * @return the hash code value for this object
+	 */
+	public int hashCode() {
+	}
+	
+}
+
+    </pre><h4><a id="d0e9641"></a>SCProtocolPermission
+      </h4><pre class="programlisting">
+        package javax.microedition.contactless.sc;
+
+import java.security.Permission;
+import java.security.PermissionCollection;
+
+import javax.microedition.io.GCFPermission;
+
+/**
+ * &lt;p&gt;This class represents access rights to connections via the "sc" protocol.
+ * A &lt;code&gt;SCProtocolPermission&lt;/code&gt; consists of a URI string but no actions
+ * list.&lt;/p&gt;
+ * 
+ * &lt;p&gt;The URI takes the following general form:&lt;/p&gt;
+ * 
+ * &lt;pre&gt;sc://{address_part}&lt;/pre&gt;
+ * 
+ * &lt;p&gt;The value of the &lt;code&gt;{address_part}&lt;/code&gt; field is implementation specific.
+ * This is because the URI is not visible to the application before an actual
+ * target is available. The &lt;code&gt;{address_part}&lt;/code&gt; field may also end with
+ * an asterisk. An asterisk indicates a match with any address that begins with
+ * the part left from the asterisk and is followed by zero or more additional
+ * characters. The asterisk alone matches all addresses.&lt;/p&gt;
+ * 
+ * @author Nokia Corporation
+ * @version 1.1
+ */
+public final class SCProtocolPermission extends GCFPermission {
+
+	/**
+	 * &lt;p&gt;Constructs &lt;code&gt;SCProtocolPermission&lt;/code&gt; with the specified URI.
+	 * The URI string &lt;span class="keyword"&gt;should&lt;/span&gt; conform to the
+	 * specification given above.&lt;/p&gt;
+	 * 
+	 * @param uri the URI for the protocol
+	 * @throws IllegalArgumentException if &lt;code&gt;uri&lt;/code&gt; is malformed
+	 * @throws NullPointerException if &lt;code&gt;uri&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+	 */
+	public SCProtocolPermission(String uri) {
+	}
+
+	/**
+	 * &lt;p&gt;Checks if the &lt;code&gt;SCProtocolPermission&lt;/code&gt; object "implies" the
+	 * specified permission. To determine whether this object implies another
+	 * permission, &lt;code&gt;p&lt;/code&gt;, this method checks that the following is
+	 * true and returns &lt;code&gt;false&lt;/code&gt; if it is not:&lt;/p&gt;
+	 * 
+	 * &lt;ul&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt; is an instanceof &lt;code&gt;SCProtocolPermission&lt;/code&gt;, and&lt;/li&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt;'s name equals or (in the case of wildcards) is implied by
+	 *      this object's name.&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param p the permission to check against
+	 * @return &lt;code&gt;true&lt;/code&gt; if the specified permission &lt;code&gt;p&lt;/code&gt; is
+	 * 				implied by this object, &lt;code&gt;false&lt;/code&gt; if not
+	 */
+	public boolean implies(Permission p) {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns the canonical string representation of the actions. Since there
+	 * are no actions defined for &lt;code&gt;SCProtocolPermission&lt;/code&gt; an
+	 * empty string "" is returned.&lt;/p&gt;
+	 * 
+	 * @return an empty string ""
+	 */
+	public String getActions() {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns a new &lt;code&gt;PermissionCollection&lt;/code&gt; for storing
+	 * &lt;code&gt;SCProtocolPermission&lt;/code&gt; objects.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;code&gt;SCProtocolPermission&lt;/code&gt; object &lt;span class="keyword"&gt;must&lt;/span&gt;
+	 * be stored in a manner that allows them to be inserted into the collection
+	 * in any order, but that also enables the &lt;code&gt;PermissionCollection.implies&lt;/code&gt;
+	 * method to be implemented in an effective (and consistent) manner.&lt;/p&gt;
+	 * 
+	 * @return a new &lt;code&gt;PermissionCollection&lt;/code&gt; object suitable for storing
+	 * 				&lt;code&gt;SCProtocolPermission&lt;/code&gt; objects
+	 */
+	public PermissionCollection newPermissionCollection() {
+	}
+	
+	/**
+	 * &lt;p&gt;Checks two &lt;code&gt;SCProtocolPermission&lt;/code&gt; objects for equality.&lt;/p&gt;
+	 * 
+	 * @param obj the object whose equality with this object is tested
+	 * @return &lt;code&gt;true&lt;/code&gt; if &lt;code&gt;obj&lt;/code&gt; is a
+	 * 		   &lt;code&gt;SCProtocolPermission&lt;/code&gt; and has the same URI string as
+	 * 		   this &lt;code&gt;SCProtocolPermission&lt;/code&gt; object
+	 */
+	public boolean equals(Object obj) {
+	}
+
+	/**
+	 * &lt;p&gt;Returns the hash code value for this object.&lt;/p&gt;
+	 * 
+	 * @return the hash code value for this object
+	 */
+	public int hashCode() {
+	}
+	
+}
+
+    </pre><h4><a id="d0e9645"></a>VTagProtocolPermission
+      </h4><pre class="programlisting">
+        package javax.microedition.contactless.visual;
+
+import java.security.Permission;
+import java.security.PermissionCollection;
+
+import javax.microedition.io.GCFPermission;
+
+/**
+ * &lt;p&gt;This class represents access rights to connections via the "vtag" protocol.
+ * A &lt;code&gt;VTagProtocolPermission&lt;/code&gt; consists of a URI string but no actions
+ * list.&lt;/p&gt;
+ *
+ * &lt;p&gt;The URI takes the following general form:&lt;/p&gt;
+ * 
+ * &lt;pre&gt;vtag://{address_part}&lt;/pre&gt;
+ * 
+ * &lt;p&gt;The value of the &lt;code&gt;{address_part}&lt;/code&gt; field is implementation specific.
+ * This is because the URI is not visible to the application before an actual
+ * target is available. The &lt;code&gt;{address_part}&lt;/code&gt; field may also end with
+ * an asterisk. An asterisk indicates a match with any address that begins with
+ * the part left from the asterisk and is followed by zero or more additional
+ * characters. The asterisk alone matches all addresses.&lt;/p&gt;
+ *
+ * @author Nokia Corporation
+ * @version 1.1
+ */
+public final class VTagProtocolPermission extends GCFPermission {
+
+	/**
+	 * &lt;p&gt;Constructs &lt;code&gt;VTagProtocolPermission&lt;/code&gt; with the specified URI.
+	 * The URI string &lt;span class="keyword"&gt;should&lt;/span&gt; conform to the
+	 * specification given above.&lt;/p&gt;
+	 * 
+	 * @param uri the URI for the protocol
+	 * @throws IllegalArgumentException if &lt;code&gt;uri&lt;/code&gt; is malformed
+	 * @throws NullPointerException if &lt;code&gt;uri&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt;
+	 */
+	public VTagProtocolPermission(String uri) {
+	}
+
+	/**
+	 * &lt;p&gt;Checks if the &lt;code&gt;VTagProtocolPermission&lt;/code&gt; object "implies" the
+	 * specified permission. To determine whether this object implies another
+	 * permission, &lt;code&gt;p&lt;/code&gt;, this method checks that the following is
+	 * true and returns &lt;code&gt;false&lt;/code&gt; if it is not:&lt;/p&gt;
+	 * 
+	 * &lt;ul&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt; is an instanceof &lt;code&gt;VTagProtocolPermission&lt;/code&gt;,
+	 * 		and&lt;/li&gt;
+	 * 	&lt;li&gt;&lt;code&gt;p&lt;/code&gt;'s name equals or (in the case of wildcards) is
+	 * 		implied by this object's name.&lt;/li&gt;
+	 * &lt;/ul&gt;
+	 * 
+	 * @param p the permission to check against
+	 * @return &lt;code&gt;true&lt;/code&gt; if the specified permission &lt;code&gt;p&lt;/code&gt; is
+	 * 				implied by this object, &lt;code&gt;false&lt;/code&gt; if not
+	 */
+	public boolean implies(Permission p) {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns the canonical string representation of the actions. Since there
+	 * are no actions defined for &lt;code&gt;VTagProtocolPermission&lt;/code&gt; an
+	 * empty string "" is returned.&lt;/p&gt;
+	 * 
+	 * @return an empty string ""
+	 */
+	public String getActions() {
+	}
+	
+	/**
+	 * &lt;p&gt;Returns a new &lt;code&gt;PermissionCollection&lt;/code&gt; for storing
+	 * &lt;code&gt;VTagProtocolPermission&lt;/code&gt; objects.&lt;/p&gt;
+	 * 
+	 * &lt;p&gt;&lt;code&gt;VTagProtocolPermission&lt;/code&gt; object &lt;span class="keyword"&gt;must&lt;/span&gt;
+	 * be stored in a manner that allows them to be inserted into the collection
+	 * in any order, but that also enables the &lt;code&gt;PermissionCollection.implies&lt;/code&gt;
+	 * method to be implemented in an effective (and consistent) manner.&lt;/p&gt;
+	 * 
+	 * @return a new &lt;code&gt;PermissionCollection&lt;/code&gt; object suitable for storing
+	 * 				&lt;code&gt;VTagProtocolPermission&lt;/code&gt; objects
+	 */
+	public PermissionCollection newPermissionCollection() {
+	}
+	
+	/**
+	 * &lt;p&gt;Checks two &lt;code&gt;VTagProtocolPermission&lt;/code&gt; objects for equality.&lt;/p&gt;
+	 * 
+	 * @param obj the object whose equality with this object is tested
+	 * @return &lt;code&gt;true&lt;/code&gt; if &lt;code&gt;obj&lt;/code&gt; is a
+	 * 		   &lt;code&gt;VTagProtocolPermission&lt;/code&gt; and has the same URI string
+	 * 		   as this &lt;code&gt;VTagProtocolPermission&lt;/code&gt; object
+	 */
+	public boolean equals(Object obj) {
+	}
+
+	/**
+	 * &lt;p&gt;Returns the hash code value for this object.&lt;/p&gt;
+	 * 
+	 * @return the hash code value for this object
+	 */
+	public int hashCode() {
+	}
+	
+}
+
+    </pre></body>
+</html>

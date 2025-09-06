@@ -1,0 +1,312 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<META http-equiv="Content-Style-Type" content="text/css">
+<TITLE></TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="../../../../stylesheet.css" TITLE="Style">
+</HEAD>
+<BODY>
+<a name="section_cmail"><h2>Cメール（EZアプリ通信）</h2></a>
+
+<p>
+パケットCメールによるアプリケーション同士の通信機能をEZアプリ通信と呼びます。ここでは、EZアプリ通信のことを「Cメール通信」または「Cメールサービス」などのように表記しています。
+</p><p>
+以下にCメールについて説明します。
+</p>
+<ul>
+ <li><a href="#section_cmail_overview"> 1. Javaアプリケーション間のCメール通信概要</a>  <ul>   
+   <li><a href="#ssection_cmail_overview_single">単発モード</a>  
+  </ul>
+ <li><a href="#section_cmail_trigger">  2. 起動要因の解析</a>   
+ <li><a href="#section_cmail_interface">3. CMailConnectionインタフェース</a>   
+  <ul>
+   <li><a href="#ssection_cmail_interface_view"> 3.1 機能一覧</a>   
+   <li><a href="#ssection_cmail_interface_max">  3.2 通信項目の最大長</a>   
+   <li><a href="#ssection_cmail_interface_timeout">  3.3 タイムアウト時間</a>   
+  </ul>
+ <li><a href="#section_cmail_sender_single">4. 発信側処理</a>  
+ <li><a href="#section_cmail_receiver">     6. 着信側処理</a>  
+   <li><a href="#ssection_cmail_receiver_single"> 6.2 単発モード</a>   
+   <li><a href="#ssection_cmail_receiver_notreceived"> 6.3 起動要求を受けていない場合</a>   
+</ul>
+
+<ul>
+</ul>
+
+<hr>
+
+<a name="section_cmail_overview"><h3>1. Javaアプリケーション間のCメール通信概要</h3></a>   
+<p>「単発モード」によるCメール通信が可能です。
+</p>
+<ul>
+ <li>「単発モード」では、発信側のJavaアプリケーションが着信側のJavaアプリケーションの起動を要求します。着信側で、起動要求されたJavaアプリケーションが存在すれば起動します。起動されたJavaアプリケーションは、発信側の電話番号やニックネーム、発信側アプリケーションからのメッセージを取得できます。
+</ul>
+<p>
+Cメールサービスにより通信できるのは、同じ種類のJavaアプリケーション同士のみです。ここで、同じ種類のアプリケーションとは、JadファイルまたはJARファイル中のマニフェストファイル中に記載されるデスクリプタのうち、MIDlet-Name、MIDlet-Version、MIDlet-Vendorが一致するアプリケーションです。
+</p>
+
+<a name="ssection_cmail_overview_single"><h4>1.1 単発モード</h4></a>   
+<p>
+単発モードでの発信側と着信側の移動機の処理を図1に示します。
+</p>
+<div align="center">
+<img src="cmail_single_mode.gif" alt="cmail_single_mode.gif">
+<p><strong>図1. Cメール単発モード処理</strong></p>   
+</div>
+<p>
+単発モードでは、通信先の移動機上のJavaアプリケーションに対して一つメッセージを送信できます。このとき、発信側のJavaアプリケーションは下記のパラメータを指定します。
+</p>
+<ul>
+ <li>Cメールサービスモード（単発モード）
+ <li>着信側の電話番号
+ <li>発信側の「ニックネーム」
+ <li>起動を要求するJavaアプリケーションに送るメッセージ（任意の文字列）
+</ul>
+<p>
+発信側の移動機は、発信の許可を求めるGUIをユーザーに表示します。ユーザーが許可したときにのみ発信されます。このとき、起動を要求するアプリケーション情報として、発信側Javaアプリケーションの名前、ベンダ名、バージョン情報を着信側に伝えます。
+</p><p>
+着信側では、起動を要求されたJavaアプリケーションの情報をもとに、移動機内部でアプリケーションの存在を確認します。存在すると「Ack」メッセージを発信側に返します。
+</p><p>
+着信側は、ユーザーに起動の許可を求めたうえで、アプリケーションを起動します。着信側で起動されたJavaアプリケーションは、自身がCメール起動要求によって起動されたことを検知します。そして、下記の情報を取得します。
+</p>
+<ul>
+ <li>Cメールサービスモード（単発モード）
+ <li>発信側の電話番号
+ <li>発信側の「ニックネーム」
+ <li>発信側から送られたメッセージ
+</ul>
+<p>
+発信側、着信側とも、すべてのJavaアプリケーションが単発モードの通信機能を使用できます。
+</p>
+
+<a name="section_cmail_trigger"><h3>2. 起動要因の解析</h3></a>   
+<p>
+Cメール通信機能を使用するJavaアプリケーションは、起動された時点で起動要因を調べる必要があります。起動要因は、MIDPのスタティックメソッドSystem.getProperty()に"kddi.system.wakeupMode"キーを与えて取得します。
+</p><p>
+System.getProperty()が"１"を返したときは、Cメール起動要求によって起動されたことを前提としてプログラムを実行しなくてはなりません。発信側の情報を取得するためには、CMailConnectionインタフェースが実装されたオブジェクトを取得し、そのメソッドを使用します。
+</p>
+
+<a name="section_cmail_interface"><h3>3. CMailConnectionインタフェース</h3></a>   
+<p>
+CMailConnectionインタフェースは、DatagramConnectionインタフェースから導出されています。MIDPのConnector.open()スタティックメソッドに、"cmail"スキームのURLを指定すると、CMailConnectionインタフェースを実装したオブジェクトが得られます。Cメール通信機能を使用するためには、このオブジェクトのメソッドを使用します。
+</p>
+
+<a name="ssection_cmail_interface_view"><h4>3.1 機能一覧</h4></a>   
+<p>
+Connector.open()に与えるurlのフォーマットで、発信側の機能を使用するのか、着信側の機能を使用するのかが決定されます。発信側機能、着信側機能、連続モード時のチャット送受信機能それぞれについて使用するメソッドを下記に示します。
+</p>
+<p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align = "left"><strong>表1. 発信側機能</strong></caption>   
+ <tr>
+  <th>機能</th>
+  <th>メソッド</th>
+ </tr>
+ <tr>
+  <td>Cメール単発モードを設定する</td>
+  <td>void setSingleMode()</td>  
+ </tr>
+ <tr>
+  <td>移動機のニックネームを設定する</td>
+  <td>void setNickName(java.lang.String nickname)</td>   
+ </tr>
+ <tr>
+  <td>起動要求するアプリケーションへのメッセージを設定する</td>
+  <td>void setMessage(java.lang.String message)</td>   
+ </tr>
+ <tr>
+  <td>ユーザーに許可を得てから、単発モードで起動要求を送信する</td>
+  <td>void sendTo()</td>  
+ </tr>
+</table>
+<p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align = "left"><strong>表2. 発信側機能</strong></caption>   
+ <tr>
+  <th>機能</th>
+  <th>メソッド</th>
+ </tr>
+ <tr>
+  <td>Cメールサービスモードを取得する</td>
+  <td>void getMode()</td>   
+ </tr>
+ <tr>
+  <td>通信相手の電話番号を取得する</td>
+  <td>java.lang.String getTelNo()</td>   
+ </tr>
+ <tr>
+  <td>通信相手のニックネームを取得する</td>
+  <td>java.lang.String getNickName(java.lang.String message)</td>   
+ </tr>
+ <tr>
+  <td>通信相手から送られたメッセージを取得する</td>
+  <td>java.lang.String getMessage(java.lang.String message)</td>   
+ </tr>
+</table>
+<dl>
+ <dt><b>注意</b>
+ <dd>発信側として、既に単発モードの設定が済んでいる状態で、異なる通信モードを設定すると例外がスローされます。同様に、着信側として通信モードが決定されている状態で、それと異なる通信モードを設定すると例外がスローされます。
+</dl>
+
+<a name="ssection_cmail_interface_max"><h4>3.2 通信項目の最大長</h4></a>   
+<p>
+Cメール関連で扱う項目の最大長について表4に示します。
+</p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align = "left"><strong>表4. 通信項目の最大長</strong></caption>   
+ <tr>
+  <th>項目</th>
+  <th>最大長（バイト）</th>
+ </tr>
+ <tr>
+  <td>ニックネーム</td>
+  <td align="right">12</td>
+ </tr>
+ <tr>
+  <td>送信メッセージ（起動要求メッセージ）</td>
+  <td align="right">81</td>
+ </tr>
+ <tr>
+  <td>チャット（Datagramオブジェクトに格納するデータ）</td>
+  <td align="right">354</td>
+ </tr>
+</table>
+<p>
+ニックネーム、送信メッセージ、およびJadファイルに指定するMIDlet-Name, MIDlet-Vendor, MIDlet-Versionの長さの総和は90バイトを超えないこととします。上記の表の数値はこの条件下において有効です。   
+</p>
+
+<a name="ssection_cmail_interface_timeout"><h4>3.3 タイムアウト時間</h4></a>   
+<p>
+Cメール関連のメソッドで発生する概略のタイムアウト時間を表5に示します。表に示すタイムアウト時間の間、メソッドが戻らない可能性があります。このタイムアウト時間はCメールパケットサービスのプロトコルに関連しており、将来変更される可能性があります。
+</p>
+<table border=1 cellspacing=0 cellpadding=2>
+<caption align = "left"><strong>表5. タイムアウト時間</strong></caption>   
+ <tr>
+  <th>項目</th>
+  <th>タイムアウト時間（分）</th>
+ </tr>
+ <tr>
+  <td>CMailConnection.sendTo()</td>
+  <td align="right">5</td>
+ </tr>
+ <tr>
+  <td>CMailConnection.close()</td>
+  <td align="right">4</td>
+ </tr>
+ <tr>
+  <td>Datagram.send()</td>
+  <td align="right">1</td>
+ </tr>
+ <tr>
+  <td>Datagram.receive()</td>
+  <td align="right">1</td>
+ </tr>
+ <tr>
+  <td>起動要求を受けていないJavaアプリケーションが、相手（発信側）からの起動要求を待つ場合に呼び出される下記のメソッド<br>
+      CMailConnection.getMode()<br>
+      CMailConnection.getTelNo()<br>
+      CMailConnection.getNickName()<br>
+      CMailConnection.getMessage()
+  </td>
+  <td align="right">5</td>
+ </tr>
+</table>
+
+<a name="section_cmail_sender_single"><h3>4. 発信側処理</h3></a>  
+<p>
+&quot;cmail&quot;スキームのurlに着信側の電話番号を加えて、Connector.open()スタティックメソッドに指定し、CMailConnection インタフェースを実装したオブジェクトを取得します。以下に例を示します。   
+</p>
+
+<pre>
+ String  partnerTelNo  =  &quot;090-1111-2222&quot;;
+     //注）  番号中のハイフン'-'は必要ではありません（無視されます）。
+     //      この他、スペース（空白）及び  'P'  も無視されます。
+     //      通常は  AddressBook.getAddressByGUI()によって取得したPersonalInfoオブジェクト
+     //      から  電話番号を得ます。
+ 
+ CMailConnection  con  =  null;
+ 
+ // CMailConnectionを実装したオブジェクトを取得
+ con  =  (CMailConnection)Connector.open(  &quot;cmail://&quot;  +  partnerTelNo  );
+</pre>
+
+<p>
+次に、CMailConnectionを実装したオブジェクトに、Cメールサービスモードを単発モードに設定します。また、発信側ニックネーム、着信側に送る単発モードメッセージを設定し発信します。以下に例を示します。
+</p>
+
+<pre>
+ // 単発モードに設定
+ con.setSingleMode();
+ // 発信側ニックネームを設定con.setNickName( &quot;Tom&quot; );
+ // 着信側に送るメッセージを設定
+ con.setMessage( &quot;MESSAGE&quot; ); 
+ con.sendTo();   // 単発モードメッセージの発信：着信側から「Ack」または「Nack」を受信、
+                 //またはタイムアウトするまでJavaアプリケーションはブロックされます。
+</pre>
+
+<p>
+con.sendTo()は、ユーザーに発信の許可を求め、ユーザーが許可すると発信します。着信側がJavaアプリケーションの存在を確認すると、「Ack」メッセージを発信側に返します。この「Ack」メッセージを発信側が検出すると、con.SendTo()メソッドの呼び出しが戻ります。ユーザーが許可しなかったり、着信側との通信に失敗すると、SendTo()メソッドではIOException例外がスローされます。
+</p><p>
+sendTo()メソッドが戻ったら、close()メソッドで接続を閉じます。
+</p>
+
+<a name="section_cmail_receiver"><h3>6. 着信側処理</h3></a>  
+<p>
+Cメール通信機能を使用するJavaアプリケーションは、起動されたときに起動要因を調べる必要があります。起動要因は、MIDPのスタティックメソッドSystem.getProperty()に"kddi.system.wakeupMode"キーを与えて取得します。以下に例を示します。
+</p>
+
+<pre>
+ try{
+   String wakeupMode = System.getProperty( &quot;kddi.system.wakeupMode&quot; ); 
+   if ( wakeupMode != null &amp;&amp; wakeupMode.equals( &quot;1&quot; ) ) {
+ 
+     // 要求受付側。モードは要求送信側に依存する。
+     CMailConnection con = (CMailConnection)Connector.open( &quot;cmail://&quot; );
+     int mode = con.getMode();
+     String nickName = con.getNickName();
+     String message = con.getMessage();
+       ...
+     }else{
+     }
+     con.close()
+   }
+ }catch ( IOException ioe ){
+ ...
+</pre>
+
+<p>
+System.getProperty()が"1"を返したときは、Cメール起動要求によって起動されたとみなします。Javaアプリケーションは、Connector.open()メソッドで、CMailConnectionインタフェースの実装オブジェクトを取得します。このとき"cmail://"をurlとして指定します。open()が成功したら、発信側が要求しているCメールサービスモードをgetMode()メソッドで、発信側のニックネームをgetNickName()メソッドで、発信側からのメッセージをgetMessage()メソッドで取得します。
+</p>
+
+<a name="ssection_cmail_receiver_single"><h4>6.2 単発モード</h4></a>   
+<p>
+Cメールサービスモードが<a href="../CMailConnection.html#SINGLE_MODE">SINGLE_MODE</a>のときは、発信側は単発モードの通信を要求してきています。Javaアプリケーションは、<a href="../CMailConnection.html#getMessage()">getMessage()</a>メソッドで発信側からのメッセージを取得し、close()メソッドで接続を閉じます。
+</p>
+
+<a name="ssection_cmail_receiver_notreceived"><h4>6.3 起動要求を受けていない場合</h4></a>   
+<p>
+Cメールで起動要求を受けていないJavaアプリケーションが、起動要求を待ち受けることも可能です。この場合、Connector.open()からclose()までの処理は、下記のように、Cメール起動要求を受けた場合と同様になります。
+</p><p>
+起動要求を受信していなくても、open()メソッドはすぐに戻ります。ただし、発信側が通知する項目を取得するためのメソッドを呼び出すと（下記の例ではcon.getMode()）、発信側が起動要求してくるか、またはタイムアウトするまで呼び出し元に戻りません。
+</p>
+<pre>
+ try{
+   // 要求受付側。モードは要求送信側に依存する。
+   CMailConnection con = (CMailConnection)Connector.open( &quot;cmail://&quot; );
+   int mode = con.getMode();
+                // 発信側から起動要求を受信する、または
+                // タイムアウトするまで
+                // Javaアプリケーションはブロックされます。
+   String nickName = con.getNickName();
+   String message = con.getMessage();
+   con.close()
+ } catch ( IOException ioe ){ 
+ ...
+</pre>
+
+<hr>
+Copyright 2003 Aplix Corporation. All rights reserved.  Aplix Confidential and Restricted.   
+
+</BODY>
+</HTML>

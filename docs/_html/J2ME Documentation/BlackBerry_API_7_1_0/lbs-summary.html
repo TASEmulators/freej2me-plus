@@ -1,0 +1,896 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN""http://www.w3.org/TR/REC-html40/frameset.dtd">
+<HTML>
+<HEAD>
+<TITLE>
+BlackBerry Java SDK 7.0 API Reference: Location-Based Services (LBS)
+</TITLE>
+<LINK REL ="stylesheet" TYPE="text/css" HREF="stylesheet.css" TITLE="Style">
+<script type="text/javascript">
+<!--
+// switchMenu - Expand or collapse a code sample div. Takes two arguments:
+// divSample, the id of the div to expand, divList
+function switchMenu(divSample, sourceLink) {
+
+	var el = document.getElementById(divSample).style;
+	if (el.display == 'none') {
+		el.display = 'block';
+		sourceLink.className = 'explink_minus';
+	} else {
+		el.display = 'none';
+		sourceLink.className = 'explink_plus';
+	}
+}
+// collapseAll - Collapses all expandable divs and adds the + graphic automatically when the page loads.
+// This is done so that users who do not have JS enabled can still see the code samples.
+function collapseAll() {
+	// Collapse all expandable divs
+	var divsOnPage = document.getElementsByTagName('div');
+	for (var x = 0; x < divsOnPage.length; x++) {
+		if (divsOnPage[x].id.substr(0,3) == "UI_") {
+		
+			divsOnPage[x].style.display = 'none';
+			
+		}
+	}
+	// Change all the expand/collapse links to explink_plus, to show a plus sign beside it
+	var linksOnPage = document.getElementsByTagName('a');
+	for (var y = 0; y < linksOnPage.length; y++) {
+		if (linksOnPage[y].className == "explink") {
+			linksOnPage[y].className = "explink_plus";
+		}
+	}
+}
+//-->
+</script>
+</HEAD>
+<BODY BGCOLOR="white" onLoad="collapseAll();">
+
+<!-- =========== START OF NAVBAR ========== -->
+<!-- DO NOT EDIT -->
+<A NAME="navbar_top"><!-- --></A>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0">
+<TR>
+<TD COLSPAN=2 BGCOLOR="#EEEEFF" CLASS="NavBarCell1">
+<A NAME="navbar_top_firstrow"><!-- --></A>
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3">
+  <TR ALIGN="center" VALIGN="top">
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-summary.html"><FONT CLASS="NavBarFont1"><B>Overview</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Package</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#FFFFFF" CLASS="NavBarCell1Rev"> &nbsp;<FONT CLASS="NavBarFont1Rev">Class</FONT>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="overview-tree.html"><FONT CLASS="NavBarFont1"><B>Tree</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="deprecated-list.html"><FONT CLASS="NavBarFont1"><B>Deprecated</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="index-files/index-1.html"><FONT CLASS="NavBarFont1"><B>Index</B></FONT></A>&nbsp;</TD>
+  <TD BGCOLOR="#EEEEFF" CLASS="NavBarCell1">    <A HREF="help-doc.html"><FONT CLASS="NavBarFont1"><B>Help</B></FONT></A>&nbsp;</TD>
+  </TR>
+</TABLE>
+</TD>
+<TD ALIGN="right" VALIGN="top" ROWSPAN=3><EM>
+</EM>
+</TD>
+</TR>
+
+<TR>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+&nbsp;PREV&nbsp;
+&nbsp;NEXT</FONT></TD>
+<TD BGCOLOR="white" CLASS="NavBarCell2"><FONT SIZE="-2">
+  <A HREF="index.html" TARGET="_top"><B>FRAMES</B></A>  &nbsp;
+&nbsp;<A HREF="lbs-summary.html" TARGET="_top"><B>NO FRAMES</B></A></FONT></TD>
+</TR>
+</TABLE>
+<!-- =========== END OF NAVBAR =========== -->
+<HR>
+<FORM action="https://www.blackberry.com/DocsFeedback/" method="GET" target="_new">
+<INPUT type="hidden" name="title" value="API Reference">
+<INPUT type="hidden" name="source" value="External">
+
+<INPUT type="hidden" name="version" value="7.0.0">
+<INPUT type="hidden" name="classname" value="Location-Based Services overview">
+<INPUT type="submit" value="Submit Feedback" /></FORM>
+
+<BR>
+
+<!-- =========== START OF BODY =========== -->
+
+<h1 align="center">Location-Based Services<a name="UI_TOP"></a></h1>
+<h2>Overview</h2>
+<p>This category contains the packages that you can use to  develop LBS applications for the BlackBerry® device. 
+<ul>
+  <li><a href="#Retrieve">Retrieving location information</a></li>
+  <ul>
+	  <li><a href="#GPS">Using GPS</a></li>
+	  <li><a href="#geolocation">Using geolocation</a></li>
+    <li><a href="#Geocode">Using geocoding and reverse geocoding</a></li>
+  </ul>
+  <li><a href="#Display">Displaying location information</a></li>
+    <ul>
+	  <li><a href="#BBMaps">Using BlackBerry Maps</a></li>
+	  <li><a href="#custommaps">Using custom maps</a></li>
+  </ul>
+  <li><a href="#Navigate">Navigating to a location</a></li>
+    <ul>
+	  <li><a href="#traveltime">Estimating the travel time and distance</a></li>
+  </ul>
+</ul>
+<br>
+<p>For more information about LBS, visit <a href="http://www.blackberry.com/go/devguides">www.blackberry.com/go/devguides</a> to read the <i>BlackBerry Java Application Location-Based Services Development Guide</i>. For additional resources, visit <a href="http://www.blackberry.com/developers">www.blackberry.com/developers</a>.
+
+<!-- =========== Retrieving location information =========== -->
+<a name="Retrieve"></a>
+<h2>Retrieving location information <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h2>
+<p>You can retrieve location information for a BlackBerry device by using one of the following services:</p>
+<ul>
+<li><strong>GPS</strong>: Provides location information using GPS satellites</li>
+<li><strong>Geolocation</strong>: Provides location information using cell tower positioning and WLAN  access points</li>
+<li><strong>Geocoding and reverse geocoding</strong>: Provides geospatial coordinates for a street address (geocoding), and  provides a street address for  geospatial coordinates (reverse geocoding)</li>
+</ul>
+
+<!-- =========== GPS =========== -->
+<a name="GPS"></a>
+<h3>Using GPS to retrieve the location of a BlackBerry device <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h3>
+<p><strong>Packages</strong>:
+<a href="javax/microedition/location/package-summary.html">javax.microedition.location</a>, 
+<a href="net/rim/device/api/gps/package-summary.html">net.rim.device.api.gps</a></p>
+
+<p>You can retrieve GPS location information by using the <a href="http://jcp.org/en/jsr/detail?id=179" target="_blank">JSR 179</a> Location API in the <a href="javax/microedition/location/package-summary.html">javax.microedition.location</a> package or the  BlackBerry extensions to JSR 179 in the <a href="net/rim/device/api/gps/package-summary.html">net.rim.device.api.gps</a> package.  The following table lists the functionality that each package provides and the BlackBerry device that the packages supports:</p><br>
+<table class="Small" width="75%" cellpadding="3" cellspacing="0">
+  <tr>
+    <th>JSR 179</th>
+    <th>BlackBerry extensions to JSR 179</th>
+  </tr>
+  <tr>
+    <td valign="top">
+    <ul>
+    <li>Retrieve the current GPS location</li>
+    <li>Retrieve periodic location updates</li>
+    <li>Retrieve device direction</li>
+    <li>Retrieve the distance from another location</li>
+    <li>Obtain notifications when a device enters a geofenced area</li>
+    <li>Manage landmarks</li>
+    </ul></td>
+    <td valign="top">
+    <ul>
+    <li>Request specific GPS modes</li>
+    <li>Specify a GPS failover mode to use when the initial GPS mode is unsuccessful</li>
+    <li>Specify a subsequent GPS mode to use after a successful first location is retrieved</li>
+    <li>Retrieve satellite tracking information before retrieving a GPS fix</li>
+    <li>Keep the GPS receiver in a warm state</li>
+    <li>Pause and resume a location tracking session</li>
+    <li>Request geolocation updates if GPS updates are unavailable</li>
+    <li>Request concurrent GPS and geolocation updates</li>
+    </ul>
+    
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">Supported on BlackBerry  devices that run BlackBerry&reg; Device Software 4.0.2 or later</td>
+    <td valign="top">Supported on BlackBerry  devices that run BlackBerry Device Software 5.0 or later</td>
+  </tr>
+</table>
+<p>When you use the JSR 179 Location API to retrieve the location of a BlackBerry device, a single location request returns a <a href="javax/microedition/location/Location.html"><span class="style2">Location</span></a> object that is provided by an instance of the <a href="javax/microedition/location/LocationProvider.html"><span class="style2">LocationProvider</span></a> class. The GPS mode that the <span class="style2">LocationProvider</span> uses to retrieve the location is specified in an instance of the <a href="javax/microedition/location/Criteria.html"><span class="style2">Criteria</span></a> class.</p>
+
+<p>When you use the BlackBerry extensions to JSR 179 to retrieve the location of a BlackBerry device, a single location request returns a <a href="net/rim/device/api/gps/BlackBerryLocation.html"><span class="style2">BlackBerryLocation</span></a> object that is provided by an instance of the  <a href="net/rim/device/api/gps/BlackBerryLocationProvider.html"><span class="style2">BlackBerryLocationProvider</span></a> class. The GPS mode that the <span class="style2">BlackBerryLocationProvider</span> uses to retrieve the location is specified in an instance of the <a href="net/rim/device/api/gps/BlackBerryCriteria.html"><span class="style2">BlackBerryCriteria</span></a> class.</p>
+
+
+<p>Retrieving the  location of a BlackBerry device involves the following steps:</p>
+<p><strong>Step 1</strong>: Specify the GPS mode.</p>
+<p><a class="explink" onClick="switchMenu('UI_01', this);">Click for  code sample: Specifying the GPS mode</a></p>
+<div id="UI_01" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">/* JSR 179 */
+Criteria myCriteria = new Criteria();
+
+/* JSR 179 extension */
+BlackBerryCriteria myBlackBerryCriteria = new BlackBerryCriteria(…);</span></pre>		</td>
+	</tr>
+</table>
+</div>
+
+<p><strong>Step 2</strong>: Retrieve a location provider.</p>
+<p><a class="explink" onClick="switchMenu('UI_02', this);">Click for code sample: Retrieving a location provider</a></p>
+<div id="UI_02" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">/* JSR 179 */
+LocationProvider myProvider = LocationProvider.getInstance(myCriteria);
+
+/* JSR 179 extension */
+BlackBerryLocationProvider myBlackBerryProvider =
+    (BlackBerryLocationProvider) LocationProvider.getInstance(myBlackBerryCriteria);</span></pre>		</td>
+	</tr>
+</table>
+</div>
+
+<p><strong>Step 3</strong>: Request a single GPS fix or multiple GPS fixes.</p>
+<p><a class="explink" onClick="switchMenu('UI_03', this);">Click  for code sample:  Requesting a single GPS fix or multiple GPS fixes</a></p>
+<div id="UI_03" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">/*
+ * Single location fix
+ */
+ 
+/* JSR 179 */
+Location myLoc = myProvider.getLocation(…);
+
+/* JSR 179 extension */
+BlackBerryLocation myBlackBerryLoc = myBlackBerryProvider.getLocation(…);
+
+/*
+ * Continuous location fixes
+ */
+
+ /* JSR 179 */
+myProvider.setLocationListener(…);
+
+/* JSR 179 extension */
+myBlackBerryProvider.setLocationListener(…);</span></pre>		</td>
+	</tr>
+</table>
+</div>
+<p><strong>Step 4</strong>: Retrieve the location of a BlackBerry device.</p>
+<p><a class="explink" onClick="switchMenu('UI_04', this);">Click  for  code sample:  Retrieving the location of a BlackBerry device</a></p>
+<div id="UI_04" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">/* JSR 179 */
+double lat = myLoc.getQualifiedCoordinates().getLatitude();
+double lng = myLoc.getQualifiedCoordinates().getLongitude();
+double alt = myLoc.getQualifiedCoordinates().getAltitude();
+
+/* JSR 179 extension */
+double lat = myBlackBerryLoc.getQualifiedCoordinates().getLatitude();
+double lng = myBlackBerryLoc.getQualifiedCoordinates().getLongitude();
+double alt = myBlackBerryLoc.getQualifiedCoordinates().getAltitude();</span></pre>		</td>
+	</tr>
+</table>
+</div>
+
+
+<p>You can use the BlackBerry extensions to JSR 179 to retrieve additional information that is used to find the  location of the BlackBerry device, such as</p>
+<ul>
+<li>number of satellites that a BlackBerry device is tracking</li>
+<li>details about the satellites that a BlackBerry device is tracking</li>
+<li>average signal quality of a satellite</li>
+<li>data source that produces the GPS fix (an internal or an external GPS receiver)</li>
+<li>GPS mode that provides the location information</li>
+</ul>
+<p><a class="explink" onClick="switchMenu('UI_05', this);">Click  for  code sample: Determining satellite information</a></p>
+<div id="UI_05" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">
+// The following code sample demonstrates how to request a location fix
+// and then determine the current number of satellites in view, tracked
+// satellites, average satellite signal quality, GPS data source
+// (internal GPS receiver or external Bluetooth® GPS receiver), and the GPS mode.			
+
+import java.util.*;
+import net.rim.device.api.gps.*;
+import javax.microedition.location.*;
+
+public class handleGPS
+{
+    static GPSThread gpsThread;
+    static int satCount;
+    static int signalQuality;
+    static int dataSource;
+    static int gpsMode;
+
+    public handleGPS()
+    {
+        gpsThread = new GPSThread();
+        gpsThread.start();
+    }
+
+    private static class GPSThread extends Thread
+    {
+        public void run()
+        {
+            try
+            {
+                BlackBerryCriteria myCriteria =
+                  new BlackBerryCriteria(GPSInfo.GPS_MODE_AUTONOMOUS);
+
+                try
+                {
+                    BlackBerryLocationProvider myProvider =
+                      (BlackBerryLocationProvider)
+                        LocationProvider.getInstance(myCriteria);
+
+                    try
+                    {
+                        BlackBerryLocation myLocation =
+                          (BlackBerryLocation)myProvider.getLocation(300);
+
+                        satCount= myLocation.getSatelliteCount();
+                        signalQuality =
+                          myLocation.getAverageSatelliteSignalQuality();
+                        dataSource = myLocation.getDataSource();
+                        gpsMode = myLocation.getGPSMode();
+
+                        SatelliteInfo si;
+                        StringBuffer sb = new StringBuffer("[Id:SQ:E:A]\n");
+                        String separator = ":";
+
+                        for (Enumeration e = myLocation.getSatelliteInfo();
+                          e!=null && e.hasMoreElements(); )
+                        {
+                            si = (SatelliteInfo)e.nextElement();
+                            sb.append(si.getId() + separator);
+                            sb.append(si.getSignalQuality() + separator);
+                            sb.append(si.getElevation() + separator);
+                            sb.append(si.getAzimuth());
+                            sb.append('\n');
+                        }
+                    }
+                    catch ( InterruptedException iex )
+                    {
+                        return;
+                    }
+                    catch ( LocationException lex )
+                    {
+                        return;
+                    }
+                }
+                catch ( LocationException lex )
+                {
+                    return;
+                }
+            }
+            catch ( UnsupportedOperationException uoex )
+            {
+                return;
+            }
+
+            return;
+        }
+    }
+}</span></pre>		</td>
+	</tr>
+</table>
+</div>
+<h4>Supported GPS modes</h4>
+<P>A BlackBerry device, depending on the model and the wireless service provider, supports all or a subset of the following GPS modes.
+<P>On BlackBerry devices that operate on  GSM&reg; networks, the autonomous mode is  supported.  Assisted GPS fixes that use the  SUPL standard are supported for  BlackBerry devices that run BlackBerry Device Software 4.6 and later and have the service provisioned by the wireless service provider. In BlackBerry Device Software 5.0 and later, the cellsite mode is supported.</P>
+<P>On BlackBerry devices that operate on  CDMA networks,  all the following modes are supported, however, not all modes are supported by wireless service providers. You should confirm with the wireless service provider  which modes are supported.</P>
+<table class="Small" width="75%" cellpadding="3" cellspacing="0">
+  <tr>
+    <th>GPS mode</th>
+    <th>Description</th>
+  </tr>
+  
+  <tr>
+    <td valign="top">autonomous</td>
+    <td valign="top">
+     <ul>
+    <li>Retrieves a fix by using the internal GPS receiver</li>
+    <li>Average time to first fix (TTFF) is slower than using the assisted or cellsite modes</li>
+    <li>Requires a clear view of the sky; cannot be used indoors</li>
+    <li>Use in  applications that require frequent fixes</li>
+    </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">assisted</td>
+    <td valign="top">
+     <ul>
+    <li>Retrieves a fix by using the assistance of the wireless service provider to find satellite information</li>
+    <li>Fast TTFF </li>
+    <li>Use in  applications that do not require frequent fixes</li>
+    </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+    <p>cellsite</p>
+ </td>
+    <td valign="top">
+    <ul>
+    <li>Retrieves a fix based on cell tower positioning</li>
+    <li>Average TTFF is faster than using the autonomous or assisted modes</li>
+    <li>Tracking information (speed and bearing) is not provided</li>
+    </ul>
+    </td>
+  </tr>
+   <tr>
+    <td valign="top">MS-based</td>
+    <td valign="top">
+     <ul>
+    <li>Retrieves the first fix by using the assistance of the wireless service provider to find satellite information, and retrieves subsequent fixes  using the autonomous mode</li>
+    <li>Average TTFF is faster than using autonomous mode </li>
+    <li>Use in applications that require frequent fixes</li>
+    <li>Use for BlackBerry devices that operate on CDMA networks</li>
+     </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">MS-assisted</td>
+    <td valign="top">
+     <ul>
+    <li>Retrieves a fix by using the assistance of the wireless service provider to find satellite information</li>
+    <li>Fast TTFF</li>
+    <li>Use in applications that do not require frequent fixes</li>
+    <li>Use for BlackBerry devices that operate on CDMA networks</li>
+     </ul>
+    </td>
+  </tr>
+   <tr>
+    <td valign="top">speed optimal</td>
+    <td valign="top">
+     <ul>
+    <li>Provides the fastest possible fix using either the MS-based or MS-assisted mode</li>
+      </ul>
+    </td>
+  </tr>
+    <tr>
+    <td valign="top">accuracy optimal</td>
+    <td valign="top">
+     <ul>
+    <li>Provides a fix by optimizing the accuracy using either the MS-based or MS-assisted mode</li>
+      </ul>
+    </td>
+  </tr>
+    <tr>
+    <td valign="top">data optimal</td>
+    <td valign="top">
+     <ul>
+    <li>Retrieves a fix based on the least amount of network traffic that is required using the MS-based or MS-assisted mode</li>
+      </ul>
+    </td>
+  </tr>
+</table><br><p>For more information about GPS support and designing GPS applications for the BlackBerry devices, search the BlackBerry Development Knowledge Base at <a href="http://www.blackberry.com/go/developerkb">http://www.blackberry.com/go/developerkb</a>.</p>
+
+<!-- =========== Geolocation =========== -->
+<a name="geolocation"></a>
+<h3>Using the geolocation service to retrieve the location of a BlackBerry device  <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h3>
+<p><strong>Packages</strong>:
+<a href="net/rim/device/api/gps/package-summary.html">net.rim.device.api.gps</a>
+<p>The geolocation service provides an approximate location (200 meters to 5 kilometers) of the BlackBerry device and includes the latitude, longitude, and horizontal accuracy  based on the positioning of cell towers and WLAN access points. You do not require GPS technology on the device to use the geolocation service.  You can use geolocation for  applications that require an approximate location and that can be used indoors (for example, applications that recommend local points of interest).</p>
+
+<p>With BlackBerry&reg; Java&reg; SDK 6.0 and later, you can specify one of the following modes that are provided in the <a href="net/rim/device/api/gps/LocationInfo.html"><span class="style2">LocationInfo</span></a> class to retrieve geolocation information:</p>
+<ul>
+<li><a href="net/rim/device/api/gps/LocationInfo.html#GEOLOCATION_MODE"><span class="style2">GEOLOCATION_MODE</span></a> retrieves a location from among the currently available geolocation sources, based on factors such as network connectivity, location accuracy, and data availability.</li>
+<li><a href="net/rim/device/api/gps/LocationInfo.html#GEOLOCATION_MODE_CELL"><span class="style2">GEOLOCATION_MODE_CELL</span></a> retrieves a location based on cell tower positioning.</li>
+<li><a href="net/rim/device/api/gps/LocationInfo.html#GEOLOCATION_MODE_WLAN"><span class="style2">GEOLOCATION_MODE_WLAN</span></a> retrieves a location based on WLAN access point positioning.</li>
+</ul>
+<p>In BlackBerry&reg; Java&reg; Development Environment 5.0, the geolocation service provides location information using cell tower positioning.  To retrieve a location using geolocation,  you can specify  <a href="net/rim/device/api/gps/GPSInfo.html#GPS_MODE_CELLSITE"><span class="style2">GPSInfo.GPS_MODE_CELLSITE</span></a> as the mode.</p>
+
+<p>The basic steps to retrieve the geolocation of a BlackBerry device are very similar to the steps used to retrieve the GPS location.</p>
+
+<p><strong>Step 1</strong>: Specify the geolocation mode.</p>
+<p><a class="explink" onClick="switchMenu('UI_06', this);">Click  for  code sample: Specifying the geolocation mode</a></p>
+<div id="UI_06" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">BlackBerryCriteria myBlackBerryCriteria = new BlackBerryCriteria(LocationInfo.GEOLOCATION_MODE);</span></pre></td>
+	</tr>
+</table>
+</div>
+
+<p><strong>Step 2</strong>: Retrieve a location provider.</p>
+<p><a class="explink" onClick="switchMenu('UI_07', this);">Click  for  code sample: Retrieving a location provider</a></p>
+<div id="UI_07" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+		  <pre><span id="support">BlackBerryLocationProvider myBlackBerryProvider =
+    (BlackBerryLocationProvider)LocationProvider.getInstance(myBlackBerryCriteria);</span></pre>		</td>
+	</tr>
+</table>
+</div>
+
+<p><strong>Step 3</strong>: Request a single geolocation fix or multiple geolocation fixes.</p>
+<p><a class="explink" onClick="switchMenu('UI_08', this);">Click  for code sample:  Requesting a single geolocation fix or multiple geolocation fixes</a></p>
+<div id="UI_08" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">/* Single location fix */
+BlackBerryLocation myBlackBerryLoc = myBlackBerryProvider.getLocation(timeout);
+ 
+/* Multiple location fixes */
+myBlackBerryProvider.setLocationListener(…);</span></pre>		</td>
+	</tr>
+</table>
+</div>
+<p><strong>Step 4</strong>: Retrieve the geolocation of a BlackBerry device.</p>
+<p><a class="explink" onClick="switchMenu('UI_09', this);">Click  for  code sample:  Retrieving the geolocation of a BlackBerry device</a></p>
+<div id="UI_09" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+	  <td><pre><span id="support">double lat = myBlackBerryLoc.getQualifiedCoordinates().getLatitude();
+double lng = myBlackBerryLoc.getQualifiedCoordinates().getLongitude();
+double alt = myBlackBerryLoc.getQualifiedCoordinates().getAltitude();</span></pre>		</td>
+	</tr>
+</table>
+</div>
+
+
+<!-- =========== Geocode =========== -->
+<a name="Geocode"></a>
+<h3> Using geocoding services to retrieve the location of a BlackBerry device <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h3>
+<p><strong>Packages</strong>:
+<a href="net/rim/device/api/lbs/package-summary.html">net.rim.device.api.lbs</a>, 
+<a href="javax/microedition/location/package-summary.html">javax.microedition.location</a> 
+<p>The <span class="style2">net.rim.device.api.lbs.<a href="net/rim/device/api/lbs/Locator.html">Locator</a></span> API, available in  BlackBerry Java Development Environment  5.0 or later, provides the geocoding methods that you can use  to request geospatial coordinates for  a street address. It also provides the reverse  geocoding methods that you can use  to request a street address for  geospatial coordinates.
+<p>You can use the <a href="net/rim/device/api/lbs/Locator.html#geocode(java.lang.String, javax.microedition.location.Coordinates)"><span class="style2">geocode()</span></a> method to request geospatial coordinates. A successful request returns an array of <a href="javax/microedition/location/Landmark.html"><span class="style2">Landmark</span></a> objects.
+ A <span class="style2">Landmark</span> object can contain a display label name, a description, the geospatial coordinates, and a street address.
+You can use the <a href="net/rim/device/api/lbs/Locator.html#reverseGeocode(int, int, int)"><span class="style2">reverseGeocode()</span></a> methods to request an approximate address, city, province/state or country information. A successful request  returns an array of <span class="style2">Landmark</span> objects.
+<p>Requests for geocoding and reverse geocoding information are synchronous and can be interrupted. A BlackBerry device application can use the <a href="net/rim/device/api/lbs/Locator.html"><span class="style2">Locator</span></a> class to make only one request at a time.
+<p>Your application must invoke  <span class="style2">geocode()</span> and <span class="style2">reverseGeocode()</span>  outside of the event dispatch thread.  Each request is sent to the BlackBerry&reg;  Infrastructure. If a request is made on the event dispatch thread, it is  denied and results in a <span class="style2">IllegalThreadStateException</span>. If a request is unsuccessful, a <span class="style2">LocatorException</span> is thrown with an error code that indicates why the request is unsuccessful. If a request fails or stalls at the transport level, it is cancelled as specified by the value for <span class="style2">REQUEST_TIMEOUT</span>.
+<p>The BlackBerry device does not cache requests.</p>
+<p><a class="explink" onClick="switchMenu('UI_10', this);">Click for code sample: Retrieving a street address by using reverse geocoding</a></p>
+<div id="UI_10" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">import net.rim.device.api.lbs.*;
+import javax.microedition.location.*;
+
+public class myReverseGeocode
+{
+    private Thread reverseGeocode;
+
+    public myReverseGeocode()
+    {
+        reverseGeocode = new Thread(thread);
+        reverseGeocode.setPriority(Thread.MIN_PRIORITY);
+        reverseGeocode.start();
+    }
+
+    Runnable thread = new Runnable()
+    {
+        public void run()
+        {
+            AddressInfo addrInfo = null;
+
+            int latitude  = (int)(45.423488 * 100000);
+            int longitude = (int)(-80.32480 * 100000);
+
+            try
+            {
+                Landmark[] results = Locator.reverseGeocode
+                 (latitude, longitude, Locator.ADDRESS );
+
+                if ( results != null && results.length > 0 )
+                    addrInfo = results[0].getAddressInfo();
+            }
+            catch ( LocatorException lex )
+            {
+            }
+        }
+    };
+}</span></pre>		</td>
+	</tr>
+</table>
+</div>
+<!-- =========== Displaying location information =========== -->
+<a name="Display"></a><h2>Displaying location information <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h2>
+<p>After you retrieve the location for a BlackBerry device, you can display the location information by using  BlackBerry Maps&reg; or by using custom maps.</p>
+
+<!-- =========== BBMaps =========== -->
+<a name="BBMaps"></a>
+<h3>Interacting with BlackBerry Maps <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h3>
+<p><strong>Packages</strong>:
+<a href="net/rim/blackberry/api/invoke/package-summary.html">net.rim.blackberry.api.invoke</a>, <a href="net/rim/blackberry/api/maps/package-summary.html">net.rim.blackberry.api.maps</a>, <a href="net/rim/blackberry/api/menuitem/package-summary.html">net.rim.blackberry.api.menuitem</a>, <a href="net/rim/device/api/lbs/package-summary.html">net.rim.device.api.lbs</a>
+<p>You can create an application that interacts with BlackBerry Maps. BlackBerry Maps is a map and location
+application that can display a map, the location of the BlackBerry device, a route from a starting location to a specific ending
+location, and points of interest on a map.</p>
+<p>BlackBerry Maps can be installed on BlackBerry devices that are running  BlackBerry Device Software  4.2 or later.</p>
+<p>Your application can interact with BlackBerry Maps in the following ways:
+<ul>
+  <li>Invoke BlackBerry Maps from your application to display the following:
+  <ul> 
+  <li>a  location for an address in the Contacts application</li>
+  <li> a location for a landmark</li>
+  <LI> a location at specific coordinates</LI>
+  <li> a location or route by using a location document</li>
+  <li>a locations by using local search information</li>
+  <li> a KML overlay</li>
+</ul>
+  <li>Open BlackBerry Maps from the BlackBerry&reg; Browser
+</ul>
+
+<h4>Invoking BlackBerry Maps</h4>
+
+<p>You can invoke BlackBerry Maps by using the <a href="net/rim/blackberry/api/invoke/Invoke.html#invokeApplication(int, net.rim.blackberry.api.invoke.ApplicationArguments)"><span class="style2">Invoke.invokeApplication()</span></a> method. You can use the  <a href="net/rim/blackberry/api/invoke/MapsArguments.html"><span class="style2">MapsArguments</span></a> parameters to specify that when BlackBerry Maps opens it displays a map with the location of a  contact's address, the location for a landmark, the location of  specific coordinates, a location using a location document, or a location using local search information.</p>
+<p>When you invoke BlackBerry Maps, your application passes control to the BlackBerry Maps application. For information about invoking applications, see <a href="App-Integration-summary.html">Application Integration</a>.</p><br>
+<p><a class="explink" onClick="switchMenu('UI_11', this);">Click for code sample: Invoking BlackBerry Maps by using a local search
+<!-- give a short description of the code sample--></a></p>
+<div id="UI_11" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre>import net.rim.blackberry.api.invoke.*;
+
+public class invokeMaps<br>{<br>    public invokeMaps()<br>    {<br>        MapsArguments ma = new MapsArguments(MapsArguments.ARG_LOCAL_SEARCH, &quot;hotels&quot;, &quot;Toronto&quot;);<br>        Invoke.invokeApplication(Invoke.APP_TYPE_MAPS, ma);<br>    }<br>}</pre>		</td>
+	</tr>
+</table>
+
+</div><br>
+<p>You can invoke BlackBerry Maps to display map locations and routes by passing in a location document. A location document is a <span class="style2">String</span> object that contains XML elements with attributes that can specify the location and route information. The XML elements that you can use include <span class="style2">&lt;lbs&gt;</span>, <span class="style2">&lt;getRoute&gt;</span> and <span class="style2">&lt;location&gt;</span>.</p>
+<br>
+<p><a class="explink" onClick="switchMenu('UI_16', this);">Click for code sample: Displaying a route by using a location document
+<!-- give a short description of the code sample--></a></p>
+<div id="UI_16" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre>import net.rim.blackberry.api.invoke.*;
+
+public class invokeMaps
+{
+    public invokeMaps ()
+    {
+       String document = &quot;&lt;lbs id='WatRoute'&gt;&lt;getRoute&gt;
+           &lt;location x='-8052237' y='4346518'
+		       label='Waterloo, ON' description='Waterloo, Ontario, Canada' /&gt;
+           &lt;location x='-7569792' y='4542349'
+	           label='Ottawa, ON' description='Ottawa, Ontario, Canada' /&gt;
+           &lt;/getRoute&gt;&lt;/lbs&gt;&quot;;
+       Invoke.invokeApplication(Invoke.APP_TYPE_MAPS, new MapsArguments
+		    (MapsArguments.ARG_LOCATION_DOCUMENT, document));
+    }
+}</pre></td>
+	</tr>
+</table>
+</div>
+<h4>Adding a menu item to BlackBerry Maps</h4>
+<p>You can add a menu item  to the menu of BlackBerry Maps by using the <a href="net/rim/blackberry/api/menuitem/ApplicationMenuItem.html"><span class="style2">ApplicationMenuItem</span></a> class and registering the <span class="style2">ApplicationMenuItem</span> with the <a href="net/rim/blackberry/api/menuitem/ApplicationMenuItemRepository.html"><span class="style2">ApplicationMenuItemRepository</span></a> class (type <span class="style2">MENUITEM_MAPS</span>).  When you register the menu item, you must use an instance of the <a href="net/rim/device/api/system/ApplicationDescriptor.html"><span class="style2">ApplicationDescriptor</span></a> class. When your <span class="style2">ApplicationMenuItem</span> is invoked, your application is passed a <a href="net/rim/blackberry/api/maps/MapView.html"><span class="style2">MapView</span></a> context object. 
+<p>For more information about menu items, visit <a href="http://www.blackberry.com/go/devguides">www.blackberry.com/go/devguides</a> to read the <em>BlackBerry Java Application UI and Navigation Development Guide</em>.</p>
+
+
+<!-- =========== Custom Maps =========== -->
+<a name="custommaps"></a>
+<h3>Creating custom maps <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h3>
+<p><strong>Packages</strong>:
+<a href="net/rim/device/api/lbs/maps/package-summary.html">net.rim.device.api.lbs.maps</a>, <a href="net/rim/device/api/lbs/maps/model/package-summary.html">net.rim.device.api.lbs.maps.model</a>, <a href="net/rim/device/api/lbs/maps/ui/package-summary.html">net.rim.device.api.lbs.maps.ui</a>, <a href="net/rim/device/api/lbs/maps/utils/package-summary.html">net.rim.device.api.lbs.maps.utils</a>
+<h4>Adding a map field</h4>
+<p>You can use the <a href="net/rim/device/api/lbs/maps/ui/MapField.html"><span class="style2">MapField</span></a> class and the <a href="net/rim/device/api/lbs/maps/ui/RichMapField.html"><span class="style2">RichMapField</span></a> that are provided in the <a href="net/rim/device/api/lbs/maps/ui/package-summary.html"><span class="style2">net.rim.device.api.lbs.maps.ui</span></a> package to display a map. These classes are available in  BlackBerry Java SDK  6.0 and later.</p>
+<blockquote>
+  <p><strong>Note</strong>: The <a href="net/rim/device/api/lbs/MapField.html"><span class="style2">MapField</span></a> class in the <a href="net/rim/device/api/lbs/MapField.html"><span class="style2">net.rim.device.api.lbs</span></a> package is deprecated in BlackBerry Java SDK 6.0 and later. </p>
+</blockquote>
+<p>The  <a href="net/rim/device/api/lbs/maps/ui/MapField.html"><span class="style2">MapField</span></a> class provides the following features:</p>
+<ul>
+<li>embedding a map in a UI field</li>
+<li>adding your own data that is rendered directly on the map</li>
+<li>panning and zooming map views</li>
+<li>generating static images that are based on the current map view, including any data on the map</li>
+</ul>
+
+<p>The <a href="net/rim/device/api/lbs/maps/ui/RichMapField.html"><span class="style2">RichMapField</span></a> class extends the functionality of the <span class="style2">MapField</span> class and provides the  following customization features:</p>
+<ul>
+<li>adding fields on top of a map without the fields being directly rendered on the map</li>
+<li>handling focus events for a map field that does not fill the screen, allowing users to select  other components on the screen</li>
+</ul>
+<p>The <a href="net/rim/device/api/lbs/maps/model/MapDataModel.html"><span class="style2">MapDataModel</span></a> class represents a container that you can use to store information about a location. Using the <span class="style2">MapDataModel</span>, you can specify  tags for a location (for example, &quot;work&quot;), and  specify whether the location is visible. The following image shows a map field with two visible, tagged locations:</p>
+<p><img src="images/tagged_demo.jpg" ></p>
+<p><a class="explink" onClick="switchMenu('UI_13', this);">Click here for a code sample:  Adding a map with tagged locations</a></p>
+<div id="UI_13" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+		  <pre><span id="support">// create a RichMapField and use its MapDataModel for mappable management
+RichMapField map = MapFactory.getInstance().generateRichMapField();
+add(map);
+MapDataModel data = map.getModel();
+
+// create Andrea's Home and Work locations
+MapLocation andreaHome = new MapLocation( 45.32503, -75.91334, "Andrea - Home", null);
+MapLocation rimMarch = new MapLocation( 45.34154, -75.91484, "RIM - March", null);
+// add Andrea's home and work with tags "andrea", "home" and "work"
+// this adds Andrea's home location and tags it "andrea"
+int andreaHomeId = data.add( andreaHome, "andrea");
+// this ID is used for direct access of data within this container
+// allowing the addition of a second tag to a single piece of data
+data.tag(andreaHomeId, "home");
+// this adds andrea's work and tags it "andrea"
+int rimMarchId = data.add( rimMarch, "andrea");
+// ... and this tags it "work"
+data.tag( rimMarchId, "work");
+
+//create Mike's home location and add it with appropriate tags
+MapLocation mikeHome = new MapLocation( 45.73471, -75.92935, "Mike - Home", null);
+int mikeHomeId = data.add( mikeHome, "mike");
+data.tag( mikeHomeId, "home");
+
+// Mike also works at RIM March, so tag it with "mike"
+data.tag( rimMarchId, "mike");
+
+// Andrea, Mike's wife, lives at the same home location as Mike, but 
+// works at a different work location
+data.tag( mikeHomeId, "andrea");
+MapLocation rimInnovation = new MapLocation( 45.34332, -75.92992, "RIM - Innovation", null);
+int rimInnovationId = data.add(rimInnovation, "andrea");
+data.tag(rimInnovationId, "work");
+
+// At this point, there are 4 visible locations in the data container,
+// each tagged with at least one items of information.
+// To see all of the locations
+map.getMapField().update(true);
+
+//To show only items that are tagged "work", turn everything invisible
+data.setVisibleNone();
+//... and set items tagged "work" as visible
+data.setVisible( "work");
+// the map will automatically update at this point, but the screen may not
+// be "efficient".  To recenter and change the zoom so that the data fills
+// the screen...
+map.getMapField().update(true);
+            </span></pre>
+      </td>
+	</tr>
+</table>
+</div>
+
+<h4>Creating a static image of a map </h4>
+<p>You can create a static image of a map by using one of the following methods:</p>
+<ul>
+<li>The <a href="net/rim/device/api/lbs/maps/ui/MapField.html#getImage()"><span class="style2">MapField.getImage()</span></a> method: Creates an image in bitmap format of the current map view on the screen. This method is best used for UI applications  where you just need to capture  what is currently displayed on the screen.</li>
+<li>The <a href="net/rim/device/api/lbs/maps/MapFactory.html#generateStaticMapImage(net.rim.device.api.ui.XYDimension, net.rim.device.api.lbs.maps.utils.MappableVector)"><span class="style2">MapFactory.generateStaticImage()</span></a> methods: Creates a  bitmap image of a map view, where you can specify the coordinates, zoom level, dimensions, and model data. The <span class="style2">generateStaticImage</span> methods are best used for non-UI applications or for situations where a non-interactive map (no panning, zooming, or changing locations) is needed.</li>
+</ul>
+<p><a class="explink" onClick="switchMenu('UI_14', this);">Click for code sample: Creating a static image of a map
+<!-- give a short description of the code sample--></a></p>
+<div id="UI_14" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">// Create a model and add the data to the model
+MapDataModel data = new MapDataModel();
+MapLocation andrew = new MapLocation( 45.42100, -75.69100, "Andrew", null );
+data.add( andrew );
+data.add( new MapLocation( 45.42200, -75.69200, "Mike", null ) );
+data.add( new MapLocation( 45.42100, -75.69200, "Lisa", null ) );
+
+// For Greg's location, "false" indicates the location is not visible
+data.add( new MapLocation( 45.42200, -75.69100, "Greg", null), null, false ); 
+
+// Set the image size, map center (Andrew's location) and zoom level
+MapDimensions dim = new MapDimensions( 200, 100 );
+dim.setCentre( andrew );
+dim.setZoom( 3 );
+
+// Create the image
+Bitmap map = MapFactory.getInstance().generateStaticMapImage( dim, data );
+            </span></pre>		</td>
+	</tr>
+</table>
+</div>
+<h4>Displaying a KML overlay</h4>
+<p>Keyhole Markup Language (KML) documents are XML-based documents that you can use to store geographic information about places, buildings, points of interest, cycle paths, pictures, and so on. You can create and publish a KML document to a web site. To display the KML data in a map field, specify the URL of the KML document by using the  <a href="net/rim/device/api/lbs/maps/MapFactory.html#populateDataModelFromKmlUrl(net.rim.device.api.lbs.maps.model.MapDataModel, java.lang.String, java.lang.String)"><span class="style2">MapFactory.populateDataModelFromKmlUrl(MapDataModel model, String url, String tag)</span></a> method.  KML data displays only if the KML document is retrieved through the BlackBerry&reg; Internet Service or the BlackBerry&reg; Enterprise Server (for example, a KML document that is stored on a public web site or on an intranet site). KML documents stored on the BlackBerry device (for example, on a microSD card) cannot be displayed.</p>
+<p>The following example uses a KML document to display location information about universities in Sweden. </p>
+<p><img src="images/MapPopulateKML.jpg" ></p>
+
+<p><a class="explink" onClick="switchMenu('UI_15', this);">Click for code sample: Displaying a KML overlay
+<!-- give a short description of the code sample--></a></p>
+<div id="UI_15" class="codesample"><!-- The ID of this div must match the ID passed in the switchMenu function call -->
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre><span id="support">// constants
+String suTag = "swedish universities";
+String suUrl = "http://www.example.com/su.kml";
+        
+// generate the map field
+RichMapField view = MapFactory.getInstance().generateRichMapField();
+        
+// retrieve the KML file and populate the data model
+MapDataModel model = view.getModel();
+MapFactory.getInstance().populateDataModelFromKmlUrl(model, suUrl, suTag );
+        
+// show only the universities and make that the map center
+model.setVisibleNone();
+model.setVisible( suTag );
+view.getMapField().update( true );           </span></pre>		</td>
+	</tr>
+</table>
+</div>
+<h4>Creating a location picker</h4>
+<p>You can create a location picker dialog box that allows a user to choose a location from a list you define, such as the following selections:</p>
+<ul>
+<li>My current location</li>
+<li>Find on a map</li>
+<li>From Contacts</li>
+<li>Recently selected</li>
+<li>App specific</li>
+<li>Enter Location</li>
+<li>BlackBerry Maps favorites</li>
+<li>Geotagged photo</li></ul>
+<p>You can define the  location picker dialog box by using the Location Picker API provided in the <a href="net/rim/device/api/lbs/picker/package-summary.html"><span class="style2">net.rim.device.api.lbs.picker</span></a> package.  The location is passed using a <a href="javax/microedition/location/Landmark.html"><span class="style2">javax.microedition.location.Landmark</span></a> object.</p>
+<p>For more information about picker dialog boxes, visit <a href="http://www.blackberry.com/go/devguides">www.blackberry.com/go/devguides</a> to read the <em>BlackBerry Java Application UI and Navigation Development Guide</em>.</p>
+<!-- =========== Navigating to a location =========== -->
+<a name="Navigate"></a>
+<h3>Navigating to a location <span class="style4"><a href="#UI_TOP" class="backtotop">[back to top]</a></span></h3>
+<p><strong>Packages</strong>:
+<a href="net/rim/device/api/lbs/travel/package-summary.html">net.rim.device.api.lbs.travel</a>
+<a name="traveltime"></a><h4>Estimating the travel time and distance</h4>
+<p>You can retrieve the estimated time and distance it takes to travel between two points on a given date and at a given time. Currently, the Travel Time API  provides estimates only for automobile travel in the United States and Canada.</p>
+<p>To request a travel time estimate, retrieve an instance of the <a href="net/rim/device/api/lbs/travel/TravelTimeEstimator.html"><span class="style2">TravelTimeEstimator</span></a> class. Use the <a href="net/rim/device/api/lbs/travel/TravelTimeEstimator.html#requestArrivalEstimate(javax.microedition.location.Coordinates, javax.microedition.location.Coordinates, long, net.rim.device.api.lbs.travel.TravelTimeOptions)"><span class="style2">requestArrivalEstimate()</span></a> method and specify the coordinates for the starting and ending locations, and the starting time. The request is forwarded to a  Travel Time server, which identifies a route between the starting and ending locations and  uses live and historical traffic information to calculate a travel time estimate. The  estimate reflects the known conditions on the specified date and at the specified time. The travel time estimate is returned by the <span class="style2">TravelTimeEstimator</span> using an instance of the <a href="net/rim/device/api/lbs/travel/TravelTime.html"><span class="style2">TravelTime</span></a> class.</p>
+
+<p><a class="explink" onClick="switchMenu('UI_12', this);">Click for code sample:  Estimating the travel time</a></p>
+<div id="UI_12" class="codesample">
+<table cellspacing="0" class="codesample" width="75%">
+    <tr>
+		<td>
+			<pre>public class MyClass {
+    ...
+    public void findTravelTime() {
+        ...
+        // Obtain the coordinates for the current location
+        LocationProvider provider = LocationProvider.getInstance(null);
+        if (provider == null) {
+            throw new IllegalStateException("no LocationProvider available");
+        }
+        Coordinates endPoint = provider.getLocation(-1).getQualifiedCoordinates();
+        
+        // Obtain the travel time between the two points
+        TravelTimeEstimator estimator = TravelTimeEstimator.getInstance();
+        try {
+            estimator.requestArrivalEstimate(start, end, TravelTime.START_NOW,
+                                            null, new TravelTimeListener() {
+                    public onSuccess(TravelTime travelTime) {
+                        // If you need to interact with the event thread
+                        // (e.g. updating a LabelField), use invokeLater or
+                        // invokeAndWait.
+                        Application.getApplication().invokeLater(new Runnable() {
+                            public void run() {
+                                // Do something with the travel time estimate.
+                                ...
+                            }
+                        });
+                    }
+                 
+                    public onFailure(TravelTimeException e) {
+                        // If you need to interact with the event thread
+                        // (e.g. displaying an error dialog), use invokeLater
+                        // or invokeAndWait.
+                        Application.getApplication().invokeLater(new Runnable() {
+                            public void run() {
+                                // Handle the error.
+                                ...
+                            }
+                        });
+                    }                  
+                });
+        } catch (TravelTimeException e) {
+            // Handle the error.
+            ...
+        }
+    }
+    ...
+}</pre>        </td>
+	</tr>
+</table>
+</div>
+
+  <!-- =========== END OF BODY ============== -->
+<!-- =========== START OF FOOTER ============== -->
+<!-- DO NOT CHANGE -->
+<HR>
+<div id="legalnotice">
+<table cellspacing="0" cellpading="0" width="100%" style="border:none;">
+<tr>
+<td style="border:none;">
+<font size=-1>
+<P>Copyright 1999-2011 Research In Motion Limited. 295 Phillip Street, Waterloo, Ontario, Canada, N2L 3W8. All Rights Reserved.<br>
+Java is a trademark of Oracle America, Inc. in the US and other countries.</p>
+</font>
+</td>
+<td style="text-align:right; border:none;">
+<font size=-1><br>
+<a href="http://www.blackberry.com/legal" target="_blank">Legal</a>
+</font>
+</td>
+</tr>
+</table>
+ </div>
+</BODY>
+</HTML>
