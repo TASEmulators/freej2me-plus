@@ -100,8 +100,13 @@ public class Config
 
 	public void init(String appname)
 	{
-		configPath = Mobile.getPlatform().dataPath + "./config/"+appname;
-		configFile = configPath + "/game.conf";
+        try
+        {
+            // For ISO-8859-1 encodings, we'll use UTF-8 for save paths, helps with chinese and special characters (Mirror RecordStore.java)
+            configPath = new String((Mobile.getPlatform().dataPath + "./config/" + appname).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
+			configFile = configPath + "/game.conf";
+        }
+        catch (UnsupportedEncodingException e) { }
 		// Load Config //
 		try
 		{
