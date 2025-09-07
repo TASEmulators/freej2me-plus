@@ -28,6 +28,7 @@ import java.io.FileReader;
 import java.io.FileOutputStream;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 
 import javax.microedition.media.Manager;
 
@@ -578,3 +579,4 @@ public class Config
 	}
 
 }
+
