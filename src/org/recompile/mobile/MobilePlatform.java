@@ -696,6 +696,11 @@ public class MobilePlatform
 				// Send dumped jar path to loader
 				URL jar = tmpfile.toURI().toURL();
 				loader = new MIDletLoader(jar, descriptorProperties);
+				if (Mobile.isDoJa)
+				{
+					Mobile.textEncoding = "Shift_JIS";
+					MobilePlatform.checkFileEncoding();
+				}
 				Mobile.config.init(loader.suitename);
 				
 				return true;
@@ -804,6 +809,11 @@ public class MobilePlatform
 			{
 				URL jar = new URL(fileName);
 				loader = new MIDletLoader(jar, descriptorProperties);
+				if (Mobile.isDoJa)
+				{
+					Mobile.textEncoding = Mobile.supportedEncodings[Mobile.SHIFT_JIS];
+					MobilePlatform.checkFileEncoding();
+				}
 				Mobile.config.init(loader.suitename);
 
 				return true;
