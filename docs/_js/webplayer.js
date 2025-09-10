@@ -176,6 +176,7 @@ function loadPage()
                 {
                     document.getElementById('dojaHelperText').style.display = 'block';
                     document.getElementById('spFilePickerButton').style.display = 'block';
+                    document.getElementById('dojaVersion').style.display = 'block';
                     document.getElementById('skipDescFile').style.display = 'none';
                 }
                 else 
@@ -254,11 +255,12 @@ async function startFreeJ2ME()
 
     let keyLayout = document.getElementById('keyMapSelector').value;
     let cmdFPS = document.getElementById('framerateSelector').value;
+    let cmdDoJaVer = document.getElementById('dojaVersionSelector').value;
 
     cheerpjCreateDisplay(-1, -1, document.body);
     document.getElementById('cheerpjDisplay').style.visibility = 'hidden';
     document.getElementById('cheerpjDisplay').style.opacity = '0';
-    await cheerpjRunJar("/app/freej2me-plus/_webplayer/freej2me.jar", "/str/app."+fileType, "1", cmdWidth, cmdHeight, "1", keyLayout, cmdFPS);
+    await cheerpjRunJar("/app/freej2me-plus/_webplayer/freej2me.jar", "/str/app."+fileType, "1", cmdWidth, cmdHeight, "1", keyLayout, cmdFPS, cmdDoJaVer);
 }
 
 document.addEventListener("DOMContentLoaded", loadPage);

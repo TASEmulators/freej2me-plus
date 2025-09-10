@@ -137,6 +137,10 @@ h2 {
     display: none;
 }
 
+#dojaVersion {
+    display: none;
+}
+
 .selector {
     margin: 2% 0%;
     padding: 5px;

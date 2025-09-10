@@ -54,9 +54,28 @@
                 <button class="loaderButton" id="skipDescFile">Skip Descriptor</button>
             </div>
 
-            <p class="helperText" id="dojaHelperText"> DoJa requires a scratchpad file to be loaded in conjunction to its JAR and JAM. It must be supplied here.</p>
+            <p class="helperText" id="dojaHelperText"> DoJa requires a set profile and scratchpad file to be loaded in conjunction to its JAR and JAM. It must be supplied here.</p>
             <input type="file" id="spFileInput" style="display: none;" accept=".sp"/>
             <button class="loaderButton" id="spFilePickerButton">Select DoJa ScratchPad (.sp)</button>
+            <div class="innerDiv" id="dojaVersion">
+                    <h2>DoJa/Star Profile</h2>
+                    <select class="selector" id="dojaVersionSelector">
+                        <option selected value="200"> Star 2.0</option>
+                        <option value="150"> Star 1.5</option>
+                        <option value="130"> Star 1.3</option>
+                        <option value="120"> Star 1.2</option>
+                        <option value="110"> Star 1.1</option>
+                        <option value="100"> Star 1.0</option>
+                        <option value="51">  DoJa 5.1</option>
+                        <option value="50">  DoJa 5.0</option>
+                        <option value="41">  DoJa 4.1</option>
+                        <option value="40">  DoJa 4.0</option>
+                        <option value="35">  DoJa 3.5</option>
+                        <option value="30">  DoJa 3.0 & 2.5</option>
+                        <option value="20">  DoJa 2.0 & 1.5</option>
+                        <option value="10">  DoJa 1.0</option>
+                    </select>
+                </div>
         </div>
 
         <div class="contentDiv" id="startupSettings">
@@ -108,6 +127,7 @@
                         <option>208x208</option>
                         <option>180x320</option>
                         <option>320x180</option>
+                        <option>240x240</option>
                         <option>208x320</option>
                         <option selected>240x320</option>
                         <option>320x240</option>
