@@ -5,8 +5,8 @@
 *    Class compilation
 ****************************************************
 -->
-	<property name="source.version" value="1.6"/>
-	<property name="target.version" value="1.6"/>
+	<property name="source.version" value="1.8"/>
+	<property name="target.version" value="1.8"/>
 
 	<mkdir dir="build/classes"/>
 	<mkdir dir="build/classes/org/objectweb"/>
@@ -75,3 +75,4 @@
 	</jar>
 
 </project>
+
