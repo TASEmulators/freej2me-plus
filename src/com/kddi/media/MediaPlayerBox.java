@@ -16,9 +16,9 @@
 */
 package com.kddi.media;
 
-import javax.microedition.lcdui.Canvas;
+import java.util.concurrent.locks.LockSupport;
 
-import org.recompile.mobile.PlatformPlayer;
+import javax.microedition.lcdui.Canvas;
 
 public class MediaPlayerBox extends Canvas implements MediaPlayerInterface 
 {
@@ -102,6 +102,14 @@ public class MediaPlayerBox extends Canvas implements MediaPlayerInterface
             this._player.setVolume(Math.max(0, Math.min(volume, 100)));
         }
         this._player.play(); 
+
+        /* play() should not return until media playback finishes in FOREGROUND mode, but tetris outdoor doesn't like this
+
+        if(mode == FOREGROUND) 
+        { 
+            while(this._player.getState() == javax.microedition.media.Player.STARTED) { LockSupport.parkNanos(1000000); }
+        } 
+        */
     }
 
     public void play(int count) { this._player.play(count); }
@@ -122,7 +130,7 @@ public class MediaPlayerBox extends Canvas implements MediaPlayerInterface
 
     public void setResource(MediaResource resource) 
     {
-        if (state != STOP) { throw new IllegalStateException("state must be STOP"); }
+        if (this._player != null && this._player.getState() > javax.microedition.media.Player.PREFETCHED) { throw new IllegalStateException("state must be STOP"); }
         if (this._resource != null) 
         {
             throw new IllegalStateException("resource must be unset before setting.");
@@ -131,7 +139,7 @@ public class MediaPlayerBox extends Canvas implements MediaPlayerInterface
 
         // FIXME: Check the resource can be played.
         this._resource = resource;
-        MediaManager.linkMediaResourceToMediaPlayerBox(resource, this);
+        resource.addPlayer(this);
         if (_player != null) { this._player.dispose(); }
         this._player = instantiatePlayer(resource);
         this._player.setResource(resource);
@@ -155,7 +163,9 @@ public class MediaPlayerBox extends Canvas implements MediaPlayerInterface
 
     public void unsetResource(MediaResource resource) 
     {
-        MediaManager.unlinkMediaResource(resource, this);
+        if (this._player.getState() > javax.microedition.media.Player.PREFETCHED) { return; }
+        resource.removePlayer(this);
+        if (_player != null) { this._player.dispose(); }
         this._resource = null;
     }
 }

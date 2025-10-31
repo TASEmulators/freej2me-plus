@@ -29,14 +29,13 @@ public class SMAFPlayer extends MediaPlayer
 
     protected int id, pitch = 0, tempo = 100, volume = 100;
     protected MediaPlayerListener listener;
-    protected Object resource;
+    protected MediaResource resource;
 
     protected SMAFPlayer(MediaResource resource, MediaPlayerBox box) 
     { 
         super(resource, box);
 
-        byte[] resourceDat = MediaManager.getResource(resource);
-        InputStream stream = new ByteArrayInputStream(resourceDat);
+        InputStream stream = new ByteArrayInputStream(resource.getData());
 
         try 
         { 

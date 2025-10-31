@@ -16,8 +16,7 @@
 */
 package com.kddi.media;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.util.ArrayList;
 
 import org.recompile.mobile.Mobile;
 
@@ -29,39 +28,48 @@ public class MediaResource extends java.lang.Object
     public static final String SMAF_YAMAHA_MA5 = "devm53z";
 
 	private String _type;
+	private byte[] data;
 
-    public MediaResource(byte[] resource, java.lang.String disposition) {
+	private ArrayList<MediaPlayerBox> players = new ArrayList<MediaPlayerBox>();
+
+    public MediaResource(byte[] resource, java.lang.String disposition) 
+	{
 		this.initialize(resource, disposition);
 	}
 
-    public MediaResource(java.lang.String url) throws java.io.IOException {
-		System.out.println(url);
-		try {
+    public MediaResource(java.lang.String url) throws java.io.IOException 
+	{
+		try 
+		{
 			byte[] dat = Mobile.getPlatform().loader.getMIDletResourceAsByteArray(url);
 			this.initialize(dat, "devm39z");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		} catch (Exception e) { e.printStackTrace(); }
 	}
 
-	private void initialize(byte[] resource, String disposition) {
+	private void initialize(byte[] resource, String disposition) 
+	{
 		this._type = disposition;
-		MediaManager.putResource(this, resource);
+		data = resource.clone();
 	}
 
-    public void dispose() {
-		MediaManager.removeResource(this);
+    public void dispose() 
+	{
+		if(players == null) { return; }
+		for(int i = 0; i < players.size(); i++) { players.get(i).stop(); }
+		players.clear();
+		data = null;
+		players = null;
 	}
 
-    public MediaPlayerBox[] getPlayer() {
-		return MediaManager.getMediaPlayerBoxes(this);
-	}
+    public MediaPlayerBox[] getPlayer() { return players.toArray(new MediaPlayerBox[0]); }
 
-    public java.lang.String getType() {
-		return this._type;
-	}
+	public void addPlayer(MediaPlayerBox player) { players.add(player); }
 
-    public java.lang.String toString() {
-		return super.toString();
-	}
+	public void removePlayer(MediaPlayerBox player) { players.remove(player); }
+
+	public byte[] getData() { return data; }
+
+    public java.lang.String getType() { return this._type; }
+
+    public java.lang.String toString() { return super.toString(); }
 }

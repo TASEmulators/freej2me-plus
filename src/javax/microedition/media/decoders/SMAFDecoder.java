@@ -21,7 +21,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.io.ByteArrayInputStream;
@@ -33,7 +32,6 @@ import java.util.Arrays;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
@@ -177,29 +175,30 @@ public final class SMAFDecoder
         // Start parsing the file.
         decodeHeader(); // MMMD (file chunk header)
 
-        boolean parsingData = true;
-        while(parsingData && decodePos < input.length-CRCSize) // -2, because CRC at the end uses 2 bytes
+        while(decodePos < input.length-CRCSize) // -2, because CRC at the end uses 2 bytes
         {
+            if(decodePos >= input.length-4) { break; } // We can't read the chunkID below
+            
             String chunkID = "" + (char) input[decodePos] + (char) input[decodePos+1] + (char) input[decodePos+2] + (char) input[decodePos+3];
 
-            if(chunkID.contains("MTR")) { decodeScoreTrackChunk(); }
-            else if(chunkID.contains("MspI") || chunkID.contains("AspI")) { decodeSeekAndPhraseChunk(); }
-            else if(chunkID.contains("Mtsu") || chunkID.contains("Atsu")) { decodeSetupDataChunk(); }
-            else if(chunkID.contains("Mtsq") || chunkID.contains("Atsq") || chunkID.contains("SEQU"))
+            if(chunkID.startsWith("MTR")) { decodeScoreTrackChunk(); }
+            else if(chunkID.startsWith("MspI") || chunkID.startsWith("AspI")) { decodeSeekAndPhraseChunk(); }
+            else if(chunkID.startsWith("Mtsu") || chunkID.startsWith("Atsu")) { decodeSetupDataChunk(); }
+            else if(chunkID.startsWith("Mtsq") || chunkID.startsWith("Atsq") || chunkID.startsWith("SEQU"))
             {
                 scoreTrackSequenceData();
                 // Handy Phone format states that more than 4 channels can be used by having multiple Score Track Sequences (each track has 4). Softbank also needs this
                 if(formatType == (byte) 0x00 || formatType == (byte) 0x04) { handyChannelIdx += 4; }
             }
-            else if(chunkID.contains("Mtsp")) { scoreTrackPCMData(); } // Unfinished as far as spec compliance goes, but works more often than not
-            else if(chunkID.contains("Mwa"))  { scoreTrackWaveData(); } // Same as above (in fact, it pretty much ties with the above)
-            else if(chunkID.contains("MMMG")) { decodeMMMGChunk(); }
-            else if(chunkID.contains("VOIC")) { decodeVoiceChunk(); }
-            else if(chunkID.contains("EXVO")) { decodeExclusiveVoiceChunk(); }
-            else if(chunkID.contains("DEVO")) { decodeDEVoiceChunk(); }
-            else if(chunkID.contains("ATR"))  { decodePCMScoreTrackChunk(); }
-            else if(chunkID.contains("Awa"))  { decodeAudioTrackWaveDataChunk(); }
-            else { parsingData = false; }
+            else if(chunkID.startsWith("Mtsp")) { scoreTrackPCMData(); } // Unfinished as far as spec compliance goes, but works more often than not
+            else if(chunkID.startsWith("Mwa"))  { scoreTrackWaveData(); } // Same as above (in fact, it pretty much ties with the above)
+            else if(chunkID.startsWith("MMMG")) { decodeMMMGChunk(); }
+            else if(chunkID.startsWith("VOIC")) { decodeVoiceChunk(); }
+            else if(chunkID.startsWith("EXVO")) { decodeExclusiveVoiceChunk(); }
+            else if(chunkID.startsWith("DEVO")) { decodeDEVoiceChunk(); }
+            else if(chunkID.startsWith("ATR"))  { decodePCMScoreTrackChunk(); }
+            else if(chunkID.startsWith("Awa"))  { decodeAudioTrackWaveDataChunk(); }
+            else { decodePos++; }
 
             // TODO: Decode more of SMAF
             /* TODOs 
@@ -214,13 +213,7 @@ public final class SMAFDecoder
             */
         }
 
-        // Warn if the parser is somehow exiting earlier than the file's expected byte data size (we could CRC check for huffman, but appending any decoded chunks into the original array is too costly).
-        if(decodePos < data.length - CRCSize && formatType != 0x01) 
-        { 
-            Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + " Early exit: Parsed " + decodePos + " of " + (data.length - CRCSize) + " bytes. Decoded file might be missing data..."); 
-        }
-
-        // If there was no early exit, check the file's CRC for good measure. If that's fine, any and all inaccuracies with the decoding lie in the decoder itself.
+        // Check the file's CRC for good measure. If that's fine, any and all inaccuracies with the decoding lie in the decoder itself.
         if(SmafCRC.verifySmafCRC(input)) 
         {
             Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + " SMAF file passed CRC check! ");
