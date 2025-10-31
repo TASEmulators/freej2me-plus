@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.awt.image.BufferedImage;
 
 import java.io.File;
 import java.io.BufferedReader;
@@ -30,10 +29,7 @@ import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 
-import javax.microedition.media.Manager;
-
 import org.recompile.mobile.Mobile;
-import org.recompile.mobile.PlatformImage;
 
 public class Config
 {

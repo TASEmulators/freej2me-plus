@@ -17,13 +17,11 @@
 package javax.microedition.m3g;
 
 import java.util.Hashtable;
-import java.util.List;
 
 import javax.microedition.lcdui.Graphics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.awt.Graphics2D;
 import java.awt.image.DataBufferInt;
 
 import org.recompile.mobile.Mobile;

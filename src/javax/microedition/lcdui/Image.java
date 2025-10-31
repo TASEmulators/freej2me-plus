@@ -16,12 +16,8 @@
 */
 package javax.microedition.lcdui;
 
-import java.awt.image.DataBufferInt;
-
 import java.io.IOException;
 import java.io.InputStream;
-
-import javax.microedition.lcdui.game.Sprite;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
@@ -136,8 +132,7 @@ public class Image extends PlatformImage
 		if (imageWidth <= 0 || imageHeight <= 0) { throw new IllegalArgumentException("Width and height must be greater than zero.");}
 
 		Image image = Image.createImage(imageWidth, imageHeight);
-		DataBufferInt dataBuffer = (DataBufferInt) image.getCanvas().getRaster().getDataBuffer();
-		int[] rgbData = dataBuffer.getData();
+		int[] rgbData = image.getDataBuffer();
 
 		for (int j = 0; j < imageHeight; j++) 
 		{

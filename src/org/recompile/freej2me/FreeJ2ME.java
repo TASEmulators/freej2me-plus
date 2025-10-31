@@ -45,12 +45,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.HashMap;
-import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -815,23 +813,23 @@ public class FreeJ2ME
 
 			if(!showDragMessage) 
 			{
-				if (Mobile.rotateDisplay == 0) { g.drawImage(Mobile.getPlatform().getLcdFrontbufferImage(), cx, cy, cw, ch, null); } 
+				if (Mobile.rotateDisplay == 0) { g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), cx, cy, cw, ch, null); } 
 				else 
 				{
 					if(Mobile.rotateDisplay == 90) 
 					{
 						((Graphics2D) g).rotate(Math.toRadians(90), cw/2, cw/2);
-						g.drawImage(Mobile.getPlatform().getLcdFrontbufferImage(), 0, cx, ch, cw, null);
+						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), 0, cx, ch, cw, null);
 					}
 					else if(Mobile.rotateDisplay == 180) 
 					{
 						((Graphics2D) g).rotate(Math.toRadians(180), cw/2, ch/2);
-        				g.drawImage(Mobile.getPlatform().getLcdFrontbufferImage(), -cx, cy, cw, ch, null);
+        				g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), -cx, cy, cw, ch, null);
 					}
 					else if(Mobile.rotateDisplay == 270) 
 					{
 						((Graphics2D) g).rotate(Math.toRadians(270), ch/2, ch/2);
-						g.drawImage(Mobile.getPlatform().getLcdFrontbufferImage(), 0, cx, ch, cw, null);
+						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), 0, cx, ch, cw, null);
 					}
 				}
 				

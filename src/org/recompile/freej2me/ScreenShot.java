@@ -59,7 +59,7 @@ public class ScreenShot
 			}
 
 			File outputfile = new File(fileName);
-			ImageIO.write(Mobile.getPlatform().getLcdFrontbufferImage(), "png", outputfile);
+			ImageIO.write(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), "png", outputfile);
 			Mobile.log(Mobile.LOG_INFO, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + "Saved screenshot: " + outputfile.toString());
 		}
 		catch (Exception e)

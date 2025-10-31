@@ -19,21 +19,16 @@ package org.recompile.mobile;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.game.GameCanvas;
 import javax.microedition.lcdui.game.Sprite;
 
 import com.nokia.mid.ui.DirectGraphics;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.awt.image.ConvolveOp;
 import java.awt.image.DataBufferInt;
-import java.awt.image.Kernel;
 
 import com.nttdocomo.ui.UIException;
 
@@ -52,8 +47,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		0,  0,  0,  0,  0, 0, 0
 	};
 	
-	protected static final int ALPHA_BLEND_DENOMINATOR = 255;
-
 	public static final int BASELINE = 64;
 	public static final int BOTTOM   = 32;
 	public static final int DOTTED   = 1;
@@ -131,8 +124,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	protected int canvasWidth;
 	protected int canvasHeight;
 	protected int[] canvasData;
-	protected int[] imgPixels;
-	protected PlatformImage baseImage, lastImage;
+	protected PlatformImage baseImage;
 	protected boolean fastBlit;
 
 	protected int translateX = 0;
@@ -146,8 +138,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	protected Font font = Font.getDefaultFont();
 	protected com.nttdocomo.ui.Font dojaFont = com.nttdocomo.ui.Font.getDefaultFont();
 	protected int strokeStyle = SOLID;
-	// Array for fixed solid and dotted stroke
-	protected BasicStroke[] strokes = new BasicStroke[] {new BasicStroke(1.0f), new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[] {4.0f}, 0.0f)};
 
 	protected int dojaLockCount = 0;
 	protected int dojaflipMode = 0;
@@ -202,13 +192,14 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.clearRect(x, y, width, height);
+		int tmpcolor = color;
+		setColor(0xFF000000); // Clear to default background color
+		fillRect(x, y, width, height);
+		setColor(tmpcolor);
 	}
 
 	public void copyArea(int x_src, int y_src, int width, int height, int x_dest, int y_dest, int anchor) 
 	{
-		if (width <= 0 || height <= 0) { return; }
-
 		x_dest = AnchorX(x_dest, width, anchor);
 		y_dest = AnchorY(y_dest, height, anchor);
 
@@ -331,25 +322,20 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		{
 			x = AnchorX(x, image.getWidth(), anchor);
 			y = AnchorY(y, image.getHeight(), anchor);
-			gc.drawImage(image.getCanvas(), x, y, null);
+
+			drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage A:"+e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage :"+e.getMessage());
 		}
 	}
 
 	public void drawImage(Image image, int x, int y)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-		try
-		{
-			gc.drawImage(image.getCanvas(), x, y, null);
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage B:"+e.getMessage());
-		}
+		
+		drawImage(image, x, y, 0);
 	}
 
 	public void flushGraphics(PlatformImage image, int x, int y, int width, int height)
@@ -359,15 +345,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		try
 		{
 			fastBlit = (!Mobile.renderLCDMask || Mobile.maskIndex == 0) && !Mobile.funLightsEnabled;
-
-			// Only spend time reallocating this if we really are drawing from a different image than the last (speeds things up a bit)
-			if(image != lastImage)
-			{
-				imgPixels = ((DataBufferInt) image.getCanvas().getRaster().getDataBuffer()).getData();
-				lastImage = image;
-			}
 			
-			if(fastBlit && imgPixels == canvasData) 
+			if(fastBlit && image.getDataBuffer() == canvasData) 
 			{ 
 				if(!MobilePlatform.showFPS.equals("Off")) { showFPS(); }
 				return; // No need to copy anything, they're already the same
@@ -382,7 +361,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 				 * The canvas is always positive-sized and positioned at (0,0), so we don't even 
 				 * need to do any of the checks below.
 				 */
-				System.arraycopy(imgPixels, 0, canvasData, 0, canvasWidth*canvasHeight);
+				System.arraycopy(image.getDataBuffer(), 0, canvasData, 0, canvasWidth*canvasHeight);
 				if(!MobilePlatform.showFPS.equals("Off")) { showFPS(); }
 				return; 
 			}
@@ -416,7 +395,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 				{
 					destRowIndex = j * canvasWidth + x;
 					srcRowIndex = j * image.getWidth() + x;
-					System.arraycopy(imgPixels, srcRowIndex, canvasData, destRowIndex, width);
+					System.arraycopy(image.getDataBuffer(), srcRowIndex, canvasData, destRowIndex, width);
 				}
 				else
 				{
@@ -426,7 +405,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 					for (i = x; i < x + width; i++) 
 					{
 						// Only apply the backlight mask if Display, nokia's DeviceControl, or others request it for backlight effects.
-						canvasData[destRowIndex + i] = imgPixels[srcRowIndex + i] & (Mobile.renderLCDMask ? Mobile.lcdMaskColors[Mobile.maskIndex] : 0xFFFFFFFF);
+						canvasData[destRowIndex + i] = image.getDataBuffer()[srcRowIndex + i] & (Mobile.renderLCDMask ? Mobile.lcdMaskColors[Mobile.maskIndex] : 0xFFFFFFFF);
 
 						// If funLights overlay is requested by the game, apply its pixels to the screen area
 						if(Mobile.funLightsEnabled) { canvasData[destRowIndex + i] = blendPixels(overlayData[srcRowIndex + i], canvasData[destRowIndex + i]); }
@@ -445,6 +424,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 	public void drawRegion(Image image, int subx, int suby, int subw, int subh, int transform, int x, int y, int anchor)
 	{
+		if(subw == 0 || subh == 0) { return; }
+
 		if (image == null) { throw new NullPointerException("Source image cannot be null"); }
 
 		if (subx < 0 || suby < 0 || subx + subw > image.getCanvas().getWidth() || suby + subh > image.getCanvas().getHeight()) 
@@ -463,15 +444,15 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 			if(transform == 0)
 			{
 				x = AnchorX(x, subw, anchor);
-				y = AnchorY(y, subh, anchor);
-				gc.drawImage(image.getCanvas(), x, y, x + subw, y + subh, subx, suby, subx + subw, suby + subh, null);
+				y = AnchorY(y, subh, anchor);				
+				drawRGB(image.getDataBuffer(), subx + (suby * image.getWidth()), image.getWidth(), x, y, subw, subh, true);
 			}
 			else
 			{
 				PlatformImage sub = new PlatformImage(image, subx, suby, subw, subh, transform);
 				x = AnchorX(x, sub.getWidth(), anchor);
 				y = AnchorY(y, sub.getHeight(), anchor);
-				gc.drawImage(sub.getCanvas(), x, y, null);
+				drawRGB(sub.getDataBuffer(), 0, sub.getWidth(), x, y, sub.getWidth(), sub.getHeight(), true);
 			}
 		}
 		catch (Exception e)
@@ -482,6 +463,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 	public void drawRegion(Image image, int subx, int suby, int subw, int subh, int transform, int x, int y, int width_dest, int height_dest, int anchor, int stretch_quality) 
 	{
+		if(subw == 0 || subh == 0) { return; }
+
 		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawRegion B is untested!");
 
 		try
@@ -508,14 +491,15 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha) 
 	{
-		if (rgbData == null) { throw new NullPointerException(); }
-		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException(); }
+		if(width == 0 || height == 0) { return; }
+		if (rgbData == null) { throw new NullPointerException("RGB Data array is null"); }
+		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException("Invalid offset for RGB Data"); }
 	
 		if (scanlength > 0) 
 		{
 			if (offset + scanlength * (height - 1) + width > rgbData.length) 
 			{
-				throw new ArrayIndexOutOfBoundsException("DrawRGB Area is out of bounds (scanlength " + scanlength + ")");
+				throw new ArrayIndexOutOfBoundsException("DrawRGB Area is out of bounds (len" + rgbData.length + " max" + (offset + scanlength * (height - 1) + width)  + " scanlength " + scanlength + " offset " + offset + ")");
 			}
 		} 
 		else 
@@ -533,22 +517,27 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
 		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
 		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
-	
-		if(y + height > clipHeight) { height -= ((y + height) - clipHeight); }
-		if(x + width > clipWidth) { width -= ((x + width) - clipWidth); }
+		final int icache = (x > clipX) ? 0 : (clipX - x);
 
-		if(width <= 0 || height <= 0) { return; } // Nothing to draw, exit early
+		if(y + height > clipHeight) { height = clipHeight - y; }
+		if(x + width > clipWidth)   { width = clipWidth - x; }
+
+		/* If width or height ended up as zero, we can exit early */
+		if(width == 0 || height == 0) { return; }
+		
+		// Needed in order to ensure images larger than the canvas don't accidentally overflow and render on the opposite edge of the screen
+		if ((getClipX() + translateX < 0) && width < canvasWidth) { width += (getClipX() + translateX); }
 
 		int rowOffset, destRow, j, i;
 		// The array's x and y positions start from either 0 or the first valid drawable position, as the offset is what dictates where the data should start being read from
-		for (j = (y >= clipY) ? 0 : (clipY - y); j < height; j++)
+		for (j = (y > clipY) ? 0 : (clipY - y); j < height; j++) // This ternary only runs once, so there's no need to cache
 		{
 			rowOffset = offset + (j * scanlength);
 			destRow = (y + j) * canvasWidth;
 	
-			for (i = (x >= clipX) ? 0 : (clipX - x); i < width; i++)
+			for (i = icache; i < width; i++)
 			{
-				if (!processAlpha) { canvasData[destRow + x + i] = rgbData[rowOffset + i] | 0xFF000000; } // Set pixel as fully opaque
+				if (!processAlpha || (rgbData[rowOffset + i] >> 24 & 0xFF) == 255) { canvasData[destRow + x + i] = rgbData[rowOffset + i] | 0xFF000000; } // Set pixel as fully opaque
 				else { canvasData[destRow + x + i] = blendPixels(rgbData[rowOffset + i], canvasData[destRow + x + i]); } // Handle alpha blending
 			}
 		}
@@ -557,20 +546,112 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	public void drawLine(int x1, int y1, int x2, int y2) 
 	{ 
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-		
-		gc.setStroke(strokes[strokeStyle]);
-		gc.drawLine(x1, y1, x2, y2); 
-		gc.setStroke(strokes[SOLID]);
+
+		x1 += translateX;
+		x2 += translateX;
+		y1 += translateY;
+		y2 += translateY;
+
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
+		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+
+		int dx = Math.abs(x2 - x1);
+    	int dy = Math.abs(y2 - y1);
+
+		// This is basically a slightly modified bresenham algorithm
+
+		int sx = (x1 < x2) ? 1 : -1; // Step in x direction
+		int sy = (y1 < y2) ? 1 : -1; // Step in y direction
+		int err = dx - dy; // Error value
+
+		int curPixel = 0; // Used only for DOTTED style lines
+		while(true) 
+		{
+			// Paint the pixel if the stroke style is dotted and the current position matches, or if it's just plain solid
+			if(x1 >= clipX && x1 < clipWidth && y1 >= clipY && y1 < clipHeight && 
+			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID)) 
+			{
+				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[y1*canvasWidth+x1] = getColor(); }
+				else 
+				{ 
+					canvasData[y1*canvasWidth+x1] = blendPixels(getColor(), canvasData[y1*canvasWidth+x1]);
+				}
+			}
+
+			if (x1 == x2 && y1 == y2) { break; } // Line is now fully drawn, so jump out
+
+			int err2 = err * 2;
+			if (err2 > -dy) 
+			{
+				err -= dy; 
+				x1 += sx;
+			}
+			if (err2 < dx) 
+			{
+				err += dx; 
+				y1 += sy;
+			}
+			curPixel++;
+		}
 	}
 
 	public void drawArc(int x, int y, int width, int height, int startAngle, int arcAngle)
 	{
-		if(width < 0 || height < 0) { return; }
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.setStroke(strokes[strokeStyle]);
-		gc.drawArc(x, y, width, height, startAngle, arcAngle);
-		gc.setStroke(strokes[SOLID]);
+		// Java's coordinate system has positive angles moving counter-clockwise
+		arcAngle = -arcAngle;
+		startAngle = -startAngle;
+
+		x += translateX;
+		y += translateY;
+
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
+		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+
+		int curPixel = 0; // Used only for DOTTED style lines
+
+		/* 
+		 * This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
+		 * iterations are used to draw the circle. A bigger value will result in the same pixels 
+		 * being hit more times (and wasted cycles since they'll be discarded later) but will
+		 * guarantee a perfectly filled outline, whereas a small value will result in gaps
+		 * appearing in the circle since less points will be sampled. The current value is
+		 * a good balance between filling all positions on all kinds of shapes while hitting as 
+		 * few pixels as possible.
+		 */
+		
+		int steps = (int) (Math.abs(arcAngle * ((width + height) / 2) / 50.0f));
+		
+		int firstFillX = -1, firstFillY = -1, lastFillX = -1, lastFillY = -1;
+		for (int i = 0; i < steps; i++) 
+		{
+			float angle = toRadians(startAngle) + (i * (toRadians(startAngle + arcAngle) - toRadians(startAngle)) / steps);
+			
+			int fillX = (int) Math.round((x + width / 2) + width / 2 * Math.cos(angle));
+			int fillY = (int) Math.round((y + height / 2) + height / 2 * Math.sin(angle));
+			
+			// Make sure we don't paint the same pixel more than once
+			if((lastFillX == fillX && lastFillY == fillY) || (firstFillX == fillX && firstFillY == fillY)) { continue; }
+			if(i == 0) { firstFillY = fillY; firstFillX = fillX; }
+			lastFillX = fillX;
+			lastFillY = fillY;
+
+			if((fillX >= clipX && fillX < clipWidth && fillY >= clipY && fillY < clipHeight) && 
+			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
+			{
+				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[(fillY * canvasWidth) + fillX] = getColor(); }
+				else 
+				{ 
+					canvasData[(fillY * canvasWidth) + fillX] = blendPixels(getColor(), canvasData[(fillY * canvasWidth) + fillX]); 
+				}
+			}
+			curPixel++;
+		}
 	}
 
 	public void drawRect(int x, int y, int width, int height)
@@ -578,19 +659,62 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		if(width < 0 || height < 0) { return; }
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 		
-		gc.setStroke(strokes[strokeStyle]);
-		gc.drawRect(x, y, width, height);
-		gc.setStroke(strokes[SOLID]);
+		width+=1;
+		height+=1;
+		x += translateX;
+		y += translateY;
+
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
+		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+		
+		for (int j = 0; j < height; j++) 
+		{
+			for (int i = 0; i < width;) 
+			{
+				// Paint the pixel if the border style is dotted and the current position matches, or if it's plain solid
+				if((x+i) >= clipX && (y+j) >= clipY && (x+i) < clipWidth && (y+j) < clipHeight && 
+				((strokeStyle == DOTTED && ((j == 0 && i % 4 <= 1) || (i == 0 && j % 4 <= 1) || 
+				(j == height-1 && i % 4 <= 1) || (i == width-1 && j % 4 <= 1)))
+				|| strokeStyle == SOLID))
+				{
+					if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[((y + j) * canvasWidth) + (x + i)] = getColor(); }
+					else 
+					{
+						canvasData[((y + j) * canvasWidth) + (x + i)] = blendPixels(getColor(), canvasData[((y + j) * canvasWidth) + (x + i)]);
+					}
+				}
+				
+				// We must only draw borders, otherwise this becomes fillRect
+				if(j == 0 || j == height-1) { i++; }
+				else { i += width-1; }
+			}
+		}
 	}
 
 	public void drawRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight)
 	{
-		if(width < 0 || height < 0 || arcWidth < 0 || arcHeight < 0) { return; }
+		if(width < 0 || height < 0) { return; }
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.setStroke(strokes[strokeStyle]);
-		gc.drawRoundRect(x, y, width, height, arcWidth, arcHeight);
-		gc.setStroke(strokes[SOLID]);
+		arcWidth = Math.abs(arcWidth);
+		arcHeight = Math.abs(arcHeight);
+
+		if(arcWidth >= width) { arcWidth = width-1; }
+		if(arcHeight >= height) { arcHeight = height-1; }
+				
+		// Fill the main rectangle area
+		drawLine(x + (arcWidth/2), y, x+width-(arcWidth/2), y); // Top line
+		drawLine(x + (arcWidth/2), y+height, x+width-(arcWidth/2), y+height); // Bottom line
+		drawLine(x, y+(arcHeight/2), x, y+height-(arcHeight/2)); // Left line
+		drawLine(x+width, y+(arcHeight/2), x+width, y+height-(arcHeight/2)); // Left line
+
+		// Fill rounded corners
+		drawArc(x, y, arcWidth, arcHeight, 90, 90); // Top-left corner
+		drawArc(x + width - arcWidth, y, arcWidth, arcHeight, 0, 90); // Top-right corner
+		drawArc(x, y + height - arcHeight, arcWidth, arcHeight, 180, 90); // Bottom-left corner
+		drawArc(x + width - arcWidth, y + height - arcHeight, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
 	public void drawString(String str, int x, int y, int anchor)
@@ -631,58 +755,128 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		}
 	}
 
-	public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle)
+	public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle) 
 	{
-		if(width < 0 || height < 0) { return; }
-		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
+		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.fillArc(x, y, width, height, startAngle, arcAngle);
+		// Java's coordinate system has positive angles moving counter-clockwise
+		arcAngle = -arcAngle;
+		startAngle = -startAngle;
+
+		x += translateX;
+		y += translateY;
+
+		final boolean[] filledPixels = new boolean[(width+1) * (height+1)];
+
+		final int clipX = Math.max(0, getClipX() + translateX);
+		final int clipY = Math.max(0, getClipY() + translateY);
+		final int clipWidth = Math.min(canvasWidth, getClipWidth() + clipX);
+		final int clipHeight = Math.min(canvasHeight, getClipHeight() + clipY);
+
+		/* 
+		 * This is just drawArc's Bresenham midpoint circle algorithm modified to draw arcs
+		 * from the center to the edge and check if a pixel was already painted before. Works great but
+		 * is VERY slow on large arcs. Trying to use a scanline approach could result in much better
+		 * performance due to the simpler checks (just go from yMax to yMin while making sure a y position
+		 * is never used twice) but doesn't seem to work right in some edge cases (negative angles, too
+		 * wide/narrow arc angles, etc) so this one, albeit slow, is what we'll be going with at the moment.
+		 * 
+		 * At least it has the upside of generating far more stable arcs that fully match their outline
+		 * compared to Java SE's standard algorithm.
+		 * 
+		 * TODO: Optimize this later
+		*/ 
+
+		int steps = (int) (Math.abs(arcAngle * ((width + height) / 2) / 50.0f));
+
+		for (int i = 0; i <= steps; i++) 
+		{
+			float angle = toRadians(startAngle) + (i * (toRadians(startAngle + arcAngle) - toRadians(startAngle)) / steps);
+
+			for (int j = 0; j <= Math.max(width / 2, height / 2); j++) 
+			{
+				int innerX = (int) Math.round((x + width / 2) + width / 2 * Math.cos(angle) * (j / (float) Math.max(width / 2, height / 2)));
+				int innerY = (int) Math.round((y + height / 2) + height / 2 * Math.sin(angle) * (j / (float) Math.max(width / 2, height / 2)));
+
+				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight && !filledPixels[(innerY-y) * width + innerX-x]) 
+				{
+                	filledPixels[(innerY-y) * width + innerX-x] = true;
+					if (getAlphaComponent() == 255) { canvasData[(innerY * canvasWidth) + innerX] = getColor(); } 
+					else 
+					{
+						canvasData[(innerY * canvasWidth) + innerX] = blendPixels(getColor(), canvasData[(innerY * canvasWidth) + innerX]);
+					}
+				}
+			}
+		}
 	}
+
 
 	public void fillRect(int x, int y, int width, int height)
 	{
 		if(width < 0 || height < 0) { return; }
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		if(!Mobile.isDoJa || (Mobile.isDoJa && renderMode == com.nttdocomo.opt.ui.Graphics2.OP_REPL)) 
+		x += translateX;
+		y += translateY;
+
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
+		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+		final int icache = (x > clipX) ? 0 : (clipX - x);
+
+		if(y + height > clipHeight) { height = clipHeight - y; }
+		if(x + width > clipWidth)   { width = clipWidth - x; }
+		
+		if(!Mobile.isDoJa && getAlphaComponent() == 255) 
 		{
-			gc.fillRect(x, y, width, height);
-		} 
-		else 
-		{
-			int newR = 0, newG = 0, newB = 0;
-			for (int j = 0; j < height; j++) 
+			for (int j = (y > clipY) ? 0 : (clipY - y); j < height; j++) 
 			{
-				for (int i = 0; i < width; i++) 
+				for (int i = icache; i < width; i++) 
 				{
-					if ((x + i) < 0 || (y + j) < 0 || (x + i) >= canvasWidth || (y + j) >= canvasData.length / canvasWidth)  { continue; }
-
-					switch (renderMode) 
-					{
-						case com.nttdocomo.opt.ui.Graphics2.OP_ADD:
-							newR = clamp(((canvasData[((y + j) * canvasWidth) + (x + i)] >> 16) & 0xFF) * dstRatio / 255 + getRedComponent() * srcRatio / 255);
-							newG = clamp(((canvasData[((y + j) * canvasWidth) + (x + i)] >> 8) & 0xFF) * dstRatio / 255 + getGreenComponent() * srcRatio / 255);
-							newB = clamp((canvasData[((y + j) * canvasWidth) + (x + i)] & 0xFF) * dstRatio / 255 + getBlueComponent() * srcRatio / 255);
-							break;
-						case com.nttdocomo.opt.ui.Graphics2.OP_SUB:
-							newR = clamp(((canvasData[((y + j) * canvasWidth) + (x + i)] >> 16) & 0xFF) * dstRatio / 255 - getRedComponent() * srcRatio / 255);
-							newG = clamp(((canvasData[((y + j) * canvasWidth) + (x + i)] >> 8) & 0xFF) * dstRatio / 255 - getGreenComponent() * srcRatio / 255);
-							newB = clamp((canvasData[((y + j) * canvasWidth) + (x + i)] & 0xFF) * dstRatio / 255 - getBlueComponent() * srcRatio / 255);
-							break;
-					}
-
-					canvasData[((y + j) * canvasWidth) + (x + i)] = (Mobile.DoJaVersion < 40 ? 0xFF << 24 : getColor() << 24) | (newR << 16) | (newG << 8) | newB;
+					canvasData[((y+j) * canvasWidth) + x+i] = getColor();
 				}
 			}
 		}
+		else 
+		{
+			for (int j = (y > clipY) ? 0 : (clipY - y); j < height; j++) 
+			{
+				for (int i = icache; i < width; i++) 
+				{
+					canvasData[((y+j) * canvasWidth) + x+i] = blendPixels(getColor(), canvasData[((y+j) * canvasWidth) + x+i]);
+				}
+			}
+		}
+		
 	}
 
-	public void fillRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight)
+	public void fillRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight) 
 	{
-		if(width < 0 || height < 0 || arcWidth < 0 || arcHeight < 0) { return; }
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.fillRoundRect(x, y, width, height, arcWidth, arcHeight);
+		arcWidth = Math.abs(arcWidth);
+		arcHeight = Math.abs(arcHeight);
+		if(arcWidth == 0 && arcHeight == 0) 
+		{ 
+			fillRect(x, y, arcWidth, arcHeight); 
+			return; 
+		}
+
+		if(arcWidth >= width) { arcWidth = width-1; }
+		if(arcHeight >= height) { arcHeight = height-1; }
+		
+		// Fill the main rectangle area
+		fillRect(x + (arcWidth/2)+1, y, width - 2 * (arcWidth/2) - 1, height); // Middle part
+		fillRect(x, y + (arcHeight/2)+1, (arcWidth/2)+1, height - 2 * (arcHeight/2) - 1); // Left Side part
+		fillRect(x + (width - (arcWidth/2)), y + (arcHeight/2), (arcWidth/2), height - 2 * (arcHeight/2) - 1); // Right Side part
+
+		// Fill rounded corners
+		fillArc(x - (arcWidth %2 == 0 ? 0 : 1), y - (arcHeight % 2 == 0 ? 0 : 1), arcWidth, arcHeight, 90, 90); // Top-left corner
+		fillArc(x + width - arcWidth - 1, y - (arcHeight % 2 == 0 ? 0 : 1), arcWidth, arcHeight, 0, 90); // Top-right corner
+		fillArc(x-(arcWidth %2 == 0 ? 0 : 1), y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
+		fillArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
 	public void setColor(int rgb)
@@ -825,7 +1019,9 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		BufferedImage image = manipulateImage(img.getCanvas(), manipulation);
 		x = AnchorX(x, image.getWidth(), anchor);
 		y = AnchorY(y, image.getHeight(), anchor);
-		gc.drawImage(image, x, y, null);
+
+		int[] imgData = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
+		drawRGB(imgData, 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
 
 		if(Mobile.compatFantasyZoneFix) 
 		{
@@ -955,65 +1151,124 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		drawRGB(data, 0, temp.getWidth(), x, y, temp.getWidth(), temp.getHeight(), transparency);
 	}
 
+	// TODO: drawPolygon has some issues with spacing
 	public void drawPolygon(int[] xPoints, int xOffset, int[] yPoints, int yOffset, int nPoints, int argbColor)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		int temp = color;
-		int[] x = new int[nPoints];
-		int[] y = new int[nPoints];
 
+		// Drawing a Polygon means basically drawing the edges (lines) between each pair of vertices
 		setAlphaRGB(argbColor);
-
-		for(int i=0; i<nPoints; i++)
+		for(int i=0; i < nPoints; i++)
 		{
-			x[i] = xPoints[xOffset+i];
-			y[i] = yPoints[yOffset+i];
+			if(i == nPoints-1) { drawLine(xPoints[xOffset+i], yPoints[yOffset+i], xPoints[xOffset], yPoints[yOffset]); }
+			else { drawLine(xPoints[xOffset+i], yPoints[yOffset+i], xPoints[xOffset+i+1], yPoints[yOffset+i+1]); }
 		}
-		gc.setStroke(strokes[strokeStyle]);
-		gc.drawPolygon(x, y, nPoints);
-		gc.setStroke(strokes[SOLID]);
-		setColor(temp);
+		setAlphaRGB(temp);
+	}
+
+	public void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3)
+	{
+		drawTriangle(x1, y1, x2, y2, x3, y3, getColor());
 	}
 
 	public void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int argbColor)
 	{
 		int temp = color;
 		setAlphaRGB(argbColor);
-		gc.drawPolygon(new int[]{x1,x2,x3}, new int[]{y1,y2,y3}, 3);
-		setColor(temp);
+		drawLine(x1, y1, x2, y2);
+		drawLine(x2, y2, x3, y3);
+		drawLine(x3, y3, x1, y1);
+		setAlphaRGB(temp);
 	}
 
-	public void fillPolygon(int[] xPoints, int xOffset, int[] yPoints, int yOffset, int nPoints, int argbColor)
+	// TODO: Not fully accurate yet (similar issues to drawPolygon and JBenchmark 2 3D raster test has gaps in geometry)
+	public void fillPolygon(int[] xPoints, int xOffset, int[] yPoints, int yOffset, int nPoints, int argbColor) 
 	{
-		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
+		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		int temp = color;
-		int[] x = new int[nPoints];
-		int[] y = new int[nPoints];
+		if (nPoints < 3) { return; }
 
-		setAlphaRGB(argbColor);
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
+		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
 
-		for(int i=0; i<nPoints; i++)
+		/* 
+		 * Filling polygons is done through the canonical Scan Line fill algorithm. It works
+		 * just like its description: Find the yMax and yMin of the polygon, calculate the intersections
+		 * between each edge, sort intersections by increasing X coordinate, then fill from top to bottom.
+		 */
+		int ymin = Integer.MAX_VALUE;
+		int ymax = Integer.MIN_VALUE;
+		for (int i = 0; i < nPoints; i++) 
 		{
-			x[i] = xPoints[xOffset+i];
-			y[i] = yPoints[yOffset+i];
+			if (yPoints[i+yOffset] < ymin) { ymin = yPoints[i+yOffset]; }
+			if (yPoints[i+yOffset] > ymax) { ymax = yPoints[i+yOffset]; }
 		}
-		gc.fillPolygon(x, y, nPoints);
-		setColor(temp);
+
+		if(ymin+translateY < clipY) { ymin = clipY-translateY; }
+		if(ymax+translateY >= clipHeight) { ymax = clipHeight-translateY; }
+
+		final int[] intersections = new int[nPoints]; 
+        int intersectionCount = 0;
+
+		for (int y = ymin; y < ymax; y++) 
+		{
+			intersectionCount = 0;
+			for (int i = 0; i < nPoints; i++) 
+			{
+				int j = (i + 1) % nPoints;
+				if ((yPoints[i+yOffset] <= y && yPoints[j+yOffset] > y) || (yPoints[j+yOffset] <= y && yPoints[i+yOffset] > y)) 
+				{
+					int x = xPoints[i+xOffset] + (y - yPoints[i+yOffset]) * (xPoints[j+xOffset] - xPoints[i+xOffset]) / (yPoints[j+yOffset] - yPoints[i+yOffset]);
+					intersections[intersectionCount++] = x;
+				}
+			}
+
+			for (int i = 0; i < intersectionCount - 1; i++) 
+			{
+				for (int j = 0; j < intersectionCount - 1 - i; j++) 
+				{
+					if (intersections[j] > intersections[j + 1]) 
+					{
+						int temp = intersections[j];
+						intersections[j] = intersections[j + 1];
+						intersections[j + 1] = temp;
+					}
+				}
+			}
+
+			for (int i = 0; i < intersectionCount; i += 2) 
+			{
+				if (i + 1 < intersectionCount) 
+				{
+					int xStart = intersections[i] + translateX;
+					int xEnd = intersections[i + 1] + translateX;
+					if(xStart < clipX) { xStart = clipX; }
+					if(xEnd > clipWidth) { xEnd = clipWidth; }
+					for (int x = xStart; x < xEnd; x++) 
+					{ 
+						if(((argbColor >> 24) & 0xFF) == 255) { canvasData[(y+translateY)*canvasWidth+x] = argbColor; }
+						else 
+						{
+							canvasData[(y+translateY)*canvasWidth+x] = blendPixels(argbColor, canvasData[(y+translateY)*canvasWidth+x]);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3)
 	{
-		gc.fillPolygon(new int[]{x1,x2,x3}, new int[]{y1,y2,y3}, 3);
+		fillTriangle(x1, y1, x2, y2, x3, y3, getColor());
 	}
 
 	public void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int argbColor)
 	{
-		int temp = color;
-		setAlphaRGB(argbColor);
-		gc.fillPolygon(new int[]{x1,x2,x3}, new int[]{y1,y2,y3}, 3);
-		setColor(temp);
+		fillPolygon(new int[]{x1, x2, x3}, 0, new int[] {y1, y2, y3}, 0, 3, argbColor);
 	}
 
 	public void getPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int format)
@@ -1261,24 +1516,45 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	}
 
 	// Used everywhere alpha blending might be needed, be it getPixels, flushGraphics, etc.
-	private static final int blendPixels(final int srcPixel, final int destPixel) 
+	private final int blendPixels(final int srcPixel, final int destPixel) 
 	{
 		final int srcAlpha = (srcPixel >> 24) & 0xFF; // Source alpha
-		if(srcAlpha == 255) { return srcPixel; }
-		else if(srcAlpha == 0) { return destPixel; }
-		else
+		int newRed = 0, newGreen = 0, newBlue = 0;
+
+		if(srcAlpha == 0) { return destPixel; } // No blending needed in any of the cases below, return early
+
+		switch (renderMode) 
 		{
-			final int destAlpha = (destPixel >> 24) & 0xFF;
+			case com.nttdocomo.opt.ui.Graphics2.OP_REPL: // Also used by MIDP, which does this operation by default (SRC_OVER)
+				if(srcAlpha == 255) { return srcPixel; }
+				else // Blending is needed
+				{
+					final int destAlpha = (destPixel >> 24) & 0xFF;
 
-			final int invSrcAlpha = (255 - srcAlpha);
+					final int invSrcAlpha = (255 - srcAlpha);
 
-			final int newAlpha = (srcAlpha + destAlpha > 255) ? 255 : (srcAlpha + destAlpha);
+					final int newAlpha = (srcAlpha + destAlpha > 255) ? 255 : (srcAlpha + destAlpha);
 
-			final int newRed = ((((srcPixel >> 16) & 0xFF) * srcAlpha) + (((destPixel >> 16) & 0xFF) * invSrcAlpha)) / ALPHA_BLEND_DENOMINATOR;
-			final int newGreen =  ((((srcPixel >> 8) & 0xFF) * srcAlpha) + (((destPixel >> 8) & 0xFF) * invSrcAlpha)) / ALPHA_BLEND_DENOMINATOR;
-			final int newBlue = (((srcPixel & 0xFF) * srcAlpha) + ((destPixel & 0xFF) * invSrcAlpha)) / ALPHA_BLEND_DENOMINATOR;
+					newRed = ((((srcPixel >> 16) & 0xFF) * srcAlpha) + (((destPixel >> 16) & 0xFF) * invSrcAlpha)) / 255;
+					newGreen =  ((((srcPixel >> 8) & 0xFF) * srcAlpha) + (((destPixel >> 8) & 0xFF) * invSrcAlpha)) / 255;
+					newBlue = (((srcPixel & 0xFF) * srcAlpha) + ((destPixel & 0xFF) * invSrcAlpha)) / 255;
 
-			return (newAlpha << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+					return (newAlpha << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+				}
+			// ADD and SUB never take alpha into consideration for RGB values
+			case com.nttdocomo.opt.ui.Graphics2.OP_ADD:
+				newRed   = clamp(((destPixel >> 16) & 0xFF) * dstRatio / 255 + ((srcPixel >> 16) & 0xFF) * srcRatio / 255);
+				newGreen = clamp(((destPixel >> 8) & 0xFF) * dstRatio / 255 + ((srcPixel >> 8) & 0xFF) * srcRatio / 255);
+				newBlue  = clamp((destPixel & 0xFF) * dstRatio / 255 + (srcPixel & 0xFF) * srcRatio / 255);
+				return (0xFF << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+			case com.nttdocomo.opt.ui.Graphics2.OP_SUB:
+				newRed   = clamp(((destPixel >> 16) & 0xFF) * dstRatio / 255 - ((srcPixel >> 16) & 0xFF) * srcRatio / 255);
+				newGreen = clamp(((destPixel >> 8) & 0xFF) * dstRatio / 255 - ((srcPixel >> 8) & 0xFF) * srcRatio / 255);
+				newBlue  = clamp((destPixel & 0xFF) * dstRatio / 255 - (srcPixel & 0xFF) * srcRatio / 255);
+				return (0xFF << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+			
+			default:
+				return srcPixel;
 		}
 	}
 
@@ -1408,9 +1684,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	{ 
 		contextDisposed = true;
 		canvasData = null;
-		imgPixels = null;
 		baseImage = null;
-		lastImage = null;
 		canvas = null;
 		gc.dispose();
 	}
@@ -1437,7 +1711,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		copyArea(x, y, width, height, dx, dy, 0);
 	}
 
-	// Text appears to be rendered with BOTTOM LEFT anchoring, at least, it's what most DoJa jars seem to like better
+	// Text appears to be rendered with BASELINE anchoring, at least, it's what most DoJa jars seem to like better
 	public void drawChars(char[] data, int x, int y, int offset, int length)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
@@ -1640,24 +1914,20 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.setStroke(strokes[strokeStyle]);
 		for (int i = 0; i < nPoints - 1; i++) 
 		{
 			drawLine(xPoints[i], yPoints[i], xPoints[i + 1], yPoints[i + 1]);
 		}
-		gc.setStroke(strokes[SOLID]);
 	}
 
 	public void drawPolyline(int[] xPoints, int[] yPoints, int offset, int count) 
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		gc.setStroke(strokes[strokeStyle]);
 		for (int i = offset; i < offset + count - 1; i++) 
 		{
 			drawLine(xPoints[i], yPoints[i], xPoints[i + 1], yPoints[i + 1]);
 		}
-		gc.setStroke(strokes[SOLID]);
 	}
 
 	// Those Polygon methods are used by Gang Bullets 2 and Dragon Ball RPG
@@ -1698,14 +1968,45 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		{
 			if (dojaflipMode != FLIP_NONE) 
 			{
-				int[] adjustedCoordinates = adjustCoordinates(image.getCanvas().getWidth(), image.getCanvas().getHeight(), sx, sy, swidth, sheight, dojaflipMode);
-				sx     = adjustedCoordinates[0];
-				sy     = adjustedCoordinates[1];
+				int[] adjustedCoordinates = adjustCoordinates(image.getCanvas().getWidth(), image.getCanvas().getHeight(), sx, sy, width, height, dojaflipMode);
+				sx      = adjustedCoordinates[0];
+				sy      = adjustedCoordinates[1];
 				swidth  = adjustedCoordinates[2];
 				sheight = adjustedCoordinates[3];
 			}
+
+			dx+=translateX;
+			dy+=translateY;
+
+			final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+			final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+			final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
+			final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+
+			BufferedImage newImg = manipulateImage(image.getCanvas(), dojaflipMode);
+			int[] imgData = ((DataBufferInt) newImg.getRaster().getDataBuffer()).getData();
 			
-			gc.drawImage(manipulateImage(image.getCanvas(), dojaflipMode), dx, dy, dx + width, dy + height, sx, sy, sx + swidth, sy + sheight, null);
+			swidth = Math.min(swidth, image.getWidth());
+			sheight = Math.min(sheight, image.getHeight());
+			width = Math.min(width, image.getWidth());
+			height = Math.min(height, image.getHeight());
+
+			for (int j = dy; j < dy + height; j++) 
+			{
+				int srcY = sy + (j - dy) * sheight / height;
+				for (int i = dx; i < dx + width; i++) 
+				{ 
+					int srcX = sx + (i - dx) * swidth / width;
+
+					if (srcX >= sx && srcX < sx + swidth && srcY >= sy && srcY < sy + sheight && srcY * image.getWidth() + srcX >= 0 &&
+					srcY * image.getWidth() + srcX < imgData.length-1 && j * canvasWidth + i >= 0 && j * canvasWidth + i < canvasData.length-1
+					&& i < clipWidth && i >= clipX && j < clipHeight && j >= clipY) 
+					{
+						setPixel(i, j, blendPixels(imgData[srcY * image.getWidth() + srcX], canvasData[j * canvasWidth + i]));
+					}
+				}
+			}
+			//gc.drawImage(manipulateImage(image.getCanvas(), dojaflipMode), dx, dy, dx + width, dy + height, sx, sy, sx + swidth, sy + sheight, null);
 		}
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawScaledImage: " + e.getMessage()); }
 	}
@@ -1718,7 +2019,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		for (com.nttdocomo.ui.Sprite sprite : sprites.getSprites())  // TODO: Support flip modes
 		{
-			gc.drawImage(sprite.getImage().getCanvas(), sprite.getX(), sprite.getY(), null);
+			drawRGB(sprite.getImage().getDataBuffer(), 0, sprite.getImage().getWidth(), sprite.getX(), sprite.getY(), sprite.getImage().getWidth(), sprite.getImage().getHeight(), true);
 		}
 	}
 
@@ -1768,16 +2069,17 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	public void setPixel(int x, int y) 
 	{ 
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-		canvasData[y*canvasWidth+x] = getColor(); 
+		
+		canvasData[y*canvasWidth+x] = getColor();
 	}
 
 	public void setPixel(int x, int y, int color) 
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 		int restorecolor = getColor();
-		setColor(color);
+		setAlphaRGB(color);
 		setPixel(x, y);
-		setColor(restorecolor);
+		setAlphaRGB(restorecolor);
 	}
 
 	public void setRGBPixel(int x, int y, int color) { setPixel(x, y, color); }
@@ -1924,10 +2226,10 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		// Set the overlay background and draw
 		setARGBColor(0x96000069); // BG is a semi-transparent dark blue
-		fillRoundRect(0, 0, scaledWidth, scaledHeight, 4, 4); // Cut a bit off from the height so that the counter is slimmer. We're not using chars that go below baseline like 'f' or 'q'
+		fillRoundRect(0, 2, scaledWidth, scaledHeight, 4, 4); // Cut a bit off from the height so that the counter is slimmer. We're not using chars that go below baseline like 'f' or 'q'
 	
 		// Set the font color and draw it
-		setColor(0xFFFFAF00); // Text color is orange
+		setAlphaRGB(0xFFFFAF00); // Text color is orange
 		drawString(fpsText, 0, 0, TOP | LEFT);
 		setOrigin(0, 0);
 		setColor(0, 0, 0);
@@ -1935,4 +2237,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 	// Helper methods
 	protected static final int clamp(int value) { return Math.max(0, Math.min(255, value)); }
+
+	protected static final float toRadians(float angdeg) { return angdeg * 0.017453292f; }
 }

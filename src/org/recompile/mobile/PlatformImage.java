@@ -16,7 +16,6 @@
 */
 package org.recompile.mobile;
 
-import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.io.IOException;
@@ -28,13 +27,10 @@ import java.io.File;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.game.Sprite;
-import javax.microedition.lcdui.game.GameCanvas;
 
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferInt;
 
 import javax.microedition.io.Connector;
@@ -44,11 +40,15 @@ public class PlatformImage
 {
 	protected BufferedImage canvas;
 
+	protected int[] dataBuffer;
+
 	private boolean isMutable = false;
 
 	private boolean is2bpp = false; // SIEMENS: False = 1bpp, True = 2bpp
 
 	public BufferedImage getCanvas() { return canvas; }
+
+	public int[] getDataBuffer() { return dataBuffer; }
 
 	public void setCanvas(BufferedImage newCanvas) { canvas = newCanvas; }
 
@@ -83,9 +83,9 @@ public class PlatformImage
 		// Create blank Image
 		if(Mobile.noAlphaOnBlankImages) { canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_RGB); }
 		else { canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB); }
-		int[] canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		
-		Arrays.fill(canvasData, 0xFFFFFFFF);
+		Arrays.fill(dataBuffer, 0xFFFFFFFF);
 
 		isMutable = true;
 	}
@@ -94,9 +94,9 @@ public class PlatformImage
 	{
 		// Create Image with specific BG color
 		canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
-		int[] canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		
-		Arrays.fill(canvasData, ARGBcolor);
+		Arrays.fill(dataBuffer, ARGBcolor);
 
 		isMutable = true;
 	}
@@ -143,6 +143,8 @@ public class PlatformImage
 				canvas = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 				canvas.getGraphics().drawImage(image, 0, 0, null);
 			}
+
+			dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		}
 	}
 
@@ -161,6 +163,8 @@ public class PlatformImage
 		{
 			canvas = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 			canvas.getGraphics().drawImage(image, 0, 0, null);
+
+			dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		}
 	}
 
@@ -171,10 +175,10 @@ public class PlatformImage
 
 		// It's safe to assume that the source image will have the same type as the destination, so instead of drawImage we can just arraycopy the source to the destination
 		canvas = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		final int[] canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		final int[] tempData = ((DataBufferInt) source.getCanvas().getRaster().getDataBuffer()).getData();
 		
-		System.arraycopy(tempData, 0, canvasData, 0, tempData.length);
+		System.arraycopy(tempData, 0, dataBuffer, 0, tempData.length);
 	}
 
 	public PlatformImage(byte[] imageData, int imageOffset, int imageLength, boolean mutable) // DoJa also uses this one, creates mutable images like DirectGraphics
@@ -194,6 +198,8 @@ public class PlatformImage
 		{
 			canvas = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 			canvas.getGraphics().drawImage(image, 0, 0, null);
+
+			dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		}
 
 		isMutable = mutable;
@@ -203,7 +209,7 @@ public class PlatformImage
 	{
 		// createRGBImage (Data is ARGB pixel data)
 		canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
-		int[] canvasPixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
 		// Process alpha if necessary
 		if (!processAlpha) 
@@ -211,7 +217,7 @@ public class PlatformImage
 			for (int i = 0; i < rgb.length; i++) { rgb[i] |= 0xFF000000; } // Set alpha to opaque
 		}
 
-		System.arraycopy(rgb, 0, canvasPixels, 0, Math.min(rgb.length, canvasPixels.length));
+		System.arraycopy(rgb, 0, dataBuffer, 0, Math.min(rgb.length, dataBuffer.length));
 	}
 
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
@@ -234,6 +240,7 @@ public class PlatformImage
 		}
 
 		canvas = transformImage(sub, transform);
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 	}
 
 	// These constructors and methods are exclusive to DoJa's Image classes
@@ -244,10 +251,10 @@ public class PlatformImage
 
 		// It's safe to assume that the source image will have the same type as the destination, so instead of drawImage we can just arraycopy the source to the destination
 		canvas = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		final int[] canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		final int[] tempData = ((DataBufferInt) source.getCanvas().getRaster().getDataBuffer()).getData();
 		
-		System.arraycopy(tempData, 0, canvasData, 0, tempData.length);
+		System.arraycopy(tempData, 0, dataBuffer, 0, tempData.length);
 	}
 
 	public PlatformImage(int Width, int Height, int[] data, int off) 
@@ -255,8 +262,8 @@ public class PlatformImage
 		// Create DoJa image from int array starting from a given offset
 		canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
 
-		int[] canvasPixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
-		System.arraycopy(data, off, canvasPixels, 0, Width * Height);
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+		System.arraycopy(data, off, dataBuffer, 0, Width * Height);
 		
 		isMutable = true;
 	}
@@ -302,15 +309,13 @@ public class PlatformImage
 			throw new IllegalArgumentException("scanlength must be >= width");
 		}
 
-		// Temporary array to hold the raw pixel data
-		int[] tempData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		// Copy the data into rgbData, taking scanlength into account
 		for (int row = 0; row < height; row++) 
 		{
 			int sourceIndex = (y + row) * canvas.getWidth() + x;
 			int destIndex = offset + row * scanlength;
 	
-			System.arraycopy(tempData, sourceIndex, rgbData, destIndex, width);
+			System.arraycopy(dataBuffer, sourceIndex, rgbData, destIndex, width);
 		}
 	}
 
@@ -321,9 +326,8 @@ public class PlatformImage
 			throw new IllegalArgumentException("Requested area exceeds bounds of the image");
 		}
 	
-		// Get the raw pixel data array directly from the canvas
-		int[] pixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
-		return pixels[y * canvas.getWidth() + x];
+		// Get the raw pixel data array directly from the canvas dataBuffer
+		return dataBuffer[y * canvas.getWidth() + x];
 	}
 
 	public int getPixel(int x, int y) { return getARGB(x, y); }
@@ -336,8 +340,7 @@ public class PlatformImage
 		}
 	
 		// Get the raw pixel data array directly from the canvas
-		int[] pixels = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
-		pixels[y * canvas.getWidth() + x] = color;
+		dataBuffer[y * canvas.getWidth() + x] = color;
 	}
 
 	public boolean isMutable() { return isMutable; }

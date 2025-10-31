@@ -16,13 +16,9 @@
 */
 package com.siemens.mp.ui;
 
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
 import java.io.IOException;
 
 import org.recompile.mobile.Mobile;
-import org.recompile.mobile.PlatformImage;
 
 import javax.microedition.lcdui.game.Sprite;
 
@@ -141,8 +137,7 @@ public class Image extends javax.microedition.lcdui.Image
         if (width <= 0 || height <= 0) { throw new IllegalArgumentException("Width and height must be greater than zero."); }
     
         javax.microedition.lcdui.Image image = javax.microedition.lcdui.Image.createImage(width, height);
-        DataBufferInt dataBuffer = (DataBufferInt) image.getCanvas().getRaster().getDataBuffer();
-        int[] rgbData = dataBuffer.getData();
+        int[] rgbData = image.getDataBuffer();
     
         for (int j = 0; j < height; j++) 
         {

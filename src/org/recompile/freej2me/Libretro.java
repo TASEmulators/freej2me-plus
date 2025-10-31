@@ -19,14 +19,10 @@ package org.recompile.freej2me;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 
-import java.awt.image.DataBufferInt;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.io.IOException;
-import java.net.URL;
 import java.net.URLDecoder;
 
 public class Libretro
@@ -194,7 +190,7 @@ public class Libretro
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
 		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight), new Runnable() { public void run() { settingsChanged(); } });
-		lcdData = ((DataBufferInt) Mobile.getPlatform().getLcdFrontbufferImage().getRaster().getDataBuffer()).getData();
+		lcdData = Mobile.getPlatform().getLcdFrontbuffer().getDataBuffer();
 
 		// The painter here is only really used to check for frontend pauses
 		Mobile.getPlatform().setPainter(new Runnable()
@@ -690,7 +686,7 @@ public class Libretro
 			lcdWidth = Mobile.lcdWidth;
 			lcdHeight = Mobile.lcdHeight;
 			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
-			lcdData = ((DataBufferInt) Mobile.getPlatform().getLcdFrontbufferImage().getRaster().getDataBuffer()).getData();
+			lcdData = Mobile.getPlatform().getLcdFrontbuffer().getDataBuffer();
 		}
 	}
 

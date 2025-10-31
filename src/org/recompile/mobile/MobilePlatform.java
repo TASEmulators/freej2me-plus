@@ -19,8 +19,6 @@ package org.recompile.mobile;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,17 +31,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-
 import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.game.GameCanvas;
-
-import java.awt.image.BufferedImage;
 
 /*
 	Mobile Platform
@@ -168,7 +159,7 @@ public class MobilePlatform
 
 	public static PlatformImage getLcdBackbuffer() { return lcd; }
 
-	public BufferedImage getLcdFrontbufferImage() { return lcdFrontbuffer.getCanvas(); }
+	public PlatformImage getLcdFrontbuffer() { return lcdFrontbuffer; }
 
 	public Graphics getLcdFrontbufferGraphics() { return (Graphics) gcFrontbuffer; }
 
