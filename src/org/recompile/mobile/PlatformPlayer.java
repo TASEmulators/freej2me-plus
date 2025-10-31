@@ -17,7 +17,6 @@
 package org.recompile.mobile;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +33,6 @@ import javax.sound.midi.MetaEventListener;
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Patch;
@@ -61,7 +59,6 @@ import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
 import javax.microedition.media.control.ToneControl;
 import javax.microedition.media.Control;
-import javax.microedition.media.Controllable;
 import javax.microedition.media.Manager;
 
 /* Patcher for MIDI files with running status bytes */
@@ -183,10 +180,19 @@ public class PlatformPlayer implements Player
 						else { player = new audioplayer(); disableControls = true; } // Somehow the SMAF decoder failed, retrieve a stub player
 						
 					}
-					else if(data.length >= 4 && data[0] == 'm' && data[1] == 'e' && data[2] == 'l' && data[3] == 'o')
+					else if((data.length >= 4 && data[0] == 'm' && data[1] == 'e' && data[2] == 'l' && data[3] == 'o') 
+							|| (data.length >= 4 && data[0] == 'c' && data[1] == 'm' && data[2] == 'i' && data[3] == 'd'))
 					{
-						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MLD/MFi! (not fully supported yet)");
-						contentType = "audio/x-mld";
+						if(data.length >= 4 && data[0] == 'm' && data[1] == 'e' && data[2] == 'l' && data[3] == 'o') 
+						{
+							Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MLD/MFi! (not fully supported yet)");
+							contentType = "audio/x-mld"; 
+						}
+						else if (data.length >= 4 && data[0] == 'c' && data[1] == 'm' && data[2] == 'i' && data[3] == 'd') 
+						{ 
+							Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is CMF! (not fully supported yet)");
+							contentType = "audio/x-cmf"; 
+						}
 						MLDDecoder.decodeMLD(data);
 						if(MLDDecoder.SequenceData != null || MLDDecoder.pcmData != null) 
 						{

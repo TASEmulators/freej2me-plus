@@ -18,9 +18,6 @@ package org.recompile.mobile;
 
 import java.io.InputStream;
 
-import javax.microedition.media.Control;
-import javax.microedition.media.Player;
-
 public class JavaxPlatformPlayer extends PlatformPlayer implements javax.microedition.media.Controllable
 {
 	public JavaxPlatformPlayer(InputStream stream, String type) { super(stream, type); }

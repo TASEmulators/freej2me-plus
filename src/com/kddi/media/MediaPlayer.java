@@ -24,7 +24,7 @@ public abstract class MediaPlayer implements MediaPlayerInterface
 
     protected MediaPlayer(MediaResource resource, MediaPlayerBox box) {}
 
-    public void addMediaEventListener(MediaEventListener l) {}
+    public void addMediaEventListener(MediaEventListener l) { }
 
     public static boolean canPlay(java.lang.String dataType) { return false; }
 
@@ -75,4 +75,7 @@ public abstract class MediaPlayer implements MediaPlayerInterface
     public void unsetResource(MediaResource resource) {}
 
     protected void validateId() {}
+
+    /* Non-KDDI, but helps state management */
+    public int getState() { return 0; }
 }

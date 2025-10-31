@@ -68,7 +68,7 @@ public class SMAFPlayer extends MediaPlayer
 
     public void pause() { this._player.stop(); }
 
-    public void play() { this.play(0); }
+    public void play() { this.play(1); }
 
     public void play(int count) 
     {
@@ -115,4 +115,6 @@ public class SMAFPlayer extends MediaPlayer
     public void addMediaEventListener(MediaEventListener l) { this._player.addPlayerListener(l); }
 
     public void removeMediaEventListener(MediaEventListener l) { this._player.removePlayerListener(l); }
+
+    public int getState() { return _player.getState(); }
 }

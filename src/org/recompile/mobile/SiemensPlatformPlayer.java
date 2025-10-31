@@ -18,7 +18,6 @@ package org.recompile.mobile;
 
 import java.io.InputStream;
 
-import javax.microedition.media.Control;
 import javax.microedition.media.Player;
 
 public class SiemensPlatformPlayer extends PlatformPlayer implements com.siemens.mp.media.Player 
