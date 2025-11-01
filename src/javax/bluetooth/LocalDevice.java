@@ -49,26 +49,26 @@ public class LocalDevice
 		properties.put("bluetooth.connected.page", "false");
 	}
 
-    public static String getBluetoothAddress() throws BluetoothStateException { return "000000000000"; }
+    public String getBluetoothAddress() throws BluetoothStateException { return "000000000000"; }
 
-    public static DeviceClass getDeviceClass() { return devcCls; }
+    public DeviceClass getDeviceClass() { return devcCls; }
 
-    public static int getDiscoverable() { return DiscoveryAgent.NOT_DISCOVERABLE; }
+    public int getDiscoverable() { return DiscoveryAgent.NOT_DISCOVERABLE; }
 
-    public static DiscoveryAgent getDiscoveryAgent() { return disAgnt; }
+    public DiscoveryAgent getDiscoveryAgent() { return disAgnt; }
 
-    public static String getFriendlyName() { return "noDevice"; }
+    public String getFriendlyName() { return "noDevice"; }
 
     public static LocalDevice getLocalDevice() throws BluetoothStateException { return locDevc; }
 
     public static String getProperty(String property) { return properties.get(property); }
 
-    public static ServiceRecord getRecord(Connection notifier) throws IllegalArgumentException, NullPointerException { return srvcRcd; }
+    public ServiceRecord getRecord(Connection notifier) throws IllegalArgumentException, NullPointerException { return srvcRcd; }
 
     public static boolean isPowerOn() { return false; }
 
-    public static boolean setDiscoverable(int mode) throws IllegalArgumentException, BluetoothStateException { return false; }    
+    public boolean setDiscoverable(int mode) throws IllegalArgumentException, BluetoothStateException { return false; }    
 
-    public static void updateRecord(ServiceRecord srvRecord) throws NullPointerException, IllegalArgumentException, ServiceRegistrationException { }
+    public void updateRecord(ServiceRecord srvRecord) throws NullPointerException, IllegalArgumentException, ServiceRegistrationException { }
 
 }
