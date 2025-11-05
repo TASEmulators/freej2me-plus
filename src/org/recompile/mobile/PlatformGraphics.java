@@ -213,33 +213,32 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 			throw new IllegalArgumentException("Source area exceeds the bounds of the graphics object.");
 		}
 
-		/* 
-			* A neat trick here is that we don't need to check for types, as the copied
-			* subregion will always have the same data type as the original canvas it
-			* was copied from, be it INT_RGB, INT_ARGB, etc.
-			*/
-		// Create a data buffer to hold the copied pixel area
+			/* 
+			 * A neat trick here is that we don't need to check for types, as the copied
+			 * subregion will always have the same data type as the original canvas it
+			 * was copied from, be it INT_RGB, INT_ARGB, etc.
+			 */
 		final int[] subPixels = new int[width * height];
 
-		int srcIndex, destIndex;
 		for (int j = 0; j < height; j++) 
 		{
-			srcIndex = (y_src + j) * canvasWidth + x_src;
-			System.arraycopy(canvasData, srcIndex, subPixels, j * width, width);
-		}
-
-		int destStartY = (y_dest < 0) ? 0 : y_dest;
-		int destEndY = (y_dest + height > canvasHeight) ? canvasHeight : (y_dest + height);
-		int srcStartY = (-y_dest < 0) ? 0 : -y_dest;
-		
-		for (int j = destStartY; j < destEndY; j++) 
-		{
-			destIndex = j * canvasWidth + x_dest;
-			srcIndex = (srcStartY + (j - destStartY)) * width;
-
-			if (x_dest >= 0 && x_dest + width <= canvasWidth) 
+			for (int i = 0; i < width; i++) 
 			{
-				System.arraycopy(subPixels, srcIndex, canvasData, destIndex, width);
+				subPixels[j * width + i] = canvasData[(y_src + j) * canvas.getWidth() + (x_src + i)];
+			}
+		}
+	
+		for (int j = 0; j < height; j++) 
+		{
+			for (int i = 0; i < width; i++) 
+			{
+				// The image data CAN go out of the destination bounds, we just can't draw it whenever it does.
+				if (x_dest + i >= 0 && y_dest + j >= 0 && 
+					x_dest + i < canvas.getWidth() && 
+					y_dest + j < canvas.getHeight()) 
+				{
+					canvasData[(y_dest + j) * canvas.getWidth() + (x_dest + i)] = subPixels[j * width + i];
+				}
 			}
 		}
 	}
@@ -265,25 +264,25 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		final int[] subPixels = new int[width * height];
 
-		int srcIndex, destIndex;
 		for (int j = 0; j < height; j++) 
 		{
-			srcIndex = (y_src + j) * canvasWidth + x_src;
-			System.arraycopy(canvasData, srcIndex, subPixels, j * width, width);
+			for (int i = 0; i < width; i++) 
+			{
+				subPixels[j * width + i] = canvasData[(y_src + j) * canvas.getWidth() + (x_src + i)];
+			}
 		}
 
-		int destStartY = (y_dest < 0) ? 0 : y_dest;
-		int destEndY = (y_dest + height > canvasHeight) ? canvasHeight : (y_dest + height);
-		int srcStartY = (-y_dest < 0) ? 0 : -y_dest;
-		
-		for (int j = destStartY; j < destEndY; j++) 
+		for (int j = 0; j < height; j++) 
 		{
-			destIndex = j * frameBuffer.getWidth() + x_dest;
-			srcIndex = (srcStartY + (j - destStartY)) * width;
-
-			if (x_dest >= 0 && x_dest + width <= frameBuffer.getWidth()) 
+			for (int i = 0; i < width; i++) 
 			{
-				System.arraycopy(subPixels, srcIndex, fbPixels, destIndex, width);
+				// The image data CAN go out of the destination bounds, we just can't draw it whenever it does.
+				if (x_dest + i >= 0 && y_dest + j >= 0 && 
+					x_dest + i < frameBuffer.getWidth() && 
+					y_dest + j < frameBuffer.getHeight()) 
+				{
+					fbPixels[(y_dest + j) * frameBuffer.getWidth() + (x_dest + i)] = subPixels[j * width + i];
+				}
 			}
 		}
 	}
