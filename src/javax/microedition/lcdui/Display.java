@@ -23,7 +23,6 @@ import javax.microedition.midlet.MIDlet;
 import javax.microedition.lcdui.Image;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -128,7 +127,17 @@ public class Display
 				if(call != null) { call.run(); }
 				
 				call = serializedEvents.poll(); 
-				if(call != null) { call.run(); }
+				if(call != null) 
+				{ 
+					try { call.run(); }
+					catch(Exception e) 
+					{ 
+						Mobile.log(Mobile.LOG_WARNING, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Failed to run callSerially event: "+ e.getMessage() + " retrying after a 1000ms delay."); 
+						try { Thread.sleep(1000); }
+						catch(Exception ex) { }
+						call.run();
+					}
+				}
 			}
 
 			// Process all pending inputs added since the previous thread loop, after any previously pending events were processed.
