@@ -22,6 +22,7 @@ import org.recompile.mobile.Mobile;
 
 public class MediaResource extends java.lang.Object 
 {
+	public static final String FORMAT_CMF1 = "dev16trp";
 	public static final String SMAF_YAMAHA_MA1 = "dev4anm";
     public static final String SMAF_YAMAHA_MA2 = "devmfan";
     public static final String SMAF_YAMAHA_MA3 = "devm39z";

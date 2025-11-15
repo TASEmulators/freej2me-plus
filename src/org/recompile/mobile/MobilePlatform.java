@@ -444,7 +444,7 @@ public class MobilePlatform
 				mask = 1 << 0x13; 
 				eventKey = com.nttdocomo.ui.Display.KEY_DOWN;
 				break;
-			case Canvas.FIRE:
+			case Canvas.FIRE: // Doubles as KDDI_CLR
 				mask = 1 << 0x14;
 				eventKey = com.nttdocomo.ui.Display.KEY_SELECT;
 				break;
@@ -504,10 +504,11 @@ public class MobilePlatform
 				mask = 1 << 0x16;
 				eventKey = com.nttdocomo.ui.Display.KEY_SOFT2;
 				break;
-			case Mobile.KDDI_CLR:
-				mask = 1 << 0x20;
-				eventKey = com.nttdocomo.ui.Display.KEY_CLEAR;
-				break;
+			// TODO: This case might not be needed for DoJa at all
+			//case Mobile.KDDI_CLR:
+			//	mask = 1 << 0x20;
+			//	eventKey = com.nttdocomo.ui.Display.KEY_CLEAR;
+			//	break;
 			default:
 				mask = 0;
 		}

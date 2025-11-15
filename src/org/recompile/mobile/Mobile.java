@@ -203,14 +203,14 @@ public class Mobile
 	public static int vibrationStrength = 0xFFFF;
 
 	//KDDI keycodes
-	public static final int KDDI_UP    = -1;
-	public static final int KDDI_DOWN  = -2;
-	public static final int KDDI_LEFT  = -3;
-	public static final int KDDI_RIGHT = -4;
-	public static final int KDDI_SOFT1 = -20; 
-	public static final int KDDI_SOFT2 = -21; 
-	public static final int KDDI_FIRE  = -5;
-	public static final int KDDI_CLR   = -8;
+	public static final int KDDI_UP    = 1;
+	public static final int KDDI_DOWN  = 6;
+	public static final int KDDI_LEFT  = 2; 
+	public static final int KDDI_RIGHT = 5;
+	public static final int KDDI_SOFT1 = 20; 
+	public static final int KDDI_SOFT2 = 21; 
+	public static final int KDDI_FIRE  = 8; // TODO, ELEVATOR ACTION doesn't use this key for anything, CLR takes its place so let's duplicate for now
+	public static final int KDDI_CLR   = 8;
 
 	//LG keycodes
 	public static final int LG_UP    = -1;

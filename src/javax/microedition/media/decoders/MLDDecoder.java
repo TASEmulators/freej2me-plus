@@ -170,6 +170,7 @@ public final class MLDDecoder
             else if (chunkID.equals("ainf")) { decodeAINFChunk(); }
             else if (chunkID.equals("auth")) { decodeAUTHChunk(); } 
             else if (chunkID.equals("copy")) { decodeCOPYChunk(); } 
+            else if (chunkID.equals("code")) { decodeCODEChunk(); } 
             else if (chunkID.equals("cuep")) { decodeCUEPChunk(); } // TODO: Untested
             else if (chunkID.equals("date")) { decodeDATEChunk(); } 
             else if (chunkID.equals("exst")) { decodeEXSTChunk(); }
@@ -332,6 +333,19 @@ public final class MLDDecoder
         String MLDTrackData = new String(byteData);
 
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Copyright: " + MLDTrackData);
+    }
+
+    public static void decodeCODEChunk() 
+    {
+        String chunkName = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++];
+        int chunkSize = (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF); 
+        byte[] byteData = new byte[chunkSize];
+        
+        for(int i = 0; i < chunkSize; i++) { byteData[i] = (byte) (input[decodePos++]); }
+
+        String MLDTrackData = new String(byteData);
+
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Code: " + MLDTrackData);
     }
 
     public static void decodeSUPTChunk() 

@@ -77,10 +77,11 @@ public class MediaPlayerBox extends Canvas implements MediaPlayerInterface
 
     protected MediaPlayer instantiatePlayer(MediaResource resource) 
     {
-        if (resource.getType() == MediaResource.SMAF_YAMAHA_MA1 ||
+        if (resource.getType() == MediaResource.FORMAT_CMF1 ||
+        resource.getType() == MediaResource.SMAF_YAMAHA_MA1 ||
         resource.getType() == MediaResource.SMAF_YAMAHA_MA2 ||
         resource.getType() == MediaResource.SMAF_YAMAHA_MA3 || 
-        resource.getType() == MediaResource.SMAF_YAMAHA_MA5) 
+        resource.getType() == MediaResource.SMAF_YAMAHA_MA5)
         {
             this._player = new SMAFPlayer(resource, this);
             return this._player;

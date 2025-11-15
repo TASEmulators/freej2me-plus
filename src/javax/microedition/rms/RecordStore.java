@@ -383,8 +383,8 @@ public class RecordStore
 		if(!recordIds.contains(recordId)) { throw new InvalidRecordIDException("getRecord: Invalid Record ID: "+recordId); }
 
 		byte[] t = records.get(recordIds.indexOf(recordId));
-		if(t == null) { throw new InvalidRecordIDException("getRecord: Invalid Record ID (empty): "+recordId); }
-		return t.length == 0 ? null : t.clone();
+
+		return t == null ? t : t.clone();
 	}
 
 	public int getRecord(int recordId, byte[] buffer, int offset) throws InvalidRecordIDException, RecordStoreNotOpenException, RecordStoreException

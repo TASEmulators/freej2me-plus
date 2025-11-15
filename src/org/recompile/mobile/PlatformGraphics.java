@@ -797,7 +797,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 				int innerX = (int) Math.round((x + width / 2) + width / 2 * Math.cos(angle) * (j / (float) Math.max(width / 2, height / 2)));
 				int innerY = (int) Math.round((y + height / 2) + height / 2 * Math.sin(angle) * (j / (float) Math.max(width / 2, height / 2)));
 
-				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight && !filledPixels[(innerY-y) * width + innerX-x]) 
+				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight && 
+					innerX-x >= 0 && innerY-y >=0 && !filledPixels[(innerY-y) * width + innerX-x]) 
 				{
                 	filledPixels[(innerY-y) * width + innerX-x] = true;
 					if (getAlphaComponent() == 255) { canvasData[(innerY * canvasWidth) + innerX] = getColor(); } 
@@ -1150,7 +1151,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		drawRGB(data, 0, temp.getWidth(), x, y, temp.getWidth(), temp.getHeight(), transparency);
 	}
 
-	// TODO: drawPolygon has some issues with spacing
 	public void drawPolygon(int[] xPoints, int xOffset, int[] yPoints, int yOffset, int nPoints, int argbColor)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
@@ -1182,7 +1182,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		setAlphaRGB(temp);
 	}
 
-	// TODO: Not fully accurate yet (similar issues to drawPolygon and JBenchmark 2 3D raster test has gaps in geometry)
 	public void fillPolygon(int[] xPoints, int xOffset, int[] yPoints, int yOffset, int nPoints, int argbColor) 
 	{
 		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
@@ -1219,10 +1218,16 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 			for (int i = 0; i < nPoints; i++) 
 			{
 				int j = (i + 1) % nPoints;
-				if ((yPoints[i+yOffset] <= y && yPoints[j+yOffset] > y) || (yPoints[j+yOffset] <= y && yPoints[i+yOffset] > y)) 
+
+				if ((yPoints[i + yOffset] <= y && yPoints[j + yOffset] > y) || (yPoints[j + yOffset] <= y && yPoints[i + yOffset] > y)) 
 				{
-					int x = xPoints[i+xOffset] + (y - yPoints[i+yOffset]) * (xPoints[j+xOffset] - xPoints[i+xOffset]) / (yPoints[j+yOffset] - yPoints[i+yOffset]);
-					intersections[intersectionCount++] = x;
+					int dy = yPoints[j + yOffset] - yPoints[i + yOffset];
+					if (dy != 0) 
+					{
+						long x = (long) xPoints[i + xOffset] * dy + (y - yPoints[i + yOffset]) * (long) (xPoints[j + xOffset] - xPoints[i + xOffset]);
+						x /= dy;
+						intersections[intersectionCount++] = (int) x;
+					}
 				}
 			}
 
