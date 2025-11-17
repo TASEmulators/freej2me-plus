@@ -615,24 +615,30 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		int curPixel = 0; // Used only for DOTTED style lines
 
 		/* 
-		 * This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
-		 * iterations are used to draw the circle. A bigger value will result in the same pixels 
-		 * being hit more times (and wasted cycles since they'll be discarded later) but will
-		 * guarantee a perfectly filled outline, whereas a small value will result in gaps
-		 * appearing in the circle since less points will be sampled. The current value is
-		 * a good balance between filling all positions on all kinds of shapes while hitting as 
-		 * few pixels as possible.
-		 */
+			* This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
+			* iterations are used to draw the circle. A bigger value will result in the same pixels 
+			* being hit more times (and wasted cycles since they'll be discarded later) but will
+			* guarantee a perfectly filled outline, whereas a small value will result in gaps
+			* appearing in the circle since less points will be sampled. The current value is
+			* a good balance between filling all positions on all kinds of shapes while hitting as 
+			* few pixels as possible.
+			*/
 		
+		final float centerX = x + width / 2.0f;
+		final float centerY = y + height / 2.0f;
+		final float radiusX = width / 2.0f;
+		final float radiusY = height / 2.0f;
+		final float startAngleRad = fastToRadians(startAngle);
+		final float endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
 		int steps = (int) (Math.abs(arcAngle * ((width + height) / 2) / 50.0f));
 		
 		int firstFillX = -1, firstFillY = -1, lastFillX = -1, lastFillY = -1;
 		for (int i = 0; i < steps; i++) 
 		{
-			float angle = toRadians(startAngle) + (i * (toRadians(startAngle + arcAngle) - toRadians(startAngle)) / steps);
+			float angle = startAngleRad + (i * endAngleRad / steps);
 			
-			int fillX = (int) Math.round((x + width / 2) + width / 2 * Math.cos(angle));
-			int fillY = (int) Math.round((y + height / 2) + height / 2 * Math.sin(angle));
+			int fillX = (int) Math.round((centerX) + radiusX * Math.cos(angle));
+			int fillY = (int) Math.round((centerY) + radiusY * Math.sin(angle));
 			
 			// Make sure we don't paint the same pixel more than once
 			if((lastFillX == fillX && lastFillY == fillY) || (firstFillX == fillX && firstFillY == fillY)) { continue; }
@@ -700,20 +706,24 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		arcWidth = Math.abs(arcWidth);
 		arcHeight = Math.abs(arcHeight);
 
+		// We'll be doing only even arc widths and heights, otherwise the borders will look off (java's Graphics allow odd width/heights though)
+		if(arcWidth  %2 != 0) { arcWidth++; }
+		if(arcHeight %2 != 0) { arcHeight++; }
+
 		if(arcWidth >= width) { arcWidth = width-1; }
 		if(arcHeight >= height) { arcHeight = height-1; }
 				
 		// Fill the main rectangle area
-		drawLine(x + (arcWidth/2), y, x+width-(arcWidth/2), y); // Top line
-		drawLine(x + (arcWidth/2), y+height, x+width-(arcWidth/2), y+height); // Bottom line
-		drawLine(x, y+(arcHeight/2), x, y+height-(arcHeight/2)); // Left line
-		drawLine(x+width, y+(arcHeight/2), x+width, y+height-(arcHeight/2)); // Left line
+		drawLine(x + (arcWidth/2)+1, y, x+width-(arcWidth/2)-2, y); // Top line
+		drawLine(x + (arcWidth/2)+1, y+height, x+width-(arcWidth/2)-2, y+height); // Bottom line
+		drawLine(x, y+(arcHeight/2)+1, x, y+height-(arcHeight/2)-2); // Left line
+		drawLine(x+width, y+(arcHeight/2)+1, x+width, y+height-(arcHeight/2)-2); // Right line
 
 		// Fill rounded corners
 		drawArc(x, y, arcWidth, arcHeight, 90, 90); // Top-left corner
-		drawArc(x + width - arcWidth, y, arcWidth, arcHeight, 0, 90); // Top-right corner
-		drawArc(x, y + height - arcHeight, arcWidth, arcHeight, 180, 90); // Bottom-left corner
-		drawArc(x + width - arcWidth, y + height - arcHeight, arcWidth, arcHeight, 270, 90); // Bottom-right corner
+		drawArc(x + width - arcWidth - 1, y, arcWidth, arcHeight, 0, 90); // Top-right corner
+		drawArc(x, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
+		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
 	public void drawString(String str, int x, int y, int anchor)
@@ -773,34 +783,42 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		final int clipHeight = Math.min(canvasHeight, getClipHeight() + clipY);
 
 		/* 
-		 * This is just drawArc's Bresenham midpoint circle algorithm modified to draw arcs
-		 * from the center to the edge and check if a pixel was already painted before. Works great but
-		 * is VERY slow on large arcs. Trying to use a scanline approach could result in much better
-		 * performance due to the simpler checks (just go from yMax to yMin while making sure a y position
-		 * is never used twice) but doesn't seem to work right in some edge cases (negative angles, too
-		 * wide/narrow arc angles, etc) so this one, albeit slow, is what we'll be going with at the moment.
-		 * 
-		 * At least it has the upside of generating far more stable arcs that fully match their outline
-		 * compared to Java SE's standard algorithm.
-		 * 
-		 * TODO: Optimize this later
+			* This is just drawArc's Bresenham midpoint circle algorithm modified to draw arcs
+			* from the center to the edge and check if a pixel was already painted before. Works great but
+			* is VERY slow on large arcs. Trying to use a scanline approach could result in much better
+			* performance due to the simpler checks (just go from yMax to yMin while making sure a y position
+			* is never used twice) but doesn't seem to work right in some edge cases (negative angles, too
+			* wide/narrow arc angles, etc) so this one, albeit slow, is what we'll be going with at the moment.
+			* 
+			* At least it has the upside of generating far more stable arcs that fully match their outline
+			* compared to Java SE's standard algorithm.
+			* 
+			* TODO: Optimize this later
 		*/ 
+
+		final float centerX = x + width / 2.0f;
+		final float centerY = y + height / 2.0f;
+		final float radiusX = width / 2.0f;
+		final float radiusY = height / 2.0f;
+		final float startAngleRad = fastToRadians(startAngle);
+		final float endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
+		float maxRadius = Math.max(radiusX, radiusY);
 
 		int steps = (int) (Math.abs(arcAngle * ((width + height) / 2) / 50.0f));
 
-		for (int i = 0; i <= steps; i++) 
+		for (int i = 0; i < steps; i++) 
 		{
-			float angle = toRadians(startAngle) + (i * (toRadians(startAngle + arcAngle) - toRadians(startAngle)) / steps);
+			float angle = startAngleRad + (i * endAngleRad / steps);
 
-			for (int j = 0; j <= Math.max(width / 2, height / 2); j++) 
+			for (float j = 0; j < maxRadius; j++) 
 			{
-				int innerX = (int) Math.round((x + width / 2) + width / 2 * Math.cos(angle) * (j / (float) Math.max(width / 2, height / 2)));
-				int innerY = (int) Math.round((y + height / 2) + height / 2 * Math.sin(angle) * (j / (float) Math.max(width / 2, height / 2)));
+				int innerX = (int) Math.round(centerX + radiusX * Math.cos(angle) * (j / maxRadius));
+				int innerY = (int) Math.round(centerY + radiusY * Math.sin(angle) * (j / maxRadius));
 
 				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight && 
 					innerX-x >= 0 && innerY-y >=0 && !filledPixels[(innerY-y) * width + innerX-x]) 
 				{
-                	filledPixels[(innerY-y) * width + innerX-x] = true;
+					filledPixels[(innerY-y) * width + innerX-x] = true;
 					if (getAlphaComponent() == 255) { canvasData[(innerY * canvasWidth) + innerX] = getColor(); } 
 					else 
 					{
@@ -864,18 +882,22 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 			return; 
 		}
 
+		// We'll be doing only even arc widths and heights, otherwise the borders will look off (java's Graphics allow odd width/heights though)
+		if(arcWidth  %2 != 0) { arcWidth++; }
+		if(arcHeight %2 != 0) { arcHeight++; }
+
 		if(arcWidth >= width) { arcWidth = width-1; }
 		if(arcHeight >= height) { arcHeight = height-1; }
 		
 		// Fill the main rectangle area
-		fillRect(x + (arcWidth/2)+1, y, width - 2 * (arcWidth/2) - 1, height); // Middle part
-		fillRect(x, y + (arcHeight/2)+1, (arcWidth/2)+1, height - 2 * (arcHeight/2) - 1); // Left Side part
-		fillRect(x + (width - (arcWidth/2)), y + (arcHeight/2), (arcWidth/2), height - 2 * (arcHeight/2) - 1); // Right Side part
+		fillRect(x + (arcWidth/2)+1, y, width - 2 * (arcWidth/2) - 2, height); // Middle part
+		fillRect(x, y + (arcHeight/2)+1, (arcWidth/2)+1, height - 2 * (arcHeight/2) - 2); // Left Side part
+		fillRect(x + (width - (arcWidth/2))-1, y + (arcHeight/2)+1, (arcWidth/2)+1, height - 2 * (arcHeight/2) - 2); // Right Side part
 
 		// Fill rounded corners
-		fillArc(x - (arcWidth %2 == 0 ? 0 : 1), y - (arcHeight % 2 == 0 ? 0 : 1), arcWidth, arcHeight, 90, 90); // Top-left corner
-		fillArc(x + width - arcWidth - 1, y - (arcHeight % 2 == 0 ? 0 : 1), arcWidth, arcHeight, 0, 90); // Top-right corner
-		fillArc(x-(arcWidth %2 == 0 ? 0 : 1), y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
+		fillArc(x, y, arcWidth, arcHeight, 90, 90); // Top-left corner
+		fillArc(x + width - arcWidth - 1, y, arcWidth, arcHeight, 0, 90); // Top-right corner
+		fillArc(x, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
 		fillArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
@@ -2231,7 +2253,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		// Set the overlay background and draw
 		setARGBColor(0x96000069); // BG is a semi-transparent dark blue
 		fillRoundRect(0, 2, scaledWidth, scaledHeight, 4, 4); // Cut a bit off from the height so that the counter is slimmer. We're not using chars that go below baseline like 'f' or 'q'
-	
 		// Set the font color and draw it
 		setAlphaRGB(0xFFFFAF00); // Text color is orange
 		drawString(fpsText, 0, 0, TOP | LEFT);
@@ -2242,5 +2263,5 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	// Helper methods
 	protected static final int clamp(int value) { return Math.max(0, Math.min(255, value)); }
 
-	protected static final float toRadians(float angdeg) { return angdeg * 0.017453292f; }
+	protected static final float fastToRadians(float angdeg) { return angdeg * 0.017453292f; }
 }
