@@ -514,9 +514,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
-		final int icache = (x > clipX) ? 0 : (clipX - x);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
@@ -524,12 +523,12 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		/* If width or height ended up as zero, we can exit early */
 		if(width == 0 || height == 0) { return; }
 		
-		// Needed in order to ensure images larger than the canvas don't accidentally overflow and render on the opposite edge of the screen
-		if ((getClipX() + translateX < 0) && width < canvasWidth) { width += (getClipX() + translateX); }
+		final int icache = (x > clipX) ? 0 : (clipX - x);
+		final int jcache = (y > clipY) ? 0 : (clipY - y);
 
 		int rowOffset, destRow, j, i;
 		// The array's x and y positions start from either 0 or the first valid drawable position, as the offset is what dictates where the data should start being read from
-		for (j = (y > clipY) ? 0 : (clipY - y); j < height; j++) // This ternary only runs once, so there's no need to cache
+		for (j = jcache; j < height; j++) // This ternary only runs once, so there's no need to cache
 		{
 			rowOffset = offset + (j * scanlength);
 			destRow = (y + j) * canvasWidth;
@@ -553,8 +552,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		int dx = Math.abs(x2 - x1);
     	int dy = Math.abs(y2 - y1);
@@ -609,8 +608,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		int curPixel = 0; // Used only for DOTTED style lines
 
@@ -671,8 +670,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 		
 		for (int j = 0; j < height; j++) 
 		{
@@ -775,12 +774,16 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		x += translateX;
 		y += translateY;
 
-		final boolean[] filledPixels = new boolean[(width+1) * (height+1)];
+		final boolean hasAlpha = getAlphaComponent() < 255;
+		boolean[] filledPixels = null;
 
-		final int clipX = Math.max(0, getClipX() + translateX);
-		final int clipY = Math.max(0, getClipY() + translateY);
-		final int clipWidth = Math.min(canvasWidth, getClipWidth() + clipX);
-		final int clipHeight = Math.min(canvasHeight, getClipHeight() + clipY);
+		// We only need to check painted pixels if the current color has transparency
+		if(hasAlpha) { filledPixels = new boolean[(width+1) * (height+1)]; }
+
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		/* 
 			* This is just drawArc's Bresenham midpoint circle algorithm modified to draw arcs
@@ -816,12 +819,12 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 				int innerY = (int) Math.round(centerY + radiusY * Math.sin(angle) * (j / maxRadius));
 
 				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight && 
-					innerX-x >= 0 && innerY-y >=0 && !filledPixels[(innerY-y) * width + innerX-x]) 
+					innerX-x >= 0 && innerY-y >=0 && (hasAlpha ? !filledPixels[(innerY-y) * width + innerX-x] : true)) 
 				{
-					filledPixels[(innerY-y) * width + innerX-x] = true;
-					if (getAlphaComponent() == 255) { canvasData[(innerY * canvasWidth) + innerX] = getColor(); } 
+					if (!hasAlpha) { canvasData[(innerY * canvasWidth) + innerX] = getColor(); } 
 					else 
 					{
+						filledPixels[(innerY-y) * width + innerX-x] = true;
 						canvasData[(innerY * canvasWidth) + innerX] = blendPixels(getColor(), canvasData[(innerY * canvasWidth) + innerX]);
 					}
 				}
@@ -840,34 +843,26 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
-		final int icache = (x > clipX) ? 0 : (clipX - x);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
+
+		/* If width or height ended up as zero, we can exit early */
+		if(width == 0 || height == 0) { return; }
 		
-		if(!Mobile.isDoJa && getAlphaComponent() == 255) 
+		final int icache = (x > clipX) ? 0 : (clipX - x);
+		final int jcache = (y > clipY) ? 0 : (clipY - y);
+		
+		for (int j = jcache; j < height; j++) 
 		{
-			for (int j = (y > clipY) ? 0 : (clipY - y); j < height; j++) 
+			for (int i = icache; i < width; i++) 
 			{
-				for (int i = icache; i < width; i++) 
-				{
-					canvasData[((y+j) * canvasWidth) + x+i] = getColor();
-				}
+				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[((y+j) * canvasWidth) + x+i] = getColor(); }
+				else { canvasData[((y+j) * canvasWidth) + x+i] = blendPixels(getColor(), canvasData[((y+j) * canvasWidth) + x+i]); }
 			}
 		}
-		else 
-		{
-			for (int j = (y > clipY) ? 0 : (clipY - y); j < height; j++) 
-			{
-				for (int i = icache; i < width; i++) 
-				{
-					canvasData[((y+j) * canvasWidth) + x+i] = blendPixels(getColor(), canvasData[((y+j) * canvasWidth) + x+i]);
-				}
-			}
-		}
-		
 	}
 
 	public void fillRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight) 
@@ -1212,8 +1207,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-		final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		/* 
 		 * Filling polygons is done through the canonical Scan Line fill algorithm. It works
@@ -2006,8 +2001,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 			final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 			final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-			final int clipWidth = (getClipWidth() + clipX > canvasWidth) ? canvasWidth : (getClipWidth() + clipX);
-			final int clipHeight = (getClipHeight() + clipY > canvasHeight) ? canvasHeight : (getClipHeight() + clipY);
+			final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+			final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 			BufferedImage newImg = manipulateImage(image.getCanvas(), dojaflipMode);
 			int[] imgData = ((DataBufferInt) newImg.getRaster().getDataBuffer()).getData();
