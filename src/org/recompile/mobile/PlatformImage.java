@@ -163,9 +163,9 @@ public class PlatformImage
 		{
 			canvas = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 			canvas.getGraphics().drawImage(image, 0, 0, null);
-
-			dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		}
+
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 	}
 
 	public PlatformImage(Image source)
@@ -198,10 +198,9 @@ public class PlatformImage
 		{
 			canvas = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 			canvas.getGraphics().drawImage(image, 0, 0, null);
-
-			dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		}
 
+		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		isMutable = mutable;
 	}
 
