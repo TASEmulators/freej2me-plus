@@ -211,13 +211,13 @@ public class PlatformImage
 		canvas = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
-		// Process alpha if necessary
-		if (!processAlpha) 
+		for(int j = 0; j < Height; j++) 
 		{
-			for (int i = 0; i < rgb.length; i++) { rgb[i] |= 0xFF000000; } // Set alpha to opaque
+			for(int i = 0; i < Width; i++) 
+			{
+				dataBuffer[j*Width + i] = (processAlpha ? rgb[j*Width + i] : rgb[j*Width + i] | 0xFF000000);
+			}
 		}
-
-		System.arraycopy(rgb, 0, dataBuffer, 0, Math.min(rgb.length, dataBuffer.length));
 	}
 
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
