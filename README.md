@@ -156,7 +156,7 @@ Although all arguments aside from the path are optional to launch FreeJ2ME-Plus 
 
 ### _Notes:_
 
-**When running under Microsoft Windows please do note paths require an additional `/` prefixed. For example, `C:\path\to\midlet.jar` should be passed as `file:///C:\path\to\midlet.jar`**
+**When running under Microsoft Windows please do note paths require an additional `/` prefixed. For example, `C:\path\to\midlet.jar` should be passed as `file:////C:\path\to\midlet.jar`**
 
 **FreeJ2ME keeps savedata and config at the working directory it is run from. Currently any settings specified at the config file take precedence over the values passed via command-line.**
 
