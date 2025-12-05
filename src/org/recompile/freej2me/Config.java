@@ -46,7 +46,7 @@ public class Config
 	private final String systemPath = "freej2me_system/";
 	private final String systemFile = systemPath + "freej2me.conf";
 
-	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","120x160","128x160","132x176","176x208","176x220","220x176","208x208","180x320","320x180", "240x240", "208x320","240x320","320x240","240x400","400x240","240x432","240x480","360x360","352x416","360x640","640x360","640x480","480x800","800x480"};
+	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","120x160","128x160","132x176","208x173","176x208","176x220","220x176","208x208","180x320","320x180", "240x240", "208x320","240x320","320x240","240x400","400x240","240x432","240x480","360x360","352x416","360x640","640x360","640x480","480x800","800x480"};
 
 	public static int inputKeycodes[] = new int[] 
 	{ 

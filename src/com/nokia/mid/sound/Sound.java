@@ -58,6 +58,8 @@ public class Sound
 
 	private static boolean isPrevPlayerTone = false;
 
+	private int gain = 255;
+
 	private SoundListener listener;
 
 	public Sound(byte[] data, int type) { init(data, type); }
@@ -173,7 +175,7 @@ public class Sound
 		}
 		
 		if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
-
+		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f));
 		player.setLoopCount(loop);
 		player.setMediaTime(0); // A play call always makes the media play from the beginning.
 		player.start();
@@ -199,13 +201,12 @@ public class Sound
 	public void setGain(int gain) 
 	{ 
 		// Gain goes from 0 to 255, while setLevel works from 0 to 100
-		if(player != null) { ((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f)); }
+		this.gain = gain;
 	}
 
 	public int getGain() 
 	{ 
-		if(player != null) { return (int) ((((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).getLevel() / 100f) * 255f); }
-		return 0;
+		return this.gain;
 	}
 
 	public void setSoundListener(SoundListener soundListener) { this.listener = soundListener; }
