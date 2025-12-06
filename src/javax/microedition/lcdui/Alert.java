@@ -233,18 +233,19 @@ public class Alert extends Screen
 			return false;
 		}
 
-		boolean handled = true;
+		boolean handled = false;
 		int scrollAmount = clientHeight/4;
 		int maxScroll = scrollHeight - clientHeight;
 
-		// TODO: Check if this is functional. Inputs should be abstracted here to work on all key layouts, Displayable is what does this
 		if ((key == Canvas.UP || key == Canvas.KEY_NUM2) && scrollY > 0) 
 		{
 			scrollY = Math.max(0, scrollY - scrollAmount);
+			handled = true;
 		} 
 		else if ((key == Canvas.DOWN || key == Canvas.KEY_NUM8) && scrollY < maxScroll) 
 		{
 			scrollY = Math.min(maxScroll, scrollY + scrollAmount);
+			handled = true;
 		}
 
 		if (handled) { _invalidate(); }

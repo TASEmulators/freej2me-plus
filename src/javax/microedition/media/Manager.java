@@ -206,7 +206,15 @@ public class Manager
 					toneChannel.programChange(restoreInstrument);
 					toneChannel.controlChange(7, restoreVolume);
 				} 
-				catch (InterruptedException e) { return; } // The only reason for this to be interrupted is if a new tone is requested
+				catch (InterruptedException e) 
+				{
+					toneChannel.noteOff(note);
+					toneChannel.controlChange(0,  restoreBankMSB);
+					toneChannel.controlChange(32, restoreBankLSB);
+					toneChannel.programChange(restoreInstrument);
+					toneChannel.controlChange(7, restoreVolume);
+					return; 
+				} // The only reason for this to be interrupted is if a new tone is requested
 			}
 		});
 		toneThread.start();

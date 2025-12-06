@@ -151,7 +151,7 @@ public class Sound
 	{
 		if(duration <= 0 || convertFreqToNote(freq) > 127 || convertFreqToNote(freq) < 0) { throw new IllegalArgumentException("Cannot init tone with invalid parameters"); }
 		
-		Mobile.log(Mobile.LOG_DEBUG, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Nokia Sound: Single Note:" + freq);
+		Mobile.log(Mobile.LOG_DEBUG, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Nokia Sound: Single Note:" + freq + " for:" + duration);
 
 		try 
 		{ 
