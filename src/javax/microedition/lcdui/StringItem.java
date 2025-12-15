@@ -74,14 +74,14 @@ public class StringItem extends Item
 		{
 			height = Font.getDefaultFont().getHeight() + 2*buttonMargin + 2*buttonPadding;
 		} 
-		else if (height == 0 && !text.isEmpty()) 
+		else if (height == 0 && text != null && !text.isEmpty()) 
 		{
 			lines = wrapText(text, width, Font.getDefaultFont());
 			lineSpacing = 1;
 
 			height = lines.size() > 0 ? (lines.size()*Font.getDefaultFont().getHeight() + (lines.size()-1)*lineSpacing) : 0;
 		} 
-		else if (text.isEmpty() && lines == null) { lines = new ArrayList<String>(); }
+		else if ((text == null || text.isEmpty()) && lines == null) { lines = new ArrayList<String>(); }
 
 		return height;
 	}
@@ -117,7 +117,7 @@ public class StringItem extends Item
 
 	protected void renderItem(Graphics graphics, int x, int y, int width, int height) 
 	{
-		if (appearance == Item.BUTTON) 
+		if (appearance == Item.BUTTON)
 		{
 			graphics.setColor(Mobile.lcduiBGColor);
 			graphics.fillRect(x+buttonMargin, y+buttonMargin, width-2*buttonMargin, height-2*buttonMargin);
@@ -128,7 +128,7 @@ public class StringItem extends Item
 			graphics.setColor(Mobile.lcduiTextColor);
 			graphics.drawString(text, x+buttonMargin+buttonPadding, y+buttonMargin+buttonPadding, 0);
 		} 
-		else 
+		else
 		{
 			graphics.setColor(Mobile.lcduiTextColor);
 			for(int l=0;l<lines.size();l++) 
