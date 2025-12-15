@@ -1061,7 +1061,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		if(width == 0 || height == 0) { return; }
 
-		int[] Type1 = {0xFFFFFFFF, 0xFF000000, 0x00FFFFFF, 0x00000000};
 		int c = 0;
 		int a = 0xFF;
 		BufferedImage temp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);// Nokia DirectGraphics states that image width and height CAN be zero.
@@ -1070,6 +1069,10 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		switch (format) 
 		{
+			// NOTE on gray scales: The higher the __pixels value on a given
+			// position, the darker the pixel. This is so that the output
+			// matches actual nokia devices like a 3310, 3410, etc. Which is
+			// why (n - c) is used in color scaling. Alpha is scaled normally.
 			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL:
 				// Bit offset, GRAY_VERTICAL packs 8 vertical pixels in a byte.
 				bit = (offset / scanlength) % 8;
@@ -1081,14 +1084,21 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 					for (int xj = 0; xj < width; xj++) 
 					{
 						// Ignore if accessing out of bounds
-						if(tmp + xj >= pixels.length) { continue; }
+						if(tmp + xj >= pixels.length)
+							continue;
+
 						c = ((pixels[tmp + xj] >> bit) & 1);
+
 						if (transparencyMask != null) 
 						{
-							c |= (((transparencyMask[tmp + xj] >> bit) & 1) 
-								^ 1) << 1;
+							a = ((transparencyMask[tmp + xj] >> bit) & 1) << 1;
+						
+							a *= 255;
 						}
-						data[ypos + xj] = Type1[c];
+
+						c = (1 - c) * 255;
+						
+						data[ypos + xj] = (a << 24) | (c << 16) | (c << 8) | c;
 					}
 					bit++;
 					if (bit > 7) 
@@ -1104,19 +1114,28 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 					int ypos = yj * width;
 					for (int xj = 0; xj < width; xj++) 
 					{
-						if((line + xj) / 8 >= pixels.length) { continue; } 
+						if((line + xj) / 8 >= pixels.length)
+							continue;
+						
 						c = ((pixels[(line + xj) / 8] >> bit) & 1);
+
 						if (transparencyMask != null) 
 						{
-							c |= (((transparencyMask[(line + xj) / 8] >> bit) 
-								& 1) ^ 1) << 1;
+							a = ((transparencyMask[(line + xj) / 8] >> bit) 
+								& 1) << 1;
+
+							a *= 255;
 						}
-						data[ypos + xj] = Type1[c];
+
+						c = (1 - c) * 255;
+
+						data[ypos + xj] = (a << 24) | (c << 16) | (c << 8) | c;
+
 						bit--;
 						if (bit < 0) 
 							bit = 7;
 					}
-					bit = bit - (scanlength - width) % 8;
+					bit -= (scanlength - width) % 8;
 					if (bit < 0) 
 						bit = 8 + bit;
 				}
@@ -1136,7 +1155,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 			 * in a byte, and BYTE_8 + BYTE_332 are one pixel per byte, so no
 			 * need for per-bit manipulations.
 			 */
-			case DirectGraphics.TYPE_BYTE_2_GRAY: 
+			case DirectGraphics.TYPE_BYTE_2_GRAY:
 				for (int yj = 0; yj < height; yj++) 
 				{
 					int line = offset + yj * scanlength;
@@ -1147,17 +1166,17 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 						if ((line + xj / 4) >= pixels.length) 
 							continue;
 
-						// Get the byte and the relevant pixel index
 						c = (pixels[line + xj / 4] >> (6 - (2 * (xj % 4))) 
 							& 0x03);
 						if (transparencyMask != null) 
 						{
 							a = (transparencyMask[line + xj / 4] >> (6 - 
 								(2 * (xj % 4))) & 0x03);
+							
+							a *= 85;
 						}
-						// Scale the gray and alpha values to 0x00-0xFF
-						c *= 85;
-						a *= 85;
+
+						c = (3 - c) * 85;
 
 						data[ypos + xj] = (a << 24) | (c << 16) | (c << 8) | c; 
 					}
@@ -1220,14 +1239,16 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 						c = (pixels[line + xj / 2] >> (4 * (1 - (xj % 2))) 
 							& 0x0F);
-						if (transparencyMask != null) 
+						if (transparencyMask != null)
+						{
 							a = (transparencyMask[line + xj / 2] >> (4 * (1 - 
 								(xj % 2))) & 0x0F);
-						
-						// Scale the color and alpha values to 0x00-0xFF
-						c *= 17;
-						a *= 17;
 
+							a *= 17;
+						}
+						
+						c = (15 - c) * 17;
+						
 						data[ypos + xj] = (a << 24) | (c << 16) | (c << 8) | c;
 					}
 				}
@@ -1244,7 +1265,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 						if ((line + xj) >= pixels.length) 
 							continue;
 
-						c = pixels[line + xj] & 0xFF;
+						c = 255 - (pixels[line + xj] & 0xFF);
+						
 						if(transparencyMask != null)
 							a = transparencyMask[line + xj] & 0xFF;
 
@@ -1452,7 +1474,6 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 			throw new IllegalArgumentException("Requested copy area exceeds bounds of the image");
 		}
 	
-		// Just like DrawPixels(byte), we only handle BYTE_1_GRAY_VERTICAL and BYTE_1_GRAY yet
 		switch (format) 
 		{
 			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL:
@@ -1585,7 +1606,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 					}
 				}
 				break;
-			default: Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "getPixels A : Format " + format + " Not Implemented");
+			default:
+				throw new IllegalArgumentException("Unsupported format: " + format);
 		}
 	}
 

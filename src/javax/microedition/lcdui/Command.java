@@ -39,11 +39,16 @@ public class Command
 
 	public Command(String text, int cmdType, int cmdPriority)
 	{
-		this(text, text, cmdType, cmdPriority);
+		this(text, null, cmdType, cmdPriority);
 	}
 
 	public Command(String shortText, String text, int cmdType, int cmdPriority)
 	{
+		if(cmdType < SCREEN || cmdType > ITEM)
+			{ throw new IllegalArgumentException("Invalid command type"); }
+		if(shortText == null) 
+			{ throw new NullPointerException("Commands cannot have a null short label"); }
+
 		label = text;
 		type = cmdType;
 		priority = cmdPriority;

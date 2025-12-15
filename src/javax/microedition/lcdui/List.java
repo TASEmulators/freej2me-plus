@@ -38,6 +38,8 @@ public class List extends Screen implements Choice
 	{
 		setTitle(title);
 		type = listType;
+
+		super.addCommand(SELECT_COMMAND);
 	}
 
 	public List(String title, int listType, String[] stringElements, Image[] imageElements)
@@ -157,9 +159,9 @@ public class List extends Screen implements Choice
 	@Override
 	public void removeCommand(Command cmd) 
 	{
+		super.removeCommand(cmd);
 		if(cmd == SELECT_COMMAND) { setSelectCommand(null); }
-		commands.remove(cmd);
-		_invalidate(); 
+		_invalidate();
 	}
 
 	public void set(int elementNum, String stringPart, Image imagePart)
@@ -180,8 +182,9 @@ public class List extends Screen implements Choice
 		
 	public void setSelectCommand(Command command) 
 	{ 
+		super.removeCommand(SELECT_COMMAND);
 		SELECT_COMMAND = command;
-		commands.add(command);
+		if(SELECT_COMMAND != null) { super.addCommand(SELECT_COMMAND); }
 	}
  
 	public void setSelectedFlags(boolean[] selectedArray) 

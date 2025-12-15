@@ -59,8 +59,9 @@ public abstract class Displayable
 	public void addCommand(Command cmd)
 	{
 		MobilePlatform.showCommandBar();
-		if(commands.contains(cmd)) { return; }
+		
 		if(cmd == null) { throw new NullPointerException("Cannot insert a null command"); }
+		if(commands.contains(cmd)) { return; }
 		synchronized(commands) { commands.add(cmd); }
 		_invalidate();
 	}
@@ -68,7 +69,7 @@ public abstract class Displayable
 	public void removeCommand(Command cmd) 
 	{
 		MobilePlatform.showCommandBar();
-		if(cmd == null) { return; }
+		if(cmd == null || !commands.contains(cmd)) { return; }
 		synchronized(commands) { commands.remove(cmd); }
 		_invalidate(); 
 	}
@@ -267,7 +268,8 @@ public abstract class Displayable
 		{
 			if(commandlistener!=null)
 			{
-                commandlistener.commandAction(commands.get(index), this);
+				commandlistener.commandAction(commands.get(index), this);
+				_invalidate();
 			}
 		}
 	}

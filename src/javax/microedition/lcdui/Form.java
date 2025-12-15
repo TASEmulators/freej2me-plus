@@ -57,7 +57,7 @@ public class Form extends Screen
 
 	public void insert(int itemNum, Item item) { doInsert(items.size(), item, false);  }
 
-	public void set(int itemNum, Item item) { doInsert(items.size(), item, true);  }
+	public void set(int itemNum, Item item) { doInsert(itemNum, item, true);  }
 
 	int doInsert(int index, Item item, boolean replace) 
 	{

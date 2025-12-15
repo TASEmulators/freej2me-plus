@@ -67,7 +67,12 @@ public abstract class Item
 
 	public Item() { }
 
-	public void addCommand(Command cmd) { commands.add(cmd); }
+	public void addCommand(Command cmd) 
+	{
+		if(cmd == null) { throw new NullPointerException("Cannot insert a null command"); }
+		if(commands.contains(cmd)) { return; }
+		synchronized(commands) { commands.add(cmd); }
+	}
 
 	public String getLabel() { return label; }
 
@@ -87,7 +92,12 @@ public abstract class Item
 		if (owner != null) { owner.itemStateChanged(this); }
 	}
 
-	public void removeCommand(Command cmd) { if (cmd == defaultCommand) defaultCommand=null; }
+	public void removeCommand(Command cmd) 
+	{ 
+		if(cmd == null || !commands.contains(cmd)) { return; }
+		if (cmd == defaultCommand) { defaultCommand = null; }
+		synchronized(commands) { commands.remove(cmd); }
+	}
 
 	public void setDefaultCommand(Command cmd) { defaultCommand = cmd; }
 
