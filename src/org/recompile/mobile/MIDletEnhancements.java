@@ -46,7 +46,12 @@ public class MIDletEnhancements
         long now = System.currentTimeMillis();
         long elapsedMillis = now - lastMillisTime;
 
-        if (MobilePlatform.pressedKeys[20]) { curTimeMillis.addAndGet(elapsedMillis * 20); } 
+        if (MobilePlatform.pressedKeys[20])
+        {
+            float multiplier = Mobile.fastForwardMultiplier;
+            if (multiplier <= 0.0f) { multiplier = 20.0f; }
+            curTimeMillis.addAndGet((long) (elapsedMillis * multiplier));
+        }
         else if (Mobile.unlockFramerateHack > 2) { curTimeMillis.addAndGet((long) (elapsedMillis * (Mobile.limitFPS == 0 ? 20 : (float) Mobile.limitFPS / 10f))); } 
         else { curTimeMillis.addAndGet(elapsedMillis); }
 
@@ -59,7 +64,12 @@ public class MIDletEnhancements
         long now = System.nanoTime();
         long elapsedNanos = now - lastNanoTime;
 
-        if (MobilePlatform.pressedKeys[20]) { curNanoTime.addAndGet(elapsedNanos * 20); } 
+        if (MobilePlatform.pressedKeys[20])
+        {
+            float multiplier = Mobile.fastForwardMultiplier;
+            if (multiplier <= 0.0f) { multiplier = 20.0f; }
+            curNanoTime.addAndGet((long) (elapsedNanos * multiplier));
+        }
         else if (Mobile.unlockFramerateHack > 2) { curNanoTime.addAndGet((long) (elapsedNanos * (Mobile.limitFPS == 0 ? 20 : (float) Mobile.limitFPS / 10f))); } 
         else { curNanoTime.addAndGet(elapsedNanos); }
 
