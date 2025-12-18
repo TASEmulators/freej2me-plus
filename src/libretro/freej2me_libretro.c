@@ -152,6 +152,8 @@ bool frameRequested = false;
 bool fast_forwarding = false;
 int framesDropped = 0;
 
+float normal_throttle_rate = DEFAULT_FPS;
+
 /* Libretro exposed config variables START */
 
 char *options_update; /* String containing the options updated in check_variables() */
@@ -328,10 +330,32 @@ int freej2me_present(const char *path)
 // Fast-forward state tracker
 void check_fast_forwarding(void) 
 {
+	unsigned int multiplier_scaled = 0;
+
     if (Environ(RETRO_ENVIRONMENT_GET_FASTFORWARDING, &fast_forwarding)) 
 	{
         javaRequestFrame[4] = fast_forwarding ? 1 : 0;
     }
+
+	struct retro_throttle_state throttle_state;
+	if (Environ(RETRO_ENVIRONMENT_GET_THROTTLE_STATE, &throttle_state))
+	{
+		if (throttle_state.mode == RETRO_THROTTLE_NONE && throttle_state.rate > 0.0f)
+		{
+			normal_throttle_rate = throttle_state.rate;
+		}
+
+		if (throttle_state.rate > 0.0f && normal_throttle_rate > 0.0f)
+		{
+			float multiplier = throttle_state.rate / normal_throttle_rate;
+			if (multiplier < 0.0f) { multiplier = 0.0f; }
+			if (multiplier > 655.35f) { multiplier = 655.35f; }
+			multiplier_scaled = (unsigned int)(multiplier * 100.0f + 0.5f);
+		}
+	}
+
+	javaRequestFrame[1] = (multiplier_scaled >> 8) & 0xFF;
+	javaRequestFrame[2] = (multiplier_scaled) & 0xFF;
 }
 
 /* Function to check the core's config states in the libretro frontend */

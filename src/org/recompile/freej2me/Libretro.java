@@ -574,6 +574,8 @@ public class Libretro
 								case 15:
 									lastCoreUpdateTime = System.currentTimeMillis();
 
+									int multiplierScaled = (din[1] << 8) | din[2];
+
 									if(din[3] == 1) // Frontend has processed the last sent frame, start counting for pause
 									{
 										canPause = true;
@@ -589,8 +591,16 @@ public class Libretro
 									}
 
 									// Check if the frontend is fast-forwarding
-									if(din[4] == 0) { MobilePlatform.pressedKeys[20] = false; }
-									else { MobilePlatform.pressedKeys[20] = true; }
+									if(din[4] == 0)
+									{
+										MobilePlatform.pressedKeys[20] = false;
+									}
+									else
+									{
+										MobilePlatform.pressedKeys[20] = true;
+										if(multiplierScaled <= 0) { Mobile.fastForwardMultiplier = 20.0f; }
+										else { Mobile.fastForwardMultiplier = multiplierScaled / 100.0f; }
+									}
 
 									/* Send Frame to Libretro */
 									try
