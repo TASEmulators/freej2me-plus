@@ -6,7 +6,7 @@ corename = "FreeJ2ME-Plus"
 categories = "Emulator"
 license = "GPLv3"
 permissions = ""
-display_version = "1.51-GIT"
+display_version = "1.52-GIT"
 
 # Hardware Information
 manufacturer = "Oracle Corporation"
