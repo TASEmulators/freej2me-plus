@@ -20,6 +20,7 @@ import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 
 import org.recompile.mobile.Mobile;
 
@@ -49,7 +50,7 @@ public class TiledLayer extends Layer
 	private int numberOfTiles;
 	protected int[] tileSetX;
 	protected int[] tileSetY;
-	private int[] animatedTiles;
+	private ArrayList<Integer> animatedTiles;
 	private int animatedTileCount = 0;
 
 	private int[][] tiles;
@@ -81,20 +82,14 @@ public class TiledLayer extends Layer
 
 		if (animatedTiles == null) 
 		{
-			animatedTiles = new int[4];
-			animatedTileCount = 1;
+			animatedTiles = new ArrayList<Integer>();
+			animatedTileCount = 0;
 		} 
-		else if (animatedTileCount == animatedTiles.length) 
-		{
-			// AnimatedTiles limit has been reached, we will need to increase its size
-			int newAnimatedTiles[] = new int[animatedTiles.length * 2];
-			System.arraycopy(animatedTiles, 0, newAnimatedTiles, 0, animatedTiles.length);
-			animatedTiles = newAnimatedTiles;
-		}
 
-		animatedTiles[animatedTileCount] = staticTileIndex;
+		animatedTiles.add(staticTileIndex);
 		animatedTileCount++;
-		return (-(animatedTileCount - 1));
+
+		return -animatedTileCount;
 	}
 
 	public void setAnimatedTile(int animatedTileIndex, int staticTileIndex) 
@@ -104,7 +99,7 @@ public class TiledLayer extends Layer
 		animatedTileIndex = -animatedTileIndex;
 		if (animatedTiles == null || animatedTileIndex <= 0 || animatedTileIndex >= animatedTileCount) { throw new IndexOutOfBoundsException(); }
 
-		animatedTiles[animatedTileIndex] = staticTileIndex;
+		animatedTiles.set(animatedTileIndex, staticTileIndex);
 	}
 
 	public int getAnimatedTile(int animatedTileIndex) 
@@ -112,7 +107,7 @@ public class TiledLayer extends Layer
 		animatedTileIndex = -animatedTileIndex;
 		if (animatedTiles == null || animatedTileIndex <= 0 || animatedTileIndex >= animatedTileCount) { throw new IndexOutOfBoundsException(); }
 
-		return animatedTiles[animatedTileIndex];
+		return animatedTiles.get(animatedTileIndex);
 	}
 
 	public void setCell(int col, int row, int tileIndex) 
@@ -218,24 +213,21 @@ public class TiledLayer extends Layer
 		if (!maintainIndices) 
 		{
 			/* 
-			 * Since we don't have to maintain Indices, initialize the TileMatrix with where all
-			 * indices will be zero, then delete any animated tiles.
+			 * Since we don't have to maintain Indices, initialize the
+			 * TileMatrix such as all indices will be zero, then delete any
+			 * animated tiles.
 			 */
 			for (int row = 0; row < tiles.length; row++) { Arrays.fill(tiles[row], 0); }
+			animatedTiles.clear();
 			animatedTiles = null;
 		}
 	
 		// Now we can start actually adding tiles to the tile matrix.
-		populateTileCoordinates(imageW, imageH);
-	}
-	
-	private void populateTileCoordinates(int imageWidth, int imageHeight) 
-	{
 		int currentTile = 1;
 	
-		for (int y = 0; y < imageHeight; y += tileHeight) 
+		for (int y = 0; y < imageH; y += tileHeight) 
 		{
-			for (int x = 0; x < imageWidth; x += tileWidth) 
+			for (int x = 0; x < imageW; x += tileWidth) 
 			{
 				tileSetX[currentTile] = x;
 				tileSetY[currentTile] = y;

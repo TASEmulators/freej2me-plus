@@ -30,8 +30,6 @@ public abstract class Layer
 	
 	protected int width;
 
-	protected Image image;
-
 	protected boolean visible = true;
 
 	public Layer() { x = 0; y = 0;}
@@ -44,32 +42,9 @@ public abstract class Layer
 		setHeight(height);
 	}
 
-	public Layer(Image i) { setLayerImage(i); }
-
-	protected void setLayerImage(Image i)
-	{
-		image = i;
-		x = 0;
-		y = 0;
-		width = i.getWidth();
-		height = i.getHeight();
-	}
-
 	public int getHeight() { return height; }
 
 	public int getWidth() { return width; }
-
-	public void setWidth(int width) 
-	{
-		if (width < 0) { throw new IllegalArgumentException(); }
-		this.width = width;
-	}
-
-	public void setHeight(int height)
-	{
-		if (height < 0) { throw new IllegalArgumentException(); }
-		this.height = height;
-	}
 
 	public int getX() { return x; }
 
@@ -85,6 +60,15 @@ public abstract class Layer
 
 	public void setVisible(boolean state) { visible = state; }
 
-	public Image getLayerImage() { return image; }
+	protected void setWidth(int width) 
+	{
+		if (width < 0) { throw new IllegalArgumentException(); }
+		this.width = width;
+	}
 
+	protected void setHeight(int height)
+	{
+		if (height < 0) { throw new IllegalArgumentException(); }
+		this.height = height;
+	}
 }

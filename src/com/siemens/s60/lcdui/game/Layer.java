@@ -23,6 +23,4 @@ public abstract class Layer extends com.siemens.mp.color_game.Layer
     public Layer() { super(); }
 
 	public Layer(int width, int height) { super(width, height); }
-
-	public Layer(Image i) { super(i); }
 }

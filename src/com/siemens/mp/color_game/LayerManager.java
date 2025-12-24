@@ -16,105 +16,118 @@
 */
 package com.siemens.mp.color_game;
 
+import java.util.ArrayList;
+
 import javax.microedition.lcdui.Graphics;
 import org.recompile.mobile.Mobile;
 
 public class LayerManager
 {
 
-	private Layer component[] = new Layer[4];
+	private ArrayList<Layer> layerList;
 
-	private int layers;
-	private int x;
-	private int y;
-	private int width;
-	private int height;
+	private int viewWindowX;
+
+	private int viewWindowY;
+
+	private int viewWindowWidth;
+
+	private int viewWindowHeight;
 
 
-	public LayerManager() { setViewWindow(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE); }
+	public LayerManager() 
+	{ 
+		setViewWindow(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
+		this.layerList = new ArrayList<Layer>();
+	}
 
 	// This is just an insert() call, but with the last layer pos as the index.
-	public void append(Layer l) { insert(l, layers); }
+	public void append(Layer layer) { insert(layer, layerList.size()); }
 
 	public Layer getLayerAt(int index) 
 	{ 
-		if ((index < 0) || (index >= layers)) { throw new IndexOutOfBoundsException(); }
+		if ((index < 0) || (index >= layerList.size()))
+			{ throw new IndexOutOfBoundsException("Invalid layer index."); }
 
-		return component[index];
+		return layerList.get(index);
 	}
 
-	public int getSize() { return layers; }
+	public int getSize() { return layerList.size(); }
 
-	public void insert(Layer l, int index) 
-	{ 
-		if ((index < 0) || (index > layers) || (exist(l) && (index >= layers))) { throw new IndexOutOfBoundsException(); }
+	public void insert(Layer layer, int index) 
+	{
+		if(layer == null)
+			{ throw new NullPointerException("Cannot insert a null layer"); }
+
+		if ((index < 0) || (index > layerList.size()) ||
+			(exist(layer) && (index >= layerList.size()))) 
+			{ throw new IndexOutOfBoundsException("Layer index out of range"); }
 	
-		remove(l);
+		remove(layer);
 
-		if (layers == component.length)
-		{
-			Layer newcomponents[] = new Layer[layers + 4];
-			System.arraycopy(component, 0, newcomponents, 0, layers);
-			System.arraycopy(component, index, newcomponents, index + 1, layers - index);
-			component = newcomponents;
-		}
-		else { System.arraycopy(component, index, component, index + 1, layers - index); }
-
-		component[index] = l;
-		layers++;
+		layerList.add(index, layer);
 	}
 
-	public void paint(Graphics g, int xdest, int ydest)
+	public void paint(Graphics g, int dx, int dy)
 	{
-		int cx = g.getClipX();
-		int cy = g.getClipY();
-		int cw = g.getClipWidth();
-		int ch = g.getClipHeight();
+		final int clipX = g.getClipX();
+		final int clipY = g.getClipY();
+		final int clipWidth = g.getClipWidth();
+		final int clipHeight = g.getClipHeight();
 
-		g.translate(xdest - x, ydest - y);
-		// set the clip to view window
-		g.clipRect(x, y, width, height);
+		// Translate and set Graphics clip to the current ViewWindow bounds
+		g.translate(dx - this.viewWindowX, dy - this.viewWindowY);
+		g.clipRect(this.viewWindowX, this.viewWindowY,
+			this.viewWindowWidth, this.viewWindowHeight);
 
-		for (int i = layers-1; i >= 0; i--)
+		// Paint the given layer (if visible). The layer's index indicates its
+		// z-order, meaning that index 0 is at the front of all others, which
+		// means we have to draw from {@code layers} to {@code 0}.
+		for (int i = layerList.size()-1; i >= 0; i--)
 		{
-			if (component[i].visible) { component[i].paint(g); }
+			if (layerList.get(i).isVisible()) { layerList.get(i).paint(g); }
 		}
+			
 
-		g.translate(-xdest + x, -ydest + y);
-		g.setClip(cx, cy, cw, ch);
+		// Restore the original translation and clip bounds after painting
+		g.translate(-dx + this.viewWindowX, -dy + this.viewWindowY);
+		g.setClip(clipX, clipY, clipWidth, clipHeight);
 	}
 
-	public void remove(Layer l) 
+	public void remove(Layer layer) 
 	{ 
-		if (l == null) { throw new NullPointerException(); }
+		if (layer == null)
+			throw new NullPointerException("Cannot remove a null layer.");
 
-		for (int i = layers-1; i >= 0; i--)
-		{
-			if (component[i] == l) 
-			{
-				System.arraycopy(component, i + 1, component, i, layers - i - 1);
-				component[--layers] = null;
-			}
-		}
+		layerList.remove(layer);
 	}
 
-	private boolean exist(Layer l)
+	private boolean exist(Layer layer)
 	{
-		if (l == null) { return false; }
+		if (layer == null) { return false; }
 
-		for (int i = layers; --i >= 0; ) { if (component[i] == l) { return true; } }
+		for (int i = 0; i < layerList.size(); i++) 
+		{
+			if (this.layerList.get(i) == layer) { return true; }
+		}
+			
 		return false;
 	}
 
-	public void setViewWindow(int wx, int wy, int wwidth, int wheight)
+	public void setViewWindow(int x, int y, int width, int height)
 	{
-		if (wwidth < 0 || wheight < 0) { throw new IllegalArgumentException(); }
+		if (width < 0 || height < 0) 
+			{ throw new IllegalArgumentException("ViewWindow has invalid width and/or height."); }
 
-		x = wx;
-		y = wy;
-		width = wwidth;
-		height = wheight;
+		this.viewWindowX = x;
+		this.viewWindowY = y;
+		this.viewWindowWidth = width;
+		this.viewWindowHeight = height;
 	}
 
-	public void removeLayer(com.siemens.mp.misc.NativeMem NativeMemoryTable, Layer l) { Mobile.log(Mobile.LOG_WARNING, LayerManager.class.getPackage().getName() + "." + LayerManager.class.getSimpleName() + ": " + "Siemens: color_game.LayerManager: removeLayer()"); } // TODO
+	public void removeLayer(com.siemens.mp.misc.NativeMem NativeMemoryTable, Layer l)
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, LayerManager.class.getPackage().getName() + "." + LayerManager.class.getSimpleName() + ": " + "Siemens: color_game.LayerManager: removeLayer()"); 
+		this.remove(l);
+	}
 }
