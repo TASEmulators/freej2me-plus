@@ -664,7 +664,7 @@ public class NokiaOTTDecoder
 		{
 			if (parsePos >= data.length) 
 			{
-				throw new IndexOutOfBoundsException("No more data to read.");
+				return 0;
 			}
 
 			value <<= 1; 
