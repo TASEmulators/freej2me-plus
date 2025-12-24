@@ -195,6 +195,9 @@ public class Sound
 	public void resume() 
 	{
 		if(player == null || getState() == SOUND_UNINITIALIZED || getState() == SOUND_PLAYING) { return; }
+
+		if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
+		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f));
 		player.start(); 
 	}
 
@@ -213,11 +216,10 @@ public class Sound
 
 	public void stop() 
 	{ 
-		if(player != null) 
-		{ 
-			if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
-			player.stop(); 
-		} 
+		if(player == null || getState() == Sound.SOUND_STOPPED || getState() == Sound.SOUND_UNINITIALIZED) { return; }
+
+		if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
+		player.stop(); 
 	}
 
 	// This is the same conversion used in Sprintpcs' DualTone implementation., as it also uses this constant.
