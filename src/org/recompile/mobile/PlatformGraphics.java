@@ -740,7 +740,38 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
+	// Patch: Line break support (May affect other games)
 	public void drawString(String str, int x, int y, int anchor)
+	{
+		if(str == null || str.length() == 0) { return; }
+		if(str.indexOf('\n') < 0 && str.indexOf('\r') < 0)
+		{
+			drawStringSingleLine(str, x, y, anchor);
+			return;
+		}
+
+		int lineHeight = 0;
+		if(Mobile.isDoJa) { lineHeight = dojaFont.getHeight(); }
+		else { lineHeight = font.getHeight(); }
+
+		int lineStart = 0;
+		int lineIndex = 0;
+		for(int i = 0; i <= str.length(); i++)
+		{
+			boolean end = (i == str.length());
+			char ch = end ? 0 : str.charAt(i);
+			if(end || ch == '\n' || ch == '\r')
+			{
+				String line = str.substring(lineStart, i);
+				drawStringSingleLine(line, x, y + (lineIndex * lineHeight), anchor);
+				lineIndex++;
+				if(!end && ch == '\r' && i + 1 < str.length() && str.charAt(i + 1) == '\n') { i++; }
+				lineStart = i + 1;
+			}
+		}
+	}
+
+	private void drawStringSingleLine(String str, int x, int y, int anchor)
 	{
 		if(str != null && str.length() > 0)
 		{
