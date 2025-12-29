@@ -70,6 +70,7 @@ import javax.microedition.media.decoders.MLDDecoder;
 /* IMA ADPCM WAV support */
 import javax.microedition.media.decoders.WAVTools;
 import javax.microedition.media.decoders.WAVImaADPCMDecoder;
+import javax.microedition.media.decoders.WAVLawDecoder;
 /* EMS iMelody support */
 import javax.microedition.media.decoders.EMSiMelodyDecoder;
 /* audio/mpeg support */
@@ -1169,9 +1170,13 @@ public class PlatformPlayer implements Player
 				{
 					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.upsample(tmpStream, wavHeaderData[1], WAVTools.hostSampleRate, (short) wavHeaderData[2], (short) wavHeaderData[4], wavHeaderData[5]))));
 				}
-				else if(wavHeaderData[0] == 7) // Microsoft GSM
+				else if(wavHeaderData[0] == 6) // A-Law GSM WAV
 				{
-					Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MS GSM! (unsupported)");
+					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeALaw(tmpStream, wavHeaderData))));
+				}
+				else if(wavHeaderData[0] == 7) // u-Law GSM WAV
+				{
+					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeULaw(tmpStream, wavHeaderData))));
 				}
 				else if(wavHeaderData[0] == 17) // IMA ADPCM
 				{
