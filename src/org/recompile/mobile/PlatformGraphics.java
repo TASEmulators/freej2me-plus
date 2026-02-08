@@ -1500,10 +1500,23 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	public void getPixels(byte[] pixels, byte[] transparencyMask, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
 		if (pixels == null) { throw new NullPointerException("Byte array cannot be null");}
-		if (x < 0 || y < 0 || x + width > canvasWidth || y + height > canvasHeight) 
-		{
-			throw new IllegalArgumentException("Requested copy area exceeds bounds of the image");
+		
+		x += getTranslateX();
+		y += getTranslateY();
+
+		if (x < 0|| y < 0 || height < 0 || width < 0)
+		{ 
+			throw new IllegalArgumentException("Invalid width,height,x or y"); 
 		}
+		
+		if (x < 0 || y < 0 || width * height > pixels.length)  
+		{
+			throw new ArrayIndexOutOfBoundsException("Requested copy area exceeds bounds of the image");
+		}
+
+		// Copy only the area that's on screen.
+		if(x+width >= canvasWidth) { width = canvasWidth-x; }
+		if(y+height >= canvasHeight) { height = canvasHeight-y; }
 	
 		switch (format) 
 		{
@@ -1645,10 +1658,23 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	public void getPixels(int[] pixels, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
 		if (pixels == null) { throw new NullPointerException("int array cannot be null"); }
-		if (x < 0 || y < 0 || x + width > canvasWidth || y + height > canvasHeight) 
-		{
-			throw new IllegalArgumentException("Requested copy area exceeds bounds of the image");
+		
+		x += getTranslateX();
+		y += getTranslateY();
+
+		if (x < 0|| y < 0 || height < 0 || width < 0)
+		{ 
+			throw new IllegalArgumentException("Invalid width,height,x or y"); 
 		}
+		
+		if (x < 0 || y < 0 || width * height > pixels.length)  
+		{
+			throw new ArrayIndexOutOfBoundsException("Requested copy area exceeds bounds of the image");
+		}
+
+		// Copy only the area that's on screen.
+		if(x+width >= canvasWidth) { width = canvasWidth-x; }
+		if(y+height >= canvasHeight) { height = canvasHeight-y; }
 
 		for (int row = 0; row < height; row++) 
 		{
@@ -1665,10 +1691,23 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	public void getPixels(short[] pixels, int offset, int scanlength, int x, int y, int width, int height, int format)
 	{
 		if (pixels == null) { throw new NullPointerException("short array cannot be null"); }
-		if (x < 0 || y < 0 || x + width > canvasWidth || y + height > canvasHeight) 
-		{
-			throw new IllegalArgumentException("Requested copy area exceeds bounds of the image");
+		
+		x += getTranslateX();
+		y += getTranslateY();
+
+		if (x < 0|| y < 0 || height < 0 || width < 0)
+		{ 
+			throw new IllegalArgumentException("Invalid width,height,x or y"); 
 		}
+		
+		if (x < 0 || y < 0 || width * height > pixels.length)  
+		{
+			throw new ArrayIndexOutOfBoundsException("Requested copy area exceeds bounds of the image");
+		}
+
+		// Copy only the area that's on screen.
+		if(x+width >= canvasWidth) { width = canvasWidth-x; }
+		if(y+height >= canvasHeight) { height = canvasHeight-y; }
 		
 		for(int row=0; row<height; row++)
 		{
