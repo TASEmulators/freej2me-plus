@@ -93,6 +93,8 @@ public final class AWTGUI
 	final Menu backlightColor = new Menu("Backlight Color");
 	final Menu fontOffset = new Menu("Font Size Offset");
 
+	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","120x160","128x160","132x176","208x173","176x208","176x220","220x176","208x208","180x320","320x180","240x240","208x320","240x320","320x240","240x400","400x240","240x432","240x480","360x360","352x416","360x640","640x360","640x480","345x800","800x345","480x800","800x480"};
+
 	/* Dialogs for resolution changes, restart notifications, MemStats and info about FreeJ2ME */
 	final Dialog[] awtDialogs = 
 	{
@@ -115,7 +117,6 @@ public final class AWTGUI
 		new Button("Cancel")
 	};
 	
-
 	/* Log Level submenu */
 	final Menu logLevel = new Menu("Log Level");
 
@@ -338,7 +339,7 @@ public final class AWTGUI
 		try { logReader = new BufferedReader(new FileReader(Mobile.logFile)); }
 		catch(Exception e) { System.out.println("Failed to create log window writer:" + e.getMessage()); }
 
-		resChoice.setFont(dialogFont);
+		resChoice.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
 		resChoice.setBackground(FreeJ2ME.freeJ2MEBGColor);
 		resChoice.setForeground(Color.ORANGE);
 
@@ -378,7 +379,7 @@ public final class AWTGUI
 
 		awtDialogs[0].setBackground(FreeJ2ME.freeJ2MEBGColor);
 		awtDialogs[0].setForeground(Color.ORANGE);
-		awtDialogs[0].setLayout( new FlowLayout(FlowLayout.CENTER, 60, 5));
+		awtDialogs[0].setLayout( new FlowLayout(FlowLayout.CENTER, 60, 3));
 		awtDialogs[0].setUndecorated(true);
 		awtDialogs[0].setSize(230, 125);
 		awtDialogs[0].setResizable(false);
@@ -1067,7 +1068,7 @@ public final class AWTGUI
 		M3GDebug.add(M3GUntextured);
 		M3GDebug.add(M3GWireframe);
 
-		for(int i = 0; i < config.supportedResolutions.length; i++) { resChoice.add(config.supportedResolutions[i]); }
+		for(int i = 0; i < supportedResolutions.length; i++) { resChoice.add(supportedResolutions[i]); }
 		for(int i = 0; i < dojaVersions.length; i++) { DoJaVersion.add(dojaVersions[i]); }
 		for(int i = 0; i < rotations.length; i++) { screenRotation.add(rotations[i]); }
 		for(int i = 0; i < layoutOptions.length; i++) { phoneType.add(layoutOptions[i]); }
