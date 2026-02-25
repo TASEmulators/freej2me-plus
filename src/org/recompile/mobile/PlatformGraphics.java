@@ -188,6 +188,8 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 	public BufferedImage getCanvas() { return canvas; }
 
+	public int[] getFrameBuffer() { return canvasData; }
+
 	public void clearRect(int x, int y, int width, int height)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
@@ -706,7 +708,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 				}
 				
 				// We must only draw borders, otherwise this becomes fillRect
-				if(j == 0 || j == height-1) { i++; }
+				if(j == 0 || j == height-1 || width == 1) { i++; }
 				else { i += width-1; }
 			}
 		}

@@ -110,81 +110,80 @@ public class Libretro
 
 		Mobile.limitFPS = Integer.parseInt(args[4]);
 
-		if(Integer.parseInt(args[5]) == 0) { soundEnabled = false; }
-		else { soundEnabled = true; }
+		soundEnabled = Integer.parseInt(args[5]) != 0;
 
-		if(Integer.parseInt(args[6]) == 0) { Mobile.useCustomMidi = false; }
-		else { Mobile.useCustomMidi = true; }
+		Mobile.useCustomMidi = Integer.parseInt(args[6]) != 0;
 
 		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
-		if(Integer.parseInt(args[7]) == 0) { Mobile.dumpAudioStreams = false; }
-		else { Mobile.dumpAudioStreams = true; }
+		Mobile.dumpAudioStreams = Integer.parseInt(args[7]) != 0;
 
 		/* Same for Logging Level */
 		Mobile.minLogLevel = (byte) (Integer.parseInt(args[8]));
 
 		/* No Alpha on Blank Images SpeedHack is a per-game config */
-		if(Integer.parseInt(args[9]) == 0) { Mobile.noAlphaOnBlankImages = false; }
-		else { Mobile.noAlphaOnBlankImages = true; }
+		Mobile.noAlphaOnBlankImages = Integer.parseInt(args[9]) != 0;
 
 		/* LCD Backlight Mask color index. */
 		Mobile.maskIndex = Integer.parseInt(args[10]);
 
 		/* Compat setting to fix Fantasy Zone 176x208 weird mirroring */
-		if(Integer.parseInt(args[11]) == 0) { Mobile.compatFantasyZoneFix = false; }
-		else { Mobile.compatFantasyZoneFix = true; }
+		Mobile.compatFantasyZoneFix = Integer.parseInt(args[11]) != 0; 
 
 		/* Compat setting to translate back to the origin whenever graphics object is reset */
-		if(Integer.parseInt(args[12]) == 0) { Mobile.compatTranslateToOriginOnReset = false; }
-		else { Mobile.compatTranslateToOriginOnReset = true; }
+		Mobile.compatTranslateToOriginOnReset = Integer.parseInt(args[12]) != 0;
 
 		// Custom font and size
-		if(Integer.parseInt(args[13]) == 0) { Mobile.useCustomTextFont = false; }
-		else { Mobile.useCustomTextFont = true; }
+		Mobile.useCustomTextFont = Integer.parseInt(args[13]) != 0;
 
 		Mobile.fontSizeOffset = (byte) Integer.parseInt(args[14]);
 
 		// Unused for now
-		if(Integer.parseInt(args[15]) == 0) { Mobile.dumpGraphicsObjects = false; }
-		else { Mobile.dumpGraphicsObjects = true; }
+		Mobile.dumpGraphicsObjects = Integer.parseInt(args[15]) != 0;
 
 		// Dump KJX extracted JAR and JAD
-		if(Integer.parseInt(args[16]) == 0) { Mobile.deleteTemporaryKJXFiles = false; }
-		else { Mobile.deleteTemporaryKJXFiles = true; }
+		Mobile.deleteTemporaryKJXFiles = Integer.parseInt(args[16]) != 0;
 
 		// M3G Render only untextured polygons
-		if(Integer.parseInt(args[17]) == 0) { Mobile.M3GRenderUntexturedPolygons = false; }
-		else { Mobile.M3GRenderUntexturedPolygons = true; }
+		Mobile.M3GRenderUntexturedPolygons = Integer.parseInt(args[17]) != 0;
 
 		// M3G Render Wireframe
-		if(Integer.parseInt(args[18]) == 0) { Mobile.M3GRenderWireframe = false; }
-		else { Mobile.M3GRenderWireframe = true; }
+		Mobile.M3GRenderWireframe = Integer.parseInt(args[18]) != 0;
 
 		/* Framerate Unlock. */
 		Mobile.unlockFramerateHack = (byte) Integer.parseInt(args[19]);
 
 		/* Compat setting to process repaints immediately */
-		if(Integer.parseInt(args[20]) == 0) { Mobile.compatImmediateRepaints = false; }
-		else { Mobile.compatImmediateRepaints = true; }
+		Mobile.compatImmediateRepaints = Integer.parseInt(args[20]) != 0;
 
 		/* Compat setting to override mobile platform checks */
-		if(Integer.parseInt(args[21]) == 0) { Mobile.compatOverridePlatformChecks = false; }
-		else { Mobile.compatOverridePlatformChecks = true; }
+		Mobile.compatOverridePlatformChecks = Integer.parseInt(args[21]) != 0;
 
 		/* Compat setting to translate drawing methods in a siemens-friendly way */
-		if(Integer.parseInt(args[22]) == 0) { Mobile.compatSiemensFriendlyDrawing = false; }
-		else { Mobile.compatSiemensFriendlyDrawing = true; }
+		Mobile.compatSiemensFriendlyDrawing = Integer.parseInt(args[22]) != 0;
 
 		/* Half-Res M3G Rendering SpeedHack is a per-game config */
-		if(Integer.parseInt(args[23]) == 0) { Mobile.halfResM3GRaster = false; }
-		else { Mobile.halfResM3GRaster = true; }
+		Mobile.halfResM3GRaster = Integer.parseInt(args[23]) != 0;
 
 		/* DoJa API Version */
 		Mobile.DoJaVersion = Integer.parseInt(args[24]);
 
 		/* Compat setting to ignore volume changes */
-		if(Integer.parseInt(args[25]) == 0) { Mobile.compatIgnoreVolumeChanges = false; }
-		else { Mobile.compatIgnoreVolumeChanges = true; }
+		Mobile.compatIgnoreVolumeChanges = Integer.parseInt(args[25]) != 0;
+
+		/* MascotCapsuleV3 Half Res rendering speedhack */
+		Mobile.halfResMCV3Raster = Integer.parseInt(args[26]) != 0;
+
+		/* MascotCapsuleV3 no Lighting speedhack */
+		Mobile.MCV3NoLighting = Integer.parseInt(args[27]) != 0;
+
+		/* Compat setting to fix Horizontal FOV for MascotCapsuleV3 */
+		Mobile.compatMCV3HorizontalFovFix = Integer.parseInt(args[28]) != 0;
+
+		/* MascotCapsuleV3 Show Heap debug setting */
+		Mobile.MCV3ShowHeapUsage = Integer.parseInt(args[29]) != 0;
+
+		/* MascotCapsuleV3 Show Heap debug setting */
+		Mobile.MCV3ShowTimeMetrics = Integer.parseInt(args[30]) != 0;
 
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
@@ -363,19 +362,16 @@ public class Libretro
 										else if(Mobile.skt)           { Mobile.config.settings.put("phone", "SKT"); }
 										else                          { Mobile.config.settings.put("phone", "Standard"); }
 
-										if(soundEnabled)   { Mobile.config.settings.put("sound", "on");  }
-										if(!soundEnabled)  { Mobile.config.settings.put("sound", "off"); }
+										Mobile.config.settings.put("sound", soundEnabled ? "on" : "off");
 
 										Mobile.config.settings.put("fps", "" + Mobile.limitFPS);
 
-										if(!Mobile.useCustomMidi)  { Mobile.config.settings.put("soundfont", "Default"); }
-										else                       { Mobile.config.settings.put("soundfont", "Custom");  }
+										Mobile.config.settings.put("soundfont", Mobile.useCustomMidi ? "Custom" : "Default");
 
-										if(!Mobile.noAlphaOnBlankImages) { Mobile.config.settings.put("spdhacknoalpha", "off"); }
-										else                             { Mobile.config.settings.put("spdhacknoalpha", "on"); }
-
-										if(!Mobile.halfResM3GRaster) { Mobile.config.settings.put("spdhackm3ghalfres", "off"); }
-										else                             { Mobile.config.settings.put("spdhackm3ghalfres", "on"); }
+										Mobile.config.settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off");
+										Mobile.config.settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off");
+										Mobile.config.settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off");
+										Mobile.config.settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off");
 
 										if(Mobile.maskIndex == 0)      { Mobile.config.settings.put("backlightcolor", "Disabled"); }
 										else if(Mobile.maskIndex == 1) { Mobile.config.settings.put("backlightcolor", "Green"); }
@@ -384,27 +380,15 @@ public class Libretro
 										else if(Mobile.maskIndex == 4) { Mobile.config.settings.put("backlightcolor", "Violet"); }
 										else if(Mobile.maskIndex == 5) { Mobile.config.settings.put("backlightcolor", "Red"); }
 
-										if(!Mobile.compatFantasyZoneFix) { Mobile.config.settings.put("compatfantasyzonefix", "off"); }
-										else                                 { Mobile.config.settings.put("compatfantasyzonefix", "on"); }
+										Mobile.config.settings.put("compatfantasyzonefix", Mobile.compatFantasyZoneFix ? "on" : "off");
+										Mobile.config.settings.put("compattranstooriginonreset", Mobile.compatTranslateToOriginOnReset ? "on" : "off");
+										Mobile.config.settings.put("compatimmediaterepaints", Mobile.compatImmediateRepaints ? "on" : "off");
+										Mobile.config.settings.put("compatoverrideplatchecks", Mobile.compatOverridePlatformChecks ? "on" : "off");
+										Mobile.config.settings.put("compatsiemensfriendlydrawing", Mobile.compatSiemensFriendlyDrawing ? "on" : "off");
+										Mobile.config.settings.put("compatignorevolumechanges", Mobile.compatIgnoreVolumeChanges ? "on" : "off");
+										Mobile.config.settings.put("compatmcv3horizfovfix", Mobile.compatMCV3HorizontalFovFix ? "on" : "off");
 
-										if(!Mobile.compatTranslateToOriginOnReset) { Mobile.config.settings.put("compattranstooriginonreset", "off"); }
-										else                                       { Mobile.config.settings.put("compattranstooriginonreset", "on"); }
-
-										if(!Mobile.compatImmediateRepaints) { Mobile.config.settings.put("compatimmediaterepaints", "off"); }
-										else                                { Mobile.config.settings.put("compatimmediaterepaints", "on"); }
-
-										if(!Mobile.compatOverridePlatformChecks) { Mobile.config.settings.put("compatoverrideplatchecks", "off"); }
-										else                                     { Mobile.config.settings.put("compatoverrideplatchecks", "on"); }
-
-										if(!Mobile.compatSiemensFriendlyDrawing) { Mobile.config.settings.put("compatsiemensfriendlydrawing", "off"); }
-										else                                     { Mobile.config.settings.put("compatsiemensfriendlydrawing", "on"); }
-
-										if(!Mobile.compatIgnoreVolumeChanges) { Mobile.config.settings.put("compatignorevolumechanges", "off"); }
-										else                                     { Mobile.config.settings.put("compatignorevolumechanges", "on"); }
-
-										if(!Mobile.useCustomTextFont)  { Mobile.config.settings.put("textfont", "Default"); }
-										else                           { Mobile.config.settings.put("textfont", "Custom");  }
-
+										Mobile.config.settings.put("textfont", Mobile.useCustomTextFont ? "Custom" : "Default");
 										Mobile.config.settings.put("fontoffset", "" + Mobile.fontSizeOffset);
 
 										if(Mobile.unlockFramerateHack == 0)      { Mobile.config.settings.put("fpshack", "Default");  }
@@ -420,20 +404,16 @@ public class Libretro
 
 										Mobile.config.sysSettings.put("logLevel", "" + Mobile.minLogLevel);
 
-										if(!Mobile.M3GRenderUntexturedPolygons)  { Mobile.config.sysSettings.put("M3GUntextured", "off"); }
-										else                                     { Mobile.config.sysSettings.put("M3GUntextured", "on");  }
+										Mobile.config.sysSettings.put("M3GUntextured", Mobile.M3GRenderUntexturedPolygons ? "on" : "off");
+										Mobile.config.sysSettings.put("M3GWireframe", Mobile.M3GRenderWireframe ? "on" : "off");
 
-										if(!Mobile.M3GRenderWireframe)  { Mobile.config.sysSettings.put("M3GWireframe", "off"); }
-										else                            { Mobile.config.sysSettings.put("M3GWireframe", "on");  }
+										Mobile.config.sysSettings.put("MCV3ShowHeapUsage", Mobile.MCV3ShowHeapUsage ? "on" : "off");
+										Mobile.config.sysSettings.put("MCV3ShowTimeMetrics", Mobile.MCV3ShowTimeMetrics ? "on" : "off");
 
-										if(!Mobile.deleteTemporaryKJXFiles)  { Mobile.config.sysSettings.put("deleteTempKJXFiles", "off"); }
-										else                                 { Mobile.config.sysSettings.put("deleteTempKJXFiles", "on");  }
+										Mobile.config.sysSettings.put("deleteTempKJXFiles", Mobile.deleteTemporaryKJXFiles ? "on" : "off");
 
-										if(!Mobile.dumpAudioStreams)  { Mobile.config.sysSettings.put("dumpAudioStreams", "off"); }
-										else                          { Mobile.config.sysSettings.put("dumpAudioStreams", "on");  }
-
-										if(!Mobile.dumpGraphicsObjects)  { Mobile.config.sysSettings.put("dumpGraphicsObjects", "off"); }
-										else                             { Mobile.config.sysSettings.put("dumpGraphicsObjects", "on");  }
+										Mobile.config.sysSettings.put("dumpAudioStreams", Mobile.dumpAudioStreams ? "on" : "off");
+										Mobile.config.sysSettings.put("dumpGraphicsObjects", Mobile.dumpGraphicsObjects ? "on" : "off");
 
 							
 										if(Mobile.libretroRestartRequested == 1) 
@@ -500,19 +480,15 @@ public class Libretro
 
 									Mobile.config.settings.put("fps", ""+ Integer.parseInt(cfgtokens[5]));
 
-									if(Integer.parseInt(cfgtokens[6])==1) { Mobile.config.settings.put("sound", "on");  }
-									if(Integer.parseInt(cfgtokens[6])==0) { Mobile.config.settings.put("sound", "off"); }
+									Mobile.config.settings.put("sound", Integer.parseInt(cfgtokens[6]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[7])==0) { Mobile.config.settings.put("soundfont", "Default"); }
-									if(Integer.parseInt(cfgtokens[7])==1) { Mobile.config.settings.put("soundfont", "Custom");  }
+									Mobile.config.settings.put("soundfont", Integer.parseInt(cfgtokens[7]) == 1 ? "Custom" : "Default");
 
-									if(Integer.parseInt(cfgtokens[8])==1) { Mobile.config.sysSettings.put("dumpAudioStreams", "on");  }
-									if(Integer.parseInt(cfgtokens[8])==0) { Mobile.config.sysSettings.put("dumpAudioStreams", "off"); }
+									Mobile.config.sysSettings.put("dumpAudioStreams", Integer.parseInt(cfgtokens[8]) == 1 ? "on" : "off");
 
-									Mobile.config.sysSettings.put("dumpAudioStreams", "" + Integer.parseInt(cfgtokens[9]));
+									Mobile.config.sysSettings.put("logLevel", "" + Integer.parseInt(cfgtokens[9]));
 
-									if(Integer.parseInt(cfgtokens[10])==0) { Mobile.config.settings.put("spdhacknoalpha", "off");  }
-									else { Mobile.config.settings.put("spdhacknoalpha", "on"); }
+									Mobile.config.settings.put("spdhacknoalpha", Integer.parseInt(cfgtokens[10]) == 1 ? "on" : "off");
 
 									if(Integer.parseInt(cfgtokens[11])==0) { Mobile.config.settings.put("backlightcolor", "Disabled"); }
 									if(Integer.parseInt(cfgtokens[11])==1) { Mobile.config.settings.put("backlightcolor", "Green");    }
@@ -521,50 +497,48 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[11])==4) { Mobile.config.settings.put("backlightcolor", "Violet"); }
 									if(Integer.parseInt(cfgtokens[11])==5) { Mobile.config.settings.put("backlightcolor", "Red"); }
 
-									if(Integer.parseInt(cfgtokens[12])==0) { Mobile.config.settings.put("compatfantasyzonefix", "off");  }
-									else { Mobile.config.settings.put("compatfantasyzonefix", "on"); }
+									Mobile.config.settings.put("compatfantasyzonefix", Integer.parseInt(cfgtokens[12]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[13])==0) { Mobile.config.settings.put("compattranstooriginonreset", "off");  }
-									else { Mobile.config.settings.put("compattranstooriginonreset", "on"); }
+									Mobile.config.settings.put("compattranstooriginonreset", Integer.parseInt(cfgtokens[13]) == 1 ? "on" : "off"); 
 
-									if(Integer.parseInt(cfgtokens[14])==0) { Mobile.config.settings.put("textfont", "Default"); }
-									if(Integer.parseInt(cfgtokens[14])==1) { Mobile.config.settings.put("textfont", "Custom");  }
+									Mobile.config.settings.put("textfont", Integer.parseInt(cfgtokens[14]) == 1 ? "Custom" : "Default");
 
 									Mobile.config.settings.put("fontoffset", "" + Integer.parseInt(cfgtokens[15]));
 
-									if(Integer.parseInt(cfgtokens[16])==1) { Mobile.config.sysSettings.put("dumpGraphicsObjects", "on");  }
-									if(Integer.parseInt(cfgtokens[16])==0) { Mobile.config.sysSettings.put("dumpGraphicsObjects", "off"); }
+									Mobile.config.sysSettings.put("dumpGraphicsObjects", Integer.parseInt(cfgtokens[16]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[17])==1) { Mobile.config.sysSettings.put("deleteTempKJXFiles", "on");  }
-									if(Integer.parseInt(cfgtokens[17])==0) { Mobile.config.sysSettings.put("deleteTempKJXFiles", "off"); }
+									Mobile.config.sysSettings.put("deleteTempKJXFiles", Integer.parseInt(cfgtokens[17]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[18])==1) { Mobile.config.sysSettings.put("M3GUntextured", "on");  }
-									if(Integer.parseInt(cfgtokens[18])==0) { Mobile.config.sysSettings.put("M3GUntextured", "off"); }
+									Mobile.config.sysSettings.put("M3GUntextured", Integer.parseInt(cfgtokens[18]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[19])==1) { Mobile.config.sysSettings.put("M3GWireframe", "on");  }
-									if(Integer.parseInt(cfgtokens[19])==0) { Mobile.config.sysSettings.put("M3GWireframe", "off"); }
+									Mobile.config.sysSettings.put("M3GWireframe", Integer.parseInt(cfgtokens[19]) == 1 ? "on" : "off");
 
 									if(Integer.parseInt(cfgtokens[20])==0) { Mobile.config.settings.put("fpshack", "Default"); }
 									if(Integer.parseInt(cfgtokens[20])==1) { Mobile.config.settings.put("fpshack", "Safe");  }
 									if(Integer.parseInt(cfgtokens[20])==2) { Mobile.config.settings.put("fpshack", "Extended");  }
 									if(Integer.parseInt(cfgtokens[20])==3) { Mobile.config.settings.put("fpshack", "Aggressive");  }
 
-									if(Integer.parseInt(cfgtokens[21])==0) { Mobile.config.settings.put("compatimmediaterepaints", "off");  }
-									else { Mobile.config.settings.put("compatimmediaterepaints", "on"); }
+									Mobile.config.settings.put("compatimmediaterepaints", Integer.parseInt(cfgtokens[21]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[22])==0) { Mobile.config.settings.put("compatoverrideplatchecks", "off");  }
-									else { Mobile.config.settings.put("compatoverrideplatchecks", "on"); }
+									Mobile.config.settings.put("compatoverrideplatchecks", Integer.parseInt(cfgtokens[22]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[23])==0) { Mobile.config.settings.put("compatsiemensfriendlydrawing", "off");  }
-									else { Mobile.config.settings.put("compatsiemensfriendlydrawing", "on"); }
+									Mobile.config.settings.put("compatsiemensfriendlydrawing", Integer.parseInt(cfgtokens[23]) == 1 ? "on" : "off");
 
-									if(Integer.parseInt(cfgtokens[24])==0) { Mobile.config.settings.put("spdhackm3ghalfres", "off");  }
-									else { Mobile.config.settings.put("spdhackm3ghalfres", "on"); }
+									Mobile.config.settings.put("spdhackm3ghalfres", Integer.parseInt(cfgtokens[24]) == 1 ? "on" : "off");
 
 									Mobile.config.settings.put("dojaversion", "" + Integer.parseInt(cfgtokens[25]));
 
-									if(Integer.parseInt(cfgtokens[26])==0) { Mobile.config.settings.put("compatignorevolumechanges", "off");  }
-									else { Mobile.config.settings.put("compatignorevolumechanges", "on"); }
+									Mobile.config.settings.put("compatignorevolumechanges", Integer.parseInt(cfgtokens[26]) == 1 ? "on" : "off");
+
+									Mobile.config.settings.put("spdhackmcv3halfres", Integer.parseInt(cfgtokens[27]) == 1 ? "on" : "off");
+
+									Mobile.config.settings.put("spdhackmcv3nolighting", Integer.parseInt(cfgtokens[28]) == 1 ? "on" : "off");
+
+									Mobile.config.settings.put("compatmcv3horizfovfix", Integer.parseInt(cfgtokens[29]) == 1 ? "on" : "off");
+
+									Mobile.config.settings.put("MCV3ShowHeapUsage", Integer.parseInt(cfgtokens[30]) == 1 ? "on" : "off");
+
+									Mobile.config.settings.put("MCV3ShowTimeMetrics", Integer.parseInt(cfgtokens[31]) == 1 ? "on" : "off");
 
 
 									Mobile.config.saveConfig();

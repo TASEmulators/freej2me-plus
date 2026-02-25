@@ -123,6 +123,9 @@ public final class AWTGUI
 	/* M3G Debug submenu */
 	final Menu M3GDebug = new Menu("M3G Debugging");
 
+	/* M3G Debug submenu */
+	final Menu MCV3Debug = new Menu("MascotCapsuleV3 Debugging");
+
 	/* Input mapping keys */
 	final Button inputButtons[] = new Button[] 
 	{
@@ -306,7 +309,9 @@ public final class AWTGUI
 	// Speedhacks
 	final CheckboxMenuItem noAlphaOnBlankImages = new CheckboxMenuItem("No alpha on blank images");
 	final CheckboxMenuItem M3GHalfRes = new CheckboxMenuItem("Render M3G at Half Resolution");
-	
+	final CheckboxMenuItem MCV3HalfRes = new CheckboxMenuItem("Render MascotCapsuleV3 at Half Res");
+	final CheckboxMenuItem MCV3NoLighting = new CheckboxMenuItem("Disable MascotCapsuleV3's lighting");
+
 	// Compatibility settings
 	final CheckboxMenuItem fantasyZoneFix = new CheckboxMenuItem("Fix for Fantasy Zone 176x208 weird mirroring");
 	final CheckboxMenuItem transToOriginOnReset = new CheckboxMenuItem("Translate to origin on gfx reset");
@@ -314,6 +319,7 @@ public final class AWTGUI
 	final CheckboxMenuItem overridePlatChecks = new CheckboxMenuItem("Override Mobile Platform checks");
 	final CheckboxMenuItem siemensFriendlyDrawing = new CheckboxMenuItem("Siemens-friendly drawing methods");
 	final CheckboxMenuItem ignoreVolumeChanges = new CheckboxMenuItem("Ignore volume changes");
+	final CheckboxMenuItem MCV3HorFovFix = new CheckboxMenuItem("MascotCapsuleV3 Horizontal FOV Fix");
 
 	final CheckboxMenuItem deleteTemporaryKJXFiles = new CheckboxMenuItem("Delete KJX files' temporary JAR/JAD");
 	final CheckboxMenuItem dumpAudioData = new CheckboxMenuItem("Dump Audio Streams");
@@ -323,6 +329,10 @@ public final class AWTGUI
 	// M3G Debugging
 	final CheckboxMenuItem M3GUntextured = new CheckboxMenuItem("Draw Only Vertex Colors");
 	final CheckboxMenuItem M3GWireframe = new CheckboxMenuItem("Wireframe Mode");
+
+	// MascotCapsuleV3 Debugging
+	final CheckboxMenuItem MCV3ShowHeapUsage = new CheckboxMenuItem("Show Heap Usage");
+	final CheckboxMenuItem MCV3ShowTimeMetrics = new CheckboxMenuItem("Show Time Metrics");
 
 	final TextArea logArea = new TextArea();
 	final TextArea memArea = new TextArea();
@@ -720,6 +730,28 @@ public final class AWTGUI
 			}
 		});
 
+		MCV3HalfRes.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(MCV3HalfRes.getState()){ config.updateMCV3ResSpeedHack("on"); hasPendingChange = true; }
+				else{ config.updateMCV3ResSpeedHack("off"); hasPendingChange = true; }
+
+				showRestartDialog();
+			}
+		});
+
+		MCV3NoLighting.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(MCV3NoLighting.getState()){ config.updateMCV3NoLightingSpeedHack("on"); hasPendingChange = true; }
+				else{ config.updateMCV3NoLightingSpeedHack("off"); hasPendingChange = true; }
+
+				showRestartDialog();
+			}
+		});
+
 		// Compatibility settings
 		fantasyZoneFix.addItemListener(new ItemListener()
 		{
@@ -778,6 +810,15 @@ public final class AWTGUI
 			{
 				if(ignoreVolumeChanges.getState()){ config.updateCompatIgnoreVolumeChanges("on"); hasPendingChange = true; }
 				else{ config.updateCompatIgnoreVolumeChanges("off"); hasPendingChange = true; }
+			}
+		});
+
+		MCV3HorFovFix.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(MCV3HorFovFix.getState()){ config.updateCompatMCV3HorizFovFix("on"); hasPendingChange = true; }
+				else{ config.updateCompatMCV3HorizFovFix("off"); hasPendingChange = true; }
 			}
 		});
 
@@ -996,6 +1037,24 @@ public final class AWTGUI
 			}
 		});
 
+		MCV3ShowHeapUsage.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(MCV3ShowHeapUsage.getState()) { config.MCV3ShowHeapUsage("on"); Mobile.MCV3ShowHeapUsage = true; }
+				else { config.MCV3ShowHeapUsage("off"); Mobile.MCV3ShowHeapUsage = false; }
+			}
+		});
+
+		MCV3ShowTimeMetrics.addItemListener(new ItemListener() 
+		{
+			public void itemStateChanged(ItemEvent e) 
+			{
+				if(MCV3ShowTimeMetrics.getState()) { config.MCV3ShowTimeMetrics("on"); Mobile.MCV3ShowTimeMetrics = true; }
+				else { config.MCV3ShowTimeMetrics("off"); Mobile.MCV3ShowTimeMetrics = false; }
+			}
+		});
+
 		// These are specific to AWTGUI
 		showDebugWindows.addItemListener(new ItemListener() 
 		{
@@ -1055,6 +1114,7 @@ public final class AWTGUI
 		debugMenu.add(showDebugWindows);
 		debugMenu.add(logLevel);
 		debugMenu.add(M3GDebug);
+		debugMenu.add(MCV3Debug);
 		
 		deleteTemporaryKJXFiles.setState(true);
 
@@ -1068,6 +1128,9 @@ public final class AWTGUI
 		M3GDebug.add(M3GUntextured);
 		M3GDebug.add(M3GWireframe);
 
+		MCV3Debug.add(MCV3ShowHeapUsage);
+		MCV3Debug.add(MCV3ShowTimeMetrics);
+
 		for(int i = 0; i < supportedResolutions.length; i++) { resChoice.add(supportedResolutions[i]); }
 		for(int i = 0; i < dojaVersions.length; i++) { DoJaVersion.add(dojaVersions[i]); }
 		for(int i = 0; i < rotations.length; i++) { screenRotation.add(rotations[i]); }
@@ -1080,6 +1143,8 @@ public final class AWTGUI
 
 		speedHackMenu.add(noAlphaOnBlankImages);
 		speedHackMenu.add(M3GHalfRes);
+		speedHackMenu.add(MCV3HalfRes);
+		speedHackMenu.add(MCV3NoLighting);
 
 		compatSettingsMenu.add(fantasyZoneFix);
 		compatSettingsMenu.add(transToOriginOnReset);
@@ -1087,6 +1152,7 @@ public final class AWTGUI
 		compatSettingsMenu.add(overridePlatChecks);
 		compatSettingsMenu.add(siemensFriendlyDrawing);
 		compatSettingsMenu.add(ignoreVolumeChanges);
+		compatSettingsMenu.add(MCV3HorFovFix);
 
 		// add menus to menubar
 		menuBar.add(fileMenu);
@@ -1125,6 +1191,10 @@ public final class AWTGUI
 
 			M3GHalfRes.setState(config.settings.get("spdhackm3ghalfres").equals("on"));
 
+			MCV3HalfRes.setState(config.settings.get("spdhackmcv3halfres").equals("on"));
+
+			MCV3NoLighting.setState(config.settings.get("spdhackmcv3nolighting").equals("on"));
+
 			fantasyZoneFix.setState(config.settings.get("compatfantasyzonefix").equals("on"));
 
 			transToOriginOnReset.setState(config.settings.get("compattranstooriginonreset").equals("on"));
@@ -1136,6 +1206,8 @@ public final class AWTGUI
 			siemensFriendlyDrawing.setState(config.settings.get("compatsiemensfriendlydrawing").equals("on"));
 
 			ignoreVolumeChanges.setState(config.settings.get("compatignorevolumechanges").equals("on"));
+
+			MCV3HorFovFix.setState(config.settings.get("compatmcv3horizfovfix").equals("on"));
 
 			resChoice.select(""+ Integer.parseInt(config.settings.get("scrwidth")) + "x" + ""+ Integer.parseInt(config.settings.get("scrheight")));
 
@@ -1151,6 +1223,10 @@ public final class AWTGUI
 			M3GWireframe.setState(config.sysSettings.get("M3GWireframe").equals("on"));
 
 			M3GUntextured.setState(config.sysSettings.get("M3GUntextured").equals("on"));
+
+			MCV3ShowHeapUsage.setState(config.sysSettings.get("MCV3ShowHeapUsage").equals("on"));
+
+			MCV3ShowTimeMetrics.setState(config.sysSettings.get("MCV3ShowTimeMetrics").equals("on"));
 
 			deleteTemporaryKJXFiles.setState(config.sysSettings.get("deleteTempKJXFiles").equals("on"));
 

@@ -141,6 +141,11 @@ struct retro_core_option_v2_category option_categories[] =
         "M3G Debug Settings",
         "Debug settings related to FreeJ2ME's M3G rendering implementation."
     },
+    {
+        "mcv3_debug",
+        "MascotCapsuleV3 Debug Settings",
+        "Debug settings related to FreeJ2ME's MascotCapsuleV3 renderer."
+    },
 };
 
 /* Core config options if running on a frontend with support for config version 2 */
@@ -569,6 +574,34 @@ struct retro_core_option_v2_definition core_options[] =
         "off"
     },
     {
+        "freej2me_spdhackmcv3halfres",
+        "Speed Hacks > Render MascotCapsuleV3 at Half Resolution",
+        "Render MascotCapsuleV3 at Half Resolution",
+        "FreeJ2ME-Plus also uses a software renderer for MascotCapsuleV3 (courtesy of Roman Lahin, @rmn20), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+        "FreeJ2ME-Plus also uses a software renderer for MascotCapsuleV3 (courtesy of Roman Lahin, @rmn20), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+        "speed_hacks",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_spdhackmcv3nolight",
+        "Speed Hacks > Disable MascotCapsuleV3 lighting",
+        "Disable MascotCapsuleV3 lighting",
+        "FreeJ2ME-Plus allows disabling all lighting operations on its MCV3 renderer. Helps games that use complex lighting setups, otherwise, doesn't have much of a performance impact.",
+        "FreeJ2ME-Plus allows disabling all lighting operations on its MCV3 renderer. Helps games that use complex lighting setups, otherwise, doesn't have much of a performance impact.",
+        "speed_hacks",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_spdhackfpsunlock",
         "Speed Hacks > Framerate Unlock Hack",
         "Framerate Unlock Hack",
@@ -669,6 +702,20 @@ struct retro_core_option_v2_definition core_options[] =
         "off"
     },
     {
+        "freej2me_compatmcv3horfovfix",
+        "Compatibility Settings > MascotCapsuleV3 Horizontal FOV Fix",
+        "MascotCapsuleV3 Horizontal FOV Fix",
+        "Might help games meant for portrait resolutions work better in landscape resolutions.",
+        "Might help games meant for portrait resolutions work better in landscape resolutions.",
+        "compat_settings",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_m3grenderuntextured",
         "M3G Debug Settings > Draw only vertex colors",
         "Draw only vertex colors",
@@ -689,6 +736,34 @@ struct retro_core_option_v2_definition core_options[] =
         "Enabling this makes M3G render only wireframes. Useful for debugging triangle clipping and culling.",
         "Enabling this makes M3G render only wireframes. Useful for debugging triangle clipping and culling.",
         "m3g_debug",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_mcv3showheap",
+        "MascotCapsuleV3 Debug Settings > Show Heap Usage",
+        "Show Heap Usage",
+        "Shows how much Heap is being used by MascotCapsuleV3's renderer.",
+        "Shows how much Heap is being used by MascotCapsuleV3's renderer.",
+        "mcv3_debug",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_mcv3showtimestats",
+        "MascotCapsuleV3 Debug Settings > Show Time Stats",
+        "Show Time Stats",
+        "Shows frametime statistics for the most important blocks of MascotCapsuleV3's renderer.",
+        "Shows frametime statistics for the most important blocks of MascotCapsuleV3's renderer.",
+        "mcv3_debug",
         {
             { "on",  "Enabled"            },
             { "off", "Disabled (Default)" },
@@ -1066,6 +1141,28 @@ struct retro_core_option_definition core_options_v1 [] =
         "off"
     },
     {
+        "freej2me_spdhackmcv3halfres",
+        "Render MascotCapsuleV3 at Half Resolution",
+        "FreeJ2ME-Plus also uses a software renderer for MascotCapsuleV3 (courtesy of Roman Lahin, @rmn20), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_spdhackmcv3nolight",
+        "Disable MascotCapsuleV3 lighting",
+        "FreeJ2ME-Plus allows disabling all lighting operations on its MCV3 renderer. Helps games that use complex lighting setups, otherwise, doesn't have much of a performance impact.",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_spdhackfpsunlock",
         "Framerate Unlock Hack",
         "Hijacks calls to Java methods normally used for delays and synchronization in order to increase the app's internal framerate. Higher aggressiveness levels increase the scope and type of calls intercepted. 'Safe' tackles only sleep() calls that reside in the same function of a rendering call, 'Extended' extends it to all sleep() calls, and 'Aggressive' goes beyond and hijacks system calls used for timing as well. Works best when the FPS limiter is set to anything other than 'Auto'.",
@@ -1145,6 +1242,17 @@ struct retro_core_option_definition core_options_v1 [] =
         "off"
     },
     {
+        "freej2me_compatmcv3horfovfix",
+        "MascotCapsuleV3 Horizontal FOV Fix",
+        "Might help games meant for portrait resolutions work better in landscape resolutions.",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
         "freej2me_m3grenderuntextured",
         "Draw only vertex colors",
         "Enabling this makes M3G render only vertex colored, untextured polygons. Useful for debugging blending and vertex coloring seams.",
@@ -1159,6 +1267,28 @@ struct retro_core_option_definition core_options_v1 [] =
         "freej2me_m3grenderwireframe",
         "Draw Wireframe",
         "Enabling this makes M3G render only wireframes. Useful for debugging triangle clipping and culling.",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_mcv3showheap",
+        "Show Heap Usage",
+        "Shows how much Heap is being used by MascotCapsuleV3's renderer.",
+        {
+            { "on",  "Enabled"            },
+            { "off", "Disabled (Default)" },
+            { NULL, NULL },
+        },
+        "off"
+    },
+    {
+        "freej2me_mcv3showtimestats",
+        "Show Time Stats",
+        "Shows frametime statistics for the most important blocks of MascotCapsuleV3's renderer.",
         {
             { "on",  "Enabled"            },
             { "off", "Disabled (Default)" },
@@ -1267,6 +1397,14 @@ static const struct retro_variable vars[] =
         "freej2me_spdhackm3ghalfres",
         "Render M3G at Half Resolution(SpeedHack); off|on",
     },
+    { /* Render MascotCapsuleV3 at Half Resolution */
+        "freej2me_spdhackmcv3halfres",
+        "Render MascotCapsuleV3 at Half Resolution(SpeedHack); off|on",
+    },
+    { /* Disable MascotCapsuleV3 lighting */
+        "freej2me_spdhackmcv3nolight",
+        "Disable MascotCapsuleV3 lighting(SpeedHack); off|on",
+    },
     { /* Framerate Unlock Hack */
         "freej2me_spdhackfpsunlock",
         "Framerate Unlock Hack; 0|1|2|3"
@@ -1295,13 +1433,25 @@ static const struct retro_variable vars[] =
         "freej2me_compatignorevolumechanges",
         "Ignore volume changes; off|on",
     },
+    { /* MascotCapsuleV3 Horizontal FOV Fix */
+        "freej2me_compatmcv3horfovfix",
+        "MascotCapsuleV3 Horizontal FOV Fix; off|on",
+    },
     { /* M3G draw only vertex colors */
         "freej2me_m3grenderuntextured",
-        "Draw only vertex colors; off|on"
+        "M3G Draw only vertex colors; off|on"
     },
     { /* M3G draw wireframe */
         "freej2me_m3grenderwireframe",
-        "Draw Wireframe; off|on"
+        "M3G Draw Wireframe; off|on"
+    },
+    { /* MascotCapsuleV3 Show Heap Usage */
+        "freej2me_mcv3showheap",
+        "MascotCapsuleV3 Show Heap Usage; off|on"
+    },
+    { /* MascotCapsuleV3 Show Time Stats */
+        "freej2me_mcv3showtimestats",
+        "MascotCapsuleV3 Show Time Stats; off|on"
     },
     { NULL, NULL },
 };

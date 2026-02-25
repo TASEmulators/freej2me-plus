@@ -1,96 +1,95 @@
 /*
-	This file is part of FreeJ2ME.
+ * MIT License
+ * Copyright (c) 2026 Yury Kharchenko
+ */
 
-	FreeJ2ME is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	FreeJ2ME is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
 package com.mascotcapsule.micro3d.v3;
 
-public class Effect3D
-{
+public class Effect3D {
 	public static final int NORMAL_SHADING = 0;
 	public static final int TOON_SHADING = 1;
 
+	Light light;
+	int shadingType;
+	boolean transparency;
+	Texture sphereTexture;
 
-	private Light light;
-	private int shading = 0;
-	private int threshold = 0;
-	private int toonthreshold = 0;
-	private int thresholdhigh = 0;
-	private int toonthresholdhigh = 0;
-	private int thresholdlow = 0;
-	private int toonthresholdlow = 0;
-	private boolean trans = false;
-	private boolean strans = false;
-	private Texture sphereTex;
-	private Texture sphereMap;
+	int toonThreshold;
+	int toonLow, toonHigh;
 
-	public Effect3D() {  }
+	public Effect3D() {
+		light = null;
+		shadingType = NORMAL_SHADING;
+		transparency = true;
+	}
 
-	public Effect3D(Light light, int shading, boolean isEnableTrans, Texture tex) {  }
-
+	public Effect3D(Light light, int shading, boolean isEnableTrans, Texture tex) {
+		setShadingType(shading);
+		setSphereTexture(tex);
+		
+		this.light = light;
+		this.shadingType = shading;
+		this.transparency = isEnableTrans;
+		this.sphereTexture = tex;
+	}
 
 	public final Light getLight() { return light; }
+	public final void setLight(Light light) { this.light = light; }
 
-	public final void setLight(Light light1) { light = light1; }
+	public final int getShadingType() { return shadingType; }
+	public final int getShading() { return shadingType; }
 
-	public final int getShading() { return shading; }
+	public final void setShadingType(int shading) {
+		if ((shading & ~TOON_SHADING) != 0) {
+			throw new IllegalArgumentException();
+		}
+		
+		this.shadingType = shading;
+	}
+	
+	public final void setShading(int shading) { setShadingType(shading); }
 
-	public final int getShadingType() { return shading; }
+	public final int getToonThreshold() { return toonThreshold; }
+	public final int getThreshold() { return toonThreshold; }
+	public final int getToonHigh() { return toonHigh; }
+	public final int getThresholdHigh() { return toonHigh; }
+	public final int getToonLow() { return toonLow; }
+	public final int getThresholdLow() { return toonLow; }
 
-	public final void setShading(int value) { shading = value; }
-
-	public final void setShadingType(int value) { shading = value; }
-
-	public final int getThreshold() { return threshold; }
-
-	public final int getToonThreshold() { return toonthreshold; }
-
-	public final int getThresholdHigh() { return thresholdhigh; }
-
-	public final int getToonHigh() { return toonthresholdhigh; }
-
-	public final int getThresholdLow() { return thresholdlow; }
-
-	public final int getToonLow() { return toonthresholdlow; }
-
-	public final void setThreshold(int i, int j, int k) // unknown order
-	{
-		threshold = i;
-		thresholdlow = j;
-		thresholdhigh = k;
+	public final void setToonParams(int threshold, int high, int low) {
+		if (
+			threshold < 0 || threshold > 255 ||
+			high < 0 || high > 255 ||
+			low < 0 || low > 255
+		) {
+			throw new IllegalArgumentException();
+		}
+		
+		this.toonThreshold = threshold;
+		this.toonHigh = high;
+		this.toonLow = low;
+	}
+	
+	public final void setThreshold(int threshold, int high, int low) {
+		setToonParams(threshold, high, low);
 	}
 
-	public final void setToonParams(int i, int j, int k)
-	{
-		toonthreshold = i;
-		toonthresholdlow = j;
-		toonthresholdhigh = k;
+	public final boolean isTransparency() { return transparency; }
+	public final boolean isSemiTransparentEnabled() { return transparency; }
+
+	public final void setTransparency(boolean isEnable) { transparency = isEnable; }
+	public final void setSemiTransparentEnabled(boolean isEnable) { transparency = isEnable; }
+
+	public final Texture getSphereTexture() { return sphereTexture; }
+	public final Texture getSphereMap() { return sphereTexture; }
+
+	public final void setSphereTexture(Texture tex) {
+		if (tex != null && tex.isForModel) {
+			throw new IllegalArgumentException();
+		}
+		
+		this.sphereTexture = tex;
 	}
-
-	public final boolean isSemiTransparentEnabled() { return strans; }
-
-	public final boolean isTransparency() { return false; }
-
-	public final void setSemiTransparentEnabled(boolean value) { strans = value; }
-
-	public final void setTransparency(boolean value) { trans = value; }
-
-	public final Texture getSphereMap() { return sphereMap; }
-
-	public final Texture getSphereTexture() { return sphereTex; }
-
-	public final void setSphereMap(Texture map) { sphereMap = map; }
-
-	public final void setSphereTexture(Texture texture) { sphereTex = texture; }
+	
+	public final void setSphereMap(Texture tex) { setSphereTexture(tex); }
 }

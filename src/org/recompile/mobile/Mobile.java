@@ -77,7 +77,9 @@ public class Mobile
 
 	// Mobile should contain flags to any and all "speedhacks" present in FreeJ2ME
 	public static boolean noAlphaOnBlankImages = true;
-	public static boolean halfResM3GRaster = true;
+	public static boolean halfResM3GRaster = false;
+	public static boolean halfResMCV3Raster = false;
+	public static boolean MCV3NoLighting = false;
 
 	// Config file handle
 	public static Config config;
@@ -149,10 +151,15 @@ public class Mobile
 	public static boolean compatOverridePlatformChecks   = true;
 	public static boolean compatSiemensFriendlyDrawing   = false;
 	public static boolean compatIgnoreVolumeChanges      = false;
+	public static boolean compatMCV3HorizontalFovFix     = false;
 
 	// M3G Debug Rendering settings
 	public static boolean M3GRenderUntexturedPolygons = false;
 	public static boolean M3GRenderWireframe = false;
+
+	// MascotCapsuleV3 Debug Rendering settings
+	public static boolean MCV3ShowTimeMetrics = false;
+	public static boolean MCV3ShowHeapUsage = false;
 
 	// Keycode modifiers
 	public static boolean kddi = false;
@@ -949,6 +956,10 @@ public class Mobile
 
 		M3GRenderWireframe = config.sysSettings.get("M3GWireframe").equals("on");
 
+		MCV3ShowHeapUsage = config.sysSettings.get("MCV3ShowHeapUsage").equals("on");
+
+		MCV3ShowTimeMetrics = config.sysSettings.get("MCV3ShowTimeMetrics").equals("on");
+
 		deleteTemporaryKJXFiles = config.sysSettings.get("deleteTempKJXFiles").equals("on");
 
 		dumpAudioStreams = config.sysSettings.get("dumpAudioStreams").equals("on");
@@ -1007,9 +1018,17 @@ public class Mobile
 		if(speedHackNoAlpha.equals("on"))        { noAlphaOnBlankImages = true; }
 		else if (speedHackNoAlpha.equals("off")) { noAlphaOnBlankImages = false; };
 
-		String speedHackM3GHalfRes= config.settings.get("spdhackm3ghalfres");
+		String speedHackM3GHalfRes = config.settings.get("spdhackm3ghalfres");
 		if(speedHackM3GHalfRes.equals("on"))        { halfResM3GRaster = true; }
 		else if (speedHackM3GHalfRes.equals("off")) { halfResM3GRaster = false; };
+
+		String speedHackMCV3HalfRes = config.settings.get("spdhackmcv3halfres");
+		if(speedHackMCV3HalfRes.equals("on"))        { halfResMCV3Raster = true; }
+		else if (speedHackMCV3HalfRes.equals("off")) { halfResMCV3Raster = false; };
+
+		String speedHackMCV3NoLighting = config.settings.get("spdhackmcv3nolighting");
+		if(speedHackMCV3NoLighting.equals("on"))        { MCV3NoLighting = true; }
+		else if (speedHackMCV3NoLighting.equals("off")) { MCV3NoLighting = false; };
 
 		// Compatibility settings (this will probably expand in the future)
 		String fantasyZoneFix = config.settings.get("compatfantasyzonefix");
@@ -1035,6 +1054,10 @@ public class Mobile
 		String ignoreVolumeChanges = config.settings.get("compatignorevolumechanges");
 		if(ignoreVolumeChanges.equals("on"))        { compatIgnoreVolumeChanges = true; }
 		else if (ignoreVolumeChanges.equals("off")) { compatIgnoreVolumeChanges = false; };
+
+		String MCV3HorizFovFix = config.settings.get("compatmcv3horizfovfix");
+		if(MCV3HorizFovFix.equals("on"))        { compatMCV3HorizontalFovFix = true; }
+		else if (MCV3HorizFovFix.equals("off")) { compatMCV3HorizontalFovFix = false; };
 
 		// Other settings
 		String textFont = config.settings.get("textfont");

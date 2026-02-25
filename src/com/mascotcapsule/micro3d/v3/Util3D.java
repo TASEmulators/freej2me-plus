@@ -1,42 +1,46 @@
 /*
-	This file is part of FreeJ2ME.
+ * MIT License
+ * Copyright (c) 2026 Yury Kharchenko
+ * Copyright (c) 2026 Roman Lahin
+ */
 
-	FreeJ2ME is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	FreeJ2ME is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
-*/
 package com.mascotcapsule.micro3d.v3;
 
-public class Util3D
-{
-	private Util3D() {  }
+public class Util3D {
+	
+	private static final short[] sinTable = new short[4096];
+	
+	static {
+		//Mascot Capsule docs state that result should be multiplied by 1024
+		//But reference implementation uses 4096 scale factor
+		
+		for(int i = 0; i < 4096; i++) {
+			sinTable[i] = (short) Math.floor(Math.sin(i * Math.PI / 2048.0) * 4096.0 + 0.5);
+		}
+	}
+	
+	private Util3D() {}
 
-	public static final int sqrt(int p)
-	{
-		//if(p>0) { return (int)Math.sqrt(p); }
-		long n = p & 0x00000000FFFFFFFFL;
-		return (int)Math.sqrt(n);
+	public static final int sin(int p) {
+		return sinTable[p & 4095];
 	}
 
-	// angle p ranges from 0 to 4096
-	public static final int sin(int p)
-	{
-		double n = (((double)p)/4096) * Math.PI*2;
-		return (int)(Math.sin(n)*4096);
+	public static final int cos(int p) {
+		return sinTable[(p + 1024) & 4095];
 	}
-
-	public static final int cos(int p)
-	{
-		double n = (((double)p)/4096) * Math.PI*2;
-		return (int)(Math.cos(n)*4096);
+	
+	public static final int sqrt(int p) {
+		if (p == 0) return 0;
+		
+		double a;
+		if (p < 0) {
+			//Fix for numbers with sign bit used
+			if (p > 0xfffd0002) return 0xffff;
+			a = p & 0xffffffffL;
+		} else {
+			a = p;
+		}
+		
+		return (int) (Math.sqrt(a) + 0.5);
 	}
 }

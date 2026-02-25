@@ -172,6 +172,8 @@ Although all arguments aside from the path are optional to launch FreeJ2ME-Plus 
 
 - #### Libretro's API: MIT License, compatible with GPLv3
 
+- #### Roman Lahin [rmn20](https://github.com/rmn20)'s MascotCapsuleV3 renderer (MascotME): MIT License, compatible with GPLv3
+
 ---
 
 # :busts_in_silhouette: How to contribute
