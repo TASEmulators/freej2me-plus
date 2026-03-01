@@ -1134,7 +1134,7 @@ public class PlatformPlayer implements Player
 		/* PCM WAV variables */
 		private byte[] tmpStream;
 		private Clip wavClip;
-		private int[] wavHeaderData = new int[6];
+		private int[] wavHeaderData = new int[7];
 		private int numLoops = 0;
 
 		public wavPlayer(InputStream stream)
@@ -1147,10 +1147,10 @@ public class PlatformPlayer implements Player
 			 */
 			try 
 			{
-				stream.mark(60);
+				stream.mark(stream.available());
 				wavHeaderData = WAVTools.readHeader(stream);
 				stream.reset();
-				stream.skip(WAVTools.PCMHEADERSIZE);
+				stream.skip(wavHeaderData[6]);
 
 				tmpStream = new byte[stream.available()];
 				stream.read(tmpStream, 0, stream.available());

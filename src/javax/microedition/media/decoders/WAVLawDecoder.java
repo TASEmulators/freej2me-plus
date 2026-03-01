@@ -43,7 +43,7 @@ public final class WAVLawDecoder
         int position;
 		byte aLawSample;
         
-		for (int i = 44; i < input.length; i++) 
+		for (int i = 0; i < input.length; i++) 
 		{
 
 			// Most of the logic here is pretty similar for u-law.
@@ -100,7 +100,7 @@ public final class WAVLawDecoder
         int position;
 		byte uLawSample;
 
-		for (int i = 44; i < input.length; i++) 
+		for (int i = 0; i < input.length; i++) 
 		{
 			uLawSample = input[i];
 
