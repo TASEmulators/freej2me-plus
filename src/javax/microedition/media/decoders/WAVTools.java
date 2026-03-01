@@ -51,29 +51,26 @@ public final class WAVTools
 	public static final int[] readHeader(InputStream input) throws IOException 
 	{
 		/*
-			The header of a WAV (RIFF) file is 44 bytes long and has the following format:
+			The header of a WAV (RIFF) file has the following format:
 
 			CHAR[4] "RIFF" header
 			UINT32  Size of the file (chunkSize).
 			  CHAR[4] "WAVE" format
 				CHAR[4] "fmt " header
-				UINT32  SubChunkSize (examples: 12 for PCM unsigned 8-bit )
+				UINT32  SubChunkSize (16 for standard PCM, 18+ for extended formats)
 				  UINT16 AudioFormat (ex: 1 [PCM], 17 [IMA ADPCM] )
 				  UINT16 NumChannels
 				  UINT32 SampleRate
 				  UINT32 BytesPerSec (samplerate*frame size)
 				  UINT16 frameSize or blockAlign (256 on some gameloft games)
 				  UINT16 BitsPerSample (gameloft games appear to use 4)
+				  [optional extra fmt bytes if SubChunkSize > 16]
+				[optional sub-chunks: "fact", "LIST", etc.]
 				CHAR[4] "data" header
 				UINT32 Length of sample data.
 				<Sample data>
 
-			-- IMA ADPCM introduces the following before "data" header, and after BitsPerSample:
-			UINT16 ByteExtraData
-			UINT16 ExtraData
-			CHAR[4] "fact" header
-			UINT32 SubChunk2Size
-			UINT32 NumOfSamples
+			IMA ADPCM usually carries extra fmt bytes and often a fact chunk before data; parser scans chunks dynamically instead of relying on fixed offsets.
 		*/
 
 		String riff = readInputStreamASCII(input, 4); // 0 - 4
@@ -88,24 +85,65 @@ public final class WAVTools
 		short frameSize = (short) readInputStreamInt16(input); // 32 - 34
 		short bitsPerSample = (short) readInputStreamInt16(input); // 34 - 36
 		
-		// These are conditionally read depending on IMA ADPCM
+		int totalBytesRead = 36; // Bytes consumed so far
+
+		// Read extra fmt bytes for IMA ADPCM, then skip any remaining extra fmt bytes
 		short ByteExtraData = 0;
 		short ExtraData = 0;
+
+		if(audioFormat == 0x11 && chunkSize > 16)
+		{
+			ByteExtraData = (short) readInputStreamInt16(input);
+			ExtraData = (short) readInputStreamInt16(input);
+			totalBytesRead += 4;
+			int extraFmtRemaining = chunkSize - 20;
+			if(extraFmtRemaining > 0) { input.skip(extraFmtRemaining); totalBytesRead += extraFmtRemaining; }
+		}
+		else if(chunkSize > 16)
+		{
+			int extraFmtBytes = chunkSize - 16;
+			input.skip(extraFmtBytes);
+			totalBytesRead += extraFmtBytes;
+		}
+
+		// Scan through sub-chunks to find the "data" chunk
 		String factHeader = "";
 		int SubChunk2Size = 0;
 		int numOfSamples = 0;
+		String dataHeader = "";
+		int dataLen = 0;
 
-		if(audioFormat == 0x11) 
+		while(true)
 		{
-			ByteExtraData = (short) readInputStreamInt16(input); // 36 - 38 -- On IMA ADPCM
-			ExtraData = (short) readInputStreamInt16(input); // 38 - 40 -- On IMA ADPCM
-			factHeader = readInputStreamASCII(input, 4);  // 40 - 44 -- On IMA ADPCM
-			SubChunk2Size = readInputStreamInt32(input);  // 44 - 48 -- On IMA ADPCM
-			numOfSamples = readInputStreamInt32(input);  // 48 - 52 -- On IMA ADPCM
-		}
+			String chunkId = readInputStreamASCII(input, 4);
+			int chunkSz = readInputStreamInt32(input);
+			totalBytesRead += 8;
 
-		String dataHeader = readInputStreamASCII(input, 4);  // 36 - 40 -- On PCM WAV, 52-56 On IMA ADPCM
-		int dataLen = readInputStreamInt32(input); // 40 - 44 -- On PCM WAV, 56-60 On IMA ADPCM
+			if(chunkId.equals("data"))
+			{
+				dataHeader = chunkId;
+				dataLen = chunkSz;
+				break;
+			}
+			else if(chunkId.equals("fact"))
+			{
+				factHeader = chunkId;
+				SubChunk2Size = chunkSz;
+				if(chunkSz >= 4)
+				{
+					numOfSamples = readInputStreamInt32(input);
+					totalBytesRead += 4;
+					int factRemaining = chunkSz - 4;
+					if(factRemaining > 0) { input.skip(factRemaining); totalBytesRead += factRemaining; }
+				}
+				else { input.skip(chunkSz); totalBytesRead += chunkSz; }
+			}
+			else
+			{
+				input.skip(chunkSz);
+				totalBytesRead += chunkSz;
+			}
+		}
 
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + (audioFormat == 0x11 ? "IMA ADPCM" : "PCM") + " WAV HEADER_START");
 
@@ -140,7 +178,7 @@ public final class WAVTools
 		 * We need the audio format to check if it's ADPCM or PCM, and the file's 
 		 * dataSize, SampleRate and audioChannels to decode ADPCM and build a new header. 
 		 */
-		return new int[] {audioFormat, sampleRate, audioChannels, frameSize, bitsPerSample, dataLen};
+		return new int[] {audioFormat, sampleRate, audioChannels, frameSize, bitsPerSample, dataLen, totalBytesRead};
 	}
 
 	/* Read a 16-bit little-endian unsigned integer from input.*/

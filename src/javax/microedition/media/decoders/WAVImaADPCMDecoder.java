@@ -230,9 +230,6 @@ public final class WAVImaADPCMDecoder
 	/* Decode the received IMA WAV ADPCM stream into a signed PCM16LE byte array, then return it to PlatformPlayer. */
 	public static final byte[] decodeImaAdpcm(final InputStream stream, final int[] wavHeaderData) throws IOException
 	{
-		/* Remove the extra header length from the stream, we shouldn't "decode" it as if it was a sample */
-		stream.skip(IMAHEADERSIZE - WAVTools.PCMHEADERSIZE);
-
 		// wavHeaderData[5] contains the correct data length specified by the IMA header that may not match the file's size due to padding and alignment, which is why we use it instead of stream.available().
 		final byte[] input = new byte[wavHeaderData[5]];
 		WAVTools.readInputStreamData(stream, input, 0, wavHeaderData[5]);
