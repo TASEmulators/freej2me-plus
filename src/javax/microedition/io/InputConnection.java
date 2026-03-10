@@ -16,6 +16,7 @@
 */
 package javax.microedition.io;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.DataInputStream;
@@ -23,8 +24,8 @@ import java.io.DataInputStream;
 public interface InputConnection extends Connection
 {
 
-	public DataInputStream openDataInputStream() throws UnsupportedEncodingException;
+	public DataInputStream openDataInputStream() throws UnsupportedEncodingException, IOException;
 
-	public InputStream openInputStream() throws UnsupportedEncodingException;
+	public InputStream openInputStream() throws UnsupportedEncodingException, IOException;
 
 }

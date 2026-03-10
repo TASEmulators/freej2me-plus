@@ -17,6 +17,7 @@
 package javax.microedition.io;
 
 
+import java.io.IOException;
 
 public interface SocketConnection extends StreamConnection
 {
@@ -28,16 +29,16 @@ public interface SocketConnection extends StreamConnection
 	public static final byte SNDBUF = 4;
 
 
-	public String getAddress();
+	public String getAddress() throws IOException;
 
-	public String getLocalAddress();
+	public String getLocalAddress() throws IOException;
 
-	public int getLocalPort();
+	public int getLocalPort() throws IOException;
 
-	public int getPort();
+	public int getPort() throws IOException;
 
-	public int getSocketOption(byte option);
+	public int getSocketOption(byte option) throws IOException;
 
-	public void setSocketOption(byte option, int value);
+	public void setSocketOption(byte option, int value) throws IOException;
 
 }

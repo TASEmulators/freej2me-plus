@@ -16,14 +16,15 @@
 */
 package javax.microedition.io;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.DataOutputStream;
 
 public interface OutputConnection extends Connection
 {
 
-	public DataOutputStream openDataOutputStream();
+	public DataOutputStream openDataOutputStream() throws IOException;
 
-	public OutputStream openOutputStream();
+	public OutputStream openOutputStream() throws IOException;
 
 }
