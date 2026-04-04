@@ -689,6 +689,9 @@ public class Graphics3D
 								{
 									// Depth testing and depth buffer updates don't need to match against the pixel's translated viewport coordinates, if they are translated
 									if (this.depthBuffer[this.vieww * y + x] < z) { continue; } // Skip if this pixel is not visible
+
+									// Update the depth buffer if depth write is enabled
+									if (compositingMode.isDepthWriteEnabled()) { this.depthBuffer[this.vieww * y + x] = z; }
 								}
 								s = sL + drawX * (sR - sL);
 								t = tL + drawX * (tR - tL);
@@ -697,8 +700,9 @@ public class Graphics3D
 								int paintPixel = 0xFF000000 | vertices.getDefaultColor(); // It's forced to opaque, maybe that shouldn't be done for untextured polygons, but helps some games like Brick Breaker Revolution
 								if(tex != null && texCoords != null && !Mobile.M3GRenderUntexturedPolygons && !Mobile.M3GRenderWireframe) { paintPixel = teximg.getConvertedPixel(M3GMath.roundPositive(s), M3GMath.roundPositive(t)); }
 								
-								int alpha = (paintPixel >> 24) & 0xFF; // Image2D converts to ARGB format
-								if (alpha < (int) (compositingMode.getAlphaThreshold() * 255)) { continue; } // Skip transparent pixels below the alpha threshold
+								if (((paintPixel >> 24) & 0xFF) < (int) (compositingMode.getAlphaThreshold() * 255)) { continue; } // Skip transparent pixels below the alpha threshold
+
+								int alpha; // Image2D converts to ARGB format
 
 								if (vertices.getColors() != null) // We have to do texture blending, as we have vertex colors and any available texture goes on top of them
 								{
@@ -715,10 +719,10 @@ public class Graphics3D
 									}
 
 									// Calculate weights based on pixel position in relation to the triangle's area
-									totalArea = M3GMath.abs((xBot - xTop) * (yMid - yTop) - (xBot - xMidL) * (yBot - yTop));
-									areaA = M3GMath.abs((xBot - xTop) * (y - yTop) - (x - xTop) * (yBot - yTop));
-									areaB = M3GMath.abs((xMidL - xTop) * (y - yTop) - (x - xTop) * (yMid - yTop));
-									areaC = M3GMath.abs((x - xBot) * (yMid - yTop) - (xBot - xMidL) * (y - yTop));
+									areaA = M3GMath.abs((xBot - xTop) * (y - yTop) - (xMidL - xTop) * (yBot - yTop)) * 0.5f;
+									areaB = M3GMath.abs((xMidL - xTop) * (y - yTop) - (x - xTop) * (yMid - yTop)) * 0.5f;
+									areaC = M3GMath.abs((x - xBot) * (yMid - yTop) - (xBot - xMidL) * (y - yTop)) * 0.5f;
+									totalArea = areaA + areaB + areaC;
 
 									weightA = areaA / totalArea;
 									weightB = areaB / totalArea;
@@ -738,8 +742,10 @@ public class Graphics3D
 
 									// Blend with texture pixel if there's one, otherwise, just use the interpolated vertex color directly
 									if(tex == null && texCoords == null) { paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b; }
-									else { paintPixel = blendPixels((alpha << 24) | (r << 16) | (g << 8) | b, paintPixel, alpha, tex.getBlending()); }
+									else { paintPixel = blendPixels(paintPixel, (alpha << 24) | (r << 16) | (g << 8) | b, alpha, tex.getBlending()); }
 								}
+
+								alpha = (paintPixel >> 24) & 0xFF; // Image2D converts to ARGB format
 
 								// To blend the fog value here, we have to take the current pixel's z value into consideration
 								if(fog != null) 
@@ -759,25 +765,22 @@ public class Graphics3D
 									paintPixel = blendFog(paintPixel, fog.getColor());
 								}
 
+								// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
+								// If blending is REPLACE and the pixel to paint is fully opaque, we can skip blending altogether and just paint it directly.
+								final int finalPixel = (compositingMode.getBlending() == CompositingMode.REPLACE && alpha == 255) ? paintPixel :
+									blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)], paintPixel, alpha, compositingMode.getBlending());
+
 								if(!Mobile.halfResM3GRaster) // If we're rendering at native res, just blend each pixel and update the depth buffer normally
 								{
-									rasterData[(y+viewy) * canvasWidth + (x+viewx)] = blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)], paintPixel, alpha, compositingMode.getBlending());
-
-									// Update depth buffer, same as depth test, check this target's DepthBuffer if compositingMode is absent
-									if(compositingMode.isDepthWriteEnabled() && isDepthBufferEnabled()) { this.depthBuffer[this.vieww * y + x] = z; }
+									rasterData[(y+viewy) * canvasWidth + (x+viewx)] = finalPixel;
 								} 
 								else // Else, we have to copy the same pixel over in a 2x2 basis, and update the depth buffer in the same manner
 								{
-									// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct
-									final int finalPixel = blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)], paintPixel, alpha, compositingMode.getBlending());
 									for(int fx = x; fx < x + 2; fx++) 
 									{
 										for(int fy = y; fy < y + 2; fy++) 
 										{
-											if((fy+viewy) * canvasWidth + (fx+viewx) >= rasterData.length || this.vieww * fy + fx >= this.depthBuffer.length) { break; }
 											rasterData[(fy+viewy) * canvasWidth + (fx+viewx)] = finalPixel;
-											// Update depth buffer, same as depth test, check this target's DepthBuffer if compositingMode is absent
-											if(compositingMode.isDepthWriteEnabled() && isDepthBufferEnabled()) { this.depthBuffer[this.vieww * fy + fx] = z; }
 										}
 									}
 								}

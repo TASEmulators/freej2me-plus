@@ -63,7 +63,7 @@ class Triangle
 		bufIndex = tris;
 
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++) 
-		{			
+		{
 			if (tri_id > 0) 
 			{
 				sharesVertices = (tris[3* tri_id + 0] == tris[3* (tri_id-1) + 1] &&
@@ -177,7 +177,7 @@ class Triangle
 	public final float rC() { return t[4 * 2 + 2]; }
 	public final float qC() { return t[4 * 2 + 3]; }
 
-	public final int getIndex(int index) { return bufIndex[3*triangleIndex + index]; }
+	public final int getIndex(int index) { return bufIndex[3 * triangleIndex + index]; }
 
 	public final boolean clip() 
 	{		
