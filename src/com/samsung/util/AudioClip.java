@@ -69,7 +69,6 @@ public class AudioClip
 
 	public AudioClip(int clipType, String filename)
 	{
-		Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + "new audioclip:" + clipType + " " + filename);
 		if(filename == null) { throw new NullPointerException("AudioClip: Cannot open a player with a null file path"); }
 		
 		// TODO: Check is ignored but is part of the AudioClip spec. Some versions of Snowball Fight send whatever for clipType here, this check breaks them completely.
@@ -100,7 +99,7 @@ public class AudioClip
 		{
 			if (player.getState() == Player.STARTED) { player.stop(); }
 			player.setMediaTime(0); // play() should always play media from the beginning, like Nokia Sound
-			player.setLoopCount((playerFormat == TYPE_MMF) ? (loop == 0 ? -1 : loop) : (loop == 255 ? -1 : loop == 0 ? 1 : loop)); // For non-MMF, treat 255 loops as infinite looping
+			player.setLoopCount((loop == 255 || loop == 0) ? -1 : loop); // Treat 0 and 255 loops as infinite looping
 			((VolumeControl) player.getControl("VolumeControl")).setLevel((playerFormat == TYPE_MMF) ? (volume <= 5 ? volume * 20 : volume) : volume * 20); // Received volume varies from 1 to 5, so adapt
 			player.start();
 		}
