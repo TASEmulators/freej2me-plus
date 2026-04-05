@@ -22,6 +22,7 @@ package org.recompile.freej2me;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
+import org.recompile.mobile.PlatformGraphics;
 
 import java.awt.Canvas;
 import java.awt.Color;
@@ -813,6 +814,16 @@ public class FreeJ2ME
 
 			if(!showDragMessage) 
 			{
+				// Draw Pause or Fast-Forward indicators before showing the frame on screen
+				if(Mobile.isPaused)
+				{
+					((PlatformGraphics)Mobile.getPlatform().getLcdFrontbufferGraphics()).drawPauseIndicator();
+				}
+				else if (MobilePlatform.pressedKeys[20]) // Check if fast-forward is active
+				{
+					((PlatformGraphics)Mobile.getPlatform().getLcdFrontbufferGraphics()).drawFastForwardIndicator();
+				}
+
 				if (Mobile.rotateDisplay == 0) { g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), cx, cy, cw, ch, null); } 
 				else 
 				{
@@ -831,29 +842,6 @@ public class FreeJ2ME
 						((Graphics2D) g).rotate(Math.toRadians(270), ch/2, ch/2);
 						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), 0, cx, ch, cw, null);
 					}
-				}
-				
-				if(Mobile.isPaused)
-				{
-					g.setColor(new Color(0, 0, 64, 160));
-					g.fillRect(0, 0, getWidth(), getHeight());
-					g.setFont(new Font("Dialog", Font.BOLD, cw/5));
-					g.setColor(Color.ORANGE);
-					String message = "PAUSED!";
-					FontMetrics metrics = g.getFontMetrics();
-					int x = (getWidth() - metrics.stringWidth(message)) / 2;
-					int y = (getHeight() + metrics.getAscent()) / 2;
-					g.drawString(message, x, y);
-				}
-				else if (MobilePlatform.pressedKeys[20]) // Check if fast-forward is active
-				{
-					g.setFont(new Font("Dialog", Font.BOLD, cw/2));
-					g.setColor(Color.ORANGE);
-					String fastForwardIndicator = "»";
-					FontMetrics ffMetrics = g.getFontMetrics();
-					int ffX = (getWidth() - ffMetrics.stringWidth(fastForwardIndicator)) / 2;
-					int ffY = (getHeight() + ffMetrics.getAscent()) / 2;
-					g.drawString(fastForwardIndicator, ffX, ffY);
 				}
 			}
 			else 

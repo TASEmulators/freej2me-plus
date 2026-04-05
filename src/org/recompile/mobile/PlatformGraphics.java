@@ -144,6 +144,11 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	protected boolean usePictoColor = false;
 	protected boolean contextDisposed = false;
 
+	private static final String fastForwardIndicator = "⮞⮞";
+	private static final String pauseIndicator = "PAUSED!";
+
+	private static final Font HUDFont = new Font(Font.FACE_MONOSPACE, Font.STYLE_BOLD, Font.SIZE_LARGE);
+
 	public PlatformGraphics(PlatformImage image)
 	{
 		this.baseImage = image;
@@ -2599,6 +2604,34 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		drawString(fpsText, 0, 0, TOP | LEFT);
 		setOrigin(0, 0);
 		setColor(0, 0, 0);
+	}
+
+	public final void drawFastForwardIndicator()
+	{
+		int tmpColor = getColor();
+		Font tmpFont = getFont();
+		setAlphaRGB(0x90000000);
+		gc.fillRect(0, 0, canvasWidth, canvasHeight);
+		setFont(HUDFont);
+		setColor(0xFFFFAF00);
+		int x = (canvasWidth - HUDFont.stringWidth(fastForwardIndicator)) / 2;
+		gc.drawString(fastForwardIndicator, x, HUDFont.getHeight());
+		setColor(tmpColor);
+		setFont(tmpFont);
+	}
+
+	public final void drawPauseIndicator()
+	{
+		int tmpColor = getColor();
+		Font tmpFont = getFont();
+		setAlphaRGB(0x90000000);
+		gc.fillRect(0, 0, canvasWidth, canvasHeight);
+		setFont(HUDFont);
+		setColor(0xFFFFAF00);
+		int x = (canvasWidth - HUDFont.stringWidth(pauseIndicator)) / 2;
+		gc.drawString(pauseIndicator, x, HUDFont.getHeight());
+		setColor(tmpColor);
+		setFont(tmpFont);
 	}
 
 	// Helper methods
