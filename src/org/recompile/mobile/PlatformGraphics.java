@@ -350,7 +350,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 		try
 		{
-			fastBlit = (!Mobile.renderLCDMask || Mobile.maskIndex == 0) && !Mobile.funLightsEnabled;
+			fastBlit = (/*!Mobile.renderLCDMask || */ Mobile.maskIndex == 0) && !Mobile.funLightsEnabled;
 			
 			if(fastBlit && image.getDataBuffer() == canvasData) 
 			{ 
@@ -411,7 +411,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 					for (i = x; i < x + width; i++) 
 					{
 						// Only apply the backlight mask if Display, nokia's DeviceControl, or others request it for backlight effects.
-						canvasData[destRowIndex + i] = image.getDataBuffer()[srcRowIndex + i] & (Mobile.renderLCDMask ? Mobile.lcdMaskColors[Mobile.maskIndex] : 0xFFFFFFFF);
+						canvasData[destRowIndex + i] = image.getDataBuffer()[srcRowIndex + i] & Mobile.lcdMaskColors[Mobile.maskIndex]; //(Mobile.renderLCDMask ? Mobile.lcdMaskColors[Mobile.maskIndex] : 0xFFFFFFFF);
 
 						// If funLights overlay is requested by the game, apply its pixels to the screen area
 						if(Mobile.funLightsEnabled) { canvasData[destRowIndex + i] = blendPixels(overlayData[srcRowIndex + i], canvasData[destRowIndex + i]); }
