@@ -1181,12 +1181,6 @@ public class PlatformPlayer implements Player
 				else if(wavHeaderData[0] == 17) // IMA ADPCM
 				{
 					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVImaADPCMDecoder.decodeImaAdpcm(new ByteArrayInputStream(tmpStream), wavHeaderData))));
-					if(Mobile.minLogLevel == Mobile.LOG_DEBUG) /* Print the decoded stream's header for analysis */
-					{
-						InputStream headerRead = new ByteArrayInputStream(tmpStream);
-						WAVTools.readHeader(headerRead);
-						headerRead = null;
-					}
 				}
 				else /* Unknown format. */
 				{

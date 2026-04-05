@@ -87,9 +87,19 @@ public final class WAVTools
 		
 		int totalBytesRead = 36; // Bytes consumed so far
 
-		// Read extra fmt bytes for IMA ADPCM, then skip any remaining extra fmt bytes
+		// Read extra fmt bytes for IMA ADPCM, then skip any remaining extra
+		// 'fmt' bytes
 		short ByteExtraData = 0;
 		short ExtraData = 0;
+		String factHeader = "";
+		int SubChunk2Size = 0;
+		int numOfSamples = 0;
+		String dataHeader = "";
+		int dataLen = 0;
+
+		// If the 'junk' header is present, we will read these
+		String junkHeader = null;
+		int junkSize = 0;
 
 		if(audioFormat == 0x11 && chunkSize > 16)
 		{
@@ -105,13 +115,6 @@ public final class WAVTools
 			input.skip(extraFmtBytes);
 			totalBytesRead += extraFmtBytes;
 		}
-
-		// Scan through sub-chunks to find the "data" chunk
-		String factHeader = "";
-		int SubChunk2Size = 0;
-		int numOfSamples = 0;
-		String dataHeader = "";
-		int dataLen = 0;
 
 		while(true)
 		{
@@ -137,6 +140,16 @@ public final class WAVTools
 					if(factRemaining > 0) { input.skip(factRemaining); totalBytesRead += factRemaining; }
 				}
 				else { input.skip(chunkSz); totalBytesRead += chunkSz; }
+			}
+			else if(chunkId.equals("junk"))
+			{
+				junkHeader = chunkId;
+				junkSize = readInputStreamInt32(input);
+				input.skip(junkSize);
+
+				// Skip one extra byte if junkSize is odd
+				if(junkSize % 2 == 1)
+					input.skip(1);
 			}
 			else
 			{
@@ -167,6 +180,12 @@ public final class WAVTools
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "---'" + factHeader +"' header---");
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "SubChunk2Size:" + Integer.toString(SubChunk2Size));
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "numOfSamples:" + Integer.toString(numOfSamples));
+		}
+
+		if(junkHeader != null)
+		{
+			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "---'" + junkHeader + "' header---");
+			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "JunkSize:" + junkSize);
 		}
 		
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "---'" + dataHeader +"' header---");
