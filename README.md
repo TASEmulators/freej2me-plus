@@ -118,6 +118,7 @@ Alternatively it can be launched from the command line with the following argume
 - `height` :arrow_right: `also self explanatory, it's the virtual LCD's height`
 - `scale` :arrow_right: `for windowed mode, dictates the scale that FreeJ2ME-Plus' window starts with.` 
   - '2' will make it 2X bigger than the original width and height size for example
+  - **Note that using the '+' and '-' keys also let you scale the window by an integer factor of +-1**
 - `keyLayout` :arrow_right: `specifies which device key layout should be used when booting up.` These can be:
   - `0 -> Default`
   - `1 -> LG`
