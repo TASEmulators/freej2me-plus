@@ -541,7 +541,8 @@ public class RecordStore
 
 		if(recordId == 0) { recordId++; } // Records should always start at ID 1
 		if(!recordIds.contains(recordId)) { throw new InvalidRecordIDException("setRecord: Invalid Record ID: "+recordId); }
-		if(offset < 0 || numBytes < 0 || offset + numBytes > newData.length) { throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
+		if(offset < 0 || numBytes < 0 || (newData != null && offset + numBytes > newData.length))
+			{ throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
 
 		try
 		{
