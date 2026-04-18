@@ -228,6 +228,7 @@ public class Mobile
 	public static final int LG_SOFT1 = -202; 
 	public static final int LG_SOFT2 = -203; 
 	public static final int LG_FIRE  = -5;
+	public static final int LG_CLR   = -204;
 
 	//Motorola E1000/Alcatel/Softbank keycodes
 	public static final int MOTOROLA_UP    = -1;
@@ -368,20 +369,21 @@ public class Mobile
 				case 7:  return KDDI_FIRE; // Y
 				case 8:  return KDDI_SOFT2; // Start
 				case 9:  return KDDI_SOFT1; // Select
-				case 19: return KDDI_CLR; // Select
+				case 19: return KDDI_CLR;
 			}
 		}
 		if(lg)
 		{
 			switch(keycode)
 			{
-				case 0: return LG_UP; // Up
-				case 1: return LG_DOWN; // Down
-				case 2: return LG_LEFT; // Left
-				case 3: return LG_RIGHT; // Right
-				case 7: return LG_FIRE; // Y
-				case 8: return LG_SOFT2; // Start
-				case 9: return LG_SOFT1; // Select
+				case 0:  return LG_UP; // Up
+				case 1:  return LG_DOWN; // Down
+				case 2:  return LG_LEFT; // Left
+				case 3:  return LG_RIGHT; // Right
+				case 7:  return LG_FIRE; // Y
+				case 8:  return LG_SOFT2; // Start
+				case 9:  return LG_SOFT1; // Select
+				case 19: return LG_CLR;
 			}
 		}
 		if(motorola)
