@@ -92,8 +92,13 @@ public class FastMath
 
     public static float atan2(float a, float b) 
     {
-        if (Float.isNaN(a) || Float.isNaN(b)) { throw new IllegalArgumentException("Values must be finite."); }
-        return (float) Math.toDegrees(Math.atan2(a, b));
+        if (Float.isNaN(a) || Float.isNaN(b) || Float.isInfinite(a) || Float.isInfinite(b)) { throw new IllegalArgumentException("Values must be finite."); }
+        if (a == 0 && b == 0) { return Float.NaN; }
+        if (a == 0) { return 90.0f; }
+        if (b == 0) { return 0.0f; }
+
+        float angle = (float) Math.toDegrees(Math.atan2(b, a));
+        return angle < 0 ? angle + 180.0f : angle;
     }
 
     public static int floatToInnerInt(float v) 
