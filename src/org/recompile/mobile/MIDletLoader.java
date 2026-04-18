@@ -369,12 +369,7 @@ public class MIDletLoader extends URLClassLoader
 			{
 				try
 				{
-					if (mainClass.getName().endsWith("ALW1")) 
-					{ 
-						Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "ALW1 wrapper class detected! Attempting to bypass...");
-						start = mainClass.getDeclaredMethod("startRealApp");
-					}
-					else { start = Mobile.isDoJa ? mainClass.getDeclaredMethod("start") : mainClass.getDeclaredMethod("startApp"); }
+					start = Mobile.isDoJa ? mainClass.getDeclaredMethod("start") : mainClass.getDeclaredMethod("startApp");
 					start.setAccessible(true);
 				}
 				catch (NoSuchMethodException e)
@@ -1062,13 +1057,6 @@ public class MIDletLoader extends URLClassLoader
 					Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "MIDlet tried to override Java's Thread method: " + name + "... patched!");
 					name = "_" + name; 
 				}
-			}
-
-			// Try bypassing ALW1 wrapper
-			if (desc.equals("()V") && name.equals("startRealApp") && access == Opcodes.ACC_PRIVATE) 
-			{
-				Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "MIDlet uses an ALW1 ad/demo wrapper... trying to patch...");
-				access = Opcodes.ACC_PUBLIC;
 			}
 
 			MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);

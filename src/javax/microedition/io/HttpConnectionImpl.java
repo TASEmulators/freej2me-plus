@@ -35,14 +35,7 @@ class HttpConnectionImpl implements HttpConnection, com.nttdocomo.io.HttpConnect
 	Map<String, String> requestProperty = new HashMap<String, String>();
 	private String url, requestMethod;
 
-	public HttpConnectionImpl(String url)  
-    { 
-        this.url = url;
-        if(url.contains("vserv") || url.contains("adapi")) 
-        {
-            Mobile.log(Mobile.LOG_WARNING, HttpConnectionImpl.class.getPackage().getName() + "." + HttpConnectionImpl.class.getSimpleName() + ": " + "vServ connection requested (" + url + "). Attempting bypass... ");
-        }
-    }
+	public HttpConnectionImpl(String url) { this.url = url; }
 
 	public String getURL() { return url; }
 
@@ -78,35 +71,29 @@ class HttpConnectionImpl implements HttpConnection, com.nttdocomo.io.HttpConnect
 
 	public long getLastModified() { return 0; }
 
-	public String getHeaderField(String name) 
-    { 
-        if (name.equalsIgnoreCase("location")) { return "vserv:"; }
-		if (name.equals("X-VSERV-CONTEXT")) { return "asd"; }
-
-        return "headerField string"; 
-    }
+	public String getHeaderField(String name) { return null; }
 
 	public int getHeaderFieldInt(String name, int def) { return 0; }
 
 	public long getHeaderFieldDate(String name, long def) { return 0; }
 
-	public String getHeaderField(int n) { return "headerFIeld int"; }
+	public String getHeaderField(int n) { return null; }
 
-	public String getHeaderFieldKey(int n) { return "getHeaderFieldKey"; }
+	public String getHeaderFieldKey(int n) { return null; }
 
 	public void close() { Mobile.log(Mobile.LOG_WARNING, HttpConnectionImpl.class.getPackage().getName() + "." + HttpConnectionImpl.class.getSimpleName() + ": " + "'closing' http connection"); }
 
-	public String getType() { return "getType"; }
+	public String getType() { return null; }
 
-	public String getEncoding() { return "getEncoding"; }
+	public String getEncoding() { return null; }
 
 	public long getLength() { return 0; }
 
 	public DataInputStream openDataInputStream() throws UnsupportedEncodingException { return new DataInputStream(this.openInputStream()); }
 
-	public InputStream openInputStream() throws UnsupportedEncodingException { return new ByteArrayInputStream("resource://!blank".getBytes("UTF-8")); }
+	public InputStream openInputStream() throws UnsupportedEncodingException { return null; }
 
 	public DataOutputStream openDataOutputStream() { return new DataOutputStream(this.openOutputStream()); }
 
-	public OutputStream openOutputStream() { return new ByteArrayOutputStream(); }
+	public OutputStream openOutputStream() { return null; }
 }
