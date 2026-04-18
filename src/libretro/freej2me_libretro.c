@@ -1414,60 +1414,63 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 void retro_deinit(void)
 {
+	if(isRunning())
+	{
 #ifdef __linux__
-	kill(javaProcess, SIGKILL);
-	wait(NULL);
+		kill(javaProcess, SIGKILL);
+		wait(NULL);
 #elif _WIN32
-	HANDLE hProcessSnap;
-	PROCESSENTRY32 pe32;
-	CloseHandle(pRead[0]);
-	CloseHandle(pRead[1]);
-	CloseHandle(pWrite[0]);
-	CloseHandle(pWrite[1]);	
+		HANDLE hProcessSnap;
+		PROCESSENTRY32 pe32;
+		CloseHandle(pRead[0]);
+		CloseHandle(pRead[1]);
+		CloseHandle(pWrite[0]);
+		CloseHandle(pWrite[1]);	
 
-	/* 
-	* Since java on win32 has the "decency" to open a secondary process with another PID
-	* that is what runs freej2me's main app, the only way i (with my very limited windows
-	* knowledge) can think of to reliably close this is going nuclear: Terminate all javaw 
-	* processes related to javaProcess.
-	*/
-	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	if (hProcessSnap == INVALID_HANDLE_VALUE) { return; }
+		/* 
+		* Since java on win32 has the "decency" to open a secondary process with another PID
+		* that is what runs freej2me's main app, the only way i (with my very limited windows
+		* knowledge) can think of to reliably close this is going nuclear: Terminate all javaw 
+		* processes related to javaProcess.
+		*/
+		hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		if (hProcessSnap == INVALID_HANDLE_VALUE) { return; }
 
-	pe32.dwSize = sizeof(PROCESSENTRY32);
+		pe32.dwSize = sizeof(PROCESSENTRY32);
 
-	if (!Process32First(hProcessSnap, &pe32)) 
-	{
-		CloseHandle(hProcessSnap);
-		return;
-	}
-
-	// Iterate through all processes.
-	do 
-	{
-		if (pe32.th32ParentProcessID == javaProcess.dwProcessId) 
+		if (!Process32First(hProcessSnap, &pe32)) 
 		{
-			// Open the child process with TERMINATE permission.
-			HANDLE hChildProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
-			if (hChildProcess) 
-			{
-				// Terminate the child process.
-				TerminateProcess(hChildProcess, 0);
-				CloseHandle(hChildProcess);
-			}
+			CloseHandle(hProcessSnap);
+			return;
 		}
-	} while (Process32Next(hProcessSnap, &pe32));
 
-	// Then terminate the parent process (the one we have the pointer to).
-	HANDLE hParentProcess = OpenProcess(PROCESS_TERMINATE, FALSE, javaProcess.dwProcessId);
-	if (hParentProcess) 
-	{
-		TerminateProcess(hParentProcess, 0);
-		CloseHandle(hParentProcess);
-	}
+		// Iterate through all processes.
+		do 
+		{
+			if (pe32.th32ParentProcessID == javaProcess.dwProcessId) 
+			{
+				// Open the child process with TERMINATE permission.
+				HANDLE hChildProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
+				if (hChildProcess) 
+				{
+					// Terminate the child process.
+					TerminateProcess(hChildProcess, 0);
+					CloseHandle(hChildProcess);
+				}
+			}
+		} while (Process32Next(hProcessSnap, &pe32));
 
-	CloseHandle(hProcessSnap);
+		// Then terminate the parent process (the one we have the pointer to).
+		HANDLE hParentProcess = OpenProcess(PROCESS_TERMINATE, FALSE, javaProcess.dwProcessId);
+		if (hParentProcess) 
+		{
+			TerminateProcess(hParentProcess, 0);
+			CloseHandle(hParentProcess);
+		}
+
+		CloseHandle(hProcessSnap);
 #endif
+	}
 }
 
 void retro_reset(void)
@@ -1535,6 +1538,7 @@ bool javaOpen(char *cmd, char **params)
 		execvp(cmd, params);
 
 		/* execvp failure! */
+		retro_deinit();
 	}
 
 	if(pid>0) /* parent */
