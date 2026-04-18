@@ -166,7 +166,7 @@ public final class MLDDecoder
             String chunkID = "" + (char) input[decodePos] + (char) input[decodePos+1] + (char) input[decodePos+2] + (char) input[decodePos+3];
 
             if (chunkID.equals("adat"))      { decodeADATChunk(); }
-            else if (chunkID.equals("adpm")) { decodeADPMChunk(); }
+            //else if (chunkID.equals("adpm")) { decodeADPMChunk(); } // ADPM is read in ADATChunk above
             else if (chunkID.equals("ainf")) { decodeAINFChunk(); }
             else if (chunkID.equals("auth")) { decodeAUTHChunk(); } 
             else if (chunkID.equals("copy")) { decodeCOPYChunk(); } 
@@ -431,6 +431,7 @@ public final class MLDDecoder
         int hasPCMData = (input[decodePos++] & 0xFF);
         
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"-------------------------- AUDIO INFO CHUNK --------------------------");
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Chunk Size: " + chunkSize);
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Amount of (AD)PCM streams: " + numStreams);
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Has following (AD)PCM streams: " + (hasPCMData == 0 ? "Yes" : "No"));
     }
@@ -440,16 +441,26 @@ public final class MLDDecoder
         String chunkName = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++];
         int chunkSize = ((input[decodePos++] & 0xFF) << 24 | (input[decodePos++] & 0xFF) << 16 | (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF));
         int adpmHeaderLen = (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
+        
+        // adpmHeaderLen contains these two as well
         int dataFormat = (input[decodePos++] & 0xFF);
         int dataAttribute = (input[decodePos++] & 0xFF);
+
+        // adpcmSize needs to subtract adpcmHeaderLen (2 bytes), dataFormat (1),
+        // dataAttribute (1), and the entire ADPM header (9) = 13 bytes.
+        int adpcmSize = chunkSize - 13;
         
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"-------------------------- AUDIO DATA CHUNK --------------------------");
-        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Header Length: " + adpmHeaderLen);
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Chunk Size: " + chunkSize);
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"ADPCM Data Size: " + adpcmSize);
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"ADPM Header Length (+fmt +attr): " + adpmHeaderLen);
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Data format: " + dataFormat);
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Data attribute: " + dataAttribute);
+    
+        decodeADPMChunk(adpcmSize);
     }
 
-    public static void decodeADPMChunk() 
+    public static void decodeADPMChunk(int size) 
     {
         String chunkName = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++];
         int chunkSize = (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF); 
@@ -457,21 +468,15 @@ public final class MLDDecoder
         int bitDepth = (input[decodePos++] & 0xFF);
         int numChannels = (input[decodePos++] & 0xFF);
 
-        int wavSize = 0;
+        byte[] waveData = new byte[size];
 
-        while(!((char) input[wavSize+decodePos] == 't' && (char) input[wavSize+decodePos+1] == 'r' && (char) input[wavSize+decodePos+2] == 'a' && (char) input[wavSize+decodePos+3] == 'c')) 
-        {
-            wavSize++;
-        }
-        
-        byte[] waveData = new byte[wavSize];
-
-        for(int i = 0; i < wavSize; i++) 
+        for(int i = 0; i < size; i++) 
         {
             waveData[i] = input[decodePos++];
         }
 
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"-------------------------- ADPCM DATA CHUNK --------------------------");
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Chunk Size: " + chunkSize);
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Sample Rate: " + (sampleRate * 1000) + "Hz");
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Bit Depth: " + bitDepth + " bits"); // This is either 2 or 4 bits
         Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Channel type: " + ((numChannels & 0x07) == 1 ? "Mono " : "Stereo ") + ((numChannels & 0x08) == 0 ? "Non-Interleaved" : "Interleaved"));
