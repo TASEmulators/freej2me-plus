@@ -70,7 +70,9 @@ public class Connector
 			return new InputConnectionImpl(name);
 		}
 
-		if (name.startsWith("http://") || name.startsWith("https://") || name.startsWith("socket://")) { return new HttpConnectionImpl(name); }
+		if (name.startsWith("http://") || name.startsWith("https://")) { return new HttpConnectionImpl(name); }
+
+		if (name.startsWith("socket://")) { return openSocketConnection(name); }
 
 		if(Mobile.usingMessagingAPI) 
 		{
@@ -78,6 +80,18 @@ public class Connector
 		}
 		
 		return null; 
+	}
+
+	public static Connection openSocketConnection(String name) throws IOException{
+		int portSepIndex = name.lastIndexOf(':');
+		int port = Integer.parseInt(name.substring(portSepIndex + 1));
+		String host = name.substring("socket://".length(), portSepIndex);
+
+		if (!host.isEmpty()) {
+			return new SocketConnectionImpl(host, port);
+		} else {
+			return new ServerSocketConnectionImpl(port);
+		}
 	}
 
 	public static DataOutputStream openDataOutputStream(String name) 
