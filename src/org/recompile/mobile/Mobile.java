@@ -167,6 +167,7 @@ public class Mobile
 	public static boolean motorola = false;
 	public static boolean motoV8 = false;
 	public static boolean motoTriplets = false;
+	public static boolean motoA1000 = false;
 	public static boolean nokiaKeyboard = false;
 	public static boolean sagem = false;
 	public static boolean siemens = false;
@@ -255,7 +256,16 @@ public class Mobile
 	public static final int TRIPLETS_RIGHT = 5;
 	public static final int TRIPLETS_SOFT1 = 21; 
 	public static final int TRIPLETS_SOFT2 = 22; 
-	public static final int TRIPLETS_FIRE = 20;
+	public static final int TRIPLETS_FIRE  = 20;
+
+	//Motorola A1000 keycodes
+	public static final int A1000_UP    = -1;
+	public static final int A1000_DOWN  = -2;
+	public static final int A1000_LEFT  = -3; 
+	public static final int A1000_RIGHT = -4; 
+	public static final int A1000_SOFT1 = -10;
+	public static final int A1000_SOFT2 = -11;
+	public static final int A1000_FIRE  =  13;
 
 	//Nokia keycodes
 	public static final int NOKIA_UP    = -1; // KEY_UP_ARROW = -1;
@@ -423,6 +433,19 @@ public class Mobile
 				case 7: return MOTOV8_FIRE; // Y
 				case 8: return MOTOV8_SOFT2; // Start
 				case 9: return MOTOV8_SOFT1; // Select
+			}
+		}
+		if(motoA1000)
+		{
+			switch(keycode)
+			{
+				case 0: return A1000_UP; // Up
+				case 1: return A1000_DOWN; // Down
+				case 2: return A1000_LEFT; // Left
+				case 3: return A1000_RIGHT; // Right
+				case 7: return A1000_FIRE; // Y
+				case 8: return A1000_SOFT2; // Start
+				case 9: return A1000_SOFT1; // Select
 			}
 		}
 		if(nokiaKeyboard)
@@ -595,6 +618,17 @@ public class Mobile
 
 			}
 		}
+		if (motoA1000) 
+		{
+			switch (keycode) 
+			{
+				case A1000_UP:    return Canvas.UP; // Up
+				case A1000_DOWN:  return Canvas.DOWN; // Down
+				case A1000_LEFT:  return Canvas.LEFT; // Left
+				case A1000_RIGHT: return Canvas.RIGHT; // Right
+				case A1000_FIRE:  return Canvas.FIRE; // Y
+			}
+		}
 		if (nokiaKeyboard) 
 		{
 			switch (keycode) 
@@ -756,6 +790,19 @@ public class Mobile
 				case MOTOV8_FIRE: return Canvas.FIRE; // Y
 				case MOTOV8_SOFT1: return Canvas.KEY_SOFT_LEFT;
 				case MOTOV8_SOFT2: return Canvas.KEY_SOFT_RIGHT;
+			}
+		}
+		if (motoA1000) 
+		{
+			switch (keycode) 
+			{
+				case A1000_UP: return Canvas.UP; // Up
+				case A1000_DOWN: return Canvas.DOWN; // Down
+				case A1000_LEFT: return Canvas.LEFT; // Left
+				case A1000_RIGHT: return Canvas.RIGHT; // Right
+				case A1000_FIRE: return Canvas.FIRE; // Y
+				case A1000_SOFT1: return Canvas.KEY_SOFT_LEFT;
+				case A1000_SOFT2: return Canvas.KEY_SOFT_RIGHT;
 			}
 		}
 		if (nokiaKeyboard) 
@@ -984,6 +1031,7 @@ public class Mobile
 		motorola = false;
 		motoTriplets = false;
 		motoV8 = false;
+		motoA1000 = false;
 		nokiaKeyboard = false;
 		sagem = false;
 		siemens = false;
@@ -994,6 +1042,7 @@ public class Mobile
 		if(phone.equals("Motorola"))      { motorola = true;}
 		if(phone.equals("MotoTriplets"))  { motoTriplets = true;}
 		if(phone.equals("MotoV8"))        { motoV8 = true;}
+		if(phone.equals("MotoA1000"))     { motoA1000 = true;}
 		if(phone.equals("NokiaKeyboard")) { nokiaKeyboard = true;}
 		if(phone.equals("Sagem"))         { sagem = true;}
 		if(phone.equals("Siemens"))       { siemens = true;}

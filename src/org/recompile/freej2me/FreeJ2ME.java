@@ -506,12 +506,13 @@ public class FreeJ2ME
 				if(Integer.parseInt(args[5]) == 2)  { Mobile.config.settings.put("phone",  "Motorola"); }
 				if(Integer.parseInt(args[5]) == 3)  { Mobile.config.settings.put("phone",  "MotoTriplets"); }
 				if(Integer.parseInt(args[5]) == 4)  { Mobile.config.settings.put("phone",  "MotoV8"); }
-				if(Integer.parseInt(args[5]) == 5)  { Mobile.config.settings.put("phone",  "NokiaKeyboard"); }
-				if(Integer.parseInt(args[5]) == 6)  { Mobile.config.settings.put("phone",  "Sagem"); }
-				if(Integer.parseInt(args[5]) == 7)  { Mobile.config.settings.put("phone",  "Siemens"); }
-				if(Integer.parseInt(args[5]) == 8)  { Mobile.config.settings.put("phone",  "Sharp"); }
-				if(Integer.parseInt(args[5]) == 9)  { Mobile.config.settings.put("phone",  "SKT"); }
-				if(Integer.parseInt(args[5]) == 10) { Mobile.config.settings.put("phone",  "KDDI"); }
+				if(Integer.parseInt(args[5]) == 5)  { Mobile.config.settings.put("phone",  "MotoA1000"); }
+				if(Integer.parseInt(args[5]) == 6)  { Mobile.config.settings.put("phone",  "NokiaKeyboard"); }
+				if(Integer.parseInt(args[5]) == 7)  { Mobile.config.settings.put("phone",  "Sagem"); }
+				if(Integer.parseInt(args[5]) == 8)  { Mobile.config.settings.put("phone",  "Siemens"); }
+				if(Integer.parseInt(args[5]) == 9)  { Mobile.config.settings.put("phone",  "Sharp"); }
+				if(Integer.parseInt(args[5]) == 10) { Mobile.config.settings.put("phone",  "SKT"); }
+				if(Integer.parseInt(args[5]) == 11) { Mobile.config.settings.put("phone",  "KDDI"); }
 			}
 
 			if(args.length>=7)

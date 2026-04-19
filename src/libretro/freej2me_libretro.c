@@ -401,12 +401,13 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "Motorola/SoftBank"))  { phoneType = 2; }
 		else if (!strcmp(var.value, "Motorola Triplets"))  { phoneType = 3; }
 		else if (!strcmp(var.value, "Motorola V8"))        { phoneType = 4; }
-		else if (!strcmp(var.value, "Nokia Full Keyboard")){ phoneType = 5; }
-		else if (!strcmp(var.value, "Sagem"))              { phoneType = 6; }
-		else if (!strcmp(var.value, "Siemens"))            { phoneType = 7; }
-		else if (!strcmp(var.value, "Sharp"))              { phoneType = 8; }
-		else if (!strcmp(var.value, "SKT"))                { phoneType = 9; }
-		else if (!strcmp(var.value, "KDDI"))               { phoneType = 10; }
+		else if (!strcmp(var.value, "Motorola A1000"))     { phoneType = 5; }
+		else if (!strcmp(var.value, "Nokia Full Keyboard")){ phoneType = 6; }
+		else if (!strcmp(var.value, "Sagem"))              { phoneType = 7; }
+		else if (!strcmp(var.value, "Siemens"))            { phoneType = 8; }
+		else if (!strcmp(var.value, "Sharp"))              { phoneType = 9; }
+		else if (!strcmp(var.value, "SKT"))                { phoneType = 10; }
+		else if (!strcmp(var.value, "KDDI"))               { phoneType = 11; }
 	}
 
 	var.key = "freej2me_backlightcolor";

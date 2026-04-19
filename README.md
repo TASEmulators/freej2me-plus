@@ -120,17 +120,18 @@ Alternatively it can be launched from the command line with the following argume
   - '2' will make it 2X bigger than the original width and height size for example
   - **Note that using the '+' and '-' keys also let you scale the window by an integer factor of +-1**
 - `keyLayout` :arrow_right: `specifies which device key layout should be used when booting up.` These can be:
-  - `0 -> Default`
-  - `1 -> LG`
-  - `2 -> Motorola/Softbank`
-  - `3 -> Motorola Triplets`
-  - `4 -> Motorola V8`
-  - `5 -> Nokia Keyboard`
-  - `6 -> Sagem`
-  - `7 -> Siemens`
-  - `8 -> Sharp`
-  - `9 -> SKT`
-  - `10 -> KDDI`
+  - `0  -> Default`
+  - `1  -> LG`
+  - `2  -> Motorola/Softbank`
+  - `3  -> Motorola Triplets`
+  - `4  -> Motorola V8`
+  - `5  -> Motorola A1000`
+  - `6  -> Nokia Keyboard`
+  - `7  -> Sagem`
+  - `8  -> Siemens`
+  - `9  -> Sharp`
+  - `10 -> SKT`
+  - `11 -> KDDI`
 - `framerate` :arrow_right: `sets the maximum FPS applications are allowed to run at.` 
   - Can be any value, although '10' to '60' is the expected ballpark
 - `dojaversion` :arrow_right: `sets the DoJa/Star profile for the I-Appli to use.` These can be:
