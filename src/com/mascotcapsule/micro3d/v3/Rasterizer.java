@@ -20,15 +20,15 @@ public class Rasterizer {
 				return src;
 			case 2: {
 				{
-					int tmp = ((((((dst & src) << 1) + ((dst ^ src) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((dst + src - ((dst ^ src) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					src = 0xff000000 | (dst + src - tmp) | tmp;
 				}
 				return src;
 			}
 			case 3: {
 				{
-					int tmp = ((((((src ^ ~dst) & 0xFEFEFE) + ((src & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-					src = 0xff000000 | ((dst | tmp) - (tmp | src));
+					int tmp = (((~dst + src - ((~dst ^ src) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+					src = 0xff000000 | ((dst | tmp) - (src | tmp));
 				}
 				return src;
 			}
@@ -681,7 +681,7 @@ public class Rasterizer {
 					texIdx = texPal[shadeOffset | (texIdx & 0xFF)];
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((dst & texIdx) << 1) + ((dst ^ texIdx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + texIdx - ((dst ^ texIdx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1] = 0xff000000 | (dst + texIdx - tmp) | tmp;
 					}
 				}
@@ -689,7 +689,7 @@ public class Rasterizer {
 					texIdx2 = texPal[shadeOffset | (texIdx2 & 0xFF)];
 					int dst = frameBuffer[x1 + 1];
 					{
-						int tmp = ((((((dst & texIdx2) << 1) + ((dst ^ texIdx2) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + texIdx2 - ((dst ^ texIdx2) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1 + 1] = 0xff000000 | (dst + texIdx2 - tmp) | tmp;
 					}
 				}
@@ -697,7 +697,7 @@ public class Rasterizer {
 					texIdx3 = texPal[shadeOffset | (texIdx3 & 0xFF)];
 					int dst = frameBuffer[x1 + 2];
 					{
-						int tmp = ((((((dst & texIdx3) << 1) + ((dst ^ texIdx3) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + texIdx3 - ((dst ^ texIdx3) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1 + 2] = 0xff000000 | (dst + texIdx3 - tmp) | tmp;
 					}
 				}
@@ -705,7 +705,7 @@ public class Rasterizer {
 					texIdx4 = texPal[shadeOffset | (texIdx4 & 0xFF)];
 					int dst = frameBuffer[x1 + 3];
 					{
-						int tmp = ((((((dst & texIdx4) << 1) + ((dst ^ texIdx4) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + texIdx4 - ((dst ^ texIdx4) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1 + 3] = 0xff000000 | (dst + texIdx4 - tmp) | tmp;
 					}
 				}
@@ -713,7 +713,7 @@ public class Rasterizer {
 					texIdx5 = texPal[shadeOffset | (texIdx5 & 0xFF)];
 					int dst = frameBuffer[x1 + 4];
 					{
-						int tmp = ((((((dst & texIdx5) << 1) + ((dst ^ texIdx5) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + texIdx5 - ((dst ^ texIdx5) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1 + 4] = 0xff000000 | (dst + texIdx5 - tmp) | tmp;
 					}
 				}
@@ -721,7 +721,7 @@ public class Rasterizer {
 					texIdx6 = texPal[shadeOffset | (texIdx6 & 0xFF)];
 					int dst = frameBuffer[x1 + 5];
 					{
-						int tmp = ((((((dst & texIdx6) << 1) + ((dst ^ texIdx6) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + texIdx6 - ((dst ^ texIdx6) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1 + 5] = 0xff000000 | (dst + texIdx6 - tmp) | tmp;
 					}
 				}
@@ -735,7 +735,7 @@ public class Rasterizer {
 
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 					}
 				}
@@ -813,48 +813,48 @@ public class Rasterizer {
 					texIdx = texPal[shadeOffset | (texIdx & 0xFF)];
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((texIdx ^ ~dst) & 0xFEFEFE) + ((texIdx & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | texIdx));
+						int tmp = (((~dst + texIdx - ((~dst ^ texIdx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (texIdx | tmp));
 					}
 				}
 				if(texIdx2 != colorKeyIdx) {
 					texIdx2 = texPal[shadeOffset | (texIdx2 & 0xFF)];
 					int dst = frameBuffer[x1 + 1];
 					{
-						int tmp = ((((((texIdx2 ^ ~dst) & 0xFEFEFE) + ((texIdx2 & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1 + 1] = 0xff000000 | ((dst | tmp) - (tmp | texIdx2));
+						int tmp = (((~dst + texIdx2 - ((~dst ^ texIdx2) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1 + 1] = 0xff000000 | ((dst | tmp) - (texIdx2 | tmp));
 					}
 				}
 				if(texIdx3 != colorKeyIdx) {
 					texIdx3 = texPal[shadeOffset | (texIdx3 & 0xFF)];
 					int dst = frameBuffer[x1 + 2];
 					{
-						int tmp = ((((((texIdx3 ^ ~dst) & 0xFEFEFE) + ((texIdx3 & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1 + 2] = 0xff000000 | ((dst | tmp) - (tmp | texIdx3));
+						int tmp = (((~dst + texIdx3 - ((~dst ^ texIdx3) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1 + 2] = 0xff000000 | ((dst | tmp) - (texIdx3 | tmp));
 					}
 				}
 				if(texIdx4 != colorKeyIdx) {
 					texIdx4 = texPal[shadeOffset | (texIdx4 & 0xFF)];
 					int dst = frameBuffer[x1 + 3];
 					{
-						int tmp = ((((((texIdx4 ^ ~dst) & 0xFEFEFE) + ((texIdx4 & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1 + 3] = 0xff000000 | ((dst | tmp) - (tmp | texIdx4));
+						int tmp = (((~dst + texIdx4 - ((~dst ^ texIdx4) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1 + 3] = 0xff000000 | ((dst | tmp) - (texIdx4 | tmp));
 					}
 				}
 				if(texIdx5 != colorKeyIdx) {
 					texIdx5 = texPal[shadeOffset | (texIdx5 & 0xFF)];
 					int dst = frameBuffer[x1 + 4];
 					{
-						int tmp = ((((((texIdx5 ^ ~dst) & 0xFEFEFE) + ((texIdx5 & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1 + 4] = 0xff000000 | ((dst | tmp) - (tmp | texIdx5));
+						int tmp = (((~dst + texIdx5 - ((~dst ^ texIdx5) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1 + 4] = 0xff000000 | ((dst | tmp) - (texIdx5 | tmp));
 					}
 				}
 				if(texIdx6 != colorKeyIdx) {
 					texIdx6 = texPal[shadeOffset | (texIdx6 & 0xFF)];
 					int dst = frameBuffer[x1 + 5];
 					{
-						int tmp = ((((((texIdx6 ^ ~dst) & 0xFEFEFE) + ((texIdx6 & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1 + 5] = 0xff000000 | ((dst | tmp) - (tmp | texIdx6));
+						int tmp = (((~dst + texIdx6 - ((~dst ^ texIdx6) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1 + 5] = 0xff000000 | ((dst | tmp) - (texIdx6 | tmp));
 					}
 				}
 				x1 += 6;
@@ -867,8 +867,8 @@ public class Rasterizer {
 
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+						int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 					}
 				}
 			}
@@ -1295,7 +1295,7 @@ public class Rasterizer {
 
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 					}
 				}
@@ -1357,8 +1357,8 @@ public class Rasterizer {
 
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+						int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 					}
 				}
 			}
@@ -1696,7 +1696,7 @@ public class Rasterizer {
 					color = texPal[shadeOffset | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					frameBuffer[x1] = color;
@@ -1762,7 +1762,7 @@ public class Rasterizer {
 					color = texPal[shadeOffset | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					int dst = frameBuffer[x1];
@@ -1830,12 +1830,12 @@ public class Rasterizer {
 					color = texPal[shadeOffset | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 					}
 				}
@@ -1901,13 +1901,13 @@ public class Rasterizer {
 					color = texPal[shadeOffset | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+						int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 					}
 				}
 			}
@@ -2250,7 +2250,7 @@ public class Rasterizer {
 					color = texPal[((s >> shadeFpShift) & 0x1f00) | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					frameBuffer[x1] = color;
@@ -2316,7 +2316,7 @@ public class Rasterizer {
 					color = texPal[((s >> shadeFpShift) & 0x1f00) | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					int dst = frameBuffer[x1];
@@ -2384,12 +2384,12 @@ public class Rasterizer {
 					color = texPal[((s >> shadeFpShift) & 0x1f00) | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 					}
 				}
@@ -2455,13 +2455,13 @@ public class Rasterizer {
 					color = texPal[((s >> shadeFpShift) & 0x1f00) | (color & 0xFF)];
 					int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 					if(envPx != 0) {
-						int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+						int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 						color = 0xff000000 | (color + envPx - tmp) | tmp;
 					}
 					int dst = frameBuffer[x1];
 					{
-						int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+						int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+						frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 					}
 				}
 			}
@@ -2804,7 +2804,7 @@ public class Rasterizer {
 
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 				}
 			}
@@ -2854,8 +2854,8 @@ public class Rasterizer {
 
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+					int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 				}
 			}
 		}
@@ -3239,7 +3239,7 @@ public class Rasterizer {
 
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 				}
 			}
@@ -3293,8 +3293,8 @@ public class Rasterizer {
 
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+					int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 				}
 			}
 		}
@@ -3598,7 +3598,7 @@ public class Rasterizer {
 				int color = colorRGB;
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				frameBuffer[x1] = color;
@@ -3653,7 +3653,7 @@ public class Rasterizer {
 				int color = colorRGB;
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				int dst = frameBuffer[x1];
@@ -3709,12 +3709,12 @@ public class Rasterizer {
 				int color = colorRGB;
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 				}
 			}
@@ -3768,13 +3768,13 @@ public class Rasterizer {
 				int color = colorRGB;
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+					int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 				}
 			}
 		}
@@ -4089,7 +4089,7 @@ public class Rasterizer {
 				int color = 0xff000000 | ((((colorRB * shadeLevel) & rbMask) | ((colorG * shadeLevel) & gMask)) >> 5);
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				frameBuffer[x1] = color;
@@ -4148,7 +4148,7 @@ public class Rasterizer {
 				int color = 0xff000000 | ((((colorRB * shadeLevel) & rbMask) | ((colorG * shadeLevel) & gMask)) >> 5);
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				int dst = frameBuffer[x1];
@@ -4208,12 +4208,12 @@ public class Rasterizer {
 				int color = 0xff000000 | ((((colorRB * shadeLevel) & rbMask) | ((colorG * shadeLevel) & gMask)) >> 5);
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((dst & color) << 1) + ((dst ^ color) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((dst + color - ((dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					frameBuffer[x1] = 0xff000000 | (dst + color - tmp) | tmp;
 				}
 			}
@@ -4271,13 +4271,13 @@ public class Rasterizer {
 				int color = 0xff000000 | ((((colorRB * shadeLevel) & rbMask) | ((colorG * shadeLevel) & gMask)) >> 5);
 				int envPx = envTexBitmap[(((ev >> fp) << envTexWBit) | (eu >> fp)) & envTexLenMask];
 				if(envPx != 0) {
-					int tmp = ((((((color & envPx) << 1) + ((color ^ envPx) & 0xFEFEFE)) & 0x1010100) >> 8) + 0x7F7F7F) ^ 0x7F7F7F;
+					int tmp = (((color + envPx - ((color ^ envPx) & 0x01010101)) >> 8) & 0x010101) * 0xff;
 					color = 0xff000000 | (color + envPx - tmp) | tmp;
 				}
 				int dst = frameBuffer[x1];
 				{
-					int tmp = ((((((color ^ ~dst) & 0xFEFEFE) + ((color & ~dst) << 1)) >> 8) & 0x10101) + 0x7F7F7F) ^ 0x7F7F7F;
-					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (tmp | color));
+					int tmp = (((~dst + color - ((~dst ^ color) & 0x01010101)) >> 8) & 0x010101) * 0xff;
+					frameBuffer[x1] = 0xff000000 | ((dst | tmp) - (color | tmp));
 				}
 			}
 		}
