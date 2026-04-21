@@ -99,10 +99,6 @@ public class FigureLayout {
 	}
 
 	public final void setParallelSize(int w, int h) {
-		if (w < 0 || h < 0) {
-			throw new IllegalArgumentException();
-		}
-		
 		parallelWidth = w;
 		parallelHeight = h;
 		projectionMode = Graphics3D.COMMAND_PARALLEL_SIZE;

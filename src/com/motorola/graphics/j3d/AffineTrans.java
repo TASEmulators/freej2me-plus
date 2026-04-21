@@ -14,10 +14,17 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.nttdocomo.opt.ui.j3d;
+package com.motorola.graphics.j3d;
 
 public class AffineTrans 
 {
+	// This might be an issue. MCV3 shouldn't have made these public. No easy way around these when moving across
+	// all the different packages that implement this.
+	
+	public int m00, m01, m02, m03;
+	public int m10, m11, m12, m13;
+	public int m20, m21, m22, m23;
+
 	protected com.mascotcapsule.micro3d.v3.AffineTrans afTrans;
 
 	public AffineTrans() { afTrans = new com.mascotcapsule.micro3d.v3.AffineTrans(); }
@@ -27,6 +34,8 @@ public class AffineTrans
 		afTrans = new com.mascotcapsule.micro3d.v3.AffineTrans(a);
 	}
 
+	AffineTrans(com.mascotcapsule.micro3d.v3.AffineTrans trans) { afTrans = trans; }
+
 	public AffineTrans(int m00, int m01, int m02, int m03,
 			int m10, int m11, int m12, int m13,
 			int m20, int m21, int m22, int m23)
@@ -34,8 +43,6 @@ public class AffineTrans
 		afTrans = new com.mascotcapsule.micro3d.v3.AffineTrans(m00, m01, m02, m03, m10, m11, m12, m13,
 			m20, m21, m22, m23);
 	}
-
-	AffineTrans(com.mascotcapsule.micro3d.v3.AffineTrans trans) { afTrans = trans; }
 
 	public final void get(int[] a) { afTrans.get(a, 0); }
 
@@ -90,11 +97,11 @@ public class AffineTrans
 		afTrans.setRotation((com.mascotcapsule.micro3d.v3.Vector3D) v, r);
 	}
 
-	public final void setRotateX(int r) { afTrans.setRotationX(r); }
+	public final void setRotationX(int r) { afTrans.setRotationX(r); }
 
-	public final void setRotateY(int r) { afTrans.setRotationY(r); }
+	public final void setRotationY(int r) { afTrans.setRotationY(r); }
 
-	public final void setRotateZ(int r) { afTrans.setRotationZ(r); }
+	public final void setRotationZ(int r) { afTrans.setRotationZ(r); }
 
 	public final void setViewTrans(Vector3D pos, Vector3D look, Vector3D up)
 	{ 
@@ -112,6 +119,4 @@ public class AffineTrans
 	{ 
 		return (Vector3D) afTrans.transPoint((com.mascotcapsule.micro3d.v3.Vector3D) v);
 	}
-
-	public final com.mascotcapsule.micro3d.v3.AffineTrans getTrans() { return afTrans; }
 }

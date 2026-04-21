@@ -14,7 +14,7 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.nttdocomo.opt.ui.j3d;
+package com.vodafone.v10.graphics.j3d;
 
 import java.io.IOException;
 

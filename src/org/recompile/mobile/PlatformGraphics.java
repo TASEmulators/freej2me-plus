@@ -16,12 +16,15 @@
 */
 package org.recompile.mobile;
 
-import javax.microedition.lcdui.Image;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.game.Sprite;
-
+import com.mascotcapsule.micro3d.v3.AffineTrans;
+import com.mascotcapsule.micro3d.v3.Effect3D;
+import com.mascotcapsule.micro3d.v3.FigureLayout;
+import com.mascotcapsule.micro3d.v3.Graphics3D;
+import com.mascotcapsule.micro3d.v3.Light;
+import com.mascotcapsule.micro3d.v3.Texture;
+import com.mascotcapsule.micro3d.v3.Vector3D;
 import com.nokia.mid.ui.DirectGraphics;
+import com.nttdocomo.ui.UIException;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -29,10 +32,16 @@ import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.util.ArrayList;
 
-import com.nttdocomo.ui.UIException;
+import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.Graphics;
+import javax.microedition.lcdui.Font;
+import javax.microedition.lcdui.game.Sprite;
 
-public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.opt.ui.j3d.Graphics3D
+public abstract class PlatformGraphics implements DirectGraphics,
+	com.jblend.graphics.j3d.Graphics3D, com.motorola.graphics.j3d.Graphics3D, 
+	com.nttdocomo.opt.ui.j3d.Graphics3D, com.vodafone.v10.graphics.j3d.Graphics3D
 {
 
 	// Gaussian blur kernel (7x7) for Motorola's FunLights
@@ -121,6 +130,7 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 	// Graphics context variables
 	protected BufferedImage canvas;
 	protected Graphics2D gc;
+	protected ArrayList<Integer> mcv3commands = new ArrayList<Integer>();
 	protected int canvasWidth;
 	protected int canvasHeight;
 	protected int[] canvasData;
@@ -149,6 +159,15 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 
 	private static final Font HUDFont = new Font(Font.FACE_MONOSPACE, Font.STYLE_BOLD, Font.SIZE_LARGE);
 
+	// Graphics3D context variables
+	protected Graphics3D mcv3gc = null; // Since this is managed by this PlatformGraphics, we bind and never release.
+	protected AffineTrans[] viewTrans = null;
+	protected Texture[] mcv3textures = null;
+	protected Texture mcv3envMap = null;
+	protected FigureLayout mcv3layout = new FigureLayout();
+	protected Effect3D mcv3effect = new Effect3D();
+	protected Light mcv3light = new Light();
+
 	public PlatformGraphics(PlatformImage image)
 	{
 		this.baseImage = image;
@@ -159,6 +178,9 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		canvasHeight = canvas.getHeight();
 
 		canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+
+		// This command is always required for MascotCapsuleV3 command lists, and DoJa does not initialize it.
+		mcv3commands.add(Graphics3D.COMMAND_LIST_VERSION_1_0);
 
 		setClip(0, 0, canvasWidth, canvasHeight);
 		gc.setFont(font.awtFont);
@@ -2494,82 +2516,540 @@ public abstract class PlatformGraphics implements DirectGraphics, com.nttdocomo.
 		usePictoColor = b; 
 	}
 
-	// TODO: Different MascotCapsuleV3's Graphics3D implementations
+	//
+	//
+	// Other vendors' MascotCapsuleV3 methods (they use the main Graphics method for drawing, not an instance of MCV3's
+	// Graphics3D class, or anything similar)
+	//
+	//
 
-	// DoJa's com.nttdocomo.opt.ui.j3d
-	public void setViewTrans(com.nttdocomo.opt.ui.j3d.AffineTrans paramAffineTrans) 
+	public void drawCommandList(com.jblend.graphics.j3d.Texture texture, int x, int y,
+		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect, int[] commandlist)
 	{
-
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+			
+		mcv3gc.drawCommandList((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), commandlist);
 	}
 	
-	public void setScreenScale(int paramInt1, int paramInt2) 
+	public void drawCommandList(com.jblend.graphics.j3d.Texture[] textures, int x, int y,
+		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect, int[] commandlist)
 	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
 
-	}
-	
-	public void setScreenCenter(int paramInt1, int paramInt2) 
-	{
+		Texture[] texs = new Texture[textures.length];
 
-	}
-	
-	public void drawFigure(com.nttdocomo.opt.ui.j3d.Figure paramFigure) 
-	{
-
-	}
-	
-	public void setSphereTexture(com.nttdocomo.opt.ui.j3d.Texture paramTexture) 
-	{
-
-	}
-	
-	public void enableLight(boolean paramBoolean) 
-	{
-
-	}
-	
-	public void enableSphereMap(boolean paramBoolean) 
-	{
-
-	}
-	
-	public void setAmbientLight(int paramInt) 
-	{ 
-
-	}
-	
-	public void setDirectionLight(com.nttdocomo.opt.ui.j3d.Vector3D paramVector3D, int paramInt) 
-	{
-
-	}
-	
-	public void enableSemiTransparent(boolean paramBoolean) 
-	{
-
-	}
-	
-	public void setClipRect3D(int paramInt1, int paramInt2, int paramInt3, int paramInt4) 
-	{
-
+		for(int i = 0; i < textures.length; i++)
+			texs[i] = (Texture) textures[i];
+			
+		mcv3gc.drawCommandList(texs, x, y, layout.getLayout(), effect.getEffect(), commandlist);
 	}
 
-	public void setPerspective(int n1, int n2, int n3) 
+	public void drawCommandList(com.motorola.graphics.j3d.Texture texture, int x, int y,
+		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect, int[] commandlist)
 	{
-
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+			
+		mcv3gc.drawCommandList((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), commandlist);
 	}
 
-	public void executeCommandList(int[] a) 
+	public void drawCommandList(com.motorola.graphics.j3d.Texture[] textures, int x, int y,
+		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect, int[] commandlist)
 	{
-
-	}
-
-	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray arr, int num) 
-	{
-
-	}
-
-	public void flush() 
-	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
 		
+		Texture[] texs = new Texture[textures.length];
+
+		for(int i = 0; i < textures.length; i++)
+			texs[i] = (Texture) textures[i];
+			
+		mcv3gc.drawCommandList(texs, x, y, layout.getLayout(), effect.getEffect(), commandlist);
+	}
+
+	public void drawCommandList(com.vodafone.v10.graphics.j3d.Texture texture, int x, int y,
+		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect,
+		int[] commandlist)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+			
+		mcv3gc.drawCommandList((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), commandlist);
+	}
+
+	public void drawCommandList(com.vodafone.v10.graphics.j3d.Texture[] textures, int x, int y,
+		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect,
+		int[] commandlist)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		Texture[] texs = new Texture[textures.length];
+
+		for(int i = 0; i < textures.length; i++)
+			texs[i] = (Texture) textures[i];
+			
+		mcv3gc.drawCommandList(texs, x, y, layout.getLayout(), effect.getEffect(), commandlist);
+	}
+
+
+	public void drawFigure(com.jblend.graphics.j3d.Figure figure, int x, int y,
+		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.drawFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+	}
+
+	public void drawFigure(com.motorola.graphics.j3d.Figure figure, int x, int y,
+		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.drawFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+	}
+
+	public void drawFigure(com.vodafone.v10.graphics.j3d.Figure figure, int x, int y,
+		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.drawFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+	}
+
+
+	public void flush()
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.flush();	
+	}
+
+
+	public void renderFigure(com.jblend.graphics.j3d.Figure figure, int x, int y,
+		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.renderFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+	}
+
+	public void renderFigure(com.motorola.graphics.j3d.Figure figure, int x, int y,
+		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.renderFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+	}
+
+	public void renderFigure(com.vodafone.v10.graphics.j3d.Figure figure, int x, int y,
+		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.renderFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+	}
+
+	
+	public void renderPrimitives(com.jblend.graphics.j3d.Texture texture, int x, int y,
+		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect, int command,
+		int numPrimitives, int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.renderPrimitives((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), command, numPrimitives,
+			vertexCoords, normals, textureCoords, colors);
+	}
+
+	public void renderPrimitives(com.motorola.graphics.j3d.Texture texture, int x, int y,
+		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect, int command,
+		int numPrimitives, int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.renderPrimitives((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), command, numPrimitives,
+			vertexCoords, normals, textureCoords, colors);
+	}
+
+	public void renderPrimitives(com.vodafone.v10.graphics.j3d.Texture texture, int x, int y,
+		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect, int command,int numPrimitives,
+		int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3gc.renderPrimitives((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), command, numPrimitives,
+			vertexCoords, normals, textureCoords, colors);
+	}
+
+	// TODO: DoJa's com.nttdocomo.opt.ui.j3d.Graphics3D classes, as they DO NOT behave like the others
+	public void drawFigure(com.nttdocomo.opt.ui.j3d.Figure figure) 
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		// TODO: Super 3D Wallpaper Box uses this, but the output seems incorrect
+		mcv3gc.drawFigure(figure.getFigure(), mcv3layout.getCenterX(), mcv3layout.getCenterY(), mcv3layout, mcv3effect);
+	}
+
+	public void enableLight(boolean b)
+	{
+		int newVal = mcv3commands.get(mcv3commands.size() - 1);
+
+		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
+		{			
+			if(b)
+				newVal |= Graphics3D.ENV_ATTR_LIGHTING;
+			else
+				newVal &= ~Graphics3D.ENV_ATTR_LIGHTING;
+			
+			mcv3commands.set(mcv3commands.size() - 1, newVal);
+		}
+		else
+			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_LIGHTING :
+				Graphics3D.COMMAND_ATTRIBUTE);
+
+		mcv3effect.setLight(b ? mcv3light : null);
+	}
+
+	public void enableSemiTransparent(boolean b)
+	{
+		int newVal = mcv3commands.get(mcv3commands.size() - 1);
+
+		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
+		{			
+			if(b)
+				newVal |= Graphics3D.ENV_ATTR_SEMI_TRANSPARENT;
+			else
+				newVal &= ~Graphics3D.ENV_ATTR_SEMI_TRANSPARENT;
+			
+			mcv3commands.set(mcv3commands.size() - 1, newVal);
+		}
+		else
+			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_SEMI_TRANSPARENT :
+				Graphics3D.COMMAND_ATTRIBUTE);
+
+		mcv3effect.setSemiTransparentEnabled(b);
+	}
+    
+    public void enableSphereMap(boolean b)
+	{
+		int newVal = mcv3commands.get(mcv3commands.size() - 1);
+
+		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
+		{			
+			if(b)
+				newVal |= Graphics3D.ENV_ATTR_SPHERE_MAP;
+			else
+				newVal &= ~Graphics3D.ENV_ATTR_SPHERE_MAP;
+			
+			mcv3commands.set(mcv3commands.size() - 1, newVal);
+		}
+		else
+			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_SPHERE_MAP :
+				Graphics3D.COMMAND_ATTRIBUTE);
+
+		mcv3effect.setSphereTexture(b ? mcv3envMap : null);
+	}
+    
+    public void enableToonShader(boolean b)
+	{
+		int newVal = mcv3commands.get(mcv3commands.size() - 1);
+
+		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
+		{			
+			if(b)
+				newVal |= Graphics3D.ENV_ATTR_TOON_SHADING;
+			else
+				newVal &= ~Graphics3D.ENV_ATTR_TOON_SHADING;
+			
+			mcv3commands.set(mcv3commands.size() - 1, newVal);
+		}
+		else
+			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_TOON_SHADING :
+				Graphics3D.COMMAND_ATTRIBUTE);
+
+		mcv3effect.setShading(b ? Effect3D.TOON_SHADING : Effect3D.NORMAL_SHADING);
+	}
+	
+	public void executeCommandList(int[] commandlist)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		mcv3commands.add(Graphics3D.COMMAND_FLUSH);
+		mcv3commands.add(Graphics3D.COMMAND_END);
+
+		int[] commands = new int[mcv3commands.size()];
+
+		for(int i = 0; i < commands.length; i++)
+			commands[i] = mcv3commands.get(i);
+
+		// TODO: Find something that uses this.
+		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa executeCommandList");
+		mcv3gc.drawCommandList(mcv3textures, 0, 0, mcv3layout, mcv3effect, commands);
+		
+		mcv3commands.clear();
+		mcv3commands.add(Graphics3D.COMMAND_LIST_VERSION_1_0);
+	}
+	
+	public void renderFigure(com.nttdocomo.opt.ui.j3d.Figure figure)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		// TODO: Find something that uses this.
+		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa renderFigure");
+		mcv3gc.renderFigure(figure.getFigure(), 0, 0, mcv3layout, mcv3effect);
+	}
+	
+	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray primitives, int command)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+
+		// TODO: Only found Espgaruda 2 Trial calling this, and i can't see the difference on screen
+		mcv3gc.renderPrimitives(mcv3textures == null ? null : mcv3textures[0], 0, 0, mcv3layout, mcv3effect,
+			(command | (primitives.getType() << 24)), primitives.size(), primitives.getVertexArray(),
+			primitives.getNormalArray(), primitives.getTextureCoordArray(), primitives.getColorArray());
+	}
+
+	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray primitives, int offset, int length,
+		int command)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+		
+		// TODO: Find something that uses this
+		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa renderPrimitives B");
+		mcv3gc.renderPrimitives(mcv3textures[0], 0, 0, mcv3layout, mcv3effect, (command | (primitives.getType() << 24)),
+		length, primitives.getVertexArray(), primitives.getNormalArray(), primitives.getTextureCoordArray(),
+		primitives.getColorArray());
+	}
+
+	public void setAmbientLight(int intensity) 
+	{ 
+		mcv3commands.add(Graphics3D.COMMAND_AMBIENT_LIGHT);
+		mcv3commands.add(intensity);
+
+		mcv3light.setAmbientIntensity(intensity);
+	}
+
+	public void setClipRect3D(int x, int y, int width, int height)
+	{
+		if(mcv3gc == null)
+		{
+			mcv3gc = new Graphics3D();
+			mcv3gc.bind(this);
+		}
+		
+		mcv3commands.add(Graphics3D.COMMAND_CLIP);
+		mcv3commands.add(x);
+		mcv3commands.add(y);
+		mcv3commands.add(width);
+		mcv3commands.add(height);
+
+		mcv3gc.release();
+
+		int tmpx = getClipX();
+		int tmpy = getClipY();
+		int tmpw = getClipWidth();
+		int tmph = getClipHeight();
+
+		setClip(x, y, width, height);
+
+		mcv3gc.bind(this);
+
+		setClip(tmpx, tmpy, tmpw, tmph);
+	}
+    
+    public void setDirectionLight(com.nttdocomo.opt.ui.j3d.Vector3D direction, int intensity)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_DIRECTION_LIGHT);
+		mcv3commands.add(direction.getX());
+		mcv3commands.add(direction.getY());
+		mcv3commands.add(direction.getZ());
+		mcv3commands.add(intensity);
+
+		mcv3light.setParallelLightDirection((Vector3D) direction);
+		mcv3light.setParallelLightIntensity(intensity);
+	}
+    
+    public void setPerspective(int zNear, int zFar, int angle)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_PERSPECTIVE_FOV);
+		mcv3commands.add(zNear);
+		mcv3commands.add(zFar);
+		mcv3commands.add(angle);
+		mcv3layout.setPerspective(zNear, zFar, angle);
+	}
+    
+    public void setPerspective(int zNear, int zFar, int width, int height)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_PERSPECTIVE_WH);
+		mcv3commands.add(zNear);
+		mcv3commands.add(zFar);
+		mcv3commands.add(width);
+		mcv3commands.add(height);
+		mcv3layout.setPerspective(zNear, zFar, width, height);
+	}
+    
+    public void setPrimitiveTexture(int index)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_TEXTURE_INDEX | index);
+
+		// TODO: Maybe not needed, but we don't have a Figure here to change its state outside of the command list
+	}
+    
+    public void setPrimitiveTextureArray(com.nttdocomo.opt.ui.j3d.Texture texture)
+	{
+		mcv3textures = new Texture[]{(Texture) texture};
+	}
+    
+    public void setPrimitiveTextureArray(com.nttdocomo.opt.ui.j3d.Texture[] textures)
+	{
+		mcv3textures = new Texture[textures.length];
+
+		for(int i = 0; i < textures.length; i++)
+			mcv3textures[i] = (Texture) textures[i];
+	}
+    
+    public void setScreenCenter(int cx, int cy)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_CENTER);
+		mcv3commands.add(cx);
+		mcv3commands.add(cy);
+		mcv3layout.setCenter(cx, cy);
+	}
+    
+    public void setScreenScale(int sx, int sy)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_PARALLEL_SCALE);
+		mcv3commands.add(sx);
+		mcv3commands.add(sy);
+
+		// TODO: Seems to cause bugs
+		//mcv3layout.setParallelSize(sx, sy);
+	}
+    
+    public void setScreenView(int width, int height)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_PARALLEL_SIZE);
+		mcv3commands.add(width);
+		mcv3commands.add(height);
+		mcv3layout.setScale(width, height);
+	}
+    
+    public void setSphereTexture(com.nttdocomo.opt.ui.j3d.Texture texture)
+	{
+		mcv3envMap = (Texture) texture;
+		mcv3effect.setSphereTexture((Texture) texture);
+	}
+    
+    public void setToonParam(int threshold, int high, int low)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_THRESHOLD);
+		mcv3commands.add(threshold);
+		mcv3commands.add(high);
+		mcv3commands.add(low);
+
+		mcv3effect.setToonParams(threshold, high, low);
+	}
+    
+    public void setViewTrans(com.nttdocomo.opt.ui.j3d.AffineTrans at)
+	{
+		mcv3layout.setAffineTrans(at.getTrans());
+	}
+    
+    public void setViewTrans(int index)
+	{
+		mcv3commands.add(Graphics3D.COMMAND_AFFINE_INDEX | index);
+
+		mcv3layout.selectAffineTrans(index);
+	}
+    
+    public void setViewTransArray(com.nttdocomo.opt.ui.j3d.AffineTrans[] ats)
+	{
+		AffineTrans[] viewTrans = new AffineTrans[ats.length];
+
+		for(int i = 0; i < ats.length; i++)
+			viewTrans[i] = ats[i].getTrans();
+
+		mcv3layout.setAffineTrans(viewTrans);
 	}
 
 	// FPS COUNTER

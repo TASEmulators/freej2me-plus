@@ -32,6 +32,17 @@ public class Texture {
 	//Used in Graphics3D polygons list
 	int g3dBindIdx = -1;
 
+	// For DoJa
+	protected Effect3D shading;
+
+	public Texture()
+	{
+		bitmapData = new byte[1];
+		width = 1;
+		height = 1;
+		isForModel = true;
+	}
+
 	public Texture(byte[] b, boolean isForModel) {
 		if (b == null) throw new NullPointerException();
 		this.isForModel = isForModel;
@@ -233,4 +244,18 @@ public class Texture {
 		envmapData = null;
 		palette = null;
 	}
+
+	// DoJa methods
+	public void setNormalShader()
+	{ 
+		shading = new Effect3D();
+	}
+
+	public void setToonShader(int threshold, int high, int low)
+	{
+		shading.setShadingType(Effect3D.TOON_SHADING);
+		shading.setToonParams(threshold, high, low);
+	}
+
+	public final com.mascotcapsule.micro3d.v3.Effect3D getShading() { return shading; }
 }

@@ -16,7 +16,14 @@
 */
 package com.nttdocomo.opt.ui.j3d;
 
-public class ActionTable 
-{
+import java.io.IOException;
+import java.io.InputStream;
 
+public class ActionTable extends com.mascotcapsule.micro3d.v3.ActionTable
+{
+	public ActionTable(byte[] data) { super(data); }
+
+	public ActionTable(String name) throws IOException { super(name); }
+
+	public ActionTable(InputStream is) throws IOException { super(is); }
 }

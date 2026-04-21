@@ -588,7 +588,7 @@ public final class MLDDecoder
                         case (byte) 0x80: // AUDIO CHANNEL VOLUME TODO: Is this where PCM samples are set to be played?
                             Mobile.log(Mobile.LOG_WARNING, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " + "Adding audio channel volume (PCM) event value " + ((eventValue & 0x3F) * 2) + ", channel " + eventChannel);
                             pcmDataPositions.put(totalDuration, (int) eventChannel);
-                            pcmDataVelocities.put(totalDuration, (eventValue & 0x3F) * 2);
+                            pcmDataVelocities.put(totalDuration, (int) ((eventValue & 0x3F) * 1.5));
                             break;
                         case (byte) 0x81: // Sonic 2 Trial uses this, seems to be ADPCM panpot
                             Mobile.log(Mobile.LOG_WARNING, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " + "Unsupported audio channel panpot (PCM) event value " + ((eventValue & 0x3F) * 2) + ", channel " + eventChannel);

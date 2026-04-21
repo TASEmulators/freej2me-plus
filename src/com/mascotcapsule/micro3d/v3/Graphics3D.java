@@ -85,7 +85,7 @@ public class Graphics3D {
 	private static final int PRIM_MAT_TOON = Figure.MAT_DOUBLE_FACE; //Reusing double face material flag
 	
 	//Instance fields
-	private Graphics boundGraphics;
+	private PlatformGraphics boundGraphics;
 	private int[] frameBuffer;
 	private int fbWidth, fbHeight;
 	private int clipX, clipY, clipW, clipH;
@@ -340,6 +340,49 @@ public class Graphics3D {
 		
 		bindAccum += (int) (System.currentTimeMillis() - startTime);
 	}
+
+	public final void bind(PlatformGraphics graphics) {
+		if (disposed) return;
+		if (graphics == null) throw new NullPointerException();
+		if (boundGraphics != null) throw new IllegalStateException();
+		
+		long startTime = System.currentTimeMillis();
+
+		boundGraphics = graphics;
+		
+		// Get framebuffer resolution
+		int clipX = graphics.getClipX();
+		int clipY = graphics.getClipY();
+		int clipW = graphics.getClipWidth();
+		int clipH = graphics.getClipHeight();
+
+		fbWidth = (graphics).getCanvas().getWidth();
+		fbHeight = (graphics).getCanvas().getHeight();
+		
+		frameBuffer = (graphics).getFrameBuffer();
+		
+		if (Mobile.halfResMCV3Raster) fbHeight /= 2;
+		
+		setClip(clipX, clipY, clipW, clipH);
+		
+		allowedClippingStages = 
+				(/*Mobile.MCV3NoNearClipping ? 0 :*/ NEAR_CLIP) |
+				(/*Mobile.MCV3NoFarClipping ? 0 :*/ FAR_CLIP) |
+				(/*Mobile.MCV3NoToonSplitting ? 0 :*/ TOON_SPLIT);
+		
+		fbDrawCounter = 0;
+		
+		//if (!MascotME.doNotClear) {
+		//	int color = MascotME.fbClearColor;
+		//	if (color == MascotME.CLEAR_WITH_LAST_USED_COLOR) {
+		//		color = graphics.getColor() & 0xffffff;
+		//	}
+		//	
+		//	clearFB(color);
+		//}
+		
+		bindAccum += (int) (System.currentTimeMillis() - startTime);
+	}
 	
 	//private final void clearFB(int color) {
 	//	int[] fb = frameBuffer;
@@ -488,6 +531,85 @@ public class Graphics3D {
 		g3dSphereTex = efxSphereTex = null;
 		
 		flushAccum += (int) (System.currentTimeMillis() - startTime);
+	}
+
+	// Used by DoJa in PlatformGraphics
+	public final void release()
+	{
+		if (disposed) return;
+		if (boundGraphics == null) throw new NullPointerException();
+		
+		boolean showSomeStats = /* Mobile.MCV3ShowFPS | */ Mobile.MCV3ShowTimeMetrics | Mobile.MCV3ShowHeapUsage;
+		
+		if (/* !MascotME.no2DInbetween && */ !showSomeStats) {
+			boundGraphics = null;
+			return;
+		}
+		
+		long startTime = System.currentTimeMillis();
+		
+		int prevClipX = boundGraphics.getClipX();
+		int prevClipY = boundGraphics.getClipY();
+		int prevClipW = boundGraphics.getClipWidth();
+		int prevClipH = boundGraphics.getClipHeight();
+		boundGraphics.setClip(0, 0, fbWidth, Mobile.halfResMCV3Raster ? fbHeight * 2 : fbHeight);
+				
+		int prevTx = boundGraphics.getTranslateX();
+		int prevTy = boundGraphics.getTranslateY();
+		boundGraphics.translate(-prevTx, -prevTy);
+		
+		//if (MascotME.no2DInbetween) {
+		//	drawFB(0, 0, fbWidth, MascotME.halfResRender ? fbHeight * 2 : fbHeight);
+		//}
+		
+		if (showSomeStats) {
+			long time = System.currentTimeMillis();
+			
+			framesCount++;
+			if (time - prevStatsCheck >= 1000) {
+				//if (Mobile.MCV3ShowFPS) {
+				//	fps = framesCount * 1000 / (int) (time - prevStatsCheck);
+				//	frameTime = (int) (time - prevStatsCheck) * 10 / framesCount;
+				//}
+				
+				if (Mobile.MCV3ShowTimeMetrics) {
+					bindTime = bindAccum / framesCount;
+					figureTime = figureAccum / framesCount;
+					primCmdTime = primCmdAccum / framesCount;
+					flushTime = flushAccum / framesCount;
+					releaseTime = releaseAccum / framesCount;
+					
+					bindAccum = figureAccum = 0;
+					primCmdAccum = flushAccum = releaseAccum = 0;
+				}
+				
+				if (Mobile.MCV3ShowHeapUsage) {
+					Runtime runtime = Runtime.getRuntime();
+					heapUsage = (int) ((runtime.totalMemory() - runtime.freeMemory()) >> 10);
+				}
+				
+				prevStatsCheck = time;
+				framesCount = 0;
+			}
+			
+			int prevColor = boundGraphics.getColor();
+			int fontH = boundGraphics.getFont().getHeight();
+			int drawY = 0;
+			
+			//if (Mobile.MCV3ShowFPS) {
+			//	drawStatsText("FPS: " + fps + " / " + frameTime, 0, drawY, boundGraphics);
+			//	drawY += fontH;
+			//}
+			
+			boundGraphics.setColor(prevColor);
+		}
+		
+		boundGraphics.setClip(prevClipX, prevClipY, prevClipW, prevClipH);
+		boundGraphics.translate(prevTx, prevTy);
+		
+		boundGraphics = null;
+		
+		releaseAccum += (int) (System.currentTimeMillis() - startTime);
 	}
 
 	public final void release(Graphics graphics) {
@@ -1432,7 +1554,7 @@ public class Graphics3D {
 			vertexCoords == null || normals == null || 
 			textureCoords == null || colors == null
 		) {
-			throw new NullPointerException();
+			throw new NullPointerException(layout + " " + effect + " " + vertexCoords + " " + normals + " " + textureCoords + " " + colors);
 		}
 		if (numPrimitives <= 0 || numPrimitives > 255) {
 			throw new IllegalArgumentException();

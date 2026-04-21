@@ -151,4 +151,41 @@ public class Vector3D {
 		n -= i >>> 31;
 		return n;
 	}
+
+	// DoJa opt.ui.j3d methods
+	public void cross(Vector3D v)
+	{
+        int newX = this.y * v.z - this.z * v.y;
+        int newY = this.z * v.x - this.x * v.z;
+        int newZ = this.x * v.y - this.y * v.x;
+        
+        this.x = newX;
+        this.y = newY;
+        this.z = newZ;
+    }
+
+    public static Vector3D cross(Vector3D u, Vector3D v) {
+        int newX = u.y * v.z - u.z * v.y;
+        int newY = u.z * v.x - u.x * v.z;
+        int newZ = u.x * v.y - u.y * v.x;
+
+        return new Vector3D(newX, newY, newZ);
+    }
+
+    public int dot(Vector3D v) {
+        return (int) (this.x * v.x + this.y * v.y + this.z * v.z);
+    }
+
+    public static int dot(Vector3D v1, Vector3D v2) {
+        return (int) (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
+    }
+
+    public void normalize() {
+        int length = (int) Math.sqrt(x * x + y * y + z * z);
+        if (length != 0) {
+            x /= length;
+            y /= length;
+            z /= length;
+        }
+    }
 }

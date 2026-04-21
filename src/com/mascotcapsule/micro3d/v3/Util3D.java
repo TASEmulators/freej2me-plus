@@ -19,7 +19,7 @@ public class Util3D {
 		}
 	}
 	
-	private Util3D() {}
+	public Util3D() { }
 
 	public static final int sin(int p) {
 		return sinTable[p & 4095];

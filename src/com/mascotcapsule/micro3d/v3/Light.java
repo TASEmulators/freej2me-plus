@@ -45,4 +45,26 @@ public class Light {
 	}
 	
 	public final void setDirection(Vector3D v) { setParallelLightDirection(v); }
+
+	// Vendor-specific methods
+	public final void setParallelLightDirection(com.jblend.graphics.j3d.Vector3D v) {
+		if (v == null) throw new NullPointerException();
+		direction = (Vector3D) v;
+	}
+
+	public final void setParallelLightDirection(com.motorola.graphics.j3d.Vector3D v) {
+		if (v == null) throw new NullPointerException();
+		direction = (Vector3D) v;
+	}
+
+	public final void setParallelLightDirection(com.vodafone.v10.graphics.j3d.Vector3D v) {
+		if (v == null) throw new NullPointerException();
+		direction = (Vector3D) v;
+	}
+
+	public final void setDirection(com.jblend.graphics.j3d.Vector3D v) { setParallelLightDirection((Vector3D) v); }
+
+	public final void setDirection(com.motorola.graphics.j3d.Vector3D v) { setParallelLightDirection((Vector3D) v); }
+
+	public final void setDirection(com.vodafone.v10.graphics.j3d.Vector3D v) { setParallelLightDirection((Vector3D) v); }
 }

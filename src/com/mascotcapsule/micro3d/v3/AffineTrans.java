@@ -5,12 +5,13 @@
 
 package com.mascotcapsule.micro3d.v3;
 
-public class AffineTrans {
-	private static final Vector3D tmp = new Vector3D();
-	
+public class AffineTrans
+{
 	public int m00, m01, m02, m03;
 	public int m10, m11, m12, m13;
 	public int m20, m21, m22, m23;
+
+	private static final Vector3D tmp = new Vector3D();
 
 	public AffineTrans() {}
 

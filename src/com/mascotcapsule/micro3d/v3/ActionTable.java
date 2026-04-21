@@ -37,6 +37,15 @@ public class ActionTable {
 		
 		loadMtraData(baos.toByteArray());
 	}
+
+	// DoJa constructor
+	public ActionTable(InputStream is) throws IOException
+	{ 
+		byte[] tmpStream = new byte[is.available()];
+		is.read(tmpStream, 0, is.available());
+
+		loadMtraData(tmpStream);
+	}
 	
 	private final void loadMtraData(byte[] bytes) {
 		Loader loader = new Loader(bytes);
@@ -197,6 +206,9 @@ public class ActionTable {
 		
 		return actions[idx].keyFrames << 16;
 	}
+
+	// DoJa method, basically getNumFrames(int)
+	public int getMaxFrame(int idx) { return getNumFrames(idx); }
 
 	static class Action {
 		int keyFrames;

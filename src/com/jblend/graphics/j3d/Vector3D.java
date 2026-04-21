@@ -14,7 +14,7 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.nttdocomo.opt.ui.j3d;
+package com.jblend.graphics.j3d;
 
 public class Vector3D extends com.mascotcapsule.micro3d.v3.Vector3D
 { 

@@ -40,7 +40,7 @@ import com.nttdocomo.util.ScratchPadOutputStream;
 
 import org.recompile.mobile.Mobile;
 
-public class ScratchPadConnection implements javax.microedition.io.Connection 
+public class ScratchPadConnection implements javax.microedition.io.StreamConnection 
 {
 
 	private String name;

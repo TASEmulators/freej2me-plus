@@ -19,12 +19,14 @@ package javax.microedition.io;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.IOException;
 
 public interface InputConnection extends Connection
 {
 
-	public DataInputStream openDataInputStream() throws UnsupportedEncodingException;
+	public DataInputStream openDataInputStream() throws UnsupportedEncodingException, IOException, EOFException;
 
-	public InputStream openInputStream() throws UnsupportedEncodingException;
+	public InputStream openInputStream() throws UnsupportedEncodingException, EOFException;
 
 }

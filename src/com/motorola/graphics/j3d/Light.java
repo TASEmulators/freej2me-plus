@@ -14,9 +14,14 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.nttdocomo.opt.ui.j3d;
+package com.motorola.graphics.j3d;
 
-public class Primitive 
-{
-    
+public class Light extends com.mascotcapsule.micro3d.v3.Light
+{	
+	public Light() { super(); }
+	
+	public Light(Vector3D dir, int dirIntensity, int ambIntensity)
+	{
+		super((com.mascotcapsule.micro3d.v3.Vector3D) dir, dirIntensity, ambIntensity); 
+	}
 }
