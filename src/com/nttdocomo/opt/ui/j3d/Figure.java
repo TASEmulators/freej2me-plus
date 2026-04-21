@@ -17,6 +17,7 @@
 package com.nttdocomo.opt.ui.j3d;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public class Figure
 {
@@ -30,6 +31,15 @@ public class Figure
 	public Figure(String name) throws IOException
 	{
 		figure = new com.mascotcapsule.micro3d.v3.Figure(name);
+	}
+
+	// DoJa constructor
+	public Figure(InputStream is) throws IOException
+	{ 
+		byte[] tmpStream = new byte[is.available()];
+		is.read(tmpStream, 0, is.available());
+
+		figure = new com.mascotcapsule.micro3d.v3.Figure(tmpStream);
 	}
 
 	public final void dispose()

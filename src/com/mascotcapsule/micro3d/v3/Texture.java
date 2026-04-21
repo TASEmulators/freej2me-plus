@@ -68,6 +68,21 @@ public class Texture {
 
 		loadBMP(baos.toByteArray());
 	}
+
+	public Texture(InputStream is, boolean isForModel) throws IOException
+	{
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] buffer = new byte[Math.max(1024, is.available())];
+		
+		int len;
+		while ((len = is.read(buffer)) > 0) {
+			baos.write(buffer, 0, len);
+		}
+		
+		is.close();
+
+		loadBMP(baos.toByteArray());
+	}
 	
 	private static final int BMP_FILE_HEADER_SIZE = 14;
 	private static final int BMP_VERSION_3 = 40;

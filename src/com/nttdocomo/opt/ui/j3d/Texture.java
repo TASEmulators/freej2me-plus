@@ -17,6 +17,7 @@
 package com.nttdocomo.opt.ui.j3d;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public class Texture extends com.mascotcapsule.micro3d.v3.Texture
 {
@@ -33,5 +34,10 @@ public class Texture extends com.mascotcapsule.micro3d.v3.Texture
 	public Texture(String name, boolean forEnv) throws IOException
 	{
 		super(name, !forEnv);
+	}
+
+	public Texture(InputStream is, boolean forEnv) throws IOException
+	{
+		super(is, !forEnv);
 	}
 }
