@@ -419,8 +419,9 @@ public final class MLDDecoder
         
         for (int i = 0; i < cuePoints.length; i++) { cuePoints[i] = (input[decodePos++] & 0xFF) << 24 | (input[decodePos++] & 0xFF) << 16 | (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF); }
 
-        Mobile.log(Mobile.LOG_WARNING, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"-------------------------- 3D POS INFO CHUNK --------------------------");
-        Mobile.log(Mobile.LOG_WARNING, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"3D Positioning data: " + Arrays.toString(byteData));
+        Mobile.log(Mobile.LOG_WARNING, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"-------------------------- CUEPOINT INFO CHUNK --------------------------");
+        Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"Chunk Size: " + chunkSize);
+        Mobile.log(Mobile.LOG_WARNING, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " +"CUEPOINT INFO data: " + Arrays.toString(byteData));
     }
 
     public static void decodeAINFChunk() 
@@ -749,7 +750,7 @@ public final class MLDDecoder
                             break;
 
                         case (byte) 0xE3: // Panpot change
-                            Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " + "Adding panpot value" + ((eventValue & 0x3F) * 2) + " to channel " + eventChannel);
+                            Mobile.log(Mobile.LOG_DEBUG, MLDDecoder.class.getPackage().getName() + "." + MLDDecoder.class.getSimpleName() + ": " + "Adding panpot value " + ((eventValue & 0x3F) * 2) + " to channel " + eventChannel);
                             event.setMessage(ShortMessage.CONTROL_CHANGE, eventChannel, 10, (eventValue & 0x3F) * 2);
                             midiEvent = new MidiEvent(event, totalDuration);
                             track.add(midiEvent);
