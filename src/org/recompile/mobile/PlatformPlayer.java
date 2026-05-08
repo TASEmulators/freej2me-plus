@@ -208,8 +208,7 @@ public class PlatformPlayer implements Player
 									}
 								}
 							}
-							// Yes, we are reusing SMAF's player for MLD, they're quite similar
-							player = new SMAFPlayer(MLDDecoder.SequenceData, MLDDecoder.pcmData.toArray(new InputStream[0]), new HashMap<Integer, Integer>(MLDDecoder.pcmDataPositions), new HashMap<Integer, Integer>(MLDDecoder.pcmDataVelocities));
+							player = new MLDPlayer(MLDDecoder.SequenceData, MLDDecoder.pcmData.toArray(new InputStream[0]), new HashMap<Integer, Integer>(MLDDecoder.pcmDataPositions), new HashMap<Integer, Integer>(MLDDecoder.pcmDataVelocities));
 						}
 						else { player = new audioplayer(); disableControls = true; } // Somehow the MLD decoder failed, retrieve a stub player
 					}
@@ -663,6 +662,7 @@ public class PlatformPlayer implements Player
 		private Sequence midiSequence;
 		public Synthesizer synthesizer;
 		private int synthIdx = 0;
+		private boolean synthReserved = false;
 		public Receiver receiver;
 		private Transmitter transmitter;
 		private int numLoops = 0;
@@ -730,10 +730,9 @@ public class PlatformPlayer implements Player
 								notifyListeners(PlayerListener.LOOPED, getMediaTime());
 								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
 								setMediaTime(0);
-								Manager.synthIdxInUse[synthIdx] = false; // It just stopped, so set synth usage to false or the start call will get a new one
 								start();
 							}
-							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); Manager.synthIdxInUse[synthIdx] = false; }
+							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); }
 						}
 					}
 				});
@@ -751,9 +750,7 @@ public class PlatformPlayer implements Player
 		{
 			try 
 			{
-				// If the currently bound synth is already in use before starting, jump to another one
-				if(Manager.synthIdxInUse[synthIdx] == true) { prepareMidiSubsystem(); }
-				Manager.synthIdxInUse[synthIdx] = true;
+				if(!synthReserved || midi.getSequence() == null) { prepareMidiSubsystem(); }
 
 				if(curTime >= getDuration()) { setMediaTime(0); } // If mediaTime >= getDuration, we should start playing from the beginning
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
@@ -769,7 +766,6 @@ public class PlatformPlayer implements Player
 		public void stop()
 		{
 			midi.stop();
-			Manager.synthIdxInUse[synthIdx] = false;
 			getMediaTime();
 			state = Player.PREFETCHED;
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
@@ -779,6 +775,7 @@ public class PlatformPlayer implements Player
 		{ 
 			transmitter = null;
 			receiver = null;
+			if(synthReserved) { Manager.synthIdxInUse[synthIdx] = false; synthReserved = false; }
 			if(midi != null) { midi.close(); }
 		}
 
@@ -833,9 +830,11 @@ public class PlatformPlayer implements Player
 
 		private void prepareMidiSubsystem() throws MidiUnavailableException, InvalidMidiDataException
 		{
-			if(midi.getSequence() == null || Manager.synthIdxInUse[synthIdx] == true) 
+			if(midi.getSequence() == null || !synthReserved) 
 			{
 				this.synthIdx = Manager.retrieveAvailableSynthIndex();
+				Manager.synthIdxInUse[synthIdx] = true;
+				synthReserved = true;
 				this.synthesizer = Manager.exclusiveSynths[synthIdx];
 				this.receiver = this.synthesizer.getReceiver();
 				transmitter.setReceiver(receiver);
@@ -851,15 +850,19 @@ public class PlatformPlayer implements Player
 		private Sequence midiSequence;
 		public Synthesizer synthesizer;
 		private int synthIdx = 0;
+		private boolean synthReserved = false;
 		public Receiver receiver;
 		private Transmitter transmitter;
 		private int numLoops = 0;
 		private long curTime = 0;
+		private boolean sequencerLoopConfigured = false;
+		private boolean hasMidiPlaybackEvents = false;
 
 		// Meanwhile, sampled data will be treated like "additional" instruments
 		private boolean isPlaying = false;
 		private AudioInputStream[] wavStreams = null;
 		public Clip[] wavClips = null;
+		private final Object pcmClipLock = new Object();
 		private Map<Integer, Integer> pcmPositions, pcmVelocities;
 
 		public SMAFPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
@@ -867,6 +870,7 @@ public class PlatformPlayer implements Player
 			try 
 			{
 				midiSequence = MidiSystem.getSequence(midiStream);
+				hasMidiPlaybackEvents = hasMidiPlaybackEvents(midiSequence);
 				if(wavStreams.length > 0) 
 				{
 					this.wavStreams = new AudioInputStream[wavStreams.length];
@@ -894,31 +898,46 @@ public class PlatformPlayer implements Player
 		{ 
 			try 
 			{
+				if(!hasMidiPlaybackEvents && !hasPcmStreams())
+				{
+					state = Player.PREFETCHED;
+					return;
+				}
 				midi = MidiSystem.getSequencer(false);
-				transmitter = midi.getTransmitter();
+				if(hasMidiPlaybackEvents) { transmitter = midi.getTransmitter(); }
 				midi.open();
-				midi.addMetaEventListener(new MetaEventListener() 
+				midi.addMetaEventListener(new MetaEventListener()
 				{
 					@Override
-					public void meta(MetaMessage meta) 
+					public void meta(MetaMessage meta)
 					{
+						handleSequenceMeta(meta);
 						if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
 						{
 							state = Player.PREFETCHED;
 							curTime = getMediaTime();
-							if(numLoops != 0) 
+							if(sequencerLoopConfigured)
+							{
+								notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+								isPlaying = false;
+							}
+							else if(numLoops != 0) 
 							{
 								notifyListeners(PlayerListener.LOOPED, getMediaTime());
 								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
 								setMediaTime(0);
-								Manager.synthIdxInUse[synthIdx] = false; // It just stopped, so set synth usage to false or the start call will get a new one
 								start();
 							}
-							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); Manager.synthIdxInUse[synthIdx] = false; isPlaying = false; }
+							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); isPlaying = false; }
 						}
 					}
 				});
-				prepareMidiSubsystem();
+				if(hasMidiPlaybackEvents) { prepareMidiSubsystem(); }
+				else
+				{
+					midi.setSequence(midiSequence);
+					configureSequencePlayback();
+				}
 
 				if(wavStreams != null) 
 				{
@@ -944,9 +963,13 @@ public class PlatformPlayer implements Player
 		{
 			try 
 			{
-				// If the currently bound synth is already in use before starting, jump to another one
-				if(Manager.synthIdxInUse[synthIdx] == true) { prepareMidiSubsystem(); }
-				Manager.synthIdxInUse[synthIdx] = true;
+				if(!hasMidiPlaybackEvents && !hasPcmClips())
+				{
+					state = Player.PREFETCHED;
+					notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+					return;
+				}
+				if(hasMidiPlaybackEvents && (!synthReserved || midi.getSequence() == null)) { prepareMidiSubsystem(); }
 
 				if(curTime >= getDuration()) { setMediaTime(0); } // If mediaTime >= getDuration, we should start playing from the beginning
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
@@ -993,8 +1016,9 @@ public class PlatformPlayer implements Player
 
 		private void playPcmStream(int pcmIndex, int velocity) 
 		{
-			if (pcmIndex < wavClips.length && wavClips[pcmIndex] != null) 
+			synchronized(pcmClipLock)
 			{
+				if (wavClips == null || pcmIndex < 0 || pcmIndex >= wavClips.length || wavClips[pcmIndex] == null) { return; }
 				for(int i = 0; i < wavClips.length; i++) 
 				{ 
 					if(wavClips[i] == null) { continue; }
@@ -1020,14 +1044,16 @@ public class PlatformPlayer implements Player
 		public void stop()
 		{
 			midi.stop();
-			Manager.synthIdxInUse[synthIdx] = false;
 			getMediaTime();
-			if(wavClips != null) 
+			synchronized(pcmClipLock)
 			{
-				for(int i = 0; i < wavClips.length; i++) 
-				{ 
-					if(wavClips[i] == null) { continue; }
-					wavClips[i].stop(); 
+				if(wavClips != null) 
+				{
+					for(int i = 0; i < wavClips.length; i++) 
+					{ 
+						if(wavClips[i] == null) { continue; }
+						wavClips[i].stop(); 
+					}
 				}
 			}
 			isPlaying = false;
@@ -1039,15 +1065,19 @@ public class PlatformPlayer implements Player
 		{
 			transmitter = null;
 			receiver = null;
+			if(synthReserved) { Manager.synthIdxInUse[synthIdx] = false; synthReserved = false; }
 			if(midi != null) { midi.close(); }
 
-			if(wavClips != null) 
+			synchronized(pcmClipLock)
 			{
-				for(int i = 0; i < wavClips.length; i++) 
-				{ 
-					if(wavClips[i] == null) { continue; }
-					wavClips[i].stop(); 
-					wavClips[i].close(); 
+				if(wavClips != null) 
+				{
+					for(int i = 0; i < wavClips.length; i++) 
+					{ 
+						if(wavClips[i] == null) { continue; }
+						wavClips[i].stop(); 
+						wavClips[i].close(); 
+					}
 				}
 			}
 
@@ -1100,11 +1130,12 @@ public class PlatformPlayer implements Player
 
 		public long getMediaTime() 
 		{ 
+			if(midi == null) { return curTime; }
 			curTime = midi.getMicrosecondPosition();
 			return midi.getMicrosecondPosition(); 
 		}
 
-		public long getDuration() { return midi.getMicrosecondLength(); }
+		public long getDuration() { return midi == null ? 0 : midi.getMicrosecondLength(); }
 
 		public boolean isRunning() { return isPlaying; }
 
@@ -1112,20 +1143,147 @@ public class PlatformPlayer implements Player
 
 		public void setSequence(InputStream sequence) 
 		{ 
-			try { midiSequence = MidiSystem.getSequence(sequence); }
+			try
+			{
+				midiSequence = MidiSystem.getSequence(sequence);
+				hasMidiPlaybackEvents = hasMidiPlaybackEvents(midiSequence);
+				sequencerLoopConfigured = false;
+			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI sequence:" + e.getMessage());  }
 		}
 
 		private void prepareMidiSubsystem() throws MidiUnavailableException, InvalidMidiDataException
 		{
-			if(midi.getSequence() == null || Manager.synthIdxInUse[synthIdx] == true) 
+			if(midi.getSequence() == null || !synthReserved) 
 			{
 				this.synthIdx = Manager.retrieveAvailableSynthIndex();
+				Manager.synthIdxInUse[synthIdx] = true;
+				synthReserved = true;
 				this.synthesizer = Manager.exclusiveSynths[synthIdx];
 				this.receiver = this.synthesizer.getReceiver();
 				transmitter.setReceiver(receiver);
 				midi.setSequence(midiSequence);
+				configureSequencePlayback();
 			}
+		}
+
+		private boolean hasPcmStreams()
+		{
+			if(wavStreams == null) { return false; }
+			for(int i = 0; i < wavStreams.length; i++)
+			{
+				if(wavStreams[i] != null) { return true; }
+			}
+			return false;
+		}
+
+		private boolean hasPcmClips()
+		{
+			if(wavClips == null) { return false; }
+			for(int i = 0; i < wavClips.length; i++)
+			{
+				if(wavClips[i] != null) { return true; }
+			}
+			return false;
+		}
+
+		private boolean hasMidiPlaybackEvents(Sequence sequence)
+		{
+			if(sequence == null) { return false; }
+			Track[] tracks = sequence.getTracks();
+			for(int t = 0; t < tracks.length; t++)
+			{
+				Track track = tracks[t];
+				for(int i = 0; i < track.size(); i++)
+				{
+					MidiEvent event = track.get(i);
+					if(!(event.getMessage() instanceof ShortMessage)) { continue; }
+					ShortMessage message = (ShortMessage) event.getMessage();
+					if(message.getCommand() == ShortMessage.NOTE_ON && message.getData2() > 0) { return true; }
+				}
+			}
+			return false;
+		}
+
+		protected void handleSequenceMeta(MetaMessage meta) { }
+
+		protected void stopActivePcmClips()
+		{
+			synchronized(pcmClipLock)
+			{
+				if(wavClips == null) { return; }
+				for(int i = 0; i < wavClips.length; i++)
+				{
+					if(wavClips[i] == null) { continue; }
+					wavClips[i].stop();
+					wavClips[i].flush();
+				}
+			}
+		}
+
+		protected Sequence getMidiSequence() { return midiSequence; }
+
+		protected void configureSequenceLoop(long loopStartTick, long loopEndTick, int repeatCount)
+		{
+			sequencerLoopConfigured = true;
+			midi.setLoopStartPoint(loopStartTick);
+			midi.setLoopEndPoint(loopEndTick);
+			midi.setLoopCount(repeatCount < 0 ? Sequencer.LOOP_CONTINUOUSLY : repeatCount);
+		}
+
+		protected void configureSequencePlayback() throws InvalidMidiDataException { }
+	}
+
+	private class MLDPlayer extends SMAFPlayer
+	{
+		public MLDPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
+		{
+			super(midiStream, wavStreams, pcmPositions, pcmVelocities);
+		}
+
+		protected void handleSequenceMeta(MetaMessage meta)
+		{
+			String marker = MLDDecoder.MLDSequenceMarker.decodeMarker(meta);
+			if(!MLDDecoder.MLDSequenceMarker.isStopMarker(marker)) { return; }
+
+			stopActivePcmClips();
+		}
+
+		protected void configureSequencePlayback() throws InvalidMidiDataException
+		{
+			MLDDecoder.MLDSequenceMarker.LoopMarker loopInfo = findEmbeddedLoopMarker(getMidiSequence());
+			if(loopInfo == null) { return; }
+
+			configureSequenceLoop(loopInfo.loopStartTick, loopInfo.loopEndTick, loopInfo.repeatCount);
+		}
+
+		private MLDDecoder.MLDSequenceMarker.LoopMarker findEmbeddedLoopMarker(Sequence sequence)
+		{
+			if(sequence == null) { return null; }
+
+			Track[] tracks = sequence.getTracks();
+			for(int t = 0; t < tracks.length; t++)
+			{
+				Track track = tracks[t];
+				for(int i = 0; i < track.size(); i++)
+				{
+					MidiEvent event = track.get(i);
+					if(!(event.getMessage() instanceof MetaMessage)) { continue; }
+
+					String marker = MLDDecoder.MLDSequenceMarker.decodeMarker((MetaMessage) event.getMessage());
+					if(!MLDDecoder.MLDSequenceMarker.isLoopMarker(marker)) { continue; }
+
+					MLDDecoder.MLDSequenceMarker.LoopMarker loopMarker = MLDDecoder.MLDSequenceMarker.parseLoopMarker(marker);
+					if(loopMarker == null)
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid embedded MLD loop marker: " + marker);
+						continue;
+					}
+					return loopMarker;
+				}
+			}
+
+			return null;
 		}
 	}
 
