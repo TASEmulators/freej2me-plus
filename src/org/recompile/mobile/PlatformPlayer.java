@@ -1044,18 +1044,7 @@ public class PlatformPlayer implements Player
 		public void stop()
 		{
 			midi.stop();
-			getMediaTime();
-			synchronized(pcmClipLock)
-			{
-				if(wavClips != null) 
-				{
-					for(int i = 0; i < wavClips.length; i++) 
-					{ 
-						if(wavClips[i] == null) { continue; }
-						wavClips[i].stop(); 
-					}
-				}
-			}
+			stopActivePcmClips();
 			isPlaying = false;
 			state = Player.PREFETCHED;
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
@@ -1115,11 +1104,23 @@ public class PlatformPlayer implements Player
 		{
 			try 
 			{
-				if(now >= getDuration()) { midi.setMicrosecondPosition(getDuration()); }
-				else if(now < 0) { midi.setMicrosecondPosition(0); }
-				else { midi.setMicrosecondPosition(now);  }
+				if(now >= getDuration()) { now = getDuration(); }
+				else if(now < 0) { now = 0; }
+
+				synchronized(pcmClipLock)
+				{
+					if(wavClips != null) 
+					{
+						for(int i = 0; i < wavClips.length; i++) 
+						{ 
+							if(wavClips[i] != null) { wavClips[i].setMicrosecondPosition(0); }
+						}
+					}
+				}
+				
+				if (midi != null) { midi.setMicrosecondPosition(now); }
 			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI position:" + e.getMessage()); }
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set SMAF/MLD position:" + e.getMessage()); }
 			
 			/* 
 			 * MicrosecondPosition doesn't guarantee perfect precision, so return the new

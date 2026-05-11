@@ -123,6 +123,9 @@ public class AudioPresenter implements MediaPresenter
         { throw new UIException(UIException.ILLEGAL_STATE, "Player is in an invalid state"); }
         if(time < 0) { throw new IllegalArgumentException("Invalid value received for time");}
 
+        // If media is playing, it must be stopped first
+        if(mediaSound.getPlayer().getState() >= Player.STARTED) { mediaSound.getPlayer().stop(); }
+
         if(mediaSound.getPlayer().getState() >= Player.REALIZED) { mediaSound.getPlayer().setMediaTime(time); }
         if(mediaSound.getPlayer().getState() >= Player.REALIZED && mediaSound.getPlayer().getState() < Player.STARTED) { mediaSound.getPlayer().setLoopCount(loopCount); }
         ((PlatformPlayer)mediaSound.getPlayer()).setDoJaListener(listener, this);
