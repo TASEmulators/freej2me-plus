@@ -40,8 +40,6 @@ public class Graphics2 extends com.nttdocomo.ui.Graphics
 		if (operator < 0 || operator > 2)   { throw new IllegalArgumentException("Invalid operator: " + operator); }
 		if (srcRatio < 0 || srcRatio > 255) { throw new IllegalArgumentException("Invalid srcRatio: " + srcRatio); }
 		if (dstRatio < 0 || dstRatio > 255) { throw new IllegalArgumentException("Invalid dstRatio: " + dstRatio); }
-
-		Mobile.log(Mobile.LOG_WARNING, Graphics2.class.getPackage().getName() + "." + Graphics2.class.getSimpleName() + ": " + "setRenderMode: Operation=" + operations[operator] + " srcRatio=" + srcRatio + " dstRatio=" + dstRatio);
 	
 		this.renderMode = operator;
 		this.srcRatio = srcRatio;
@@ -51,8 +49,6 @@ public class Graphics2 extends com.nttdocomo.ui.Graphics
 	public static int getIntermediateColor(int color1, int color2, int ratio) 
 	{
 		if (ratio < 0 || ratio > 255) { throw new IllegalArgumentException("Invalid ratio: " + ratio); }
-
-		Mobile.log(Mobile.LOG_WARNING, Graphics2.class.getPackage().getName() + "." + Graphics2.class.getSimpleName() + ": " + "getIntermediateColor");
 
 		int red1 = (color1 >> 16) & 0xFF;
 		int green1 = (color1 >> 8) & 0xFF;
@@ -71,12 +67,12 @@ public class Graphics2 extends com.nttdocomo.ui.Graphics
 
 	public void drawImage(com.nttdocomo.ui.Image image, com.nttdocomo.opt.ui.j3d.AffineTrans at) 
 	{
-
+		Mobile.log(Mobile.LOG_WARNING, Graphics2.class.getPackage().getName() + "." + Graphics2.class.getSimpleName() + ": " + "drawImage A");
 	}
 
 	public void drawImage(com.nttdocomo.ui.Image image, com.nttdocomo.opt.ui.j3d.AffineTrans at, int sx, int sy, int width, int height) 
 	{
-
+		Mobile.log(Mobile.LOG_WARNING, Graphics2.class.getPackage().getName() + "." + Graphics2.class.getSimpleName() + ": " + "drawImage B");
 	}
 
 	// For fixed-width fonts, this is equivalent to calling Graphics#drawString after extracting digit characters from "(an infinite blank string) + (a string representation of value)" from the right

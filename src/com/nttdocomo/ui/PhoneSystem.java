@@ -22,13 +22,6 @@ import javax.microedition.media.Manager;
 
 public class PhoneSystem 
 {
-
-    public static final int SOUND_INFO = 0;
-    public static final int SOUND_WARNING = 1;
-    public static final int SOUND_ERROR = 2;
-    public static final int SOUND_ALARM = 3;
-    public static final int SOUND_CONFIRM = 4;
-
     // Area Information Attributes
     public static final int ATTR_AREAINFO_COMMUNICATING = 5;
     public static final int ATTR_AREAINFO_FOMA = 0;
@@ -86,17 +79,40 @@ public class PhoneSystem
     public static final int DEV_VIBRATOR = 1;
     public static final int DEV_FOLDING = 2;
     public static final int DEV_MAILBOX = 3;
-
+    public static final int DEV_MESSAGEBOX = 4;
     public static final int DEV_BATTERY = 5;
-    
+    public static final int DEV_SERVICEAREA = 6;
+    public static final int DEV_MANNER = 7;
     public static final int DEV_KEYPAD = 8;
+    public static final int DEV_SCREEN_VISIBLE = 9;
     public static final int DEV_AUDIO_SURROUND = 10;
     public static final int DEV_AREAINFO = 11;
 
-    public static final int DEV_UNKNOWN = 7; // Taiko no Tatsujin 4 requests this
-    public static final int DEV_UNKNOWN2 = 9; // Professor Layton and the Mansion of the Deadly Mirror requests this
-    public static final int DEV_UNKNOWN3 = 135; // Wai Wai World requests this
-    public static final int DEV_UNKNOWN4 = 142; // Super Bomberman G WIDE requests this
+    public static final int DEV_VENDOR = 135; // Wai Wai World requests this
+    public static final int DEV_VENDOR2 = 142; // Super Bomberman G WIDE requests this
+
+    // Vendor and optional attribute ranges
+	public static final int MAX_OPTION_ATTR = 255;
+	public static final int MAX_VENDOR_ATTR = 127;
+	public static final int MIN_OPTION_ATTR = 128;
+	public static final int MIN_VENDOR_ATTR = 64;
+
+    // System sound cues
+    public static final int SOUND_INFO = 0;
+    public static final int SOUND_WARNING = 1;
+    public static final int SOUND_ERROR = 2;
+    public static final int SOUND_ALARM = 3;
+    public static final int SOUND_CONFIRM = 4;
+
+    // Theme setting types
+    public static final int THEME_AV_CALL_IN = 5;
+    public static final int THEME_AV_CALLING = 7;
+    public static final int THEME_CALL_IN = 2;
+    public static final int THEME_CALL_OUT = 1;
+    public static final int THEME_CHAT_RECEIVED = 6;
+    public static final int THEME_MESSAGE_RECEIVE = 4;
+    public static final int THEME_MESSAGE_SEND = 3;
+    public static final int THEME_STANDBY = 0;
    
 
     private static int[] attributes = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -109,14 +125,14 @@ public class PhoneSystem
 
         Mobile.log(Mobile.LOG_DEBUG, PhoneSystem.class.getPackage().getName() + "." + PhoneSystem.class.getSimpleName() + ": " + "I-Appli set attr " + attr + " value to:" + value);
 
-        if(attr != DEV_UNKNOWN && attr != DEV_UNKNOWN2 && attr != DEV_UNKNOWN3 && attr != DEV_UNKNOWN4) { attributes[attr] = value; }
+        if(attr != DEV_VENDOR && attr != DEV_VENDOR2) { attributes[attr] = value; }
     }
 
     public static int getAttribute(int attr) 
     {
         if (!isValidAttribute(attr, 0)) { throw new IllegalArgumentException("Invalid attribute to get:" + attr); }
 
-        if(attr == DEV_UNKNOWN || attr == DEV_UNKNOWN2 || attr == DEV_UNKNOWN3 || attr == DEV_UNKNOWN4) { return 0; }
+        if(attr == DEV_VENDOR || attr == DEV_VENDOR2) { return 0; }
         return attributes[attr];
     }
 
@@ -156,10 +172,8 @@ public class PhoneSystem
                     value == ATTR_AREAINFO_UNKNOWN;
             case DEV_KEYPAD:
                 return true; // TODO
-            case DEV_UNKNOWN:
-            case DEV_UNKNOWN2:
-            case DEV_UNKNOWN3:
-            case DEV_UNKNOWN4:
+            case DEV_VENDOR:
+            case DEV_VENDOR2:
                 return true;
         }
         return false;
