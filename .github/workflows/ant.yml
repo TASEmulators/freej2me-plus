@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up OpenJDK 1.8
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'adopt'
         java-version: '8'
@@ -20,12 +20,8 @@ jobs:
       id: shortsha
       run: |
         echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
-        branch=$(echo ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}})
-        sanitized_branch=$(echo "$branch" | sed 's/[":<>|*?\\\/\r\n]//g')
-        echo "branch=$sanitized_branch" >> "$GITHUB_ENV"
-        echo "Branch: ${{ env.branch }}"
         echo "Sha: ${{ env.sha_short }}"
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
-        name: freej2me-${{ env.branch }}-${{ env.sha_short }}
+        name: freej2me-${{ env.sha_short }}
         path: build/*.jar
