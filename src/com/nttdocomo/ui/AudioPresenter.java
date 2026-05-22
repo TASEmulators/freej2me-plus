@@ -126,7 +126,7 @@ public class AudioPresenter implements MediaPresenter
         // If media is playing, it must be stopped first
         if(mediaSound.getPlayer().getState() >= Player.STARTED) { mediaSound.getPlayer().stop(); }
 
-        if(mediaSound.getPlayer().getState() >= Player.REALIZED) { mediaSound.getPlayer().setMediaTime(time); }
+        if(mediaSound.getPlayer().getState() >= Player.REALIZED) { mediaSound.getPlayer().setMediaTime(time * 1000); }
         if(mediaSound.getPlayer().getState() >= Player.REALIZED && mediaSound.getPlayer().getState() < Player.STARTED) { mediaSound.getPlayer().setLoopCount(loopCount); }
         ((PlatformPlayer)mediaSound.getPlayer()).setDoJaListener(listener, this);
         if(mediaSound.getPlayer().getState() >= Player.REALIZED) 
