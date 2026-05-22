@@ -31,4 +31,10 @@ public class System
 	public static String getProtectedProperty(String property) { return null; }
 
 	public static void promptMasterVolume() { }
+
+	public static void getTactileFeedback()
+	{
+		// This method seems to be just for vibration feedback on touch
+		com.sprintpcs.media.Vibrator.vibrate(100);
+	}
 }
