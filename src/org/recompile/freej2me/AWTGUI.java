@@ -1354,6 +1354,8 @@ public final class AWTGUI
 		restartMenuItem.setEnabled(true);
 		pauseRes.setEnabled(true);
 		scrShot.setEnabled(true);
+
+		main.setResizable(true);
 	}
 
 	public MenuBar getMenuBar() { return menuBar; }
@@ -1373,6 +1375,8 @@ public final class AWTGUI
             public void componentMoved(ComponentEvent e) { updateDialogLocations(main); }
             public void componentResized(ComponentEvent e) { updateDialogLocations(main); }
         });
+
+		main.setResizable(false);
 	}
 
 	public String getJarPath() { return jarfile; }

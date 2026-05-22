@@ -94,8 +94,8 @@ public class FreeJ2ME
 		extEventsMap.put("pa", 0);
 	}
 
-	public static final Color freeJ2MEBGColor = new Color(0,0,64);
-	public static final Color freeJ2MEDragColor = new Color(55, 55, 125);
+	public static final Color freeJ2MEBGColor = new Color(0,0,64, 255);
+	public static final Color freeJ2MEDragColor = new Color(55, 55, 125, 255);
 
 	public static boolean isFullscreen = false;
 
@@ -815,6 +815,47 @@ public class FreeJ2ME
 
 			if(!showDragMessage) 
 			{
+				if(!awtGUI.hasLoadedFile())
+				{
+					// Draw FreeJ2ME-Plus' intro screen
+					g.setColor(Color.BLACK);
+					g.fillRect(0, 0, getWidth(), getHeight());
+
+					g.drawImage(main.getIconImage(),
+						getWidth()/2 - main.getIconImage().getWidth(null)/2,
+						getHeight()/2 - main.getIconImage().getHeight(null)/2,
+						Math.min(getWidth(), main.getIconImage().getWidth(null)),
+						Math.min(getHeight(), main.getIconImage().getHeight(null)),
+						null);
+
+					g.setColor(new Color(55, 55, 125, 238));
+					g.fillRect(0, 0, getWidth(), getHeight());
+
+					g.setColor(Color.ORANGE);
+					g.setFont(new Font("Dialog", Font.BOLD | Font.ITALIC, 24));
+					String text = "FreeJ2ME-Plus V1.53";
+					FontMetrics metrics = g.getFontMetrics();
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
+						(getHeight() / 2) - metrics.getHeight());
+
+					g.setFont(new Font("Dialog", Font.BOLD, 16));
+					text = "Please use the 'File' menu";
+					metrics = g.getFontMetrics();
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
+						(getHeight() / 2));
+
+					text = "or drop a valid J2ME app";
+					metrics = g.getFontMetrics();
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
+						(getHeight() / 2) + metrics.getHeight());
+
+					text = "inside this window.";
+					metrics = g.getFontMetrics();
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
+						(getHeight() / 2) + metrics.getHeight() * 2);
+
+					return;
+				}
 				// Draw Pause or Fast-Forward indicators before showing the frame on screen
 				if(Mobile.isPaused)
 				{
