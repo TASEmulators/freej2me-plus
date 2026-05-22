@@ -125,13 +125,10 @@ public class Config
 				cFile.createNewFile();
 				settings.put("scrwidth", ""+width);
 				settings.put("scrheight", ""+height);
-				settings.put("sound", "on");
 				settings.put("phone", "Standard");
 				settings.put("backlightcolor", "Disabled");
 				settings.put("rotate", "0");
 				settings.put("fps", "0");
-				settings.put("soundfont", "Default");
-				settings.put("textfont", "Default");
 				settings.put("fontoffset", "0");
 				settings.put("spdhacknoalpha", "off");
 				settings.put("compatfantasyzonefix", "off");
@@ -162,6 +159,9 @@ public class Config
 				sysSettings.put("deleteTempKJXFiles", "on");
 				sysSettings.put("dumpAudioStreams", "off");
 				sysSettings.put("dumpGraphicsObjects", "off");
+				sysSettings.put("sound", "on");
+				sysSettings.put("soundfont", "Default");
+				sysSettings.put("textfont", "Default");
 				// AWT Inputs
 				updateAWTInputs();
 				saveConfig();
@@ -200,17 +200,17 @@ public class Config
 				if(settings.get("rotate").equals("on")) { settings.put("rotate", "270"); }
 				else if(settings.get("rotate").equals("off")) { settings.put("rotate", "0"); }
 			}
+			if(settings.containsKey("sound")) { settings.remove("sound"); }
+			if(settings.containsKey("soundfont")) { settings.remove("soundfont"); }
+			if(settings.containsKey("textfont")) { settings.remove("textfont"); }
 
 			// Add any missing settings
 			if(!settings.containsKey("scrwidth")) { settings.put("scrwidth", ""+width); }
 			if(!settings.containsKey("scrheight")) { settings.put("scrheight", ""+height); }
-			if(!settings.containsKey("sound")) { settings.put("sound", "on"); }
 			if(!settings.containsKey("phone")) { settings.put("phone", "Standard"); }
 			if(!settings.containsKey("backlightcolor")) { settings.put("backlightcolor", "Disabled"); }
 			if(!settings.containsKey("rotate")) { settings.put("rotate", "0"); }
 			if(!settings.containsKey("fps")) { settings.put("fps", "0"); }
-			if(!settings.containsKey("soundfont")) { settings.put("soundfont", "Default"); }
-			if(!settings.containsKey("textfont")) { settings.put("textfont", "Default"); }
 			if(!settings.containsKey("fontoffset")) { settings.put("fontoffset", "0"); }
 			if(!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", "off"); }
 			if(!settings.containsKey("compatfantasyzonefix")) { settings.put("compatfantasyzonefix", "off"); }
@@ -248,6 +248,9 @@ public class Config
 			if(!sysSettings.containsKey("deleteTempKJXFiles")) { sysSettings.put("deleteTempKJXFiles", "on"); }
 			if(!sysSettings.containsKey("dumpAudioStreams")) { sysSettings.put("dumpAudioStreams", "off"); }
 			if(!sysSettings.containsKey("dumpGraphicsObjects")) { sysSettings.put("dumpGraphicsObjects", "off"); }
+			if(!sysSettings.containsKey("soundfont")) { sysSettings.put("soundfont", "Default"); }
+			if(!sysSettings.containsKey("textfont")) { sysSettings.put("textfont", "Default"); }
+			if(!sysSettings.containsKey("sound")) { sysSettings.put("sound", "on"); }
 			// AWT Inputs
 			if(!sysSettings.containsKey("input_LeftSoft"))    { sysSettings.put("input_LeftSoft", ""     + inputKeycodes[0]); }
 			if(!sysSettings.containsKey("input_RightSoft"))   { sysSettings.put("input_RightSoft", ""    + inputKeycodes[1]); }
@@ -359,14 +362,6 @@ public class Config
 		height = h;
 	}
 
-	public void updateSound(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: sound "+value);
-		settings.put("sound", value);
-		saveConfig();
-		onChange.run();
-	}
-
 	public void updatePhone(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: phone "+value);
@@ -387,22 +382,6 @@ public class Config
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: fps "+value);
 		settings.put("fps", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateSoundfont(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: soundfont "+value);
-		settings.put("soundfont", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateTextFont(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: textfont "+value);
-		settings.put("textfont", value);
 		saveConfig();
 		onChange.run();
 	}
@@ -598,6 +577,30 @@ public class Config
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: dumpGraphicsObjects "+value);
 		sysSettings.put("dumpGraphicsObjects", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateSound(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: sound "+value);
+		sysSettings.put("sound", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateSoundfont(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: soundfont "+value);
+		sysSettings.put("soundfont", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateTextFont(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: textfont "+value);
+		sysSettings.put("textfont", value);
 		saveConfig();
 		onChange.run();
 	}

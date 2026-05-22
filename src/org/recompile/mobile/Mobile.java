@@ -1015,15 +1015,23 @@ public class Mobile
 
 		dumpGraphicsObjects = config.sysSettings.get("dumpGraphicsObjects").equals("on");
 
+		String soundEnabled = config.sysSettings.get("sound");
+		sound = false;
+		if(soundEnabled.equals("on")) { sound = true; }
+
+		String midiSoundfont = config.sysSettings.get("soundfont");
+		if(midiSoundfont.equals("Custom") && useCustomMidi == false)      { useCustomMidi = true;  Manager.changeCustomMidi(); }
+		else if(midiSoundfont.equals("Default") && useCustomMidi == true) { useCustomMidi = false; Manager.changeCustomMidi(); }
+
+		String textFont = config.sysSettings.get("textfont");
+		if(textFont.equals("Custom"))       { useCustomTextFont = true; }
+		else if(textFont.equals("Default")) { useCustomTextFont = false; }
+
 		// Then move on to per-app settings
 		lcdWidth = Integer.parseInt(config.settings.get("scrwidth"));
 		lcdHeight = Integer.parseInt(config.settings.get("scrheight"));
 
 		limitFPS = Integer.parseInt(config.settings.get("fps"));
-
-		String soundEnabled = config.settings.get("sound");
-		sound = false;
-		if(soundEnabled.equals("on")) { sound = true; }
 
 		String phone = config.settings.get("phone");
 		kddi = false;
@@ -1048,10 +1056,6 @@ public class Mobile
 		if(phone.equals("Siemens"))       { siemens = true;}
 		if(phone.equals("Sharp"))         { sharp = true;}
 		if(phone.equals("SKT"))           { skt = true;}
-
-		String midiSoundfont = config.settings.get("soundfont");
-		if(midiSoundfont.equals("Custom") && useCustomMidi == false)      { useCustomMidi = true;  Manager.changeCustomMidi(); }
-		else if(midiSoundfont.equals("Default") && useCustomMidi == true) { useCustomMidi = false; Manager.changeCustomMidi(); }
 
 		String lcdBacklightColor = config.settings.get("backlightcolor");
 		if(lcdBacklightColor.equals("Disabled"))    { maskIndex = 0; }
@@ -1111,10 +1115,6 @@ public class Mobile
 		else if (MCV3HorizFovFix.equals("off")) { compatMCV3HorizontalFovFix = false; };
 
 		// Other settings
-		String textFont = config.settings.get("textfont");
-		if(textFont.equals("Custom"))       { useCustomTextFont = true; }
-		else if(textFont.equals("Default")) { useCustomTextFont = false; }
-
 		String fontOffset = config.settings.get("fontoffset");
 		fontSizeOffset = (byte) Integer.parseInt(fontOffset);
 

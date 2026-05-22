@@ -1078,6 +1078,11 @@ public final class AWTGUI
 
 	private void buildMenuBar() 
 	{
+		closeMenuItem.setEnabled(false);
+		restartMenuItem.setEnabled(false);
+		pauseRes.setEnabled(false);
+		scrShot.setEnabled(false);
+
 		//add menu items to menus
 		fileMenu.add(openMenuItem);
 		fileMenu.add(restartMenuItem);
@@ -1085,6 +1090,8 @@ public final class AWTGUI
 		fileMenu.addSeparator();
 		fileMenu.add(scrShot);
 		fileMenu.add(pauseRes);
+		fileMenu.addSeparator();
+		fileMenu.add(showPlayer);
 		fileMenu.addSeparator();
 		fileMenu.add(aboutMenuItem);
 		fileMenu.add(exitMenuItem);
@@ -1105,8 +1112,8 @@ public final class AWTGUI
 		optionMenu.add(speedHackMenu);
 		optionMenu.add(compatSettingsMenu);
 
-		debugMenu.add(showPlayer);
-		debugMenu.addSeparator();
+		optionMenu.setEnabled(false);
+
 		debugMenu.add(showFPS);
 		debugMenu.add(deleteTemporaryKJXFiles);
 		debugMenu.add(dumpAudioData);
@@ -1115,10 +1122,16 @@ public final class AWTGUI
 		debugMenu.add(logLevel);
 		debugMenu.add(M3GDebug);
 		debugMenu.add(MCV3Debug);
+
+		debugMenu.setEnabled(false);
 		
 		deleteTemporaryKJXFiles.setState(true);
 
-		for(int i = 0; i < logLevels.length; i++) { logLevel.add(logLevels[i]); }
+		// Internally log levels are ordered in decreasing verbosity level
+		// But UI is ordered by increasing verbosity.
+		logLevel.add(logLevels[0]);
+		for(int i = logLevels.length-1; i > 0; i--) { logLevel.add(logLevels[i]); }
+
 		logLevels[0].setState(false);
 		logLevels[1].setState(false);
 		logLevels[2].setState(true);
@@ -1163,9 +1176,9 @@ public final class AWTGUI
 	public void updateOptions() 
 	{
 			fullScreen.setState(FreeJ2ME.isFullscreen);
-			enableAudio.setState(config.settings.get("sound").equals("on"));
-			useCustomMidi.setState(config.settings.get("soundfont").equals("Custom"));
-			useCustomFont.setState(config.settings.get("textfont").equals("Custom"));
+			enableAudio.setState(config.sysSettings.get("sound").equals("on"));
+			useCustomMidi.setState(config.sysSettings.get("soundfont").equals("Custom"));
+			useCustomFont.setState(config.sysSettings.get("textfont").equals("Custom"));
 
 			for(int i = 0; i < dojaVersions.length; i++) { dojaVersions[i].setState(config.settings.get("dojaversion").equals(dojaVersionValues[i])); }
 
@@ -1335,6 +1348,12 @@ public final class AWTGUI
 		jarfile = jarpath;
 		fileLoaded = true;
 		firstLoad = true;
+		optionMenu.setEnabled(true);
+		debugMenu.setEnabled(true);
+		closeMenuItem.setEnabled(true);
+		restartMenuItem.setEnabled(true);
+		pauseRes.setEnabled(true);
+		scrShot.setEnabled(true);
 	}
 
 	public MenuBar getMenuBar() { return menuBar; }
