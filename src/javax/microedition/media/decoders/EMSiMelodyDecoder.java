@@ -67,7 +67,6 @@ public final class EMSiMelodyDecoder
 
     public static final InputStream decodeiMelody(byte[] inputData) 
     {
-
         decodePos = 0;
         input = inputData;
 
@@ -80,99 +79,64 @@ public final class EMSiMelodyDecoder
         ledPositions.clear();
         backlightPositions.clear();
 
-        String headerStart, version, format, name = null, composer = null, copyright = null;
+        String headerStart = null, version = null, format = null, name = null,
+            composer = null, copyright = null;
         StringBuilder nextString = new StringBuilder();
 
-        // File start
-        while(!(Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos+1]) == 'E')) { nextString.append((char) (input[decodePos++] & 0xFF)); }
-        headerStart = nextString.toString().replaceAll("[\\r\\n ]", "");
-        nextString.delete(0, nextString.capacity());
-
-        // Version
-        while(!(Character.toUpperCase((char) input[decodePos]) == 'F' && Character.toUpperCase((char) input[decodePos+1]) == 'O')) { nextString.append((char) (input[decodePos++] & 0xFF)); }
-        version = nextString.toString().replaceAll("[\\r\\n ]", "");
-        nextString.delete(0, nextString.capacity());
-
-        // Format
-        while (!((Character.toUpperCase((char) input[decodePos]) == 'N' && Character.toUpperCase((char) input[decodePos + 1]) == 'A' && Character.toUpperCase((char) input[decodePos + 4]) == ':') ||
-                (Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 8]) == ':') ||
-                (Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') ||
-                (Character.toUpperCase((char) input[decodePos]) == 'B' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 4]) == ':') ||
-                (Character.toUpperCase((char) input[decodePos]) == 'S' && Character.toUpperCase((char) input[decodePos + 1]) == 'T' && Character.toUpperCase((char) input[decodePos + 5]) == ':') ||
-                (Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 6]) == ':') ||
-                (Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':'))) 
-        {
-            nextString.append((char) (input[decodePos++] & 0xFF));
-        }
-        format = nextString.toString().replaceAll("[\\r\\n ]", "");
-        nextString.setLength(0);
-
-        // Get any optional data fields before we reach the melody field (the left side of each is case insensitive, and fields are stacked, as in, the Beat field never comes before the name field when both are present)
+        // Parse the header
         while (!(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
         {
-            if (Character.toUpperCase((char) input[decodePos]) == 'N' && Character.toUpperCase((char) input[decodePos + 1]) == 'A' && Character.toUpperCase((char) input[decodePos + 4]) == ':') // Name field
-            { 
-                while (!(Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 8]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'B' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 4]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'S' && Character.toUpperCase((char) input[decodePos + 1]) == 'T' && Character.toUpperCase((char) input[decodePos + 5]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 6]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
-                {
-                    nextString.append((char) (input[decodePos++] & 0xFF));
-                }
-                name = nextString.toString().replaceAll("[\\r\\n ]", "");
-            } 
-            else if (Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 8]) == ':') // Composer field
-            { 
-                while (!(Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'B' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 4]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'S' && Character.toUpperCase((char) input[decodePos + 1]) == 'T' && Character.toUpperCase((char) input[decodePos + 5]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 6]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
-                {
-                    nextString.append((char) (input[decodePos++] & 0xFF));
-                }
-                composer = nextString.toString().replaceAll("[\\r\\n ]", "");
-            } 
-            else if (Character.toUpperCase((char) input[decodePos]) == 'B' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 4]) == ':') // Beat field
-            { 
-                while (!(Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'S' && Character.toUpperCase((char) input[decodePos + 1]) == 'T' && Character.toUpperCase((char) input[decodePos + 5]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 6]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
-                {
-                    nextString.append((char) (input[decodePos++] & 0xFF));
-                }
-                tempo = Integer.parseInt(nextString.toString().replaceAll("[\\r\\n ]", "").split(":")[1]);
-            } 
-            else if (Character.toUpperCase((char) input[decodePos]) == 'S' && Character.toUpperCase((char) input[decodePos + 1]) == 'T' && Character.toUpperCase((char) input[decodePos + 5]) == ':') // Style field
-            { 
-                while (!(Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 6]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
-                {
-                    nextString.append((char) (input[decodePos++] & 0xFF));
-                }
-                style = Integer.parseInt(nextString.toString().replaceAll("[\\r\\n S]", "").split(":")[1]);
-            } 
-            else if (Character.toUpperCase((char) input[decodePos]) == 'V' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 6]) == ':') // Volume field
-            { 
-                while (!(Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') &&
-                    !(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
-                {
-                    nextString.append((char) (input[decodePos++] & 0xFF));
-                }
-                volume = Integer.parseInt(nextString.toString().replaceAll("[\\r\\n V]", "").split(":")[1]) * 8;
-            } 
-            else if (Character.toUpperCase((char) input[decodePos]) == 'C' && Character.toUpperCase((char) input[decodePos + 1]) == 'O' && Character.toUpperCase((char) input[decodePos + 9]) == ':') // Copyright field
+            while(((char) input[decodePos]) != '\n')
+                nextString.append((char) (input[decodePos++] & 0xFF));
+
+            // Skip newline as well
+            decodePos++;
+
+            if(nextString.toString().toUpperCase().startsWith("BEGIN"))
+                headerStart = nextString.toString();
+            
+            if(nextString.toString().toUpperCase().startsWith("VERSION"))
+                version = nextString.toString();
+
+            if(nextString.toString().toUpperCase().startsWith("FORMAT"))
+                format = nextString.toString();
+
+            if(nextString.toString().toUpperCase().startsWith("NAME"))
+                name = nextString.toString();
+
+            if(nextString.toString().toUpperCase().startsWith("COMPOSER"))
+                composer = nextString.toString();
+
+            if(nextString.toString().toUpperCase().startsWith("COPYRIGHT"))
+                copyright = nextString.toString();
+
+            if(nextString.toString().toUpperCase().startsWith("BEAT"))
             {
-                while (!(Character.toUpperCase((char) input[decodePos]) == 'M' && Character.toUpperCase((char) input[decodePos + 1]) == 'E' && Character.toUpperCase((char) input[decodePos + 6]) == ':')) 
+                String tempoStr = nextString.toString().trim().split(":")[1];
+                
+                // Some i-Melody files do concatenate the volume level on the
+                // BEAT block, even though the specification doesn't have any
+                // notes about this being allowed or not.
+                if(tempoStr.contains(","))
                 {
-                    nextString.append((char) (input[decodePos++] & 0xFF));
+                    String volumeStr = tempoStr.toString().trim().
+                        split(",")[1].replace("l=", "");
+
+                    volume = Integer.parseInt(volumeStr);
+
+                    tempoStr = tempoStr.toString().trim().
+                        split(",")[0];
                 }
-                copyright = nextString.toString().replaceAll("[\\r\\n ]", "");;
+                tempo = Integer.parseInt(tempoStr);
             }
+                
+            if(nextString.toString().toUpperCase().startsWith("VOLUME"))
+                volume = Integer.parseInt(nextString.toString().
+                    replace("V", "").trim().split(":")[1]) * 8 + 7;
+
+            if(nextString.toString().toUpperCase().startsWith("STYLE"))
+                style = Integer.parseInt(nextString.toString().replace("S", "").
+                    trim().split(":")[1]);
 
             nextString.setLength(0);
         }
@@ -186,7 +150,7 @@ public final class EMSiMelodyDecoder
         if(composer != null)  { Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + composer); }
         Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     BEAT:" + tempo);
         Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + styleString[style]);
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     VOLUME:" + volume);
+        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     VOLUME:" + ((volume - 7) / 8));
         if(copyright != null) { Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + copyright); }
         
         return decodeMelodyData();
@@ -203,7 +167,6 @@ public final class EMSiMelodyDecoder
             Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "-----------------EMS Decoding-----------------");
 
             // Set up tempo, volume and instrument beforehand
-
             int microsecondsPerQuarterNote = 60000000 / tempo;
             MetaMessage tempoEvent = new MetaMessage();
             tempoEvent.setMessage(0x51, new byte[]
@@ -235,11 +198,14 @@ public final class EMSiMelodyDecoder
             while(!((char) input[decodePos] == 'E' && (char) input[decodePos+1] == 'N' && (char) input[decodePos+2] == 'D')) 
                 { nextString.append((char) (input[decodePos++] & 0xFF)); }
 
+            // Usually a block will be delimited by parenthesis, however, we can just skip over
+            // them as the '@' specifier is what indicates how many times a block must loop,
+            // and it is always at the very end of a block
             String melodyString = nextString.toString().replaceAll("[\\r\\n ()MELODY:]", "");
             
             nextString.setLength(0);
 
-            decodeBlock(melodyString, track);
+            decodeMelody(melodyString, track);
 
             while(decodePos < input.length) { nextString.append((char) (input[decodePos++] & 0xFF)); }
             String melodyEndString = nextString.toString().replaceAll("[\\r\\n ]", "");
@@ -257,7 +223,7 @@ public final class EMSiMelodyDecoder
         return null;
     }
 
-    private static void decodeBlock(String melodyString, Track track) throws InvalidMidiDataException
+    private static void decodeMelody(String melodyString, Track track) throws InvalidMidiDataException
     {
         int octave = 4;
         int noteDuration = 0;
@@ -290,12 +256,33 @@ public final class EMSiMelodyDecoder
             if (currentChar == 'r') 
             {
                 noteDuration = Character.getNumericValue(melodyString.charAt(++i));
-
                 noteDuration = getDurationInTicks(noteDuration);
 
-                if(melodyString.charAt(i+1) == '.') { noteDuration *= 1.5; i++; } // dotted note
-                else if(melodyString.charAt(i+1) == ';') { noteDuration *= 1.75; i++; } // double dotted note
-                else if(melodyString.charAt(i+1) == ':') { noteDuration = (int) Math.round(noteDuration * (2.0 / 3.0)); i++; } // 2/3 length note
+                // If there are still more characters to be read, we can check if the next char is a
+                // note duration specifier (dotted, double dotted or 2/3 length).
+                if(i + 1 < melodyString.length())
+                {
+                    // dotted note
+                    if(melodyString.charAt(i+1) == '.')
+                    {
+                        noteDuration = noteDuration * 15 / 10;
+                        i++;
+                    }
+
+                    // double dotted note
+                    else if(melodyString.charAt(i+1) == ';')
+                    {
+                        noteDuration = noteDuration * 175 / 100;
+                        i++;
+                    }
+
+                    // 2/3 length note
+                    else if(melodyString.charAt(i+1) == ':')
+                    {
+                        noteDuration = noteDuration * 2 / 3;
+                        i++;
+                    }
+                }
 
                 Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Adding rest event from time " + curTick + " to " + (curTick+noteDuration));
 
@@ -388,25 +375,42 @@ public final class EMSiMelodyDecoder
             if (isNoteCharacter(currentChar)) 
             {
                 noteValue = getNoteValue(currentChar, octave);
-                noteDuration = Character.getNumericValue(melodyString.charAt(++i)); // Get duration
+                noteDuration = Character.getNumericValue(melodyString.charAt(++i));
                 noteDuration = getDurationInTicks(noteDuration);
 
                 int restDuration = 0;
 
                 // If there are still more characters to be read, we can check if the next char is a
                 // note duration specifier (dotted, double dotted or 2/3 length).
-                if(i+1 < melodyString.length())
+                if(i + 1 < melodyString.length())
                 {
-                    if(melodyString.charAt(i+1) == '.') { noteDuration *= 1.5; i++; } // dotted note
-                    else if(melodyString.charAt(i+1) == ';') { noteDuration *= 1.75; i++; } // double dotted note
-                    else if(melodyString.charAt(i+1) == ':') { noteDuration = (int) Math.round(noteDuration * (2.0 / 3.0)); i++; } // 2/3 length note
+                    // dotted note
+                    if(melodyString.charAt(i+1) == '.')
+                    {
+                        noteDuration = noteDuration * 15 / 10;
+                        i++;
+                    }
+
+                    // double dotted note
+                    else if(melodyString.charAt(i+1) == ';')
+                    {
+                        noteDuration = noteDuration * 175 / 100;
+                        i++;
+                    }
+
+                    // 2/3 length note
+                    else if(melodyString.charAt(i+1) == ':')
+                    {
+                        noteDuration = noteDuration * 2 / 3;
+                        i++;
+                    }
                 }
 
                 switch(style)
                 {
                     case 0: // Natural Style, 20:1 ratio of note:rest
                         restDuration = noteDuration / 20;
-                        noteDuration *= (20 / 21);
+                        noteDuration = noteDuration * 20 / 21;
                         break;
 
                     case 1: // Continuous style, no rest.
@@ -433,9 +437,7 @@ public final class EMSiMelodyDecoder
 
                 curTick += noteDuration + restDuration;
 
-                currentEvents.add(new MidiEvent(noteOff, curTick - 50));
-
-                
+                currentEvents.add(new MidiEvent(noteOff, curTick));
                 
                 noteModifier = 0; // Restore the note modifier
                 continue;
@@ -444,27 +446,26 @@ public final class EMSiMelodyDecoder
             if(currentChar == '@') // '@' is a special character denoting how many times this note/led/vibe/back event block should repeat
             {   
                 int numRepeats = Character.getNumericValue(melodyString.charAt(++i));
+                int curTickIncrement = 0;
                 Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + (numRepeats == 0 ? "Infinite (unsupported, capped to 255)" : numRepeats-1) + " block repeats requested!");
                 
                 if(numRepeats == 0) { numRepeats = 255; } // 0 means infinite looping of a block, but that's not feasible in MIDI i think
                 for(int rep = 1; rep < numRepeats; rep++) 
                 { 
-                    curTick += tempo/4; // Add a small gap between repeats
-                    int curTickIncrement = 0;
                     for (MidiEvent event : currentEvents) 
                     {
                         MidiEvent newEvent = new MidiEvent(event.getMessage(), curTick + event.getTick());
                         track.add(newEvent);
                         curTickIncrement = (int) newEvent.getTick();
                     }
-                    curTick = curTickIncrement;
                 }
+                curTick = curTickIncrement;
                 currentEvents.clear(); // Clear the repeated block's events
                 continue;
             }
 
             // If nothing above matched the current character, skip it
-            i++;
+            Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Unknown char:" + currentChar);
         }
     }
 
@@ -492,13 +493,13 @@ public final class EMSiMelodyDecoder
         switch (note) 
         {
             case 'c': baseNote = 12; break;
-            case 'd': baseNote = 14; break; // D4
-            case 'e': baseNote = 16; break; // E4
-            case 'f': baseNote = 17; break; // F4
-            case 'g': baseNote = 19; break; // G4
-            case 'a': baseNote = 21; break; // A4
-            case 'b': baseNote = 23; break; // B4
-            default: baseNote = 40; // Invalid note, default to silence
+            case 'd': baseNote = 14; break;
+            case 'e': baseNote = 16; break;
+            case 'f': baseNote = 17; break;
+            case 'g': baseNote = 19; break;
+            case 'a': baseNote = 21; break;
+            case 'b': baseNote = 23; break;
+            default: baseNote = 12; // Invalid note, default to C
         };
         return baseNote + octave * 12;
     }
