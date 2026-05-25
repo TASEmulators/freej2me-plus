@@ -48,10 +48,6 @@ public final class EMSiMelodyDecoder
         "S2 (Staccato Style)"
     };
 
-    private static final int NATURAL_STYLE_RATIO = 20; // S0 rest-note ratio is (20:1)
-    // CONTINUOUS STYLE Has no rest between notes
-    private static final int STACCATO_STYLE_RATIO = 2; // S2 (it's meant to be 1:1 between rest and note duration, but we reuse note duration for rest, so it has to be 2 here)
-
     private static final int PPQ = 24;
 
     private static int volume;
@@ -235,18 +231,15 @@ public final class EMSiMelodyDecoder
             track.add(new MidiEvent(bankLSB, 1));
             track.add(new MidiEvent(programChange, 0));
 
-            decodePos+=7; // Skip the "MELODY:" string, go straight for the first melody block
+            // Parse the melody data itself
+            while(!((char) input[decodePos] == 'E' && (char) input[decodePos+1] == 'N' && (char) input[decodePos+2] == 'D')) 
+                { nextString.append((char) (input[decodePos++] & 0xFF)); }
 
-            while((char) input[decodePos] == '(') 
-            {
-                while(!((char) input[decodePos] == ')')) { nextString.append((char) (input[decodePos++] & 0xFF)); }
-                decodePos++; // Move to the next block or "END:MELODY"
-                String melodyString = nextString.toString().replaceAll("[\\r\\n (]", "");
-                
-                nextString.setLength(0);
+            String melodyString = nextString.toString().replaceAll("[\\r\\n ()MELODY:]", "");
+            
+            nextString.setLength(0);
 
-                decodeBlock(melodyString, track);
-            }
+            decodeBlock(melodyString, track);
 
             while(decodePos < input.length) { nextString.append((char) (input[decodePos++] & 0xFF)); }
             String melodyEndString = nextString.toString().replaceAll("[\\r\\n ]", "");
@@ -269,6 +262,7 @@ public final class EMSiMelodyDecoder
         int octave = 4;
         int noteDuration = 0;
         int noteModifier = 0; // Note modifier for flat and sharp notes.
+        int noteValue = 0;
 
         for (int i = 0; i < melodyString.length(); i++) 
         {
@@ -292,7 +286,7 @@ public final class EMSiMelodyDecoder
                 continue;
             }
 
-            // Rest event
+            // Silence event (appears to not be affected by Style)
             if (currentChar == 'r') 
             {
                 noteDuration = Character.getNumericValue(melodyString.charAt(++i));
@@ -308,7 +302,7 @@ public final class EMSiMelodyDecoder
                 ShortMessage noteOn = new ShortMessage();
                 ShortMessage noteOff = new ShortMessage();
 
-                noteOn.setMessage(ShortMessage.NOTE_ON, 0, 0, volume);
+                noteOn.setMessage(ShortMessage.NOTE_ON, 0, noteValue, 0);
                 track.add(new MidiEvent(noteOn, curTick));
                 
                 noteOff.setMessage(ShortMessage.NOTE_OFF, 0, 0, 0);
@@ -316,6 +310,8 @@ public final class EMSiMelodyDecoder
                 
                 currentEvents.add(new MidiEvent(noteOn, curTick));
                 currentEvents.add(new MidiEvent(noteOff, curTick + noteDuration));
+
+                curTick += noteDuration;
 
                 continue;
             }
@@ -391,17 +387,39 @@ public final class EMSiMelodyDecoder
             // Actual note specifier
             if (isNoteCharacter(currentChar)) 
             {
-                int noteValue = getNoteValue(currentChar, octave);
+                noteValue = getNoteValue(currentChar, octave);
                 noteDuration = Character.getNumericValue(melodyString.charAt(++i)); // Get duration
-
                 noteDuration = getDurationInTicks(noteDuration);
 
-                if(melodyString.charAt(i+1) == '.') { noteDuration *= 1.5; i++; } // dotted note
-                else if(melodyString.charAt(i+1) == ';') { noteDuration *= 1.75; i++; } // double dotted note
-                else if(melodyString.charAt(i+1) == ':') { noteDuration = (int) Math.round(noteDuration * (2.0 / 3.0)); i++; } // 2/3 length note
+                int restDuration = 0;
 
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Adding note:" + (noteModifier > 0 ? "#" : (noteModifier < 0 ? "&" : "")) + currentChar + octave + " with duration " + noteDuration + " and velocity " + volume + " from time " + curTick + " to " + (curTick+noteDuration));
+                // If there are still more characters to be read, we can check if the next char is a
+                // note duration specifier (dotted, double dotted or 2/3 length).
+                if(i+1 < melodyString.length())
+                {
+                    if(melodyString.charAt(i+1) == '.') { noteDuration *= 1.5; i++; } // dotted note
+                    else if(melodyString.charAt(i+1) == ';') { noteDuration *= 1.75; i++; } // double dotted note
+                    else if(melodyString.charAt(i+1) == ':') { noteDuration = (int) Math.round(noteDuration * (2.0 / 3.0)); i++; } // 2/3 length note
+                }
+
+                switch(style)
+                {
+                    case 0: // Natural Style, 20:1 ratio of note:rest
+                        restDuration = noteDuration / 20;
+                        noteDuration *= (20 / 21);
+                        break;
+
+                    case 1: // Continuous style, no rest.
+                        break;
+
+                    case 2: // Staccato Style, 1:1 ratio of note:rest
+                        noteDuration /= 2;    
+                        restDuration = noteDuration;
+                }
                 
+                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Adding note:" + (noteModifier > 0 ? "#" : (noteModifier < 0 ? "&" : "")) + currentChar + octave + " with duration " + noteDuration + " and velocity " + volume + " from time " + curTick + " to " + (curTick+noteDuration));
+                noteValue += noteModifier;
+
                 ShortMessage noteOn = new ShortMessage();
                 ShortMessage noteOff = new ShortMessage();
 
@@ -412,24 +430,12 @@ public final class EMSiMelodyDecoder
                 track.add(new MidiEvent(noteOff, curTick + noteDuration));
                 
                 currentEvents.add(new MidiEvent(noteOn, curTick));
-                currentEvents.add(new MidiEvent(noteOff, curTick + noteDuration));
-                
-                switch (style) 
-                {
-                    case 0: // Natural Style
-                        noteDuration = (int) Math.round(noteDuration * NATURAL_STYLE_RATIO); // Rest between notes (20:1 ratio)
-                        break;
-                    case 1: // Continuous Style
-                        // No adjustment needed, keep noteDuration as is so we don't have rest between notes
-                        break;
-                    case 2: // Staccato Style
-                        noteDuration = (int) Math.round(noteDuration * STACCATO_STYLE_RATIO); // Rest between notes is 1:1 the note duration
-                        break;
-                    default:
-                        break; // Handle unexpected style values if necessary
-                }
 
-                curTick += noteDuration;
+                curTick += noteDuration + restDuration;
+
+                currentEvents.add(new MidiEvent(noteOff, curTick - 50));
+
+                
                 
                 noteModifier = 0; // Restore the note modifier
                 continue;
@@ -485,15 +491,15 @@ public final class EMSiMelodyDecoder
 
         switch (note) 
         {
-            case 'c': baseNote = 60; break;
-            case 'd': baseNote = 62; break; // D4
-            case 'e': baseNote = 64; break; // E4
-            case 'f': baseNote = 65; break; // F4
-            case 'g': baseNote = 67; break; // G4
-            case 'a': baseNote = 69; break; // A4
-            case 'b': baseNote = 71; break; // B4
-            default: break; // Invalid note, default to silence
+            case 'c': baseNote = 12; break;
+            case 'd': baseNote = 14; break; // D4
+            case 'e': baseNote = 16; break; // E4
+            case 'f': baseNote = 17; break; // F4
+            case 'g': baseNote = 19; break; // G4
+            case 'a': baseNote = 21; break; // A4
+            case 'b': baseNote = 23; break; // B4
+            default: baseNote = 40; // Invalid note, default to silence
         };
-        return baseNote + (octave - 4) * 12;
+        return baseNote + octave * 12;
     }
 }
