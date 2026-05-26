@@ -38,7 +38,7 @@ import javax.sound.midi.Track;
 
 import org.recompile.mobile.Mobile;
 
-public final class EMSiMelodyDecoder
+public final class EMSMelodyDecoder
 {
 
     private static final String[] styleString = 
@@ -65,7 +65,7 @@ public final class EMSiMelodyDecoder
     public static Map<Integer, Integer> ledPositions = new HashMap<Integer, Integer>();
     public static Map<Integer, Integer> backlightPositions = new HashMap<Integer, Integer>();
 
-    public static final InputStream decodeiMelody(byte[] inputData) 
+    public static final InputStream decodeMelody(byte[] inputData) 
     {
         decodePos = 0;
         input = inputData;
@@ -141,22 +141,22 @@ public final class EMSiMelodyDecoder
             nextString.setLength(0);
         }
 
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "----------------EMS Header----------------");
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + headerStart);
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + version);
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + format);
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "----------------EMS Header----------------");
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + headerStart);
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + version);
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + format);
         
-        if(name != null)      { Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + name); }
-        if(composer != null)  { Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + composer); }
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     BEAT:" + tempo);
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + styleString[style]);
-        Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     VOLUME:" + ((volume - 7) / 8));
-        if(copyright != null) { Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ":     " + copyright); }
+        if(name != null)      { Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + name); }
+        if(composer != null)  { Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + composer); }
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     BEAT:" + tempo);
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + styleString[style]);
+        Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     VOLUME:" + ((volume - 7) / 8));
+        if(copyright != null) { Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ":     " + copyright); }
         
-        return decodeMelodyData();
+        return decodeMelodyData(headerStart.equalsIgnoreCase("BEGIN:EMELODY"));
     }
 
-    public static final InputStream decodeMelodyData() 
+    public static final InputStream decodeMelodyData(boolean eMelody) 
     {
         try 
         {
@@ -164,7 +164,7 @@ public final class EMSiMelodyDecoder
             track = sequence.createTrack();
             StringBuilder nextString = new StringBuilder();
 
-            Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "-----------------EMS Decoding-----------------");
+            Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "-----------------EMS Decoding-----------------");
 
             // Set up tempo, volume and instrument beforehand
             int microsecondsPerQuarterNote = 60000000 / tempo;
@@ -205,13 +205,13 @@ public final class EMSiMelodyDecoder
             
             nextString.setLength(0);
 
-            decodeMelody(melodyString, track);
+            decodeMelody(melodyString, track, eMelody);
 
             while(decodePos < input.length) { nextString.append((char) (input[decodePos++] & 0xFF)); }
             String melodyEndString = nextString.toString().replaceAll("[\\r\\n ]", "");
 
             // This should always match END:MELODY
-            Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "REACHED " + melodyEndString);
+            Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "REACHED " + melodyEndString);
 
             // Everything's finished, send the converted stream to the player
             ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -219,11 +219,11 @@ public final class EMSiMelodyDecoder
 
             return new ByteArrayInputStream(output.toByteArray());
         }
-        catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Failed to decode EMS iMelody:" + e.getMessage()); e.printStackTrace(); }
+        catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Failed to decode EMS Melody:" + e.getMessage()); e.printStackTrace(); }
         return null;
     }
 
-    private static void decodeMelody(String melodyString, Track track) throws InvalidMidiDataException
+    private static void decodeMelody(String melodyString, Track track, boolean eMelody) throws InvalidMidiDataException
     {
         int octave = 4;
         int noteDuration = 0;
@@ -232,7 +232,85 @@ public final class EMSiMelodyDecoder
 
         for (int i = 0; i < melodyString.length(); i++) 
         {
-            char currentChar = melodyString.charAt(i);            
+            char currentChar = melodyString.charAt(i);     
+
+            if(eMelody)
+            {
+                // Higher octave modifier
+                if(currentChar == '+') 
+                { 
+                    Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Highre octave modifier parsed");
+                    octave += 1; 
+                    continue; 
+                }
+
+                // Sharp note -> Increase next Midi note value by 1
+                if(currentChar == '#') 
+                { 
+                    Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Sharp note modifier parsed");
+                    noteModifier = 1; 
+                    continue; 
+                }
+
+                // eMelody note specifier
+                if (isNoteCharacter(currentChar)) 
+                {
+                    noteValue = getNoteValue(Character.toLowerCase(currentChar), octave);
+                    
+                    // In eMelody, it appears that uppercase notes are longer
+                    // half notes, while lowercase ones are eigth notes.
+                    // Reference: https://web.archive.org/web/
+                    // 20260309055027/https://www.fmjsoft.com/fmt/emy.htm
+
+                    // There are apparently "two" eMelody formats, but only the
+                    // simpler one (supported here) is able to be transferred
+                    // between devices and copied, so it is probably the only
+                    // type we'll be able to find on Ericsson apps and the web.
+                    noteDuration = getDurationInTicks(Character.isUpperCase(currentChar) ? 1 : 3);
+
+                    int restDuration = 0;
+
+                    switch(style)
+                    {
+                        case 0: // Natural Style, 20:1 ratio of note:rest
+                            restDuration = noteDuration / 20;
+                            noteDuration = noteDuration * 20 / 21;
+                            break;
+
+                        case 1: // Continuous style, no rest.
+                            break;
+
+                        case 2: // Staccato Style, 1:1 ratio of note:rest
+                            noteDuration /= 2;    
+                            restDuration = noteDuration;
+                    }
+                    
+                    Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Adding note:" + (noteModifier > 0 ? "#" : (noteModifier < 0 ? "&" : "")) + currentChar + octave + " with duration " + noteDuration + " and velocity " + volume + " from time " + curTick + " to " + (curTick+noteDuration));
+                    noteValue += noteModifier;
+
+                    ShortMessage noteOn = new ShortMessage();
+                    ShortMessage noteOff = new ShortMessage();
+
+                    noteOn.setMessage(ShortMessage.NOTE_ON, 0, noteValue, volume);
+                    track.add(new MidiEvent(noteOn, curTick));
+                    
+                    noteOff.setMessage(ShortMessage.NOTE_OFF, 0, noteValue, 0);
+                    track.add(new MidiEvent(noteOff, curTick + noteDuration));
+                    
+                    currentEvents.add(new MidiEvent(noteOn, curTick));
+
+                    curTick += noteDuration + restDuration;
+
+                    currentEvents.add(new MidiEvent(noteOff, curTick));
+                    
+                    noteModifier = 0; // Restore the note modifier
+
+                    octave = 4;
+                    continue;
+                }
+            }
+
+            // Not a simpler eMelody, parse as iMelody       
 
             // Handle note volume/velocity modifier
             if (currentChar == 'V') 
@@ -240,13 +318,13 @@ public final class EMSiMelodyDecoder
                 if (i + 1 < melodyString.length() && melodyString.charAt(i + 1) == '+') // V+ increases volume by a step
                 {
                     volume = Math.min(volume + 8, 127);
-                    Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Volume changed to:" + volume);
+                    Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Volume changed to:" + volume);
                     i++;
                 } 
                 else if (i + 1 < melodyString.length() && melodyString.charAt(i + 1) == '-') 
                 {
                     volume = Math.max(volume - 8, 0);
-                    Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Volume changed to:" + volume);
+                    Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Volume changed to:" + volume);
                     i++;
                 }
                 continue;
@@ -284,7 +362,7 @@ public final class EMSiMelodyDecoder
                     }
                 }
 
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Adding rest event from time " + curTick + " to " + (curTick+noteDuration));
+                Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Adding rest event from time " + curTick + " to " + (curTick+noteDuration));
 
                 ShortMessage noteOn = new ShortMessage();
                 ShortMessage noteOff = new ShortMessage();
@@ -306,7 +384,7 @@ public final class EMSiMelodyDecoder
             // Flat note -> Decrease next Midi note value by 1
             if(currentChar == '&') 
             { 
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Flat note modifier parsed");
+                Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Flat note modifier parsed");
                 noteModifier = -1; 
                 continue; 
             }
@@ -314,7 +392,7 @@ public final class EMSiMelodyDecoder
             // Sharp note -> Increase next Midi note value by 1
             if(currentChar == '#') 
             { 
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Sharp note modifier parsed");
+                Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Sharp note modifier parsed");
                 noteModifier = +1; 
                 continue; 
             }
@@ -323,55 +401,55 @@ public final class EMSiMelodyDecoder
             if (currentChar == '*') 
             {
                 octave = Character.getNumericValue(melodyString.charAt(++i));
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Octave changed to:" + octave);
+                Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Octave changed to:" + octave);
                 continue;
             }
 
             // TODO: Handle those other events like vibration, led and backlight, for now, we just skip them
             if (melodyString.startsWith("ledon", i)) 
             {
-                Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "LED On event not implemented");
+                Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "LED On event not implemented");
                 ledPositions.put(curTick, Integer.MAX_VALUE);
                 i += 4;
                 continue;
             }
             if (melodyString.startsWith("ledoff", i)) 
             {
-                Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "LED Off event not implemented");
+                Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "LED Off event not implemented");
                 ledPositions.put(curTick, 0);
                 i += 5;
                 continue;
             }
             if (melodyString.startsWith("vibeon", i)) 
             {
-                Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Vibration On event not implemented");
+                Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Vibration On event not implemented");
                 vibePositions.put(curTick, Integer.MAX_VALUE);
                 i += 5;
                 continue;
             }
             if (melodyString.startsWith("vibeoff", i)) 
             {
-                Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Vibration Off event not implemented");
+                Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Vibration Off event not implemented");
                 vibePositions.put(curTick, 0);
                 i += 6;
                 continue;
             }
             if (melodyString.startsWith("backon", i)) 
             {
-                Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Backlight On event not implemented");
+                Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Backlight On event not implemented");
                 backlightPositions.put(curTick, Integer.MAX_VALUE);
                 i += 5;
                 continue;
             }
             if (melodyString.startsWith("backoff", i)) 
             {
-                Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Backlight Off event not implemented");
+                Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Backlight Off event not implemented");
                 backlightPositions.put(curTick, 0);
                 i += 6;
                 continue;
             }
 
-            // Actual note specifier
+            // iMelody note specifier
             if (isNoteCharacter(currentChar)) 
             {
                 noteValue = getNoteValue(currentChar, octave);
@@ -421,7 +499,7 @@ public final class EMSiMelodyDecoder
                         restDuration = noteDuration;
                 }
                 
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Adding note:" + (noteModifier > 0 ? "#" : (noteModifier < 0 ? "&" : "")) + currentChar + octave + " with duration " + noteDuration + " and velocity " + volume + " from time " + curTick + " to " + (curTick+noteDuration));
+                Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Adding note:" + (noteModifier > 0 ? "#" : (noteModifier < 0 ? "&" : "")) + currentChar + octave + " with duration " + noteDuration + " and velocity " + volume + " from time " + curTick + " to " + (curTick+noteDuration));
                 noteValue += noteModifier;
 
                 ShortMessage noteOn = new ShortMessage();
@@ -447,7 +525,7 @@ public final class EMSiMelodyDecoder
             {   
                 int numRepeats = Character.getNumericValue(melodyString.charAt(++i));
                 int curTickIncrement = 0;
-                Mobile.log(Mobile.LOG_DEBUG, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + (numRepeats == 0 ? "Infinite (unsupported, capped to 255)" : numRepeats-1) + " block repeats requested!");
+                Mobile.log(Mobile.LOG_DEBUG, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + (numRepeats == 0 ? "Infinite (unsupported, capped to 255)" : numRepeats-1) + " block repeats requested!");
                 
                 if(numRepeats == 0) { numRepeats = 255; } // 0 means infinite looping of a block, but that's not feasible in MIDI i think
                 for(int rep = 1; rep < numRepeats; rep++) 
@@ -465,11 +543,11 @@ public final class EMSiMelodyDecoder
             }
 
             // If nothing above matched the current character, skip it
-            Mobile.log(Mobile.LOG_WARNING, EMSiMelodyDecoder.class.getPackage().getName() + "." + EMSiMelodyDecoder.class.getSimpleName() + ": " + "Unknown char:" + currentChar);
+            Mobile.log(Mobile.LOG_WARNING, EMSMelodyDecoder.class.getPackage().getName() + "." + EMSMelodyDecoder.class.getSimpleName() + ": " + "Unknown char:" + currentChar);
         }
     }
 
-    private static boolean isNoteCharacter(char c)  { return "cdefgab".indexOf(c) >= 0; }
+    private static boolean isNoteCharacter(char c)  { return "cdefgabCDEFGAB".indexOf(c) >= 0; }
 
     private static int getDurationInTicks(int durationValue) 
     {

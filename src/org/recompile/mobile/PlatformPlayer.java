@@ -71,8 +71,8 @@ import javax.microedition.media.decoders.MLDDecoder;
 import javax.microedition.media.decoders.WAVTools;
 import javax.microedition.media.decoders.WAVImaADPCMDecoder;
 import javax.microedition.media.decoders.WAVLawDecoder;
-/* EMS iMelody support */
-import javax.microedition.media.decoders.EMSiMelodyDecoder;
+/* Ericsson Melody support */
+import javax.microedition.media.decoders.EMSMelodyDecoder;
 /* audio/mpeg support */
 import javazoom.jl.player.MPEGPlayer;
 
@@ -216,7 +216,13 @@ public class PlatformPlayer implements Player
 					{
 						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is EMS iMelody! (not fully supported yet)");
 						contentType = "audio/x-imy";
-						player = new midiPlayer(EMSiMelodyDecoder.decodeiMelody(data));
+						player = new midiPlayer(EMSMelodyDecoder.decodeMelody(data));
+					}
+					else if(data.length >= 4 && data[0] == 'B' && data[1] == 'E' && data[2] == 'G' && data[3] == 'I' && data[4] == 'N' && data[5] == ':' && data[6] == 'E' && data[7] == 'M')
+					{
+						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is EMS eMelody! (not fully supported yet)");
+						contentType = "audio/x-emy";
+						player = new midiPlayer(EMSMelodyDecoder.decodeMelody(data));
 					}
 					else if(data.length >= 6 && data[0] == '#' && data[1] == '!' && data[2] == 'A' && data[3] == 'M' && data[4] == 'R' && data[5] == '\n') 
 					{
