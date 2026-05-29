@@ -369,7 +369,7 @@ public class NokiaOTTDecoder
 				if(noteStyle == STACCATO_STYLE) // STACCATO has shorter notes with longer rest by making NOTE_OFF end way before the next note's NOTE_ON
 				{
 					noteOff.setMessage(ShortMessage.NOTE_OFF, 0, midiNote, 0);
-					track.add(new MidiEvent(noteOff, curTick + (int) (ticks * 0.6f)));
+					track.add(new MidiEvent(noteOff, curTick + (ticks / 2)));
 				}
 				else if (noteStyle == CONTINUOUS_STYLE) // Notes flow into each other
 				{
@@ -379,10 +379,9 @@ public class NokiaOTTDecoder
 				else // NATURAL adds notes with a small rest between them.
 				{
 					noteOff.setMessage(ShortMessage.NOTE_OFF, 0, midiNote, 0);
-					track.add(new MidiEvent(noteOff, curTick + (int) (ticks * 0.8f)));
+					track.add(new MidiEvent(noteOff, curTick + (ticks * 20 / 21)));
 				}
 			}
-			
 			
 			curTick += ticks;
 		}
@@ -641,13 +640,13 @@ public class NokiaOTTDecoder
 		switch (durationSpecifier) 
 		{
 			case 0x1: // Dotted note
-				baseTicks = (int) (baseTicks * 1.5); // Increase duration by 50%
+				baseTicks = baseTicks * 15 / 10; // Increase duration by 50%
 				break;
 			case 0x2: // Double dotted note
-				baseTicks = (int) (baseTicks * 1.75); // Increase duration by 75%
+				baseTicks = baseTicks * 175 / 100; // Increase duration by 75%
 				break;
 			case 0x3: // 2/3 length
-				baseTicks = (int) (baseTicks * (2.0 / 3.0)); // Reduce duration to about 2/3
+				baseTicks = baseTicks * 2 / 3; // Reduce duration to about 2/3
 				break;
 			case 0x0: // No special duration specifier
 			default:   // This case should not happen but just ignore any duration changes if it does
