@@ -632,6 +632,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		arcAngle = -arcAngle;
 		startAngle = -startAngle;
 
+		width += 1;
+		height += 1;
+		
 		x += translateX;
 		y += translateY;
 
@@ -643,14 +646,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int curPixel = 0; // Used only for DOTTED style lines
 
 		/* 
-			* This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
-			* iterations are used to draw the circle. A bigger value will result in the same pixels 
-			* being hit more times (and wasted cycles since they'll be discarded later) but will
-			* guarantee a perfectly filled outline, whereas a small value will result in gaps
-			* appearing in the circle since less points will be sampled. The current value is
-			* a good balance between filling all positions on all kinds of shapes while hitting as 
-			* few pixels as possible.
-			*/
+		 * This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
+		 * iterations are used to draw the circle. A bigger value will result in the same pixels 
+		 * being hit more times (and wasted cycles since they'll be discarded later) but will
+		 * guarantee a perfectly filled outline, whereas a small value will result in gaps
+		 * appearing in the circle since less points will be sampled. The current value is
+		 * a good balance between filling all positions on all kinds of shapes while hitting as 
+		 * few pixels as possible.
+		 */
 		
 		final float centerX = x + width / 2.0f;
 		final float centerY = y + height / 2.0f;
@@ -685,7 +688,13 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			int fillY = (int) Math.round((centerY) + radiusY * Math.sin(angle));
 			
 			// Make sure we don't paint the same pixel more than once
-			if((lastFillX == fillX && lastFillY == fillY) || (firstFillX == fillX && firstFillY == fillY)) { continue; }
+			if((lastFillX == fillX ^ lastFillY == fillY) || (firstFillX == fillX && firstFillY == fillY))
+			{
+				lastFillX = -1;
+				lastFillY = -1;
+				continue; 
+			}
+
 			lastFillX = fillX;
 			lastFillY = fillY;
 
@@ -857,8 +866,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		 * Only allocate the alpha buffer if the color isn't opaque. Noticeably
 		 * improves performance for opaque arcs. 8 pixels of information are packed
 		 * in a single boolean/byte, noticeably reducing memory usage.
+		 * 
+		 * width and height are inclusive, hence the + 1 on each
 		 */
-		if(hasAlpha) { filledPixels = new byte[width * height / 8 + 1]; }
+		if(hasAlpha) { filledPixels = new byte[(width + 1) * (height + 1) / 8]; }
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
