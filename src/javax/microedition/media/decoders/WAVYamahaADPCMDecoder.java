@@ -88,8 +88,7 @@ public final class WAVYamahaADPCMDecoder
         diff = ((1 + (delta << 1)) * stepSize[0]) >> 3;
         newval = history[0] + (sign > 0 ? -clamp(diff, 0, 32767) : clamp(diff, 0, 32767));
         nstep = ADPCMZ_STEP_TABLE[delta] * stepSize[0] >> 8;
-        stepSize[0] = clamp(nstep, 1280, 32767); // Same as ADPCM-B, works better on a wide sample of PCM MLD data
-        //stepSize[0] = clamp(nstep, 127, 24576); // Original code's step clamping
+        stepSize[0] = clamp(nstep, 127, 24576);
         history[0] = newval = clamp(newval, -32768, 32767);
         return newval;
     }
@@ -154,19 +153,23 @@ public final class WAVYamahaADPCMDecoder
 
         int outputIndex = 0, step = 0, decodedSample = 0;
         
+        // TODO: The Yamaha YMZ/AICA chips perform low-pass filtering (not implemented at all)
+        // and interpolation (done by upsample) to smooth out the resulting audio waves.
+
         for (int i = 0; i < buffer.length; i++) 
         {
-            history[0] *= (254 / 256); // Apply a bit of High pass to the historical sample
+            // Closest we have to "low-pass" right now is that
+            // (sample * 224 / 255) operation to reduce the wave's amplitude.
 
             // lower nibble
             step = (buffer[i] & 0x0F);
-            decodedSample = ADPCMZStep(step, history, stepSize);
+            decodedSample = ADPCMZStep(step, history, stepSize) * 224 / 255;
             outBuffer[outputIndex++] = (byte) (decodedSample & 0xFF);        // LSB
             outBuffer[outputIndex++] = (byte) ((decodedSample >> 8) & 0xFF); // MSB
 
             // upper nibble
             step = (buffer[i] >> 4) & 0x0F;
-            decodedSample = ADPCMZStep(step, history, stepSize);
+            decodedSample = ADPCMZStep(step, history, stepSize) * 224 / 255;
             outBuffer[outputIndex++] = (byte) (decodedSample & 0xFF);        // LSB
             outBuffer[outputIndex++] = (byte) ((decodedSample >> 8) & 0xFF); // MSB
         }
