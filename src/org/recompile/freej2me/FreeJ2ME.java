@@ -729,7 +729,7 @@ public class FreeJ2ME
 		else 
 		{
             main.setSize(350, 450);
-            main.setMinimumSize(new Dimension(240, 240));
+            main.setMinimumSize(new Dimension(192, 64));
 			main.setLocationRelativeTo(null); // Center window on screen
         }
 
