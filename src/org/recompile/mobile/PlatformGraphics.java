@@ -43,6 +43,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	com.jblend.graphics.j3d.Graphics3D, com.motorola.graphics.j3d.Graphics3D, 
 	com.nttdocomo.opt.ui.j3d.Graphics3D, com.vodafone.v10.graphics.j3d.Graphics3D
 {
+	private static final int FP_FACTOR = 15;
 
 	// Gaussian blur kernel (7x7) for Motorola's FunLights
 	protected static final byte[] gaussianKernel = 
@@ -351,7 +352,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			x = AnchorX(x, image.getWidth(), anchor);
 			y = AnchorY(y, image.getHeight(), anchor);
 
-			drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
+			drawRegion(image, 0, 0,
+			image.getWidth(), image.getHeight(), 0,
+			x, y, anchor);
+
+			//drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
 		}
 		catch (Exception e)
 		{
@@ -655,21 +660,21 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		 * few pixels as possible.
 		 */
 		
-		final float centerX = x + width / 2.0f;
-		final float centerY = y + height / 2.0f;
-		final float radiusX = width / 2.0f;
-		final float radiusY = height / 2.0f;
-		final float startAngleRad = fastToRadians(startAngle);
-		final float endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
-		int steps = (int) (Math.abs(arcAngle * ((width + height) / 2) / 50.0f));
+		final int centerX = (x << 1) + ((width << 1) / 2);
+		final int centerY = (y << 1) + ((height << 1) / 2);
+		final int radiusX = (width << 1) / 2;
+		final int radiusY = (height << 1) / 2;
+		final int startAngleRad = fastToRadians(startAngle);
+		final int endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
+		final int steps = Math.abs(arcAngle * (width + height)) / 100;
+		int angle = startAngleRad;
 		
-		int firstFillX = (int) Math.round((centerX) + radiusX * Math.cos(startAngleRad));
-		int firstFillY = (int) Math.round((centerY) + radiusY * Math.sin(startAngleRad)); 
+		int firstFillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
+		int firstFillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
 		int lastFillX = -1;
 		int lastFillY = -1;
 
-		if((firstFillX >= clipX && firstFillX < clipWidth && firstFillY >= clipY && firstFillY < clipHeight) && 
-			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
+		if((firstFillX >= clipX && firstFillX < clipWidth && firstFillY >= clipY && firstFillY < clipHeight))
 		{
 			if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[(firstFillY * canvasWidth) + firstFillX] = getColor(); }
 			else 
@@ -680,15 +685,15 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		}
 
 		/* First pixel was already drawn, so start from step 1 */
-		for (int i = 1; i < steps; i++) 
+		for (int i = 1; i <= steps; i++) 
 		{
-			float angle = startAngleRad + (i * endAngleRad / steps);
+			angle += endAngleRad / steps;
 			
-			int fillX = (int) Math.round((centerX) + radiusX * Math.cos(angle));
-			int fillY = (int) Math.round((centerY) + radiusY * Math.sin(angle));
+			int fillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
+			int fillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
 			
 			// Make sure we don't paint the same pixel more than once
-			if((lastFillX == fillX ^ lastFillY == fillY) || (firstFillX == fillX && firstFillY == fillY))
+			if(((lastFillX == fillX) ^ (lastFillY == fillY)) || (firstFillX == fillX && firstFillY == fillY))
 			{
 				lastFillX = -1;
 				lastFillY = -1;
@@ -772,10 +777,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		drawLine(x+width, y+(arcHeight/2)+1, x+width, y+height-(arcHeight/2)-2); // Right line
 
 		// Fill rounded corners
-		drawArc(x, y, arcWidth, arcHeight, 90, 90); // Top-left corner
-		drawArc(x + width - arcWidth - 1, y, arcWidth, arcHeight, 0, 90); // Top-right corner
-		drawArc(x, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
-		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
+		drawArc(x + 1, y + 1, arcWidth - 1, arcHeight - 1, 90, 90); // Top-left corner
+		drawArc(x + width - arcWidth - 1, y + 1, arcWidth, arcHeight - 1, 0, 90); // Top-right corner
+		drawArc(x + 1, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
+		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth+1, arcHeight+1, 270, 90); // Bottom-right corner
 	}
 
 	// Patch: Line break support (May affect other games)
@@ -876,24 +881,24 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
 		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
-		final float centerX = x + width / 2.0f;
-		final float centerY = y + height / 2.0f;
-		final float radiusX = width / 2.0f;
-		final float radiusY = height / 2.0f;
-		final float startAngleRad = fastToRadians(startAngle);
-		final float endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
-		float maxRadius = Math.max(radiusX, radiusY);
-
-		int steps = (int) (Math.abs(arcAngle * ((width + height) / 2) / 50.0f));
+		final int centerX = (x << 1) + ((width << 1) / 2);
+		final int centerY = (y << 1) + ((height << 1) / 2);
+		final int radiusX = (width << 1) / 2;
+		final int radiusY = (height << 1) / 2;
+		final int maxRadius = Math.max(radiusX, radiusY);
+		final int startAngleRad = fastToRadians(startAngle);
+		final int endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
+		final int steps = Math.abs(arcAngle * (width + height)) / 100;
+		int angle = startAngleRad;
 
 		for (int i = 0; i < steps; i++) 
 		{
-			float angle = startAngleRad + (i * endAngleRad / steps);
+			angle = startAngleRad + (i * endAngleRad / steps);
 
-			for (float j = 0; j < maxRadius; j++) 
+			for (int j = 0; j < maxRadius; j++) 
 			{
-				int innerX = (int) Math.round(centerX + radiusX * Math.cos(angle) * (j / maxRadius));
-				int innerY = (int) Math.round(centerY + radiusY * Math.sin(angle) * (j / maxRadius));
+				int innerX = (centerX + (radiusX * (fpCos(angle) * j / maxRadius) >> FP_FACTOR)) >> 1;
+				int innerY = (centerY + (radiusY * (fpSin(angle) * j / maxRadius) >> FP_FACTOR)) >> 1;
 				filledZ = ((innerY-y) * width + innerX-x);
 
 				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight && 
@@ -968,9 +973,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		fillRect(x + (width - (arcWidth/2))-1, y + (arcHeight/2)+1, (arcWidth/2)+1, height - arcHeight - 2); // Right Side part
 
 		// Fill rounded corners
-		fillArc(x, y, arcWidth, arcHeight, 90, 90); // Top-left corner
-		fillArc(x + width - arcWidth - 1, y, arcWidth, arcHeight, 0, 90); // Top-right corner
-		fillArc(x, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
+		fillArc(x + 1, y + 1, arcWidth - 1, arcHeight - 1, 90, 90); // Top-left corner
+		fillArc(x + width - arcWidth - 1, y + 1, arcWidth, arcHeight - 1, 0, 90); // Top-right corner
+		fillArc(x + 1, y + height - arcHeight - 1, arcWidth - 1, arcHeight, 180, 90); // Bottom-left corner
 		fillArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
@@ -3128,5 +3133,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Helper methods
 	protected static final int clamp(int value) { return Math.max(0, Math.min(255, value)); }
 
-	protected static final float fastToRadians(float angdeg) { return angdeg * 0.017453292f; }
+	// All math below here uses a factor of 32768, same as shifting by 15 bits
+	protected static final int fastToRadians(int angdeg) { return angdeg * 572; }
+
+	protected static final int fpCos(int angle) { return (int)(Math.cos(angle / 32768.0f) * 32768); }
+
+	protected static final int fpSin(int angle) { return (int)(Math.sin(angle / 32768.0f) * 32768); }
 }
