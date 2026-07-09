@@ -1089,8 +1089,7 @@ public class RecordStore
 		try 
 		{
 			base64Encoded = Base64Util.encode(name.getBytes("UTF-8"))
-				.toLowerCase()
-				.replace('=', '_');
+				.toLowerCase().replace('=', '_').replace('/', '~');
 		} 
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Failed to properly encode the recordStores disk name!"); }
 		
