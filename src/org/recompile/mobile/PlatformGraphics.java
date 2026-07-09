@@ -352,11 +352,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			x = AnchorX(x, image.getWidth(), anchor);
 			y = AnchorY(y, image.getHeight(), anchor);
 
-			drawRegion(image, 0, 0,
-			image.getWidth(), image.getHeight(), 0,
-			x, y, anchor);
-
-			//drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
+			drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
 		}
 		catch (Exception e)
 		{
