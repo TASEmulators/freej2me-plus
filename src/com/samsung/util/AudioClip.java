@@ -64,7 +64,12 @@ public class AudioClip
 			playerFormat = clipType;
 			player.prefetch();
 		}
-		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage()); e.printStackTrace(); }
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage());
+			e.printStackTrace();
+			throw new NullPointerException(e.getMessage());
+		}
 	}
 
 	public AudioClip(int clipType, String filename)
@@ -82,7 +87,12 @@ public class AudioClip
 			playerFormat = clipType;
 			player.prefetch();
 		}
-		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage()); e.printStackTrace(); }
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_WARNING, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to create player:" + e.getMessage());
+			e.printStackTrace();
+			throw new NullPointerException(e.getMessage());
+		}
 	}
 
 	public static boolean isSupported() { return true; }
