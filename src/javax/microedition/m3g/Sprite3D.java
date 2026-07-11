@@ -39,9 +39,15 @@ public class Sprite3D extends Node
 
 	public Sprite3D(boolean isScaled, Image2D img, Appearance a)
 	{
+		/* As per JSR-184, the image cannot be null, and the crop rectangle initially covers the whole image. */
+		if (img == null) { throw new NullPointerException("Cannot create a Sprite3D with a null image."); }
 		scaled = isScaled;
 		image = img;
 		appearance = a;
+		cropx = 0;
+		cropy = 0;
+		cropw = img.getWidth();
+		croph = img.getHeight();
 	}
 
 	public Appearance getAppearance() { return appearance; }

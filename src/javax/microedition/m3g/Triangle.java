@@ -42,113 +42,156 @@ class Triangle
 		// sC, tC, rC, qC;
 		// 0   1   2   3
 
-	private static int[] bufIndex;
+	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
+	final float[] invW = new float[] { 1f, 1f, 1f };
 
-	private int triangleIndex = 0;
+	/* Effective vertex indices of the source triangle (after strip-winding correction). */
+	private int idxA, idxB, idxC;
 
-	Triangle(float[] vertices, int triIndex) 
-	{ 
+	Triangle(float[] vertices, int ia, int ib, int ic)
+	{
 		v = vertices;
-		triangleIndex = triIndex;
+		idxA = ia; idxB = ib; idxC = ic;
 	}
 
 	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode)
 	{
 		renderableTriangles[0] = 0;
 		boolean sharesVertices = false;
-		final Triangle[] result = new Triangle[tris.length / 3];
+		/* Near-plane clipping can split a crossing triangle into two. */
+		final Triangle[] result = new Triangle[(tris.length / 3) * 2];
 
-		// Index buffer data. We don't need to make a sub-array copy for each triangle.
-		// We can then just track it statically and each triangle's index will take care of the rest
-		bufIndex = tris;
+		final float[] inV = new float[12];
+		final float[] inT = new float[12];
+		final float[] outV = new float[16]; /* Up to 4 vertices after clipping against one plane */
+		final float[] outT = new float[16];
 
-		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++) 
+		int prevA = 0, prevB = 0, prevC = 0; /* effective indices of the previous triangle */
+		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
 		{
-			if (tri_id > 0) 
+			/*
+			 * Triangle-strip winding correction: consecutive triangles sharing an edge
+			 * alternate their winding, so swap two indices to normalize it. The swap is
+			 * done on LOCAL copies, comparing against the previous triangle's EFFECTIVE
+			 * (post-swap) indices — writing the swap back into the IndexBuffer's array
+			 * would corrupt the mesh cumulatively across renders (the detection would
+			 * then run on already-swapped data, flipping different triangles each time).
+			 */
+			int ia = tris[3 * tri_id + 0], ib = tris[3 * tri_id + 1], ic = tris[3 * tri_id + 2];
+			if (tri_id > 0)
 			{
-				sharesVertices = (tris[3* tri_id + 0] == tris[3* (tri_id-1) + 1] &&
-								tris[3* tri_id + 1] == tris[3* (tri_id-1) + 2]) ||
-								(tris[3* tri_id + 1] == tris[3* (tri_id-1) + 0] &&
-								tris[3* tri_id + 2] == tris[3* (tri_id-1) + 1]);
+				sharesVertices = (ia == prevB && ib == prevC) || (ib == prevA && ic == prevB);
 
-				// Swap vertices for triangles if sharing is detected
-				if (sharesVertices) 
+				if (sharesVertices)
 				{
-					// Swap indexA and indexB
-					int temp = tris[3 * tri_id + 0];
-					tris[3 * tri_id + 0] = tris[3 * tri_id + 1];
-					tris[3 * tri_id + 1] = temp;
+					final int temp = ia;
+					ia = ib;
+					ib = temp;
+				}
+			}
+			prevA = ia; prevB = ib; prevC = ic;
+
+			for (int i = 0; i < 3; i++)
+			{
+				final int idx = 4 * (i == 0 ? ia : (i == 1 ? ib : ic));
+				inV[4*i]   = vert[idx];     inV[4*i+1] = vert[idx + 1];
+				inV[4*i+2] = vert[idx + 2]; inV[4*i+3] = vert[idx + 3];
+				if (texc != null)
+				{
+					inT[4*i]   = texc[idx];     inT[4*i+1] = texc[idx + 1];
+					inT[4*i+2] = texc[idx + 2]; inT[4*i+3] = texc[idx + 3];
 				}
 			}
 
-			result[renderableTriangles[0]] = new Triangle(new float[] // Vertex positions
+			/*
+			 * Clip against the near plane (w >= near) in clip space, interpolating both
+			 * positions and texture coordinates. Vertices behind the camera would otherwise
+			 * explode to huge screen coordinates after the perspective division.
+			 */
+			final int outCount = clipNearPlane(inV, inT, texc != null, near, outV, outT);
+			if (outCount < 3) { continue; }
+
+			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
+			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
-				vert[4 * tris[3 * tri_id + 0] + 0], // xA
-				vert[4 * tris[3 * tri_id + 0] + 1], // yA
-				vert[4 * tris[3 * tri_id + 0] + 2], // zA
-				vert[4 * tris[3 * tri_id + 0] + 3], // wA
-				vert[4 * tris[3 * tri_id + 1] + 0], // xB
-				vert[4 * tris[3 * tri_id + 1] + 1], // yB
-				vert[4 * tris[3 * tri_id + 1] + 2], // zB
-				vert[4 * tris[3 * tri_id + 1] + 3], // wB
-				vert[4 * tris[3 * tri_id + 2] + 0], // xC
-				vert[4 * tris[3 * tri_id + 2] + 1], // yC
-				vert[4 * tris[3 * tri_id + 2] + 2], // zC
-				vert[4 * tris[3 * tri_id + 2] + 3]  // wC
-			}, 
-			tri_id); // Triangle Index
+				final Triangle tri = new Triangle(new float[]
+				{
+					outV[0], outV[1], outV[2], outV[3],
+					outV[4*(fan+1)], outV[4*(fan+1)+1], outV[4*(fan+1)+2], outV[4*(fan+1)+3],
+					outV[4*(fan+2)], outV[4*(fan+2)+1], outV[4*(fan+2)+2], outV[4*(fan+2)+3]
+				}, ia, ib, ic);
 
-			// Check if this triangle should be rendered or clipped/culled.
-			for (int i = 0; i < 3; i++) // Go through vertices A, B and C
-			{ 
-				if (result[renderableTriangles[0]].v[i * 4 + 3] >= near) // W cannot be smaller than the near plane, otherwise we'll erroneously cull triangles close to the camera
-				{ 
-					result[renderableTriangles[0]].v[i * 4 + 0] /= result[renderableTriangles[0]].v[i * 4 + 3]; // x / w
-					result[renderableTriangles[0]].v[i * 4 + 1] /= result[renderableTriangles[0]].v[i * 4 + 3]; // y / w
-					result[renderableTriangles[0]].v[i * 4 + 2] /= result[renderableTriangles[0]].v[i * 4 + 3]; // z / w
+				// Perspective division for culling and visibility checks (all w >= near now)
+				for (int i = 0; i < 3; i++)
+				{
+					tri.v[i * 4 + 0] /= tri.v[i * 4 + 3];
+					tri.v[i * 4 + 1] /= tri.v[i * 4 + 3];
+					tri.v[i * 4 + 2] /= tri.v[i * 4 + 3];
 				}
-			}
 
-			boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && result[renderableTriangles[0]].isCounterClockwise()) ||
-								(cullingMode == PolygonMode.CULL_FRONT && !result[renderableTriangles[0]].isCounterClockwise());
+				final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && tri.isCounterClockwise()) ||
+									(cullingMode == PolygonMode.CULL_FRONT && !tri.isCounterClockwise());
+				if (cullTriangle) { continue; }
 
-			if (!cullTriangle)
-			{
-				// Move visible triangles (not clipped nor culled) to the front of the array
-				if(!result[renderableTriangles[0]].clip()) 
-				{ 
-					// We now have to restore the renderable geometry back to its original coordinates, otherwise rendering will be broken
-					for (int i = 0; i < 3; i++) 
-					{
-						result[renderableTriangles[0]].v[i * 4 + 0] *= result[renderableTriangles[0]].v[i * 4 + 3]; // x * w
-						result[renderableTriangles[0]].v[i * 4 + 1] *= result[renderableTriangles[0]].v[i * 4 + 3]; // y * w
-						result[renderableTriangles[0]].v[i * 4 + 2] *= result[renderableTriangles[0]].v[i * 4 + 3]; // z * w
-					}
+				if (tri.clip()) { continue; }
 
-					// Triangle will be rendered, so we can now bother with allocating texture coordinates
-					result[renderableTriangles[0]].setTexCoords(texc == null ? null : new float[] // Tex Coordinates
-					{
-						texc[4 * tris[3 * tri_id + 0] + 0], // sA
-						texc[4 * tris[3 * tri_id + 0] + 1], // tA
-						texc[4 * tris[3 * tri_id + 0] + 2], // rA
-						texc[4 * tris[3 * tri_id + 0] + 3], // qA
-						texc[4 * tris[3 * tri_id + 1] + 0], // sB
-						texc[4 * tris[3 * tri_id + 1] + 1], // tB
-						texc[4 * tris[3 * tri_id + 1] + 2], // rB
-						texc[4 * tris[3 * tri_id + 1] + 3], // qB
-						texc[4 * tris[3 * tri_id + 2] + 0], // sC
-						texc[4 * tris[3 * tri_id + 2] + 1], // tC
-						texc[4 * tris[3 * tri_id + 2] + 2], // rC
-						texc[4 * tris[3 * tri_id + 2] + 3]  // qC
-					});
-
-					result[renderableTriangles[0]].project(); 
-					renderableTriangles[0]++;
+				// We now have to restore the renderable geometry back to its original coordinates, otherwise rendering will be broken
+				for (int i = 0; i < 3; i++)
+				{
+					tri.v[i * 4 + 0] *= tri.v[i * 4 + 3];
+					tri.v[i * 4 + 1] *= tri.v[i * 4 + 3];
+					tri.v[i * 4 + 2] *= tri.v[i * 4 + 3];
 				}
+
+				tri.setTexCoords(texc == null ? null : new float[]
+				{
+					outT[0], outT[1], outT[2], outT[3],
+					outT[4*(fan+1)], outT[4*(fan+1)+1], outT[4*(fan+1)+2], outT[4*(fan+1)+3],
+					outT[4*(fan+2)], outT[4*(fan+2)+1], outT[4*(fan+2)+2], outT[4*(fan+2)+3]
+				});
+
+				tri.project();
+				result[renderableTriangles[0]] = tri;
+				renderableTriangles[0]++;
 			}
 		}
 
 		return result;
+	}
+
+	/*
+	 * Sutherland-Hodgman clip of one triangle against the near plane (w >= near).
+	 * Writes the resulting polygon (0, 3 or 4 vertices) into outV/outT and returns
+	 * its vertex count. Positions and texture coordinates interpolate linearly in
+	 * clip space, which is exact for both.
+	 */
+	private static int clipNearPlane(float[] inV, float[] inT, boolean hasTex, float near, float[] outV, float[] outT)
+	{
+		int outCount = 0;
+		for (int i = 0; i < 3; i++)
+		{
+			final int j = (i + 1) % 3;
+			final float wi = inV[4*i+3], wj = inV[4*j+3];
+			final boolean insideI = wi >= near, insideJ = wj >= near;
+
+			if (insideI)
+			{
+				System.arraycopy(inV, 4*i, outV, 4*outCount, 4);
+				if (hasTex) { System.arraycopy(inT, 4*i, outT, 4*outCount, 4); }
+				outCount++;
+			}
+			if (insideI != insideJ)
+			{
+				final float amt = (near - wi) / (wj - wi);
+				for (int c = 0; c < 4; c++)
+				{
+					outV[4*outCount + c] = inV[4*i + c] + amt * (inV[4*j + c] - inV[4*i + c]);
+					if (hasTex) { outT[4*outCount + c] = inT[4*i + c] + amt * (inT[4*j + c] - inT[4*i + c]); }
+				}
+				outCount++;
+			}
+		}
+		return outCount;
 	}
 
 	public final float xA() { return v[4 * 0 + 0]; }
@@ -177,7 +220,7 @@ class Triangle
 	public final float rC() { return t[4 * 2 + 2]; }
 	public final float qC() { return t[4 * 2 + 3]; }
 
-	public final int getIndex(int index) { return bufIndex[3 * triangleIndex + index]; }
+	public final int getIndex(int index) { return index == 0 ? idxA : (index == 1 ? idxB : idxC); }
 
 	public final boolean clip() 
 	{		
@@ -215,20 +258,26 @@ class Triangle
 	public final void project()
 	{
 		// Apply perspective division to the triangle, it's going to NDC
-		for (int i = 0; i < 3; i++) 
+		for (int i = 0; i < 3; i++)
 		{
+			final float w = v[4 * i + 3];
+
+			/* Keep 1/w around: the rasterizer interpolates s/w, t/w and 1/w linearly in
+			 * screen space and divides per-pixel for perspective-correct texturing. */
+			invW[i] = (w > M3GMath.EPSILON) ? (1f / w) : 1f;
+
 			// Project vertex
-			v[4 * i + 0] /= v[4 * i + 3]; // x / w
-			v[4 * i + 1] /= v[4 * i + 3]; // y / w
-			v[4 * i + 2] /= v[4 * i + 3]; // z / w
+			v[4 * i + 0] /= w; // x / w
+			v[4 * i + 1] /= w; // y / w
+			v[4 * i + 2] /= w; // z / w
 			v[4 * i + 3] = 1f;  // Set w to 1
 
-			// Project texture coordinates
-			t[4 * i + 0] /= v[4 * i + 3]; // u / w
-			t[4 * i + 1] /= v[4 * i + 3]; // v / w
-			// Those don't seem necessary
-			//t[4 * i + 2] /= v[4 * i + 3]; // r / w
-			//t[4 * i + 3] = 1f;  // Set q to 1
+			// Texture coordinates are stored as s/w and t/w (undone per-pixel in the rasterizer)
+			if (t != null)
+			{
+				t[4 * i + 0] *= invW[i]; // s / w
+				t[4 * i + 1] *= invW[i]; // t / w
+			}
 		}
 	}
 

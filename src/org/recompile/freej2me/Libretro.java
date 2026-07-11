@@ -607,12 +607,16 @@ public class Libretro
 										/* Vibration duration should be set to zero to prevent constant sends of the same data, so update it here */
 										Mobile.vibrationDuration = 0;
 
-										/* Send display data to libretro */
-										for(int i=0; i<lcdData.length; i++)
+										/* Send display data to libretro. The conversion is synchronized against
+										 * flushGraphics() so a concurrent flush cannot tear the outgoing frame. */
+										synchronized (Mobile.getPlatform().getLcdFrontbuffer())
 										{
-											frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
-											frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);
-											frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
+											for(int i=0; i<lcdData.length; i++)
+											{
+												frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
+												frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);
+												frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
+											}
 										}
 
 										System.out.write(frameBuffer, 0, lcdData.length*3);

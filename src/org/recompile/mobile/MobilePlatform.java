@@ -876,7 +876,12 @@ public class MobilePlatform
 	{
 		if(!Mobile.isPaused && !appTerminated)
 		{
-			gcFrontbuffer.flushGraphics(img, x, y, width, height);
+			/* Synchronized so a frontend reading the frontbuffer (e.g. the libretro
+			 * pipe serializer) never observes a half-flushed frame (tearing). */
+			synchronized (lcdFrontbuffer)
+			{
+				gcFrontbuffer.flushGraphics(img, x, y, width, height);
+			}
 			if(postDraw != null) { postDraw.run(); postDraw = null; }
 			painter.run();
 			
