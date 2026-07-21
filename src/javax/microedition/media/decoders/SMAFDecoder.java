@@ -622,7 +622,14 @@ public final class SMAFDecoder
         else if(ATRDataFormat == (byte) 0x01) // YAMAHA ADPCM
         {
             Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"PCM data uses YAMAHA ADPCM. Decoding for this is not fully tested!");
-            pcmData.add(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMBDecode(waveData, Integer.parseInt(pcmSamplingFreqs[ATRSamplingFreq]), ATRChannelType+1)));
+            
+            if(ATRBaseBit == (byte) 0x02)
+            {
+                // 12 bits is the only thing that could indicate that ADPCM-A must be decoded, but was not found in use yet
+                Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"PCM data expects 12-bit output (ADPCM-A), which is untested!");
+                pcmData.add(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMADecode(waveData, Integer.parseInt(pcmSamplingFreqs[ATRSamplingFreq]), ATRChannelType+1)));
+            }
+            else { pcmData.add(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMBDecode(waveData, Integer.parseInt(pcmSamplingFreqs[ATRSamplingFreq]), ATRChannelType+1))); }
         } 
         else if(ATRDataFormat == (byte) 0x02) // TODO: TwinVQ
         {
