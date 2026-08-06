@@ -87,14 +87,14 @@ public class MobilePlatform
 	public MobilePlatform(int width, int height)
 	{
 		boolean isUsingValidEncoding = false;
-		
+
 		// Check whether we're using any of the valid encodings before starting the jar, otherwise we'll be defaulting to ISO_8859_1
-		for (String encoding : Mobile.supportedEncodings) 
+		for (String encoding : Mobile.supportedEncodings)
 		{
 			if (encoding.equals(System.getProperty("file.encoding"))) { isUsingValidEncoding = true; }
 		}
 
-		if(!isUsingValidEncoding) 
+		if(!isUsingValidEncoding)
 		{
 			Mobile.textEncoding = Mobile.supportedEncodings[Mobile.ISO_8859_1];
 			checkFileEncoding();
@@ -125,16 +125,16 @@ public class MobilePlatform
 		lcdFrontbuffer = new PlatformImage(width, height);
 		lcd = new PlatformImage(width, height);
 
-		
+
         gcFrontbuffer = lcdFrontbuffer.getMIDPGraphics();
-		
-		
-		/* 
+
+
+		/*
 		 * Try to have the jar scale as well. If this doesn't work,
 		 * a simple restart is all it takes, just like before.
 		 */
 
-		if (!Mobile.isDoJa) 
+		if (!Mobile.isDoJa)
 		{
 			gc = lcd.getMIDPGraphics();
 			com.xce.lcdui.XDisplay.width = width;
@@ -142,19 +142,19 @@ public class MobilePlatform
 			com.xce.lcdui.XDisplay.platformImage = lcd;
 			com.xce.lcdui.Toolkit.graphics = (Graphics) gc;
 
-			if (Mobile.getDisplay() != null && Mobile.getDisplay().getCurrent() != null) 
+			if (Mobile.getDisplay() != null && Mobile.getDisplay().getCurrent() != null)
 			{
 				Mobile.getDisplay().getCurrent().doSizeChanged(width, height);
 				Mobile.getDisplay().getCurrent().platformImage = lcd;
 				Mobile.getDisplay().getCurrent().graphics = (Graphics) gc;
 			}
-		} 
+		}
 		else if(Mobile.isDoJa && com.nttdocomo.ui.Display.getCurrent() != null) // Doja's current Frames (Displayables) are static
 		{
-			com.nttdocomo.ui.Display.getCurrent().platformImage = lcd; 
-			com.nttdocomo.ui.Display.getCurrent().graphics = lcd.getDoJaGraphics(); 
+			com.nttdocomo.ui.Display.getCurrent().platformImage = lcd;
+			com.nttdocomo.ui.Display.getCurrent().graphics = lcd.getDoJaGraphics();
 		}
-		
+
 	}
 
 	public static PlatformImage getLcdBackbuffer() { return lcd; }
@@ -165,37 +165,37 @@ public class MobilePlatform
 
 	public void setPainter(Runnable r) { painter = r; }
 
-	public static void pauseResumeApp() 
+	public static void pauseResumeApp()
 	{
-		if(!Mobile.isDoJa) 
+		if(!Mobile.isDoJa)
 		{
 			displayable = Mobile.getDisplay().getCurrent();
 			if (!(displayable instanceof Canvas)) { return; }
-			
+
 			if(!Mobile.isPaused)
 			{
 				((Canvas) displayable).hideNotify();
-				
-				try { Mobile.midlet.callPauseApp(); } 
+
+				try { Mobile.midlet.callPauseApp(); }
 				catch (Exception e) { e.printStackTrace(); }
 
 				Mobile.isPaused = true;
 
 				painter.run();
 			}
-			else 
+			else
 			{
 				Mobile.isPaused = false;
-				
+
 				((Canvas) displayable).showNotify();
-				
-				try { Mobile.midlet.callStartApp(); } 
+
+				try { Mobile.midlet.callStartApp(); }
 				catch (Exception e) { e.printStackTrace(); }
 
 				painter.run();
 			}
 		}
-		else 
+		else
 		{
 			// TODO: DoJa pause/resume
 		}
@@ -211,8 +211,8 @@ public class MobilePlatform
 			updateKeyState(Mobile.getGameAction(keycode), true);
 			updateVodafoneKeyState(Mobile.getCanvasAction(keycode), true);
 			updateDoJaKeyState(Mobile.getCanvasAction(keycode), true);
-			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null) 
-			{ 
+			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
+			{
 				Mobile.getDisplay().postInputEvent(new Runnable()
 				{
 					@Override
@@ -299,7 +299,7 @@ public class MobilePlatform
 				public void run() { displayable.pointerPressed(x, y); }
 			});
 		}
-		else if(Mobile.isDoJa) 
+		else if(Mobile.isDoJa)
 		{
 			com.nttdocomo.opt.ui.PointingDevice.setX(x);
 			com.nttdocomo.opt.ui.PointingDevice.setY(y);
@@ -311,7 +311,7 @@ public class MobilePlatform
 	public static void pointerReleased(final int x, final int y)
 	{
 		if(appTerminated) { return; }
-		
+
 		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
 		{
 			Mobile.getDisplay().postInputEvent(new Runnable()
@@ -320,7 +320,7 @@ public class MobilePlatform
 				public void run() { displayable.pointerReleased(x, y); }
 			});
 		}
-		else if(Mobile.isDoJa) 
+		else if(Mobile.isDoJa)
 		{
 			com.nttdocomo.opt.ui.PointingDevice.setX(-1);
 			com.nttdocomo.opt.ui.PointingDevice.setY(-1);
@@ -356,7 +356,7 @@ public class MobilePlatform
 	private static void updateVodafoneKeyState(int key, boolean pressed)
 	{
 		int mask=0;
-		switch (key) 
+		switch (key)
 		{
 			case Canvas.UP:
 				mask = 1 << 12; // 12 Up
@@ -426,7 +426,7 @@ public class MobilePlatform
 	private static void updateDoJaKeyState(int key, boolean pressed)
 	{
 		int mask = 0, eventKey = 0;
-		switch (key) 
+		switch (key)
 		{
 			case Canvas.UP:
 				mask = 1 << 0x11;
@@ -437,11 +437,11 @@ public class MobilePlatform
 				eventKey = com.nttdocomo.ui.Display.KEY_LEFT;
 				break;
 			case Canvas.RIGHT:
-				mask = 1 << 0x12; 
+				mask = 1 << 0x12;
 				eventKey = com.nttdocomo.ui.Display.KEY_RIGHT;
 				break;
 			case Canvas.DOWN:
-				mask = 1 << 0x13; 
+				mask = 1 << 0x13;
 				eventKey = com.nttdocomo.ui.Display.KEY_DOWN;
 				break;
 			case Canvas.FIRE: // Doubles as KDDI_CLR
@@ -449,19 +449,19 @@ public class MobilePlatform
 				eventKey = com.nttdocomo.ui.Display.KEY_SELECT;
 				break;
 			case Canvas.KEY_NUM0:
-				mask = 1; 
+				mask = 1;
 				eventKey = com.nttdocomo.ui.Display.KEY_0;
 				break;
 			case Canvas.KEY_NUM1:
-				mask = 1 << 1; 
+				mask = 1 << 1;
 				eventKey = com.nttdocomo.ui.Display.KEY_1;
 				break;
 			case Canvas.KEY_NUM2:
-				mask = 1 << 2; 
+				mask = 1 << 2;
 				eventKey = com.nttdocomo.ui.Display.KEY_2;
 				break;
 			case Canvas.KEY_NUM3:
-				mask = 1 << 3; 
+				mask = 1 << 3;
 				eventKey = com.nttdocomo.ui.Display.KEY_3;
 				break;
 			case Canvas.KEY_NUM4:
@@ -469,23 +469,23 @@ public class MobilePlatform
 				eventKey = com.nttdocomo.ui.Display.KEY_4;
 				break;
 			case Canvas.KEY_NUM5:
-				mask = 1 << 5; 
+				mask = 1 << 5;
 				eventKey = com.nttdocomo.ui.Display.KEY_5;
 				break;
 			case Canvas.KEY_NUM6:
-				mask = 1 << 6; 
+				mask = 1 << 6;
 				eventKey = com.nttdocomo.ui.Display.KEY_6;
 				break;
 			case Canvas.KEY_NUM7:
-				mask = 1 << 7; 
+				mask = 1 << 7;
 				eventKey = com.nttdocomo.ui.Display.KEY_7;
 				break;
 			case Canvas.KEY_NUM8:
-				mask = 1 << 8; 
+				mask = 1 << 8;
 				eventKey = com.nttdocomo.ui.Display.KEY_8;
 				break;
 			case Canvas.KEY_NUM9:
-				mask = 1 << 9; 
+				mask = 1 << 9;
 				eventKey = com.nttdocomo.ui.Display.KEY_9;
 				break;
 			case Canvas.KEY_STAR:
@@ -546,16 +546,16 @@ public class MobilePlatform
 
 		if((!canvasFullscreen && !displayable.commands.isEmpty()) || notCanvas)
 		{
-			if (displayable.listCommands) 
+			if (displayable.listCommands)
 			{
-				if(key == Canvas.KEY_NUM2 || key == Canvas.UP) 
+				if(key == Canvas.KEY_NUM2 || key == Canvas.UP)
 				{
 					displayable.currentCommand--;
 					if(displayable.currentCommand<0) { displayable.currentCommand = displayable.commands.size()-1; }
 					displayable._invalidate();
 					return true;
 				}
-				else if(key == Canvas.KEY_NUM8 || key == Canvas.DOWN) 
+				else if(key == Canvas.KEY_NUM8 || key == Canvas.DOWN)
 				{
 					displayable.currentCommand++;
 					if(displayable.currentCommand>=displayable.commands.size()) { displayable.currentCommand = 0; }
@@ -568,25 +568,25 @@ public class MobilePlatform
 					displayable.doLeftCommand();
 					return true;
 				}
-				else if (key == Canvas.KEY_SOFT_RIGHT) 
+				else if (key == Canvas.KEY_SOFT_RIGHT)
 				{
 					showCommandBar();
 					displayable.doRightCommand();
 					return true;
 				}
 			}
-			else 
+			else
 			{
 				boolean handled = displayable.screenKeyPressed(key);
 				if (!handled)
 				{
-					if (key == Canvas.KEY_SOFT_LEFT) 
+					if (key == Canvas.KEY_SOFT_LEFT)
 					{
 						showCommandBar();
 						displayable.doLeftCommand();
 						return true;
 					}
-					else if (key == Canvas.KEY_SOFT_RIGHT) 
+					else if (key == Canvas.KEY_SOFT_RIGHT)
 					{
 						showCommandBar();
 						displayable.doRightCommand();
@@ -602,11 +602,11 @@ public class MobilePlatform
 	******** Jar/Jad Loading ********
 */
 
-	public boolean load(String fileName) 
+	public boolean load(String fileName)
 	{
         Map<String, String> descriptorProperties = new HashMap<String, String>();
 
-		/* 
+		/*
 		 * Java treats "!/" sequences as a pointer to a file inside a jar, which will cause
 		 * issues with MIDletLoader, so convert exclamations beforehand to not confuse it.
 		 */
@@ -618,9 +618,9 @@ public class MobilePlatform
 			try
 			{
 				File testDir = new File(Mobile.tempKJXDir);
-				if(!testDir.isDirectory()) 
+				if(!testDir.isDirectory())
 				{
-					try 
+					try
 					{
 						testDir.mkdirs();
 					}
@@ -634,11 +634,11 @@ public class MobilePlatform
 				DataInputStream dis = new DataInputStream(inputStream);
 				byte[] magic = new byte[3];
 				dis.read(magic, 0, 3);
-				if (!Arrays.equals(magic, "KJX".getBytes())) 
+				if (!Arrays.equals(magic, "KJX".getBytes()))
 				{
 					throw new Exception("KJX Header string does not match: " + new String(magic));
 				}
-	
+
 				byte startJadPos = dis.readByte();
 				byte lenKjxFileName = dis.readByte();
 				dis.skipBytes(lenKjxFileName);
@@ -647,17 +647,17 @@ public class MobilePlatform
 				byte[] jadFileName = new byte[lenJadFileName];
 				dis.read(jadFileName, 0, lenJadFileName);
 				kjxJadFileName = new String(jadFileName);
-	
+
 				int bufSize = 2048;
 				byte[] buf = new byte[bufSize];
-	
+
 				// Write jad and parse its descriptors
 				tmpfile = new File(Mobile.tempKJXDir, kjxJadFileName);
 				try
 				{
 					FileOutputStream fos = new FileOutputStream(tmpfile);
 					int restSize = lenJadFileContent;
-					while(restSize > 0) 
+					while(restSize > 0)
 					{
 						int readSize = dis.read(buf, 0, Math.min(restSize, bufSize));
 						fos.write(buf, 0, readSize);
@@ -677,12 +677,12 @@ public class MobilePlatform
 					MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties);
 					targetStream.close();
 				}
-				catch (IOException e) 
+				catch (IOException e)
 				{
 					Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load kjx jad data: " + e.getMessage());
 					return false;
 				}
-	
+
 				// Write jar
 				tmpfile = new File(Mobile.tempKJXDir, kjxJadFileName.substring(0, kjxJadFileName.length() -4) + ".jar");
 				try
@@ -707,31 +707,31 @@ public class MobilePlatform
 					MobilePlatform.checkFileEncoding();
 				}
 				Mobile.config.init(loader.suitename);
-				
+
 				return true;
-			} 
+			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Couldn't load KJX file:" + e.getMessage()); return false; }
 		}
 		else // If it's not KJX, it's JAD/MSD or JAR
 		{
 			/*
-			 * If loading a jar directly, check if an accompanying jad/msd with the same name 
+			 * If loading a jar directly, check if an accompanying jad/msd with the same name
 			 * is present in the directory, to load any platform properties from there.
 			 */
-			if (fileName.toLowerCase().contains(".jar")) 
+			if (fileName.toLowerCase().contains(".jar"))
 			{
-				try 
+				try
 				{
 					// Create a File object for the directory containing the JAR file
 					final File jarFile = new File(new URI(fileName));
 					final File jarDirectory = jarFile.getParentFile();
 
 					// Check for accompanying JAD or MSD files
-					if (jarDirectory != null && jarDirectory.isDirectory()) 
+					if (jarDirectory != null && jarDirectory.isDirectory())
 					{
-						FilenameFilter filter = new FilenameFilter() 
+						FilenameFilter filter = new FilenameFilter()
 						{
-							public boolean accept(File dir, String name) 
+							public boolean accept(File dir, String name)
 							{
 								return name.equalsIgnoreCase(jarFile.getName().replace(".jar", ".jad")) ||
 									name.equalsIgnoreCase(jarFile.getName().replace(".jar", ".msd"));
@@ -740,17 +740,17 @@ public class MobilePlatform
 
 						File[] files = jarDirectory.listFiles(filter);
 
-						if (files != null) 
+						if (files != null)
 						{
-							for (File file : files) 
+							for (File file : files)
 							{
-								if (file.exists() && !file.isDirectory()) 
+								if (file.exists() && !file.isDirectory())
 								{
-									if (file.getName().toLowerCase().endsWith(".jad")) 
+									if (file.getName().toLowerCase().endsWith(".jad"))
 									{
 										Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Accompanying JAD found! Parsing additional MIDlet properties.");
 										fileName = file.toURI().toString();
-									} 
+									}
 									else if (file.getName().toLowerCase().endsWith(".msd")) // We assume there will never be a jad and a msd for the same app in the directory
 									{
 										Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Accompanying MSD found! Parsing additional MIDlet properties.");
@@ -761,38 +761,38 @@ public class MobilePlatform
 							}
 						}
 					}
-				} 
+				}
 				catch (Exception e) { Mobile.log(Mobile.LOG_INFO, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Couldn't check for accompanying JAD/MSD:" + e.getMessage()); }
 			}
 
 			boolean isMsd = fileName.toLowerCase().endsWith(".msd");
 			boolean isJad = fileName.toLowerCase().endsWith(".jad");
 
-			if (isJad || isMsd) 
+			if (isJad || isMsd)
 			{
-				if (isMsd) 
-				{ 
-					Mobile.isSKT = true; 
-					Mobile.textEncoding = "EUC_KR"; 
+				if (isMsd)
+				{
+					Mobile.isSKT = true;
+					Mobile.textEncoding = "EUC_KR";
 					MobilePlatform.checkFileEncoding();
 				}
 
 				String preparedFileName = fileName.replace("file:", "").trim();
 				try { preparedFileName = URLDecoder.decode(preparedFileName, Mobile.textEncoding); }
-				catch (Exception e) 
+				catch (Exception e)
 				{
 					System.err.println("Error decoding file name: " + e.getMessage());
 					return false;
 				}
 
 				InputStream targetStream = null;
-				try 
+				try
 				{
 					targetStream = new FileInputStream(preparedFileName);
-					try { MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties); } 
+					try { MIDletLoader.parseDescriptorInto(targetStream, descriptorProperties); }
 					finally { targetStream.close(); }
-				} 
-				catch (IOException e) 
+				}
+				catch (IOException e)
 				{
 					Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load descriptor data: " + e.getMessage());
 					return false;
@@ -810,7 +810,7 @@ public class MobilePlatform
 				fileName = fileName.substring(0, fileName.lastIndexOf('.')) + ".jar";
 			}
 
-			try 
+			try
 			{
 				URL jar = new URL(fileName);
 				loader = new MIDletLoader(jar, descriptorProperties);
@@ -822,8 +822,8 @@ public class MobilePlatform
 				Mobile.config.init(loader.suitename);
 
 				return true;
-			} 
-			catch (Exception e) 
+			}
+			catch (Exception e)
 			{
 				Mobile.log(Mobile.LOG_ERROR, MobilePlatform.class.getPackage().getName() + "." + MobilePlatform.class.getSimpleName() + ": " + "Failed to load Jar: " + e.getMessage());
 				e.printStackTrace();
@@ -876,10 +876,18 @@ public class MobilePlatform
 	{
 		if(!Mobile.isPaused && !appTerminated)
 		{
-			gcFrontbuffer.flushGraphics(img, x, y, width, height);
+			/*
+			 * This must be Synchronized so a frontend reading the frontbuffer
+			 * (e.g. the libretro pipe serializer) never observes a half-flushed
+			 * frame (tearing).
+			 */
+			synchronized (lcdFrontbuffer)
+			{
+				gcFrontbuffer.flushGraphics(img, x, y, width, height);
+			}
 			if(postDraw != null) { postDraw.run(); postDraw = null; }
 			painter.run();
-			
+
 			if(focusCommandBar)
 			{
 				timeToUnfocus -= (System.nanoTime()-lastRenderTime);
@@ -890,9 +898,9 @@ public class MobilePlatform
 		}
 	}
 
-	public final void drawAppTerminated() 
+	public final void drawAppTerminated()
 	{
-		if(!isLibretro) 
+		if(!isLibretro)
 		{
 			gcFrontbuffer.setColor(0, 0, 64);
 			gcFrontbuffer.fillRect(0, 0, lcdWidth, lcdHeight);
@@ -902,18 +910,18 @@ public class MobilePlatform
 			gcFrontbuffer.drawString("through Drag-Drop", lcdWidth/2, lcdHeight/10 + 2*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
 			gcFrontbuffer.drawString("or 'File->Open'.", lcdWidth/2, lcdHeight/10 + 3*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
 		}
-		else 
+		else
 		{
 			gcFrontbuffer.setColor(0,0,0);
 			gcFrontbuffer.fillRect(0, 0, lcdWidth, lcdHeight);
 		}
 
 		appTerminated = true;
-	
+
 		painter.run();
 	}
 
-	public void limitFps() 
+	public void limitFps()
 	{
 		if(Mobile.limitFPS == 0 || pressedKeys[20]) { lastRenderTime = System.nanoTime(); return; }
 

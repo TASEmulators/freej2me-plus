@@ -48,7 +48,7 @@ public class Libretro
 	private int mousex;
 	private int mousey;
 
-	/* 
+	/*
 	 * StringBuilder used to get the updated configs from the libretro core
 	 * String[] used to tokenize each setting as its own string.
 	 */
@@ -67,16 +67,16 @@ public class Libretro
 		lcdWidth  = Mobile.lcdWidth;
 		lcdHeight = Mobile.lcdHeight;
 
-		/* 
-		 * Notify the MIDlet class that this version of FreeJ2ME is for Libretro, which disables 
+		/*
+		 * Notify the MIDlet class that this version of FreeJ2ME is for Libretro, which disables
 		 * the ability to close the jar when a J2ME app requests an exit as this can cause segmentation
 		 * faults on libretro frontends and also close the unexpectedly.
 		*/
 		Mobile.getPlatform().isLibretro = true;
 
-		/* 
+		/*
 		 * Checks if the arguments were received from the commandline -> width, height, rotate, phonetype, fps, sound, ...
-		 * 
+		 *
 		 * NOTE:
 		 * Due to differences in how linux and win32 pass their cmd arguments, we can't explictly check for a given size
 		 * on the argv array. Linux includes the "java", "-jar" and "path/to/freej2me" into the array while WIN32 doesn't.
@@ -129,7 +129,7 @@ public class Libretro
 		Mobile.maskIndex = Integer.parseInt(args[10]);
 
 		/* Compat setting to fix Fantasy Zone 176x208 weird mirroring */
-		Mobile.compatFantasyZoneFix = Integer.parseInt(args[11]) != 0; 
+		Mobile.compatFantasyZoneFix = Integer.parseInt(args[11]) != 0;
 
 		/* Compat setting to translate back to the origin whenever graphics object is reset */
 		Mobile.compatTranslateToOriginOnReset = Integer.parseInt(args[12]) != 0;
@@ -205,7 +205,7 @@ public class Libretro
 		lio = new LibretroIO();
 
 		lio.start();
-		
+
 		System.out.println("+READY");
 		System.out.flush();
 	}
@@ -259,13 +259,13 @@ public class Libretro
 								case 2:	// joypad key up
 									MobilePlatform.pressedKeys[code] = false;
 									MobilePlatform.keyReleased(Mobile.getMobileKey(code));
-									for(int i = 0; i < MobilePlatform.pressedKeys.length; i++) 
+									for(int i = 0; i < MobilePlatform.pressedKeys.length; i++)
 									{
 										if(MobilePlatform.pressedKeys[i]) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
 									}
 								break;
 
-								case 3: // joypad key down					
+								case 3: // joypad key down
 									MobilePlatform.pressedKeys[code] = true;
 									MobilePlatform.keyPressed(Mobile.getMobileKey(code));
 								break;
@@ -273,7 +273,7 @@ public class Libretro
 								case 4: // mouse up
 									mousex = (din[1]<<8) | din[2];
 									mousey = (din[3]<<8) | din[4];
-									
+
 									if(Mobile.rotateDisplay == 0)
 									{
 										MobilePlatform.pointerReleased(mousex, mousey);
@@ -282,7 +282,7 @@ public class Libretro
 									{
 										MobilePlatform.pointerReleased(mousey, lcdHeight - mousex);
 									}
-									if(Mobile.rotateDisplay == 180) 
+									if(Mobile.rotateDisplay == 180)
 									{
 										MobilePlatform.pointerReleased(lcdWidth - mousex, lcdHeight - mousey);
 									}
@@ -304,7 +304,7 @@ public class Libretro
 									{
 										MobilePlatform.pointerPressed(mousey, lcdHeight - mousex);
 									}
-									if(Mobile.rotateDisplay == 180) 
+									if(Mobile.rotateDisplay == 180)
 									{
 										MobilePlatform.pointerPressed(lcdWidth - mousex, lcdHeight - mousey);
 									}
@@ -326,7 +326,7 @@ public class Libretro
 									{
 										MobilePlatform.pointerDragged(mousey, lcdHeight - mousex);
 									}
-									if(Mobile.rotateDisplay == 180) 
+									if(Mobile.rotateDisplay == 180)
 									{
 										MobilePlatform.pointerDragged(lcdWidth - mousex, lcdHeight - mousey);
 									}
@@ -418,8 +418,8 @@ public class Libretro
 										Mobile.config.sysSettings.put("dumpAudioStreams", Mobile.dumpAudioStreams ? "on" : "off");
 										Mobile.config.sysSettings.put("dumpGraphicsObjects", Mobile.dumpGraphicsObjects ? "on" : "off");
 
-							
-										if(Mobile.libretroRestartRequested == 1) 
+
+										if(Mobile.libretroRestartRequested == 1)
 										{
 											frameHeader[14] = Mobile.libretroRestartRequested;
 											frameHeader[15] = Mobile.libretroEncodingRequested;
@@ -455,13 +455,13 @@ public class Libretro
 									/* Received updated settings from libretro core */
 									buffer = new byte[code];
 									bytesRead = System.in.read(buffer);
-									
+
 									String cfgvars = new String(buffer, 0, bytesRead);
 									/* Tokens: [0]="FJ2ME_LR_OPTS:", [1]=width, [2]=height, [3]=rotate, [4]=phone, [5]=fps, ... */
 									cfgtokens = cfgvars.split("[| x]", 0);
-									/* 
-									 * cfgtokens[0] is the string used to indicate that the 
-									 * received string is a config update. Only useful for debugging, 
+									/*
+									 * cfgtokens[0] is the string used to indicate that the
+									 * received string is a config update. Only useful for debugging,
 									 * but better leave it in there as we might make adjustments later.
 									 */
 									Mobile.config.settings.put("scrwidth",  ""+Integer.parseInt(cfgtokens[1]));
@@ -503,7 +503,7 @@ public class Libretro
 
 									Mobile.config.settings.put("compatfantasyzonefix", Integer.parseInt(cfgtokens[12]) == 1 ? "on" : "off");
 
-									Mobile.config.settings.put("compattranstooriginonreset", Integer.parseInt(cfgtokens[13]) == 1 ? "on" : "off"); 
+									Mobile.config.settings.put("compattranstooriginonreset", Integer.parseInt(cfgtokens[13]) == 1 ? "on" : "off");
 
 									Mobile.config.settings.put("textfont", Integer.parseInt(cfgtokens[14]) == 1 ? "Custom" : "Default");
 
@@ -560,11 +560,11 @@ public class Libretro
 										break;
 									}
 									else // The frontend is requesting a new frame
-									{ 
-										canPause = false; 
+									{
+										canPause = false;
 										if(Mobile.isPaused) // Resume if it was paused previously
-										{ 
-											MobilePlatform.pauseResumeApp(); 
+										{
+											MobilePlatform.pauseResumeApp();
 										}
 									}
 
@@ -608,15 +608,18 @@ public class Libretro
 										Mobile.vibrationDuration = 0;
 
 										/* Send display data to libretro */
-										for(int i=0; i<lcdData.length; i++)
+										synchronized (Mobile.getPlatform().getLcdFrontbuffer())
 										{
-											frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
-											frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);
-											frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
-										}
+											for(int i=0; i<lcdData.length; i++)
+											{
+												frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
+												frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);
+												frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
+											}
 
-										System.out.write(frameBuffer, 0, lcdData.length*3);
-										System.out.flush();
+											System.out.write(frameBuffer, 0, lcdData.length*3);
+											System.out.flush();
+										}
 									}
 									catch (Exception e)
 									{
@@ -635,14 +638,14 @@ public class Libretro
 		} // timer
 	} // LibretroIO
 
-	private static void updatePauseTimer() 
+	private static void updatePauseTimer()
 	{
 		if(!canPause) { return; } // Only start counting this after libretro has finished processing the last sent frame
 		long currentTime = System.currentTimeMillis();
-		
-		// Check if the timer has expired since the last core update, as anything beyond the PAUSE_DELAY_MS delta 
+
+		// Check if the timer has expired since the last core update, as anything beyond the PAUSE_DELAY_MS delta
 		// between core updates means the frontend is pretty much effectively paused as well)
-		if (!Mobile.isPaused && (currentTime - lastCoreUpdateTime >= PAUSE_DELAY_MS)) 
+		if (!Mobile.isPaused && (currentTime - lastCoreUpdateTime >= PAUSE_DELAY_MS))
 		{
 			MobilePlatform.pauseResumeApp(); // Call to pause the app
 		}
@@ -668,7 +671,7 @@ public class Libretro
 		Mobile.updateSettings();
 
 		frameHeader[5] = (byte) (Mobile.rotateDisplay / 90);
-		
+
 		if(lcdWidth != Mobile.lcdWidth || lcdHeight != Mobile.lcdHeight)
 		{
 			lcdWidth = Mobile.lcdWidth;

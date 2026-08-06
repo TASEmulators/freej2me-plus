@@ -39,9 +39,15 @@ public class Sprite3D extends Node
 
 	public Sprite3D(boolean isScaled, Image2D img, Appearance a)
 	{
+		/* As per JSR-184, the image cannot be null, and the crop rectangle initially covers the whole image. */
+		if (img == null) { throw new NullPointerException("Cannot create a Sprite3D with a null image."); }
 		scaled = isScaled;
 		image = img;
 		appearance = a;
+		cropx = 0;
+		cropy = 0;
+		cropw = img.getWidth();
+		croph = img.getHeight();
 	}
 
 	public Appearance getAppearance() { return appearance; }
@@ -58,10 +64,10 @@ public class Sprite3D extends Node
 
 	public boolean isScaled() { return scaled; }
 
-	public void setAppearance(Appearance a) 
-	{ 
+	public void setAppearance(Appearance a)
+	{
 		removeReference(appearance);
-		appearance = a; 
+		appearance = a;
 		addReference(appearance);
 	}
 
@@ -73,8 +79,8 @@ public class Sprite3D extends Node
 		croph=height;
 	}
 
-	public void setImage(Image2D img) 
-	{ 
+	public void setImage(Image2D img)
+	{
 		if(img == null) { throw new NullPointerException("Cannot set null image on a Sprite3D"); }
 		removeReference(this.image);
 		this.image = img;
@@ -86,18 +92,18 @@ public class Sprite3D extends Node
 	}
 
 	@Override
-	void updateProperty(int property, float[] value) 
+	void updateProperty(int property, float[] value)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Sprite3D property");
-		switch (property) 
+		switch (property)
 		{
 			case AnimationTrack.CROP:
-				if (value.length > 2) 
+				if (value.length > 2)
 				{
 					setCrop((int)value[0], (int)value[1], (int) M3GMath.max(-Graphics3D.MAX_TEXTURE_DIMENSION, M3GMath.min(Graphics3D.MAX_TEXTURE_DIMENSION, value[2])),
 							(int) M3GMath.max(-Graphics3D.MAX_TEXTURE_DIMENSION, M3GMath.min(Graphics3D.MAX_TEXTURE_DIMENSION, value[3])));
-				} 
-				else 
+				}
+				else
 				{
 					setCrop((int)value[0], (int)value[1], getCropWidth(), getCropHeight());
 				}
@@ -106,9 +112,9 @@ public class Sprite3D extends Node
 		}
 	}
 
-	boolean animTrackCompatible(AnimationTrack track) 
+	boolean animTrackCompatible(AnimationTrack track)
 	{
-		switch (track.getTargetProperty()) 
+		switch (track.getTargetProperty())
 		{
 			case AnimationTrack.CROP:
 				return true;
