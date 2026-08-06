@@ -54,7 +54,7 @@ import java.util.Arrays;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 
-public final class AWTGUI 
+public final class AWTGUI
 {
 	final String VERSION = "1.52";
 	/* This is used to indicate to FreeJ2ME that it has to call "settingsChanged()" to apply changes made here */
@@ -79,8 +79,8 @@ public final class AWTGUI
 	/* MenuBar's menus */
 	final Menu fileMenu = new Menu("File");
 	final Menu optionMenu = new Menu("Settings");
-	final Menu speedHackMenu = new Menu("SpeedHacks"); 
-	final Menu compatSettingsMenu = new Menu("Compatibility Settings"); 
+	final Menu speedHackMenu = new Menu("SpeedHacks");
+	final Menu compatSettingsMenu = new Menu("Compatibility Settings");
 	final Menu debugMenu = new Menu("Debug");
 
 	/* Sub menus (for now, all of them are located in "Settings") */
@@ -96,7 +96,7 @@ public final class AWTGUI
 	public final String[] supportedResolutions = {"96x65","101x64","101x80","128x128","130x130","120x160","128x160","160x128","132x176","208x173","176x208","176x220","220x176","208x208","220x220","180x320","320x180","240x240","240x260","208x320","240x320","320x240","240x400","400x240","320x320","240x432","240x480","360x360","352x416","360x480","360x640","640x360","480x640","640x480","345x800","800x345","480x800","800x480"};
 
 	/* Dialogs for resolution changes, restart notifications, MemStats and info about FreeJ2ME */
-	final Dialog[] awtDialogs = 
+	final Dialog[] awtDialogs =
 	{
 		new Dialog(main , "Set LCD Resolution", true),
 		new Dialog(main , "About FreeJ2ME", true),
@@ -105,8 +105,8 @@ public final class AWTGUI
 		new Dialog(main, "Key Mapping", true),
 		new Dialog(main, "Console Log", false),
 	};
-	
-	final Button[] awtButtons = 
+
+	final Button[] awtButtons =
 	{
 		new Button("Close"),
 		new Button("Apply"),
@@ -116,7 +116,7 @@ public final class AWTGUI
 		new Button("Apply Inputs"),
 		new Button("Cancel")
 	};
-	
+
 	/* Log Level submenu */
 	final Menu logLevel = new Menu("Log Level");
 
@@ -127,7 +127,7 @@ public final class AWTGUI
 	final Menu MCV3Debug = new Menu("MascotCapsuleV3 Debugging");
 
 	/* Input mapping keys */
-	final Button inputButtons[] = new Button[] 
+	final Button inputButtons[] = new Button[]
 	{
 		new Button("Q"),
 		new Button("W"),
@@ -155,13 +155,13 @@ public final class AWTGUI
 	};
 
 	/* Array of inputs in order to support input remapping */
-	public static int inputKeycodes[] = new int[] 
+	public static int inputKeycodes[] = new int[]
 	{
-		KeyEvent.VK_Q, KeyEvent.VK_W, 
-		KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_ENTER, KeyEvent.VK_RIGHT, KeyEvent.VK_DOWN, 
-		KeyEvent.VK_NUMPAD7, KeyEvent.VK_NUMPAD8, KeyEvent.VK_NUMPAD9, 
-		KeyEvent.VK_NUMPAD4, KeyEvent.VK_NUMPAD5, KeyEvent.VK_NUMPAD6, 
-		KeyEvent.VK_NUMPAD1, KeyEvent.VK_NUMPAD2, KeyEvent.VK_NUMPAD3, 
+		KeyEvent.VK_Q, KeyEvent.VK_W,
+		KeyEvent.VK_UP, KeyEvent.VK_LEFT, KeyEvent.VK_ENTER, KeyEvent.VK_RIGHT, KeyEvent.VK_DOWN,
+		KeyEvent.VK_NUMPAD7, KeyEvent.VK_NUMPAD8, KeyEvent.VK_NUMPAD9,
+		KeyEvent.VK_NUMPAD4, KeyEvent.VK_NUMPAD5, KeyEvent.VK_NUMPAD6,
+		KeyEvent.VK_NUMPAD1, KeyEvent.VK_NUMPAD2, KeyEvent.VK_NUMPAD3,
 		KeyEvent.VK_E, KeyEvent.VK_NUMPAD0, KeyEvent.VK_R, KeyEvent.VK_A,
 		KeyEvent.VK_SPACE, KeyEvent.VK_C, KeyEvent.VK_X
 	};
@@ -191,7 +191,7 @@ public final class AWTGUI
 	final CheckboxMenuItem useCustomMidi = new CheckboxMenuItem("Use custom midi soundfont", false);
 	final CheckboxMenuItem useCustomFont = new CheckboxMenuItem("Use custom text font", false);
 
-	final CheckboxMenuItem[] dojaVersions = 
+	final CheckboxMenuItem[] dojaVersions =
 	{
 		new CheckboxMenuItem("DoJa-1.0", false),
 		new CheckboxMenuItem("DoJa-2.0 & 1.5 OE", false),
@@ -210,7 +210,7 @@ public final class AWTGUI
 	};
 	final String[] dojaVersionValues = {"10", "20", "30", "35", "40", "41", "50", "51", "100", "110", "120", "130", "150", "200"};
 
-	final CheckboxMenuItem[] rotations = 
+	final CheckboxMenuItem[] rotations =
 	{
 		new CheckboxMenuItem("No rotation", true),
 		new CheckboxMenuItem("90 degrees",  false),
@@ -219,24 +219,23 @@ public final class AWTGUI
 	};
 	final String[] rotationValues = {"0", "90", "180", "270"};
 
-	final CheckboxMenuItem[] layoutOptions = 
+	final CheckboxMenuItem[] layoutOptions =
 	{
 		new CheckboxMenuItem("Default", true),
 		new CheckboxMenuItem("KDDI", false),
 		new CheckboxMenuItem("LG", false),
-		new CheckboxMenuItem("Motorola/SoftBank", false),
+		new CheckboxMenuItem("Motorola/SoftBank/Sharp", false),
 		new CheckboxMenuItem("Motorola V8", false),
-		new CheckboxMenuItem("Motorola Triplets", false),
+		new CheckboxMenuItem("Motorola Triplets/Sharp", false),
 		new CheckboxMenuItem("Motorola A1000", false),
 		new CheckboxMenuItem("Nokia Full Keyboard", false),
 		new CheckboxMenuItem("Sagem", false),
-		new CheckboxMenuItem("Sharp", false),
 		new CheckboxMenuItem("Siemens", false),
 		new CheckboxMenuItem("SKT", false)
 	};
-	final String[] layoutValues = {"Standard", "KDDI", "LG", "Motorola", "MotoV8", "MotoTriplets", "MotoA1000", "NokiaKeyboard", "Sagem", "Sharp", "Siemens", "SKT"};
-	
-	final CheckboxMenuItem[] backlightOptions = 
+	final String[] layoutValues = {"Standard", "KDDI", "LG", "Motorola", "MotoV8", "MotoTriplets", "MotoA1000", "NokiaKeyboard", "Sagem", "Siemens", "SKT"};
+
+	final CheckboxMenuItem[] backlightOptions =
 	{
 		new CheckboxMenuItem("White/Disabled", false),
 		new CheckboxMenuItem("Green", true),
@@ -247,7 +246,7 @@ public final class AWTGUI
 	};
 	final String[] backlightValues = {"Disabled", "Green", "Cyan", "Orange", "Violet", "Red"};
 
-	final CheckboxMenuItem[] fpsOptions = 
+	final CheckboxMenuItem[] fpsOptions =
 	{
 		new CheckboxMenuItem("No Limit", true),
 		new CheckboxMenuItem("60 FPS", false),
@@ -264,7 +263,7 @@ public final class AWTGUI
 	};
 	final String[] fpsValues = {"0", "60", "55", "50", "45", "40", "35", "30", "25", "20", "15", "10"};
 
-	final CheckboxMenuItem[] fpsHackOptions = 
+	final CheckboxMenuItem[] fpsHackOptions =
 	{
 		new CheckboxMenuItem("Disabled", true),
 		new CheckboxMenuItem("Safe", false),
@@ -273,7 +272,7 @@ public final class AWTGUI
 	};
 	final String[] fpsHackValues = {"Disabled", "Safe", "Extended", "Aggressive"};
 
-	final CheckboxMenuItem[] fpsCounterPos = 
+	final CheckboxMenuItem[] fpsCounterPos =
 	{
 		new CheckboxMenuItem("Off", true),
 		new CheckboxMenuItem("Top Left", false),
@@ -283,7 +282,7 @@ public final class AWTGUI
 	};
 	final String[] showFPSValues = {"Off", "TopLeft", "TopRight", "BottomLeft", "BottomRight"};
 
-	final CheckboxMenuItem[] fontOffsets = 
+	final CheckboxMenuItem[] fontOffsets =
 	{
 		new CheckboxMenuItem("-4pt", false),
 		new CheckboxMenuItem("-3pt", false),
@@ -297,7 +296,7 @@ public final class AWTGUI
 	};
 	final String[] fontOffsetValues = {"-4", "-3", "-2", "-1", "0", "1", "2", "3", "4"};
 
-	final CheckboxMenuItem[] logLevels = 
+	final CheckboxMenuItem[] logLevels =
 	{
 		new CheckboxMenuItem("Disabled", false),
 		new CheckboxMenuItem("Debug", false),
@@ -326,7 +325,7 @@ public final class AWTGUI
 	final CheckboxMenuItem dumpAudioData = new CheckboxMenuItem("Dump Audio Streams");
 	final CheckboxMenuItem dumpGraphicsData = new CheckboxMenuItem("Dump Graphics Objects");
 	final CheckboxMenuItem showDebugWindows = new CheckboxMenuItem("Show Debug Windows");
-	
+
 	// M3G Debugging
 	final CheckboxMenuItem M3GUntextured = new CheckboxMenuItem("Draw Only Vertex Colors");
 	final CheckboxMenuItem M3GWireframe = new CheckboxMenuItem("Wireframe Mode");
@@ -362,7 +361,7 @@ public final class AWTGUI
 
 		awtButtons[2].setBackground(FreeJ2ME.freeJ2MEBGColor);
 		awtButtons[2].setForeground(Color.ORANGE);
-		
+
 		awtButtons[3].setBackground(FreeJ2ME.freeJ2MEDragColor);
 		awtButtons[3].setForeground(Color.ORANGE);
 
@@ -371,7 +370,7 @@ public final class AWTGUI
 
 		awtDialogs[1].setBackground(FreeJ2ME.freeJ2MEBGColor);
 		awtDialogs[1].setForeground(Color.ORANGE);
-		awtDialogs[1].setLayout( new FlowLayout(FlowLayout.CENTER, 200, 0));  
+		awtDialogs[1].setLayout( new FlowLayout(FlowLayout.CENTER, 200, 0));
 		awtDialogs[1].setUndecorated(true); /* Whenever a Dialog is undecorated, it's because it's meant to look like an internal menu on FreeJ2ME's main Frame */
 		awtDialogs[1].setSize(230, 235);
 		awtDialogs[1].setResizable(false);
@@ -408,7 +407,7 @@ public final class AWTGUI
 		awtDialogs[4].setSize(240, 440);
 		awtDialogs[4].setLocationRelativeTo(main);
 		awtDialogs[4].setResizable(false);
-		
+
 		// Setup input button colors
 		awtButtons[5].setBackground(FreeJ2ME.freeJ2MEDragColor);
 		awtButtons[5].setForeground(Color.GREEN);
@@ -416,8 +415,8 @@ public final class AWTGUI
 		awtButtons[6].setBackground(FreeJ2ME.freeJ2MEDragColor);
 		awtButtons[6].setForeground(Color.RED);
 
-		for(int i = 0; i < inputButtons.length; i++) 
-		{ 
+		for(int i = 0; i < inputButtons.length; i++)
+		{
 			inputButtons[i].setBackground(FreeJ2ME.freeJ2MEDragColor);
 			inputButtons[i].setForeground(Color.ORANGE);
 		}
@@ -457,11 +456,11 @@ public final class AWTGUI
 		awtDialogs[4].add(new Label(""));
 		awtDialogs[4].add(new Label(""));
 		awtDialogs[4].add(new Label(""));
-		
+
 		awtDialogs[4].add(inputButtons[7]);
 		awtDialogs[4].add(inputButtons[8]);
 		awtDialogs[4].add(inputButtons[9]);
-		
+
 		awtDialogs[4].add(inputButtons[10]);
 		awtDialogs[4].add(inputButtons[11]);
 		awtDialogs[4].add(inputButtons[12]);
@@ -485,7 +484,7 @@ public final class AWTGUI
 		awtDialogs[4].add(new Label(""));
 		awtDialogs[4].add(new Label(""));
 		awtDialogs[4].add(new Label(""));
-		
+
 		awtDialogs[4].add(new Label("Fast-Forward"));
 		awtDialogs[4].add(new Label("Screenshot"));
 		awtDialogs[4].add(new Label("Pause/Resume"));
@@ -497,7 +496,7 @@ public final class AWTGUI
 		awtDialogs[4].add(new Label(""));
 		awtDialogs[4].add(new Label(""));
 		awtDialogs[4].add(new Label(""));
-		
+
 		awtDialogs[4].add(new Label("Slowdown"));
 		awtDialogs[4].add(new Label("TODO"));
 		awtDialogs[4].add(new Label("TODO"));
@@ -509,7 +508,7 @@ public final class AWTGUI
 
 		awtDialogs[3].setBackground(FreeJ2ME.freeJ2MEBGColor);
 		awtDialogs[3].setForeground(Color.ORANGE);
-		awtDialogs[3].setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));  
+		awtDialogs[3].setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
 		awtDialogs[3].setUndecorated(true);
 		awtDialogs[3].setSize(230, 80);
 		awtDialogs[3].setLocationRelativeTo(main);
@@ -542,7 +541,7 @@ public final class AWTGUI
 
 		ScrollPane logScrollPane = new ScrollPane(ScrollPane.SCROLLBARS_AS_NEEDED);
         logScrollPane.add(logArea);
-		
+
 		awtDialogs[5].setBackground(FreeJ2ME.freeJ2MEBGColor);
         awtDialogs[5].setForeground(Color.ORANGE);
 		awtDialogs[5].setLayout(new BorderLayout());
@@ -571,7 +570,7 @@ public final class AWTGUI
 		awtButtons[6].setActionCommand("CancelInputs");
 
 		showPlayer.setActionCommand("ShowPlayer");
-		
+
 		openMenuItem.addActionListener(menuItemListener);
 		restartMenuItem.addActionListener(menuItemListener);
 		closeMenuItem.addActionListener(menuItemListener);
@@ -598,27 +597,27 @@ public final class AWTGUI
 		buildMenuBar();
 	}
 
-	public void updateDialogLocations(Frame mainFrame) 
+	public void updateDialogLocations(Frame mainFrame)
 	{
 		awtDialogs[2].setLocation(mainFrame.getLocation().x+mainFrame.getSize().width, mainFrame.getLocation().y);
 		awtDialogs[5].setLocation(mainFrame.getLocation().x+mainFrame.getSize().width, mainFrame.getLocation().y+awtDialogs[2].getHeight());
 	}
 
-	private void addInputButtonListeners() 
+	private void addInputButtonListeners()
 	{
-		for(int i = 0; i < inputButtons.length; i++) 
+		for(int i = 0; i < inputButtons.length; i++)
 		{
 			final int buttonIndex = i;
 
 			/* Add a focus listener to each input mapping button */
-            inputButtons[i].addFocusListener(new FocusAdapter() 
+            inputButtons[i].addFocusListener(new FocusAdapter()
 			{
                 Button focusedButton;
 				String lastButtonKey = new String("");
 				boolean keySet = false;
 
 				@Override
-				public void focusGained(FocusEvent e) 
+				public void focusGained(FocusEvent e)
 				{
 					{
 						keySet = false;
@@ -626,9 +625,9 @@ public final class AWTGUI
 						lastButtonKey = focusedButton.getLabel();
 						focusedButton.setLabel("Waiting...");
 
-						focusedButton.addKeyListener(new KeyAdapter() 
+						focusedButton.addKeyListener(new KeyAdapter()
 						{
-							public void keyPressed(KeyEvent e) 
+							public void keyPressed(KeyEvent e)
 							{
 								focusedButton.setLabel(KeyEvent.getKeyText(e.getKeyCode()));
 								keySet = true;
@@ -646,38 +645,38 @@ public final class AWTGUI
 		}
 	}
 
-	private void setActionListeners() 
+	private void setActionListeners()
 	{
-		fullScreen.addItemListener(new ItemListener() 
+		fullScreen.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(hasLoadedFile()) { FreeJ2ME.app.toggleFullscreen(); }
 				else { fullScreen.setState(FreeJ2ME.isFullscreen); }
 			}
 		});
 
-		enableAudio.addItemListener(new ItemListener() 
+		enableAudio.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(enableAudio.getState()){ config.updateSound("on"); hasPendingChange = true; }
 				else{ config.updateSound("off"); hasPendingChange = true; }
 			}
 		});
 
-		useCustomMidi.addItemListener(new ItemListener() 
+		useCustomMidi.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(useCustomMidi.getState()){ config.updateSoundfont("Custom"); hasPendingChange = true; }
 				else{ config.updateSoundfont("Default"); hasPendingChange = true; }
 			}
 		});
 
-		useCustomFont.addItemListener(new ItemListener() 
+		useCustomFont.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(useCustomFont.getState()){ config.updateTextFont("Custom"); hasPendingChange = true; }
 				else{ config.updateTextFont("Default"); hasPendingChange = true; }
@@ -687,18 +686,18 @@ public final class AWTGUI
 		});
 
 		// DoJa Version
-		for(byte i = 0; i < dojaVersions.length; i++) 
+		for(byte i = 0; i < dojaVersions.length; i++)
 		{
 			final byte index = i;
-			dojaVersions[i].addItemListener(new ItemListener() 
+			dojaVersions[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!dojaVersions[index].getState()){ dojaVersions[index].setState(true); }
 					if(dojaVersions[index].getState())
-					{ 
+					{
 						config.updateDoJaVersion(dojaVersionValues[index]);
-						for(int j = 0; j < dojaVersions.length; j++) 
+						for(int j = 0; j < dojaVersions.length; j++)
 						{
 							if(j != index) { dojaVersions[j].setState(false); }
 						}
@@ -711,9 +710,9 @@ public final class AWTGUI
 		}
 
 		// Speedhacks
-		noAlphaOnBlankImages.addItemListener(new ItemListener() 
+		noAlphaOnBlankImages.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(noAlphaOnBlankImages.getState()){ config.updateAlphaSpeedHack("on"); hasPendingChange = true; }
 				else{ config.updateAlphaSpeedHack("off"); hasPendingChange = true; }
@@ -722,18 +721,18 @@ public final class AWTGUI
 			}
 		});
 
-		M3GHalfRes.addItemListener(new ItemListener() 
+		M3GHalfRes.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(M3GHalfRes.getState()){ config.updateM3GResSpeedHack("on"); hasPendingChange = true; }
 				else{ config.updateM3GResSpeedHack("off"); hasPendingChange = true; }
 			}
 		});
 
-		MCV3HalfRes.addItemListener(new ItemListener() 
+		MCV3HalfRes.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(MCV3HalfRes.getState()){ config.updateMCV3ResSpeedHack("on"); hasPendingChange = true; }
 				else{ config.updateMCV3ResSpeedHack("off"); hasPendingChange = true; }
@@ -742,9 +741,9 @@ public final class AWTGUI
 			}
 		});
 
-		MCV3NoLighting.addItemListener(new ItemListener() 
+		MCV3NoLighting.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(MCV3NoLighting.getState()){ config.updateMCV3NoLightingSpeedHack("on"); hasPendingChange = true; }
 				else{ config.updateMCV3NoLightingSpeedHack("off"); hasPendingChange = true; }
@@ -756,7 +755,7 @@ public final class AWTGUI
 		// Compatibility settings
 		fantasyZoneFix.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(fantasyZoneFix.getState()){ config.updateCompatFantasyZoneFix("on"); hasPendingChange = true; }
 				else{ config.updateCompatFantasyZoneFix("off"); hasPendingChange = true; }
@@ -765,18 +764,18 @@ public final class AWTGUI
 			}
 		});
 
-		transToOriginOnReset.addItemListener(new ItemListener() 
+		transToOriginOnReset.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(transToOriginOnReset.getState()){ config.updateCompatTranslateToOriginOnReset("on"); hasPendingChange = true; }
 				else{ config.updateCompatTranslateToOriginOnReset("off"); hasPendingChange = true; }
 			}
 		});
 
-		immediateRepaints.addItemListener(new ItemListener() 
+		immediateRepaints.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(immediateRepaints.getState()){ config.updateCompatImmediateRepaints("on"); hasPendingChange = true; }
 				else{ config.updateCompatImmediateRepaints("off"); hasPendingChange = true; }
@@ -824,18 +823,18 @@ public final class AWTGUI
 		});
 
 		// Screen rotations
-		for(byte i = 0; i < rotations.length; i++) 
+		for(byte i = 0; i < rotations.length; i++)
 		{
 			final byte index = i;
-			rotations[i].addItemListener(new ItemListener() 
+			rotations[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!rotations[index].getState()){ rotations[index].setState(true); }
 					if(rotations[index].getState())
-					{ 
+					{
 						config.updateRotate(rotationValues[index]);
-						for(int j = 0; j < rotations.length; j++) 
+						for(int j = 0; j < rotations.length; j++)
 						{
 							if(j != index) { rotations[j].setState(false); }
 						}
@@ -846,18 +845,18 @@ public final class AWTGUI
 		}
 
 		// Layout options
-		for(byte i = 0; i < layoutOptions.length; i++) 
+		for(byte i = 0; i < layoutOptions.length; i++)
 		{
 			final byte index = i;
-			layoutOptions[i].addItemListener(new ItemListener() 
+			layoutOptions[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!layoutOptions[index].getState()){ layoutOptions[index].setState(true); }
 					if(layoutOptions[index].getState())
-					{ 
+					{
 						config.updatePhone(layoutValues[index]);
-						for(int j = 0; j < layoutOptions.length; j++) 
+						for(int j = 0; j < layoutOptions.length; j++)
 						{
 							if(j != index) { layoutOptions[j].setState(false); }
 						}
@@ -867,18 +866,18 @@ public final class AWTGUI
 			});
 		}
 
-		for(byte i = 0; i < backlightOptions.length; i++) 
+		for(byte i = 0; i < backlightOptions.length; i++)
 		{
 			final byte index = i;
-			backlightOptions[i].addItemListener(new ItemListener() 
+			backlightOptions[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!backlightOptions[index].getState()){ backlightOptions[index].setState(true); }
 					if(backlightOptions[index].getState())
-					{ 
+					{
 						config.updateBacklight(backlightValues[index]);
-						for(int j = 0; j < backlightOptions.length; j++) 
+						for(int j = 0; j < backlightOptions.length; j++)
 						{
 							if(j != index) { backlightOptions[j].setState(false); }
 						}
@@ -888,18 +887,18 @@ public final class AWTGUI
 			});
 		}
 
-		for(byte i = 0; i < fpsOptions.length; i++) 
+		for(byte i = 0; i < fpsOptions.length; i++)
 		{
 			final byte index = i;
-			fpsOptions[i].addItemListener(new ItemListener() 
+			fpsOptions[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!fpsOptions[index].getState()){ fpsOptions[index].setState(true); }
 					if(fpsOptions[index].getState())
-					{ 
+					{
 						config.updateFPS(fpsValues[index]);
-						for(int j = 0; j < fpsOptions.length; j++) 
+						for(int j = 0; j < fpsOptions.length; j++)
 						{
 							if(j != index) { fpsOptions[j].setState(false); }
 						}
@@ -909,18 +908,18 @@ public final class AWTGUI
 			});
 		}
 
-		for(byte i = 0; i < fpsHackOptions.length; i++) 
+		for(byte i = 0; i < fpsHackOptions.length; i++)
 		{
 			final byte index = i;
-			fpsHackOptions[i].addItemListener(new ItemListener() 
+			fpsHackOptions[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!fpsHackOptions[index].getState()){ fpsHackOptions[index].setState(true); }
 					if(fpsHackOptions[index].getState())
-					{ 
+					{
 						config.updateFPSHack(fpsHackValues[index]);
-						for(int j = 0; j < fpsHackOptions.length; j++) 
+						for(int j = 0; j < fpsHackOptions.length; j++)
 						{
 							if(j != index) { fpsHackOptions[j].setState(false); }
 						}
@@ -930,18 +929,18 @@ public final class AWTGUI
 			});
 		}
 
-		for(byte i = 0; i < fontOffsets.length; i++) 
+		for(byte i = 0; i < fontOffsets.length; i++)
 		{
 			final byte index = i;
-			fontOffsets[i].addItemListener(new ItemListener() 
+			fontOffsets[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!fontOffsets[index].getState()){ fontOffsets[index].setState(true); }
 					if(fontOffsets[index].getState())
-					{ 
+					{
 						config.updateFontOffset(fontOffsetValues[index]);
-						for(int j = 0; j < fontOffsets.length; j++) 
+						for(int j = 0; j < fontOffsets.length; j++)
 						{
 							if(j != index) { fontOffsets[j].setState(false); }
 						}
@@ -951,19 +950,19 @@ public final class AWTGUI
 		}
 
 		// Sys settings
-		for(byte i = 0; i < fpsCounterPos.length; i++) 
+		for(byte i = 0; i < fpsCounterPos.length; i++)
 		{
 			final byte index = i;
-			fpsCounterPos[i].addItemListener(new ItemListener() 
+			fpsCounterPos[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!fpsCounterPos[index].getState()){ fpsCounterPos[index].setState(true); }
 					if(fpsCounterPos[index].getState())
-					{ 
+					{
 						config.updatefpsCounterPosition(showFPSValues[index]);
 						Mobile.getPlatform().setShowFPS(showFPSValues[index]);
-						for(int j = 0; j < fpsCounterPos.length; j++) 
+						for(int j = 0; j < fpsCounterPos.length; j++)
 						{
 							if(j != index) { fpsCounterPos[j].setState(false); }
 						}
@@ -972,18 +971,18 @@ public final class AWTGUI
 			});
 		}
 
-		for(byte i = 0; i < logLevels.length; i++) 
+		for(byte i = 0; i < logLevels.length; i++)
 		{
 			final byte index = i;
-			logLevels[i].addItemListener(new ItemListener() 
+			logLevels[i].addItemListener(new ItemListener()
 			{
-				public void itemStateChanged(ItemEvent e) 
+				public void itemStateChanged(ItemEvent e)
 				{
 					if(!logLevels[index].getState()){ logLevels[index].setState(true); }
 					if(logLevels[index].getState())
 					{
 						config.updateLogLevel(logLevelValues[index]);
-						for(int j = 0; j < logLevels.length; j++) 
+						for(int j = 0; j < logLevels.length; j++)
 						{
 							if(j != index) { logLevels[j].setState(false); }
 						}
@@ -991,65 +990,65 @@ public final class AWTGUI
 				}
 			});
 		}
-		
-		deleteTemporaryKJXFiles.addItemListener(new ItemListener() 
+
+		deleteTemporaryKJXFiles.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(deleteTemporaryKJXFiles.getState()) { config.updateDeleteTempKJXFiles("on"); Mobile.deleteTemporaryKJXFiles = true; }
 				else { config.updateDeleteTempKJXFiles("off"); Mobile.deleteTemporaryKJXFiles = false; }
 			}
 		});
-		
 
-		dumpAudioData.addItemListener(new ItemListener() 
+
+		dumpAudioData.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(dumpAudioData.getState()) { config.updateDumpAudioStreams("on"); Mobile.dumpAudioStreams = true; }
 				else { config.updateDumpAudioStreams("off"); Mobile.dumpAudioStreams = false; }
 			}
 		});
 
-		dumpGraphicsData.addItemListener(new ItemListener() 
+		dumpGraphicsData.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(dumpGraphicsData.getState()) { config.updateDumpGraphicsObjects("on"); Mobile.dumpGraphicsObjects = true; }
 				else { config.updateDumpGraphicsObjects("off"); Mobile.dumpGraphicsObjects = false; }
 			}
 		});
 
-		M3GUntextured.addItemListener(new ItemListener() 
+		M3GUntextured.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(M3GUntextured.getState()) { config.updateM3GUntextured("on"); Mobile.M3GRenderUntexturedPolygons = true; }
 				else { config.updateM3GUntextured("off"); Mobile.M3GRenderUntexturedPolygons = false; }
 			}
 		});
 
-		M3GWireframe.addItemListener(new ItemListener() 
+		M3GWireframe.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(M3GWireframe.getState()) { config.updateM3GWireframe("on"); Mobile.M3GRenderWireframe = true; }
 				else { config.updateM3GWireframe("off"); Mobile.M3GRenderWireframe = false; }
 			}
 		});
 
-		MCV3ShowHeapUsage.addItemListener(new ItemListener() 
+		MCV3ShowHeapUsage.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(MCV3ShowHeapUsage.getState()) { config.MCV3ShowHeapUsage("on"); Mobile.MCV3ShowHeapUsage = true; }
 				else { config.MCV3ShowHeapUsage("off"); Mobile.MCV3ShowHeapUsage = false; }
 			}
 		});
 
-		MCV3ShowTimeMetrics.addItemListener(new ItemListener() 
+		MCV3ShowTimeMetrics.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				if(MCV3ShowTimeMetrics.getState()) { config.MCV3ShowTimeMetrics("on"); Mobile.MCV3ShowTimeMetrics = true; }
 				else { config.MCV3ShowTimeMetrics("off"); Mobile.MCV3ShowTimeMetrics = false; }
@@ -1057,27 +1056,27 @@ public final class AWTGUI
 		});
 
 		// These are specific to AWTGUI
-		showDebugWindows.addItemListener(new ItemListener() 
+		showDebugWindows.addItemListener(new ItemListener()
 		{
-			public void itemStateChanged(ItemEvent e) 
+			public void itemStateChanged(ItemEvent e)
 			{
 				/* Mem stats frame won't be centered on FreeJ2ME's frame, instead, it will sit right by its side, that's why "setLocationRelativeTo(main)" isn't used */
-				if(showDebugWindows.getState()) 
-				{ 
-					updateDialogLocations(main); 
-					awtDialogs[2].setVisible(true); 
-					awtDialogs[5].setVisible(true); 
+				if(showDebugWindows.getState())
+				{
+					updateDialogLocations(main);
+					awtDialogs[2].setVisible(true);
+					awtDialogs[5].setVisible(true);
 				}
-				else 
-				{ 
-					awtDialogs[2].setVisible(false); 
-					awtDialogs[5].setVisible(false); 
+				else
+				{
+					awtDialogs[2].setVisible(false);
+					awtDialogs[5].setVisible(false);
 				}
 			}
 		});
 	}
 
-	private void buildMenuBar() 
+	private void buildMenuBar()
 	{
 		closeMenuItem.setEnabled(false);
 		restartMenuItem.setEnabled(false);
@@ -1125,7 +1124,7 @@ public final class AWTGUI
 		debugMenu.add(MCV3Debug);
 
 		debugMenu.setEnabled(false);
-		
+
 		deleteTemporaryKJXFiles.setState(true);
 
 		// Internally log levels are ordered in decreasing verbosity level
@@ -1174,7 +1173,7 @@ public final class AWTGUI
 		menuBar.add(debugMenu);
 	}
 
-	public void updateOptions() 
+	public void updateOptions()
 	{
 			fullScreen.setState(FreeJ2ME.isFullscreen);
 			enableAudio.setState(config.sysSettings.get("sound").equals("on"));
@@ -1191,12 +1190,12 @@ public final class AWTGUI
 
 			for(int i = 0; i < fontOffsets.length; i++) { fontOffsets[i].setState(config.settings.get("fontoffset").equals(fontOffsetValues[i])); }
 
-			for(int i = 0; i < layoutOptions.length; i++) 
+			for(int i = 0; i < layoutOptions.length; i++)
 			{
 				layoutOptions[i].setState(config.settings.get("phone").equals(layoutValues[i]));
 			}
 
-			for(int i = 0; i < backlightOptions.length; i++) 
+			for(int i = 0; i < backlightOptions.length; i++)
 			{
 				backlightOptions[i].setState(config.settings.get("backlightcolor").equals(backlightValues[i]));
 			}
@@ -1233,7 +1232,7 @@ public final class AWTGUI
 			dumpGraphicsData.setState(config.sysSettings.get("dumpGraphicsObjects").equals("on"));
 
 			dumpAudioData.setState(config.sysSettings.get("dumpAudioStreams").equals("on"));
-			
+
 			M3GWireframe.setState(config.sysSettings.get("M3GWireframe").equals("on"));
 
 			M3GUntextured.setState(config.sysSettings.get("M3GUntextured").equals("on"));
@@ -1252,12 +1251,12 @@ public final class AWTGUI
 			firstLoad = false;
 	}
 
-	class UIListener implements ActionListener 
+	class UIListener implements ActionListener
 	{
-		public void actionPerformed(ActionEvent a) 
-		{            
+		public void actionPerformed(ActionEvent a)
+		{
 
-			if(a.getActionCommand() == "Open") 
+			if(a.getActionCommand() == "Open")
 			{
 				FileDialog filePicker = new FileDialog(main, "Open JAR / JAD / KJX / MSD File", FileDialog.LOAD);
 				String filename;
@@ -1272,7 +1271,7 @@ public final class AWTGUI
 				filePicker.setVisible(true);
 
 				filename = filePicker.getFile();
-				
+
 				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "JAR/JAD Loading was cancelled"); }
 				else
 				{
@@ -1305,7 +1304,7 @@ public final class AWTGUI
 
 			else if(a.getActionCommand() == "ChangeResolution") { awtDialogs[0].setLocationRelativeTo(main); awtDialogs[0].setVisible(true); }
 
-			else if(a.getActionCommand() == "ApplyResChange") 
+			else if(a.getActionCommand() == "ApplyResChange")
 			{
 				if(fileLoaded) /* Only update res if a jar was loaded, or else AWT throws NullPointerException */
 				{
@@ -1325,17 +1324,17 @@ public final class AWTGUI
 
 			else if(a.getActionCommand() == "MapInputs") { awtDialogs[4].setVisible(true); }
 
-			else if(a.getActionCommand() == "ApplyInputs") 
+			else if(a.getActionCommand() == "ApplyInputs")
 			{
 				System.arraycopy(newInputKeycodes, 0, Config.inputKeycodes, 0, newInputKeycodes.length);
 				config.updateAWTInputs();
-				awtDialogs[4].setVisible(false); 
+				awtDialogs[4].setVisible(false);
 			}
 
 			else if(a.getActionCommand() == "CancelInputs") { awtDialogs[4].setVisible(false); }
 
-			else if(a.getActionCommand() == "ShowPlayer") 
-			{ 
+			else if(a.getActionCommand() == "ShowPlayer")
+			{
 				// Create FreeJ2MEPlayer Dialog instance and show it;
 				FreeJ2MEPlayer playerDialog = new FreeJ2MEPlayer(main);
 				playerDialog.setLocationRelativeTo(main);
@@ -1367,11 +1366,11 @@ public final class AWTGUI
 
 	public boolean hasLoadedFile() { return fileLoaded; }
 
-	public void setMainFrame(Frame mainFrame) 
-	{ 
-		main = mainFrame; 
+	public void setMainFrame(Frame mainFrame)
+	{
+		main = mainFrame;
 		// So that the console window and memory stats follow the main window around
-		main.addComponentListener(new ComponentAdapter() 
+		main.addComponentListener(new ComponentAdapter()
 		{
             public void componentMoved(ComponentEvent e) { updateDialogLocations(main); }
             public void componentResized(ComponentEvent e) { updateDialogLocations(main); }
@@ -1390,7 +1389,7 @@ public final class AWTGUI
 		awtDialogs[3].setVisible(true);
 	}
 
-	public void updateDialogs() 
+	public void updateDialogs()
 	{
 		String line;
 		try
@@ -1398,14 +1397,14 @@ public final class AWTGUI
 			while ((line = logReader.readLine()) != null) { debugContent.append(line).append("\n"); }
 			logArea.setText(new String(debugContent.toString()));
 			logArea.setCaretPosition(logArea.getText().length());
-		} 
+		}
 		catch (Exception e) { logArea.append("Error reading log file: " + e.getMessage() + "\n"); }
 
 		memArea.setText
 		(
-			"Total Mem: " + (Runtime.getRuntime().totalMemory() / 1024) + " KB\n" + 
-			"Free Mem : " + (Runtime.getRuntime().freeMemory() / 1024) + " KB\n" + 
-			"Used Mem : " + ((Runtime.getRuntime().totalMemory() / 1024) - (Runtime.getRuntime().freeMemory() / 1024)) + " KB\n" + 
+			"Total Mem: " + (Runtime.getRuntime().totalMemory() / 1024) + " KB\n" +
+			"Free Mem : " + (Runtime.getRuntime().freeMemory() / 1024) + " KB\n" +
+			"Used Mem : " + ((Runtime.getRuntime().totalMemory() / 1024) - (Runtime.getRuntime().freeMemory() / 1024)) + " KB\n" +
 			"Max Mem  : " + (Runtime.getRuntime().maxMemory() / 1024) + " KB"
 		);
     }

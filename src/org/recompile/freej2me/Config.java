@@ -46,8 +46,8 @@ public class Config
 	private final String systemPath = "freej2me_system/";
 	private final String systemFile = systemPath + "freej2me.conf";
 
-	public static int inputKeycodes[] = new int[] 
-	{ 
+	public static int inputKeycodes[] = new int[]
+	{
 		81,  // Q Key
 		87,  // W Key
 		38,  // Arrow Up
@@ -57,16 +57,16 @@ public class Config
 		40,  // Arrow Down
 		103, // Numpad_7
 		104, // Numpad_8
-		105, // Numpad_9 
+		105, // Numpad_9
 		100, // Numpad_4
-		101, // Numpad_5 
-		102, // Numpad_6 
+		101, // Numpad_5
+		102, // Numpad_6
 		97,  // Numpad_1
-		98,  // Numpad_2 
-		99,  // Numpad_3 
-		69,  // E Key 
-		96,  // Numpad_0 
-		82,  // R Key 
+		98,  // Numpad_2
+		99,  // Numpad_3
+		69,  // E Key
+		96,  // Numpad_0
+		82,  // R Key
 		65,  // A key
 		32,  // Space Key (for AWT fast-forward)
 		67,  // C Key (for AWT screenshots)
@@ -80,7 +80,7 @@ public class Config
 
 	public Config()
 	{
-		
+
 		width = Mobile.getPlatform().lcdWidth;
 		height = Mobile.getPlatform().lcdHeight;
 
@@ -196,35 +196,70 @@ public class Config
 			if(settings.containsKey("compatnonfatalnullimage")) { settings.remove("compatnonfatalnullimage"); } // No longer needed
 			if(settings.containsKey("compatdonottranslatedrawrgb")) { settings.remove("compatdonottranslatedrawrgb"); } // No longer needed
 			if(settings.containsKey("rotate")) // Compatibility with older, more limited rotation toggle
-			{ 
+			{
 				if(settings.get("rotate").equals("on")) { settings.put("rotate", "270"); }
 				else if(settings.get("rotate").equals("off")) { settings.put("rotate", "0"); }
 			}
 			if(settings.containsKey("sound")) { settings.remove("sound"); }
 			if(settings.containsKey("soundfont")) { settings.remove("soundfont"); }
 			if(settings.containsKey("textfont")) { settings.remove("textfont"); }
+			if(settings.containsKey("phone") && settings.get("phone").equals("Sharp")) { settings.put("phone", "MotoTriplets"); }
 
 			// Add any missing settings
-			if(!settings.containsKey("scrwidth")) { settings.put("scrwidth", ""+width); }
-			if(!settings.containsKey("scrheight")) { settings.put("scrheight", ""+height); }
+			if(!settings.containsKey("scrwidth")) { settings.put("scrwidth", ""+Mobile.lcdWidth); }
+			if(!settings.containsKey("scrheight")) { settings.put("scrheight", ""+Mobile.lcdHeight); }
 			if(!settings.containsKey("phone")) { settings.put("phone", "Standard"); }
-			if(!settings.containsKey("backlightcolor")) { settings.put("backlightcolor", "Disabled"); }
-			if(!settings.containsKey("rotate")) { settings.put("rotate", "0"); }
-			if(!settings.containsKey("fps")) { settings.put("fps", "0"); }
-			if(!settings.containsKey("fontoffset")) { settings.put("fontoffset", "0"); }
-			if(!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", "off"); }
-			if(!settings.containsKey("compatfantasyzonefix")) { settings.put("compatfantasyzonefix", "off"); }
-			if(!settings.containsKey("compattranstooriginonreset")) { settings.put("compattranstooriginonreset", "off"); }
-			if(!settings.containsKey("compatimmediaterepaints")) { settings.put("compatimmediaterepaints", "off"); }
-			if(!settings.containsKey("compatoverrideplatchecks")) { settings.put("compatoverrideplatchecks", "on"); }
-			if(!settings.containsKey("compatsiemensfriendlydrawing")) { settings.put("compatsiemensfriendlydrawing", "off"); }
-			if(!settings.containsKey("compatignorevolumechanges")) { settings.put("compatignorevolumechanges", "off"); }
-			if(!settings.containsKey("compatmcv3horizfovfix")) { settings.put("compatmcv3horizfovfix", "off"); }
-			if(!settings.containsKey("fpshack")) { settings.put("fpshack", "Disabled"); }
-			if(!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", "off"); }
-			if(!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", "off"); }
-			if(!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", "off"); }
-			if(!settings.containsKey("dojaversion")) { settings.put("dojaversion", "200"); }
+			if(!settings.containsKey("backlightcolor"))
+			{
+				switch(Mobile.maskIndex)
+				{
+					case 0:
+						settings.put("backlightcolor", "Disabled");
+					case 1:
+						settings.put("backlightcolor", "Green");
+					case 2:
+						settings.put("backlightcolor", "Cyan");
+					case 3:
+						settings.put("backlightcolor", "Orange");
+					case 4:
+						settings.put("backlightcolor", "Violet");
+					case 5:
+						settings.put("backlightcolor", "Red");
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("rotate")) { settings.put("rotate", ""+Mobile.rotateDisplay); }
+			if(!settings.containsKey("fps")) { settings.put("fps", ""+Mobile.limitFPS); }
+			if(!settings.containsKey("fontoffset")) { settings.put("fontoffset", ""+Mobile.fontSizeOffset); }
+			if(!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off"); }
+			if(!settings.containsKey("compatfantasyzonefix")) { settings.put("compatfantasyzonefix", Mobile.compatFantasyZoneFix ? "on" : "off"); }
+			if(!settings.containsKey("compattranstooriginonreset")) { settings.put("compattranstooriginonreset", Mobile.compatTranslateToOriginOnReset ? "on" : "off"); }
+			if(!settings.containsKey("compatimmediaterepaints")) { settings.put("compatimmediaterepaints", Mobile.compatImmediateRepaints ? "on" : "off"); }
+			if(!settings.containsKey("compatoverrideplatchecks")) { settings.put("compatoverrideplatchecks", Mobile.compatOverridePlatformChecks ? "on" : "off"); }
+			if(!settings.containsKey("compatsiemensfriendlydrawing")) { settings.put("compatsiemensfriendlydrawing", Mobile.compatSiemensFriendlyDrawing ? "on" : "off"); }
+			if(!settings.containsKey("compatignorevolumechanges")) { settings.put("compatignorevolumechanges", Mobile.compatIgnoreVolumeChanges ? "on" : "off"); }
+			if(!settings.containsKey("compatmcv3horizfovfix")) { settings.put("compatmcv3horizfovfix", Mobile.compatMCV3HorizontalFovFix ? "on" : "off"); }
+			if(!settings.containsKey("fpshack"))
+			{
+				switch(Mobile.unlockFramerateHack)
+				{
+					case 0:
+						settings.put("fpshack", "Disabled");
+					case 1:
+						settings.put("fpshack", "Safe");
+					case 2:
+						settings.put("fpshack", "Extended");
+					case 3:
+						settings.put("fpshack", "Aggressive");
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off"); }
+			if(!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off"); }
+			if(!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off"); }
+			if(!settings.containsKey("dojaversion")) { settings.put("dojaversion", ""+Mobile.DoJaVersion); }
 
 			// System settings
 			reader = new BufferedReader(new FileReader(sFile));
@@ -249,8 +284,8 @@ public class Config
 			if(!sysSettings.containsKey("dumpAudioStreams")) { sysSettings.put("dumpAudioStreams", "off"); }
 			if(!sysSettings.containsKey("dumpGraphicsObjects")) { sysSettings.put("dumpGraphicsObjects", "off"); }
 			if(!sysSettings.containsKey("soundfont")) { sysSettings.put("soundfont", "Default"); }
-			if(!sysSettings.containsKey("textfont")) { sysSettings.put("textfont", "Default"); }
-			if(!sysSettings.containsKey("sound")) { sysSettings.put("sound", "on"); }
+			if(!sysSettings.containsKey("textfont")) { sysSettings.put("textfont", Mobile.useCustomTextFont ? "Custom" : "Default"); }
+			if(!sysSettings.containsKey("sound")) { sysSettings.put("sound", Mobile.sound ? "on" : "off"); }
 			// AWT Inputs
 			if(!sysSettings.containsKey("input_LeftSoft"))    { sysSettings.put("input_LeftSoft", ""     + inputKeycodes[0]); }
 			if(!sysSettings.containsKey("input_RightSoft"))   { sysSettings.put("input_RightSoft", ""    + inputKeycodes[1]); }
@@ -329,7 +364,7 @@ public class Config
 			fout.close();
 
 			/* Save system file (if it has been created already), also sorted alphabetically */
-			if(sFile != null) 
+			if(sFile != null)
 			{
 				sortedKeys = new ArrayList<String>(sysSettings.keySet());
 				Collections.sort(sortedKeys);
@@ -498,7 +533,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateBacklight(String value) 
+	public void updateBacklight(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: backlightcolor "+value);
 		settings.put("backlightcolor", value);
@@ -509,7 +544,7 @@ public class Config
 
 	// System settings
 
-	public void updatefpsCounterPosition(String value) 
+	public void updatefpsCounterPosition(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: fpsCounterPosition "+value);
 		sysSettings.put("fpsCounterPosition", value);
@@ -517,7 +552,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateLogLevel(String value) 
+	public void updateLogLevel(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: logLevel "+value);
 		sysSettings.put("logLevel", value);
@@ -525,7 +560,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateM3GWireframe(String value) 
+	public void updateM3GWireframe(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: M3GWireframe "+value);
 		sysSettings.put("M3GWireframe", value);
@@ -533,7 +568,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateM3GUntextured(String value) 
+	public void updateM3GUntextured(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: M3GUntextured "+value);
 		sysSettings.put("M3GUntextured", value);
@@ -541,7 +576,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void MCV3ShowTimeMetrics(String value) 
+	public void MCV3ShowTimeMetrics(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: MCV3ShowTimeMetrics "+value);
 		sysSettings.put("MCV3ShowTimeMetrics", value);
@@ -549,7 +584,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void MCV3ShowHeapUsage(String value) 
+	public void MCV3ShowHeapUsage(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: MCV3ShowHeapUsage "+value);
 		sysSettings.put("MCV3ShowHeapUsage", value);
@@ -557,7 +592,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateDeleteTempKJXFiles(String value) 
+	public void updateDeleteTempKJXFiles(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: deleteTempKJXFiles "+value);
 		sysSettings.put("deleteTempKJXFiles", value);
@@ -565,7 +600,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateDumpAudioStreams(String value) 
+	public void updateDumpAudioStreams(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: dumpAudioStreams "+value);
 		sysSettings.put("dumpAudioStreams", value);
@@ -573,7 +608,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateDumpGraphicsObjects(String value) 
+	public void updateDumpGraphicsObjects(String value)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: dumpGraphicsObjects "+value);
 		sysSettings.put("dumpGraphicsObjects", value);
@@ -605,7 +640,7 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateAWTInputs() 
+	public void updateAWTInputs()
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Updating inputs on System file");
 		sysSettings.put("input_LeftSoft", ""     + inputKeycodes[0]);
@@ -636,4 +671,3 @@ public class Config
 	}
 
 }
-

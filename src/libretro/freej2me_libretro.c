@@ -323,7 +323,7 @@ int read_from_pipe(void* pipe, void *data, int datasize)
 }
 #endif
 
-int freej2me_present(const char *path) 
+int freej2me_present(const char *path)
 {
 #ifdef _WIN32
     return _access(path, 0) == 0;
@@ -333,11 +333,11 @@ int freej2me_present(const char *path)
 }
 
 // Fast-forward state tracker
-void check_fast_forwarding(void) 
+void check_fast_forwarding(void)
 {
 	unsigned int multiplier_scaled = 0;
 
-    if (Environ(RETRO_ENVIRONMENT_GET_FASTFORWARDING, &fast_forwarding)) 
+    if (Environ(RETRO_ENVIRONMENT_GET_FASTFORWARDING, &fast_forwarding))
 	{
         javaRequestFrame[4] = fast_forwarding ? 1 : 0;
     }
@@ -405,9 +405,8 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "Nokia Full Keyboard")){ phoneType = 6; }
 		else if (!strcmp(var.value, "Sagem"))              { phoneType = 7; }
 		else if (!strcmp(var.value, "Siemens"))            { phoneType = 8; }
-		else if (!strcmp(var.value, "Sharp"))              { phoneType = 9; }
-		else if (!strcmp(var.value, "SKT"))                { phoneType = 10; }
-		else if (!strcmp(var.value, "KDDI"))               { phoneType = 11; }
+		else if (!strcmp(var.value, "SKT"))                { phoneType = 9; }
+		else if (!strcmp(var.value, "KDDI"))               { phoneType = 10; }
 	}
 
 	var.key = "freej2me_backlightcolor";
@@ -715,8 +714,8 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], rotateScreen, 
-		phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams, loggingLevel, spdHackNoAlpha, backlightColor, compatFantasyZoneFix, 
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1], rotateScreen,
+		phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams, loggingLevel, spdHackNoAlpha, backlightColor, compatFantasyZoneFix,
 		compatTransToOriginOnGFXReset, customFont, fontOffset, dumpGraphicsData, deleteTemporaryKJXFiles, m3gUntextured, m3gWireframe, spdFrameRateUnlock, compatImmediateRepaintCalls,
 		compatOverridePlatCheck, compatSiemensFriendlyDraw, spdHackM3GHalfRes, dojaVersion, compatIgnoreVolumeChanges, spdHackMCV3HalfRes, spdHackMCV3NoLight, compatMCV3HorFovFix, mcv3Heap, mcv3TimeStats);
 	optstrlen = strlen(options_update);
@@ -799,7 +798,7 @@ void retro_init(void)
 	char *freej2mePath = malloc(sizeof(char) * PIPE_MAX_LEN);
     snprintf(freej2mePath, sizeof(char) * PIPE_MAX_LEN, "%s/%s", systemPath, freej2meapp);
 
-    if (!freej2me_present(freej2mePath)) 
+    if (!freej2me_present(freej2mePath))
 	{
 		free(freej2mePath);
 		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[SYSTEM_NOT_FOUND_MSG]);
@@ -863,10 +862,10 @@ void retro_init(void)
 		free(params);
 	}
 
-	if(!booted) 
-	{ 
-		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]); 
-		return; 
+	if(!booted)
+	{
+		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[COULD_NOT_START_MSG]);
+		return;
 	}
 
 	/* Setup keyboard input */
@@ -890,7 +889,7 @@ bool retro_load_game(const struct retro_game_info *info)
 	/* Send savepath to java */
 	char *savedir;
 	Environ(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &savedir);
-	if (savedir[0] == '\0') 
+	if (savedir[0] == '\0')
 	{
 		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &savedir);
 	}
@@ -948,7 +947,7 @@ void retro_run(void)
 
 	if(isRunning())
 	{
-		
+
 		/* request frame */
 		if(!frameRequested)
 		{
@@ -963,9 +962,9 @@ void retro_run(void)
 
 		InputPoll();
 
-		/* 
+		/*
 		 *                            0    1    2     3     4  5  6   7       8          9     10 11 12 13 14 15 16 17 18,  19
-		 * Input array in libretro: [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1, 3. *. #, 2, 4, 6, 8, 5, CLR] 
+		 * Input array in libretro: [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1, 3. *. #, 2, 4, 6, 8, 5, CLR]
 		 */
 
 		joypad[0] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
@@ -979,14 +978,14 @@ void retro_run(void)
 		joypad[8] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START);
 		joypad[9] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT);
 
-		if(useAnalogAsEntireKeypad) 
+		if(useAnalogAsEntireKeypad)
 		{
-			// These are more sensitive (lower threshold) in order to minimize cases where the 2,4,6,8 inputs are registered before these. 
+			// These are more sensitive (lower threshold) in order to minimize cases where the 2,4,6,8 inputs are registered before these.
 			// Num 8 & Num 6
-			num9pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone/2) 
+			num9pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone/2)
 							&& ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > analogDeadzone/2);
 			// Num 8 & Num 4
-			num7pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone/2) 
+			num7pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone/2)
 							&& ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone/2);
 			// Num 2 & Num 4
 			num1pressed = ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone/2)
@@ -1007,19 +1006,19 @@ void retro_run(void)
 			joypad[10] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L); // num 1
 			joypad[11] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R); // num 3
 		}
-		
+
 
 		joypad[12] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
 		joypad[13] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 
-		if(useAnalogAsEntireKeypad) 
+		if(useAnalogAsEntireKeypad)
 		{
 			joypad[14] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone) && !num1pressed && !num3pressed; // Num 2
 			joypad[15] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone) && !num1pressed && !num7pressed;  // Num 4
 			joypad[16] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) > analogDeadzone) && !num3pressed && !num9pressed;  // Num 6
 			joypad[17] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) > analogDeadzone) && !num9pressed && !num7pressed;  // Num 8
 		}
-		else 
+		else
 		{
 			joypad[14] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y ) / 32767.0f) < -analogDeadzone); // Num 2
 			joypad[15] = (int) ((InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X ) / 32767.0f) < -analogDeadzone);  // Num 4
@@ -1029,7 +1028,7 @@ void retro_run(void)
 
 		joypad[18] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3); // Num 5
 		joypad[19] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3); // CLR
-		
+
 		/* Right analog will control the pointer, freeing the left analog to mirror the D-Pad if needed. */
 		int joyRx = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 		int joyRy = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
@@ -1201,7 +1200,7 @@ void retro_run(void)
 			 */
 		}
 
-		
+
 
 		/* read frame header */
 		frameRequested = false;
@@ -1224,9 +1223,9 @@ void retro_run(void)
 			// restart request received, honor it
 			if(frameHeader[13] == 1) { resetRequested = true; }
 
-			if(preRumbleTime > 0) 
-			{ 
-				log_fn(RETRO_LOG_INFO, "Received Vibration event of %d ms. Strength is 0x%04X\n", preRumbleTime, rumbleStrength); 
+			if(preRumbleTime > 0)
+			{
+				log_fn(RETRO_LOG_INFO, "Received Vibration event of %d ms. Strength is 0x%04X\n", preRumbleTime, rumbleStrength);
 				rumbleTime = preRumbleTime;
 			}
 
@@ -1278,24 +1277,24 @@ void retro_run(void)
 					t+=3;
 				}
 			}
-			else if(r == 1) 
+			else if(r == 1)
 			{
 				/* copy frameBuffer to frame rotated 90 degrees */
-				for (j = 0; j < frameWidth; j++) 
+				for (j = 0; j < frameWidth; j++)
 				{
-					for (i = 0; i < frameHeight; i++) 
+					for (i = 0; i < frameHeight; i++)
 					{
 						frame[(i * frameWidth) + (frameWidth - 1 - j)] = (frameBuffer[t] << 16) | (frameBuffer[t + 1] << 8) | (frameBuffer[t + 2]);
 						t += 3;
 					}
 				}
 			}
-			else if (r == 2) 
+			else if (r == 2)
 			{
 				/* copy frameBuffer to frame rotated 180 degrees */
-				for (i = 0; i < frameHeight; i++) 
+				for (i = 0; i < frameHeight; i++)
 				{
-					for (j = 0; j < frameWidth; j++) 
+					for (j = 0; j < frameWidth; j++)
 					{
 						frame[(frameHeight - 1 - i) * frameWidth + (frameWidth - 1 - j)] = (frameBuffer[t] << 16) | (frameBuffer[t + 1] << 8) | (frameBuffer[t + 2]);
 						t += 3;
@@ -1368,7 +1367,7 @@ void retro_run(void)
 	/* send frame to libretro irrespective of FreeJ2ME running (for error messages) */
 	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 
-	/* 
+	/*
  	 * I couldn't find a way for the frontend to notify FreeJ2ME's process that it has paused,
  	 * so this is the alternative. What happens is that, for every frame, libretro will ask
  	 * FreeJ2ME's process to resume/continue at the start, and stop/pause at the end. When
@@ -1378,10 +1377,10 @@ void retro_run(void)
  	 * frame. This also means that frame advance is kinda supported, although not perfect.
  	 */
 	if(resetRequested) { retro_reset(); }
-	
+
 	javaRequestFrame[3] = 1; // Indicate that frame was processed
 	write_to_pipe(pWrite[1], javaRequestFrame, 5);
-	
+
 }
 
 unsigned retro_get_region(void)
@@ -1426,12 +1425,12 @@ void retro_deinit(void)
 		CloseHandle(pRead[0]);
 		CloseHandle(pRead[1]);
 		CloseHandle(pWrite[0]);
-		CloseHandle(pWrite[1]);	
+		CloseHandle(pWrite[1]);
 
-		/* 
+		/*
 		* Since java on win32 has the "decency" to open a secondary process with another PID
 		* that is what runs freej2me's main app, the only way i (with my very limited windows
-		* knowledge) can think of to reliably close this is going nuclear: Terminate all javaw 
+		* knowledge) can think of to reliably close this is going nuclear: Terminate all javaw
 		* processes related to javaProcess.
 		*/
 		hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -1439,20 +1438,20 @@ void retro_deinit(void)
 
 		pe32.dwSize = sizeof(PROCESSENTRY32);
 
-		if (!Process32First(hProcessSnap, &pe32)) 
+		if (!Process32First(hProcessSnap, &pe32))
 		{
 			CloseHandle(hProcessSnap);
 			return;
 		}
 
 		// Iterate through all processes.
-		do 
+		do
 		{
-			if (pe32.th32ParentProcessID == javaProcess.dwProcessId) 
+			if (pe32.th32ParentProcessID == javaProcess.dwProcessId)
 			{
 				// Open the child process with TERMINATE permission.
 				HANDLE hChildProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pe32.th32ProcessID);
-				if (hChildProcess) 
+				if (hChildProcess)
 				{
 					// Terminate the child process.
 					TerminateProcess(hChildProcess, 0);
@@ -1463,7 +1462,7 @@ void retro_deinit(void)
 
 		// Then terminate the parent process (the one we have the pointer to).
 		HANDLE hParentProcess = OpenProcess(PROCESS_TERMINATE, FALSE, javaProcess.dwProcessId);
-		if (hParentProcess) 
+		if (hParentProcess)
 		{
 			TerminateProcess(hParentProcess, 0);
 			CloseHandle(hParentProcess);
@@ -1507,7 +1506,7 @@ bool javaOpen(char *cmd, char **params)
 		log_fn(RETRO_LOG_INFO, "Setting up java app's process and pipes...\n");
 	}
 	else { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME.\n"); restarting = false; }
-	
+
 	log_fn(RETRO_LOG_INFO, "Opening: %s %s %s %s ...\n", *(params+0), *(params+1), *(params+2), *(params+3));
 
 #ifdef __linux__
@@ -1533,7 +1532,7 @@ bool javaOpen(char *cmd, char **params)
 
 		close(pWrite[1]);
 		close(pRead[0]);
-		
+
 		chdir(systemPath);
 
 		execvp(cmd, params);
@@ -1612,15 +1611,15 @@ bool javaOpen(char *cmd, char **params)
 	log_fn(RETRO_LOG_INFO, "Created pipes! \n");
 
 	log_fn(RETRO_LOG_INFO, "Trying to create process... \n");
-	
+
 	/* Try starting the child process. Windows requires the commandline argument to be a single string. */
 	char cmdWin[PATH_MAX_LENGTH];
 
 	snprintf(cmdWin, PATH_MAX_LENGTH, "%s", params[0]); // First argument needs no space separator
 
-	for (int i = 1; i < NUM_ARGUMENTS; i++) 
+	for (int i = 1; i < NUM_ARGUMENTS; i++)
 	{
-		if (params[i] != NULL) 
+		if (params[i] != NULL)
 		{
 			// Append a space and then the parameter
 			snprintf(cmdWin + strlen(cmdWin), PATH_MAX_LENGTH - strlen(cmdWin), " %s", params[i]);
@@ -1667,7 +1666,7 @@ bool javaOpen(char *cmd, char **params)
 	}
 
 	if(!isRunning()) { return false; }
-	else 
+	else
 	{
 		log_fn(RETRO_LOG_INFO, "Core and Java app started! Initializing game data... \n");
 		return true;

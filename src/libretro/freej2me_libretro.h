@@ -29,7 +29,7 @@
 // The max amount of phone keys currently supported (might increase since KDDI and SKT/SK-VM phones tend to have more)
 #define PHONE_KEYS 20
 
-static const char *supported_encodings[] = 
+static const char *supported_encodings[] =
 {
     "-Dfile.encoding=ISO_8859_1",
     "-Dfile.encoding=Shift_JIS",
@@ -247,8 +247,8 @@ struct retro_core_option_v2_definition core_options[] =
         "freej2me_phone",
         "System > Phone Key Layout",
         "Phone Key Layout",
-        "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
-        "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
+        "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option. NOTE: Sharp devices are known to use motorola's mappings.",
+        "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option. NOTE: Sharp devices are known to use motorola's mappings.",
         "system_settings",
         {
             { "Default",             NULL },
@@ -260,7 +260,6 @@ struct retro_core_option_v2_definition core_options[] =
             { "Motorola A1000",      NULL },
             { "Nokia Full Keyboard", NULL },
             { "Sagem",               NULL },
-            { "Sharp",               NULL },
             { "Siemens",             NULL },
             { "SKT",                 NULL },
             { NULL, NULL },
@@ -880,7 +879,7 @@ struct retro_core_option_definition core_options_v1 [] =
     {
         "freej2me_phone",
         "Phone Key Layout",
-        "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option.",
+        "Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option. NOTE: Sharp devices are known to use motorola's mappings.",
         {
             { "Default",             NULL },
             { "KDDI",                NULL },
@@ -891,7 +890,6 @@ struct retro_core_option_definition core_options_v1 [] =
             { "Motorola A1000",      NULL },
             { "Nokia Full Keyboard", NULL },
             { "Sagem",               NULL },
-            { "Sharp",               NULL },
             { "Siemens",             NULL },
             { "SKT",                 NULL },
             { NULL, NULL },
@@ -1329,11 +1327,11 @@ static const struct retro_variable vars[] =
     },
     { /* Screen Rotation */
         "freej2me_rotate",
-        "Rotate Screen; 0|90|180|270" 
+        "Rotate Screen; 0|90|180|270"
     },
     { /* Phone Control Type */
         "freej2me_phone",
-        "Phone Key Layout; Default|KDDI|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Motorola A1000|Nokia Full Keyboard|Sagem|Sharp|Siemens|SKT"
+        "Phone Key Layout; Default|KDDI|LG|Motorola/SoftBank|Motorola Triplets|Motorola V8|Motorola A1000|Nokia Full Keyboard|Sagem|Siemens|SKT"
     },
     { /* LCD Backlight Color */
         "freej2me_backlightcolor",
@@ -1341,7 +1339,7 @@ static const struct retro_variable vars[] =
     },
     { /* Game FPS limit */
         "freej2me_fps",
-        "Game FPS Limit; Auto|60|55|50|45|40|35|30|25|20|15|10" 
+        "Game FPS Limit; Auto|60|55|50|45|40|35|30|25|20|15|10"
     },
     { /* Virtual Phone Sound */
         "freej2me_sound",

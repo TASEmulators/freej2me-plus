@@ -129,9 +129,8 @@ Alternatively it can be launched from the command line with the following argume
   - `6  -> Nokia Keyboard`
   - `7  -> Sagem`
   - `8  -> Siemens`
-  - `9  -> Sharp`
-  - `10 -> SKT`
-  - `11 -> KDDI`
+  - `9 -> SKT`
+  - `10 -> KDDI`
 - `framerate` :arrow_right: `sets the maximum FPS applications are allowed to run at.` 
   - Can be any value, although '10' to '60' is the expected ballpark
 - `dojaversion` :arrow_right: `sets the DoJa/Star profile for the I-Appli to use.` These can be:
@@ -167,8 +166,6 @@ Although all arguments aside from the path are optional to launch FreeJ2ME-Plus 
 # :mag: Modules and external dependencies used:
 
 - #### JLayer(MPEG Player): - LGPLv2.1 License, compatible with GPLv3
-
-- #### libsdl4j: zlib License, compatible with GPLv3
 
 - #### ObjectWeb's ASM: BSD 3-Clause License, not directly compatible with GPLv3, but can be used as long as the original license is published alongside GPLv3 (check the 'License' tab)
 
