@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 import org.recompile.mobile.Mobile;
 
-public class TiledLayer extends Layer 
+public class TiledLayer extends Layer
 {
 
 	protected Image image;
@@ -46,16 +46,15 @@ public class TiledLayer extends Layer
 
 	private int tileIndex;
 	private int tx, ty, row, column;
-	
+
 	private int numberOfTiles;
 	protected int[] tileSetX;
 	protected int[] tileSetY;
 	private ArrayList<Integer> animatedTiles;
-	private int animatedTileCount = 0;
 
 	private int[][] tiles;
 
-	public TiledLayer(int colsw, int rowsh, Image baseimage, int tileWidth, int tileHeight) 
+	public TiledLayer(int colsw, int rowsh, Image baseimage, int tileWidth, int tileHeight)
 	{
 		super(colsw < 1 || tileWidth < 1 ? -1 : colsw * tileWidth, rowsh < 1 || tileHeight < 1 ? -1 : rowsh * tileHeight);
 
@@ -76,64 +75,65 @@ public class TiledLayer extends Layer
 		createStaticSet(baseimage, noOfFrames + 1, tileWidth, tileHeight, true);
 	}
 
-	public int createAnimatedTile(int staticTileIndex) 
+	public int createAnimatedTile(int staticTileIndex)
 	{
 		if (staticTileIndex < 0 || staticTileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); }
 
-		if (animatedTiles == null) 
+		if (animatedTiles == null)
 		{
 			animatedTiles = new ArrayList<Integer>();
-			animatedTileCount = 0;
-		} 
+			// Animated tiles start from index -1. Pad the first array position
+			// so we don't have to constantly add + or -1 when managing it.
+			animatedTiles.add(0);
+		}
 
 		animatedTiles.add(staticTileIndex);
-		animatedTileCount++;
 
-		return -animatedTileCount;
+		return -(animatedTiles.size()-1);
 	}
 
-	public void setAnimatedTile(int animatedTileIndex, int staticTileIndex) 
+	public void setAnimatedTile(int animatedTileIndex, int staticTileIndex)
 	{
 		if (staticTileIndex < 0 || staticTileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); }
-		
+
 		animatedTileIndex = -animatedTileIndex;
-		if (animatedTiles == null || animatedTileIndex <= 0 || animatedTileIndex >= animatedTileCount) { throw new IndexOutOfBoundsException(); }
+		if (animatedTiles == null || animatedTileIndex <= 0 || animatedTileIndex >= animatedTiles.size()) { throw new IndexOutOfBoundsException(); }
 
 		animatedTiles.set(animatedTileIndex, staticTileIndex);
 	}
 
-	public int getAnimatedTile(int animatedTileIndex) 
+	public int getAnimatedTile(int animatedTileIndex)
 	{
 		animatedTileIndex = -animatedTileIndex;
-		if (animatedTiles == null || animatedTileIndex <= 0 || animatedTileIndex >= animatedTileCount) { throw new IndexOutOfBoundsException(); }
+		if (animatedTiles == null || animatedTileIndex <= 0 || animatedTileIndex >= animatedTiles.size()) { throw new IndexOutOfBoundsException(); }
 
 		return animatedTiles.get(animatedTileIndex);
 	}
 
-	public void setCell(int col, int row, int tileIndex) 
+	public void setCell(int col, int row, int tileIndex)
 	{
 		if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) { throw new IndexOutOfBoundsException(); }
 
-		if (tileIndex > 0) { if (tileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); } } 
-		else if (tileIndex < 0) { if (animatedTiles == null || (-tileIndex) >= animatedTileCount) { throw new IndexOutOfBoundsException(); } }
+		if (tileIndex > 0) { if (tileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); } }
+		else if (tileIndex < 0) { if (animatedTiles == null || (-tileIndex) >= animatedTiles.size()) { throw new IndexOutOfBoundsException(); } }
 
 		tiles[row][col] = tileIndex;
 	}
 
-	public int getCell(int col, int row) 
+	public int getCell(int col, int row)
 	{
 		if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) { throw new IndexOutOfBoundsException(); }
 		return tiles[row][col];
 	}
 
-	public void fillCells(int col, int row, int numCols, int numRows, int tileIndex) 
+	public void fillCells(int col, int row, int numCols, int numRows, int tileIndex)
 	{
 		if (numCols < 0 || numRows < 0) { throw new IllegalArgumentException(); }
 
 		if (col < 0 || col >= this.cols || row < 0 || row >= this.rows || col + numCols > this.cols || row + numRows > this.rows)  { throw new IndexOutOfBoundsException(); }
 
-		if (tileIndex > 0) { if (tileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); } } 
-		else if (tileIndex < 0) { if (animatedTiles == null || (-tileIndex) >= animatedTileCount) { throw new IndexOutOfBoundsException(); } }
+		if (tileIndex > 0) { if (tileIndex >= numberOfTiles) { throw new IndexOutOfBoundsException(); } }
+		else if (tileIndex < 0) { if (animatedTiles == null || (-tileIndex) >= animatedTiles.size()) { throw new IndexOutOfBoundsException(); } }
 
 		for (int rowCount = row; rowCount < row + numRows; rowCount++) { Arrays.fill(tiles[rowCount], col, col + numCols, tileIndex); }
 	}
@@ -146,9 +146,9 @@ public class TiledLayer extends Layer
 
 	public final int getRows() { return rows; }
 
-	public void setStaticTileSet(Image baseimage, int tileWidth, int tileHeight) 
+	public void setStaticTileSet(Image baseimage, int tileWidth, int tileHeight)
 	{
-		if (tileWidth < 1 || tileHeight < 1 || ((baseimage.getWidth() % tileWidth) != 0) || ((baseimage.getHeight() % tileHeight) != 0)) 
+		if (tileWidth < 1 || tileHeight < 1 || ((baseimage.getWidth() % tileWidth) != 0) || ((baseimage.getHeight() % tileHeight) != 0))
 			{ throw new IllegalArgumentException(); }
 
 		setWidth(cols * tileWidth);
@@ -158,61 +158,61 @@ public class TiledLayer extends Layer
 
 		// the zero index is left empty for transparent tiles
 		// so it is passed in createStaticSet as noOfFrames + 1
-		if (noOfFrames >= (numberOfTiles - 1)) { createStaticSet(baseimage, noOfFrames + 1, tileWidth, tileHeight, true); } 
+		if (noOfFrames >= (numberOfTiles - 1)) { createStaticSet(baseimage, noOfFrames + 1, tileWidth, tileHeight, true); }
 		else { createStaticSet(baseimage, noOfFrames + 1, tileWidth, tileHeight, false); }
 	}
 
 	@Override
-	public final void paint(Graphics g) 
+	public final void paint(Graphics g)
 	{
 		if (g == null) { throw new NullPointerException(); }
-	
+
 		if (!visible) { return; }
-	
+
 		// Drawing is restricted to target's clip rect bounds
 		clipX = g.getClipX();
 		clipY = g.getClipY();
 		clipWidth = g.getClipWidth();
 		clipHeight = g.getClipHeight();
-	
+
 		startColumn = Math.max(0, (clipX - this.x) / tileWidth);
 		endColumn = Math.min(this.cols, (clipX + clipWidth - this.x + tileWidth - 1) / tileWidth);
 		startRow = Math.max(0, (clipY - this.y) / tileHeight);
 		endRow = Math.min(this.rows, (clipY + clipHeight - this.y + tileHeight - 1) / tileHeight);
-	
-		for (row = startRow; row < endRow; row++) 
+
+		for (row = startRow; row < endRow; row++)
 		{
 			ty = y + (row * tileHeight);
-			for (column = startColumn; column < endColumn; column++) 
+			for (column = startColumn; column < endColumn; column++)
 			{
 				tileIndex = tiles[row][column];
-	
+
 				if (tileIndex == 0) { continue; } // Skip the transparent tile
 				if (tileIndex < 0) { tileIndex = getAnimatedTile(tileIndex); }
-	
+
 				tx = x + (column * tileWidth);
 				g.drawRegion(image, tileSetX[tileIndex], tileSetY[tileIndex], tileWidth, tileHeight, Sprite.TRANS_NONE, tx, ty, Graphics.TOP | Graphics.LEFT);
 			}
 		}
 	}
 
-	private void createStaticSet(Image baseImage, int noOfFrames, int tileWidth, int tileHeight, boolean maintainIndices) 
+	private void createStaticSet(Image baseImage, int noOfFrames, int tileWidth, int tileHeight, boolean maintainIndices)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, TiledLayer.class.getPackage().getName() + "." + TiledLayer.class.getSimpleName() + ": " + "Created StaticTileSet!");
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
-	
+
 		final int imageW = baseImage.getWidth();
 		final int imageH = baseImage.getHeight();
-	
+
 		this.image = baseImage;
 		this.numberOfTiles = noOfFrames;
 		this.tileSetX = new int[numberOfTiles];
 		this.tileSetY = new int[numberOfTiles];
-	
-		if (!maintainIndices) 
+
+		if (!maintainIndices)
 		{
-			/* 
+			/*
 			 * Since we don't have to maintain Indices, initialize the
 			 * TileMatrix such as all indices will be zero, then delete any
 			 * animated tiles.
@@ -221,13 +221,13 @@ public class TiledLayer extends Layer
 			animatedTiles.clear();
 			animatedTiles = null;
 		}
-	
+
 		// Now we can start actually adding tiles to the tile matrix.
 		int currentTile = 1;
-	
-		for (int y = 0; y < imageH; y += tileHeight) 
+
+		for (int y = 0; y < imageH; y += tileHeight)
 		{
-			for (int x = 0; x < imageW; x += tileWidth) 
+			for (int x = 0; x < imageW; x += tileWidth)
 			{
 				tileSetX[currentTile] = x;
 				tileSetY[currentTile] = y;
