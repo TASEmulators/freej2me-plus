@@ -36,9 +36,9 @@ public class Graphics3D
 
 
 	public static final boolean SUPPORT_ANTIALIASING = false;
-	public static final boolean SUPPORT_TRUE_COLOR = false;
+	public static final boolean SUPPORT_TRUE_COLOR = true;
 	public static final boolean SUPPORT_DITHERING = false;
-	public static final boolean SUPPORT_MIPMAPPING = false;
+	public static final boolean SUPPORT_MIPMAPPING = true;
 	public static final boolean SUPPORT_PERSPECTIVE_CORRECTION = true;
 	public static final boolean SUPPORT_LOCAL_CAMERA_LIGHTING = false;
 	public static final int MAX_LIGHTS = 8;
