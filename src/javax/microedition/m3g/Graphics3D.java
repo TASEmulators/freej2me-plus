@@ -581,7 +581,7 @@ public class Graphics3D
 				{
 					if (fog.getMode() == Fog.LINEAR)
 					{
-						fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - ndcZ) / (fog.getFarDistance() - fog.getNearDistance()) * 250));
+						fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - ndcZ) / (fog.getFarDistance() - fog.getNearDistance()) * 255));
 					}
 					else
 					{
@@ -1050,11 +1050,11 @@ public class Graphics3D
 								// To blend the fog value here, we have to take the current pixel's z value into consideration
 								if(fog != null)
 								{
-									// TODO: This multiplication by 250 is not correct, it's just a workaround that helps games with actual fog usage to show geometry
+									// TODO: This multiplication by 255 is likely not correct, it's just a workaround that helps games with fog usage to show geometry
 									// There's probably some kind of issue with how triangles' final z-coordinate is calculated
 									if (fog.getMode() == Fog.LINEAR)
 									{
-										fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - z) / (fog.getFarDistance() - fog.getNearDistance()) * 250));
+										fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - z) / (fog.getFarDistance() - fog.getNearDistance()) * 255));
 									}
 									else
 									{
@@ -1080,7 +1080,7 @@ public class Graphics3D
 									{
 										for(int fy = y; fy < y + 2; fy++)
 										{
-											rasterData[(fy+viewy) * canvasWidth + (fx+viewx)] = finalPixel;
+											if (fy+viewy < canvasHeight && fx+viewx < canvasWidth) { rasterData[(fy+viewy) * canvasWidth + (fx+viewx)] = finalPixel; }
 										}
 									}
 								}
