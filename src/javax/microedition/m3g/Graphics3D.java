@@ -714,7 +714,7 @@ public class Graphics3D
 		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertsAndTris already does culling and clipping)
-		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVert, triangles.getIndexArray(), renderableTriangles, clipNear, cullingMode);
+		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVert, triangles.getIndexArray(), renderableTriangles, clipNear, cullingMode, vertices);
 
 		/*
 		 * Per-triangle flat lighting (JSR-184 lighting requires a Material on the
@@ -985,59 +985,44 @@ public class Graphics3D
 									paintPixel = teximg.getConvertedPixel(texX, texY);
 								}
 
-								/*
-								 * Alpha test BEFORE any depth write: fully transparent fragments must not
-								 * occlude geometry drawn later (games rely on this — e.g. tree canopies
-								 * with alpha cutouts drawn before the ground). The depth buffer is only
-								 * updated by fragments that survive this test.
-								 */
-								final int fragAlpha = (paintPixel >> 24) & 0xFF;
-								if (fragAlpha == 0 || fragAlpha < (int) (compositingMode.getAlphaThreshold() * 255)) { continue; } // Skip transparent pixels below the alpha threshold
-
-								// Update the depth buffer if depth write is enabled
-								if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[this.vieww * y + x] = z; }
-
 								int alpha; // Image2D converts to ARGB format
 
-								if (vertices.getColors() != null) // We have to do texture blending, as we have vertex colors and any available texture goes on top of them
+								// We have to do texture blending, as we have vertex colors and any available texture goes on top of them
+								if (trisScreen[tri_id].hasVertexColors())
 								{
-									// Get vertex index color TODO: This doesn't yet result in proper blending
-									for (int i = 0; i < 3; i++)
-									{
-										vertices.getColors().get(trisScreen[tri_id].getIndex(ord[i]), 1, color_vertex);
-										colors[i] = (vertices.getColors().getComponentCount() == 3)
-											? (0xFF << 24) | (Byte.toUnsignedInt(color_vertex[0]) << 16) |
-											(Byte.toUnsignedInt(color_vertex[1]) << 8) | Byte.toUnsignedInt(color_vertex[2])
-											: (Byte.toUnsignedInt(color_vertex[3]) << 24) |
-											(Byte.toUnsignedInt(color_vertex[0]) << 16) |
-											(Byte.toUnsignedInt(color_vertex[1]) << 8) | Byte.toUnsignedInt(color_vertex[2]);
-									}
+									// TODO: This doesn't yet result in proper blending
+									float xA = trisScreen[tri_id].xA();
+									float xB = trisScreen[tri_id].xB();
+									float xC = trisScreen[tri_id].xC();
+									float yA = trisScreen[tri_id].yA();
+									float yB = trisScreen[tri_id].yB();
+									float yC = trisScreen[tri_id].yC();
 
-									// Calculate weights based on pixel position in relation to the triangle's area
-									areaA = M3GMath.abs((xBot - xTop) * (y - yTop) - (xMidL - xTop) * (yBot - yTop)) * 0.5f;
-									areaB = M3GMath.abs((xMidL - xTop) * (y - yTop) - (x - xTop) * (yMid - yTop)) * 0.5f;
-									areaC = M3GMath.abs((x - xBot) * (yMid - yTop) - (xBot - xMidL) * (y - yTop)) * 0.5f;
-									totalArea = areaA + areaB + areaC;
+									float areaTri = Math.abs((xB - xA) * (yC - yA) - (xC - xA) * (yB - yA));
 
-									weightA = areaA / totalArea;
-									weightB = areaB / totalArea;
-									weightC = areaC / totalArea;
+									float areaPAB = Math.abs((xB - xA) * (y - yA) - (x - xA) * (yB - yA));
+									float areaPBC = Math.abs((xC - xB) * (y - yB) - (x - xB) * (yC - yB));
+									float areaPCA = Math.abs((xA - xC) * (y - yC) - (x - xC) * (yA - yC));
 
-									// Normalize weights
-									totalWeight = weightA + weightB + weightC;
-									weightA /= totalWeight;
-									weightB /= totalWeight;
-									weightC /= totalWeight;
+									// Barycentric coordinates
+									float c1 = areaPBC / areaTri;
+									float c2 = areaPCA / areaTri;
+									float c3 = areaPAB / areaTri;
 
-									// Interpolate color based on weights
-									alpha = (int) ((weightA * ((colors[0] >> 24) & 0xFF)) + (weightB * ((colors[1] >> 24) & 0xFF)) + (weightC * ((colors[2] >> 24) & 0xFF)));
-									r = (int) ((weightA * ((colors[0] >> 16) & 0xFF)) + (weightB * ((colors[1] >> 16) & 0xFF)) + (weightC * ((colors[2] >> 16) & 0xFF)));
-									g = (int) ((weightA * ((colors[0] >> 8) & 0xFF)) + (weightB * ((colors[1] >> 8) & 0xFF)) + (weightC * ((colors[2] >> 8) & 0xFF)));
-									b = (int) ((weightA * (colors[0] & 0xFF)) + (weightB * (colors[1] & 0xFF)) + (weightC * (colors[2] & 0xFF)));
+									int colorA = trisScreen[tri_id].colorA();
+									int colorB = trisScreen[tri_id].colorB();
+									int colorC = trisScreen[tri_id].colorC();
 
-									// Blend with texture pixel if there's one, otherwise, just use the interpolated vertex color directly
+									alpha = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
+									r = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
+									g = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
+									b = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
+
+									// Blend with texture pixel if there's one (vertex color becomes
+									// opaque, as it shouldn't affect the texture alpha), otherwise,
+									// just use the interpolated vertex color directly
 									if(tex == null && texCoords == null) { paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b; }
-									else { paintPixel = blendPixels((alpha << 24) | (r << 16) | (g << 8) | b, paintPixel, alpha, tex.getBlending()); }
+									else { paintPixel = blendPixels(paintPixel, (255 << 24) | (r << 16) | (g << 8) | b,  alpha, tex.getBlending()); }
 
 									if (litVerts != null)
 									{
@@ -1050,6 +1035,17 @@ public class Graphics3D
 								}
 
 								alpha = (paintPixel >> 24) & 0xFF; // Image2D converts to ARGB format
+
+								/*
+								 * Alpha test BEFORE any depth write: transparent fragments must not
+								 * occlude geometry drawn later (games rely on this — e.g. tree canopies
+								 * with alpha cutouts drawn before the ground). The depth buffer is only
+								 * updated by fragments that survive this test.
+								 */
+								if (alpha == 0 || alpha < (int) (compositingMode.getAlphaThreshold() * 255)) { continue; } // Skip transparent pixels below the alpha threshold
+
+								// Update the depth buffer if depth write is enabled and the fragment is fully opaque.
+								if (depthEnabled && compositingMode.isDepthWriteEnabled() && alpha >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
 
 								// To blend the fog value here, we have to take the current pixel's z value into consideration
 								if(fog != null)

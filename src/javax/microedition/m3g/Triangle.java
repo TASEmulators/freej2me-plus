@@ -42,6 +42,10 @@ class Triangle
 		// sC, tC, rC, qC;
 		// 0   1   2   3
 
+	private boolean hasVertexColors = false;
+
+	final int[] colors = new int[3];
+
 	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
 	final float[] invW = new float[] { 1f, 1f, 1f };
 
@@ -54,7 +58,7 @@ class Triangle
 		idxA = ia; idxB = ib; idxC = ic;
 	}
 
-	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode)
+	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode, VertexBuffer vertices)
 	{
 		renderableTriangles[0] = 0;
 		boolean sharesVertices = false;
@@ -150,6 +154,8 @@ class Triangle
 					outT[4*(fan+2)], outT[4*(fan+2)+1], outT[4*(fan+2)+2], outT[4*(fan+2)+3]
 				});
 
+				tri.setVertexColors(vertices);
+
 				tri.project();
 				result[renderableTriangles[0]] = tri;
 				renderableTriangles[0]++;
@@ -223,6 +229,10 @@ class Triangle
 	public final float iwA() { return invW[0]; }
 	public final float iwB() { return invW[1]; }
 	public final float iwC() { return invW[2]; }
+
+	public final int colorA() { return colors[0]; }
+	public final int colorB() { return colors[1]; }
+	public final int colorC() { return colors[2]; }
 
 	public final int getIndex(int index) { return index == 0 ? idxA : (index == 1 ? idxB : idxC); }
 
@@ -304,13 +314,36 @@ class Triangle
 
 	public final void setTexCoords(float[] texCoords)
 	{
-        if (texCoords != null && texCoords.length != 12)
+		if (texCoords != null && texCoords.length != 12)
 		{
 			throw new IllegalArgumentException("Each vertex texture coordinate must have 4 elements (s, t, r, q).");
 		}
 
 		this.t = texCoords;
-    }
+	}
+
+    public final void setVertexColors(VertexBuffer vertices)
+	{
+		if (vertices.getColors() != null)
+		{
+			final byte[] color_vertex = new byte[4];
+
+			for (int i = 0; i < 3; i++)
+			{
+				vertices.getColors().get(this.getIndex(i), 1, color_vertex);
+				colors[i] = (vertices.getColors().getComponentCount() == 3)
+					? (0xFF << 24) | (Byte.toUnsignedInt(color_vertex[0]) << 16) |
+					(Byte.toUnsignedInt(color_vertex[1]) << 8) | Byte.toUnsignedInt(color_vertex[2])
+					: (Byte.toUnsignedInt(color_vertex[3]) << 24) |
+					(Byte.toUnsignedInt(color_vertex[0]) << 16) |
+					(Byte.toUnsignedInt(color_vertex[1]) << 8) | Byte.toUnsignedInt(color_vertex[2]);
+			}
+
+			this.hasVertexColors = true;
+		}
+	}
+
+	public final boolean hasVertexColors() { return this.hasVertexColors; }
 
 	public final boolean isCounterClockwise()
 	{

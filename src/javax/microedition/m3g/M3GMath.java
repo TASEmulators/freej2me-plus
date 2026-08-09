@@ -16,7 +16,7 @@
 */
 package javax.microedition.m3g;
 
-public class M3GMath 
+public class M3GMath
 {
 	static final float EPSILON = Float.MIN_VALUE * 16f;
 
@@ -24,37 +24,37 @@ public class M3GMath
 
 	private static final float[] preCalcSin = new float[65536];
 
-	static 
+	static
 	{
-        for (int i = 0; i < 65536; ++i) 
+        for (int i = 0; i < 65536; ++i)
 		{
             preCalcSin[i] = (float) Math.sin((float) i * Math.PI * 2.0f / 65536.0f);
         }
     }
 
-    public static float sin(float f) 
+    public static float sin(float f)
 	{
         return preCalcSin[(int) (f * 10430.378F) & '\uffff'];
     }
 
-    public static float cos(float f) 
+    public static float cos(float f)
 	{
         return preCalcSin[(int) (f * 10430.378F + 16384.0F) & '\uffff'];
     }
 
-	public static float tan(float a) 
+	public static float tan(float a)
 	{
 		final float sine = sin(a);
 		final float cosine = cos(a);
 		return cosine != 0 ? sine / cosine : Float.POSITIVE_INFINITY;
 	}
-	
+
 	// Approximation: acos(a) ~= pi/2 + (ba + ca^3) / (1 + da^2 + ea^4)
-	public static float acos(float a) 
+	public static float acos(float a)
 	{
-		return (float) (Math.PI / 2 + 
-                        ((-0.939115566365855 * a) +(0.9217841528914573f * Math.pow(a, 3))) / 
-                        (1 + (-1.2845906244690837f * Math.pow(a, 2)) + 
+		return (float) (Math.PI / 2 +
+                        ((-0.939115566365855 * a) +(0.9217841528914573f * Math.pow(a, 3))) /
+                        (1 + (-1.2845906244690837f * Math.pow(a, 2)) +
                          (0.295624144969963174f * Math.pow(a, 4))));
 	}
 
@@ -63,7 +63,7 @@ public class M3GMath
 
 	public static float toDegrees(float angrad) { return angrad * 57.29577951f; } // angdeg * (180.0f / Math.PI)
 
-	public static float sqrt(float x) 
+	public static float sqrt(float x)
 	{
 		return Float.intBitsToFloat(532483686 + (Float.floatToRawIntBits(x) >> 1));
 	}
@@ -80,21 +80,21 @@ public class M3GMath
 
 	public static int min(int a, int b) { return (a < b) ? a : b; }
 
-	public static double exp(double val) 
+	public static double exp(double val)
 	{
 		final long tmp = (long) (1512775 * val + (1072693248 - 60801));
 		return Double.longBitsToDouble(tmp << 32);
 	}
 
-	public static float exp(float val) 
+	public static float exp(float val)
 	{
 		final int tmp = (int) (1512775 * val + (1072693248 - 60801));
 		return Float.intBitsToFloat(tmp << 32);
 	}
 
-	public static int round(float value) 
+	public static int round(float value)
 	{
-		if (value > 0) { return (int) (value + 0.5f); } 
+		if (value > 0) { return (int) (value + 0.5f); }
 		else { return (int) (value - 0.5f); }
 	}
 
@@ -104,7 +104,7 @@ public class M3GMath
 	public static int roundNegative(float value) { return (int) (value - 0.5f); }
 
 	// Much faster atan2 approximation heavily based on https://gist.github.com/volkansalma/2972237
-	public static final float atan2(float y, float x) 
+	public static final float atan2(float y, float x)
 	{
 		final float abs_y = abs(y) + 1e-10f;
 		final float r = (x - Math.copySign(abs_y, x)) / (abs_y + abs(x));
@@ -116,25 +116,25 @@ public class M3GMath
 
 	// Now we get to stuff specific to M3G
 
-	public static float[] calculateNormal(float[] vector) 
+	public static float[] calculateNormal(float[] vector)
 	{
 		float[] v1 = {vector[4 * 1 + 0] - vector[4 * 0 + 0], vector[4 * 1 + 1] - vector[4 * 0 + 1], vector[4 * 1 + 2] - vector[4 * 0 + 2]};
 		float[] v2 = {vector[4 * 2 + 0] - vector[4 * 0 + 0], vector[4 * 2 + 1] - vector[4 * 0 + 1], vector[4 * 2 + 2] - vector[4 * 0 + 2]};
 		return normalize(crossProduct(v1, v2));
 	}
 
-	public static void transformNormal(float[] normal, Transform transform) 
+	public static void transformNormal(float[] normal, Transform transform)
 	{
 		float[] transformMatrix = new float[16];
 		float[] normalMatrix = new float[9]; // 3x3 normal matrix
 		float[] transformedNormal = new float[4];
 
 		transform.get(transformMatrix);
-		
+
 		// Extract the upper-left 3x3 part of the 4x4 transformation matrix
-		for (int i = 0; i < 3; i++) 
+		for (int i = 0; i < 3; i++)
 		{
-			for (int j = 0; j < 3; j++) 
+			for (int j = 0; j < 3; j++)
 			{
 				normalMatrix[i * 3 + j] = transformMatrix[i * 4 + j];
 			}
@@ -150,27 +150,52 @@ public class M3GMath
                                 transformedNormal[1] * transformedNormal[1] +
                                 transformedNormal[2] * transformedNormal[2]);
 
-		if (length > 0) 
+		if (length > 0)
 		{
 			normal[0] = transformedNormal[0] / length;
 			normal[1] = transformedNormal[1] / length;
 			normal[2] = transformedNormal[2] / length;
 		}
 	}
-	
+
 	// Cross product
-	public static float[] crossProduct(float[] a, float[] b) 
+	public static float[] crossProduct(float[] a, float[] b)
 	{
-		return new float[] 
+		return new float[]
 		{
 			a[1] * b[2] - a[2] * b[1],
 			a[2] * b[0] - a[0] * b[2],
 			a[0] * b[1] - a[1] * b[0]
 		};
 	}
-	
+
+	// Calculates the length of a vector
+	public static float length(float[] vector)
+	{
+        float sum = 0.0f;
+
+        for (float component : vector) { sum += component * component; }
+
+        return sqrt(sum);
+    }
+
+	// Calculates the distance between two vectors
+	public static float distance(float[] a, float[] b)
+	{
+        float sum = 0.0f;
+        float diff = 0.0f;
+
+        for (int i = 0; i < a.length; i++)
+        {
+            diff = a[i] - b[i];
+            sum += diff * diff;
+        }
+
+        return sqrt(sum);
+    }
+
 	// Normalize a vector
-	public static float[] normalize(float[] vector) 
+	public static float[] normalize(float[] vector)
 	{
 		float length = sqrt(dotProduct(vector, vector));
 		if (length < EPSILON) { return new float[] {0, 0, 0}; } // Handle zero-length case
@@ -184,14 +209,14 @@ public class M3GMath
 		float[] b,
 		float[] ta,
 		float[] tb
-	) 
+	)
 	{
 		float pd, ad, bd, ratio;
 		pd = dotProduct(p, pn);
 		ad = dotProduct(a, pn);
 		bd = dotProduct(b, pn);
 		ratio = (pd - ad) / (bd - ad);
-		return new float[][] 
+		return new float[][]
 		{
 			add(a, mul(sub(b, a), ratio)),
 			add(ta, mul(sub(tb, ta), ratio))
@@ -229,18 +254,18 @@ public class M3GMath
 		return sum;
 	}
 
-	public static void scaleVec(float[] vec, float s) 
+	public static void scaleVec(float[] vec, float s)
 	{
 		for (int i = 0; i < vec.length; i++) { vec[i] *= s; }
 	}
 
-	public static void subVec(float[] vec, float[] other) 
+	public static void subVec(float[] vec, float[] other)
 	{
 		if (vec.length != other.length) { throw new java.lang.IllegalArgumentException(); }
 		for (int i = 0; i < vec.length; i++) { vec[i] -= other[i]; }
 	}
 
-	public static void addVec(float[] vec, float[] other) 
+	public static void addVec(float[] vec, float[] other)
 	{
 		if (vec.length != other.length) { throw new java.lang.IllegalArgumentException(); }
 		for (int i = 0; i < vec.length; i++) { vec[i] += other[i]; }
@@ -251,7 +276,7 @@ public class M3GMath
 	// [0] = x
 	// [1] = y
 	// [2] = z
-	public static void lerpVec3(int size, float[] vec, float s, float[] start, float[] end) 
+	public static void lerpVec3(int size, float[] vec, float s, float[] start, float[] end)
 	{
 		float sCompl = 1.f - s;
 		for (int i = 0; i < size; i++) { vec[i] = (sCompl * start[i]) + (s * end[i]); }
@@ -264,7 +289,7 @@ public class M3GMath
 	// [1] = y
 	// [2] = z
 	// [3] = w
-	public static void logDiffQuat(float[] orig, float[] from, float[] to) 
+	public static void logDiffQuat(float[] orig, float[] from, float[] to)
 	{
 		float[] temp = new float[4];
 		temp[0] = -from[0];
@@ -275,7 +300,7 @@ public class M3GMath
 		orig = logQuat(temp);
 	}
 
-	public static float[] mulQuat(float[] other) 
+	public static float[] mulQuat(float[] other)
 	{
 		float[] q = new float[4];
 		q = other;
@@ -285,78 +310,78 @@ public class M3GMath
 		float z = q[3] * other[2] + q[0] * other[1] - q[1] * other[0] + q[2] * other[3];
 		return new float[] {x,y,z,w};
 	}
-	
-	public static float[] logQuat(float[] quat) 
+
+	public static float[] logQuat(float[] quat)
 	{
 		float sinTheta = sqrt(norm3(quat));
 		float s, x, y, z;
 
-		if (sinTheta > EPSILON) 
+		if (sinTheta > EPSILON)
 		{
 			s = atan2(sinTheta, quat[3]) / sinTheta;
 			x = s * quat[0];
 			y = s * quat[1];
 			z = s * quat[2];
-		} 
+		}
 		else { x = y = z = 0.0f; }
 
 		return new float[] {x,y,z,quat[3]};
 	}
 
-	public static float norm3(float[] quat) 
+	public static float norm3(float[] quat)
 	{
 		return (quat[0] * quat[0] + quat[1] * quat[1] + quat[2] * quat[2]);
 	}
 
-	public static float[] normalizeQuat(float[] vec4) 
+	public static float[] normalizeQuat(float[] vec4)
 	{
 		float norm = (vec4[0] * vec4[0] + vec4[1] * vec4[1] + vec4[2] * vec4[2] + vec4[3] * vec4[3]);
 
-		if (norm > EPSILON) 
-		{ 
+		if (norm > EPSILON)
+		{
 			norm = (1.0f / sqrt(norm));
 			scaleVec(vec4, norm);
-		} 
+		}
 		else { return identityQuat(); }
 
 		return vec4;
 	}
 
-	public static void expQuat(float[] vec4, float[] vec3Exp) 
+	public static void expQuat(float[] vec4, float[] vec3Exp)
 	{
 		float theta = sqrt(vec3Exp[0] * vec3Exp[0] + vec3Exp[1] * vec3Exp[1] + vec3Exp[2] * vec3Exp[2]);
 
-		if (theta > EPSILON) 
+		if (theta > EPSILON)
 		{
 			float s = sin(theta) * (1.0f / theta);
 			vec4[0] = vec3Exp[0] * s;
 			vec4[1] = vec3Exp[1] * s;
 			vec4[2] = vec3Exp[2] * s;
 			vec4[3] = cos(theta);
-		} 
-		else 
+		}
+		else
 		{
 			vec4[0] = vec4[1] = vec4[2] = 0.0f;
 			vec4[3] = 1.0f;
 		}
 	}
 
-	public static void slerpQuat(float[] orig, float s, float[] q0, float[] q1) 
+	public static void slerpQuat(float[] orig, float s, float[] q0, float[] q1)
 	{
 		float s0, s1;
 		float cosTheta = dotProduct(q0, q1);
 		float oneMinusS = 1.0f - s;
 
-		if (cosTheta > (EPSILON - 1.0f)) 
+		if (cosTheta > (EPSILON - 1.0f))
 		{
-			if (cosTheta < (1.0f - EPSILON)) 
+			if (cosTheta < (1.0f - EPSILON))
 			{
 				float theta = acos(cosTheta);
 				float sinTheta = sin(theta);
 				s0 = sin(oneMinusS * theta) / sinTheta;
 				s1 = sin(s * theta) / sinTheta;
-			} 
-			else 
+			}
+			else
 			{
 				s0 = oneMinusS;
 				s1 = s;
@@ -365,8 +390,8 @@ public class M3GMath
 			orig[1] = s0 * q0[1] + s1 * q1[1];
 			orig[2] = s0 * q0[2] + s1 * q1[2];
 			orig[3] = s0 * q0[3] + s1 * q1[3];
-		} 
-		else 
+		}
+		else
 		{
 			orig[0] = -q0[1];
 			orig[1] = q0[0];
@@ -384,28 +409,28 @@ public class M3GMath
 
 	public static float[] identityQuat() { return new float[] { 0.0f, 0.0f, 0.0f, 1.0f }; }
 
-	public static float[] setQuatRotation(float[] srcAxis, float[] targetAxis) 
+	public static float[] setQuatRotation(float[] srcAxis, float[] targetAxis)
 	{
 		float[] rot = new float[4];
 		float[] cross = new float[3];
 		float dot = srcAxis[0] * targetAxis[0] + srcAxis[1] * targetAxis[1] + srcAxis[2] * targetAxis[2];
-	
+
 		cross[0] = srcAxis[1] * targetAxis[2] - srcAxis[2] * targetAxis[1];
 		cross[1] = srcAxis[2] * targetAxis[0] - srcAxis[0] * targetAxis[2];
 		cross[2] = srcAxis[0] * targetAxis[1] - srcAxis[1] * targetAxis[0];
-	
+
 		float angle = acos(dot);
 		float sinHalfAngle = sin(angle / 2);
-	
+
 		rot[0] = cross[0] * sinHalfAngle; // x
 		rot[1] = cross[1] * sinHalfAngle; // y
 		rot[2] = cross[2] * sinHalfAngle; // z
 		rot[3] = cos(angle / 2); // w
-	
+
 		return rot;
 	}
 
-	public static void mulQuat(float[] q1, float[] q2, float[] result) 
+	public static void mulQuat(float[] q1, float[] q2, float[] result)
 	{
 		result[0] = q1[3] * q2[0] + q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1]; // x
 		result[1] = q1[3] * q2[1] + q1[1] * q2[3] + q1[2] * q2[0] - q1[0] * q2[2]; // y
