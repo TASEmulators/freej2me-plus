@@ -990,7 +990,6 @@ public class Graphics3D
 								// We have to do texture blending, as we have vertex colors and any available texture goes on top of them
 								if (trisScreen[tri_id].hasVertexColors())
 								{
-									// TODO: This doesn't yet result in proper blending
 									float xA = trisScreen[tri_id].xA();
 									float xB = trisScreen[tri_id].xB();
 									float xC = trisScreen[tri_id].xC();
@@ -998,13 +997,12 @@ public class Graphics3D
 									float yB = trisScreen[tri_id].yB();
 									float yC = trisScreen[tri_id].yC();
 
-									float areaTri = Math.abs((xB - xA) * (yC - yA) - (xC - xA) * (yB - yA));
+									float areaTri = M3GMath.abs((xB - xA) * (yC - yA) - (xC - xA) * (yB - yA));
 
-									float areaPAB = Math.abs((xB - xA) * (y - yA) - (x - xA) * (yB - yA));
-									float areaPBC = Math.abs((xC - xB) * (y - yB) - (x - xB) * (yC - yB));
-									float areaPCA = Math.abs((xA - xC) * (y - yC) - (x - xC) * (yA - yC));
+									float areaPAB = M3GMath.abs((xB - xA) * (y - yA) - (x - xA) * (yB - yA));
+									float areaPBC = M3GMath.abs((xC - xB) * (y - yB) - (x - xB) * (yC - yB));
+									float areaPCA = M3GMath.abs((xA - xC) * (y - yC) - (x - xC) * (yA - yC));
 
-									// Barycentric coordinates
 									float c1 = areaPBC / areaTri;
 									float c2 = areaPCA / areaTri;
 									float c3 = areaPAB / areaTri;
@@ -1022,7 +1020,7 @@ public class Graphics3D
 									// opaque, as it shouldn't affect the texture alpha), otherwise,
 									// just use the interpolated vertex color directly
 									if(tex == null && texCoords == null) { paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b; }
-									else { paintPixel = blendPixels(paintPixel, (255 << 24) | (r << 16) | (g << 8) | b,  alpha, tex.getBlending()); }
+									else { paintPixel = blendPixels((255 << 24) | (r << 16) | (g << 8) | b, paintPixel,  alpha, tex.getBlending()); }
 
 									if (litVerts != null)
 									{

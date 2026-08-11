@@ -33,6 +33,7 @@ public class Loader
 {
 	private DataInputStream dis;
 	private Vector<Object3D> objs;
+	private Vector<String> roots;
 	private String resName;
 	private static String resDir;
 	private int bytesRead = 0;
@@ -114,10 +115,11 @@ public class Loader
 		}
 	}
 
-	private Loader(byte[] data, Vector<Object3D> objects)
+	private Loader(byte[] data, Vector<Object3D> objects, Vector<String> roots)
 	{
 		this.dis = new DataInputStream(new ByteArrayInputStream(data));
 		this.objs = objects;
+		this.roots = roots;
 	}
 
 	private Object3D[] loadPNG() throws IOException
@@ -310,6 +312,7 @@ public class Loader
 				cont.setSpeed(speed, referenceWorldTime);
 				cont.setWeight(weight);
 				objs.addElement(cont);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 2) // AnimationTrack
 			{
@@ -323,6 +326,7 @@ public class Loader
 				dis.reset();
 				loadObject3D(track);
 				objs.addElement(track);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 3) // Appearance
 			{
@@ -342,6 +346,7 @@ public class Loader
 					appearance.setTexture(i, tex != null ? (Texture2D) tex : null);
 				}
 				objs.addElement(appearance);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 4) // Background
 			{
@@ -362,6 +367,7 @@ public class Loader
 				background.setDepthClearEnable(readBoolean());
 				background.setColorClearEnable(readBoolean());
 				objs.addElement(background); // dummy
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 5) // Camera
 			{
@@ -385,6 +391,7 @@ public class Loader
 					else { camera.setPerspective(fovy, aspect, near, far); }
 				}
 				objs.addElement(camera);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 6) // CompositingMode
 			{
@@ -398,6 +405,7 @@ public class Loader
 				compositingMode.setAlphaThreshold((float) readByte() / 255.0f);
 				compositingMode.setDepthOffset(readFloat(), readFloat());
 				objs.addElement(compositingMode);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 7) // Fog
 			{
@@ -408,6 +416,7 @@ public class Loader
 				if (fog.getMode() == Fog.EXPONENTIAL) { fog.setDensity(readFloat()); }
 				else { fog.setLinear(readFloat(), readFloat()); }
 				objs.addElement(fog);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 8) // PolygonMode
 			{
@@ -420,12 +429,14 @@ public class Loader
 				polygonMode.setLocalCameraLightingEnable(readBoolean());
 				polygonMode.setPerspectiveCorrectionEnable(readBoolean());
 				objs.addElement(polygonMode);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 9) // Group
 			{
 				Group group = new Group();
 				loadGroup(group);
 				objs.addElement(group);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 10) // Image2D
 			{
@@ -460,6 +471,7 @@ public class Loader
 				loadObject3D(image);
 
 				objs.addElement(image);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 11) // TriangleStripArray
 			{
@@ -504,6 +516,7 @@ public class Loader
 				loadObject3D(triStrip);
 
 				objs.addElement(triStrip);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 12) // Light
 			{
@@ -519,6 +532,7 @@ public class Loader
 				light.setSpotAngle(readFloat());
 				light.setSpotExponent(readFloat());
 				objs.addElement(light);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 13) // Material
 			{
@@ -531,6 +545,7 @@ public class Loader
 				material.setShininess(readFloat());
 				material.setVertexColorTrackingEnable(readBoolean());
 				objs.addElement(material);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 14) // Mesh
 			{
@@ -556,6 +571,7 @@ public class Loader
 				loadNode(mesh);
 
 				objs.addElement(mesh);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 15) // MorphingMesh
 			{
@@ -589,6 +605,7 @@ public class Loader
 				loadNode(mesh);
 
 				objs.addElement(mesh);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 16) // SkinnedMesh
 			{
@@ -624,6 +641,7 @@ public class Loader
 				dis.reset();
 				loadNode(mesh);
 				objs.addElement(mesh);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 17) // Texture2D
 			{
@@ -643,6 +661,7 @@ public class Loader
 				loadTransformable(texture);
 
 				objs.addElement(texture);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 18) // Sprite3D
 			{
@@ -659,6 +678,7 @@ public class Loader
 				dis.reset();
 				loadNode(sprite);
 				objs.addElement(sprite);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 19) // KeyframeSequence
 			{
@@ -722,6 +742,7 @@ public class Loader
 				dis.reset();
 				loadObject3D(seq);
 				objs.addElement(seq);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 20) // VertexArray
 			{
@@ -774,6 +795,7 @@ public class Loader
 				loadObject3D(va);
 
 				objs.addElement(va);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 21) // VertexBuffer
 			{
@@ -805,6 +827,7 @@ public class Loader
 				}
 
 				objs.addElement(vertices);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 22) // World
 			{
@@ -814,6 +837,7 @@ public class Loader
 				Object bg = getObject(readInt());
 				world.setBackground(bg != null ? (Background) bg : null);
 				objs.addElement(world);
+				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 255) // External reference
 			{
@@ -854,12 +878,17 @@ public class Loader
 					}
 				}
 
-				//for (int i = 0; i < objArray.length; i++) { objs.addElement(objArray[i]); }
 				if (objArray != null && objArray.length > 0)
 				{
 					for (int i = 0; i < objArray.length; i++)
 					{
-						if(objArray[i] != null) { objs.addElement(objArray[i]); break; } // Add root-level object only at the External reference position
+						// Add only the root-level object at the External reference position
+						if(objArray[i] != null)
+						{
+							objs.addElement(objArray[i]);
+							roots.addElement("" + (objs.size()-1));
+							break;
+						}
 					}
 				}
 				else
@@ -878,11 +907,12 @@ public class Loader
 
 	private Object3D[] loadM3G() throws IOException
 	{
-		objs = new Vector<Object3D>();
-		objs.addElement(null); // Index 0 always means a null object
-		objs.addElement(null); // Index 1 is the header, which is not a valid object.
+		this.objs = new Vector<Object3D>();
+		this.roots = new Vector<String>();
+		this.objs.addElement(null); // Index 0 always means a null object
+		this.objs.addElement(null); // Index 1 is the header, which is not a valid object.
 
-		bytesRead = 0;
+		this.bytesRead = 0;
 		// First section must be header
 		int compressionScheme = readByte();
 		int totalSectionLength = readInt();
@@ -931,15 +961,18 @@ public class Loader
 
 			checkSum = readInt();
 
-			new Loader(uncompressedData, objs).loadM3GSectionData();
+			new Loader(uncompressedData, objs, roots).loadM3GSectionData();
 
 			read += totalSectionLength;
 		}
+
 		dis.close();
 
-		// TODO: Return only the root level objects, that is, those not referenced by any other objects.
+		// Return only the root level objects, that is, those not referenced by any other objects.
+		Object3D[] rootObjs = new Object3D[roots.size()];
+		for(int i = 0; i < rootObjs.length; i++) { rootObjs[i] = objs.get(Integer.parseInt(roots.get(i))); }
 
-		return new Object3D[]{objs.elementAt(objs.size()-1)};
+		return rootObjs;
 	}
 
 
@@ -1068,7 +1101,12 @@ public class Loader
 			throw new IllegalArgumentException("Cannot get an M3G Object3D index that's higher than the current object's index");
 		}
 		if(index == 1) { throw new IllegalArgumentException("Header index is not a valid object!"); }
-		else { return objs.elementAt(index); }
+		else
+		{
+			// The referenced object is no longer root-level.
+			roots.remove("" + index);
+			return objs.get(index);
+		}
 	}
 
 	private void loadObject3D(Object3D object) throws IOException
