@@ -433,7 +433,6 @@ public class Graphics3D
 		}
 		else if (node instanceof Sprite3D)
 		{
-			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Graphics3D.render Node: Sprite3D not fully tested!");
 			if(!node.isRenderingEnabled()) { return; }
 			renderSprite((Sprite3D) node, transform);
 		}
@@ -623,9 +622,6 @@ public class Graphics3D
 		//    defined in VertexBuffer or IndexBuffer
 		//    throw new java.lang.IllegalStateException();
 
-		/* Receiving a null transform indicates that the identity matrix must be used. */
-		if (transform == null) { transform = new Transform(); }
-
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
 
 		// TODO: Shading mode is not implemented
@@ -653,19 +649,13 @@ public class Graphics3D
 		// Set up fog properties
 		final Fog fog = appearance.getFog();
 
-		final Transform tr = new Transform();
-		final Transform textr = new Transform();
-		final Transform texcomptr = new Transform();
-
 		final VertexArray vertPos = vertices.getPositions(scaleBias);
 		final Texture2D tex = appearance.getTexture(0);
 		final Image2D teximg = tex == null ? null : tex.getImage();
 
-		// Scale and translate mesh
-		tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
-		tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
-
-		final VertexArray texCoords = vertices.getTexCoords(0, scaleBias); // get Texture coordinates
+		final Transform tr = new Transform();
+		final Transform textr = new Transform();
+		final Transform texcomptr = new Transform();
 
 		/* Texture wrapping mode and dimensions, applied per-pixel while sampling */
 		final boolean texRepeatS = (tex != null) && tex.getWrappingS() == Texture2D.WRAP_REPEAT;
@@ -675,14 +665,23 @@ public class Graphics3D
 
 		if (tex != null) { tex.getCompositeTransform(texcomptr); }
 
+		/* Receiving a null transform indicates that the identity matrix must be used. */
+		if (transform == null) { transform = new Transform(); }
+
+		// -> Local space
+
+		// Scale and translate mesh (P = (S * V) + B)
+		tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
+		tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
+
+		// Get Texture coordinates
+		final VertexArray texCoords = vertices.getTexCoords(0, scaleBias);
+
 		// Scale and translate texture coordinates (same scaleBias)
 		textr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
 		textr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
 
 		textr.preMultiply(texcomptr);
-
-		// -> Local space
-		this.currCam.getProjection(projectionMatrix);
 
 		// Transform mesh from local coords to world coords
 		tr.preMultiply(transform);
@@ -690,9 +689,10 @@ public class Graphics3D
 
 		// Apply the inverse of the camera's transform to the mesh
 		tr.preMultiply(this.currCamTransInv);
-		// -> View space
+		// -> Eye/View space
 
 		// Apply projection matrix
+		this.currCam.getProjection(projectionMatrix);
 		tr.preMultiply(projectionMatrix);
 		// -> Clip space
 
@@ -773,9 +773,8 @@ public class Graphics3D
 
 		// Fit to viewport
 		if (teximg != null) { textr.postScale(teximg.getWidth(), teximg.getHeight(), 1); }
-		tr.postScale((float) vieww / 2f, (float) viewh / 2f, 1f);
-		tr.postTranslate(1, 1, 0);
-		tr.postScale(1, -1, 1);
+		tr.postScale(vieww / 2f, -viewh / 2f, 1f);
+		tr.postTranslate(1, -1, 0);
 
 		// -> Screen space
 

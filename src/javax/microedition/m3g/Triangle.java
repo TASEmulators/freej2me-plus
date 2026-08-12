@@ -18,6 +18,17 @@ package javax.microedition.m3g;
 
 class Triangle
 {
+	// Temporary buffer for vertex colors
+	private static final byte[] color_vertex = new byte[4];
+
+	// Temporary buffer for input and output vertices/texCoords/vertex colors.
+	private static final int[] inC = new int[3];
+	private static final int[] outC = new int[4];
+	private static final float[] inV = new float[12];
+	private static final float[] inT = new float[12];
+	private static final float[] outV = new float[16];
+	private static final float[] outT = new float[16];
+
 	// Clipping planes
 	private static final float[]  p = new float[] { 0, 0, 0, 0};
 	private static final float[] xp = new float[] {-1, 0, 0, 1};
@@ -30,12 +41,16 @@ class Triangle
 	// Let's reuse this when clipping, quite a bit faster than creating ArrayLists each time
 	private static final float[] clipVert = new float[4];
 
+	// Output array of triangles. Allows us to reuse the memory block allocated for triangle
+	// data without needing to GC it every render pass (it'll still reallocate if the triangle count increases)
+	private static Triangle[] result;
+
 	private boolean hasVertexColors = false;
 
 	/* Effective vertex indices of the source triangle (after strip-winding correction). */
-	private int[] idx;
+	private final int[] idx;
 
-	private int[] colors;
+	private final int[] colors;
 
 	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
 	private final float[] invW = new float[] { 1f, 1f, 1f };
@@ -46,30 +61,30 @@ class Triangle
 		// xC, yC, zC, wC;
 		// 0   1   2   3
 
-	private float[] t;
+	private final float[] t;
 		// sA, tA, rA, qA,
 		// sB, tB, rB, qB,
 		// sC, tC, rC, qC;
 		// 0   1   2   3
 
-	Triangle(float[] vertices, int[] indices)
+	Triangle(float[] vertices, float[] texCoords, int[] vertColors, int[] indices)
 	{
-		v = vertices;
-		idx = indices;
+		this.v = vertices;
+		this.t = texCoords == null ? new float[12] : texCoords;
+		this.colors = vertColors == null ? new int[3] : vertColors;
+		this.hasVertexColors = (vertColors != null);
+		this.idx = indices;
 	}
 
 	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode, VertexBuffer vertices)
 	{
 		renderableTriangles[0] = 0;
 		boolean sharesVertices = false;
-		/* Near-plane clipping can split a crossing triangle into two. */
-		final Triangle[] result = new Triangle[(tris.length / 3) * 2];
 
-		final float[] inV = new float[12];
-		final float[] inT = new float[12];
-		final float[] outV = new float[16]; /* Up to 4 vertices after clipping against one plane */
-		final float[] outT = new float[16];
-		final int[] outC = new int[4];
+		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
+		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`.
+		if(Triangle.result == null || (tris.length / 3) * 2 > Triangle.result.length)
+			Triangle.result = new Triangle[(tris.length / 3) * 2];
 
 		int prevA = -1, prevB = -1, prevC = -1; /* effective indices of the previous triangle */
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
@@ -82,10 +97,7 @@ class Triangle
 			 * would corrupt the mesh cumulatively across renders (the detection would
 			 * then run on already-swapped data, flipping different triangles each time).
 			 */
-			int[] indices = new int[3];
-			indices[0] = tris[3 * tri_id + 0];
-			indices[1] = tris[3 * tri_id + 1];
-			indices[2] = tris[3 * tri_id + 2];
+			int[] indices = new int[]{tris[3 * tri_id + 0], tris[3 * tri_id + 1], tris[3 * tri_id + 2]};
 
 			sharesVertices = (indices[0] == prevB && indices[1] == prevC) || (indices[1] == prevA && indices[2] == prevB);
 
@@ -101,12 +113,12 @@ class Triangle
 			for (int i = 0; i < 3; i++)
 			{
 				final int idx = 4 * indices[i];
-				inV[4*i]   = vert[idx];     inV[4*i+1] = vert[idx + 1];
-				inV[4*i+2] = vert[idx + 2]; inV[4*i+3] = vert[idx + 3];
+				Triangle.inV[4*i]   = vert[idx];     Triangle.inV[4*i+1] = vert[idx + 1];
+				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
 				if (texc != null)
 				{
-					inT[4*i]   = texc[idx];     inT[4*i+1] = texc[idx + 1];
-					inT[4*i+2] = texc[idx + 2]; inT[4*i+3] = texc[idx + 3];
+					Triangle.inT[4*i]   = texc[idx];     Triangle.inT[4*i+1] = texc[idx + 1];
+					Triangle.inT[4*i+2] = texc[idx + 2]; Triangle.inT[4*i+3] = texc[idx + 3];
 				}
 			}
 
@@ -115,18 +127,47 @@ class Triangle
 			 * positions, texture coordinates and vertex colors. Vertices behind the
 			 * camera would otherwise explode to huge coordinates after perspective division.
 			 */
-			final int outCount = clipNearPlane(inV, inT, indices, vertices, texc != null, near, outV, outT, outC);
+			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, indices, vertices,
+				texc != null, near, Triangle.outV, Triangle.outT, Triangle.outC);
 			if (outCount < 3) { continue; }
 
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
 			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
-				final Triangle tri = new Triangle(new float[]
+				final Triangle tri;
+
+				// Create a new triangle if we don't already have one available on the static array.
+				// This saves a bunch of temporary memory allocations once the array is built and no longer increases
+				// in size.
+				if(Triangle.result[renderableTriangles[0]] == null)
 				{
-					outV[0], outV[1], outV[2], outV[3],
-					outV[4*(fan+1)], outV[4*(fan+1)+1], outV[4*(fan+1)+2], outV[4*(fan+1)+3],
-					outV[4*(fan+2)], outV[4*(fan+2)+1], outV[4*(fan+2)+2], outV[4*(fan+2)+3]
-				}, indices);
+					tri = new Triangle(new float[]
+					{
+						Triangle.outV[0], Triangle.outV[1], Triangle.outV[2], Triangle.outV[3],
+						Triangle.outV[4*(fan+1)], Triangle.outV[4*(fan+1)+1], Triangle.outV[4*(fan+1)+2], Triangle.outV[4*(fan+1)+3],
+						Triangle.outV[4*(fan+2)], Triangle.outV[4*(fan+2)+1], Triangle.outV[4*(fan+2)+2], Triangle.outV[4*(fan+2)+3]
+					},
+					texc == null ? null : new float[]
+					{
+						Triangle.outT[0], Triangle.outT[1], Triangle.outT[2], Triangle.outT[3],
+						Triangle.outT[4*(fan+1)], Triangle.outT[4*(fan+1)+1], Triangle.outT[4*(fan+1)+2], Triangle.outT[4*(fan+1)+3],
+						Triangle.outT[4*(fan+2)], Triangle.outT[4*(fan+2)+1], Triangle.outT[4*(fan+2)+2], Triangle.outT[4*(fan+2)+3]
+					},
+					vertices.getColors() == null ? null : new int[]
+					{
+				        Triangle.outC[0],
+				        Triangle.outC[fan + 1],
+				        Triangle.outC[fan + 2]
+				    }, indices);
+				}
+				else
+				{
+					tri = Triangle.result[renderableTriangles[0]];
+					tri.setVertexCoords(Triangle.outV, fan);
+					tri.setTexCoords(texc == null ? null : Triangle.outT, fan);
+					tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
+					tri.setVertexIndices(indices);
+				}
 
 				// Perspective division for culling and visibility checks (all w >= near now)
 				for (int i = 0; i < 3; i++)
@@ -149,32 +190,13 @@ class Triangle
 					tri.v[i * 4 + 2] *= tri.v[i * 4 + 3];
 				}
 
-				tri.setTexCoords(texc == null ? null : new float[]
-				{
-					outT[0], outT[1], outT[2], outT[3],
-					outT[4*(fan+1)], outT[4*(fan+1)+1], outT[4*(fan+1)+2], outT[4*(fan+1)+3],
-					outT[4*(fan+2)], outT[4*(fan+2)+1], outT[4*(fan+2)+2], outT[4*(fan+2)+3]
-				});
-
-				// Only really allocate vertex colors if we have them to begin with.
-				if(vertices.getColors() != null)
-				{
-					tri.colors = new int[] {
-				        outC[0],
-				        outC[fan + 1],
-				        outC[fan + 2]
-				    };
-
-					tri.hasVertexColors = true;
-				}
-
 				tri.project();
-				result[renderableTriangles[0]] = tri;
+				Triangle.result[renderableTriangles[0]] = tri;
 				renderableTriangles[0]++;
 			}
 		}
 
-		return result;
+		return Triangle.result;
 	}
 
 	/*
@@ -183,27 +205,25 @@ class Triangle
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static int clipNearPlane(float[] inV, float[] inT, int[] indices, VertexBuffer vertices, boolean hasTex, float near, float[] outV, float[] outT, int[] outC)
+	private static int clipNearPlane(float[] inV, float[] inT, int[] inC, int[] indices,
+		VertexBuffer vertices, boolean hasTex, float near, float[] outV, float[] outT, int[] outC)
 	{
 		int outCount = 0;
 
-		int[] inC = null;
 		// Do we have vertex colors? If so, prep them here
 		if (vertices.getColors() != null)
 		{
-			inC = new int[3];
-
-			final byte[] color_vertex = new byte[4];
-
 			for (int i = 0; i < 3; i++)
 			{
-				vertices.getColors().get(indices[i], 1, color_vertex);
-				inC[i] = (vertices.getColors().getComponentCount() == 3)
-					? (0xFF << 24) | (Byte.toUnsignedInt(color_vertex[0]) << 16) |
-					(Byte.toUnsignedInt(color_vertex[1]) << 8) | Byte.toUnsignedInt(color_vertex[2])
-					: (Byte.toUnsignedInt(color_vertex[3]) << 24) |
-					(Byte.toUnsignedInt(color_vertex[0]) << 16) |
-					(Byte.toUnsignedInt(color_vertex[1]) << 8) | Byte.toUnsignedInt(color_vertex[2]);
+				vertices.getColors().get(indices[i], 1, Triangle.color_vertex);
+				inC[i] = (vertices.getColors().getComponentCount() == 3) ?
+					(0xFF << 24) | (Byte.toUnsignedInt(Triangle.color_vertex[0]) << 16) |
+					(Byte.toUnsignedInt(Triangle.color_vertex[1]) << 8) |
+					Byte.toUnsignedInt(Triangle.color_vertex[2]) :
+					(Byte.toUnsignedInt(Triangle.color_vertex[3]) << 24) |
+					(Byte.toUnsignedInt(Triangle.color_vertex[0]) << 16) |
+					(Byte.toUnsignedInt(Triangle.color_vertex[1]) << 8) |
+					Byte.toUnsignedInt(Triangle.color_vertex[2]);
 			}
 		}
 
@@ -366,14 +386,44 @@ class Triangle
 		return null; // If no vertex is inside, return a null object since the triangle isn't visible
 	}
 
-	public final void setTexCoords(float[] texCoords)
+	// This one is for memory reuse, so `this.t` is expected to be allocated by now.
+	public final void setTexCoords(float[] tCoords, int fan)
 	{
-		if (texCoords != null && texCoords.length != 12)
-		{
-			throw new IllegalArgumentException("Each vertex texture coordinate must have 4 elements (s, t, r, q).");
-		}
+		if (tCoords == null) { return; }
 
-		this.t = texCoords;
+		this.t[0]  = tCoords[0]; this.t[1] = tCoords[1]; this.t[2] = tCoords[2]; this.t[3] = tCoords[3];
+		this.t[4]  = tCoords[4*(fan+1)];   this.t[5]  = tCoords[4*(fan+1)+1];
+		this.t[6]  = tCoords[4*(fan+1)+2]; this.t[7]  = tCoords[4*(fan+1)+3];
+		this.t[8]  = tCoords[4*(fan+2)];   this.t[9]  = tCoords[4*(fan+2)+1];
+		this.t[10] = tCoords[4*(fan+2)+2]; this.t[11] = tCoords[4*(fan+2)+3];
+	}
+
+	// This one is also for memory reuse, so `this.v` is expected to be allocated by now.
+	public final void setVertexCoords(float[] vCoords, int fan)
+	{
+		this.v[0]  = vCoords[0]; this.v[1] = vCoords[1]; this.v[2] = vCoords[2]; this.v[3] = vCoords[3];
+		this.v[4]  = vCoords[4*(fan+1)];   this.v[5]  = vCoords[4*(fan+1)+1];
+		this.v[6]  = vCoords[4*(fan+1)+2]; this.v[7]  = vCoords[4*(fan+1)+3];
+		this.v[8]  = vCoords[4*(fan+2)];   this.v[9]  = vCoords[4*(fan+2)+1];
+		this.v[10] = vCoords[4*(fan+2)+2]; this.v[11] = vCoords[4*(fan+2)+3];
+	}
+
+	// This one is also for memory reuse, so `this.colors` is expected to be allocated by now.
+	public final void setVertexColors(int[] vColors, int fan)
+	{
+		this.hasVertexColors = (vColors != null);
+		if (vColors == null) { return; }
+		this.colors[0] = vColors[0];
+		this.colors[1] = vColors[fan + 1];
+		this.colors[2] = vColors[fan + 2];
+	}
+
+	// This one is also for memory reuse, so `this.idx` is expected to be allocated by now.
+	public final void setVertexIndices(int[] indices)
+	{
+		this.idx[0] = indices[0];
+		this.idx[1] = indices[1];
+		this.idx[2] = indices[2];
 	}
 
 	public final boolean hasVertexColors() { return this.hasVertexColors; }
