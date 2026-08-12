@@ -998,38 +998,36 @@ public class Graphics3D
 									float yB = trisScreen[tri_id].yB();
 									float yC = trisScreen[tri_id].yC();
 
-									float areaTri = M3GMath.abs((xB - xA) * (yC - yA) - (xC - xA) * (yB - yA));
+									float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
 
-									float areaPAB = M3GMath.abs((xB - xA) * (y - yA) - (x - xA) * (yB - yA));
-									float areaPBC = M3GMath.abs((xC - xB) * (y - yB) - (x - xB) * (yC - yB));
-									float areaPCA = M3GMath.abs((xA - xC) * (y - yC) - (x - xC) * (yA - yC));
-
-									float c1 = areaPBC / areaTri;
-									float c2 = areaPCA / areaTri;
-									float c3 = areaPAB / areaTri;
-
-									int colorA = trisScreen[tri_id].colorA();
-									int colorB = trisScreen[tri_id].colorB();
-									int colorC = trisScreen[tri_id].colorC();
-
-									alpha = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
-									r = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
-									g = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
-									b = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
-
-									// Blend with texture pixel if there's one (vertex color becomes
-									// opaque, as it shouldn't affect the texture alpha), otherwise,
-									// just use the interpolated vertex color directly
-									if(tex == null && texCoords == null) { paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b; }
-									else { paintPixel = blendPixels((255 << 24) | (r << 16) | (g << 8) | b, paintPixel,  alpha, tex.getBlending()); }
-
-									if (litVerts != null)
+									if (M3GMath.abs(denominator) > M3GMath.EPSILON)
 									{
-										/* Modulate the rasterized color with this triangle's flat lighting factor. */
-										paintPixel = (paintPixel & 0xFF000000)
-											| (((int) (((paintPixel >> 16) & 0xFF) * litR)) << 16)
-											| (((int) (((paintPixel >> 8) & 0xFF) * litG)) << 8)
-											| ((int) ((paintPixel & 0xFF) * litB));
+										float c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - x) * (yC - y) - (xC - x) * (yB - y)) / denominator));
+										float c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - x) * (yA - y) - (xA - x) * (yC - y)) / denominator));
+										float c3 = 1.0f - c1 - c2;
+
+										int colorA = trisScreen[tri_id].colorA();
+										int colorB = trisScreen[tri_id].colorB();
+										int colorC = trisScreen[tri_id].colorC();
+
+										alpha = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
+										r = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
+										g = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
+										b = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
+
+										// Blend with texture pixel if there's one, otherwise,
+										// just use the interpolated vertex color directly
+										if(tex == null && texCoords == null) { paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b; }
+										else { paintPixel = blendPixels((alpha << 24) | (r << 16) | (g << 8) | b, paintPixel,  alpha, tex.getBlending()); }
+
+										if (litVerts != null)
+										{
+											/* Modulate the rasterized color with this triangle's flat lighting factor. */
+											paintPixel = (paintPixel & 0xFF000000)
+												| (((int) (((paintPixel >> 16) & 0xFF) * litR)) << 16)
+												| (((int) (((paintPixel >> 8) & 0xFF) * litG)) << 8)
+												| ((int) ((paintPixel & 0xFF) * litB));
+										}
 									}
 								}
 
@@ -1041,10 +1039,10 @@ public class Graphics3D
 								 * with alpha cutouts drawn before the ground). The depth buffer is only
 								 * updated by fragments that survive this test.
 								 */
-								if (alpha == 0 || alpha < (int) (compositingMode.getAlphaThreshold() * 255)) { continue; } // Skip transparent pixels below the alpha threshold
+								if (alpha < (int) (compositingMode.getAlphaThreshold() * 255)) { continue; } // Skip transparent pixels below the alpha threshold
 
-								// Update the depth buffer if depth write is enabled and the fragment is fully opaque.
-								if (depthEnabled && compositingMode.isDepthWriteEnabled() && alpha >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
+								// Update the depth buffer if depth write is enabled
+								if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[this.vieww * y + x] = z; }
 
 								// To blend the fog value here, we have to take the current pixel's z value into consideration
 								if(fog != null)
