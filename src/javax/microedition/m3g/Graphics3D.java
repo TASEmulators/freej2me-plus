@@ -945,7 +945,7 @@ public class Graphics3D
 						ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
 
 						// Draw the pixels for the current y-coordinate
-						for (int x = ixL; x < ixR; x += Mobile.halfResM3GRaster ? 2 : 1)
+						for (int x = ixL; x < ixR; x++)
 						{
 							// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 							if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
@@ -1071,14 +1071,11 @@ public class Graphics3D
 								{
 									rasterData[(y+viewy) * canvasWidth + (x+viewx)] = finalPixel;
 								}
-								else // Else, we have to copy the same pixel over in a 2x2 basis, and update the depth buffer in the same manner
+								else // Else, we have to copy the same pixel over in a 1x2 basis (half vertical res), and update the depth buffer in the same manner
 								{
-									for(int fx = x; fx < x + 2; fx++)
+									for(int fy = y; fy < y + 2; fy++)
 									{
-										for(int fy = y; fy < y + 2; fy++)
-										{
-											if (fy+viewy < canvasHeight && fx+viewx < canvasWidth) { rasterData[(fy+viewy) * canvasWidth + (fx+viewx)] = finalPixel; }
-										}
+										if (fy+viewy < canvasHeight) { rasterData[(fy+viewy) * canvasWidth + (x+viewx)] = finalPixel; }
 									}
 								}
 							}
