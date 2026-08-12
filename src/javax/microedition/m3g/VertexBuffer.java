@@ -59,7 +59,7 @@ public class VertexBuffer extends Object3D
 		this.texCoordBias = new float[Graphics3D.NUM_TEXTURE_UNITS][0];
 	}
 
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
 		VertexBuffer copy = (VertexBuffer) super.duplicateImpl();
 
@@ -85,7 +85,7 @@ public class VertexBuffer extends Object3D
 		{
 			/* As per JSR-184, throw IllegalArgumentException if (scaleBias != null) && (scaleBias.length < 4). */
 			if(scaleBias.length < 4) { throw new IllegalArgumentException("ScaleBias has invalid length (less than 4)."); }
-			
+
 			scaleBias[0] = this.positionScale;
 			for (int i = 0; i < 3; i++)
 				scaleBias[i + 1] = this.positionBias[i];
@@ -116,11 +116,11 @@ public class VertexBuffer extends Object3D
 
 	public void setColors(VertexArray colors)
 	{
-		if (colors == null) { this.colors = null; } 
+		if (colors == null) { this.colors = null; }
 		else
 		{
-			/* 
-			 * As per JSR-184, throw IllegalArgumentException if: 
+			/*
+			 * As per JSR-184, throw IllegalArgumentException if:
 			 * (colors != null) && (colors.getComponentType != 1)
 			 * (colors != null) && (colors.getComponentCount != {3,4})
 			 * (colors != null) && (colors.getVertexCount != getVertexCount) && (at least one other VertexArray is set)
@@ -142,8 +142,8 @@ public class VertexBuffer extends Object3D
 		if (normals == null) { this.normals = null; }
 		else
 		{
-			/* 
-			 * As per JSR-184, throw IllegalArgumentException if: 
+			/*
+			 * As per JSR-184, throw IllegalArgumentException if:
 			 * (normals != null) && (normals.getComponentCount != 3)
 			 * (normals != null) && (normals.getVertexCount != getVertexCount) && (at least one other VertexArray is set)
 			 */
@@ -162,7 +162,7 @@ public class VertexBuffer extends Object3D
 		if (positions == null) { this.positions = null; }
 		else
 		{
-			/* 
+			/*
 			 * As per JSR-184, throw IllegalArgumentException if:
 			 * (positions != null) && (positions.getComponentCount != 3
 			 * (positions != null) && (positions.getVertexCount != getVertexCount) && (at least one other VertexArray is set)
@@ -178,12 +178,12 @@ public class VertexBuffer extends Object3D
 			this.positions = positions;
 			addReference(this.positions);
 			this.positionScale = scale;
-			this.positionBias = bias;
-			
+			this.positionBias = bias.clone();
+
 		}
 	}
 
-	public void setTexCoords(int index, VertexArray texCoords, float scale, float[] bias) 
+	public void setTexCoords(int index, VertexArray texCoords, float scale, float[] bias)
 	{
 		/* As per JSR-184, throw IndexOutOfBoundsException if if index != [0,N] where N is the implementation specific maximum texturing unit index. */
 		if (index < 0 || index >= Graphics3D.NUM_TEXTURE_UNITS)
@@ -194,7 +194,7 @@ public class VertexBuffer extends Object3D
 		{
 			int componentCount = texCoords.getComponentCount();
 
-			/* 
+			/*
 			 * Also per JSR-184, throw IllegalArgumentException if:
 			 * (texCoords != null) && (texCoords.getComponentCount != {2,3})
 			 * (texCoords != null) && (texCoords.getVertexCount != getVertexCount) && (at least one other VertexArray is set)
@@ -210,7 +210,7 @@ public class VertexBuffer extends Object3D
 			this.texCoords[index] = texCoords;
 			addReference(this.texCoords[index]);
 			this.texCoordScale[index] = scale;
-			this.texCoordBias[index] = bias;
+			this.texCoordBias[index] = bias.clone();
 		}
 	}
 
@@ -224,10 +224,10 @@ public class VertexBuffer extends Object3D
 	}
 
 	@Override
-	void updateProperty(int property, float[] value) 
+	void updateProperty(int property, float[] value)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating VertexBuffer property");
-		switch (property) 
+		switch (property)
 		{
 			case AnimationTrack.ALPHA:
 				defaultColor = (defaultColor | 0xFF000000) & ((int) value[0] << 24);
@@ -240,9 +240,9 @@ public class VertexBuffer extends Object3D
 		}
 	}
 
-	boolean animTrackCompatible(AnimationTrack track) 
+	boolean animTrackCompatible(AnimationTrack track)
 	{
-		switch (track.getTargetProperty()) 
+		switch (track.getTargetProperty())
 		{
 			case AnimationTrack.ALPHA:
 			case AnimationTrack.COLOR:

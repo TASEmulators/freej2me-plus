@@ -450,7 +450,9 @@ public class Graphics3D
 							Transform t = new Transform();
 							child.getCompositeTransform(t);
 							t.preMultiply(transform);
-							render(child, t);
+
+							if (child instanceof Sprite3D) { renderSprite((Sprite3D) child, t); }
+							else { render(child, t); }
 						}
 					}
 					child = child.right;
