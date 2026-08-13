@@ -44,7 +44,7 @@
 	*/
 
 	// REVIEW: the audio device should not be opened until the
-	// first MPEG audio frame has been decoded. 
+	// first MPEG audio frame has been decoded.
 	public class MPEGPlayer
 	{
 		/**
@@ -102,7 +102,7 @@
 
 		public MPEGPlayer(InputStream stream, AudioDevice device, boolean buffer) throws JavaLayerException, IOException {
 			if (stream instanceof ByteArrayInputStream) { buffer = true; }
-			if (buffer) 
+			if (buffer)
 			{
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(stream.available());
 				byte[] b = new byte[2048];
@@ -110,15 +110,15 @@
 				while ((r = stream.read(b)) != -1) { baos.write(b, 0, r); }
 				data = baos.toByteArray();
 				stream.close();
-				stream = dataStream = new InputStream() 
+				stream = dataStream = new InputStream()
 				{
-					public int read() throws IOException 
+					public int read() throws IOException
 					{
 						if (dataIndex == data.length) return -1;
 						return data[dataIndex++];
 					}
 
-					public int read(byte[] b, int i, int len) throws IOException 
+					public int read(byte[] b, int i, int len) throws IOException
 					{
 						if (len > data.length - dataIndex) { len = data.length - dataIndex; }
 						if (len == 0) return -1;
@@ -162,20 +162,20 @@
 			while (frames-- > 0 && ret)
 			{
 				if(paused) { return false; }
-				if(closed) 
+				if(closed)
 				{
 					ret = false;
 					break;
 				}
 
-				if (reset) 
+				if (reset)
 				{
 					Mobile.log(Mobile.LOG_WARNING, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "play locked");
 					synchronized (dataStream) { dataStream.wait(); }
 					Mobile.log(Mobile.LOG_WARNING, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "play unlocked");
 				}
 				//int i = audio.getPosition();
-				try { ret = decodeFrame(); } 
+				try { ret = decodeFrame(); }
 				catch (JavaLayerException e) { if (!reset) throw e; }
 
 				//int j = audio.getPosition() - i;
@@ -199,23 +199,23 @@
 			return ret;
 		}
 
-		public void reset() 
+		public void reset()
 		{
 			if (!isBuffered) { return; }
 
 			Mobile.log(Mobile.LOG_DEBUG, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "reset");
 			dataIndex = positionOffset = 0;
 			reset = true;
-			try 
+			try
 			{
-				if (this.bitstream != null) 
+				if (this.bitstream != null)
 				{
 					this.bitstream.close();
 					this.bitstream = null;
 				}
 				this.bitstream = new Bitstream(dataStream);
 				decoder = new Decoder();
-				if (audio != null) 
+				if (audio != null)
 				{
 					audio.close();
 					audio = null;
@@ -319,7 +319,7 @@
 				bitstream.closeFrame();
 			}
 			catch (RuntimeException ex) { throw new JavaLayerException("Exception decoding audio frame", ex); }
-			
+
 			return true;
 		}
 
@@ -337,11 +337,11 @@
 
 		public float framesPerSecond() { return framesPerSecond(bitstream.header); }
 
-		public static float framesPerSecond(Header h) 
+		public static float framesPerSecond(Header h)
 		{
 			if(h.frequency() == 0) { return 0; }
 			float o = 1;
-			switch(h.frequency()) 
+			switch(h.frequency())
 			{
 			case 44100:
 				o = 38f + 1 / 3f;
@@ -386,7 +386,7 @@
 
 		public int getFrame() { return frame; }
 
-		public void setLevel(int n) 
+		public void setLevel(int n)
 		{
 			vol = n;
 			if(audio != null) audio.setVolume(n);
@@ -396,12 +396,12 @@
 
 		public Bitstream bitstream() { return bitstream; }
 
-	/* 
-	 * This player works in milliseconds. setMicrosecondPosition actually sets in milliseconds, but 
+	/*
+	 * This player works in milliseconds. setMicrosecondPosition actually sets in milliseconds, but
 	 * since getMicrosecondPosition converts to microseconds, the jar will get the resulting microsecond
 	 * position, aligning to the j2me docs.
 	 */
-	public void setMicrosecondPosition(long position) 
+	public void setMicrosecondPosition(long position)
 	{
 		try
 		{
@@ -414,23 +414,23 @@
 	/* getPosition returns in milliseconds, so multiplying by 1000 gives us the result in microseconds */
 	public long getMicrosecondPosition() { return getPosition() * 1000L; }
 
-	public long getDuration() 
-	{ 
+	public long getDuration()
+	{
 		double duration = 0;
 
-		try { duration = (double) ((data.length * 8 * 1000000D) / getBitrate()); } 
+		try { duration = (double) ((data.length * 8 * 1000000D) / getBitrate()); }
 		catch (Exception e){ Mobile.log(Mobile.LOG_ERROR, MPEGPlayer.class.getPackage().getName() + "." + MPEGPlayer.class.getSimpleName() + ": " + "Couldn't get duration:" + e.getMessage()); return Player.TIME_UNKNOWN;}
-		
-		return (long) duration; 
+
+		return (long) duration;
 	}
 
-	public void setLoopCount(int count) 
+	public void setLoopCount(int count)
 	{
 		if(count == -1) { loopCount = Integer.MAX_VALUE; } // Loop "indefinitely"
 		else { loopCount = count; }
 	}
 
-	public boolean isRunning() 
+	public boolean isRunning()
 	{
 		if(!paused && !closed && !reset) { return true; }
 		else { return false; }

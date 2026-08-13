@@ -1455,6 +1455,7 @@ public class PlatformPlayer implements Player
 		private MPEGPlayer mp3Player;
 		private Thread playerThread = null;
 		private volatile boolean mp3PlayerRunning = false;
+		private int numLoops = 0;
 
 		public MP3Player(InputStream stream)
 		{
@@ -1510,9 +1511,9 @@ public class PlatformPlayer implements Player
 								{
 									state = Player.PREFETCHED;
 									notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-									if(mp3Player.getLoopCount() != 0)
+									if(numLoops != 0)
 									{
-										if(mp3Player.getLoopCount() > 0) { mp3Player.decreaseLoopCount(); } // If getLoopCount() = -1, we're looping indefinitely
+										if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
 										mp3Player.reset();
 										mp3Player.play();
 									}
@@ -1521,7 +1522,7 @@ public class PlatformPlayer implements Player
 								}
 							}
 						}
-						catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
+						catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Mpeg player runtime error:" + e.getMessage()); }
 					}
 				});
 
@@ -1534,8 +1535,8 @@ public class PlatformPlayer implements Player
 
 		public void stop()
 		{
-			mp3PlayerRunning = false;
 			mp3Player.stop();
+			mp3PlayerRunning = false;
 			state = Player.PREFETCHED;
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
@@ -1567,8 +1568,8 @@ public class PlatformPlayer implements Player
 			 * it appears that count = 1 means no loop at all, at least based
 			 * on Gameloft games that set effects and some music with count = 1
 			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { mp3Player.setLoopCount(count); }
-			else { mp3Player.setLoopCount(count-1); }
+			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
+			else { numLoops = count-1; }
 		}
 
 		public long setMediaTime(long now)
@@ -1917,7 +1918,8 @@ public class PlatformPlayer implements Player
 						}
 					}
 				}
-				else if(player instanceof MP3Player) { ((MP3Player)player).mp3Player.setLevel(level); }
+				else if(player instanceof MP3Player && ((MP3Player)player).mp3Player != null)
+					{ ((MP3Player)player).mp3Player.setLevel(level); }
 			}
 			catch(Exception e)
 			{
