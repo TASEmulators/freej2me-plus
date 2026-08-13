@@ -19,8 +19,8 @@ package javax.microedition.m3g;
 public class VertexArray extends Object3D
 {
 
-	private byte[][] vertArrayByteSize;
-	private short[][] vertArrayShortSize;
+	private byte[] vertArrayByteSize;
+	private short[] vertArrayShortSize;
 	private int numVertices;
 	private int numComponents;
 	private int componentType;
@@ -41,12 +41,12 @@ public class VertexArray extends Object3D
 		switch (componentType)
 		{
 			case 1:
-				this.vertArrayByteSize = new byte[numVertices][numComponents];
+				this.vertArrayByteSize = new byte[numVertices * numComponents];
 				this.vertArrayShortSize = null;
 				break;
 			case 2:
 				this.vertArrayByteSize = null;
-				this.vertArrayShortSize = new short[numVertices][numComponents];
+				this.vertArrayShortSize = new short[numVertices * numComponents];
 				break;
 		}
 	}
@@ -54,23 +54,25 @@ public class VertexArray extends Object3D
 	protected Object3D duplicateImpl()
 	 {
 		VertexArray copy = (VertexArray) super.duplicateImpl();
-		if(componentType == 1) 
-		{ 
-			copy.vertArrayByteSize = new byte[vertArrayByteSize.length][];
-			for(int i = 0; i < vertArrayByteSize.length; i++) { copy.vertArrayByteSize[i] = (byte[]) vertArrayByteSize[i].clone(); }
-		}
-		else 
+
+		if(componentType == 1)
 		{
-			copy.vertArrayShortSize = new short[vertArrayShortSize.length][];
-			for(int i = 0; i < vertArrayShortSize.length; i++) { copy.vertArrayShortSize[i] = (short[]) vertArrayShortSize[i].clone(); }
+			copy.vertArrayByteSize = new byte[vertArrayByteSize.length];
+			System.arraycopy(this.vertArrayShortSize, 0, copy.vertArrayShortSize, 0, this.vertArrayShortSize.length);
 		}
+		else
+		{
+			copy.vertArrayShortSize = new short[vertArrayShortSize.length];
+			System.arraycopy(this.vertArrayShortSize, 0, copy.vertArrayShortSize, 0, this.vertArrayShortSize.length);
+		}
+
 		return copy;
 	}
 
 
 	public void get(int firstVertex, int numVertices, byte[] values)
 	{
-		/* As per JSR-184, throw: 
+		/* As per JSR-184, throw:
 		 * NullPointerException if values is null.
 		 * IllegalStateException if the commponentType specifies usage of 16-bit vertex attributes.
 		 * IllegalArgumentException if numVertices < 0 or values.length < numVertices * getComponentCount
@@ -78,25 +80,18 @@ public class VertexArray extends Object3D
 		 */
 		if(values == null) { throw new NullPointerException("Cannot return the values into a null array."); }
 		if(this.componentType != 1) { throw new IllegalStateException("The set componentType is meant for 16-bit attributes, not 8-bit."); }
-		if(numVertices < 0 || values.length < numVertices * this.numComponents) 
+		if(numVertices < 0 || values.length < numVertices * this.numComponents)
 			{ throw new IllegalArgumentException("Tried using negative number of vertices or incorrect array size."); }
-		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices) 
+		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-		for (int vid = 0; vid < numVertices; vid++)
-		{
-			for (int cid = 0; cid < this.numComponents; cid++)
-			{
-				int abs_vid = vid + firstVertex;
-				int flat_id = vid * this.numComponents + cid;
-				values[flat_id] = this.vertArrayByteSize[abs_vid][cid];
-			}
-		}
+		System.arraycopy(this.vertArrayByteSize, firstVertex * this.numComponents,
+			values, 0, numVertices * this.numComponents);
 	}
 
 	public void get(int firstVertex, int numVertices, short[] values)
 	{
-		/* As per JSR-184, throw: 
+		/* As per JSR-184, throw:
 		 * NullPointerException if values is null.
 		 * IllegalStateException if the commponentType specifies usage of 8-bit vertex attributes.
 		 * IllegalArgumentException if numVertices < 0 or values.length < numVertices * getComponentCount
@@ -104,20 +99,13 @@ public class VertexArray extends Object3D
 		 */
 		if(values == null) { throw new NullPointerException("Cannot return the values into a null array."); }
 		if(this.componentType != 2) { throw new IllegalStateException("The set componentType is meant for 8-bit attributes, not 16-bit."); }
-		if(numVertices < 0 || values.length < numVertices * this.numComponents) 
+		if(numVertices < 0 || values.length < numVertices * this.numComponents)
 			{ throw new IllegalArgumentException("Tried using negative number of vertices or incorrect array size."); }
-		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices) 
+		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-		for (int vid = 0; vid < numVertices; vid++)
-		{
-			for (int cid = 0; cid < this.numComponents; cid++)
-			{
-				int abs_vid = vid + firstVertex;
-				int flat_id = vid * this.numComponents + cid;
-				values[flat_id] = this.vertArrayShortSize[abs_vid][cid];
-			}
-		}
+			System.arraycopy(this.vertArrayShortSize, firstVertex * this.numComponents,
+				values, 0, numVertices * this.numComponents);
 	}
 
 	public int getComponentCount() { return this.numComponents; }
@@ -128,7 +116,7 @@ public class VertexArray extends Object3D
 
 	public void set(int firstVertex, int numVertices, byte[] values)
 	{
-		/* As per JSR-184, throw: 
+		/* As per JSR-184, throw:
 		 * NullPointerException if values is null.
 		 * IllegalStateException if the commponentType specifies usage of 16-bit vertex attributes.
 		 * IllegalArgumentException if numVertices < 0 or values.length < numVertices * getComponentCount
@@ -136,25 +124,18 @@ public class VertexArray extends Object3D
 		 */
 		if(values == null) { throw new NullPointerException("Cannot return the values into a null array."); }
 		if(this.componentType != 1) { throw new IllegalStateException("The set componentType is meant for 16-bit attributes, not 8-bit."); }
-		if(numVertices < 0 || values.length < numVertices * this.numComponents) 
+		if(numVertices < 0 || values.length < numVertices * this.numComponents)
 			{ throw new IllegalArgumentException("Tried using negative number of vertices or incorrect array size."); }
-		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices) 
+		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-		for (int vid = 0; vid < numVertices; vid++)
-		{
-			for (int cid = 0; cid < this.numComponents; cid++)
-			{
-				int abs_vid = vid + firstVertex;
-				int flat_id = vid * this.numComponents + cid;
-				this.vertArrayByteSize[abs_vid][cid] = values[flat_id];
-			}
-		}
+			System.arraycopy(values, 0,this.vertArrayByteSize,
+				firstVertex * this.numComponents, numVertices * this.numComponents);
 	}
 
 	public void set(int firstVertex, int numVertices, short[] values)
 	{
-		/* As per JSR-184, throw: 
+		/* As per JSR-184, throw:
 		 * NullPointerException if values is null.
 		 * IllegalStateException if the commponentType specifies usage of 8-bit vertex attributes.
 		 * IllegalArgumentException if numVertices < 0 or values.length < numVertices * getComponentCount
@@ -162,20 +143,13 @@ public class VertexArray extends Object3D
 		 */
 		if(values == null) { throw new NullPointerException("Cannot return the values into a null array."); }
 		if(this.componentType != 2) { throw new IllegalStateException("The set componentType is meant for 8-bit attributes, not 16-bit."); }
-		if(numVertices < 0 || values.length < numVertices * this.numComponents) 
+		if(numVertices < 0 || values.length < numVertices * this.numComponents)
 			{ throw new IllegalArgumentException("Tried using negative number of vertices or incorrect array size."); }
-		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices) 
+		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-		for (int vid = 0; vid < numVertices; vid++)
-		{
-			for (int cid = 0; cid < this.numComponents; cid++)
-			{
-				int abs_vid = vid + firstVertex;
-				int flat_id = vid * this.numComponents + cid;
-				this.vertArrayShortSize[abs_vid][cid] = values[flat_id];
-			}
-		}
+			System.arraycopy(values, 0,this.vertArrayShortSize,
+				firstVertex * this.numComponents, numVertices * this.numComponents);
 	}
 
 }

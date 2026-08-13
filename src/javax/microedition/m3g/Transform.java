@@ -20,14 +20,15 @@ import java.util.Arrays;
 
 public class Transform
 {
-
+	private final byte[] bVertices = new byte[3];
+	private final short[] sVertices = new short[3];
 	// This is a 4x4 matrix represented as a 16 item long array.
 	// The items are in row major order:
 	//   [  0,  1,  2,  3 ]
 	//   [  4,  5,  6,  7 ]   Addressing in 2D vs in 1D:
 	//   [  8,  9, 10, 11 ]     mat_2D[row][col] == mat_1D[4*row + col]
 	//   [ 12, 13, 14, 15 ]
-	private float[] matrix = new float[] 
+	private float[] matrix = new float[]
 	{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
@@ -35,8 +36,15 @@ public class Transform
 		0, 0, 0, 1
 	};
 
-	// Matrix for operations such as scale, translation, etc
-	private static final float[] manipulationMatrix = new float[] 
+	private final float[] scratch = new float[]
+	{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+
+	private final float[] manipulationMatrix = new float[]
 	{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
@@ -52,7 +60,7 @@ public class Transform
 		/* As per JSR-184, throw NullPointerException if the given transform is null. */
 		if(transform == null) { throw new NullPointerException("Cannot initialize with a null transform."); }
 
-		this.matrix = transform.matrix.clone();
+		System.arraycopy(transform.matrix, 0, this.matrix, 0, 16);
 	}
 
 	public void get(float[] matrix)
@@ -71,95 +79,96 @@ public class Transform
 		/* The inverse matrix is calculated by using an adapted version of the Laplace Expansion Theorem. */
 
 		/*
-		 * Since the matrix is a linear array, the logic is akin to C's pointer arithmethic 
+		 * Since the matrix is a linear array, the logic is akin to C's pointer arithmethic
 		 * on matrices, where accesses to mat[row][col] becomes mat[4*row + col].
 		 */
-		float s0 = this.matrix[4*0 + 0] * this.matrix[4*1 + 1] - this.matrix[4*1 + 0] * this.matrix[4*0 + 1];
-    	float s1 = this.matrix[4*0 + 0] * this.matrix[4*1 + 2] - this.matrix[4*1 + 0] * this.matrix[4*0 + 2];
-    	float s2 = this.matrix[4*0 + 0] * this.matrix[4*1 + 3] - this.matrix[4*1 + 0] * this.matrix[4*0 + 3];
-		float s3 = this.matrix[4*0 + 1] * this.matrix[4*1 + 2] - this.matrix[4*1 + 1] * this.matrix[4*0 + 2];
-		float s4 = this.matrix[4*0 + 1] * this.matrix[4*1 + 3] - this.matrix[4*1 + 1] * this.matrix[4*0 + 3];
-		float s5 = this.matrix[4*0 + 2] * this.matrix[4*1 + 3] - this.matrix[4*1 + 2] * this.matrix[4*0 + 3];
+		float[] m = this.matrix;
 
-		float c0 = this.matrix[4*2 + 0] * this.matrix[4*3 + 1] - this.matrix[4*3 + 0] * this.matrix[4*2 + 1];
-		float c1 = this.matrix[4*2 + 0] * this.matrix[4*3 + 2] - this.matrix[4*3 + 0] * this.matrix[4*2 + 2];
-		float c2 = this.matrix[4*2 + 0] * this.matrix[4*3 + 3] - this.matrix[4*3 + 0] * this.matrix[4*2 + 3];
-		float c3 = this.matrix[4*2 + 1] * this.matrix[4*3 + 2] - this.matrix[4*3 + 1] * this.matrix[4*2 + 2];
-		float c4 = this.matrix[4*2 + 1] * this.matrix[4*3 + 3] - this.matrix[4*3 + 1] * this.matrix[4*2 + 3];
-		float c5 = this.matrix[4*2 + 2] * this.matrix[4*3 + 3] - this.matrix[4*3 + 2] * this.matrix[4*2 + 3];
-		
-		/* 
+		float s0 = m[0] * m[5] - m[4] * m[1];
+		float s1 = m[0] * m[6] - m[4] * m[2];
+		float s2 = m[0] * m[7] - m[4] * m[3];
+		float s3 = m[1] * m[6] - m[5] * m[2];
+		float s4 = m[1] * m[7] - m[5] * m[3];
+		float s5 = m[2] * m[7] - m[6] * m[3];
+
+		float c0 = m[8] * m[13] - m[12] * m[9];
+		float c1 = m[8] * m[14] - m[12] * m[10];
+		float c2 = m[8] * m[15] - m[12] * m[11];
+		float c3 = m[9] * m[14] - m[13] * m[10];
+		float c4 = m[9] * m[15] - m[13] * m[11];
+		float c5 = m[10] * m[15] - m[14] * m[11];
+
+		/*
 		 * Check if the transform matrix can be inverted by calculating its determinant.
 		 */
-		float determinant = (float) 1.0 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
+
+		float determDiv = (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
+
+		if(determDiv == 0.0f) { throw new ArithmeticException("This transform matrix cannot be inverted."); }
+
+		float determinant = 1.0f / determDiv;
 
 		/* If it can't, throw ArithmeticException as per JSR-184. */
-		if(determinant == 0) { throw new ArithmeticException("This transform matrix cannot be inverted."); }
+		if(determinant == 0.0f) { throw new ArithmeticException("This transform matrix cannot be inverted."); }
 
 		/* Calculate the inverse. */
-		float[] inverseMatrix = new float[]
-		{
-			( this.matrix[4*1 + 1] * c5 - this.matrix[4*1 + 2] * c4 + this.matrix[4*1 + 3] * c3) * determinant,
-			(-this.matrix[4*0 + 1] * c5 + this.matrix[4*0 + 2] * c4 - this.matrix[4*0 + 3] * c3) * determinant,
-			( this.matrix[4*3 + 1] * s5 - this.matrix[4*3 + 2] * s4 + this.matrix[4*3 + 3] * s3) * determinant,
-			(-this.matrix[4*2 + 1] * s5 + this.matrix[4*2 + 2] * s4 - this.matrix[4*2 + 3] * s3) * determinant,
+		scratch[0]  = ( matrix[5]  * c5 - matrix[6]  * c4 + matrix[7]  * c3) * determinant;
+		scratch[1]  = (-matrix[1]  * c5 + matrix[2]  * c4 - matrix[3]  * c3) * determinant;
+		scratch[2]  = ( matrix[13] * s5 - matrix[14] * s4 + matrix[15] * s3) * determinant;
+		scratch[3]  = (-matrix[9]  * s5 + matrix[10] * s4 - matrix[11] * s3) * determinant;
 
-			(-this.matrix[4*1 + 0] * c5 + this.matrix[4*1 + 2] * c2 - this.matrix[4*1 + 3] * c1) * determinant,
-			( this.matrix[4*0 + 0] * c5 - this.matrix[4*0 + 2] * c2 + this.matrix[4*0 + 3] * c1) * determinant,
-			(-this.matrix[4*3 + 0] * s5 + this.matrix[4*3 + 2] * s2 - this.matrix[4*3 + 3] * s1) * determinant,
-			( this.matrix[4*2 + 0] * s5 - this.matrix[4*2 + 2] * s2 + this.matrix[4*2 + 3] * s1) * determinant,
+		scratch[4]  = (-matrix[4]  * c5 + matrix[6]  * c2 - matrix[7]  * c1) * determinant;
+		scratch[5]  = ( matrix[0]  * c5 - matrix[2]  * c2 + matrix[3]  * c1) * determinant;
+		scratch[6]  = (-matrix[12] * s5 + matrix[14] * s2 - matrix[15] * s1) * determinant;
+		scratch[7]  = ( matrix[8]  * s5 - matrix[10] * s2 + matrix[11] * s1) * determinant;
 
-			( this.matrix[4*1 + 0] * c4 - this.matrix[4*1 + 1] * c2 + this.matrix[4*1 + 3] * c0) * determinant,
-			(-this.matrix[4*0 + 0] * c4 + this.matrix[4*0 + 1] * c2 - this.matrix[4*0 + 3] * c0) * determinant,
-			( this.matrix[4*3 + 0] * s4 - this.matrix[4*3 + 1] * s2 + this.matrix[4*3 + 3] * s0) * determinant,
-			(-this.matrix[4*2 + 0] * s4 + this.matrix[4*2 + 1] * s2 - this.matrix[4*2 + 3] * s0) * determinant,
+		scratch[8]  = ( matrix[4]  * c4 - matrix[5]  * c2 + matrix[7]  * c0) * determinant;
+		scratch[9]  = (-matrix[0]  * c4 + matrix[1]  * c2 - matrix[3]  * c0) * determinant;
+		scratch[10] = ( matrix[12] * s4 - matrix[13] * s2 + matrix[15] * s0) * determinant;
+		scratch[11] = (-matrix[8]  * s4 + matrix[9]  * s2 - matrix[11] * s0) * determinant;
 
-			(-this.matrix[4*1 + 0] * c3 + this.matrix[4*1 + 1] * c1 - this.matrix[4*1 + 2] * c0) * determinant,
-			( this.matrix[4*0 + 0] * c3 - this.matrix[4*0 + 1] * c1 + this.matrix[4*0 + 2] * c0) * determinant,
-			(-this.matrix[4*3 + 0] * s3 + this.matrix[4*3 + 1] * s1 - this.matrix[4*3 + 2] * s0) * determinant,
-			( this.matrix[4*2 + 0] * s3 - this.matrix[4*2 + 1] * s1 + this.matrix[4*2 + 2] * s0) * determinant
-		};
+		scratch[12] = (-matrix[4]  * c3 + matrix[5]  * c1 - matrix[6]  * c0) * determinant;
+		scratch[13] = ( matrix[0]  * c3 - matrix[1]  * c1 + matrix[2]  * c0) * determinant;
+		scratch[14] = (-matrix[12] * s3 + matrix[13] * s1 - matrix[14] * s0) * determinant;
+		scratch[15] = ( matrix[8]  * s3 - matrix[9]  * s1 + matrix[10] * s0) * determinant;
 
-		/* Make the inverse matrix be the transform's matrix. */
-		this.matrix = inverseMatrix;
+		System.arraycopy(scratch, 0, this.matrix, 0, 16);
 	}
 
 	public void postMultiply(Transform transform)
 	{
-		/* As per JSR-184, throw NullPointerException if the given transform is null. */
-		if(transform == null) { throw new NullPointerException("Cannot multiply by receiving a null transform."); }
-	
-		multiply(this.matrix.clone(), transform.matrix);
+		if (transform == null) { throw new NullPointerException("Cannot multiply by receiving a null transform."); }
+		multiply(this.matrix, transform.matrix, this.matrix);
 	}
 
 	public void postRotate(float angle, float ax, float ay, float az)
 	{
-		Transform.rotate(angle, ax, ay, az);
-		multiply(this.matrix.clone(), Transform.manipulationMatrix);
+		computeRotationMatrix(angle, ax, ay, az);
+		multiply(this.matrix, this.manipulationMatrix, this.matrix);
 	}
 
 	public void postRotateQuat(float qx, float qy, float qz, float qw)
 	{
-		Transform.rotateQuat(qx, qy, qz, qw);
-		multiply(this.matrix.clone(), Transform.manipulationMatrix);
+		computeRotationQuatMatrix(qx, qy, qz, qw);
+		multiply(this.matrix, this.manipulationMatrix, this.matrix);
 	}
 
 	public void postScale(float sx, float sy, float sz)
 	{
-		resetManipulationMatrix();
-		manipulationMatrix[0]  = sx;
-		manipulationMatrix[5]  = sy;
-		manipulationMatrix[10] = sz;
-		multiply(this.matrix.clone(), Transform.manipulationMatrix);
+		float[] m = this.matrix;
+		m[0] *= sx;  m[1] *= sy;  m[2] *= sz;
+		m[4] *= sx;  m[5] *= sy;  m[6] *= sz;
+		m[8] *= sx;  m[9] *= sy;  m[10] *= sz;
+		m[12] *= sx; m[13] *= sy; m[14] *= sz;
 	}
 
 	public void postTranslate(float tx, float ty, float tz)
 	{
-		resetManipulationMatrix();
-		manipulationMatrix[3]  = tx;
-		manipulationMatrix[7]  = ty;
-		manipulationMatrix[11] = tz;
-		multiply(this.matrix.clone(), Transform.manipulationMatrix);
+		float[] m = this.matrix;
+		m[3]  += m[0] * tx + m[1] * ty + m[2] * tz;
+		m[7]  += m[4] * tx + m[5] * ty + m[6] * tz;
+		m[11] += m[8] * tx + m[9] * ty + m[10] * tz;
+		m[15] += m[12] * tx + m[13] * ty + m[14] * tz;
 	}
 
 	public void set(float[] matrix)
@@ -178,80 +187,40 @@ public class Transform
 		/* As per JSR-184, throw NullPointerException if the given transform is null. */
 		if(transform == null) { throw new NullPointerException("Tried to set a null transform."); }
 
-		this.matrix = transform.matrix.clone();
+		System.arraycopy(transform.matrix, 0, this.matrix, 0, 16);
 	}
 
 	public void setIdentity()
 	{
-		this.matrix[0] = 1;
-		this.matrix[1] = 0;
-		this.matrix[2] = 0;
-		this.matrix[3] = 0;
-
-		this.matrix[4] = 0;
-		this.matrix[5] = 1;
-		this.matrix[6] = 0;
-		this.matrix[7] = 0;
-
-		this.matrix[8]  = 0;
-		this.matrix[9]  = 0;
-		this.matrix[10] = 1;
-		this.matrix[11] = 0;
-
-		this.matrix[12] = 0;
-		this.matrix[13] = 0;
-		this.matrix[14] = 0;
-		this.matrix[15] = 1;
-	}
-
-	public static void resetManipulationMatrix() 
-	{
-		manipulationMatrix[0] = 1;
-		manipulationMatrix[1] = 0;
-		manipulationMatrix[2] = 0;
-		manipulationMatrix[3] = 0;
-
-		manipulationMatrix[4] = 0;
-		manipulationMatrix[5] = 1;
-		manipulationMatrix[6] = 0;
-		manipulationMatrix[7] = 0;
-
-		manipulationMatrix[8]  = 0;
-		manipulationMatrix[9]  = 0;
-		manipulationMatrix[10] = 1;
-		manipulationMatrix[11] = 0;
-
-		manipulationMatrix[12] = 0;
-		manipulationMatrix[13] = 0;
-		manipulationMatrix[14] = 0;
-		manipulationMatrix[15] = 1;
+		float[] m = this.matrix;
+		m[0] = 1; m[1] = 0; m[2] = 0; m[3] = 0;
+		m[4] = 0; m[5] = 1; m[6] = 0; m[7] = 0;
+		m[8] = 0; m[9] = 0; m[10] = 1; m[11] = 0;
+		m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
 	}
 
 	public void transform(float[] vectors)
 	{
 		/* As per JSR-184, throw NullPointerException if the given vector is null. */
 		if(vectors == null) { throw new NullPointerException("Cannot transform a null vector."); }
-		
+
 		/* Also per JSR-184, throw IllegalArgumentException if the given vector is not a flat array of quadruplets. */
 		if(vectors.length % 4 != 0) { throw new IllegalArgumentException("Cannot transform a vector array that's not multiple of 4."); }
 
 		/* Multiply each 4D vector with this transform's matrix by quadruplets, hence the vector offset of 4. */
 		float x, y, z, w;
-		for (int offset = 0; offset < vectors.length; offset += 4) 
+		float[] m = this.matrix;
+		for (int offset = 0; offset < vectors.length; offset += 4)
 		{
 			x = vectors[offset];
 			y = vectors[offset + 1];
 			z = vectors[offset + 2];
 			w = vectors[offset + 3];
 
-			for (int row = 0; row < 4; row++) 
-			{
-				vectors[offset + row] =
-					this.matrix[4 * row + 0] * x +
-					this.matrix[4 * row + 1] * y +
-					this.matrix[4 * row + 2] * z +
-					this.matrix[4 * row + 3] * w;
-			}
+			vectors[offset]     = m[0] * x + m[1] * y + m[2] * z + m[3] * w;
+			vectors[offset + 1] = m[4] * x + m[5] * y + m[6] * z + m[7] * w;
+			vectors[offset + 2] = m[8] * x + m[9] * y + m[10] * z + m[11] * w;
+			vectors[offset + 3] = m[12] * x + m[13] * y + m[14] * z + m[15] * w;
 		}
 	}
 
@@ -263,40 +232,42 @@ public class Transform
 		int vertexCount = in.getVertexCount();
 		int vertexDims = in.getComponentCount();
 
-		/* Also per JSR-184, throw IllegalArgumentException if numComponents == 4 or out.length < (4 * vertexCount). */
-		if (vertexDims == 4 || out.length < 4 * vertexCount) { throw new IllegalArgumentException("Tried to transform an invalid vertex array."); }
+		/* Also per JSR-184, throw IllegalArgumentException if numComponents < 2 || > 3, or out.length < (4 * vertexCount). */
+		if (vertexDims < 2 || vertexDims == 4 || out.length < 4 * vertexCount) // Vertex position data has either 2 or 3 components
+		{
+			throw new IllegalArgumentException("Tried to transform an invalid vertex array.");
+		}
 
 		// Fill the `out` array with raw data
-		if (in.getComponentType() == 1) 
+		float wVal = W ? 1.0f : 0.0f;
+
+		if (in.getComponentType() == 1)
 		{
-			byte[] vertices = new byte[vertexCount * vertexDims];
-			in.get(0, vertexCount, vertices);
+			if (vertexDims < 3) { bVertices[2] = 0; }
 
-			for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
+			for (int i = 0; i < vertexCount; i++)
 			{
-				int  in_offset = vertexIndex * vertexDims;
-				int out_offset = vertexIndex * 4;
+				in.get(i, 1, bVertices);
+				int outIdx = i * 4;
 
-				out[out_offset] = vertices[in_offset]; // x
-				out[out_offset + 1] = vertexDims > 1 ? vertices[in_offset + 1] : 0.0f; // y
-				out[out_offset + 2] = vertexDims > 2 ? vertices[in_offset + 2] : 0.0f; // z
-				out[out_offset + 3] = vertexDims > 3 ? vertices[in_offset + 3] : (W ? 1f : 0f); // w
+				out[outIdx]     = bVertices[0];
+				out[outIdx + 1] = bVertices[1];
+				out[outIdx + 2] = bVertices[2];
+				out[outIdx + 3] = wVal;
 			}
 		}
-		else 
+		else
 		{
-			short[] vertices = new short[vertexCount * vertexDims];
-			in.get(0, vertexCount, vertices);
-
-			for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
+			if (vertexDims < 3) { sVertices[2] = 0; }
+			for (int i = 0; i < vertexCount; i++)
 			{
-				int  in_offset = vertexIndex * vertexDims;
-				int out_offset = vertexIndex * 4;
+				in.get(i, 1, sVertices);
+				int outIdx = i * 4;
 
-				out[out_offset] = vertices[in_offset]; // x
-				out[out_offset + 1] = vertexDims > 1 ? vertices[in_offset + 1] : 0.0f; // y
-				out[out_offset + 2] = vertexDims > 2 ? vertices[in_offset + 2] : 0.0f; // z
-				out[out_offset + 3] = vertexDims > 3 ? vertices[in_offset + 3] : (W ? 1f : 0f); // w
+				out[outIdx]     = sVertices[0];
+				out[outIdx + 1] = sVertices[1];
+				out[outIdx + 2] = sVertices[2];
+				out[outIdx + 3] = wVal;
 			}
 		}
 
@@ -306,10 +277,15 @@ public class Transform
 
 	public void transpose()
 	{
-		float[] old = this.matrix.clone();
+		float[] m = this.matrix;
+		float tmp;
 
-		/* Transposes the matrix column by column. */
-		for (int i = 0; i < 16; i++) { this.matrix[4*(i/4) + (i%4)] = old[4*(i%4) + (i/4)]; }
+		tmp = m[1];  m[1] = m[4];   m[4] = tmp;
+		tmp = m[2];  m[2] = m[8];   m[8] = tmp;
+		tmp = m[3];  m[3] = m[12];  m[12] = tmp;
+		tmp = m[6];  m[6] = m[9];   m[9] = tmp;
+		tmp = m[7];  m[7] = m[13];  m[13] = tmp;
+		tmp = m[11]; m[11] = m[14]; m[14] = tmp;
 	}
 
 	/* ------------------------- package methods ------------------------- */
@@ -320,75 +296,52 @@ public class Transform
 	// package-private
 	void preMultiply(Transform transform)
 	{
-		if (transform == null) { throw new java.lang.NullPointerException("preMultiply() called with null transform."); }
-		multiply(transform.matrix, this.matrix.clone());
+		if (transform == null) { throw new NullPointerException("preMultiply() called with null transform."); }
+		multiply(transform.matrix, this.matrix, this.matrix);
 	}
 
-	// package-private
 	void preRotate(float angle, float ax, float ay, float az)
 	{
-		Transform.rotate(angle, ax, ay, az);
-		multiply(Transform.manipulationMatrix, this.matrix.clone());
+		computeRotationMatrix(angle, ax, ay, az);
+		multiply(this.manipulationMatrix, this.matrix, this.matrix);
 	}
 
-	// package-private
 	void preRotateQuat(float qx, float qy, float qz, float qw)
 	{
-		Transform.rotateQuat(qx, qy, qz, qw);
-		multiply(Transform.manipulationMatrix, this.matrix.clone());
+		computeRotationQuatMatrix(qx, qy, qz, qw);
+		multiply(this.manipulationMatrix, this.matrix, this.matrix);
 	}
 
-	// package-private
-	static void rotate(float angle, float ax, float ay, float az)
+	private void computeRotationMatrix(float angle, float ax, float ay, float az)
 	{
-		/* As per JSR-184, throw IllegalArgumentException if the rotation axis is zero but the angle is not. */
-		if(ax == 0 && ay == 0 && az == 0 && angle != 0) { throw new IllegalArgumentException("The rotation axis is zero while angle is nonZero."); }
+		if (ax == 0 && ay == 0 && az == 0 && angle != 0) {
+			throw new IllegalArgumentException("The rotation axis is zero while angle is nonZero.");
+		}
 
 		resetManipulationMatrix();
-
-		// If angle is 0, return right away;
 		if (angle == 0) { return; }
-		
-		// Compute sine and cosine of the angle
+
 		float rad = M3GMath.toRadians(angle);
 		float s = M3GMath.sin(rad);
 		float c = M3GMath.cos(rad);
-		float d = 1f - c;
+		float d = 1.0f - c;
 
-		// Normalize the axis
 		float l = M3GMath.sqrt((ax * ax) + (ay * ay) + (az * az));
 		float x = ax / l;
 		float y = ay / l;
 		float z = az / l;
 
-		manipulationMatrix[0] = x*x*d +  c;
-		manipulationMatrix[1] = y*x*d - z*s;
-		manipulationMatrix[2] = z*x*d + y*s;
-		manipulationMatrix[3] = 0;
-
-		manipulationMatrix[4] = x*y*d + z*s;
-		manipulationMatrix[5] = y*y*d +  c;
-		manipulationMatrix[6] = z*y*d - x*s;
-		manipulationMatrix[7] = 0;
-
-		manipulationMatrix[8]  = x*z*d - y*s;
-		manipulationMatrix[9]  = y*z*d + x*s;
-		manipulationMatrix[10] = z*z*d +  c;
-		manipulationMatrix[11] = 0;
-
-		manipulationMatrix[12] = 0;
-		manipulationMatrix[13] = 0;
-		manipulationMatrix[14] = 0;
-		manipulationMatrix[15] = 1;
+		manipulationMatrix[0] = x*x*d + c;   manipulationMatrix[1] = y*x*d - z*s; manipulationMatrix[2] = z*x*d + y*s;
+		manipulationMatrix[4] = x*y*d + z*s; manipulationMatrix[5] = y*y*d + c;   manipulationMatrix[6] = z*y*d - x*s;
+		manipulationMatrix[8] = x*z*d - y*s; manipulationMatrix[9] = y*z*d + x*s; manipulationMatrix[10]= z*z*d + c;
 	}
 
-	// package-private
-	static void rotateQuat(float qx, float qy, float qz, float qw)
+	private void computeRotationQuatMatrix(float qx, float qy, float qz, float qw)
 	{
-		/* As per JSR-184, throw IllegalArgumentException if all quaternion components are zero. */
-		if(qx == 0 && qy == 0 && qz == 0 && qw == 0) { throw new IllegalArgumentException("Cannot rotate when all quaternion components are zero."); }
+		if (qx == 0 && qy == 0 && qz == 0 && qw == 0) {
+			throw new IllegalArgumentException("Cannot rotate when all quaternion components are zero.");
+		}
 
-		// Normalize the quaternion
 		float l = M3GMath.sqrt((qx * qx) + (qy * qy) + (qz * qz) + (qw * qw));
 		float x = qx / l;
 		float y = qy / l;
@@ -396,45 +349,46 @@ public class Transform
 		float w = qw / l;
 
 		resetManipulationMatrix();
-		manipulationMatrix[0] = 1-2*y*y-2*z*z;
-		manipulationMatrix[1] = 2*x*y-2*z*w;
-		manipulationMatrix[2] = 2*x*z+2*y*w;
-		manipulationMatrix[3] = 0;
+		manipulationMatrix[0] = 1 - 2*y*y - 2*z*z;
+		manipulationMatrix[1] = 2*x*y - 2*z*w;
+		manipulationMatrix[2] = 2*x*z + 2*y*w;
 
-		manipulationMatrix[4] = 2*x*y+2*z*w;
-		manipulationMatrix[5] = 1-2*x*x-2*z*z;
-		manipulationMatrix[6] = 2*y*z-2*x*w;
-		manipulationMatrix[7] = 0;
+		manipulationMatrix[4] = 2*x*y + 2*z*w;
+		manipulationMatrix[5] = 1 - 2*x*x - 2*z*z;
+		manipulationMatrix[6] = 2*y*z - 2*x*w;
 
-		manipulationMatrix[8]  = 2*x*z-2*y*w;
-		manipulationMatrix[9]  = 2*y*z+2*x*w;
-		manipulationMatrix[10] = 1-2*x*x-2*y*y;
-		manipulationMatrix[11] = 0;
+		manipulationMatrix[8] = 2*x*z - 2*y*w;
+		manipulationMatrix[9] = 2*y*z + 2*x*w;
+		manipulationMatrix[10]= 1 - 2*x*x - 2*y*y;
+	}
 
-		manipulationMatrix[12] = 0;
-		manipulationMatrix[13] = 0;
-		manipulationMatrix[14] = 0;
-		manipulationMatrix[15] = 1;
+	private void resetManipulationMatrix()
+	{
+		manipulationMatrix[0] = 1.0f; manipulationMatrix[1] = 0.0f; manipulationMatrix[2] = 0.0f; manipulationMatrix[3] = 0.0f;
+		manipulationMatrix[4] = 0.0f; manipulationMatrix[5] = 1.0f; manipulationMatrix[6] = 0.0f; manipulationMatrix[7] = 0.0f;
+		manipulationMatrix[8] = 0.0f; manipulationMatrix[9] = 0.0f; manipulationMatrix[10]= 1.0f; manipulationMatrix[11]= 0.0f;
+		manipulationMatrix[12]= 0.0f; manipulationMatrix[13]= 0.0f; manipulationMatrix[14]= 0.0f; manipulationMatrix[15]= 1.0f;
 	}
 
 	/* ------------------------- private methods ------------------------- */
 
-	private void multiply(float[] left, float[] right)
+	private void multiply(float[] left, float[] right, float[] target)
 	{
-		for (int row = 0; row < 4; row++)
+		float[] out = (target == left || target == right) ? scratch : target;
+
+		for (int r = 0; r < 16; r += 4)
 		{
-			this.matrix[4 * row] = left[4 * row] * right[0] + left[4 * row + 1] * right[4] + 
-				left[4 * row + 2] * right[8] + left[4 * row + 3] * right[12];
+			float l0 = left[r], l1 = left[r+1], l2 = left[r+2], l3 = left[r+3];
 
-			this.matrix[4 * row + 1] = left[4 * row] * right[1] + left[4 * row + 1] * right[5] + 
-				left[4 * row + 2] * right[9] + left[4 * row + 3] * right[13];
+			out[r]   = l0 * right[0] + l1 * right[4] + l2 * right[8]  + l3 * right[12];
+			out[r+1] = l0 * right[1] + l1 * right[5] + l2 * right[9]  + l3 * right[13];
+			out[r+2] = l0 * right[2] + l1 * right[6] + l2 * right[10] + l3 * right[14];
+			out[r+3] = l0 * right[3] + l1 * right[7] + l2 * right[11] + l3 * right[15];
+		}
 
-			this.matrix[4 * row + 2] = left[4 * row] * right[2] + left[4 * row + 1] * right[6] + 
-				left[4 * row + 2] * right[10] + left[4 * row + 3] * right[14];
-
-			this.matrix[4 * row + 3] = left[4 * row] * right[3] + left[4 * row + 1] * right[7] + 
-				left[4 * row + 2] * right[11] + left[4 * row + 3] * right[15];
+		if (out == scratch)
+		{
+			System.arraycopy(scratch, 0, target, 0, 16);
 		}
 	}
-
 }

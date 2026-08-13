@@ -862,11 +862,11 @@ public class Graphics3D
 
 				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
 				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
-		        if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
-		        if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
+				if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
+				if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
 
 				// Degenerate triangle? Skip it.
-		        if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
+				if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
 
 				// Assign ordered vertex attributes based on their determined order
 				xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
