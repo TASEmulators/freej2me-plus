@@ -26,16 +26,16 @@ public class World extends Group
 
 	public Camera getActiveCamera() { return camera; }
 
-	public void setActiveCamera(Camera camera) 
-	{ 
+	public void setActiveCamera(Camera camera)
+	{
 		removeReference(this.camera);
 		this.camera = camera;
-		removeReference(this.camera);
+		addReference(this.camera);
 	}
 
 	public Background getBackground() { return background; }
 
-	public void setBackground(Background background) 
+	public void setBackground(Background background)
 	{
 		removeReference(this.background);
 		this.background = background;

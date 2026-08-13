@@ -47,8 +47,11 @@ class Triangle
 
 	private boolean hasVertexColors = false;
 
-	/* Effective vertex indices of the source triangle (after strip-winding correction). */
-	private final int[] idx;
+	/* Triangle id on the indices array. */
+	private int triangleID;
+
+	/* Vertex indices of the source triangle. */
+	private int[] idx;
 
 	private final int[] colors;
 
@@ -67,13 +70,14 @@ class Triangle
 		// sC, tC, rC, qC;
 		// 0   1   2   3
 
-	Triangle(float[] vertices, float[] texCoords, int[] vertColors, int[] indices)
+	Triangle(float[] vertices, float[] texCoords, int[] vertColors, int[] indices, int tri_id)
 	{
 		this.v = vertices;
 		this.t = texCoords == null ? new float[12] : texCoords;
 		this.colors = vertColors == null ? new int[3] : vertColors;
 		this.hasVertexColors = (vertColors != null);
 		this.idx = indices;
+		this.triangleID = tri_id;
 	}
 
 	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode, VertexBuffer vertices)
@@ -86,33 +90,11 @@ class Triangle
 		if(Triangle.result == null || (tris.length / 3) * 2 > Triangle.result.length)
 			Triangle.result = new Triangle[(tris.length / 3) * 2];
 
-		int prevA = -1, prevB = -1, prevC = -1; /* effective indices of the previous triangle */
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
 		{
-			/*
-			 * Triangle-strip winding correction: consecutive triangles sharing an edge
-			 * alternate their winding, so swap two indices to normalize it. The swap is
-			 * done on LOCAL copies, comparing against the previous triangle's EFFECTIVE
-			 * (post-swap) indices — writing the swap back into the IndexBuffer's array
-			 * would corrupt the mesh cumulatively across renders (the detection would
-			 * then run on already-swapped data, flipping different triangles each time).
-			 */
-			int[] indices = new int[]{tris[3 * tri_id + 0], tris[3 * tri_id + 1], tris[3 * tri_id + 2]};
-
-			sharesVertices = (indices[0] == prevB && indices[1] == prevC) || (indices[1] == prevA && indices[2] == prevB);
-
-			if (sharesVertices)
-			{
-				final int temp = indices[0];
-				indices[0] = indices[1];
-				indices[1] = temp;
-			}
-
-			prevA = indices[0]; prevB = indices[1]; prevC = indices[2];
-
 			for (int i = 0; i < 3; i++)
 			{
-				final int idx = 4 * indices[i];
+				final int idx = 4 * tris[3 * tri_id + i];
 				Triangle.inV[4*i]   = vert[idx];     Triangle.inV[4*i+1] = vert[idx + 1];
 				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
 				if (texc != null)
@@ -127,7 +109,7 @@ class Triangle
 			 * positions, texture coordinates and vertex colors. Vertices behind the
 			 * camera would otherwise explode to huge coordinates after perspective division.
 			 */
-			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, indices, vertices,
+			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tris, tri_id, vertices,
 				texc != null, near, Triangle.outV, Triangle.outT, Triangle.outC);
 			if (outCount < 3) { continue; }
 
@@ -158,7 +140,7 @@ class Triangle
 				        Triangle.outC[0],
 				        Triangle.outC[fan + 1],
 				        Triangle.outC[fan + 2]
-				    }, indices);
+				    }, tris, tri_id);
 				}
 				else
 				{
@@ -166,7 +148,7 @@ class Triangle
 					tri.setVertexCoords(Triangle.outV, fan);
 					tri.setTexCoords(texc == null ? null : Triangle.outT, fan);
 					tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
-					tri.setVertexIndices(indices);
+					tri.setVertexIndices(tris, tri_id);
 				}
 
 				// Perspective division for culling and visibility checks (all w >= near now)
@@ -205,7 +187,7 @@ class Triangle
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static int clipNearPlane(float[] inV, float[] inT, int[] inC, int[] indices,
+	private static int clipNearPlane(float[] inV, float[] inT, int[] inC, int[] indices, int tri_id,
 		VertexBuffer vertices, boolean hasTex, float near, float[] outV, float[] outT, int[] outC)
 	{
 		int outCount = 0;
@@ -215,7 +197,7 @@ class Triangle
 		{
 			for (int i = 0; i < 3; i++)
 			{
-				vertices.getColors().get(indices[i], 1, Triangle.color_vertex);
+				vertices.getColors().get(indices[3 * tri_id + i], 1, Triangle.color_vertex);
 				inC[i] = (vertices.getColors().getComponentCount() == 3) ?
 					(0xFF << 24) | (Byte.toUnsignedInt(Triangle.color_vertex[0]) << 16) |
 					(Byte.toUnsignedInt(Triangle.color_vertex[1]) << 8) |
@@ -419,11 +401,10 @@ class Triangle
 	}
 
 	// This one is also for memory reuse, so `this.idx` is expected to be allocated by now.
-	public final void setVertexIndices(int[] indices)
+	public final void setVertexIndices(int[] indices, int tri_id)
 	{
-		this.idx[0] = indices[0];
-		this.idx[1] = indices[1];
-		this.idx[2] = indices[2];
+		this.idx = indices;
+		this.triangleID = tri_id;
 	}
 
 	public final boolean hasVertexColors() { return this.hasVertexColors; }

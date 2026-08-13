@@ -25,19 +25,18 @@ public class TriangleStripArray extends IndexBuffer
 	{
 		/* Per JSR-184, throw NullPointerException if indices or stripLengths are null */
 		if(indices == null || stripLengths == null) { throw new NullPointerException("Tried to construct a TriangleStripArray with incomplete information."); }
-	
-		/* 
-		 * Also per JSR-184, throw IllegalArgumentException if: 
-		 * stripLengths is empty, any element in stripLengths is less than 3, or indices.length < sum(stripLengths). 
+
+		/*
+		 * Also per JSR-184, throw IllegalArgumentException if:
+		 * stripLengths is empty, any element in stripLengths is less than 3, or indices.length < sum(stripLengths).
 		 */
-		int totalStripLength = 0;
-		for (int length : stripLengths) { totalStripLength += length; }
+		int totalStripLength = sum(stripLengths);
 
 		if(stripLengths.length == 0 || indices.length < totalStripLength || hasLengthLessThan3(stripLengths))
 			{ throw new IllegalArgumentException("Cannot construct TriangleStripArray, incorrect parameters received."); }
 
 		/* also per JSR-184, throw IndexOutOfBoundsException if any element in indices is negative, or greater than 65535. */
-		if(hasInvalidIndices(indices)) 
+		if(hasInvalidIndices(indices, totalStripLength))
 			{ throw new IndexOutOfBoundsException("Index provided to TriangleStripArray is out of bounds."); }
 
 		/* Setup the StripArray with explicit indices. */
@@ -48,14 +47,13 @@ public class TriangleStripArray extends IndexBuffer
 	{
 		/* As per JSR-184, throw NullPointerException if stripLengths == null. */
 		if(stripLengths == null) { throw new NullPointerException("Tried to construct TriangleStripArray with null stripLengths."); }
-	
+
 		/* Also per JSR-184, throw IllegalArgumentException if stripLengths.length == 0 or any element in stripLengths is less than 3. */
-		if(stripLengths.length == 0 || hasLengthLessThan3(stripLengths)) 
+		if(stripLengths.length == 0 || hasLengthLessThan3(stripLengths))
 			{ throw new IllegalArgumentException("Cannot construct TriangleStripArray, incorrect parameters received."); }
 
 		/* Also per JSR-184, throw IndexOutOfBoundsException if any element in indices is negative, or if firstIndex + sum(stripLengths) is greater than 65535. */
-		int totalStripLength = 0;
-		for (int length : stripLengths) { totalStripLength += length; }
+		int totalStripLength = sum(stripLengths);
 
 		if(firstIndex < 0 || firstIndex + totalStripLength > 65535)
 			{ throw new IndexOutOfBoundsException("Index provided to TriangleStripArray is out of bounds."); }
@@ -64,13 +62,9 @@ public class TriangleStripArray extends IndexBuffer
 		this.updateFields(false, new int[] { firstIndex }, stripLengths);
 	}
 
-	protected Object3D duplicateImpl() 
-	{
-		TriangleStripArray copy = (TriangleStripArray) super.duplicateImpl();
-		return copy;
-	}
+	protected Object3D duplicateImpl() { return (TriangleStripArray) super.duplicateImpl(); }
 
-	private void updateFields(boolean isExplicit, int[] indices, int[] stripLengths) 
+	private void updateFields(boolean isExplicit, int[] indices, int[] stripLengths)
 	{
 		/* Update the number of indices from the parent by mapping all valid StripLength elements. */
 		super.indexCount = calculateIndexCount(stripLengths);
@@ -85,9 +79,9 @@ public class TriangleStripArray extends IndexBuffer
 		{
 			for (int i = 0; i < (stripLengths[strip_id] - 2); i++)
 			{
-				int x,y,z;
-				int abs_index = in_offset + i;
-				boolean swap = i % 2 == 1;
+				int x, y, z;
+                int abs_index = in_offset + i;
+                boolean swap = (i % 2 == 1);
 
 				if (isExplicit)
 				{
@@ -102,21 +96,22 @@ public class TriangleStripArray extends IndexBuffer
 					z = indices[0] + abs_index + 2;
 				}
 
-				// TODO determine correct way to swap vertices
-				super.indices[out_offset + 0] = swap ? x : x;
-				super.indices[out_offset + 1] = swap ? y : y;
-				super.indices[out_offset + 2] = swap ? z : z;
+				// Swap vertices for odd triangles to maintaining face orientation
+				// so that Triangle.java doesn't need to do that in the render loop.
+				super.indices[out_offset + 0] = x;
+				super.indices[out_offset + 1] = swap ? z : y;
+				super.indices[out_offset + 2] = swap ? y : z;
 
 				/* Move to the next vertex on the parent object. */
 				out_offset += 3;
 			}
-			
+
 			/* Move to the next vertex on this StripArray. */
 			in_offset += stripLengths[strip_id];
 		}
 	}
 
-	private int sum(int[] array) 
+	private int sum(int[] array)
 	{
 		int total = 0;
 		for (int value : array) { total += value; }
@@ -124,29 +119,30 @@ public class TriangleStripArray extends IndexBuffer
 		return total;
 	}
 
-	private boolean hasLengthLessThan3(int[] array) 
+	private boolean hasLengthLessThan3(int[] array)
 	{
-		for (int value : array) 
+		for (int value : array)
 		{
 			if (value < 3) { return true; }
 		}
 		return false;
 	}
 
-	private boolean hasInvalidIndices(int[] array) 
-	{
-		for (int value : array) 
-		{
-			if (value < 0 || value > 65535) { return true; }
-		}
-		return false;
-	}
+	private boolean hasInvalidIndices(int[] array, int numIndices)
+    {
+        for (int i = 0; i < numIndices; i++)
+        {
+            if (array[i] < 0 || array[i] > 65535) { return true; }
+        }
 
-	private int calculateIndexCount(int[] stripLengths) 
+        return false;
+    }
+
+	private int calculateIndexCount(int[] stripLengths)
 	{
 		int total = 0;
 		for (int length : stripLengths) { total += (length - 2) * 3; }
-		
+
 		return total;
 	}
 }

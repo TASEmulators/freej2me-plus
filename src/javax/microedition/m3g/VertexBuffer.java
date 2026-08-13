@@ -35,7 +35,7 @@ public class VertexBuffer extends Object3D
 	private int defaultColor;
 	private VertexArray positions;
 	private VertexArray normals;
-	private VertexArray colors = null;
+	private VertexArray colors;
 	private VertexArray[] texCoords;
 
 	private float positionScale;
@@ -54,6 +54,8 @@ public class VertexBuffer extends Object3D
 		this.positions = null;
 		this.normals = null;
 		this.colors = null;
+		this.positionScale = 1.0f;
+		this.positionBias = new float[3];
 		this.texCoords = new VertexArray[Graphics3D.NUM_TEXTURE_UNITS];
 		this.texCoordScale = new float[Graphics3D.NUM_TEXTURE_UNITS];
 		this.texCoordBias = new float[Graphics3D.NUM_TEXTURE_UNITS][0];
@@ -63,15 +65,37 @@ public class VertexBuffer extends Object3D
 	{
 		VertexBuffer copy = (VertexBuffer) super.duplicateImpl();
 
-		copy.positionBias = (float[]) positionBias.clone();
-		copy.texCoords = (VertexArray[]) texCoords.clone();
-		copy.texCoordBias = new float[texCoordBias.length][];
-		for(int i = 0; i < texCoordBias.length; i++) { copy.texCoordBias[i] = (float[]) texCoordBias[i].clone(); }
-		copy.texCoordScale = (float[]) texCoordScale.clone();
+		copy.positions = this.positions;
+        copy.normals = this.normals;
+        copy.colors = this.colors;
+
+		copy.texCoords = (VertexArray[]) this.texCoords.clone();
+		copy.positionBias = (float[]) this.positionBias.clone();
+		copy.texCoordBias = new float[this.texCoordBias.length][];
+		copy.texCoordScale = (float[]) this.texCoordScale.clone();
+
+		// We may have some texture units unset, so check for nulls before cloning.
+		for(int i = 0; i < texCoordBias.length; i++)
+		{
+			if (this.texCoordBias[i] != null)
+	        {
+	            copy.texCoordBias[i] = (float[]) this.texCoordBias[i].clone();
+	        }
+		}
+
+		if (copy.positions != null) { copy.addReference(copy.positions); }
+		if (copy.normals != null) { copy.addReference(copy.normals); }
+		if (copy.colors != null) { copy.addReference(copy.colors); }
+		if (copy.texCoords != null)
+		{
+			for (int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+			{
+            	if (copy.texCoords[i] != null) { copy.addReference(copy.texCoords[i]); }
+			}
+		}
 
 		return copy;
 	}
-
 
 	public VertexArray getColors() { return this.colors; }
 
@@ -87,9 +111,9 @@ public class VertexBuffer extends Object3D
 			if(scaleBias.length < 4) { throw new IllegalArgumentException("ScaleBias has invalid length (less than 4)."); }
 
 			scaleBias[0] = this.positionScale;
-			for (int i = 0; i < 3; i++)
-				scaleBias[i + 1] = this.positionBias[i];
+			System.arraycopy(this.positionBias, 0, scaleBias, 1, 3);
 		}
+
 		return this.positions;
 	}
 
@@ -101,14 +125,15 @@ public class VertexBuffer extends Object3D
 
 		if (scaleBias != null && this.texCoords[index] != null)
 		{
+			int components = this.texCoords[index].getComponentCount();
 			/* Also per JSR-184, throw IllegalArgumentException if (scaleBias != null) && (scaleBias.length < texCoords.getComponentCount+1). */
-			if (scaleBias.length < this.texCoords[index].getComponentCount() + 1)
+			if (scaleBias.length < components + 1)
 				{ throw new IllegalArgumentException("Invalid scaleBias length."); }
 
 			scaleBias[0] = this.texCoordScale[index];
-			for (int i = 0; i < this.texCoords[index].getComponentCount(); i++)
-				{ scaleBias[i + 1] = this.texCoordBias[index][i]; }
+			System.arraycopy(this.texCoordBias[index], 0, scaleBias, 1, components);
 		}
+
 		return this.texCoords[index];
 	}
 
@@ -116,8 +141,7 @@ public class VertexBuffer extends Object3D
 
 	public void setColors(VertexArray colors)
 	{
-		if (colors == null) { this.colors = null; }
-		else
+		if (colors != null)
 		{
 			/*
 			 * As per JSR-184, throw IllegalArgumentException if:
@@ -133,14 +157,19 @@ public class VertexBuffer extends Object3D
 			this.colors = colors;
 			addReference(this.colors);
 		}
+		else
+		{
+			removeReference(this.colors);
+			this.colors = colors;
+			this.checkUnfix();
+		}
 	}
 
 	public void setDefaultColor(int ARGB) { this.defaultColor = ARGB; }
 
 	public void setNormals(VertexArray normals)
 	{
-		if (normals == null) { this.normals = null; }
-		else
+		if (normals != null)
 		{
 			/*
 			 * As per JSR-184, throw IllegalArgumentException if:
@@ -155,12 +184,17 @@ public class VertexBuffer extends Object3D
 			this.normals = normals;
 			addReference(this.normals);
 		}
+		else
+		{
+			removeReference(this.normals);
+			this.normals = normals;
+			this.checkUnfix();
+		}
 	}
 
 	public void setPositions(VertexArray positions, float scale, float[] bias)
 	{
-		if (positions == null) { this.positions = null; }
-		else
+		if (positions != null)
 		{
 			/*
 			 * As per JSR-184, throw IllegalArgumentException if:
@@ -178,8 +212,17 @@ public class VertexBuffer extends Object3D
 			this.positions = positions;
 			addReference(this.positions);
 			this.positionScale = scale;
-			this.positionBias = bias.clone();
-
+			if (bias != null) { System.arraycopy(bias, 0, this.positionBias, 0, 3); }
+		}
+		else
+		{
+			removeReference(this.positions);
+			this.positions = positions;
+			this.positionScale = 1.0f; // Maybe we don't need to reset it here?
+			this.positionBias[0] = 0.0f;
+			this.positionBias[1] = 0.0f;
+			this.positionBias[2] = 0.0f;
+			this.checkUnfix();
 		}
 	}
 
@@ -189,8 +232,7 @@ public class VertexBuffer extends Object3D
 		if (index < 0 || index >= Graphics3D.NUM_TEXTURE_UNITS)
 			{ throw new IndexOutOfBoundsException("Tried to access invalid texture unit index."); }
 
-		if (texCoords == null) { this.texCoords[index] = null; }
-		else
+		if (texCoords != null)
 		{
 			int componentCount = texCoords.getComponentCount();
 
@@ -209,8 +251,18 @@ public class VertexBuffer extends Object3D
 			this.updateLength(texCoords.getVertexCount());
 			this.texCoords[index] = texCoords;
 			addReference(this.texCoords[index]);
+
 			this.texCoordScale[index] = scale;
-			this.texCoordBias[index] = bias.clone();
+			this.texCoordBias[index] = new float[componentCount];
+			if (bias != null) { System.arraycopy(bias, 0, this.texCoordBias[index], 0, componentCount); }
+		}
+		else
+		{
+			removeReference(this.texCoords[index]);
+			this.texCoords[index] = texCoords;
+			this.texCoordScale[index] = 1.0f; // Maybe we don't need to reset it here?
+			this.texCoordBias[index] = null;
+			this.checkUnfix();
 		}
 	}
 
@@ -223,6 +275,21 @@ public class VertexBuffer extends Object3D
 		}
 	}
 
+	// This VertexBuffer may be fully reset at some point, and when every
+	// VertexArray in it is null, it can get a new fixed size.
+	private void checkUnfix()
+    {
+        if (this.positions != null || this.normals != null || this.colors != null) { return; }
+        for (VertexArray texCoord : this.texCoords)
+        {
+            if (texCoord != null) { return; }
+        }
+
+        // All VertexArrays are null, we can work with a new length once new data comes in
+        this.fixed = false;
+        this.length = 0;
+    }
+
 	@Override
 	void updateProperty(int property, float[] value)
 	{
@@ -230,10 +297,14 @@ public class VertexBuffer extends Object3D
 		switch (property)
 		{
 			case AnimationTrack.ALPHA:
-				defaultColor = (defaultColor | 0xFF000000) & ((int) value[0] << 24);
+				int alpha = M3GMath.min(255, M3GMath.max(0, M3GMath.roundPositive(value[0] * 255.0f)));
+				defaultColor = (defaultColor & 0x00FFFFFF) | (alpha << 24);
 				break;
 			case AnimationTrack.COLOR:
-				defaultColor = (defaultColor | 0x00FFFFFF) & (int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2];
+				int r = M3GMath.min(255, M3GMath.max(0, M3GMath.roundPositive(value[0] * 255.0f)));
+				int g = M3GMath.min(255, M3GMath.max(0, M3GMath.roundPositive(value[1] * 255.0f)));
+				int b = M3GMath.min(255, M3GMath.max(0, M3GMath.roundPositive(value[2] * 255.0f)));
+				defaultColor = (defaultColor & 0xFF000000) | (r << 16) | (g << 8) | b;
 				break;
 			default:
 				super.updateProperty(property, value);
