@@ -309,6 +309,7 @@ public final class AWTGUI
 	// Speedhacks
 	final CheckboxMenuItem noAlphaOnBlankImages = new CheckboxMenuItem("No alpha on blank images");
 	final CheckboxMenuItem M3GHalfRes = new CheckboxMenuItem("Render M3G at Half Resolution");
+	final CheckboxMenuItem M3GDisableBilinear = new CheckboxMenuItem("Disable M3G Bilinear Filtering");
 	final CheckboxMenuItem MCV3HalfRes = new CheckboxMenuItem("Render MascotCapsuleV3 at Half Res");
 	final CheckboxMenuItem MCV3NoLighting = new CheckboxMenuItem("Disable MascotCapsuleV3's lighting");
 
@@ -727,6 +728,15 @@ public final class AWTGUI
 			{
 				if(M3GHalfRes.getState()){ config.updateM3GResSpeedHack("on"); hasPendingChange = true; }
 				else{ config.updateM3GResSpeedHack("off"); hasPendingChange = true; }
+			}
+		});
+
+		M3GDisableBilinear.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(M3GDisableBilinear.getState()){ config.updateM3GBilinearSpeedHack("on"); hasPendingChange = true; }
+				else{ config.updateM3GBilinearSpeedHack("off"); hasPendingChange = true; }
 			}
 		});
 
@@ -1156,6 +1166,7 @@ public final class AWTGUI
 
 		speedHackMenu.add(noAlphaOnBlankImages);
 		speedHackMenu.add(M3GHalfRes);
+		speedHackMenu.add(M3GDisableBilinear);
 		speedHackMenu.add(MCV3HalfRes);
 		speedHackMenu.add(MCV3NoLighting);
 
@@ -1203,6 +1214,8 @@ public final class AWTGUI
 			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));
 
 			M3GHalfRes.setState(config.settings.get("spdhackm3ghalfres").equals("on"));
+
+			M3GDisableBilinear.setState(config.settings.get("spdhackm3gdisablebilinear").equals("on"));
 
 			MCV3HalfRes.setState(config.settings.get("spdhackmcv3halfres").equals("on"));
 

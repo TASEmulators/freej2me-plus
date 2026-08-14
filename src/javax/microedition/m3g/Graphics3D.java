@@ -586,7 +586,7 @@ public class Graphics3D
 				fogFactor = M3GMath.exp(-fog.getDensity() * zEye);
 			}
 
-			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 255.0f));
+			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
 		}
 
 		for (int y = pixT; y < pixB; y++)
@@ -1030,8 +1030,8 @@ public class Graphics3D
 								final float pw = pwL + drawX * (pwR - pwL);
 								if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
 
-								// && !Mobile.m3gBilinearFilter
-								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && false)
+								// We can force-disable bilinear filter
+								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
 								{
 									paintPixel = sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT);
 								}
@@ -1095,7 +1095,7 @@ public class Graphics3D
 								}
 								else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
 
-								fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 255.0f));
+								fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
 
 								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA); }
 							}
@@ -1202,108 +1202,140 @@ public class Graphics3D
 	/* Helper Methods */
 
 	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
-	private int blendPixels(int background, int foreground, int alpha, int blendMode)
+	private int blendPixels(int bg, int fg, int alpha, int blendMode)
 	{
-		final int bgA = (background >> 24) & 0xFF;
-		final int bgR = (background >> 16) & 0xFF;
-		final int bgG = (background >> 8) & 0xFF;
-		final int bgB = background & 0xFF;
-
-		final int fgA = (foreground >> 24) & 0xFF;
-		final int fgR = (foreground >> 16) & 0xFF;
-		final int fgG = (foreground >> 8) & 0xFF;
-		final int fgB = foreground & 0xFF;
-
-		final int outR, outG, outB, outA;
+		if (alpha == 0) { return bg; }
 
 		switch (blendMode)
 		{
 			case Texture2D.FUNC_REPLACE:
 			case CompositingMode.REPLACE:
-				// Linear lerp using fgA as integer weight [0, 255]
-				outA = bgA + (((255 - bgA) * fgA) >> 8);
-				outR = bgR + (((fgR - bgR) * fgA) >> 8);
-				outG = bgG + (((fgG - bgG) * fgA) >> 8);
-				outB = bgB + (((fgB - bgB) * fgA) >> 8);
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			{
+				int fgA = fg >>> 24;
+				if (fgA == 255) { return fg; }
+				if (fgA == 0) { return bg; }
 
-			case CompositingMode.ALPHA_ADD:
-				outR = bgR + ((fgR * alpha) >> 8);
-				outG = bgG + ((fgG * alpha) >> 8);
-				outB = bgB + ((fgB * alpha) >> 8);
-				outA = bgA + ((alpha * (255 - bgA)) >> 8);
-				return ((outA > 255 ? 255 : outA) << 24) |
-					   ((outR > 255 ? 255 : outR) << 16) |
-					   ((outG > 255 ? 255 : outG) << 8) |
-					   (outB > 255 ? 255 : outB);
+				int bgRB = bg & 0x00FF00FF;
+				int fgRB = fg & 0x00FF00FF;
+				int outRB = bgRB + ((((fgRB - bgRB) * fgA) >> 8) & 0x00FF00FF);
+
+				int bgAG = (bg >>> 8) & 0x00FF00FF;
+				int fgAG = (fg >>> 8) & 0x00FF00FF;
+				int outAG = bgAG + ((((fgAG - bgAG) * fgA) >> 8) & 0x00FF00FF);
+
+				return outRB | (outAG << 8);
+			}
 
 			case Texture2D.FUNC_BLEND:
 			case CompositingMode.ALPHA:
-				// Pure integer interpolation with material/global alpha
-				outR = bgR + (((fgR - bgR) * alpha) >> 8);
-				outG = bgG + (((fgG - bgG) * alpha) >> 8);
-				outB = bgB + (((fgB - bgB) * alpha) >> 8);
-				outA = bgA + (((fgA - bgA) * alpha) >> 8);
+			{
+				if (alpha == 255) { return fg; }
+
+				// Standard unpack (cleanest and fastest when alpha is constant across channels)
+				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
+				int fgA = fg >>> 24, fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+
+				int outR = bgR + (((fgR - bgR) * alpha) >> 8);
+				int outG = bgG + (((fgG - bgG) * alpha) >> 8);
+				int outB = bgB + (((fgB - bgB) * alpha) >> 8);
+				int outA = bgA + (((fgA - bgA) * alpha) >> 8);
+
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
 
 			case Texture2D.FUNC_MODULATE:
 			case CompositingMode.MODULATE:
-				outR = (fgR * bgR) >> 8;
-				outG = (fgG * bgG) >> 8;
-				outB = (fgB * bgB) >> 8;
-				outA = (fgA * bgA) >> 8;
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			{
+				int bgRB = bg & 0x00FF00FF;
+				int fgRB = fg & 0x00FF00FF;
+
+				int r = (((bgRB >> 16) * (fgRB >> 16)) >> 8) & 0xFF;
+				int b = (((bgRB & 0xFF) * (fgRB & 0xFF)) >> 8) & 0xFF;
+
+				int bgAG = (bg >>> 8) & 0x00FF00FF;
+				int fgAG = (fg >>> 8) & 0x00FF00FF;
+				int a = (((bgAG >> 16) * (fgAG >> 16)) >> 8) & 0xFF;
+				int g = (((bgAG & 0xFF) * (fgAG & 0xFF)) >> 8) & 0xFF;
+
+				return (a << 24) | (r << 16) | (g << 8) | b;
+			}
 
 			case CompositingMode.MODULATE_X2:
-				outR = (fgR * bgR) >> 7; // Equivalent to ((2 * fg * bg) >> 8)
-				outG = (fgG * bgG) >> 7;
-				outB = (fgB * bgB) >> 7;
-				outA = (fgA * bgA) >> 7;
-				return ((outA > 255 ? 255 : outA) << 24) |
-					   ((outR > 255 ? 255 : outR) << 16) |
-					   ((outG > 255 ? 255 : outG) << 8) |
-					   (outB > 255 ? 255 : outB);
+			{
+				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
+				int fgA = fg >>> 24, fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+
+				int outR = (fgR * bgR) >> 7;
+				int outG = (fgG * bgG) >> 7;
+				int outB = (fgB * bgB) >> 7;
+				int outA = (fgA * bgA) >> 7;
+
+				if (outR > 255) { outR = 255; }
+				if (outG > 255) { outG = 255; }
+				if (outB > 255) { outB = 255; }
+				if (outA > 255) { outA = 255; }
+
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
 
 			case Texture2D.FUNC_DECAL:
-				outR = bgR + (((fgR - bgR) * fgA) >> 8);
-				outG = bgG + (((fgG - bgG) * fgA) >> 8);
-				outB = bgB + (((fgB - bgB) * fgA) >> 8);
-				outA = fgA;
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			{
+				int fgA = fg >>> 24;
+				int bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
+				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+
+				int outR = bgR + (((fgR - bgR) * fgA) >> 8);
+				int outG = bgG + (((fgG - bgG) * fgA) >> 8);
+				int outB = bgB + (((fgB - bgB) * fgA) >> 8);
+
+				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
+			}
 
 			case Texture2D.FUNC_ADD:
-				outR = bgR + fgR;
-				outG = bgG + fgG;
-				outB = bgB + fgB;
-				outA = bgA > fgA ? bgA : fgA;
-				return (outA << 24) |
-					   ((outR > 255 ? 255 : outR) << 16) |
-					   ((outG > 255 ? 255 : outG) << 8) |
-					   (outB > 255 ? 255 : outB);
+			{
+				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
+				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+
+				int outR = bgR + fgR; if (outR > 255) outR = 255;
+				int outG = bgG + fgG; if (outG > 255) outG = 255;
+				int outB = bgB + fgB; if (outB > 255) outB = 255;
+				int outA = M3GMath.max(bgA, fg >>> 24);
+
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
+
+			case CompositingMode.ALPHA_ADD:
+			{
+				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
+				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+
+				int outR = bgR + ((fgR * alpha) >> 8); if (outR > 255) outR = 255;
+				int outG = bgG + ((fgG * alpha) >> 8); if (outG > 255) outG = 255;
+				int outB = bgB + ((fgB * alpha) >> 8); if (outB > 255) outB = 255;
+				int outA = bgA + ((alpha * (255 - bgA)) >> 8); if (outA > 255) outA = 255;
+
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
 
 			default:
-				return background;
+				return bg;
 		}
 	}
 
 	// For bilinear filtering support
 	private int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT)
 	{
-		// Offset by 0.5 to align texel centers with pixel coordinates
-		float u = s - 0.5f;
-		float v = t - 0.5f;
+		// Shift by 0.5 for OpenGL-like filtering,
+		int uFixed = (int) ((s - 0.5f) * 256.0f);
+		int vFixed = (int) ((t - 0.5f) * 256.0f);
 
-		// Integer base coordinates (top-left texel)
-		int x0 = (int) M3GMath.roundPositive(u);
-		int y0 = (int) M3GMath.roundPositive(v);
+		int x0 = uFixed >> 8;
+		int y0 = vFixed >> 8;
 		int x1 = x0 + 1;
 		int y1 = y0 + 1;
 
-		float fracX = u - x0;
-		float fracY = v - y0;
-
-		if (fracX < 0.0f) fracX = 0.0f; else if (fracX > 1.0f) fracX = 1.0f;
-		if (fracY < 0.0f) fracY = 0.0f; else if (fracY > 1.0f) fracY = 1.0f;
+		int fx = uFixed & 0xFF;
+		int fy = vFixed & 0xFF;
 
 		x0 = wrapX(x0, texW, texRepeatS);
 		x1 = wrapX(x1, texW, texRepeatS);
@@ -1315,43 +1347,39 @@ public class Graphics3D
 		int c01 = teximg.getPixel(x0, y1);
 		int c11 = teximg.getPixel(x1, y1);
 
-		return lerpBilinear(c00, c10, c01, c11, fracX, fracY);
+		return lerpBilinear(c00, c10, c01, c11, fx, fy);
 	}
 
-	private int lerpBilinear(int c00, int c10, int c01, int c11, float fx, float fy)
+	private int lerpBilinear(int c00, int c10, int c01, int c11, int fx, int fy)
 	{
-		float a00 = (c00 >>> 24) & 0xFF, r00 = (c00 >>> 16) & 0xFF, g00 = (c00 >>> 8) & 0xFF, b00 = c00 & 0xFF;
-		float a10 = (c10 >>> 24) & 0xFF, r10 = (c10 >>> 16) & 0xFF, g10 = (c10 >>> 8) & 0xFF, b10 = c10 & 0xFF;
-		float a01 = (c01 >>> 24) & 0xFF, r01 = (c01 >>> 16) & 0xFF, g01 = (c01 >>> 8) & 0xFF, b01 = c01 & 0xFF;
-		float a11 = (c11 >>> 24) & 0xFF, r11 = (c11 >>> 16) & 0xFF, g11 = (c11 >>> 8) & 0xFF, b11 = c11 & 0xFF;
+		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
+	    int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 
-		float w00 = (1.0f - fx) * (1.0f - fy);
-		float w10 = fx * (1.0f - fy);
-		float w01 = (1.0f - fx) * fy;
-		float w11 = fx * fy;
+	    int rb1 = (c01 & 0x00FF00FF) + ((((c11 & 0x00FF00FF) - (c01 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
+	    int ag1 = ((c01 >>> 8) & 0x00FF00FF) + (((((c11 >>> 8) & 0x00FF00FF) - ((c01 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 
-		int a = (int) (a00 * w00 + a10 * w10 + a01 * w01 + a11 * w11);
-		int r = (int) (r00 * w00 + r10 * w10 + r01 * w01 + r11 * w11);
-		int g = (int) (g00 * w00 + g10 * w10 + g01 * w01 + g11 * w11);
-		int b = (int) (b00 * w00 + b10 * w10 + b01 * w01 + b11 * w11);
+	    int rb = rb0 + ((((rb1 - rb0) * fy) >> 8) & 0x00FF00FF);
+	    int ag = ag0 + ((((ag1 - ag0) * fy) >> 8) & 0x00FF00FF);
 
-		return (a << 24) | (r << 16) | (g << 8) | b;
+	    return (ag << 8) | rb;
 	}
 
 	// Helpers for texture wrapping/clamping
 	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
 	// Out-of-range coordinates must never index outside the image.
-	private int wrapX(int x, int width, boolean repeat) {
+	private int wrapX(int x, int width, boolean repeat)
+	{
 		if (repeat) { return ((x % width) + width) % width; }
-		if (x < 0) return 0;
-		if (x >= width) return width - 1;
+		if (x < 0) { return 0; }
+		if (x >= width) { return width - 1; }
 		return x;
 	}
 
-	private int wrapY(int y, int height, boolean repeat) {
+	private int wrapY(int y, int height, boolean repeat)
+	{
 		if (repeat) { return ((y % height) + height) % height; }
-		if (y < 0) return 0;
-		if (y >= height) return height - 1;
+		if (y < 0) { return 0; }
+		if (y >= height) { return height - 1; }
 		return y;
 	}
 }

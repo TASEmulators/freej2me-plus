@@ -78,6 +78,7 @@ public class Mobile
 	// Mobile should contain flags to any and all "speedhacks" present in FreeJ2ME
 	public static boolean noAlphaOnBlankImages = true;
 	public static boolean halfResM3GRaster = false;
+	public static boolean m3gDisableBilinearFilter = false;
 	public static boolean halfResMCV3Raster = false;
 	public static boolean MCV3NoLighting = false;
 
@@ -1027,6 +1028,10 @@ public class Mobile
 		String speedHackM3GHalfRes = config.settings.get("spdhackm3ghalfres");
 		if(speedHackM3GHalfRes.equals("on"))        { halfResM3GRaster = true; }
 		else if (speedHackM3GHalfRes.equals("off")) { halfResM3GRaster = false; };
+
+		String speedHackM3GDisableBilinear = config.settings.get("spdhackm3gdisablebilinear");
+		if(speedHackM3GDisableBilinear.equals("on"))        { m3gDisableBilinearFilter = true; }
+		else if (speedHackM3GDisableBilinear.equals("off")) { m3gDisableBilinearFilter = false; };
 
 		String speedHackMCV3HalfRes = config.settings.get("spdhackmcv3halfres");
 		if(speedHackMCV3HalfRes.equals("on"))        { halfResMCV3Raster = true; }

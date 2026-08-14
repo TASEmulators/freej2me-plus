@@ -185,6 +185,9 @@ public class Libretro
 		/* MascotCapsuleV3 Show Heap debug setting */
 		Mobile.MCV3ShowTimeMetrics = Integer.parseInt(args[30]) != 0;
 
+		/* M3G Disable Biliniear filter speedhack */
+		Mobile.m3gDisableBilinearFilter = Integer.parseInt(args[31]) != 0;
+
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -371,6 +374,7 @@ public class Libretro
 										Mobile.config.settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off");
 										Mobile.config.settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off");
 										Mobile.config.settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off");
+										Mobile.config.settings.put("spdhackm3gdisablebilinear",  Mobile.m3gDisableBilinearFilter ? "on" : "off");
 										Mobile.config.settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off");
 
 										if(Mobile.maskIndex == 0)      { Mobile.config.settings.put("backlightcolor", "Disabled"); }
@@ -540,6 +544,8 @@ public class Libretro
 
 									Mobile.config.settings.put("MCV3ShowTimeMetrics", Integer.parseInt(cfgtokens[31]) == 1 ? "on" : "off");
 
+									Mobile.config.settings.put("spdhackm3gdisablebilinear", Integer.parseInt(cfgtokens[32]) == 1 ? "on" : "off");
+
 
 									Mobile.config.saveConfig();
 									settingsChanged();
@@ -676,5 +682,4 @@ public class Libretro
 			lcdData = Mobile.getPlatform().getLcdFrontbuffer().getDataBuffer();
 		}
 	}
-
 }

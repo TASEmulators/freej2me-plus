@@ -140,6 +140,7 @@ public class Config
 				settings.put("compatmcv3horizfovfix", "off");
 				settings.put("fpshack", "Disabled");
 				settings.put("spdhackm3ghalfres", "off");
+				settings.put("spdhackm3gdisablebilinear", "off");
 				settings.put("spdhackmcv3halfres", "off");
 				settings.put("spdhackmcv3nolighting", "off");
 				settings.put("dojaversion", "200");
@@ -257,6 +258,7 @@ public class Config
 				}
 			}
 			if(!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off"); }
+			if(!settings.containsKey("spdhackm3gdisablebilinear")) { settings.put("spdhackm3gdisablebilinear", Mobile.m3gDisableBilinearFilter ? "on" : "off"); }
 			if(!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off"); }
 			if(!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off"); }
 			if(!settings.containsKey("dojaversion")) { settings.put("dojaversion", ""+Mobile.DoJaVersion); }
@@ -441,6 +443,14 @@ public class Config
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhackm3ghalfres "+value);
 		settings.put("spdhackm3ghalfres", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GBilinearSpeedHack(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhackm3gdisablebilinear "+value);
+		settings.put("spdhackm3gdisablebilinear", value);
 		saveConfig();
 		onChange.run();
 	}
