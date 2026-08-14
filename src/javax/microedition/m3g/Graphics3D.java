@@ -216,17 +216,9 @@ public class Graphics3D
 		/* As per JSR-184, throw IllegalStateException if this Graphics3D object does not have a render target. */
 		if (this.target == null) { throw new IllegalStateException("Cannot clear Background on a Graphics3D without a render target."); }
 
-		int color = 0;
-		boolean clearColor = true;
-		boolean clearDepth = true;
-
-		if (background != null)
-		{
-			color = background.getColor();
-			clearColor = background.isColorClearEnabled();
-			clearDepth = background.isDepthClearEnabled();
-		}
-		else { color = 0x00000000; }
+		final int color = (background != null) ? background.getColor() : 0x00000000;
+		final boolean clearColor = (background == null) || background.isColorClearEnabled();
+		final boolean clearDepth = (background == null) || background.isDepthClearEnabled();
 
 		/*
 		 * If the background object is null:
@@ -287,7 +279,9 @@ public class Graphics3D
 							if (repeatX) { sx = ((sx % bgImg.getWidth()) + bgImg.getWidth()) % bgImg.getWidth(); }
 							else if (sx < 0 || sx >= bgImg.getWidth()) { continue; }
 
-							rasterData[(py + viewy) * canvasWidth + (px + viewx)] = bgImg.getPixel(sx, sy);
+							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =
+								blendPixels(rasterData[(py + viewy) * canvasWidth + (px + viewx)], bgImg.getPixel(sx, sy),
+									(bgImg.getPixel(sx, sy) >> 24) & 0xFF, CompositingMode.ALPHA);
 						}
 					}
 				}
@@ -1024,7 +1018,11 @@ public class Graphics3D
 							t = tL + drawX * (tR - tL);
 
 							// If there's no texture coords or a texture image, we default to rendering with vertex colors. (also used for debug render modes)
-							int paintPixel = 0xFF000000 | vertices.getDefaultColor(); // It's forced to opaque, maybe that shouldn't be done for untextured polygons, but helps some games like Brick Breaker Revolution
+							// It's forced to opaque when blending mode is set to REPLACE.
+							int paintPixel = vertices.getDefaultColor();
+							paintPixel = compositingMode.getBlending() == CompositingMode.REPLACE ? 0xFF000000 | paintPixel : paintPixel;
+
+
 							if(hasTexture)
 							{
 								final float pw = pwL + drawX * (pwR - pwL);
@@ -1353,15 +1351,15 @@ public class Graphics3D
 	private int lerpBilinear(int c00, int c10, int c01, int c11, int fx, int fy)
 	{
 		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
-	    int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
+		int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 
-	    int rb1 = (c01 & 0x00FF00FF) + ((((c11 & 0x00FF00FF) - (c01 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
-	    int ag1 = ((c01 >>> 8) & 0x00FF00FF) + (((((c11 >>> 8) & 0x00FF00FF) - ((c01 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
+		int rb1 = (c01 & 0x00FF00FF) + ((((c11 & 0x00FF00FF) - (c01 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
+		int ag1 = ((c01 >>> 8) & 0x00FF00FF) + (((((c11 >>> 8) & 0x00FF00FF) - ((c01 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 
-	    int rb = rb0 + ((((rb1 - rb0) * fy) >> 8) & 0x00FF00FF);
-	    int ag = ag0 + ((((ag1 - ag0) * fy) >> 8) & 0x00FF00FF);
+		int rb = rb0 + ((((rb1 - rb0) * fy) >> 8) & 0x00FF00FF);
+		int ag = ag0 + ((((ag1 - ag0) * fy) >> 8) & 0x00FF00FF);
 
-	    return (ag << 8) | rb;
+		return (ag << 8) | rb;
 	}
 
 	// Helpers for texture wrapping/clamping
