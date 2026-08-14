@@ -727,7 +727,8 @@ public class Graphics3D
 		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertsAndTris already does culling and clipping)
-		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVert, triangles.getIndexArray(), renderableTriangles, clipNear, cullingMode, vertices);
+		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVert, triangles.getIndexArray(),
+			renderableTriangles, clipNear, cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW);
 
 		/*
 		 * Per-triangle flat lighting (JSR-184 lighting requires a Material on the

@@ -19,7 +19,7 @@ package javax.microedition.m3g;
 class Triangle
 {
 	// Temporary buffer for vertex colors
-	private static final byte[] color_vertex = new byte[4];
+	private static final byte[] COLOR_VERTEX = new byte[4];
 
 	// Temporary buffer for input and output vertices/texCoords/vertex colors.
 	private static final int[] inC = new int[3];
@@ -28,15 +28,6 @@ class Triangle
 	private static final float[] inT = new float[12];
 	private static final float[] outV = new float[16];
 	private static final float[] outT = new float[16];
-
-	// Clipping planes
-	private static final float[]  p = new float[] { 0, 0, 0, 0};
-	private static final float[] xp = new float[] {-1, 0, 0, 1};
-	private static final float[] xn = new float[] { 1, 0, 0, 1};
-	private static final float[] yp = new float[] { 0,-1, 0, 1};
-	private static final float[] yn = new float[] { 0, 1, 0, 1};
-	private static final float[] zp = new float[] { 0, 0,-1, 1};
-	private static final float[] zn = new float[] { 0, 0, 1, 1};
 
 	// Let's reuse this when clipping, quite a bit faster than creating ArrayLists each time
 	private static final float[] clipVert = new float[4];
@@ -53,42 +44,34 @@ class Triangle
 	/* Vertex indices of the source triangle. */
 	private int[] idx;
 
-	private final int[] colors;
+	private final int[] colors = new int[3];
 
 	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
 	private final float[] invW = new float[] { 1f, 1f, 1f };
 
-	private final float[] v;
+	private final float[] v = new float[12];
 		// xA, yA, zA, wA,
 		// xB, yB, zB, wB,
 		// xC, yC, zC, wC;
 		// 0   1   2   3
 
-	private final float[] t;
+	private final float[] t = new float[12];
 		// sA, tA, rA, qA,
 		// sB, tB, rB, qB,
 		// sC, tC, rC, qC;
 		// 0   1   2   3
 
-	Triangle(float[] vertices, float[] texCoords, int[] vertColors, int[] indices, int tri_id)
-	{
-		this.v = vertices;
-		this.t = texCoords == null ? new float[12] : texCoords;
-		this.colors = vertColors == null ? new int[3] : vertColors;
-		this.hasVertexColors = (vertColors != null);
-		this.idx = indices;
-		this.triangleID = tri_id;
-	}
+	Triangle() { }
 
-	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode, VertexBuffer vertices)
+	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode, VertexBuffer vertices, boolean polygonClockwise)
 	{
 		renderableTriangles[0] = 0;
-		boolean sharesVertices = false;
+		final int totalTris = tris.length / 3;
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`.
-		if(Triangle.result == null || (tris.length / 3) * 2 > Triangle.result.length)
-			Triangle.result = new Triangle[(tris.length / 3) * 2];
+		if(Triangle.result == null || totalTris * 2 > Triangle.result.length)
+			Triangle.result = new Triangle[totalTris * 2];
 
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
 		{
@@ -116,63 +99,29 @@ class Triangle
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
 			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
-				final Triangle tri;
-
 				// Create a new triangle if we don't already have one available on the static array.
 				// This saves a bunch of temporary memory allocations once the array is built and no longer increases
 				// in size.
 				if(Triangle.result[renderableTriangles[0]] == null)
-				{
-					tri = new Triangle(new float[]
-					{
-						Triangle.outV[0], Triangle.outV[1], Triangle.outV[2], Triangle.outV[3],
-						Triangle.outV[4*(fan+1)], Triangle.outV[4*(fan+1)+1], Triangle.outV[4*(fan+1)+2], Triangle.outV[4*(fan+1)+3],
-						Triangle.outV[4*(fan+2)], Triangle.outV[4*(fan+2)+1], Triangle.outV[4*(fan+2)+2], Triangle.outV[4*(fan+2)+3]
-					},
-					texc == null ? null : new float[]
-					{
-						Triangle.outT[0], Triangle.outT[1], Triangle.outT[2], Triangle.outT[3],
-						Triangle.outT[4*(fan+1)], Triangle.outT[4*(fan+1)+1], Triangle.outT[4*(fan+1)+2], Triangle.outT[4*(fan+1)+3],
-						Triangle.outT[4*(fan+2)], Triangle.outT[4*(fan+2)+1], Triangle.outT[4*(fan+2)+2], Triangle.outT[4*(fan+2)+3]
-					},
-					vertices.getColors() == null ? null : new int[]
-					{
-				        Triangle.outC[0],
-				        Triangle.outC[fan + 1],
-				        Triangle.outC[fan + 2]
-				    }, tris, tri_id);
-				}
-				else
-				{
-					tri = Triangle.result[renderableTriangles[0]];
-					tri.setVertexCoords(Triangle.outV, fan);
-					tri.setTexCoords(texc == null ? null : Triangle.outT, fan);
-					tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
-					tri.setVertexIndices(tris, tri_id);
-				}
+					Triangle.result[renderableTriangles[0]] = new Triangle();
 
-				// Perspective division for culling and visibility checks (all w >= near now)
-				for (int i = 0; i < 3; i++)
-				{
-					tri.v[i * 4 + 0] /= tri.v[i * 4 + 3];
-					tri.v[i * 4 + 1] /= tri.v[i * 4 + 3];
-					tri.v[i * 4 + 2] /= tri.v[i * 4 + 3];
-				}
+				final Triangle tri = Triangle.result[renderableTriangles[0]];
+				tri.setVertexCoords(Triangle.outV, fan);
+				tri.setTexCoords(texc == null ? null : Triangle.outT, fan);
+				tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
+				tri.setVertexIndices(tris, tri_id);
 
-				final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && tri.isCounterClockwise()) ||
-									(cullingMode == PolygonMode.CULL_FRONT && !tri.isCounterClockwise());
+				final boolean isFrontFace = polygonClockwise ? !tri.isCounterClockwise() : tri.isCounterClockwise();
 
-				if (cullTriangle || tri.clip()) { continue; }
+				final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && !isFrontFace) ||
+							 (cullingMode == PolygonMode.CULL_FRONT && isFrontFace);
 
-				// We now have to restore the renderable geometry back to its original coordinates, otherwise rendering will be broken
-				for (int i = 0; i < 3; i++)
-				{
-					tri.v[i * 4 + 0] *= tri.v[i * 4 + 3];
-					tri.v[i * 4 + 1] *= tri.v[i * 4 + 3];
-					tri.v[i * 4 + 2] *= tri.v[i * 4 + 3];
-				}
+				if (cullTriangle) { continue; }
 
 				tri.project();
+
+				if (tri.outsideFrustum()) { continue; }
+
 				Triangle.result[renderableTriangles[0]] = tri;
 				renderableTriangles[0]++;
 			}
@@ -197,15 +146,15 @@ class Triangle
 		{
 			for (int i = 0; i < 3; i++)
 			{
-				vertices.getColors().get(indices[3 * tri_id + i], 1, Triangle.color_vertex);
+				vertices.getColors().get(indices[3 * tri_id + i], 1, Triangle.COLOR_VERTEX);
 				inC[i] = (vertices.getColors().getComponentCount() == 3) ?
-					(0xFF << 24) | (Byte.toUnsignedInt(Triangle.color_vertex[0]) << 16) |
-					(Byte.toUnsignedInt(Triangle.color_vertex[1]) << 8) |
-					Byte.toUnsignedInt(Triangle.color_vertex[2]) :
-					(Byte.toUnsignedInt(Triangle.color_vertex[3]) << 24) |
-					(Byte.toUnsignedInt(Triangle.color_vertex[0]) << 16) |
-					(Byte.toUnsignedInt(Triangle.color_vertex[1]) << 8) |
-					Byte.toUnsignedInt(Triangle.color_vertex[2]);
+					(0xFF << 24) | (Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
+					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
+					Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]) :
+					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[3]) << 24) |
+					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
+					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
+					Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]);
 			}
 		}
 
@@ -254,6 +203,63 @@ class Triangle
 		return outCount;
 	}
 
+	public final boolean outsideFrustum()
+	{
+		return (v[0] < -1f && v[4] < -1f && v[8] < -1f) ||
+			(v[0] >  1f && v[4] >  1f && v[8] >  1f) ||
+			(v[1] < -1f && v[5] < -1f && v[9] < -1f) ||
+			(v[1] >  1f && v[5] >  1f && v[9] >  1f) ||
+			(v[2] < -1f && v[6] < -1f && v[10] < -1f) ||
+			(v[2] >  1f && v[6] >  1f && v[10] >  1f);
+	}
+
+	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform trTex)
+	{
+		for (int i = 0; i < visibleTris; i++)
+		{
+			trVert.transform(triangles[i].v);
+			if (triangles[i].t != null && trTex != null) { trTex.transform(triangles[i].t); }
+		}
+	}
+
+	public final void project()
+	{
+		// Apply perspective division to the triangle, it's going to NDC
+		for (int i = 0; i < 3; i++)
+		{
+			final float w = v[4 * i + 3];
+
+			/* Keep 1/w around: the rasterizer interpolates s/w, t/w and 1/w linearly in
+			 * screen space and divides per-pixel for perspective-correct texturing. */
+			invW[i] = (w > M3GMath.EPSILON) ? (1f / w) : 1f;
+
+			// Project vertex
+			v[4 * i + 0] /= w; // x / w
+			v[4 * i + 1] /= w; // y / w
+			v[4 * i + 2] /= w; // z / w
+			v[4 * i + 3] = 1f;  // Set w to 1
+
+			// Texture coordinates are stored as s/w and t/w (undone per-pixel in the rasterizer)
+			if (t != null)
+			{
+				t[4 * i + 0] *= invW[i]; // s / w
+				t[4 * i + 1] *= invW[i]; // t / w
+			}
+		}
+	}
+
+	public final boolean isCounterClockwise()
+	{
+		float ax = v[0], ay = v[1], aw = v[3];
+		float bx = v[4], by = v[5], bw = v[7];
+		float cx = v[8], cy = v[9], cw = v[11];
+
+		// Usually counterClockWise would be <= 0.0, but we're in Clip space
+		// here where Y is the inverse of NDC, so invert to > 0.0;
+		return ((bx * aw - ax * bw) * (cy * aw - ay * cw) -
+			(by * aw - ay * bw) * (cx * aw - ax * cw)) > 0.0f;
+	}
+
 	public final float xA() { return v[4 * 0 + 0]; }
 	public final float yA() { return v[4 * 0 + 1]; }
 	public final float zA() { return v[4 * 0 + 2]; }
@@ -290,104 +296,28 @@ class Triangle
 
 	public final int getIndex(int index) { return idx[index]; }
 
-	public final boolean clip()
-	{
-		if (isValid())
-		{
-			// Clip against each plane sequentially
-			if (clipPlane(xp) != null &&
-				clipPlane(xn) != null &&
-				clipPlane(yp) != null &&
-				clipPlane(yn) != null &&
-				clipPlane(zp) != null &&
-				clipPlane(zn) != null)
-			{
-				return false; // If it passed all planes, it means it's at least partially visible, don't clip
-			}
-		}
-
-		return true;
-	}
-
-	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform trTex)
-	{
-		for (int i = 0; i < visibleTris; i++)
-		{
-			trVert.transform(triangles[i].v);
-			if (triangles[i].t != null && trTex != null) { trTex.transform(triangles[i].t); }
-		}
-	}
-
-	private final boolean isValid()
-	{
-		return wA() >= M3GMath.EPSILON || wB() >= M3GMath.EPSILON || wC() >= M3GMath.EPSILON;
-	}
-
-	public final void project()
-	{
-		// Apply perspective division to the triangle, it's going to NDC
-		for (int i = 0; i < 3; i++)
-		{
-			final float w = v[4 * i + 3];
-
-			/* Keep 1/w around: the rasterizer interpolates s/w, t/w and 1/w linearly in
-			 * screen space and divides per-pixel for perspective-correct texturing. */
-			invW[i] = (w > M3GMath.EPSILON) ? (1f / w) : 1f;
-
-			// Project vertex
-			v[4 * i + 0] /= w; // x / w
-			v[4 * i + 1] /= w; // y / w
-			v[4 * i + 2] /= w; // z / w
-			v[4 * i + 3] = 1f;  // Set w to 1
-
-			// Texture coordinates are stored as s/w and t/w (undone per-pixel in the rasterizer)
-			if (t != null)
-			{
-				t[4 * i + 0] *= invW[i]; // s / w
-				t[4 * i + 1] *= invW[i]; // t / w
-			}
-		}
-	}
-
-	private final Triangle clipPlane(float[] pn)
-	{
-		pn = M3GMath.div(pn, (float) M3GMath.sqrt(M3GMath.dotProduct(pn, pn)));
-
-		// Test each vertex of the triangle against the clip planes
-		for (int i = 0; i < 3; i++)
-		{
-			Triangle.clipVert[0] = v[4 * i + 0];
-			Triangle.clipVert[1] = v[4 * i + 1];
-			Triangle.clipVert[2] = v[4 * i + 2];
-			Triangle.clipVert[3] = v[4 * i + 3];
-
-			// If partially visible in this plane, move to next plane
-			if (M3GMath.dotProduct(pn, Triangle.clipVert) - M3GMath.dotProduct(pn, p) >= 0) { return this; }
-		}
-
-		return null; // If no vertex is inside, return a null object since the triangle isn't visible
-	}
-
 	// This one is for memory reuse, so `this.t` is expected to be allocated by now.
 	public final void setTexCoords(float[] tCoords, int fan)
 	{
 		if (tCoords == null) { return; }
 
-		this.t[0]  = tCoords[0]; this.t[1] = tCoords[1]; this.t[2] = tCoords[2]; this.t[3] = tCoords[3];
-		this.t[4]  = tCoords[4*(fan+1)];   this.t[5]  = tCoords[4*(fan+1)+1];
-		this.t[6]  = tCoords[4*(fan+1)+2]; this.t[7]  = tCoords[4*(fan+1)+3];
-		this.t[8]  = tCoords[4*(fan+2)];   this.t[9]  = tCoords[4*(fan+2)+1];
-		this.t[10] = tCoords[4*(fan+2)+2]; this.t[11] = tCoords[4*(fan+2)+3];
+		final int f1 = 4 * (fan + 1);
+		final int f2 = 4 * (fan + 2);
+
+		System.arraycopy(tCoords, 0,  t, 0, 4);
+		System.arraycopy(tCoords, f1, t, 4, 4);
+		System.arraycopy(tCoords, f2, t, 8, 4);
 	}
 
 	// This one is also for memory reuse, so `this.v` is expected to be allocated by now.
 	public final void setVertexCoords(float[] vCoords, int fan)
 	{
-		this.v[0]  = vCoords[0]; this.v[1] = vCoords[1]; this.v[2] = vCoords[2]; this.v[3] = vCoords[3];
-		this.v[4]  = vCoords[4*(fan+1)];   this.v[5]  = vCoords[4*(fan+1)+1];
-		this.v[6]  = vCoords[4*(fan+1)+2]; this.v[7]  = vCoords[4*(fan+1)+3];
-		this.v[8]  = vCoords[4*(fan+2)];   this.v[9]  = vCoords[4*(fan+2)+1];
-		this.v[10] = vCoords[4*(fan+2)+2]; this.v[11] = vCoords[4*(fan+2)+3];
+		final int f1 = 4 * (fan + 1);
+		final int f2 = 4 * (fan + 2);
+
+		System.arraycopy(vCoords, 0,  v, 0, 4);
+		System.arraycopy(vCoords, f1, v, 4, 4);
+		System.arraycopy(vCoords, f2, v, 8, 4);
 	}
 
 	// This one is also for memory reuse, so `this.colors` is expected to be allocated by now.
@@ -408,9 +338,4 @@ class Triangle
 	}
 
 	public final boolean hasVertexColors() { return this.hasVertexColors; }
-
-	public final boolean isCounterClockwise()
-	{
-		return (xB() - xA()) * (yC() - yA()) - (xC() - xA()) * (yB() - yA()) < 0; // Clockwise if normal points towards the viewer
-	}
 }
