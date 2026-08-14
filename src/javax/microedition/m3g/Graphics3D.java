@@ -569,6 +569,26 @@ public class Graphics3D
 		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
 
+		// The Sprite3D has the same dapth for its entire area, so we only need
+		// to calculate fog once.
+		if (fog != null)
+		{
+			// Distance in eye space along the camera's viewing axis
+			final float zEye = -oz;
+
+			float fogFactor;
+			if (fog.getMode() == Fog.LINEAR)
+			{
+				fogFactor = (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance());
+			}
+			else
+			{
+				fogFactor = M3GMath.exp(-fog.getDensity() * zEye);
+			}
+
+			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 255.0f));
+		}
+
 		for (int y = pixT; y < pixB; y++)
 		{
 			final float v = (y + 0.5f - sy0) / spanY;
@@ -588,19 +608,8 @@ public class Graphics3D
 				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
 				if (alpha < alphaThreshold || alpha == 0) { continue; } /* Alpha test discards the fragment before any writes */
 
-				if (fog != null)
-				{
-					if (fog.getMode() == Fog.LINEAR)
-					{
-						fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - ndcZ) / (fog.getFarDistance() - fog.getNearDistance()) * 255));
-					}
-					else
-					{
-						fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * ndcZ));
-						fogFactor = M3GMath.max(0, M3GMath.min(1, fogFactor));
-					}
-					paintPixel = blendFog(paintPixel, fog.getColor());
-				}
+				if (fog != null && fogFactor < 255.0f)
+					{ paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA); }
 
 				final int finalPixel = (compositingMode.getBlending() == CompositingMode.REPLACE && alpha == 255) ? paintPixel :
 					blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)], paintPixel, alpha, compositingMode.getBlending());
@@ -1021,14 +1030,18 @@ public class Graphics3D
 								final float pw = pwL + drawX * (pwR - pwL);
 								if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
 
-								/* JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
-								 * Out-of-range coordinates must never index outside the image. */
-								int texX = M3GMath.roundPositive(s), texY = M3GMath.roundPositive(t);
-								if (texRepeatS) { texX = ((texX % texW) + texW) % texW; }
-								else if (texX < 0) { texX = 0; } else if (texX >= texW) { texX = texW - 1; }
-								if (texRepeatT) { texY = ((texY % texH) + texH) % texH; }
-								else if (texY < 0) { texY = 0; } else if (texY >= texH) { texY = texH - 1; }
-								paintPixel = teximg.getPixel(texX, texY);
+								// && !Mobile.m3gBilinearFilter
+								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && false)
+								{
+									paintPixel = sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT);
+								}
+								else
+								{
+									int texX = M3GMath.roundPositive(s), texY = M3GMath.roundPositive(t);
+									texX = wrapX(texX, texW, texRepeatS);
+									texY = wrapY(texY, texH, texRepeatT);
+									paintPixel = teximg.getPixel(texX, texY);
+								}
 							}
 
 							// We have to do texture blending, as we have vertex colors and any available texture goes on top of them
@@ -1082,9 +1095,9 @@ public class Graphics3D
 								}
 								else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
 
-								fogFactor = M3GMath.max(0, M3GMath.min(1, fogFactor));
+								fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 255.0f));
 
-								paintPixel = blendFog(paintPixel, fog.getColor());
+								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA); }
 							}
 
 							// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
@@ -1203,98 +1216,142 @@ public class Graphics3D
 
 		final int outR, outG, outB, outA;
 
-		final float alphaNorm = alpha / 255f;
-
 		switch (blendMode)
 		{
 			case Texture2D.FUNC_REPLACE:
 			case CompositingMode.REPLACE:
-				outA = (int) (fgA + (bgA * (1 - (fgA / 255f))));
-				outR = (int) (fgR * (fgA / 255f) + bgR * (1 - (fgA / 255f)));
-				outG = (int) (fgG * (fgA / 255f) + bgG * (1 - (fgA / 255f)));
-				outB = (int) (fgB * (fgA / 255f) + bgB * (1 - (fgA / 255f)));
-				return (M3GMath.max(0, M3GMath.min(outA, 255)) << 24) |
-					(M3GMath.max(0, M3GMath.min(outR, 255)) << 16) |
-					(M3GMath.max(0, M3GMath.min(outG, 255)) << 8) |
-					M3GMath.max(0, M3GMath.min(outB, 255));
+				// Linear lerp using fgA as integer weight [0, 255]
+				outA = bgA + (((255 - bgA) * fgA) >> 8);
+				outR = bgR + (((fgR - bgR) * fgA) >> 8);
+				outG = bgG + (((fgG - bgG) * fgA) >> 8);
+				outB = bgB + (((fgB - bgB) * fgA) >> 8);
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 
 			case CompositingMode.ALPHA_ADD:
-				outR = (int) M3GMath.min(255, (fgR * alphaNorm) + bgR);
-				outG = (int) M3GMath.min(255, (fgG * alphaNorm) + bgG);
-				outB = (int) M3GMath.min(255, (fgB * alphaNorm) + bgB);
-				outA = (int) M3GMath.min(255, bgA + (int)(alpha * (1 - (bgA / 255f))));
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+				outR = bgR + ((fgR * alpha) >> 8);
+				outG = bgG + ((fgG * alpha) >> 8);
+				outB = bgB + ((fgB * alpha) >> 8);
+				outA = bgA + ((alpha * (255 - bgA)) >> 8);
+				return ((outA > 255 ? 255 : outA) << 24) |
+					   ((outR > 255 ? 255 : outR) << 16) |
+					   ((outG > 255 ? 255 : outG) << 8) |
+					   (outB > 255 ? 255 : outB);
 
 			case Texture2D.FUNC_BLEND:
 			case CompositingMode.ALPHA:
-				outR = (int) ((fgR * alphaNorm) + (bgR * (1 - alphaNorm)));
-				outG = (int) ((fgG * alphaNorm) + (bgG * (1 - alphaNorm)));
-				outB = (int) ((fgB * alphaNorm) + (bgB * (1 - alphaNorm)));
-				outA = (int) (bgA * (1 - alphaNorm) + fgA * alphaNorm);
-				return (M3GMath.max(0, M3GMath.min(outA, 255)) << 24) |
-					(M3GMath.max(0, M3GMath.min(outR, 255)) << 16) |
-					(M3GMath.max(0, M3GMath.min(outG, 255)) << 8) |
-					M3GMath.max(0, M3GMath.min(outB, 255));
+				// Pure integer interpolation with material/global alpha
+				outR = bgR + (((fgR - bgR) * alpha) >> 8);
+				outG = bgG + (((fgG - bgG) * alpha) >> 8);
+				outB = bgB + (((fgB - bgB) * alpha) >> 8);
+				outA = bgA + (((fgA - bgA) * alpha) >> 8);
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 
 			case Texture2D.FUNC_MODULATE:
 			case CompositingMode.MODULATE:
-				outR = (int) ((fgR * bgR) / 255);
-				outG = (int) ((fgG * bgG) / 255);
-				outB = (int) ((fgB * bgB) / 255);
-				outA = (int) ((fgA * bgA) / 255);
-				return (M3GMath.max(0, M3GMath.min(outA, 255)) << 24) |
-					(M3GMath.max(0, M3GMath.min(outR, 255)) << 16) |
-					(M3GMath.max(0, M3GMath.min(outG, 255)) << 8) |
-					M3GMath.max(0, M3GMath.min(outB, 255));
+				outR = (fgR * bgR) >> 8;
+				outG = (fgG * bgG) >> 8;
+				outB = (fgB * bgB) >> 8;
+				outA = (fgA * bgA) >> 8;
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 
 			case CompositingMode.MODULATE_X2:
-				outR = (int) (((2 * fgR) * bgR) / 255);
-				outG = (int) (((2 * fgG) * bgG) / 255);
-				outB = (int) (((2 * fgB) * bgB) / 255);
-				outA = (int) (((2 * fgA) * bgA) / 255);
-				return (M3GMath.max(0, M3GMath.min(outA, 255)) << 24) |
-					(M3GMath.max(0, M3GMath.min(outR, 255)) << 16) |
-					(M3GMath.max(0, M3GMath.min(outG, 255)) << 8) |
-					M3GMath.max(0, M3GMath.min(outB, 255));
+				outR = (fgR * bgR) >> 7; // Equivalent to ((2 * fg * bg) >> 8)
+				outG = (fgG * bgG) >> 7;
+				outB = (fgB * bgB) >> 7;
+				outA = (fgA * bgA) >> 7;
+				return ((outA > 255 ? 255 : outA) << 24) |
+					   ((outR > 255 ? 255 : outR) << 16) |
+					   ((outG > 255 ? 255 : outG) << 8) |
+					   (outB > 255 ? 255 : outB);
 
 			case Texture2D.FUNC_DECAL:
-				outR = (fgR * fgA / 255) + (bgR * (255 - fgA) / 255);
-				outG = (fgG * fgA / 255) + (bgG * (255 - fgA) / 255);
-				outB = (fgB * fgA / 255) + (bgB * (255 - fgA) / 255);
-				outA = fgA; // Use foreground's alpha
-				return (M3GMath.min(M3GMath.max(outA, 0), 255) << 24) |
-					(M3GMath.min(M3GMath.max(outR, 0), 255) << 16) |
-					(M3GMath.min(M3GMath.max(outG, 0), 255) << 8) |
-					M3GMath.min(M3GMath.max(outB, 0), 255);
+				outR = bgR + (((fgR - bgR) * fgA) >> 8);
+				outG = bgG + (((fgG - bgG) * fgA) >> 8);
+				outB = bgB + (((fgB - bgB) * fgA) >> 8);
+				outA = fgA;
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 
 			case Texture2D.FUNC_ADD:
-				outR = M3GMath.min(bgR + fgR, 255);
-				outG = M3GMath.min(bgG + fgG, 255);
-				outB = M3GMath.min(bgB + fgB, 255);
-				outA = M3GMath.max(bgA, fgA); // Use maximum alpha
-				return (M3GMath.min(M3GMath.max(outA, 0), 255) << 24) |
-					(outR << 16) |
-					(outG << 8) |
-					outB;
+				outR = bgR + fgR;
+				outG = bgG + fgG;
+				outB = bgB + fgB;
+				outA = bgA > fgA ? bgA : fgA;
+				return (outA << 24) |
+					   ((outR > 255 ? 255 : outR) << 16) |
+					   ((outG > 255 ? 255 : outG) << 8) |
+					   (outB > 255 ? 255 : outB);
 
 			default:
-				return background; // Fallback
+				return background;
 		}
 	}
 
-	private int blendFog(int pixelColor, int fogColor)
+	// For bilinear filtering support
+	private int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT)
 	{
-		/*
-		 * M3G specifies that, the smaller the fogFactor value, the more we
-		 * should blend the fog color into the received color... which means
-		 * that the fog's contribution to the resulting color should be
-		 * 1 - fogFactor;
-		 */
-		final int r = (int) (((pixelColor >> 16) & 0xFF) * fogFactor + ((fogColor >> 16) & 0xFF) * (1 - fogFactor));
-		final int g = (int) (((pixelColor >> 8) & 0xFF) * fogFactor + ((fogColor >> 8) & 0xFF) * (1 - fogFactor));
-		final int b = (int) ((pixelColor & 0xFF) * fogFactor + (fogColor & 0xFF) * (1 - fogFactor));
+		// Offset by 0.5 to align texel centers with pixel coordinates
+		float u = s - 0.5f;
+		float v = t - 0.5f;
 
-		// Fog only has RGB channels, so it's always fully opaque
-		return (255 << 24) | (r << 16) | (g << 8) | b;
+		// Integer base coordinates (top-left texel)
+		int x0 = (int) M3GMath.roundPositive(u);
+		int y0 = (int) M3GMath.roundPositive(v);
+		int x1 = x0 + 1;
+		int y1 = y0 + 1;
+
+		float fracX = u - x0;
+		float fracY = v - y0;
+
+		if (fracX < 0.0f) fracX = 0.0f; else if (fracX > 1.0f) fracX = 1.0f;
+		if (fracY < 0.0f) fracY = 0.0f; else if (fracY > 1.0f) fracY = 1.0f;
+
+		x0 = wrapX(x0, texW, texRepeatS);
+		x1 = wrapX(x1, texW, texRepeatS);
+		y0 = wrapY(y0, texH, texRepeatT);
+		y1 = wrapY(y1, texH, texRepeatT);
+
+		int c00 = teximg.getPixel(x0, y0);
+		int c10 = teximg.getPixel(x1, y0);
+		int c01 = teximg.getPixel(x0, y1);
+		int c11 = teximg.getPixel(x1, y1);
+
+		return lerpBilinear(c00, c10, c01, c11, fracX, fracY);
+	}
+
+	private int lerpBilinear(int c00, int c10, int c01, int c11, float fx, float fy)
+	{
+		float a00 = (c00 >>> 24) & 0xFF, r00 = (c00 >>> 16) & 0xFF, g00 = (c00 >>> 8) & 0xFF, b00 = c00 & 0xFF;
+		float a10 = (c10 >>> 24) & 0xFF, r10 = (c10 >>> 16) & 0xFF, g10 = (c10 >>> 8) & 0xFF, b10 = c10 & 0xFF;
+		float a01 = (c01 >>> 24) & 0xFF, r01 = (c01 >>> 16) & 0xFF, g01 = (c01 >>> 8) & 0xFF, b01 = c01 & 0xFF;
+		float a11 = (c11 >>> 24) & 0xFF, r11 = (c11 >>> 16) & 0xFF, g11 = (c11 >>> 8) & 0xFF, b11 = c11 & 0xFF;
+
+		float w00 = (1.0f - fx) * (1.0f - fy);
+		float w10 = fx * (1.0f - fy);
+		float w01 = (1.0f - fx) * fy;
+		float w11 = fx * fy;
+
+		int a = (int) (a00 * w00 + a10 * w10 + a01 * w01 + a11 * w11);
+		int r = (int) (r00 * w00 + r10 * w10 + r01 * w01 + r11 * w11);
+		int g = (int) (g00 * w00 + g10 * w10 + g01 * w01 + g11 * w11);
+		int b = (int) (b00 * w00 + b10 * w10 + b01 * w01 + b11 * w11);
+
+		return (a << 24) | (r << 16) | (g << 8) | b;
+	}
+
+	// Helpers for texture wrapping/clamping
+	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
+	// Out-of-range coordinates must never index outside the image.
+	private int wrapX(int x, int width, boolean repeat) {
+		if (repeat) { return ((x % width) + width) % width; }
+		if (x < 0) return 0;
+		if (x >= width) return width - 1;
+		return x;
+	}
+
+	private int wrapY(int y, int height, boolean repeat) {
+		if (repeat) { return ((y % height) + height) % height; }
+		if (y < 0) return 0;
+		if (y >= height) return height - 1;
+		return y;
 	}
 }
