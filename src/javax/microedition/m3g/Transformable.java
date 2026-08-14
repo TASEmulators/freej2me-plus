@@ -143,9 +143,9 @@ public abstract class Transformable extends Object3D
 
 	public void setTransform(Transform transform)
 	{
+		invalidateTransformable();
 		if (transform == null)
 		{
-			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Received null transform! Creating identity transform...");
 			this.matrix.setIdentity();
 			return;
 		}
@@ -160,19 +160,16 @@ public abstract class Transformable extends Object3D
 			float m15 = this.scratch[15];
 
 			// Check if the bottom row is invalid (with a small tolerance for float imprecision)
+			// This SHOULD be an exception, but EA released a few NFS titles that hit this, and work in Nokia devices.
 			if (Math.abs(m12) > M3GMath.EPSILON || Math.abs(m13) > M3GMath.EPSILON ||
 				Math.abs(m14) > M3GMath.EPSILON || Math.abs(m15 - 1.0f) > M3GMath.EPSILON)
 			{
-				throw new IllegalArgumentException("The bottom row of the transform must be (0, 0, 0, 1) for Node objects.");
+				//throw new IllegalArgumentException("The bottom row of the transform must be (0, 0, 0, 1) for Node objects.");
+				this.matrix.setIdentity();
 			}
-
-			// This SHOULD be an exception, but EA released a few NFS titles that hit this, and work in Nokia devices.
-			//if (this.scratch[12] != 0 || this.scratch[13] != 0 || this.scratch[14] != 0 || this.scratch[15] != 1)
-			//	{ throw new IllegalArgumentException("The bottom row of the transform must be (0, 0, 0, 1) for Node objects."); }
 		}
 
 		this.matrix.set(transform);
-		invalidateTransformable();
 	}
 
 	public void setTranslation(float tx, float ty, float tz)
