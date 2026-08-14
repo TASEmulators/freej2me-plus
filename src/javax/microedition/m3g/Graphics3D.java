@@ -915,10 +915,10 @@ public class Graphics3D
 
 						final int spanWidth = ixR - ixL;
 
-						// Used for vertex color blending and nothing else.
-						final float invSpanWidth = (1.0f / spanWidth);
-
 						if (spanWidth <= 0) { continue; }
+
+						// Used for vertex color blending and nothing else.
+						final float invSpanWidth = M3GMath.fastReciprocal(spanWidth);
 
 						// Do we have vertex colors? If so, get the span edges' colors here,
 						// that way, the inner loop only needs to do a simple interpolation.
@@ -942,8 +942,8 @@ public class Graphics3D
 								int colorC = trisScreen[tri_id].colorC();
 
 								// Calculate the left edge's color
-								float c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - xL) * (yC - y) - (xC - xL) * (yB - y)) / denominator));
-								float c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - xL) * (yA - y) - (xA - xL) * (yC - y)) / denominator));
+								float c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixL) * (yC - y) - (xC - ixL) * (yB - y)) / denominator));
+								float c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixL) * (yA - y) - (xA - ixL) * (yC - y)) / denominator));
 								float c3 = 1.0f - c1 - c2;
 
 								aL = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
@@ -952,8 +952,8 @@ public class Graphics3D
 								bL = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
 
 								// Now the right edge's color
-								c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - xR) * (yC - y) - (xC - xR) * (yB - y)) / denominator));
-								c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - xR) * (yA - y) - (xA - xR) * (yC - y)) / denominator));
+								c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixR) * (yC - y) - (xC - ixR) * (yB - y)) / denominator));
+								c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixR) * (yA - y) - (xA - ixR) * (yC - y)) / denominator));
 								c3 = 1.0f - c1 - c2;
 
 								aR = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
