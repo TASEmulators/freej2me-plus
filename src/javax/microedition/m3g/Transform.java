@@ -314,12 +314,13 @@ public class Transform
 
 	private void computeRotationMatrix(float angle, float ax, float ay, float az)
 	{
+		resetManipulationMatrix();
+
 		float axisLen = (ax * ax) + (ay * ay) + (az * az);
 
 		// Angle or axis length as zero means no/invalid rotation. Return right away
 		if (angle == 0.0f || axisLen < M3GMath.EPSILON) { return; }
 
-		resetManipulationMatrix();
 		if (angle == 0) { return; }
 
 		float rad = M3GMath.toRadians(angle);
@@ -339,6 +340,8 @@ public class Transform
 
 	private void computeRotationQuatMatrix(float qx, float qy, float qz, float qw)
 	{
+		resetManipulationMatrix();
+
 		if (qx == 0 && qy == 0 && qz == 0 && qw == 0) {
 			throw new IllegalArgumentException("Cannot rotate when all quaternion components are zero.");
 		}
@@ -349,7 +352,6 @@ public class Transform
 		float z = qz / l;
 		float w = qw / l;
 
-		resetManipulationMatrix();
 		manipulationMatrix[0] = 1 - 2*y*y - 2*z*z;
 		manipulationMatrix[1] = 2*x*y - 2*z*w;
 		manipulationMatrix[2] = 2*x*z + 2*y*w;
