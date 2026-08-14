@@ -643,20 +643,9 @@ public class Graphics3D
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
 		final boolean perspectiveCorrectionEnabled = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 
-		// Handle winding order first and foremost
-		if (windingOrder == PolygonMode.WINDING_CW)
-		{
-			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Polygon Winding is Clockwise! Untested, might render incorrectly");
-			ord[0] = 0;
-			ord[1] = 2;
-			ord[2] = 1;
-		}
-		else
-		{
-			ord[0] = 0;
-			ord[1] = 1;
-			ord[2] = 2;
-		}
+		ord[0] = 0;
+		ord[1] = 1;
+		ord[2] = 2;
 
 		// Set up fog properties
 		final Fog fog = appearance.getFog();
@@ -1085,17 +1074,15 @@ public class Graphics3D
 							// To blend the fog value here, we have to take the current pixel's z value into consideration
 							if (fog != null)
 							{
-								// TODO: This multiplication by 255 is likely not correct, it's just a workaround that helps games with fog usage to show geometry
-								// There's probably some kind of issue with how triangles' final z-coordinate is calculated
+								final float zEye = M3GMath.fastReciprocal((pwL + drawX * (pwR - pwL)));
+
 								if (fog.getMode() == Fog.LINEAR)
 								{
-									fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - z) / (fog.getFarDistance() - fog.getNearDistance()) * 255));
+									fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance())));
 								}
-								else
-								{
-									fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * z));
-									fogFactor = M3GMath.max(0, M3GMath.min(1, fogFactor));
-								}
+								else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
+
+								fogFactor = M3GMath.max(0, M3GMath.min(1, fogFactor));
 
 								paintPixel = blendFog(paintPixel, fog.getColor());
 							}

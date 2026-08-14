@@ -26,21 +26,21 @@ public class M3GMath
 
 	static
 	{
-        for (int i = 0; i < 65536; ++i)
+		for (int i = 0; i < 65536; ++i)
 		{
-            preCalcSin[i] = (float) Math.sin((float) i * Math.PI * 2.0f / 65536.0f);
-        }
-    }
+			preCalcSin[i] = (float) Math.sin((float) i * Math.PI * 2.0f / 65536.0f);
+		}
+	}
 
-    public static float sin(float f)
+	public static float sin(float f)
 	{
-        return preCalcSin[(int) (f * 10430.378F) & '\uffff'];
-    }
+		return preCalcSin[(int) (f * 10430.378F) & '\uffff'];
+	}
 
-    public static float cos(float f)
+	public static float cos(float f)
 	{
-        return preCalcSin[(int) (f * 10430.378F + 16384.0F) & '\uffff'];
-    }
+		return preCalcSin[(int) (f * 10430.378F + 16384.0F) & '\uffff'];
+	}
 
 	public static float tan(float a)
 	{
@@ -53,9 +53,9 @@ public class M3GMath
 	public static float acos(float a)
 	{
 		return (float) (Math.PI / 2 +
-                        ((-0.939115566365855 * a) +(0.9217841528914573f * Math.pow(a, 3))) /
-                        (1 + (-1.2845906244690837f * Math.pow(a, 2)) +
-                         (0.295624144969963174f * Math.pow(a, 4))));
+						((-0.939115566365855 * a) +(0.9217841528914573f * Math.pow(a, 3))) /
+						(1 + (-1.2845906244690837f * Math.pow(a, 2)) +
+						 (0.295624144969963174f * Math.pow(a, 4))));
 	}
 
 	// Those 'to*' methods are just backported from Java 9
@@ -147,8 +147,8 @@ public class M3GMath
 		transformedNormal[3] = 0; // Homogeneous coordinate for normal is always 0
 
 		float length = sqrt(transformedNormal[0] * transformedNormal[0] +
-                                transformedNormal[1] * transformedNormal[1] +
-                                transformedNormal[2] * transformedNormal[2]);
+								transformedNormal[1] * transformedNormal[1] +
+								transformedNormal[2] * transformedNormal[2]);
 
 		if (length > 0)
 		{
@@ -172,27 +172,27 @@ public class M3GMath
 	// Calculates the length of a vector
 	public static float length(float[] vector)
 	{
-        float sum = 0.0f;
+		float sum = 0.0f;
 
-        for (float component : vector) { sum += component * component; }
+		for (float component : vector) { sum += component * component; }
 
-        return sqrt(sum);
-    }
+		return sqrt(sum);
+	}
 
 	// Calculates the distance between two vectors
 	public static float distance(float[] a, float[] b)
 	{
-        float sum = 0.0f;
-        float diff = 0.0f;
+		float sum = 0.0f;
+		float diff = 0.0f;
 
-        for (int i = 0; i < a.length; i++)
-        {
-            diff = a[i] - b[i];
-            sum += diff * diff;
-        }
+		for (int i = 0; i < a.length; i++)
+		{
+			diff = a[i] - b[i];
+			sum += diff * diff;
+		}
 
-        return sqrt(sum);
-    }
+		return sqrt(sum);
+	}
 
 	// Normalize a vector
 	public static float[] normalize(float[] vector)
@@ -236,6 +236,15 @@ public class M3GMath
 	{
 		for (int i = 0; i < a.length; i++) { a[i] *= b; }
 		return a;
+	}
+
+	// Fast float reciprocal (1 / x) using Newton-Raphson step
+	public static float fastReciprocal(float x)
+	{
+		int i = Float.floatToRawIntBits(x);
+		i = 0x7EF311C2 - i;
+		float y = Float.intBitsToFloat(i);
+		return y * (2.0f - x * y);
 	}
 
 	public static float[] div(float[] a, float b) { return mul(a, 1f / b); }
