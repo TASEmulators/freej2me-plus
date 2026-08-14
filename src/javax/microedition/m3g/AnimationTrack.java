@@ -46,7 +46,9 @@ public class AnimationTrack extends Object3D
 	public int property;
 	private AnimationController controller;
 
-	public AnimationTrack(KeyframeSequence sequence, int property) 
+	private float[] sample;
+
+	public AnimationTrack(KeyframeSequence sequence, int property)
 	{
 		if (sequence == null) { throw new NullPointerException("Sequence must not be null"); }
 		if ((property < ALPHA) || (property > VISIBILITY)) { throw new IllegalArgumentException("Unknown property"); }
@@ -56,46 +58,60 @@ public class AnimationTrack extends Object3D
 		addReference(this.sequence);
 	}
 
-	public void getContribution(int time, float[] accumSamples, float[] weight, int[] validity) 
+	protected Object3D duplicateImpl()
 	{
-		if (this.controller == null || !controller.isActive(time)) 
+		AnimationTrack copy = (AnimationTrack) super.duplicateImpl();
+		copy.sequence = this.sequence;
+		copy.property = this.property;
+		copy.setController(this.controller);
+
+		addReference(copy.sequence);
+		return copy;
+	}
+
+	public void getContribution(int time, float[] accumSamples, float[] weight, int[] validity)
+	{
+		if (this.controller == null || !controller.isActive(time))
 		{
 			weight[0] = 0;
-			validity[0] = ((controller != null) ? controller.timeToActivation(time) : 0x7FFFFFFF);
-			if (validity[0] < 1) { validity[0] = 1; }
+			int timeToAct = (controller != null) ? controller.timeToActivation(time) : Integer.MAX_VALUE;
+			validity[0] = M3GMath.max(1, timeToAct);
+			return;
+		}
+
+		weight[0] = controller.getWeight();
+
+		if (weight[0] <= 0.0f)
+		{
+			validity[0] = Integer.MAX_VALUE;
 			return;
 		}
 
 		int sampleLength = sequence.getComponentCount();
-		weight[0] = controller.getWeight();
 
-		if (weight[0] <= 0.0f) 
-		{
-			validity[0] = 0x7FFFFFFF;
-			return;
-		}
+		if (this.sample == null || this.sample.length < sampleLength)
+			{ this.sample = new float[sampleLength]; }
 
-		float[] sample = new float[sampleLength];
-
+		float speed = controller.getSpeed();
 		int sampleTime = (int) controller.getPosition(time);
-		int sampleValidity = sequence.getSample(sampleTime, sample);
-		validity[0] = sampleValidity;
+		validity[0] = sequence.getSample(sampleTime, this.sample);
 
-		if (sampleValidity > 0) 
-		{
-			sampleValidity = controller.timeToDeactivation(time);
-			if (sampleValidity < validity[0]) { validity[0] = sampleValidity; }
+		int worldValidity;
+		if (speed == 0.0f) { worldValidity = Integer.MAX_VALUE; }
+		else { worldValidity = (int) M3GMath.roundPositive(validity[0] / M3GMath.abs(speed)); }
 
-			for (int i = 0; i < sampleLength; i++) { accumSamples[i] += sample[i] * weight[0]; }
-		}
+		int timeToDeact = controller.timeToDeactivation(time);
+		validity[0] = M3GMath.max(1, M3GMath.min(worldValidity, timeToDeact));
+
+		for (int i = 0; i < sampleLength; i++) { accumSamples[i] += this.sample[i] * weight[0]; }
 	}
 
 	public AnimationController getController() { return controller; }
 
-	public void setController(AnimationController controller) 
-	{ 
+	public void setController(AnimationController controller)
+	{
 		removeReference(this.controller);
-		this.controller = controller; 
+		this.controller = controller;
 		addReference(this.controller);
 	}
 
@@ -103,9 +119,9 @@ public class AnimationTrack extends Object3D
 
 	public KeyframeSequence getKeyframeSequence() { return sequence; }
 
-	private boolean isCompatible(int components, int property) 
+	private boolean isCompatible(int components, int property)
 	{
-		switch (property) 
+		switch (property)
 		{
 			case ALPHA:
 			case DENSITY:
@@ -138,5 +154,4 @@ public class AnimationTrack extends Object3D
 				return false; // Shouldn't occur
 		}
 	}
-
 }

@@ -20,110 +20,106 @@ import org.recompile.mobile.Mobile;
 
 public class Material extends Object3D
 {
-
 	public static final int AMBIENT = 1024;
 	public static final int DIFFUSE = 2048;
 	public static final int EMISSIVE = 4096;
 	public static final int SPECULAR = 8192;
 
-	private int ambientColor;
-	private int diffuseColor;
-	private int emissiveColor;
-	private int specularColor;
-	private float shininess;
-	private boolean tracking;
+	private int ambientColor = 0x00333333;
+	private int diffuseColor = 0xFFCCCCCC;
+	private int emissiveColor = 0x00000000;
+	private int specularColor = 0x00000000;
+	private float shininess = 0.0f;
+	private boolean tracking = false;
 
-	public Material() 
-	{  
-		this.tracking = false;
-		this.ambientColor = 0x00333333;
-		this.diffuseColor = 0xFFCCCCCC;
-		this.emissiveColor = 0x00000000;
-		this.specularColor = 0x00000000;
-		this.shininess = 0f;
+	public Material() { }
+
+	protected Object3D duplicateImpl()
+	{
+		Material copy = (Material) super.duplicateImpl();
+		copy.ambientColor = this.ambientColor;
+		copy.diffuseColor = this.diffuseColor;
+		copy.emissiveColor = this.emissiveColor;
+		copy.specularColor = this.specularColor;
+		copy.shininess = this.shininess;
+		copy.tracking = this.tracking;
+		return copy;
 	}
 
-	public int getColor(int target) 
-	{ 
+	public int getColor(int target)
+	{
 		/* As per JSR-184, throw IllegalArgumentException if target has a value other than AMBIENT, DIFFUSSE, EMISSIVE or SPECULAR. */
-		if(target != AMBIENT || target != DIFFUSE || target != EMISSIVE || target != SPECULAR) 
+		if (target != AMBIENT && target != DIFFUSE && target != EMISSIVE && target != SPECULAR)
 			{ throw new IllegalArgumentException("Tried to get invalid color component from material."); }
-		
+
 		switch(target)
 		{
+			case DIFFUSE: return this.diffuseColor;
+			case EMISSIVE: return this.emissiveColor;
+			case SPECULAR: return this.specularColor;
 			case AMBIENT:
-				return this.ambientColor; 
-			case DIFFUSE:
-				return this.diffuseColor;
-			case EMISSIVE:
-				return this.emissiveColor;
-			case SPECULAR:
-				return this.specularColor;
+			default: return this.ambientColor;
 		}
-
-		return this.ambientColor; 
 	}
 
 	public float getShininess() { return this.shininess; }
 
 	public boolean isVertexColorTrackingEnabled() { return this.tracking; }
 
-	public void setColor(int target, int ARGB) 
-	{ 
+	public void setColor(int target, int ARGB)
+	{
 		/* As per JSR-184, throw IllegalArgumentException if target has a value other than an inclusive OR of one or more of AMBIENT, DIFFUSE, EMISSIVE, SPECULAR. */
-		if((target & ~(AMBIENT | DIFFUSE | EMISSIVE | SPECULAR)) != 0) 
+		if (target == 0 || (target & ~(AMBIENT | DIFFUSE | EMISSIVE | SPECULAR)) != 0)
 			{throw new IllegalArgumentException("Trying to set material color on invalid material component."); }
-		
 
-		if ((target & AMBIENT)  != 0) { this.ambientColor = ARGB;  }
+
+		if ((target & AMBIENT)  != 0) { this.ambientColor = ARGB & 0x00FFFFFF;  }
 		if ((target & DIFFUSE)  != 0) { this.diffuseColor = ARGB;  }
-		if ((target & EMISSIVE) != 0) { this.emissiveColor = ARGB; }
-		if ((target & SPECULAR) != 0) { this.specularColor = ARGB; }
+		if ((target & EMISSIVE) != 0) { this.emissiveColor = ARGB & 0x00FFFFFF; }
+		if ((target & SPECULAR) != 0) { this.specularColor = ARGB & 0x00FFFFFF; }
 	}
 
-	public void setShininess(float shininess) 
-	{ 
-		/* As per JSR-184, throw IllegalArgumentException if shininess > 128(1f) or < 0(0f). */
-		//if(shininess < 0f || shininess > 1f) { throw new IllegalArgumentException("Material received invalid shininess value:" + shininess); }
-		
-		if(shininess < 0f) { shininess = 0f; }
-		else if (shininess > 1f) { shininess = 1f; }
-		
-		this.shininess = shininess; 
+	public void setShininess(float shininess)
+	{
+		/* As per JSR-184, throw IllegalArgumentException if shininess > 128 or < 0. */
+		if(shininess < 0f || shininess > 128.0f) { throw new IllegalArgumentException("Material received invalid shininess value:" + shininess); }
+
+		this.shininess = shininess;
 	}
 
 	public void setVertexColorTrackingEnable(boolean enable) { this.tracking = enable; }
 
-	@Override
-	void updateProperty(int property, float[] value) 
+	void updateProperty(int property, float[] value)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating material property");
-		switch (property) 
+
+		switch (property)
 		{
 			case AnimationTrack.ALPHA:
-				diffuseColor = (diffuseColor | 0xFF000000) & ((int) value[0] << 24);
+				int a = M3GMath.max(0, M3GMath.min(255, (int) (value[0] <= 1.0f ? value[0] * 255.0f : value[0])));
+				this.diffuseColor = (a << 24) | (this.diffuseColor & 0x00FFFFFF);
 				break;
 			case AnimationTrack.AMBIENT_COLOR:
-				ambientColor = (int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2];
+				this.ambientColor = parseRGB(value);
 				break;
 			case AnimationTrack.DIFFUSE_COLOR:
-				diffuseColor = (diffuseColor | 0x00FFFFFF) & ((int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2]);
+				this.diffuseColor = (this.diffuseColor & 0xFF000000) | parseRGB(value);
 				break;
 			case AnimationTrack.EMISSIVE_COLOR:
-				emissiveColor = ((int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2] & 0x00FFFFFF);
-				break;
-			case AnimationTrack.SHININESS:
-				shininess = M3GMath.max(0.f, M3GMath.min(128.f, value[0]));
+				this.emissiveColor = parseRGB(value);
 				break;
 			case AnimationTrack.SPECULAR_COLOR:
-				specularColor = (int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2];
+				this.specularColor = parseRGB(value);
+				break;
+			case AnimationTrack.SHININESS:
+				this.shininess = M3GMath.max(0.0f, M3GMath.min(128.0f, value[0]));
 				break;
 			default:
 				super.updateProperty(property, value);
 		}
 	}
 
-	boolean animTrackCompatible(AnimationTrack track) 
+	boolean animTrackCompatible(AnimationTrack track)
 	{
 		switch (track.getTargetProperty()) {
 			case AnimationTrack.ALPHA:
@@ -136,5 +132,13 @@ public class Material extends Object3D
 			default:
 				return super.animTrackCompatible(track);
 		}
+	}
+
+	private static int parseRGB(float[] value)
+	{
+		int r = M3GMath.max(0, M3GMath.min(255, (int) (value[0] <= 1.0f ? value[0] * 255.0f : value[0])));
+		int g = M3GMath.max(0, M3GMath.min(255, (int) (value[1] <= 1.0f ? value[1] * 255.0f : value[1])));
+		int b = M3GMath.max(0, M3GMath.min(255, (int) (value[2] <= 1.0f ? value[2] * 255.0f : value[2])));
+		return (r << 16) | (g << 8) | b;
 	}
 }

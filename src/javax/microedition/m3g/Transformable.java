@@ -20,6 +20,8 @@ import org.recompile.mobile.Mobile;
 
 public abstract class Transformable extends Object3D
 {
+	final float[] scratch = new float[16];
+
 	private Transform matrix = new Transform();
 	private Transform scale = new Transform();
 	private Transform rotate = new Transform();
@@ -37,7 +39,7 @@ public abstract class Transformable extends Object3D
 		transform.postMultiply(this.matrix);
 	}
 
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
 		Transformable copy = (Transformable) super.duplicateImpl();
 		copy.matrix = new Transform(matrix);
@@ -54,16 +56,16 @@ public abstract class Transformable extends Object3D
 		if (angleAxis.length < 4) { throw new IllegalArgumentException("Illegal length of angle axis array"); }
 
 		final float ax, ay, az;
-		final float[] m = new float[16];
-		this.rotate.get(m);
-		
-		final float angle = M3GMath.acos(((m[0] + m[5] + m[10]) - 1) / 2);
-		
-		ax = angle == 0 ? 0 : (m[9] - m[6]) / (2 * M3GMath.sin(angle));
-		ay = angle == 0 ? 0 : (m[2] - m[8]) / (2 * M3GMath.sin(angle));
-		az = angle == 0 ? 0 : (m[4] - m[1]) / (2 * M3GMath.sin(angle));
+		this.rotate.get(this.scratch);
 
-		angleAxis[0] = angle;
+		final float angle = M3GMath.acos(((this.scratch[0] + this.scratch[5] + this.scratch[10]) - 1.0f) * 0.5f);
+		final float sinAngle = (2 * M3GMath.sin(angle));
+
+		ax = (angle == 0.0f || sinAngle == 0.0f) ? 0.0f : (this.scratch[9] - this.scratch[6]) / sinAngle;
+		ay = (angle == 0.0f || sinAngle == 0.0f) ? 0.0f: (this.scratch[2] - this.scratch[8]) / sinAngle;
+		az = (angle == 0.0f || sinAngle == 0.0f) ? 0.0f : (this.scratch[4] - this.scratch[1]) / sinAngle;
+
+		angleAxis[0] = M3GMath.toDegrees(angle); // Angle has to be in degrees here
 		angleAxis[1] = ax;
 		angleAxis[2] = ay;
 		angleAxis[3] = az;
@@ -92,7 +94,7 @@ public abstract class Transformable extends Object3D
 	{
 		if (matrix == null) { throw new NullPointerException("Cannot copy matrix data into a null matrix."); }
 
-		System.arraycopy(this.matrix, 0, matrix, 0, 16);
+		this.matrix.get(matrix);
 	}
 
 	public void getTranslation(float[] xyz)
@@ -110,33 +112,33 @@ public abstract class Transformable extends Object3D
 	public void postRotate(float angle, float ax, float ay, float az)
 	{
 		this.rotate.postRotate(angle, ax, ay, az);
+		invalidateTransformable();
 	}
 
 	public void preRotate(float angle, float ax, float ay, float az)
 	{
 		this.rotate.preRotate(angle, ax, ay, az);
+		invalidateTransformable();
 	}
 
 	public void scale(float sx, float sy, float sz)
 	{
-		float[] xyz = new float[3];
-		getScale(xyz);
-		sx *= xyz[0];
-		sy *= xyz[1];
-		sz *= xyz[2];
 		this.scale.postScale(sx, sy, sz);
+		invalidateTransformable();
 	}
 
 	public void setOrientation(float angle, float ax, float ay, float az)
 	{
 		this.rotate.setIdentity();
 		this.rotate.preRotate(angle, ax, ay, az);
+		invalidateTransformable();
 	}
 
 	public void setScale(float sx, float sy, float sz)
 	{
 		this.scale.setIdentity();
 		this.scale.postScale(sx, sy, sz);
+		invalidateTransformable();
 	}
 
 	public void setTransform(Transform transform)
@@ -148,68 +150,79 @@ public abstract class Transformable extends Object3D
 			return;
 		}
 
-		if (this instanceof Node) 
+		if (this instanceof Node)
 		{
-			final float[] m = new float[16];
-			transform.get(m);
+			transform.get(this.scratch);
 
-			if (m[12] != 0 || m[13] != 0 || m[14] != 0 || m[15] != 1) { throw new IllegalArgumentException("The bottom row of the transform must be (0, 0, 0, 1) for Node objects."); }
+			float m12 = this.scratch[12];
+			float m13 = this.scratch[13];
+			float m14 = this.scratch[14];
+			float m15 = this.scratch[15];
+
+			// Check if the bottom row is invalid (with a small tolerance for float imprecision)
+			if (Math.abs(m12) > M3GMath.EPSILON || Math.abs(m13) > M3GMath.EPSILON ||
+				Math.abs(m14) > M3GMath.EPSILON || Math.abs(m15 - 1.0f) > M3GMath.EPSILON)
+			{
+				throw new IllegalArgumentException("The bottom row of the transform must be (0, 0, 0, 1) for Node objects.");
+			}
+
+			// This SHOULD be an exception, but EA released a few NFS titles that hit this, and work in Nokia devices.
+			//if (this.scratch[12] != 0 || this.scratch[13] != 0 || this.scratch[14] != 0 || this.scratch[15] != 1)
+			//	{ throw new IllegalArgumentException("The bottom row of the transform must be (0, 0, 0, 1) for Node objects."); }
 		}
 
-		this.matrix = new Transform(transform);
+		this.matrix.set(transform);
+		invalidateTransformable();
 	}
 
 	public void setTranslation(float tx, float ty, float tz)
 	{
 		this.translate.setIdentity();
 		this.translate.postTranslate(tx, ty, tz);
+		invalidateTransformable();
 	}
 
 	public void translate(float tx, float ty, float tz)
 	{
-		float[] xyz = new float[3];
-		getTranslation(xyz);
-		tx += xyz[0];
-		ty += xyz[1];
-		tz += xyz[2];
 		this.translate.postTranslate(tx, ty, tz);
+		invalidateTransformable();
 	}
 
 	@Override
-	void updateProperty(int property, float[] value) 
+	void updateProperty(int property, float[] value)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Transformable property");
-		switch (property) 
+		switch (property)
 		{
 			case AnimationTrack.ORIENTATION:
 				setOrientation(value[0], value[1], value[2], value[3]);
 				break;
 			case AnimationTrack.TRANSLATION:
-				translate(value[0], value[1], value[2]);
+				setTranslation(value[0], value[1], value[2]);
 				break;
 			case AnimationTrack.SCALE:
-				scale(value[0], value[1], value[2]);
+				setScale(value[0], value[1], value[2]);
 				break;
 			default:
 				super.updateProperty(property, value);
 		}
-		boolean invalidate = true;
 	}
 
-	void invalidateTransformable() 
+	void invalidateTransformable()
 	{
-		if (!(this instanceof Texture2D)) 
+		if (!(this instanceof Texture2D))
 		{
-			if (((Node) this).parent != null && (((Node) this).hasRenderables || ((Node) this).hasBones)) 
+			Node node = (Node) this;
+			if (node.parent != null && (node.hasRenderables || node.hasBones))
 			{
-				((Node) this).parent.invalidateNode(new boolean[]{false, false});
+				node.parent.invalidateNode(new boolean[]{false, false});
 			}
 		}
 	}
 
-	boolean animTrackCompatible(AnimationTrack track) 
+	boolean animTrackCompatible(AnimationTrack track)
 	{
-		switch (track.getTargetProperty()) 
+		switch (track.getTargetProperty())
 		{
 			case AnimationTrack.ORIENTATION:
 			case AnimationTrack.SCALE:

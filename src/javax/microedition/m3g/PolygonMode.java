@@ -44,77 +44,61 @@ public class PolygonMode extends Object3D
 		this.perspectiveCorrection = false;
 	}
 
-	public int getCulling()
+	protected Object3D duplicateImpl()
 	{
-		return this.culling;
+		PolygonMode copy = (PolygonMode) super.duplicateImpl();
+		copy.culling = this.culling;
+		copy.shading = this.shading;
+		copy.winding = this.winding;
+		copy.twoSidedLighting = this.twoSidedLighting;
+		copy.localCameraLighting = this.localCameraLighting;
+		copy.perspectiveCorrection = this.perspectiveCorrection;
+		return copy;
 	}
 
-	public int getShading()
-	{
-		return this.shading;
-	}
+	public int getCulling() { return this.culling; }
 
-	public int getWinding()
-	{
-		return this.winding;
-	}
+	public int getShading() { return this.shading; }
 
-	public boolean isLocalCameraLightingEnabled()
-	{
-		return this.localCameraLighting;
-	}
+	public int getWinding() { return this.winding; }
 
-	public boolean isPerspectiveCorrectionEnabled()
-	{
-		return this.perspectiveCorrection;
-	}
+	public boolean isLocalCameraLightingEnabled() { return this.localCameraLighting; }
 
-	public boolean isTwoSidedLightingEnabled()
-	{
-		return this.twoSidedLighting;
-	}
+	public boolean isPerspectiveCorrectionEnabled() { return this.perspectiveCorrection; }
+
+	public boolean isTwoSidedLightingEnabled() { return this.twoSidedLighting; }
 
 	public void setCulling(int mode)
 	{
 		if (mode != CULL_BACK &&
 			mode != CULL_FRONT &&
 			mode != CULL_NONE)
-			throw new java.lang.IllegalArgumentException();
+			throw new java.lang.IllegalArgumentException("Invalid cull mode:" + mode);
 
 		this.culling = mode;
 	}
 
-	public void setLocalCameraLightingEnable(boolean enable)
-	{
-		this.localCameraLighting = enable;
-	}
+	public void setLocalCameraLightingEnable(boolean enable) { this.localCameraLighting = enable; }
 
-	public void setPerspectiveCorrectionEnable(boolean enable)
-	{
-		this.perspectiveCorrection = enable;
-	}
+	public void setPerspectiveCorrectionEnable(boolean enable) { this.perspectiveCorrection = enable; }
 
 	public void setShading(int mode)
 	{
 		if (mode != SHADE_FLAT &&
 			mode != SHADE_SMOOTH)
-			throw new java.lang.IllegalArgumentException();
+			throw new java.lang.IllegalArgumentException("Invalid shading:" + mode);
 
 		this.shading = mode;
 	}
 
-	public void setTwoSidedLightingEnable(boolean enable)
-	{
-		this.twoSidedLighting = enable;
-	}
+	public void setTwoSidedLightingEnable(boolean enable) { this.twoSidedLighting = enable; }
 
 	public void setWinding(int mode)
 	{
 		if (mode != WINDING_CCW &&
 			mode != WINDING_CW)
-			throw new java.lang.IllegalArgumentException();
+			throw new java.lang.IllegalArgumentException("Invalid winding:" + mode);
 
 		this.winding = mode;
 	}
-
 }

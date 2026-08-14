@@ -16,124 +16,128 @@
 */
 package javax.microedition.m3g;
 
-import java.util.Vector;
-
 public class Group extends Node
 {
-
 	public Node firstChild;
 	public int numNonCullables = 0, numRenderables = 0;
 
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
 		Group copy = (Group) super.duplicateImpl();
-		copy.firstChild = (Node) firstChild.duplicateImpl();
-		
-		copy.removeReference(firstChild);
-		copy.addReference(copy.firstChild);
+		copy.firstChild = null;
 
-		copy.firstChild.parent = copy;
+		// We must Duplicate each child in the circular doubly-linked list
+		if (this.firstChild != null)
+		{
+			Node curr = this.firstChild;
+			do
+			{
+				Node childCopy = (Node) curr.duplicateImpl();
+				copy.addChild(childCopy);
+				curr = curr.right;
+			}
+			while (curr != this.firstChild);
+		}
 
 		return copy;
 	}
 
-	public void addChild(Node child) 
+	public void addChild(Node child)
 	{
 		if (child == null) { throw new NullPointerException("child can not be null"); }
 		if (child == this) { throw new IllegalArgumentException("can not add self as child"); }
+		if (child.getParent() != null) { throw new IllegalArgumentException("child already has parent"); }
+		if (isAncestor(child)) { throw new IllegalArgumentException("Cannot add an ancestor as a child"); }
 
-		if (child.parent == null) 
+		if (firstChild == null)
 		{
-			if (firstChild == null) 
-			{
-				firstChild = child;
-				child.left = child;
-				child.right = child;
-			} 
-			else 
-			{
-				Node linkChild = firstChild;
-				child.left = linkChild.left;
-				linkChild.left.right = child;
-
-				child.right = linkChild;
-				linkChild.left = child;
-			}
-			child.setParent(this);
-			addReference(child);
+			firstChild = child;
+			child.left = child;
+			child.right = child;
 		}
+		else
+		{
+			Node lastChild = firstChild.left;
+
+			lastChild.right = child;
+			child.left = lastChild;
+
+			child.right = firstChild;
+			firstChild.left = child;
+		}
+
+		child.setParent(this);
+		addReference(child);
 	}
 
-	public Node getChild(int idx) 
+	public Node getChild(int idx)
 	{
-		if (idx < 0) { throw new IllegalArgumentException(); }
+		if (idx < 0 || idx > getChildCount())
+			{ throw new IllegalArgumentException("Negative child index"); }
+
+		if (firstChild == null)
+		{
+			throw new IndexOutOfBoundsException("Group has no children");
+		}
 
 		Node n = firstChild;
-		while (idx-- > 0) 
+		int count = 0;
+		do
 		{
+			if (count == idx)
+			{
+				return n;
+			}
+			count++;
 			n = n.right;
-			if (n == firstChild) { throw new IllegalArgumentException(); }
 		}
-		return n;
+		while (n != firstChild);
+
+		throw new IndexOutOfBoundsException("Index " + idx + " out of bounds (child count is: " + count + ")");
 	}
 
-	public int getChildCount() 
+	public int getChildCount()
 	{
+		if (firstChild == null)
+		{
+			return 0;
+		}
+
 		int count = 0;
 		Node child = firstChild;
-		if (child != null) 
+		do
 		{
-			do 
-			{
-				++count;
-				child = child.right;
-			} while (child != firstChild);
+			count++;
+			child = child.right;
 		}
+		while (child != firstChild);
+
 		return count;
 	}
 
-	@Override
-	boolean doAlign(Node ref) 
+	public void removeChild(Node child)
 	{
-		if (!super.doAlign(ref)) { return false; }
-
-		Node child = firstChild;
-		if (child != null) 
-		{
-			do 
-			{
-				if (!child.doAlign(ref)) { return false; } 
-				child = child.right;
-			} while (child != firstChild);
-		}
-		return true;
-	}
-
-	public boolean pick(int scope, float x, float y, Camera camera, RayIntersection ri) 
-	{
-		// TODO
-		return false;
-	}
-
-	public boolean pick(int scope, float ox, float oy, float oz, float dx, float dy, float dz, RayIntersection ri) 
-	{
-		// TODO
-		return false;
-	}
-
-	public void removeChild(Node child) 
-	{
-		if (child != null && firstChild != null) 
+		if (child != null && firstChild != null)
 		{
 			Node n = firstChild;
-			do 
+			do
 			{
-				if (n == child) 
+				if (n == child)
 				{
-					n.right.left = n.left;
-					n.left.right = n.right;
+					if (n.right == n) // Only child in the list
+					{
+						firstChild = null;
+					}
+					else
+					{
+						n.right.left = n.left;
+						n.left.right = n.right;
 
-					if (firstChild == n) { firstChild = (n.right != n) ? n.right : null; }
+						if (firstChild == n)
+						{
+							firstChild = n.right;
+						}
+					}
 
 					n.left = null;
 					n.right = null;
@@ -142,8 +146,65 @@ public class Group extends Node
 					return;
 				}
 				n = n.right;
-			} while (n != firstChild);
+			}
+			while (n != firstChild);
 		}
 	}
 
+	@Override
+	boolean doAlign(Node ref)
+	{
+		if (!super.doAlign(ref))
+		{
+			return false;
+		}
+
+		Node child = firstChild;
+		if (child != null)
+		{
+			do
+			{
+				if (!child.doAlign(ref))
+				{
+					return false;
+				}
+				child = child.right;
+			}
+			while (child != firstChild);
+		}
+		return true;
+	}
+
+	public boolean pick(int scope, float x, float y, Camera camera, RayIntersection ri)
+	{
+		if (camera == null) { throw new NullPointerException("Camera cannot be null"); }
+
+		// TODO
+		return false;
+	}
+
+	public boolean pick(int scope, float ox, float oy, float oz, float dx, float dy, float dz, RayIntersection ri)
+	{
+		if (dx == 0.0f && dy == 0.0f && dz == 0.0f)
+			{ throw new IllegalArgumentException("Ray direction vector cannot be zero"); }
+		// TODO
+		return false;
+	}
+
+	private boolean isAncestor(Node potentialChild)
+	{
+		Node p = this.getParent();
+		while (p != null)
+		{
+			if (p == potentialChild)
+			{
+				return true;
+			}
+			p = p.getParent();
+		}
+		return false;
+	}
+
+	int getRenderableCount() { return this.numRenderables; }
+	int getNonCullableCount() { return this.numNonCullables; }
 }

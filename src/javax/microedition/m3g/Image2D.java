@@ -16,8 +16,6 @@
 */
 package javax.microedition.m3g;
 
-import java.awt.image.Raster;
-
 import org.recompile.mobile.Mobile;
 
 public class Image2D extends Object3D
@@ -40,73 +38,83 @@ public class Image2D extends Object3D
 
 	public Image2D(int format, int w, int h)
 	{
+		/* As per JSR-184, throw IllegalArgumentException if format or dimensions are invalid. */
+		validateFormat(format);
+		validateDimensions(w, h);
+
 		this.mutable = true;
 		this.width = w;
 		this.height = h;
 		this.format = format;
+		this.image = new byte[w * h * bpp()];
 	}
 
 	public Image2D(int format, int w, int h, byte[] image)
 	{
 		/* As per JSR-184, throw NullPointerException if the received image is null. */
 		if (image == null) { throw new NullPointerException("Tried to construct Image2D with null image. "); }
-		
-		/* Also per JSR-184, throw IllegalArgumentException if format is not one of the constants. */
-		if (format != ALPHA && format != LUMINANCE && format != LUMINANCE_ALPHA && format != RGB && format != RGBA)
-			{ throw new IllegalArgumentException("Invalid image format received."); } 
 
-		/* Also per JSR-184, throw IllegalArgumentException if w or h <= 0*/
-		if (w <=0 || h <= 0) { throw new IllegalArgumentException("Image has invalid width and/or height."); }
+		/* Also per JSR-184, throw IllegalArgumentException if format or dimensions are invalid. */
+		validateFormat(format);
+		validateDimensions(w, h);
+
+		this.format = format;
+
+		int len = w * h * this.bpp();
+		if (image.length < len)
+		{
+			throw new IllegalArgumentException("Image byte array too small. Expected size: " + len + ", actual size: " + image.length);
+		}
 
 		Mobile.log(Mobile.LOG_DEBUG, Image2D.class.getPackage().getName() + "." + Image2D.class.getSimpleName() + ": " +  "M3G Byte Image Format: " + formatNames[format-96]);
-		
+
 		this.mutable = false;
 		this.width = w;
 		this.height = h;
-		this.format = format;
+
 		this.image = image;
 	}
 
 	public Image2D(int format, int w, int h, byte[] image, byte[] palette)
 	{
-		/* As per JSR-184, throw NullPointerException if the received image is null. */
+		/* As per JSR-184, throw NullPointerException if the received image or palette are null. */
 		if (image == null) { throw new NullPointerException("Tried to construct Image2D with null image. "); }
-		
-		/* Also per JSR-184, throw IllegalArgumentException if format is not one of the constants. */
-		if (format != ALPHA && format != LUMINANCE && format != LUMINANCE_ALPHA && format != RGB && format != RGBA)
-			{ throw new IllegalArgumentException("Invalid image format received."); } 
+		if (palette == null) { throw new NullPointerException("Image Palette array cannot be null."); }
 
-		/* Also per JSR-184, throw IllegalArgumentException if w or h <= 0*/
-		if (w <=0 || h <= 0) { throw new IllegalArgumentException("Image has invalid width and/or height."); }
+		/* Also per JSR-184, throw IllegalArgumentException if format or dimensions are invalid. */
+		validateFormat(format);
+		validateDimensions(w, h);
 
-		/* 
-		 * Also per JSR-184, throw IllegalArgumentException if (palette.length < 256*C) && ((palette.length % C) != 0), 
-		 * where C is the number of color components (for instance, 3 for RGB). 
+		/*
+		 * Also per JSR-184, throw IllegalArgumentException if (palette.length < 256*C) && ((palette.length % C) != 0),
+		 * where C is the number of color components (for instance, 3 for RGB).
 		 */
-		this.format = format; // bpp() uses the format to ascertain the bytes per pixel, so we have to set it before the check
+		this.format = format;
+		int bpp = this.bpp();
 
-		if(palette.length < 256 * this.bpp() && ((palette.length % this.bpp()) != 0)) 
-			{ throw new IllegalArgumentException("Illegal palette length received."); }
+		if (palette.length < 256 * bpp && (palette.length % bpp) != 0)
+			{ throw new IllegalArgumentException("Illegal palette length: " + palette.length); }
 
 		Mobile.log(Mobile.LOG_DEBUG, Image2D.class.getPackage().getName() + "." + Image2D.class.getSimpleName() + ": " +  "M3G Paletted Image Format: " + formatNames[format-96] + " indices len: " + image.length + " palette len:" + palette.length);
 
 		this.mutable = false;
 		this.width = w;
 		this.height = h;
-		
+
 		// We now start to copy the received "image" comprised of palette indices, as well as the palette colors themselves.
-		this.image = new byte[image.length * bpp()];
-		for(int i = 0; i < image.length; i++)  
+		this.image = new byte[image.length * this.bpp()];
+
+		for(int i = 0; i < image.length; i++)
 		{
-			for(int k = 0; k < bpp(); k++) // The pallete will be 256 entries multiplied by the format's amount of bytes per pixel
-			{
-				/* 
-				 * Due to that, we get its data by reading the received image[] multiplied by bpp. Also, those values 
-				 * are unsigned (as there will be 256 entries in the palette), while java treats its native types
-				 * as signed. So we are required to do that bitwise AND operation to make them unsigned when reading
-				*/
-				this.image[i * bpp() + k] = (byte) (palette[(image[i] & 0xFF) * bpp() + k] & 0xFF);
-			}
+			/*
+			 * Due to that, we get its data by reading the received image[] multiplied by bpp. Also, those values
+			 * are unsigned (as there will be 256 entries in the palette), while java treats its native types
+			 * as signed. So we are required to do that bitwise AND operation to make them unsigned when reading
+			*/
+			int pIdx = (image[i] & 0xFF) * bpp;
+			int offset = i * bpp;
+			// The pallete will be 256 entries multiplied by the format's amount of bytes per pixel
+			for (int k = 0; k < bpp; k++) { this.image[offset + k] = palette[pIdx + k]; }
 		}
 	}
 
@@ -114,46 +122,67 @@ public class Image2D extends Object3D
 	{
 		/* As per JSR-184, throw NullPointerException if the received image is null. */
 		if (image == null) { throw new NullPointerException("Tried to construct Image2D with null image. "); }
-		
+
 		/* Also per JSR-184, throw IllegalArgumentException if format is not one of the constants. */
-		if (format != ALPHA && format != LUMINANCE && format != LUMINANCE_ALPHA && format != RGB && format != RGBA)
-			{ throw new IllegalArgumentException("Invalid image format received."); } 
+		validateFormat(format);
 
 		/* Also per JSR-184, throw IllegalArgumentException if image is not a valid instance of the supported Image classes. */
-		if (!(image instanceof javax.microedition.lcdui.Image) && !(image instanceof java.awt.Image)) 
+		if (!(image instanceof javax.microedition.lcdui.Image) && !(image instanceof java.awt.Image))
 			{ throw new IllegalArgumentException("The image object received is not appropriate to this implementation."); }
-
-		Raster img = ((javax.microedition.lcdui.Image) image).getCanvas().getData();
-		int bppSrc = img.getNumBands();
-		int[] buf = new int[bppSrc];
 
 		Mobile.log(Mobile.LOG_DEBUG, Image2D.class.getPackage().getName() + "." + Image2D.class.getSimpleName() + ": " +  "M3G Image Format:" + formatNames[format-96]);
 
+		javax.microedition.lcdui.Image img = (javax.microedition.lcdui.Image) image;
 		this.mutable = false;
 		this.width = img.getWidth();
 		this.height = img.getHeight();
 		this.format = format;
+
 		int bpp = this.bpp();
 		this.image = new byte[this.width * this.height * bpp];
 
-		for (int row = 0; row < this.height; row++) 
+		int[] argb = new int[this.width * this.height];
+		img.getRGB(argb, 0, this.width, 0, 0, this.width, this.height);
+
+		int idx = 0;
+		for (int pixel : argb)
 		{
-			for (int col = 0; col < this.width; col++)
+			int a = (pixel >> 24) & 0xFF;
+			int r = (pixel >> 16) & 0xFF;
+			int g = (pixel >> 8) & 0xFF;
+			int b = pixel & 0xFF;
+
+			switch (this.format)
 			{
-				img.getPixel(col, row, buf);
-				for (int ch = 0; ch < bpp; ch++)
-				{
-					this.image[bpp * (this.width * row + col) + ch] =
-						(byte) buf[ch % bppSrc];
-				}
+				case ALPHA:
+					this.image[idx++] = (byte) a;
+					break;
+				case LUMINANCE:
+					this.image[idx++] = (byte) ((r + g + b) / 3);
+					break;
+				case LUMINANCE_ALPHA:
+					this.image[idx++] = (byte) ((r + g + b) / 3);
+					this.image[idx++] = (byte) a;
+					break;
+				case RGB:
+					this.image[idx++] = (byte) r;
+					this.image[idx++] = (byte) g;
+					this.image[idx++] = (byte) b;
+					break;
+				case RGBA:
+					this.image[idx++] = (byte) r;
+					this.image[idx++] = (byte) g;
+					this.image[idx++] = (byte) b;
+					this.image[idx++] = (byte) a;
+					break;
 			}
 		}
 	}
 
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
-		Image2D copy =(Image2D) super.duplicateImpl();
-		copy.image = (byte[]) image.clone();
+		Image2D copy = (Image2D) super.duplicateImpl();
+		copy.image = this.image == null ? null : (byte[]) this.image.clone();
 		return copy;
 	}
 
@@ -176,14 +205,20 @@ public class Image2D extends Object3D
 		 */
 		if (image == null) { throw new java.lang.NullPointerException("Received null image."); }
 		if (!this.mutable) { throw new java.lang.IllegalStateException("This Image2D object is not mutable."); }
-		if (x < 0 || y < 0 || w <= 0 || h <= 0 ||
-			x + w > this.width || y + h > this.height ||
-			image.length < w * h * this.bpp())
+		if (x < 0 || y < 0 || w <= 0 || h <= 0 || (x + w) > this.width || (y + h) > this.height)
 			{ throw new java.lang.IllegalArgumentException("Tried to set image with invalid parameters."); }
 
-		for (int i = 0; i < w; i++)
-		{ 
-			for (int j = 0; j < h; j++) { this.image[this.width * (y + j) + (x + i)] = image[j * w + i]; }
+		final int bpp = this.bpp();
+		if (image.length < w * h * bpp)
+		{
+			throw new IllegalArgumentException("Source image cannot smaller than specified region");
+		}
+
+		for (int row = 0; row < h; row++)
+		{
+			int src = row * w * bpp;
+			int dest = ((y + row) * this.width + x) * bpp;
+			System.arraycopy(image, src, this.image, dest, w * bpp);
 		}
 	}
 
@@ -194,52 +229,46 @@ public class Image2D extends Object3D
 		int offset = this.bpp() * (this.width * y + x);
 		int result = 0;
 
-		for (int ch = 0; ch < this.bpp(); ch++) 
-		{ 
-			result |= this.image[offset + ch] << (8 * (this.bpp() - ch - 1));
+		switch (this.format)
+		{
+			case ALPHA:
+				return ((this.image[offset] & 0xFF) << 24) | 0x00FFFFFF;
+			case LUMINANCE:
+				int lum = this.image[offset] & 0xFF;
+				return 0xFF000000 | (lum << 16) | (lum << 8) | lum;
+			case LUMINANCE_ALPHA:
+				int laLum = this.image[offset] & 0xFF;
+				int laAlpha = this.image[offset + 1] & 0xFF;
+				return (laAlpha << 24) | (laLum << 16) | (laLum << 8) | laLum;
+			case RGB:
+				return 0xFF000000
+					| ((this.image[offset] & 0xFF) << 16)
+					| ((this.image[offset + 1] & 0xFF) << 8)
+					| (this.image[offset + 2] & 0xFF);
+			case RGBA:
+				return ((this.image[offset + 3] & 0xFF) << 24)
+					| ((this.image[offset] & 0xFF) << 16)
+					| ((this.image[offset + 1] & 0xFF) << 8)
+					| (this.image[offset + 2] & 0xFF);
+			default:
+				return 0;
 		}
-
-		return result;
 	}
 
-	int getConvertedPixel(int x, int y) 
+	private static void validateFormat(int format)
 	{
-		x = ((x % this.width) + this.width) % this.width;
-		y = ((y % this.height) + this.height) % this.height;
-		int offset = this.bpp() * (this.width * y + x);
-		int result = 0;
-	
-		switch (this.format) 
+		if (format < ALPHA || format > RGBA)
 		{
-			case ALPHA: // TODO: Untested
-				result = (this.image[offset] & 0xFF) << 24 | (0xFF << 16) | (0xFF << 8) | 0xFF; // Alpha only, to ARGB
-				break;
-			case LUMINANCE: // TODO: Untested
-				int luminance = this.image[offset] & 0xFF; // Grayscale value
-				result = (0xFF << 24) | (luminance << 16) | (luminance << 8) | luminance; // Cast to ARGB
-				break;
-			case LUMINANCE_ALPHA:
-				int lum = this.image[offset] & 0xFF; // Luminance
-				int alpha = this.image[offset + 1] & 0xFF; // Alpha
-				result = (alpha << 24) | (lum << 16) | (lum << 8) | lum; // Cast to ARGB
-				break;
-			case RGB:
-				result |= 0xFF << 24; // Full alpha
-				result |= (this.image[offset] & 0xFF) << 16; // Red
-				result |= (this.image[offset + 1] & 0xFF) << 8; // Green
-				result |= (this.image[offset + 2] & 0xFF); // Blue
-				break;
-			case RGBA:
-				result |= (this.image[offset + 3] & 0xFF) << 24; // Alpha
-				result |= (this.image[offset] & 0xFF) << 16; // Red
-				result |= (this.image[offset + 1] & 0xFF) << 8; // Green
-				result |= (this.image[offset + 2] & 0xFF); // Blue
-				break;
-			default:
-				throw new IllegalArgumentException("Unsupported format: " + this.format);
+			throw new IllegalArgumentException("Invalid image format: " + format);
 		}
-	
-		return result;
+	}
+
+	private static void validateDimensions(int w, int h)
+	{
+		if (w <= 0 || h <= 0)
+		{
+			throw new IllegalArgumentException("Width and height must be > 0");
+		}
 	}
 
 	private int bpp()

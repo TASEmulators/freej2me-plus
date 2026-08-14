@@ -16,21 +16,13 @@
 */
 package javax.microedition.m3g;
 
-import java.util.Hashtable;
-
 import org.recompile.mobile.Mobile;
 
 public class Sprite3D extends Node
 {
-
-	private static final int FLIPX = 1;
-	private static final int FLIPY = 2;
-	private int flip;
-
 	private Image2D image;
 	private Appearance appearance;
 	private boolean scaled;
-	private Texture2D texture;
 
 	private int cropw;
 	private int croph;
@@ -42,12 +34,24 @@ public class Sprite3D extends Node
 		/* As per JSR-184, the image cannot be null, and the crop rectangle initially covers the whole image. */
 		if (img == null) { throw new NullPointerException("Cannot create a Sprite3D with a null image."); }
 		scaled = isScaled;
-		image = img;
-		appearance = a;
+		setImage(img);
+		setAppearance(a);
 		cropx = 0;
 		cropy = 0;
 		cropw = img.getWidth();
 		croph = img.getHeight();
+	}
+
+	protected Object3D duplicateImpl()
+	{
+		Sprite3D copy = (Sprite3D) super.duplicateImpl();
+
+		copy.scaled = this.scaled;
+		copy.setCrop(this.cropx, this.cropy, this.cropw, this.croph);
+
+		copy.setImage(this.image);
+		copy.setAppearance(this.getAppearance());
+		return copy;
 	}
 
 	public Appearance getAppearance() { return appearance; }
@@ -73,6 +77,11 @@ public class Sprite3D extends Node
 
 	public void setCrop(int cropX, int cropY, int width, int height)
 	{
+		if (M3GMath.abs(width) > Graphics3D.MAX_TEXTURE_DIMENSION ||
+			M3GMath.abs(height) > Graphics3D.MAX_TEXTURE_DIMENSION)
+		{
+			throw new IllegalArgumentException("Crop width or height magnitude exceeds MAX_TEXTURE_DIMENSION");
+		}
 		cropx=cropX;
 		cropy=cropY;
 		cropw=width;
@@ -107,6 +116,8 @@ public class Sprite3D extends Node
 				{
 					setCrop((int)value[0], (int)value[1], getCropWidth(), getCropHeight());
 				}
+				break;
+
 			default:
 				super.updateProperty(property, value);
 		}

@@ -26,77 +26,113 @@ public class Light extends Node
 	public static final int OMNI = 130;
 	public static final int SPOT = 131;
 
-	private int mode;
-	private int color;
-	private float intensity;
-	private float linear;
-	private float quadratic;
-	private float constant;
-	private float angle;
-	private float exponent;
+	private int mode = DIRECTIONAL;
+	private int color = 0x00FFFFFF;
+	private float intensity = 1.0f;
+	private float constant = 1.0f;
+	private float linear = 0.0f;
+	private float quadratic = 0.0f;
+	private float angle = 180.0f;
+	private float exponent = 0.0f;
 
-	public Light() {  }
+	public Light() { }
 
+	protected Object3D duplicateImpl()
+	{
+		Light copy = (Light) super.duplicateImpl();
+		copy.mode = this.mode;
+		copy.color = this.color;
+		copy.intensity = this.intensity;
+		copy.constant = this.constant;
+		copy.linear = this.linear;
+		copy.quadratic = this.quadratic;
+		copy.angle = this.angle;
+		copy.exponent = this.exponent;
+		return copy;
+	}
 
-	public int getColor() { return color; }
+	public int getColor() { return this.color; }
 
-	public float getConstantAttenuation() { return constant; }
+	public float getConstantAttenuation() { return this.constant; }
 
-	public float getIntensity() { return intensity; }
+	public float getIntensity() { return this.intensity; }
 
-	public float getLinearAttenuation() { return linear; }
+	public float getLinearAttenuation() { return this.linear; }
 
-	public int getMode() { return mode; }
+	public int getMode() { return this.mode; }
 
-	public float getQuadraticAttenuation() { return quadratic; }
+	public float getQuadraticAttenuation() { return this.quadratic; }
 
-	public float getSpotAngle() { return angle; }
+	public float getSpotAngle() { return this.angle; }
 
-	public float getSpotExponent() { return exponent; }
+	public float getSpotExponent() { return this.exponent; }
 
 	public void setAttenuation(float c, float l, float q)
 	{
-		constant = c;
-		linear = l;
-		quadratic = q;
+		if (c < 0.0f || l < 0.0f || q < 0.0f || (c == 0.0f && l == 0.0f && q == 0.0f))
+			{ throw new IllegalArgumentException("Invalid attenuation coefficients."); }
+
+		this.constant = c;
+		this.linear = l;
+		this.quadratic = q;
 	}
 
-	public void setColor(int RGB) { color = RGB; }
+	public void setColor(int RGB) { this.color = RGB & 0x00FFFFFF;; }
 
-	public void setIntensity(float value) { intensity = value; }
+	public void setIntensity(float value) { this.intensity = value; }
 
-	public void setMode(int value) { mode = value; }
+	public void setMode(int value)
+	{
+		if (mode < AMBIENT || mode > SPOT)
+			{ throw new IllegalArgumentException("Invalid light mode: " + mode); }
 
-	public void setSpotAngle(float theta) { angle = theta; }
+		this.mode = value;
+	}
 
-	public void setSpotExponent(float exp) { exponent = exp; }
+	public void setSpotAngle(float theta)
+	{
+		if ((theta < 0.0f || theta > 90.0f) && theta != 180.0f)
+			{ throw new IllegalArgumentException("Spot angle must be either in range of [0, 90], or equal to 180."); }
 
-	@Override
-	void updateProperty(int property, float[] value) 
+		this.angle = theta;
+	}
+
+	public void setSpotExponent(float exp)
+	{
+		if (exp < 0.0f || exp > 128.0f)
+			{ throw new IllegalArgumentException("Spot exponent must be in range of [0, 128]."); }
+
+		this.exponent = exp;
+	}
+
+	void updateProperty(int property, float[] value)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating light property");
-		switch (property) 
+		switch (property)
 		{
 			case AnimationTrack.COLOR:
-				color = (int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2];
+				int r = M3GMath.max(0, M3GMath.min(255, (int) (value[0] <= 1.0f ? value[0] * 255.0f : value[0])));
+				int g = M3GMath.max(0, M3GMath.min(255, (int) (value[1] <= 1.0f ? value[1] * 255.0f : value[1])));
+				int b = M3GMath.max(0, M3GMath.min(255, (int) (value[2] <= 1.0f ? value[2] * 255.0f : value[2])));
+				this.color = (r << 16) | (g << 8) | b;
 				break;
 			case AnimationTrack.INTENSITY:
 				intensity = value[0];
 				break;
 			case AnimationTrack.SPOT_ANGLE:
-				angle = M3GMath.max(0.f, M3GMath.min(90.f, value[0]));
+				angle = M3GMath.max(0.0f, M3GMath.min(90.0f, value[0]));
 				break;
 			case AnimationTrack.SPOT_EXPONENT:
-				exponent = M3GMath.max(0.f, M3GMath.min(128.f, value[0]));
+				exponent = M3GMath.max(0.0f, M3GMath.min(128.0f, value[0]));
 				break;
 			default:
 				super.updateProperty(property, value);
 		}
 	}
 
-	boolean animTrackCompatible(AnimationTrack track) 
+	boolean animTrackCompatible(AnimationTrack track)
 	{
-		switch (track.getTargetProperty()) 
+		switch (track.getTargetProperty())
 		{
 			case AnimationTrack.COLOR:
 			case AnimationTrack.INTENSITY:
@@ -107,5 +143,4 @@ public class Light extends Node
 				return super.animTrackCompatible(track);
 		}
 	}
-
 }

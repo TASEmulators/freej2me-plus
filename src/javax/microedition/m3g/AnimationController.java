@@ -16,7 +16,6 @@
 */
 package javax.microedition.m3g;
 
-
 public class AnimationController extends Object3D
 {
 
@@ -27,27 +26,42 @@ public class AnimationController extends Object3D
 	private float refSequenceTime = 0;
 	private float weight = 1.0f;
 
-	public int timeToActivation(int worldTime) 
+	protected Object3D duplicateImpl()
 	{
-		if (worldTime < activationTime) { return activationTime - worldTime; }
-		else if (worldTime < deactivationTime) { return 0; }
-
-		return 0x7FFFFFFF;
+		AnimationController copy = (AnimationController) super.duplicateImpl();
+		copy.activationTime = this.activationTime;
+		copy.deactivationTime = this.deactivationTime;
+		copy.speed = this.speed;
+		copy.refWorldTime = this.refWorldTime;
+		copy.refSequenceTime = this.refSequenceTime;
+		copy.weight = this.weight;
+		return copy;
 	}
 
-	public int timeToDeactivation(int worldTime) 
+	public boolean isActive(int worldTime)
 	{
-		if (worldTime < deactivationTime) { return deactivationTime - worldTime; }
-		return 0x7FFFFFFF;
-	}
-
-	public boolean isActive(int worldTime) 
-	{
+		// start == end? Then the controller is active at all world times
 		if (activationTime == deactivationTime) { return true; }
+
 		return (worldTime >= activationTime && worldTime < deactivationTime);
 	}
 
-	public void setActiveInterval(int start, int end) 
+	public int timeToActivation(int worldTime)
+	{
+		if (worldTime < activationTime) { return activationTime - worldTime; }
+		else if (worldTime <= deactivationTime) { return 0; }
+
+		return Integer.MAX_VALUE;
+	}
+
+	public int timeToDeactivation(int worldTime)
+	{
+		if (worldTime < deactivationTime) { return deactivationTime - worldTime; }
+
+		return Integer.MAX_VALUE;
+	}
+
+	public void setActiveInterval(int start, int end)
 	{
 		if (start > end)
 			throw new IllegalArgumentException("Start time must be inferior to end time");
@@ -60,7 +74,7 @@ public class AnimationController extends Object3D
 
 	public int getActiveIntervalEnd() { return deactivationTime; }
 
-	public void setSpeed(float speed, int worldTime) 
+	public void setSpeed(float speed, int worldTime)
 	{
 		this.refSequenceTime = getPosition(worldTime);
 		this.refWorldTime = worldTime;
@@ -69,20 +83,20 @@ public class AnimationController extends Object3D
 
 	public float getSpeed() { return speed; }
 
-	public void setPosition(float sequenceTime, int worldTime) 
+	public void setPosition(float sequenceTime, int worldTime)
 	{
 		this.refSequenceTime = sequenceTime;
 		this.refWorldTime = worldTime;
 	}
 
-	public float getPosition(int worldTime) 
+	public float getPosition(int worldTime)
 	{
 		return (refSequenceTime + (speed * (float) (worldTime - refWorldTime)));
 	}
 
 	public int getRefWorldTime() { return refWorldTime; }
 
-	public void setWeight(float weight) 
+	public void setWeight(float weight)
 	{
 		if (weight < 0)
 			throw new IllegalArgumentException("Weight must be positive or zero");
@@ -90,5 +104,4 @@ public class AnimationController extends Object3D
 	}
 
 	public float getWeight() { return weight; }
-
 }

@@ -16,91 +16,67 @@
 */
 package javax.microedition.m3g;
 
+import org.recompile.mobile.Mobile;
 
 public class CompositingMode extends Object3D
 {
-
 	public static final int ALPHA = 64;
 	public static final int ALPHA_ADD = 65;
 	public static final int MODULATE = 66;
 	public static final int MODULATE_X2 = 67;
 	public static final int REPLACE = 68;
 
+	private int blending = REPLACE;
+	private float alphaThreshold = 0.0f;
+	private boolean alphaWrite = true;
+	private boolean depthWrite = true;
+	private boolean depthTest = true;
+	private float depthOffsetUnits = 0.0f;
+	private float depthOffsetFactor = 0.0f;
+	private boolean colorWrite = true;
 
-	private int blending;
-	private float alphaThreshold;
-	private boolean alphaWrite;
-	private boolean depthWrite;
-	private boolean depthTest;
-	private float depthOffsetUnits;
-	private float depthOffsetFactor;
-	private boolean colorWrite;
 
+	public CompositingMode() { }
 
-	public CompositingMode()
+	protected Object3D duplicateImpl()
 	{
-			this.blending = REPLACE;
-			this.alphaThreshold = 0f;
-			this.depthOffsetUnits = 0f;
-			this.depthOffsetFactor = 0f;
-			this.depthTest = true;
-			this.depthWrite = true;
-			this.colorWrite = true;
-			this.alphaWrite = true;
+		CompositingMode copy = (CompositingMode) super.duplicateImpl();
+		copy.blending = this.blending;
+		copy.alphaThreshold = this.alphaThreshold;
+		copy.alphaWrite = this.alphaWrite;
+		copy.depthWrite = this.depthWrite;
+		copy.depthTest = this.depthTest;
+		copy.depthOffsetUnits = this.depthOffsetUnits;
+		copy.depthOffsetFactor = this.depthOffsetFactor;
+		copy.colorWrite = this.colorWrite;
+		return copy;
 	}
 
-	public float getAlphaThreshold()
-	{
-		return this.alphaThreshold;
-	}
+	public float getAlphaThreshold() { return this.alphaThreshold; }
 
-	public int getBlending()
-	{
-		return this.blending;
-	}
+	public int getBlending() { return this.blending; }
 
-	public float getDepthOffsetFactor()
-	{
-		return this.depthOffsetFactor;
-	}
+	public float getDepthOffsetFactor() { return this.depthOffsetFactor; }
 
-	public float getDepthOffsetUnits()
-	{
-		return this.depthOffsetUnits;
-	}
+	public float getDepthOffsetUnits() { return this.depthOffsetUnits; }
 
-	public boolean isAlphaWriteEnabled()
-	{
-		return this.alphaWrite;
-	}
+	public boolean isAlphaWriteEnabled() { return this.alphaWrite; }
 
-	public boolean isColorWriteEnabled()
-	{
-		return this.colorWrite;
-	}
+	public boolean isColorWriteEnabled() { return this.colorWrite; }
 
-	public boolean isDepthTestEnabled()
-	{
-		return this.depthTest;
-	}
+	public boolean isDepthTestEnabled() { return this.depthTest; }
 
-	public boolean isDepthWriteEnabled()
-	{
-		return this.depthWrite;
-	}
+	public boolean isDepthWriteEnabled() { return this.depthWrite; }
 
 	public void setAlphaThreshold(float threshold)
 	{
-		if (threshold < 0 || 1 < threshold)
-			throw new java.lang.IllegalArgumentException();
+		if (threshold < 0.0f || 1.0f < threshold)
+			{ throw new IllegalArgumentException("Invalid threshold:" + threshold); }
 
 		this.alphaThreshold = threshold;
 	}
 
-	public void setAlphaWriteEnable(boolean enable)
-	{
-		this.alphaWrite = enable;
-	}
+	public void setAlphaWriteEnable(boolean enable) { this.alphaWrite = enable; }
 
 	public void setBlending(int mode)
 	{
@@ -109,15 +85,12 @@ public class CompositingMode extends Object3D
 			mode != MODULATE &&
 			mode != MODULATE_X2 &&
 			mode != REPLACE)
-			throw new java.lang.IllegalArgumentException();
+			{ throw new IllegalArgumentException("Invalid blend mode:" + mode); }
 
 		this.blending = mode;
 	}
 
-	public void setColorWriteEnable(boolean enable)
-	{
-		this.colorWrite = enable;
-	}
+	public void setColorWriteEnable(boolean enable) { this.colorWrite = enable; }
 
 	public void setDepthOffset(float factor, float units)
 	{
@@ -125,14 +98,31 @@ public class CompositingMode extends Object3D
 		this.depthOffsetUnits = units;
 	}
 
-	public void setDepthTestEnable(boolean enable)
+	public void setDepthTestEnable(boolean enable) { this.depthTest = enable; }
+
+	public void setDepthWriteEnable(boolean enable) { this.depthWrite = enable; }
+
+	void updateProperty(int property, float[] value)
 	{
-		this.depthTest = enable;
+		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating compositingMode property");
+		switch (property)
+		{
+			case AnimationTrack.ALPHA:
+				this.alphaThreshold = M3GMath.max(0.0f, M3GMath.min(1.0f, value[0]));
+				break;
+			default:
+				super.updateProperty(property, value);
+		}
 	}
 
-	public void setDepthWriteEnable(boolean enable)
+	boolean animTrackCompatible(AnimationTrack track)
 	{
-		this.depthWrite = enable;
+		switch (track.getTargetProperty())
+		{
+			case AnimationTrack.ALPHA:
+				return true;
+			default:
+				return super.animTrackCompatible(track);
+		}
 	}
-
 }

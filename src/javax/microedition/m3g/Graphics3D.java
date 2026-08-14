@@ -287,7 +287,7 @@ public class Graphics3D
 							if (repeatX) { sx = ((sx % bgImg.getWidth()) + bgImg.getWidth()) % bgImg.getWidth(); }
 							else if (sx < 0 || sx >= bgImg.getWidth()) { continue; }
 
-							rasterData[(py + viewy) * canvasWidth + (px + viewx)] = bgImg.getConvertedPixel(sx, sy);
+							rasterData[(py + viewy) * canvasWidth + (px + viewx)] = bgImg.getPixel(sx, sy);
 						}
 					}
 				}
@@ -584,7 +584,7 @@ public class Graphics3D
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
-				int paintPixel = img.getConvertedPixel(texX, texY);
+				int paintPixel = img.getPixel(texX, texY);
 				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
 				if (alpha < alphaThreshold || alpha == 0) { continue; } /* Alpha test discards the fragment before any writes */
 
@@ -1038,7 +1038,7 @@ public class Graphics3D
 								else if (texX < 0) { texX = 0; } else if (texX >= texW) { texX = texW - 1; }
 								if (texRepeatT) { texY = ((texY % texH) + texH) % texH; }
 								else if (texY < 0) { texY = 0; } else if (texY >= texH) { texY = texH - 1; }
-								paintPixel = teximg.getConvertedPixel(texX, texY);
+								paintPixel = teximg.getPixel(texX, texY);
 							}
 
 							// We have to do texture blending, as we have vertex colors and any available texture goes on top of them

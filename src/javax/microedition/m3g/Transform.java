@@ -314,9 +314,10 @@ public class Transform
 
 	private void computeRotationMatrix(float angle, float ax, float ay, float az)
 	{
-		if (ax == 0 && ay == 0 && az == 0 && angle != 0) {
-			throw new IllegalArgumentException("The rotation axis is zero while angle is nonZero.");
-		}
+		float axisLen = (ax * ax) + (ay * ay) + (az * az);
+
+		// Angle or axis length as zero means no/invalid rotation. Return right away
+		if (angle == 0.0f || axisLen < M3GMath.EPSILON) { return; }
 
 		resetManipulationMatrix();
 		if (angle == 0) { return; }
@@ -326,7 +327,7 @@ public class Transform
 		float c = M3GMath.cos(rad);
 		float d = 1.0f - c;
 
-		float l = M3GMath.sqrt((ax * ax) + (ay * ay) + (az * az));
+		float l = M3GMath.sqrt(axisLen);
 		float x = ax / l;
 		float y = ay / l;
 		float z = az / l;

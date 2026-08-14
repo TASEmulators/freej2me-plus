@@ -17,76 +17,116 @@
 package javax.microedition.m3g;
 
 import java.util.Vector;
+import org.recompile.mobile.Mobile;
 
 public abstract class Object3D implements Cloneable
 {
-
 	protected int userID = 0;
 	protected Object userObject = null;
 	Vector<AnimationTrack> animationTracks = new Vector<AnimationTrack>();
 	Vector<Object3D> curReferences = new Vector<Object3D>();
+
+	public Object3D() { }
 
 	void updateProperty(int property, float[] value) { }
 
 	public final Object3D duplicate() { return this.duplicateImpl(); }
 
 	@SuppressWarnings("unchecked") // Those two vectors will always house AnimationTracks and Object3Ds
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
-		try 
+		try
 		{
-			Object3D copy = (Object3D) this.clone();
-			copy.animationTracks = (Vector<AnimationTrack>) animationTracks.clone();
-			copy.curReferences = (Vector<Object3D>) curReferences.clone();
+			Object3D copy = (Object3D) super.clone();
+
+			copy.userID = this.userID;
+			copy.userObject = this.userObject;
+
+			copy.curReferences = new Vector<Object3D>();
+			copy.animationTracks = new Vector<AnimationTrack>();
+
+			for (int i = 0; i < this.animationTracks.size(); i++)
+			{
+				AnimationTrack origTrack = this.animationTracks.elementAt(i);
+				AnimationTrack trackCopy = (AnimationTrack) origTrack.duplicate();
+				copy.animationTracks.addElement(trackCopy);
+				copy.addReference(trackCopy);
+			}
 
 			return copy;
-		} 
-		catch (CloneNotSupportedException e) { } // Shouldn't ever happen
-		
-		return null;
+		}
+		catch (CloneNotSupportedException e)
+		{
+			// Object3D implements Cloneable, so this should never even happen
+			Mobile.log(Mobile.LOG_ERROR, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Object3D not cloneable? " + e.getMessage());
+			throw new RuntimeException(e.getMessage());
+		}
 	}
 
-	public Object3D find(int userID) 
+	public Object3D find(int userID)
 	{
-		if (this.userID == userID) { return this; }
+		Vector<Object3D> visited = new Vector<Object3D>();
 
-		Object3D found = null;
+		return findInternal(userID, visited);
+	}
 
-		for (int obj = 0; obj < this.curReferences.size(); obj++) 
-		{ 
-			found = ((Object3D) this.curReferences.get(obj)).find(userID);
-			if(found != null) { return found; }
+	private Object3D findInternal(int targetUserID, Vector<Object3D> visited)
+	{
+		if (visited.contains(this)) { return null; }
+		visited.addElement(this);
+
+		if (this.userID == targetUserID && targetUserID != 0)
+		{
+			return this;
+		}
+
+		for (int i = 0; i < this.curReferences.size(); i++)
+		{
+			Object3D ref = this.curReferences.elementAt(i);
+			if (ref != null)
+			{
+				Object3D found = ref.findInternal(targetUserID, visited);
+				if (found != null) { return found; }
+			}
 		}
 
 		return null;
 	}
 
-	public int getReferences(Object3D[] references) 
-	{ 
-		if(references != null && references.length < curReferences.size()) { throw new IllegalArgumentException("references array is not large enough to hold all of this object's references"); }
-		
-		if (references != null) 
+	public int getReferences(Object3D[] references)
+	{
+		if(references != null && references.length < this.curReferences.size())
+			{ throw new IllegalArgumentException("references array is not large enough to hold all references"); }
+
+		if (references != null)
 		{
-			for (int reference = 0; reference < curReferences.size(); ++reference) 
+			// Fill up to array length or total references, whichever is smaller
+			int maxToCopy = M3GMath.min(references.length, this.curReferences.size());
+			for (int i = 0; i < maxToCopy; i++)
 			{
-				references[reference] = (Object3D) curReferences.get(reference);
+				references[i] = (Object3D) this.curReferences.get(i);
 			}
 		}
 
 		return curReferences.size();
 	}
 
-	public int getUserID() { return userID; }
+	public int getUserID() { return this.userID; }
 
 	public void setUserID(int userID) { this.userID = userID; }
 
-	public Object getUserObject() { return userObject; }
+	public Object getUserObject() { return this.userObject; }
 
 	public void setUserObject(Object userObject) { this.userObject = userObject; }
 
-	public void addAnimationTrack(AnimationTrack animationTrack) 
+	public void addAnimationTrack(AnimationTrack animationTrack)
 	{
 		if (animationTrack == null) { throw new NullPointerException("AnimationTrack cannot be null"); }
+
+		if (!animTrackCompatible(animationTrack))
+		{
+			throw new IllegalArgumentException("Animation track property is not compatible with this Object3D");
+		}
 
 		if (animationTracks.contains(animationTrack))
 		{
@@ -96,15 +136,15 @@ public abstract class Object3D implements Cloneable
 		int newTrackTarget = animationTrack.getTargetProperty();
 		int components = animationTrack.getKeyframeSequence().getComponentCount();
 		int i;
-		for (i = 0; i < animationTracks.size(); i++) 
+		for (i = 0; i < animationTracks.size(); i++)
 		{
 			AnimationTrack track = (AnimationTrack) animationTracks.elementAt(i);
 
 			if (track.getTargetProperty() > newTrackTarget) { break; }
 
-			if (track.getTargetProperty() == newTrackTarget && (track.getKeyframeSequence().getComponentCount() != components)) 
+			if (track.getTargetProperty() == newTrackTarget && (track.getKeyframeSequence().getComponentCount() != components))
 			{
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException("Incompatible component count for animation track");
 			}
 		}
 
@@ -112,65 +152,106 @@ public abstract class Object3D implements Cloneable
 		addReference(animationTrack);
 	}
 
-	public AnimationTrack getAnimationTrack(int index) { return (AnimationTrack) animationTracks.elementAt(index); }
+	public AnimationTrack getAnimationTrack(int index)
+	{
+		if (index < 0 || index >= animationTracks.size())
+		{
+			throw new IndexOutOfBoundsException("AnimationTrack index is out of bounds: " + index);
+		}
 
-	public void removeAnimationTrack(AnimationTrack animationTrack) { animationTracks.removeElement(animationTrack); }
+		return (AnimationTrack) animationTracks.elementAt(index);
+	}
+
+	public void removeAnimationTrack(AnimationTrack animationTrack)
+	{
+		if (animationTracks.removeElement(animationTrack))
+		{
+			removeReference(animationTrack);
+		}
+	}
 
 	public int getAnimationTrackCount() { return animationTracks.size(); }
 
-	public final int animate(int time) 
-	{ 
-		int validity = 0x7FFFFFFF;
+	public final int animate(int time)
+	{
+		int validity = Integer.MAX_VALUE;
+
+		// Animate sub-references in scene graph hierarchy
+		for (int i = 0; i < curReferences.size(); i++)
+		{
+			Object3D ref = curReferences.elementAt(i);
+			if (ref != null)
+			{
+				int childValidity = ref.animate(time);
+				validity = Math.min(validity, childValidity);
+			}
+		}
 
 		if (animationTracks.isEmpty()) { return validity; }
 
 		int numTracks = animationTracks.size();
 
-		for (int trackIndex = 0; trackIndex < numTracks; ) 
+		for (int trackIndex = 0; trackIndex < numTracks; )
 		{
-			AnimationTrack track = (AnimationTrack) animationTracks.elementAt(trackIndex);
-			KeyframeSequence sequence = track.sequence;
+			AnimationTrack track = animationTracks.elementAt(trackIndex);
+			KeyframeSequence sequence = track.getKeyframeSequence();
 
-			int components = sequence.componentCount;
-			int property = track.property;
+			int components = sequence.getComponentCount();
+			int property = track.getTargetProperty();
 			int nextProperty;
 
-			float sumWeights = 0;
+			float sumWeights = 0.0f;
 			float[] sumValues = new float[components];
+			float[] tempValues = new float[components];
 
-			for (int i = 0; i < components; i++) sumValues[i] = 0;
-
-			do 
+			do
 			{
 				float[] weight = new float[1];
-				int[] Validity = new int[1];
+				int[] trackValidity = new int[1];
 
-				track.getContribution(time, sumValues, weight, Validity);
-				if (Validity[0] <= 0)
-					return 0;
+				track.getContribution(time, tempValues, weight, trackValidity);
 
-				sumWeights += weight[0];
-				validity = M3GMath.min(validity, Validity[0]);
+				if (trackValidity[0] > 0 && weight[0] > 0.0f)
+				{
+					sumWeights += weight[0];
+					for (int c = 0; c < components; c++)
+					{
+						sumValues[c] += tempValues[c] * weight[0];
+					}
+				}
+
+				validity = Math.min(validity, trackValidity[0]);
 
 				if (++trackIndex == numTracks) { break; }
-				track = (AnimationTrack) animationTracks.elementAt(trackIndex);
-				nextProperty = track.property;
-			} while (nextProperty == property);
+				track = animationTracks.elementAt(trackIndex);
+				nextProperty = track.getTargetProperty();
+			}
+			while (nextProperty == property);
 
-			if (sumWeights > 0) { updateProperty(property, sumValues); }
+			if (sumWeights > 0.0f)
+			{
+				// Normalize sum values by weight sum before applying to property
+				float invWeight = 1.0f / sumWeights;
+				for (int c = 0; c < components; c++)
+				{
+					sumValues[c] *= invWeight;
+				}
+				updateProperty(property, sumValues);
+			}
 		}
+
 		return validity;
 	}
 
 	boolean animTrackCompatible(AnimationTrack animationtrack) { return false; }
 
-	protected void addReference(Object3D obj) 
+	protected void addReference(Object3D obj)
 	{
-		if(obj == null) { return; } 
-		curReferences.add(obj); 
+		if(obj == null) { return; }
+		if (!curReferences.contains(obj)) { curReferences.addElement(obj); }
 	}
 
-	protected void removeReference(Object3D obj) 
+	protected void removeReference(Object3D obj)
 	{
 		if(obj == null) { return; }
 		curReferences.remove(obj);

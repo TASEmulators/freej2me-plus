@@ -18,7 +18,6 @@ package javax.microedition.m3g;
 
 public class RayIntersection
 {
-
 	private Node intersected = null;
 	private float distance = 0.f;
 	private int submeshIndex = 0;
@@ -27,61 +26,69 @@ public class RayIntersection
 	private float[] normal = new float[3];
 	private float[] ray = new float[6];
 
-	public RayIntersection() 
+	public RayIntersection()
 	{
-		normal[0] = 0.f;
-		normal[1] = 0.f;
 		normal[2] = 1.f;
-
-		ray[0] = 0.f;
-		ray[1] = 0.f;
-		ray[2] = 0.f;
-		ray[3] = 0.f;
-		ray[4] = 0.f;
 		ray[5] = 1.f;
 	}
 
-	public Node getIntersected() { return intersected; }
+	public Node getIntersected() { return this.intersected; }
 
-	public float getDistance() { return distance; }
+	public float getDistance() { return this.distance; }
 
-	public int getSubmeshIndex() { return submeshIndex; }
+	public int getSubmeshIndex() { return this.submeshIndex; }
 
-	public float getTextureS(int index) 
+	public float getTextureS(int index)
 	{
-		if (index < 0 || index >= textureS.length) { throw new IndexOutOfBoundsException(); }
+		if (index < 0 || index >= textureS.length)
+			{ throw new IndexOutOfBoundsException("Invalid texture unit"); }
 
-		return textureS[index];
+		return this.textureS[index];
 	}
 
-	public float getTextureT(int index) 
+	public float getTextureT(int index)
 	{
-		if (index < 0 || index >= textureT.length) { throw new IndexOutOfBoundsException(); }
+		if (index < 0 || index >= textureS.length)
+			{ throw new IndexOutOfBoundsException("Invalid texture unit"); }
 
-		return textureT[index];
+		return this.textureT[index];
 	}
 
-	public float getNormalX() { return normal[0]; }
+	public float getNormalX() { return this.normal[0]; }
 
-	public float getNormalY() { return normal[1]; }
+	public float getNormalY() { return this.normal[1]; }
 
-	public float getNormalZ() { return normal[2]; }
+	public float getNormalZ() { return this.normal[2]; }
 
-	public void getRay(float[] ray) 
+	public void getRay(float[] ray)
 	{
-		if (ray.length < 6) { throw new IllegalArgumentException(); }
+		if (ray == null) { throw new NullPointerException("Ray cannot be null"); }
 
-		ray[0] = this.ray[0];
-		ray[1] = this.ray[1];
-		ray[2] = this.ray[2];
-		ray[3] = this.ray[3];
-		ray[4] = this.ray[4];
-		ray[5] = this.ray[5];
+		if (ray.length < 6) { throw new IllegalArgumentException("Invalid Ray size"); }
+
+		System.arraycopy(this.ray, 0, ray, 0, 6);
 	}
 
-	static float[] createResult() 
+	void set(Node node, float distance, int submeshIndex, float[] ray, float[] normal, float[] texS, float[] texT)
 	{
-		return new float[1 + 1 + 2 * Graphics3D.getTextureUnitCount() + 3 + 6];
-	}
+		this.intersected = node;
+		this.distance = distance;
+		this.submeshIndex = submeshIndex;
 
+		if (ray != null) { System.arraycopy(ray, 0, this.ray, 0, 6); }
+
+		if (normal != null) { System.arraycopy(normal, 0, this.normal, 0, 3); }
+
+		if (texS != null)
+		{
+			int len = Math.min(texS.length, this.textureS.length);
+			System.arraycopy(texS, 0, this.textureS, 0, len);
+		}
+
+		if (texT != null)
+		{
+			int len = Math.min(texT.length, this.textureT.length);
+			System.arraycopy(texT, 0, this.textureT, 0, len);
+		}
+	}
 }

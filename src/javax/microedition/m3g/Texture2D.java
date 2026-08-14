@@ -16,8 +16,6 @@
 */
 package javax.microedition.m3g;
 
-import java.lang.Math;
-
 import org.recompile.mobile.Mobile;
 
 public class Texture2D extends Transformable
@@ -35,7 +33,7 @@ public class Texture2D extends Transformable
 	public static final int WRAP_REPEAT = 241;
 
 	private int blending;
-	private int blendcolor;
+	private int blendColor;
 	private int imageFilter;
 	private int levelFilter;
 	private int wraps;
@@ -50,13 +48,27 @@ public class Texture2D extends Transformable
 		this.levelFilter = FILTER_BASE_LEVEL;
 		this.imageFilter = FILTER_NEAREST;
 		this.blending = FUNC_MODULATE;
-		this.blendcolor = 0x00000000;
+		this.blendColor = 0x00000000;
 		this.setImage(image);
+	}
+
+	protected Object3D duplicateImpl()
+	{
+		Texture2D copy = (Texture2D) super.duplicateImpl();
+		copy.blending = this.blending;
+		copy.blendColor = this.blendColor;
+		copy.imageFilter = this.imageFilter;
+		copy.levelFilter = this.levelFilter;
+		copy.wraps = this.wraps;
+		copy.wrapt = this.wrapt;
+		copy.setImage(this.texImage); // Already adds the reference
+
+		return copy;
 	}
 
 	public int getBlendColor()
 	{
-		return this.blendcolor;
+		return this.blendColor;
 	}
 
 	public int getBlending()
@@ -91,7 +103,7 @@ public class Texture2D extends Transformable
 
 	public void setBlendColor(int RGB)
 	{
-		this.blendcolor = RGB;
+		this.blendColor = RGB & 0x00FFFFFF; // Make sure alpha is discarded
 	}
 
 	public void setBlending(int func)
@@ -124,10 +136,13 @@ public class Texture2D extends Transformable
 		if (image == null)
 			{ throw new java.lang.NullPointerException("Cannot set texture as null image."); }
 		if (image.getWidth() > Graphics3D.MAX_TEXTURE_DIMENSION ||
-			image.getHeight() > Graphics3D.MAX_TEXTURE_DIMENSION ||
-			!isPowerOfTwo(image.getWidth()) ||
-			!isPowerOfTwo(image.getHeight()))
+			image.getHeight() > Graphics3D.MAX_TEXTURE_DIMENSION)
 			{ throw new java.lang.IllegalArgumentException("Invalid texture size"); }
+
+		if(!isPowerOfTwo(image.getWidth()) || !isPowerOfTwo(image.getHeight()))
+		{
+			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Texture (" + image.getWidth() + "," + image.getHeight() + ") is NPOT! Might cause render issues.");
+		}
 
 		removeReference(this.texImage);
 		this.texImage = image;
@@ -144,25 +159,28 @@ public class Texture2D extends Transformable
 		this.wrapt = wrapT;
 	}
 
-	private static boolean isPowerOfTwo(int value) { return ((value & (value-1)) == 0); }
+	private static boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
 
 	@Override
-	void updateProperty(int property, float[] value) 
+	void updateProperty(int property, float[] value)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Texture2D property");
-		switch (property) 
+		switch (property)
 		{
 			case AnimationTrack.COLOR:
-				blendcolor = (value.length == 3) ? (int) value[0] >> 16 & (int) value[1] >> 8 & (int) value[2] : (int) value[0] >> 24 & (int) value[1] >> 16 & (int) value[2] >> 8 & (int) value[3];
+				int r = Math.max(0, Math.min(255, (int)(value[0] * 255.0f)));
+				int g = Math.max(0, Math.min(255, (int)(value[1] * 255.0f)));
+				int b = Math.max(0, Math.min(255, (int)(value[2] * 255.0f)));
+				this.blendColor = (r << 16) | (g << 8) | b;
 				break;
 			default:
 				super.updateProperty(property, value);
 		}
 	}
 
-	boolean animTrackCompatible(AnimationTrack track) 
+	boolean animTrackCompatible(AnimationTrack track)
 	{
-		switch (track.getTargetProperty()) 
+		switch (track.getTargetProperty())
 		{
 			case AnimationTrack.COLOR:
 				return true;

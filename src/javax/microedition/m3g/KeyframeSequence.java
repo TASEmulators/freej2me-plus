@@ -30,14 +30,13 @@ public class KeyframeSequence extends Object3D
 
 	private int duration;
 	private int intType;
-	private int keyframe;
 	private int keyframes;
-	private int repeat;
+	private int repeat = CONSTANT;
 	private int rangeFirst;
 	private int rangeLast;
-	public int componentCount;
+	private int componentCount;
 	private int nextKeyframe;
-	private boolean dirty;
+	private boolean dirty = true;
 
 	private float[][] keyFrames;
 	private float[][] inTangents;
@@ -46,29 +45,30 @@ public class KeyframeSequence extends Object3D
 	private float[][] a;
 	private float[][] b;
 
+	private final float[] tempQ0 = new float[4];
+	private final float[] tempQ1 = new float[4];
+	private final float[] tempS0 = new float[4];
+	private final float[] tempS1 = new float[4];
 
-	public KeyframeSequence(int numKeyframes, int numComponents, int interpolation) 
-	{  
-		if ((numKeyframes < 1) || (numComponents < 1)) 
+	public KeyframeSequence(int numKeyframes, int numComponents, int interpolation)
+	{
+		if (numKeyframes < 1 || numComponents < 1)
 		{
-			throw new IllegalArgumentException("Number of keyframes/components must be >= 1");
+			throw new IllegalArgumentException("Number of keyframes and components must be >= 1");
 		}
 
-		// Check given interpolation mode
-		switch (interpolation) 
+		switch (interpolation)
 		{
 			case SLERP:
-				if (numComponents != 4)
-					throw new IllegalArgumentException("SLERP and SQUAD mode requires 4 components in each keyframe");
-				break;
 			case SQUAD:
 				if (numComponents != 4)
-					throw new IllegalArgumentException("SLERP and SQUAD mode requires 4 components in each keyframe");
-				a = new float[numKeyframes][4];
-				b = new float[numKeyframes][4];
+					throw new IllegalArgumentException("SLERP and SQUAD require 4 components");
+				if (interpolation == SQUAD) {
+					a = new float[numKeyframes][4];
+					b = new float[numKeyframes][4];
+				}
 				break;
 			case STEP:
-				break;
 			case LINEAR:
 				break;
 			case SPLINE:
@@ -83,349 +83,50 @@ public class KeyframeSequence extends Object3D
 		this.componentCount = numComponents;
 		this.intType = interpolation;
 
-		// Initialize the sequence with default values
 		keyFrames = new float[numKeyframes][numComponents];
 		keyFrameTimes = new int[numKeyframes];
 		rangeFirst = 0;
 		rangeLast = numKeyframes - 1;
-		dirty = true;
 	}
 
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
 		KeyframeSequence copy = (KeyframeSequence) super.duplicateImpl();
 
-		for (int i = 0; i < keyFrames.length; i++) { copy.keyFrames[i] = (float[]) keyFrames[i].clone(); }
+		copy.duration = this.duration;
+		copy.intType = this.intType;
+		copy.keyframes = this.keyframes;
+		copy.repeat = this.repeat;
+		copy.rangeFirst = this.rangeFirst;
+		copy.rangeLast = this.rangeLast;
+		copy.componentCount = this.componentCount;
+		copy.dirty = true;
 
-		copy.keyFrameTimes = (int[]) keyFrameTimes.clone();
+		copy.keyFrames = new float[keyframes][componentCount];
+		for (int i = 0; i < keyframes; i++) {
+			System.arraycopy(this.keyFrames[i], 0, copy.keyFrames[i], 0, componentCount);
+		}
 
-		if (!dirty) 
-		{
-			if (inTangents != null) 
-			{
-				for (int i = 0; i < inTangents.length; i++) { copy.inTangents[i] = (float[]) inTangents[i].clone(); }
-				for (int i = 0; i < outTangents.length; i++) { copy.outTangents[i] = (float[]) outTangents[i].clone(); }
-			}
-			if (a != null) 
-			{
-				copy.a = new float[a.length][4];
-				copy.b = new float[b.length][4];
-				for (int i = 0; i < a.length; i++) { copy.a[i] = (float[]) a[i].clone(); }
-				for (int i = 0; i < b.length; i++) { copy.b[i] = (float[]) b[i].clone(); }
-			}
+		copy.keyFrameTimes = this.keyFrameTimes.clone();
+
+		if (inTangents != null) {
+			copy.inTangents = new float[keyframes][componentCount];
+			copy.outTangents = new float[keyframes][componentCount];
+		}
+
+		if (a != null) {
+			copy.a = new float[keyframes][4];
+			copy.b = new float[keyframes][4];
 		}
 
 		return copy;
 	}
 
-
 	public int getComponentCount() { return this.componentCount; }
-
-	public float[] keyframeAt(int idx) { return this.keyFrames[idx]; }
-
-	public int previousKeyframeIndex(int ind) 
-	{
-		if (ind == rangeFirst) { return rangeLast; }
-		else if (ind == 0) { return keyframes - 1; }
-		else { return ind - 1; }
-	}
-
-	public int nextKeyframeIndex(int ind) 
-	{
-		if (ind == rangeLast) { return rangeFirst; }
-		else if (ind == (keyframes - 1)) { return 0; }
-		else { return (ind + 1); }
-	}
-
-	public float[] keyframeBefore(int idx) { return keyframeAt(previousKeyframeIndex(idx)); }
-
-	public float[] keyframeAfter(int idx) { return keyframeAt(nextKeyframeIndex(idx)); }
-
-	public int timeDelta(int ind) 
-	{
-		if (ind == rangeLast) { return (duration - keyFrameTimes[rangeLast]) + keyFrameTimes[rangeFirst]; }
-
-		return keyFrameTimes[nextKeyframeIndex(ind)] - keyFrameTimes[ind];
-	}
-
-	public float incomingTangentScale(int ind) 
-	{
-		if (repeat != LOOP && (ind == rangeFirst || ind == rangeLast)) { return 0; }
-		else 
-		{
-			int prevind = previousKeyframeIndex(ind);
-			return (((float) timeDelta(prevind) * 2.0f) / ((float) (timeDelta(ind) + timeDelta(prevind))));
-		}
-	}
-
-	public float outgoingTangentScale(int ind) 
-	{
-		if (repeat != LOOP && (ind == rangeFirst || ind == rangeLast)) { return 0; }
-		else 
-		{
-			int prevind = previousKeyframeIndex(ind);
-			return (((float) timeDelta(ind) * 2.0f) / ((float) (timeDelta(ind) + timeDelta(prevind))));
-		}
-	}
-
-	public float[] tangentTo(int idx) 
-	{
-		if (inTangents == null) { throw new NullPointerException("Cannot find tangent to keyframe if tangents are null"); }
-		return inTangents[idx];
-	}
-
-	public float[] tangentFrom(int idx) 
-	{
-		if (outTangents == null) { throw new NullPointerException("Cannot find tangent from keyframe if tangents are null"); }
-		return outTangents[idx];
-	}
-
-	public int getSample(int time, float[] sample) 
-	{
-		if (dirty) 
-		{
-			if (intType == SPLINE) 
-			{
-				int kf = rangeFirst;
-				do 
-				{
-					float[] prev = keyframeBefore(kf);
-					float[] next = keyframeAfter(kf);
-					float sIn = incomingTangentScale(kf);
-					float sOut = outgoingTangentScale(kf);
-					float[] in = tangentTo(kf);
-					float[] out = tangentFrom(kf);
-
-					for (int i = 0; i < componentCount; i++) 
-					{
-						in[i] = ((0.5f * ((next[i] - prev[i]))) * sIn);
-						out[i] = ((0.5f * ((next[i] - prev[i]))) * sOut);
-					}
-
-					kf = nextKeyframeIndex(kf);
-				} while (kf != rangeFirst);
-			} 
-			else if (intType == SQUAD) 
-			{
-				int kf = rangeFirst;
-				float[] start = new float[4];
-				float[] end = new float[4];
-				float[] prev = new float[4];
-				float[] next = new float[4];
-				float[] tempq = new float[4];
-				float[] tempv = new float[3];
-				float[] cfd = new float[3];
-				float[] tangent = new float[3];
-				do 
-				{
-					prev = keyframeBefore(kf);
-					start = keyframeAt(kf);
-					end = keyframeAfter(kf);
-					next = keyframeAfter(nextKeyframeIndex(kf));
-
-					M3GMath.logDiffQuat(cfd, start, end);
-					M3GMath.logDiffQuat(tempv, prev, start);
-					M3GMath.addVec(cfd, tempv);
-					M3GMath.scaleVec(cfd, 0.5f);
-
-					tangent = cfd;
-					M3GMath.scaleVec(tangent, outgoingTangentScale(kf));
-
-					M3GMath.logDiffQuat(tempv, start, end);
-					M3GMath.subVec(tangent, tempv);
-					M3GMath.scaleVec(tangent, 0.5f);
-					tempq[0] = tempv[0];
-					tempq[1] = tempv[1];
-					tempq[2] = tempv[2];
-					M3GMath.expQuat(tempq, tangent);
-					a[kf] = start;
-					a[kf] = M3GMath.mulQuat(tempq);
-
-					tangent = cfd;
-					M3GMath.scaleVec(tangent, incomingTangentScale(kf));
-
-					tempv[0] = tempq[0];
-					tempv[1] = tempq[1];
-					tempv[2] = tempq[2];
-					M3GMath.logDiffQuat(tempv, prev, start);
-					M3GMath.subVec(tempv, tangent);
-					M3GMath.scaleVec(tempv, 0.5f);
-					tempq[0] = tempv[0];
-					tempq[1] = tempv[1];
-					tempq[2] = tempv[2];
-					M3GMath.expQuat(tempq, tempv);
-					b[kf] = start;
-					b[kf] = M3GMath.mulQuat(tempq);
-
-					kf = nextKeyframeIndex(kf);
-				} while (kf != rangeFirst);
-			}
-			dirty = false;
-			nextKeyframe = rangeFirst;
-		}
-
-		if (repeat == LOOP) 
-		{
-			if (time < 0) { time = (time % duration) + duration; }
-			else { time = time % duration; }
-
-			if (time < keyFrameTimes[rangeFirst]) { time += duration; }
-		} 
-		else 
-		{
-			if (time < keyFrameTimes[rangeFirst]) 
-			{
-				float[] value = keyframeAt(rangeFirst);
-				for (int i = 0; i < componentCount; i++) { sample[i] = value[i]; }
-				return (keyFrameTimes[rangeFirst] - time);
-			}
-			else if (time >= keyFrameTimes[rangeLast]) 
-			{
-				float[] value = keyframeAt(rangeLast);
-				for (int i = 0; i < componentCount; i++) { sample[i] = value[i]; }
-				return 0x7FFFFFFF;
-			}
-		}
-
-		int start = nextKeyframe;
-		if (keyFrameTimes[start] > time) { start = rangeFirst; }
-		while (start != rangeLast && keyFrameTimes[nextKeyframeIndex(start)] <= time) { start = nextKeyframeIndex(start); }
-		nextKeyframe = start;
-
-		if (time == keyFrameTimes[start] || intType == STEP) 
-		{
-			float[] value = keyframeAt(start);
-			for (int i = 0; i < componentCount; i++) { sample[i] = value[i]; }
-			return (intType == STEP) ? (timeDelta(start) - (time - keyFrameTimes[start])) : 1;
-		}
-
-		float s = ((time - keyFrameTimes[start]) / (float) timeDelta(start));
-
-		int end = nextKeyframeIndex(start);
-		float[] Start;
-		float[] End;
-		float[] temp;
-		float[] tStart;
-		float[] tEnd;
-		float s2;
-		float s3;
-		float[] q0;
-		float[] q1;
-		float[] sampl;
-		float[] temp0;
-		float[] temp1;
-		float[] A;
-		float[] B;
-		switch (intType) 
-		{
-			case LINEAR:
-				Start = keyframeAt(start);
-				End = keyframeAt(end);
-				M3GMath.lerpVec3(componentCount, sample, s, Start, End);
-				break;
-			case SLERP:
-				if (componentCount != 4) { throw new IllegalStateException(); }
-				q0 = new float[4];
-				q1 = new float[4];
-				sampl = new float[4];
-
-				q0 = keyframeAt(start);
-				q1 = keyframeAt(end);
-				sampl = sample;
-
-				M3GMath.slerpQuat(sampl, s, q0, q1);
-				sample[0] = sampl[0];
-				sample[1] = sampl[1];
-				sample[2] = sampl[2];
-				sample[3] = sampl[3];
-				// may be not necessary
-				temp = keyframeAt(start);
-				temp[0] = q0[0];
-				temp[1] = q0[1];
-				temp[2] = q0[2];
-				temp[3] = q0[3];
-				temp = keyframeAt(end);
-				temp[0] = q1[0];
-				temp[1] = q1[1];
-				temp[2] = q1[2];
-				temp[3] = q1[3];
-				break;
-			case SPLINE:
-				Start = keyframeAt(start);
-				End = keyframeAt(end);
-				tStart = tangentFrom(start);
-				tEnd = tangentTo(end);
-
-				s2 = s * s;
-				s3 = s2 * s;
-
-				for (int i = 0; i < componentCount; i++) { sample[i] = (Start[i] * (((s3 * 2) - (3.f * s2)) + 1.f) + (End[i] * ((3.f * s2) - (s3 * 2)) + (tStart[i] * ((s3 - (s2 * 2)) + s) + (tEnd[i] * (s3 - s2))))); }
-				break;
-			case SQUAD:
-				if (componentCount != 4)
-					throw new IllegalStateException();
-				temp0 = new float[4];
-				temp1 = new float[4];
-				q0 = new float[4];
-				q1 = new float[4];
-				//A = new float[4];
-				//B = new float[4];
-				sampl = new float[4];
-
-				q0 = keyframeAt(start);
-				q1 = keyframeAt(end);
-				//A.setQuat(a[start]);
-				//B.setQuat(b[end]);
-				sampl = sample;
-				M3GMath.slerpQuat(temp0, s, q0, q1);
-				M3GMath.slerpQuat(temp1, s, a[start], b[end]);
-				M3GMath.slerpQuat(sampl, ((s * (1.0f - s)) * 2), temp0, temp1);
-				sample[0] = sampl[0];
-				sample[1] = sampl[1];
-				sample[2] = sampl[2];
-				sample[3] = sampl[3];
-				// may be not necessary
-				temp = keyframeAt(start);
-				temp[0] = q0[0];
-				temp[1] = q0[1];
-				temp[2] = q0[2];
-				temp[3] = q0[3];
-				temp = keyframeAt(end);
-				temp[0] = q1[0];
-				temp[1] = q1[1];
-				temp[2] = q1[2];
-				temp[3] = q1[3];
-				/*temp = a[start];
-                temp[0] = A[0];
-				temp[1] = A[1];
-				temp[2] = A[2];
-				temp[3] = A[3];
-				temp = b[end];
-				temp[0] = B[0];
-				temp[1] = B[1];
-				temp[2] = B[2];
-				temp[3] = B[3];*/
-				break;
-			default:
-				throw new IllegalStateException();
-		}
-		return 1;
-	}
 
 	public int getDuration() { return duration; }
 
 	public int getInterpolationType() { return intType; }
-
-	public int getKeyframe(int index, float[] value) 
-	{ 
-		if ((index < 0) || (index >= keyframes)) { throw new IndexOutOfBoundsException(); }
-
-		if ((value != null) && (value.length < componentCount)) { throw new IllegalArgumentException(); }
-
-		if (value != null) { System.arraycopy(keyFrames[index], 0, value, 0, componentCount); }
-
-		return keyFrameTimes[index];
-	}
 
 	public int getKeyframeCount() { return keyframes; }
 
@@ -435,45 +136,141 @@ public class KeyframeSequence extends Object3D
 
 	public int getValidRangeLast() { return rangeLast; }
 
-	public void setDuration(int value) 
-	{ 
-		duration = value;
-		dirty = true;
+	public void setDuration(int value)
+	{
+		if (value <= 0) {
+			throw new IllegalArgumentException("Duration must be positive");
+		}
+		this.duration = value;
+		this.dirty = true;
 	}
 
-	public void setKeyframe(int index, int time, float[] value) 
-	{ 
-		if (value == null) { throw new NullPointerException("Keyframe value vector must not be null"); }
-		if ((index < 0) || (index >= keyframes))  { throw new IndexOutOfBoundsException(); }
-		if ((value.length < componentCount) || (time < 0)) { throw new IllegalArgumentException(); }
+	public void setRepeatMode(int mode) {
+		if (mode != CONSTANT && mode != LOOP) {
+			throw new IllegalArgumentException("Invalid repeat mode");
+		}
+		this.repeat = mode;
+	}
+
+	public void setValidRange(int first, int last)
+	{
+		if (first < 0 || first >= keyframes || last < 0 || last >= keyframes || first > last)
+		{
+			throw new IllegalArgumentException("Invalid keyframe range");
+		}
+		this.rangeFirst = first;
+		this.rangeLast = last;
+		this.dirty = true;
+	}
+
+	public void setKeyframe(int index, int time, float[] value)
+	{
+		if (value == null) { throw new NullPointerException("Value vector must not be null"); }
+		if (index < 0 || index >= keyframes) { throw new IndexOutOfBoundsException(); }
+		if (value.length < componentCount || time < 0) { throw new IllegalArgumentException(); }
 
 		System.arraycopy(value, 0, keyFrames[index], 0, componentCount);
 		keyFrameTimes[index] = time;
-		if (intType == SLERP || intType == SQUAD) 
+
+		if (intType == SLERP || intType == SQUAD)
 		{
-			float[] q = new float[4];
-			float[] kf = keyframeAt(index);
-			q = kf;
-			q = M3GMath.normalizeQuat(q);
-			kf[0] = q[0];
-			kf[1] = q[1];
-			kf[2] = q[2];
-			kf[3] = q[3];
+			M3GMath.normalizeQuat(keyFrames[index]);
 		}
 		dirty = true;
 	}
 
-	public void setRepeatMode(int mode) { repeat=mode; }
-
-	public void setValidRange(int first, int last) 
+	public int getKeyframe(int index, float[] value)
 	{
-		if ((first < 0) || (first >= keyframes) || (last < 0) || (last >= keyframes)) 
-		{
-			throw new IndexOutOfBoundsException("Invalid range");
+		if (index < 0 || index >= keyframes) { throw new IndexOutOfBoundsException(); }
+		if (value != null && value.length < componentCount) { throw new IllegalArgumentException(); }
+
+		if (value != null) {
+			System.arraycopy(keyFrames[index], 0, value, 0, componentCount);
 		}
-		rangeFirst=first; 
-		rangeLast=last;
-		dirty=true;
+
+		return keyFrameTimes[index];
 	}
 
+	public int getSample(int time, float[] sample)
+	{
+		if (sample == null || sample.length < componentCount) {
+			throw new IllegalArgumentException("Sample array is null or too small");
+		}
+
+		if (repeat == LOOP)
+		{
+			if (duration > 0) {
+				time = time % duration;
+				if (time < 0) time += duration;
+			}
+		}
+
+		if (time < keyFrameTimes[rangeFirst])
+		{
+			System.arraycopy(keyFrames[rangeFirst], 0, sample, 0, componentCount);
+			return keyFrameTimes[rangeFirst] - time;
+		}
+		else if (time >= keyFrameTimes[rangeLast])
+		{
+			System.arraycopy(keyFrames[rangeLast], 0, sample, 0, componentCount);
+			return Integer.MAX_VALUE;
+		}
+
+		// Find surrounding keyframes
+		int start = nextKeyframe;
+		if (keyFrameTimes[start] > time || start < rangeFirst || start >= rangeLast) {
+			start = rangeFirst;
+		}
+		while (start < rangeLast && keyFrameTimes[start + 1] <= time) {
+			start++;
+		}
+		nextKeyframe = start;
+		int end = start + 1;
+
+		int dt = keyFrameTimes[end] - keyFrameTimes[start];
+		if (dt == 0 || time == keyFrameTimes[start] || intType == STEP)
+		{
+			System.arraycopy(keyFrames[start], 0, sample, 0, componentCount);
+			return (intType == STEP) ? (keyFrameTimes[end] - time) : 1;
+		}
+
+		float s = (float)(time - keyFrameTimes[start]) / (float)dt;
+
+		switch (intType)
+		{
+			case LINEAR:
+				M3GMath.lerpVec3(componentCount, sample, s, keyFrames[start], keyFrames[end]);
+				break;
+
+			case SLERP:
+				M3GMath.slerpQuat(sample, s, keyFrames[start], keyFrames[end]);
+				break;
+
+			case SPLINE:
+				float s2 = s * s;
+				float s3 = s2 * s;
+				float h00 = 2 * s3 - 3 * s2 + 1;
+				float h10 = s3 - 2 * s2 + s;
+				float h01 = -2 * s3 + 3 * s2;
+				float h11 = s3 - s2;
+
+				float[] p0 = keyFrames[start];
+				float[] p1 = keyFrames[end];
+				float[] t0 = outTangents[start];
+				float[] t1 = inTangents[end];
+
+				for (int i = 0; i < componentCount; i++) {
+					sample[i] = h00 * p0[i] + h10 * t0[i] + h01 * p1[i] + h11 * t1[i];
+				}
+				break;
+
+			case SQUAD:
+				M3GMath.slerpQuat(tempQ0, s, keyFrames[start], keyFrames[end]);
+				M3GMath.slerpQuat(tempQ1, s, a[start], b[end]);
+				M3GMath.slerpQuat(sample, 2.0f * s * (1.0f - s), tempQ0, tempQ1);
+				break;
+		}
+
+		return 1;
+	}
 }

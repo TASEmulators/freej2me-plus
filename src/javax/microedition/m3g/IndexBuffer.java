@@ -18,14 +18,13 @@ package javax.microedition.m3g;
 
 public abstract class IndexBuffer extends Object3D
 {
-
 	protected int indexCount;
 	protected int[] indices;
 
-	protected Object3D duplicateImpl() 
+	protected Object3D duplicateImpl()
 	{
 		IndexBuffer copy = (IndexBuffer) super.duplicateImpl();
-		copy.indices = (int[]) indices.clone();
+		copy.indices = this.indices == null ? null : (int[]) this.indices.clone();
 		return copy;
 	}
 
@@ -35,12 +34,12 @@ public abstract class IndexBuffer extends Object3D
 	{
 		/* As per JSR-184, throw NullPointerException if the received indices is null. */
 		if(indices == null) {throw new NullPointerException("Tried to get buffer's vertex indices without providing the actual indices."); }
-		
+
 		/* Also per JSR-184, throw IllegalArgumentException if indices.length < getIndexCount. */
-		if (indices.length < this.indexCount)
+		if (indices.length < getIndexCount())
 			{ throw new IllegalArgumentException("Tried to return vertex indices to an array that's smaller than the object's number of indices."); }
 
-		System.arraycopy(this.indices, 0, indices, 0, this.indexCount);
+		if (getIndexCount() > 0 && this.indices != null) { System.arraycopy(this.indices, 0, indices, 0, getIndexCount()); }
 	}
 
 	// Faster alternative to the above that doesn't copy the index array, used by Graphics3D's render()
