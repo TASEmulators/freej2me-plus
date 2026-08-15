@@ -895,8 +895,11 @@ public class Graphics3D
 					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
 
 					// Adjust drawY calculation based on half
-					for (int y = yStart; y < yEnd; y += Mobile.halfResM3GRaster ? 2 : 1)
+					for (int y = yStart; y < yEnd; y++)
 					{
+						// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
+						if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
+
 						drawY = half == 0
 							? (y - yTop) / (yMid - yTop)  // Upper half
 							: 1f - (y - yMid) / (yBot - yMid); // Lower half
