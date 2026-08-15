@@ -63,7 +63,8 @@ class Triangle
 
 	Triangle() { }
 
-	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles, float near, int cullingMode, VertexBuffer vertices, boolean polygonClockwise)
+	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles,
+		float near, int cullingMode, VertexBuffer vertices, boolean polygonClockwise, boolean perspectiveCorrect)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
@@ -71,7 +72,7 @@ class Triangle
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`.
 		if(Triangle.result == null || totalTris * 2 > Triangle.result.length)
-			Triangle.result = new Triangle[totalTris * 2];
+			{ Triangle.result = new Triangle[totalTris * 2]; }
 
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
 		{
@@ -80,6 +81,7 @@ class Triangle
 				final int idx = 4 * tris[3 * tri_id + i];
 				Triangle.inV[4*i]   = vert[idx];     Triangle.inV[4*i+1] = vert[idx + 1];
 				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
+
 				if (texc != null)
 				{
 					Triangle.inT[4*i]   = texc[idx];     Triangle.inT[4*i+1] = texc[idx + 1];
@@ -94,6 +96,7 @@ class Triangle
 			 */
 			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tris, tri_id, vertices,
 				texc != null, near, Triangle.outV, Triangle.outT, Triangle.outC);
+
 			if (outCount < 3) { continue; }
 
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
@@ -103,7 +106,7 @@ class Triangle
 				// This saves a bunch of temporary memory allocations once the array is built and no longer increases
 				// in size.
 				if(Triangle.result[renderableTriangles[0]] == null)
-					Triangle.result[renderableTriangles[0]] = new Triangle();
+					{ Triangle.result[renderableTriangles[0]] = new Triangle(); }
 
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
 				tri.setVertexCoords(Triangle.outV, fan);
@@ -118,7 +121,7 @@ class Triangle
 
 				if (cullTriangle) { continue; }
 
-				tri.project();
+				tri.project(perspectiveCorrect);
 
 				if (tri.outsideFrustum()) { continue; }
 
@@ -182,20 +185,21 @@ class Triangle
 
 				if (inC != null)
 				{
-					int a = (inC[i] >> 24) & 0xFF;
-					int rA = (inC[i] >> 16) & 0xFF;
-					int gA = (inC[i] >> 8) & 0xFF;
-					int bA = inC[i] & 0xFF;
+					final int cA = inC[i];
+				    final int cB = inC[j];
 
-					int rB = (inC[j] >> 16) & 0xFF;
-					int gB = (inC[j] >> 8) & 0xFF;
-					int bB = inC[j] & 0xFF;
+				    final int alpha = (int) (amt * 256f);
 
-					int r = (int) (rA + amt * (rB - rA));
-					int g = (int) (gA + amt * (gB - gA));
-					int b = (int) (bA + amt * (bB - bA));
+				    final int rbA = cA & 0x00FF00FF;
+				    final int rbB = cB & 0x00FF00FF;
 
-					outC[outCount] = (a << 24) | (r << 16) | (g << 8) | b;
+				    final int agA = (cA >>> 8) & 0x00FF00FF;
+				    final int agB = (cB >>> 8) & 0x00FF00FF;
+
+				    final int rb = rbA + (((rbB - rbA) * alpha) >> 8) & 0x00FF00FF;
+				    final int ag = agA + (((agB - agA) * alpha) >> 8) & 0x00FF00FF;
+
+				    outC[outCount] = (ag << 8) | rb;
 				}
 				outCount++;
 			}
@@ -222,7 +226,7 @@ class Triangle
 		}
 	}
 
-	public final void project()
+	public final void project(boolean perspectiveCorrect)
 	{
 		// Apply perspective division to the triangle, it's going to NDC
 		for (int i = 0; i < 3; i++)
@@ -239,8 +243,9 @@ class Triangle
 			v[4 * i + 2] /= w; // z / w
 			v[4 * i + 3] = 1f;  // Set w to 1
 
-			// Texture coordinates are stored as s/w and t/w (undone per-pixel in the rasterizer)
-			if (t != null)
+			// Texture coordinates are stored as s/w and t/w if
+			// perspective correction is enabled (undone per-pixel in rasterizer)
+			if (t != null && perspectiveCorrect)
 			{
 				t[4 * i + 0] *= invW[i]; // s / w
 				t[4 * i + 1] *= invW[i]; // t / w

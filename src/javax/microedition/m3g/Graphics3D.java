@@ -630,6 +630,8 @@ public class Graphics3D
 		//    defined in VertexBuffer or IndexBuffer
 		//    throw new java.lang.IllegalStateException();
 
+		final int projType = this.currCam.getProjection(projParams);
+
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
 
 		// TODO: Shading mode is not implemented
@@ -637,7 +639,8 @@ public class Graphics3D
 
 		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
-		final boolean perspectiveCorrectionEnabled = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
+		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
+		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
 
 		ord[0] = 0;
 		ord[1] = 1;
@@ -709,12 +712,12 @@ public class Graphics3D
 		 * Clipping against w >= 0 leaves vertices at w == 0 that blow up to infinity
 		 * in the perspective division, dropping every triangle that crosses the plane.
 		 */
-		final int projType = this.currCam.getProjection(projParams);
 		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertsAndTris already does culling and clipping)
 		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVert, triangles.getIndexArray(),
-			renderableTriangles, clipNear, cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW);
+			renderableTriangles, clipNear, cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW,
+			perspectiveCorrection);
 
 		/*
 		 * Per-triangle flat lighting (JSR-184 lighting requires a Material on the
@@ -1044,8 +1047,12 @@ public class Graphics3D
 
 							if(hasTexture)
 							{
-								final float pw = pwL + drawX * (pwR - pwL);
-								if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
+								// TODO: Allow perspective correction force-disable
+								if(perspectiveCorrection)
+								{
+									float pw = pwL + drawX * (pwR - pwL);
+									if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
+								}
 
 								// We can force-disable bilinear filter
 								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
@@ -1081,7 +1088,8 @@ public class Graphics3D
 							// To blend the fog value here, we have to take the current pixel's z value into consideration
 							if (fog != null)
 							{
-								final float zEye = M3GMath.fastReciprocal((pwL + drawX * (pwR - pwL)));
+								// Fog is always perspective-correct
+								final float zEye = M3GMath.fastReciprocal(pwL + drawX * (pwR - pwL));
 
 								if (fog.getMode() == Fog.LINEAR)
 								{
