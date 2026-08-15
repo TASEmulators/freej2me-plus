@@ -28,6 +28,8 @@ import org.recompile.mobile.Mobile;
 
 public class Graphics3D
 {
+	// Special blend mode for fog
+	public static final int BLEND_FOG = -1;
 
 	public static final int ANTIALIAS = 2;
 	public static final int DITHER = 4;
@@ -604,7 +606,7 @@ public class Graphics3D
 				if (alpha < alphaThreshold || alpha == 0) { continue; } /* Alpha test discards the fragment before any writes */
 
 				if (fog != null && fogFactor < 255.0f)
-					{ paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA, 0, 0); }
+					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 
 				final int finalPixel = blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)],
 					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
@@ -1008,7 +1010,7 @@ public class Graphics3D
 							// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 							if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
-							drawX = (x - xL) / (xR - xL);
+							drawX = (x - xL) * invSpanWidth;
 							drawX = M3GMath.max(0f, M3GMath.min(drawX, 1f));
 							z = (zL + drawX * (zR - zL));
 
@@ -1043,6 +1045,14 @@ public class Graphics3D
 									0xFF000000 | vertices.getDefaultColor() : vertices.getDefaultColor();
 							}
 
+							/*
+							 * Alpha test BEFORE any depth write: transparent fragments must not
+							 * occlude geometry drawn later (games rely on this — e.g. tree canopies
+							 * with alpha cutouts drawn before the ground). The depth buffer is only
+							 * updated by fragments that survive this test.
+							 */
+							if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
+
 							if(hasTexture)
 							{
 								final float pw = pwL + drawX * (pwR - pwL);
@@ -1063,6 +1073,8 @@ public class Graphics3D
 									paintPixel = blendPixels(paintPixel, teximg.getPixel(texX, texY), 255,
 										tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
 								}
+
+								if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
 							}
 
 							if (litVerts != null)
@@ -1073,16 +1085,6 @@ public class Graphics3D
 									| (((int) (((paintPixel >> 8) & 0xFF) * litG)) << 8)
 									| ((int) ((paintPixel & 0xFF) * litB));
 							}
-
-							alpha = (paintPixel >> 24) & 0xFF; // Image2D converts to ARGB format
-
-							/*
-							 * Alpha test BEFORE any depth write: transparent fragments must not
-							 * occlude geometry drawn later (games rely on this — e.g. tree canopies
-							 * with alpha cutouts drawn before the ground). The depth buffer is only
-							 * updated by fragments that survive this test.
-							 */
-							if (alpha <= alphaThreshold) { continue; }
 
 							// Update the depth buffer if depth write is enabled
 							if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdxY + x] = z; }
@@ -1100,12 +1102,12 @@ public class Graphics3D
 
 								fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
 
-								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA, 0, 0); }
+								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 							}
 
 							// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
 							final int finalPixel = blendPixels(rasterData[rasterIdxY + x],
-								paintPixel, alpha, compositingMode.getBlending(), 0, 0);
+								paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
 
 							rasterData[rasterIdxY + x] = finalPixel;
 
@@ -1213,8 +1215,8 @@ public class Graphics3D
 
 			case CompositingMode.ALPHA:
 			{
-				if (alpha == 0)   return bg;
-				if (alpha >= 255) return fg;
+				if (alpha == 0)   { return bg; }
+				if (alpha >= 255) { return fg; }
 
 				int bgRB = bg & 0x00FF00FF;
 				int fgRB = fg & 0x00FF00FF;
@@ -1374,6 +1376,26 @@ public class Graphics3D
 
 				// RGBA and LUMINANCE_ALPHA just replace bg completely.
 				return fg;
+
+			// Special case for fog blending
+			case Graphics3D.BLEND_FOG:
+				/*
+				 * M3G specifies that, the smaller the fogFactor value, the more we
+				 * should blend the fog color into the received color... which means
+				 * that the fog's contribution to the resulting color should be
+				 * 1 - fogFactor;
+				 */
+			    final int bgRB = bg & 0x00FF00FF;
+			    final int bgG  = (bg >> 8) & 0xFF;
+
+			    final int fgRB = fg & 0x00FF00FF;
+			    final int fgG  = (fg >> 8) & 0xFF;
+
+			    final int r = ((fgRB >> 16) + ((((bgRB >> 16) - (fgRB >> 16)) * alpha) >> 8)) & 0xFF;
+			    final int g = (fgG          + ((((bgG)          - (fgG))          * alpha) >> 8)) & 0xFF;
+			    final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * alpha) >> 8)) & 0xFF;
+
+			    return (bg & 0xFF000000) | (r << 16) | (g << 8) | b;
 
 			default:
 				return bg;
