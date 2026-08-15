@@ -94,7 +94,7 @@ public class Graphics3D
 	float xMidL, yMid, zMidL, sMidL, tMidL;
 	float xBot, yBot, zBot, sBot, tBot;
 	float rHorizon, xMidR, zMidR, sMidR, tMidR;
-	float drawY, drawX, zL, zR, sL, sR, tL, tR;
+	float drawY, drawX, xL, xR, zL, zR, sL, sR, tL, tR;
 	float pwTop, pwMidL, pwBot, pwMidR, pwL, pwR;
 
 	float z, s, t;
@@ -900,12 +900,15 @@ public class Graphics3D
 						drawY = M3GMath.max(0f, M3GMath.min(drawY, 1f));
 
 						// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
-						ixL = half == 0
-							? M3GMath.max(M3GMath.roundPositive(xTop + drawY * (xMidL - xTop)), 0)
-							: M3GMath.max(M3GMath.roundPositive(xBot + drawY * (xMidL - xBot)), 0);
-						ixR = half == 0
-							? M3GMath.min(M3GMath.roundPositive(xTop + drawY * (xMidR - xTop)), vieww)
-							: M3GMath.min(M3GMath.roundPositive(xBot + drawY * (xMidR - xBot)), vieww);
+						xL = half == 0
+							? xTop + drawY * (xMidL - xTop)
+							: xBot + drawY * (xMidL - xBot);
+						xR = half == 0
+							? xTop + drawY * (xMidR - xTop)
+							: xBot + drawY * (xMidR - xBot);
+
+						ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
+						ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
 
 						final int spanWidth = ixR - ixL;
 
@@ -997,7 +1000,7 @@ public class Graphics3D
 							// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 							if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
-							drawX = M3GMath.max(0f, M3GMath.min((x - ixL) * invSpanWidth, 1f));
+							drawX = M3GMath.max(0f, M3GMath.min((x - xL) / (xR - xL), 1f));
 							z = (zL + drawX * (zR - zL));
 
 							// Only depth test if the compositingMode has the feature enabled. If
