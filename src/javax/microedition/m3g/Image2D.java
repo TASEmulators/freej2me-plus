@@ -183,6 +183,10 @@ public class Image2D extends Object3D
 	{
 		Image2D copy = (Image2D) super.duplicateImpl();
 		copy.image = this.image == null ? null : (byte[]) this.image.clone();
+		copy.width = this.width;
+		copy.height = this.height;
+		copy.format = this.format;
+		copy.mutable = this.mutable;
 		return copy;
 	}
 
@@ -224,8 +228,17 @@ public class Image2D extends Object3D
 
 	int getPixel(int x, int y)
 	{
-		x = ((x % this.width) + this.width) % this.width;
-		y = ((y % this.height) + this.height) % this.height;
+		if(isPowerOfTwo(this.width) && isPowerOfTwo(this.height))
+		{
+			x &= (this.width - 1);
+			y &= (this.height - 1);
+		}
+		else
+		{
+			x = ((x % this.width) + this.width) % this.width;
+			y = ((y % this.height) + this.height) % this.height;
+		}
+
 		int offset = this.bpp() * (this.width * y + x);
 		int result = 0;
 
@@ -289,4 +302,6 @@ public class Image2D extends Object3D
 				return 0;
 		}
 	}
+
+	private static boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
 }

@@ -279,9 +279,10 @@ public class Graphics3D
 							if (repeatX) { sx = ((sx % bgImg.getWidth()) + bgImg.getWidth()) % bgImg.getWidth(); }
 							else if (sx < 0 || sx >= bgImg.getWidth()) { continue; }
 
+							// Image format argument shouldn't matter here
 							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =
 								blendPixels(rasterData[(py + viewy) * canvasWidth + (px + viewx)], bgImg.getPixel(sx, sy),
-									(bgImg.getPixel(sx, sy) >> 24) & 0xFF, CompositingMode.ALPHA);
+									(bgImg.getPixel(sx, sy) >> 24) & 0xFF, CompositingMode.ALPHA, 0, 0);
 						}
 					}
 				}
@@ -603,10 +604,10 @@ public class Graphics3D
 				if (alpha < alphaThreshold || alpha == 0) { continue; } /* Alpha test discards the fragment before any writes */
 
 				if (fog != null && fogFactor < 255.0f)
-					{ paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA); }
+					{ paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA, 0, 0); }
 
-				final int finalPixel = (compositingMode.getBlending() == CompositingMode.REPLACE && alpha == 255) ? paintPixel :
-					blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)], paintPixel, alpha, compositingMode.getBlending());
+				final int finalPixel = blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)],
+					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
 
 				rasterData[(y+viewy) * canvasWidth + (x+viewx)] = finalPixel;
 
@@ -652,6 +653,7 @@ public class Graphics3D
 
 		// Set up fog properties
 		final Fog fog = appearance.getFog();
+		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
 
 		final VertexArray vertPos = vertices.getPositions(scaleBias);
 		final Texture2D tex = appearance.getTexture(0);
@@ -1017,32 +1019,9 @@ public class Graphics3D
 							s = sL + drawX * (sR - sL);
 							t = tL + drawX * (tR - tL);
 
-							// If there's no texture coords or a texture image, we default to rendering with vertex colors. (also used for debug render modes)
-							// It's forced to opaque when blending mode is set to REPLACE.
-							int paintPixel = vertices.getDefaultColor();
-							paintPixel = compositingMode.getBlending() == CompositingMode.REPLACE ? 0xFF000000 | paintPixel : paintPixel;
+							int paintPixel;
 
-
-							if(hasTexture)
-							{
-								final float pw = pwL + drawX * (pwR - pwL);
-								if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
-
-								// We can force-disable bilinear filter
-								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
-								{
-									paintPixel = sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT);
-								}
-								else
-								{
-									int texX = M3GMath.roundPositive(s), texY = M3GMath.roundPositive(t);
-									texX = wrapX(texX, texW, texRepeatS);
-									texY = wrapY(texY, texH, texRepeatT);
-									paintPixel = teximg.getPixel(texX, texY);
-								}
-							}
-
-							// We have to do texture blending, as we have vertex colors and any available texture goes on top of them
+							// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
 							if (trisScreen[tri_id].hasVertexColors())
 							{
 								// Interpolate from xL to xR based on current X.
@@ -1054,10 +1033,36 @@ public class Graphics3D
 								g     = (int) (gL + xPos * deltaG);
 								b     = (int) (bL + xPos * deltaB);
 
-								// Blend with texture pixel if there's one, otherwise,
-								// just use the interpolated vertex color directly
-								if(tex == null && texCoords == null) { paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b; }
-								else { paintPixel = blendPixels((alpha << 24) | (r << 16) | (g << 8) | b, paintPixel, alpha, tex.getBlending()); }
+								paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b;
+							}
+							else
+							{
+								// If there's no texture coords or a texture image, we default to rendering with vertex colors. (also used for debug render modes)
+								// It's forced to opaque when blending mode is set to REPLACE.
+								paintPixel = compositingMode.getBlending() == CompositingMode.REPLACE ?
+									0xFF000000 | vertices.getDefaultColor() : vertices.getDefaultColor();
+							}
+
+							if(hasTexture)
+							{
+								final float pw = pwL + drawX * (pwR - pwL);
+								if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
+
+								// We can force-disable bilinear filter
+								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
+								{
+									paintPixel = blendPixels(paintPixel,
+										sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT, tex.isNPOT()),
+										255, tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
+								}
+								else
+								{
+									int texX = M3GMath.roundPositive(s), texY = M3GMath.roundPositive(t);
+									texX = wrapX(texX, texW, texRepeatS, tex.isNPOT());
+									texY = wrapY(texY, texH, texRepeatT, tex.isNPOT());
+									paintPixel = blendPixels(paintPixel, teximg.getPixel(texX, texY), 255,
+										tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
+								}
 							}
 
 							if (litVerts != null)
@@ -1077,7 +1082,7 @@ public class Graphics3D
 							 * with alpha cutouts drawn before the ground). The depth buffer is only
 							 * updated by fragments that survive this test.
 							 */
-							if (alpha < alphaThreshold) { continue; }
+							if (alpha <= alphaThreshold) { continue; }
 
 							// Update the depth buffer if depth write is enabled
 							if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdxY + x] = z; }
@@ -1089,19 +1094,18 @@ public class Graphics3D
 
 								if (fog.getMode() == Fog.LINEAR)
 								{
-									fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance())));
+									fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
 								}
 								else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
 
 								fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
 
-								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA); }
+								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), 255 - (int) fogFactor, CompositingMode.ALPHA, 0, 0); }
 							}
 
 							// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
-							// If blending is REPLACE and the pixel to paint is fully opaque, we can skip blending altogether and just paint it directly.
-							final int finalPixel = (compositingMode.getBlending() == CompositingMode.REPLACE && alpha == 255) ? paintPixel :
-								blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)], paintPixel, alpha, compositingMode.getBlending());
+							final int finalPixel = blendPixels(rasterData[rasterIdxY + x],
+								paintPixel, alpha, compositingMode.getBlending(), 0, 0);
 
 							rasterData[rasterIdxY + x] = finalPixel;
 
@@ -1200,38 +1204,26 @@ public class Graphics3D
 	/* Helper Methods */
 
 	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
-	private int blendPixels(int bg, int fg, int alpha, int blendMode)
+	private final int blendPixels(int bg, int fg, int alpha, int blendMode, int texBlendColor, int texFormat)
 	{
-		if (alpha == 0) { return bg; }
-
 		switch (blendMode)
 		{
-			case Texture2D.FUNC_REPLACE:
 			case CompositingMode.REPLACE:
+				return fg;
+
+			case CompositingMode.ALPHA:
 			{
-				int fgA = fg >>> 24;
-				if (fgA == 255) { return fg; }
-				if (fgA == 0) { return bg; }
+				if (alpha == 0)   return bg;
+				if (alpha >= 255) return fg;
 
 				int bgRB = bg & 0x00FF00FF;
 				int fgRB = fg & 0x00FF00FF;
-				int outRB = bgRB + ((((fgRB - bgRB) * fgA) >> 8) & 0x00FF00FF);
 
-				int bgAG = (bg >>> 8) & 0x00FF00FF;
-				int fgAG = (fg >>> 8) & 0x00FF00FF;
-				int outAG = bgAG + ((((fgAG - bgAG) * fgA) >> 8) & 0x00FF00FF);
+				int bgR = (bg >> 16) & 0xFF, fgR = (fg >> 16) & 0xFF;
+				int bgB = bg & 0xFF,         fgB = fg & 0xFF;
 
-				return outRB | (outAG << 8);
-			}
-
-			case Texture2D.FUNC_BLEND:
-			case CompositingMode.ALPHA:
-			{
-				if (alpha == 255) { return fg; }
-
-				// Standard unpack (cleanest and fastest when alpha is constant across channels)
-				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
-				int fgA = fg >>> 24, fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+				int bgA = bg >>> 24,         fgA = fg >>> 24;
+				int bgG = (bg >> 8) & 0xFF,  fgG = (fg >> 8) & 0xFF;
 
 				int outR = bgR + (((fgR - bgR) * alpha) >> 8);
 				int outG = bgG + (((fgG - bgG) * alpha) >> 8);
@@ -1241,7 +1233,22 @@ public class Graphics3D
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
 
-			case Texture2D.FUNC_MODULATE:
+			case CompositingMode.ALPHA_ADD:
+			{
+				if (alpha == 0) { return bg; }
+
+				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
+				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+
+				int outR = bgR + ((fgR * alpha) >> 8); if (outR > 255) outR = 255;
+				int outG = bgG + ((fgG * alpha) >> 8); if (outG > 255) outG = 255;
+				int outB = bgB + ((fgB * alpha) >> 8); if (outB > 255) outB = 255;
+				int outA = bgA + ((alpha * (255 - bgA)) >> 8);
+				if (outA > 255) { outA = 255; }
+
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
+
 			case CompositingMode.MODULATE:
 			{
 				int bgRB = bg & 0x00FF00FF;
@@ -1268,52 +1275,105 @@ public class Graphics3D
 				int outB = (fgB * bgB) >> 7;
 				int outA = (fgA * bgA) >> 7;
 
-				if (outR > 255) { outR = 255; }
-				if (outG > 255) { outG = 255; }
-				if (outB > 255) { outB = 255; }
-				if (outA > 255) { outA = 255; }
+				outR = (outR | -(outR >> 8)) & 0xFF;
+				outG = (outG | -(outG >> 8)) & 0xFF;
+				outB = (outB | -(outB >> 8)) & 0xFF;
+				outA = (outA | -(outA >> 8)) & 0xFF;
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-			}
-
-			case Texture2D.FUNC_DECAL:
-			{
-				int fgA = fg >>> 24;
-				int bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
-				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
-
-				int outR = bgR + (((fgR - bgR) * fgA) >> 8);
-				int outG = bgG + (((fgG - bgG) * fgA) >> 8);
-				int outB = bgB + (((fgB - bgB) * fgA) >> 8);
-
-				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
 			}
 
 			case Texture2D.FUNC_ADD:
 			{
-				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
-				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+				int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
+				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
 
-				int outR = bgR + fgR; if (outR > 255) outR = 255;
-				int outG = bgG + fgG; if (outG > 255) outG = 255;
-				int outB = bgB + fgB; if (outB > 255) outB = 255;
-				int outA = M3GMath.max(bgA, fg >>> 24);
+				int outR = fR, outG = fG, outB = fB;
+				if (texFormat != Image2D.ALPHA)
+				{
+					outR = fR + tR; if (outR > 255) outR = 255;
+					outG = fG + tG; if (outG > 255) outG = 255;
+					outB = fB + tB; if (outB > 255) outB = 255;
+				}
+
+				boolean hasAlpha = (texFormat == Image2D.ALPHA
+					|| texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
+				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
 
-			case CompositingMode.ALPHA_ADD:
+			case Texture2D.FUNC_BLEND:
 			{
-				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
-				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+				int fA = bg >>> 24, tA = fg >>> 24;
+				boolean hasAlpha = (texFormat == Image2D.ALPHA || texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
+				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
 
-				int outR = bgR + ((fgR * alpha) >> 8); if (outR > 255) outR = 255;
-				int outG = bgG + ((fgG * alpha) >> 8); if (outG > 255) outG = 255;
-				int outB = bgB + ((fgB * alpha) >> 8); if (outB > 255) outB = 255;
-				int outA = bgA + ((alpha * (255 - bgA)) >> 8); if (outA > 255) outA = 255;
+				if (texFormat == Image2D.ALPHA) { return (outA << 24) | (bg & 0x00FFFFFF); }
+
+				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF;
+				int factor = (tR + tG + tB) / 3;
+				if (factor == 0) { return (outA << 24) | (bg & 0x00FFFFFF); }
+
+				// Blend is the only one that uses the texture's blend color
+				int fRB = bg & 0x00FF00FF, cRB = texBlendColor & 0x00FF00FF;
+				int outRB = (fRB + ((((cRB - fRB) * factor) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+				int fAG = (bg >>> 8) & 0x00FF00FF, cAG = (texBlendColor >>> 8) & 0x00FF00FF;
+				int outAG = (fAG + ((((cAG - fAG) * factor) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+				return (outA << 24) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
+			}
+
+			case Texture2D.FUNC_DECAL:
+			{
+				if (texFormat == Image2D.RGB) { return (bg & 0xFF000000) | (fg & 0x00FFFFFF); }
+				else if (texFormat == Image2D.RGBA)
+				{
+					int tA = fg >>> 24;
+					if (tA == 0)   { return bg; }
+					if (tA == 255) { return (bg & 0xFF000000) | (fg & 0x00FFFFFF); }
+
+					int fRB = bg & 0x00FF00FF, tRB = fg & 0x00FF00FF;
+					int outRB = (fRB + ((((tRB - fRB) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+					int fAG = (bg >>> 8) & 0x00FF00FF, tAG = (fg >>> 8) & 0x00FF00FF;
+					int outAG = (fAG + ((((tAG - fAG) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+					return (bg & 0xFF000000) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
+				}
+
+				// TODO: DECAL is undefined for ALPHA, LUMINANCE, and LUMINANCE_ALPHA, so we just
+				// don't do any blending. Is this the same on vendor implementations? No idea.
+				return bg;
+			}
+
+			case Texture2D.FUNC_MODULATE:
+			{
+				int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
+				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
+
+				int outR = (texFormat == Image2D.ALPHA) ? fR : (fR * tR) >> 8;
+				int outG = (texFormat == Image2D.ALPHA) ? fG : (fG * tG) >> 8;
+				int outB = (texFormat == Image2D.ALPHA) ? fB : (fB * tB) >> 8;
+
+				boolean hasAlpha = (texFormat == Image2D.ALPHA ||
+					texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
+				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
+
+			case Texture2D.FUNC_REPLACE:
+				// RGB & LUMINANCE don't carry an alpha channel, so we use the bg alpha
+				if (texFormat == Image2D.RGB || texFormat == Image2D.LUMINANCE)
+					{ return (bg & 0xFF000000) | (fg & 0x00FFFFFF); }
+
+				// ALPHA format only carries alpha, so we use the bg color
+				if (texFormat == Image2D.ALPHA) { return (fg & 0xFF000000) | (bg & 0x00FFFFFF); }
+
+				// RGBA and LUMINANCE_ALPHA just replace bg completely.
+				return fg;
 
 			default:
 				return bg;
@@ -1321,7 +1381,7 @@ public class Graphics3D
 	}
 
 	// For bilinear filtering support
-	private int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT)
+	private final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
 		// Shift by 0.5 for OpenGL-like filtering,
 		int uFixed = (int) ((s - 0.5f) * 256.0f);
@@ -1335,21 +1395,19 @@ public class Graphics3D
 		int fx = uFixed & 0xFF;
 		int fy = vFixed & 0xFF;
 
-		x0 = wrapX(x0, texW, texRepeatS);
-		x1 = wrapX(x1, texW, texRepeatS);
-		y0 = wrapY(y0, texH, texRepeatT);
-		y1 = wrapY(y1, texH, texRepeatT);
+		x0 = wrapX(x0, texW, texRepeatS, isNPOT);
+		x1 = wrapX(x1, texW, texRepeatS, isNPOT);
+		y0 = wrapY(y0, texH, texRepeatT, isNPOT);
+		y1 = wrapY(y1, texH, texRepeatT, isNPOT);
 
 		int c00 = teximg.getPixel(x0, y0);
 		int c10 = teximg.getPixel(x1, y0);
 		int c01 = teximg.getPixel(x0, y1);
 		int c11 = teximg.getPixel(x1, y1);
 
-		return lerpBilinear(c00, c10, c01, c11, fx, fy);
-	}
+		// Are all colors the same? Don't waste time blending.
+		if (c00 == c10 && c00 == c01 && c00 == c11) { return c00; }
 
-	private int lerpBilinear(int c00, int c10, int c01, int c11, int fx, int fy)
-	{
 		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 		int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 
@@ -1365,19 +1423,45 @@ public class Graphics3D
 	// Helpers for texture wrapping/clamping
 	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
 	// Out-of-range coordinates must never index outside the image.
-	private int wrapX(int x, int width, boolean repeat)
+	private final int wrapX(int x, int width, boolean repeat, boolean isNPOT)
 	{
-		if (repeat) { return ((x % width) + width) % width; }
+		if (repeat)
+		{
+			// If the texture is Power-Of-Two, repeat wrapping can be done
+			// quickly as just an AND of the coordinate with the the edge
+			// mask (which is width - 1). Why is that? A POT texture has
+			// the following property: (2 - 1 = 1 = `0b1`, 4 - 1 = 3 = `0b11`,
+			// 8 - 1 = 7 = `0b111`, and so on), so we always wrap around to the
+			// correct coordinate with an AND of size - 1, as overflowing data
+			// will naturally wrap back to the start.
+			if(!isNPOT) { return x & (width - 1); }
+
+			// If it is NPOT we must fallback to modulo, as an AND would not
+			// result in the proper coordinate.
+			int r = x % width;
+			return r < 0 ? r + width : r;
+		}
+
+		// CLAMP is fast for both POT and NPOT
 		if (x < 0) { return 0; }
-		if (x >= width) { return width - 1; }
+		if (x >= width) { return (width - 1); }
+
 		return x;
 	}
 
-	private int wrapY(int y, int height, boolean repeat)
+	private final int wrapY(int y, int height, boolean repeat, boolean isNPOT)
 	{
-		if (repeat) { return ((y % height) + height) % height; }
+		if (repeat)
+		{
+			if(!isNPOT) { return y & (height - 1); }
+
+			int r = y % height;
+			return r < 0 ? r + height : r;
+		}
+
 		if (y < 0) { return 0; }
-		if (y >= height) { return height - 1; }
+		if (y >= height) { return (height - 1); }
+
 		return y;
 	}
 }

@@ -39,6 +39,8 @@ public class Texture2D extends Transformable
 	private int wraps;
 	private int wrapt;
 
+	private boolean isNPOT;
+
 	private Image2D texImage;
 
 	public Texture2D(Image2D image)
@@ -49,6 +51,7 @@ public class Texture2D extends Transformable
 		this.imageFilter = FILTER_NEAREST;
 		this.blending = FUNC_MODULATE;
 		this.blendColor = 0x00000000;
+		this.isNPOT = false;
 		this.setImage(image);
 	}
 
@@ -142,6 +145,7 @@ public class Texture2D extends Transformable
 		if(!isPowerOfTwo(image.getWidth()) || !isPowerOfTwo(image.getHeight()))
 		{
 			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Texture (" + image.getWidth() + "," + image.getHeight() + ") is NPOT! Might cause render issues.");
+			this.isNPOT = true;
 		}
 
 		removeReference(this.texImage);
@@ -188,4 +192,8 @@ public class Texture2D extends Transformable
 				return super.animTrackCompatible(track);
 		}
 	}
+
+	// We make some texture coord optimizations in Graphics3D, NPOT
+	// breaks them so we must check whether this texture is NPOT.
+	boolean isNPOT() { return this.isNPOT; }
 }
