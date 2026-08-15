@@ -255,7 +255,7 @@ public class Graphics3D
 				grp.fillRect(viewx, viewy, vieww, viewh);
 
 				// Draw the background's image if any (and there's a background)
-				if(background != null && background.getImage() != null)
+				if(background != null && background.getImage() != null && false)
 				{
 					final Image2D bgImg = background.getImage();
 
@@ -271,15 +271,13 @@ public class Graphics3D
 
 					for (int py = 0; py < viewh; py++)
 					{
-						int sy = cropY + (int) ((long) py * cropH / viewh);
-						if (repeatY) { sy = ((sy % bgImg.getHeight()) + bgImg.getHeight()) % bgImg.getHeight(); }
-						else if (sy < 0 || sy >= bgImg.getHeight()) { continue; }
+						int sy = cropY + (int) (py * cropH / viewh);
+						sy = wrapY(sy, bgImg.getHeight(), repeatY, bgImg.isPowerOfTwo(bgImg.getHeight()));
 
 						for (int px = 0; px < vieww; px++)
 						{
-							int sx = cropX + (int) ((long) px * cropW / vieww);
-							if (repeatX) { sx = ((sx % bgImg.getWidth()) + bgImg.getWidth()) % bgImg.getWidth(); }
-							else if (sx < 0 || sx >= bgImg.getWidth()) { continue; }
+							int sx = cropX + (int) (px * cropW / vieww);
+							sx = wrapY(sx, bgImg.getWidth(), repeatX, bgImg.isPowerOfTwo(bgImg.getWidth()));
 
 							// Image format argument shouldn't matter here
 							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =

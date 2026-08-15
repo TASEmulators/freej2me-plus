@@ -226,19 +226,9 @@ public class Image2D extends Object3D
 		}
 	}
 
+	// We do not handle OOB x and y positions here, Graphics3D does that in the clear/render loops
 	int getPixel(int x, int y)
 	{
-		if(isPowerOfTwo(this.width) && isPowerOfTwo(this.height))
-		{
-			x &= (this.width - 1);
-			y &= (this.height - 1);
-		}
-		else
-		{
-			x = ((x % this.width) + this.width) % this.width;
-			y = ((y % this.height) + this.height) % this.height;
-		}
-
 		int offset = this.bpp() * (this.width * y + x);
 		int result = 0;
 
@@ -303,5 +293,5 @@ public class Image2D extends Object3D
 		}
 	}
 
-	private static boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
+	static boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
 }
