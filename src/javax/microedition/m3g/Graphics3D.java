@@ -78,21 +78,23 @@ public class Graphics3D
 	private ArrayList<Transform> currLightTrans;
 
 	// Reusable rendering variables
-	int yStart, yEnd, ixL, ixR, alpha, r, g, b;
 	int canvasWidth, canvasHeight;
 	int[] rasterData;
-	final int[] ord = new int[3];
 
+	// Vertex color blending
+	int alpha, r, g, b;
+
+	// 3D rendering variables
+	int yStart, yEnd, ixL, ixR;
+	final int[] ord = new int[3];
 	float[] vertClip = null;
 	float[] texVert = null;
 	final float[] projParams = new float[4];
 	float xTop, yTop, zTop, sTop, tTop;
 	float xMidL, yMid, zMidL, sMidL, tMidL;
-	float aMidL, rMidL, gMidL, bMidL;
 	float xBot, yBot, zBot, sBot, tBot;
 	float rHorizon, xMidR, zMidR, sMidR, tMidR;
-	float aMidR, rMidR, gMidR, bMidR;
-	float drawY, drawX, xL, xR, zL, zR, sL, sR, tL, tR;
+	float drawY, drawX, zL, zR, sL, sR, tL, tR;
 	float pwTop, pwMidL, pwBot, pwMidR, pwL, pwR;
 
 	float z, s, t;
@@ -100,11 +102,6 @@ public class Graphics3D
 
 	final Transform projectionMatrix = new Transform();
 	final int[] renderableTriangles = {0}; // Counter for visible triangles
-
-	// Vertex color blending variables
-	final int[] colors = new int[3];
-	final byte[] color_vertex = new byte[4];
-	float totalArea, areaA, areaB, areaC, weightA, weightB, weightC, totalWeight;
 
 	// fog blending factor
 	float fogFactor = 0.0f;
@@ -116,11 +113,6 @@ public class Graphics3D
 	final float[] coS = new float[3];
 	final float[] coT = new float[3];
 	final float[] coW = new float[3];
-	final float[] coA = new float[3];
-	final float[] coR = new float[3];
-	final float[] coG = new float[3];
-	final float[] coB = new float[3];
-
 
 	public Graphics3D()
 	{
@@ -908,15 +900,12 @@ public class Graphics3D
 						drawY = M3GMath.max(0f, M3GMath.min(drawY, 1f));
 
 						// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
-						xL = half == 0
-							? xTop + drawY * (xMidL - xTop)
-							: xBot + drawY * (xMidL - xBot);
-						xR = half == 0
-							? xTop + drawY * (xMidR - xTop)
-							: xBot + drawY * (xMidR - xBot);
-
-						ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
-						ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
+						ixL = half == 0
+							? M3GMath.max(M3GMath.roundPositive(xTop + drawY * (xMidL - xTop)), 0)
+							: M3GMath.max(M3GMath.roundPositive(xBot + drawY * (xMidL - xBot)), 0);
+						ixR = half == 0
+							? M3GMath.min(M3GMath.roundPositive(xTop + drawY * (xMidR - xTop)), vieww)
+							: M3GMath.min(M3GMath.roundPositive(xBot + drawY * (xMidR - xBot)), vieww);
 
 						final int spanWidth = ixR - ixL;
 
@@ -1008,8 +997,7 @@ public class Graphics3D
 							// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 							if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
-							drawX = (x - xL) * invSpanWidth;
-							drawX = M3GMath.max(0f, M3GMath.min(drawX, 1f));
+							drawX = M3GMath.max(0f, M3GMath.min((x - ixL) * invSpanWidth, 1f));
 							z = (zL + drawX * (zR - zL));
 
 							// Only depth test if the compositingMode has the feature enabled. If
