@@ -20,7 +20,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PushbackInputStream;
 import java.io.BufferedInputStream;
 import java.util.Vector;
 import java.util.zip.Inflater;
@@ -55,22 +54,68 @@ public class Loader
 	private static final int JPEG_SOFn_DELTA = 7;
 	private static final int JPEG_INVALID_COLOUR_FORMAT = -1;
 
-	private static Vector<String> currentCycleReferences = new Vector<String>();
+	private static Vector<String> activeRefs = new Vector<String>();
 
-	private Loader(byte[] data, int offset) throws IOException
+	private Loader(byte[] data, Vector<Object3D> objects, Vector<String> roots, String resDir, Vector<String> activeRefs)
 	{
-		if(data == null) { throw new NullPointerException("Cannot load M3G object from null data"); }
-		if(offset >= data.length) { throw new IllegalArgumentException("Invalid offset for m3g data"); }
-		// TODO: Check for cyclic references here, although it might not be needed
+		this.dis = new DataInputStream(new ByteArrayInputStream(data));
+		this.objs = objects;
+		this.roots = roots;
+		this.resDir = resDir;
+		this.activeRefs = activeRefs;
+	}
 
-		dis = new DataInputStream(new ByteArrayInputStream(data));
-		if (offset > 0) { dis.skipBytes(offset); }
+	private Loader(byte[] data, int offset, Vector<String> activeRefs) throws IOException
+	{
+		if (data == null) { throw new NullPointerException("Cannot load M3G object from null data"); }
+		if (offset >= data.length) { throw new IllegalArgumentException("Invalid offset for m3g data"); }
+
+		this.dis = new DataInputStream(new ByteArrayInputStream(data));
+		if (offset > 0) { this.dis.skipBytes(offset); }
+		this.resDir = "/";
+		this.activeRefs = activeRefs != null ? activeRefs : new Vector<String>();
+	}
+
+	private Loader(String name, Vector<String> activeRefs) throws IOException
+	{
+		if (name == null) { throw new NullPointerException("Cannot load M3G object from null path"); }
+
+		// Standardize path (ensure leading slash for MIDlet resource stream)
+		String canonicalPath = name.startsWith("/") ? name : "/" + name;
+
+		this.activeRefs = activeRefs != null ? activeRefs : new Vector<String>();
+
+		if (this.activeRefs.contains(canonicalPath))
+		{
+			throw new IOException("Detected a cyclic reference loop: " + canonicalPath);
+		}
+
+		// Push path to active stack
+		this.activeRefs.addElement(canonicalPath);
+
+		InputStream is = Mobile.getMIDletResourceAsStream(canonicalPath);
+		if (is == null)
+		{
+			// Remove the path from active references before throwing an
+			// exception. Some apps expecti this and catch, so we must keep
+			// the active references array valid
+			this.activeRefs.removeElement(canonicalPath);
+			throw new IOException("Can't load resource: " + canonicalPath);
+		}
+
+		this.resName = canonicalPath;
+		// Compute base directory (e.g. "/models/car.m3g" -> "/models/")
+		int lastSlash = canonicalPath.lastIndexOf('/');
+		this.resDir = (lastSlash >= 0) ? canonicalPath.substring(0, lastSlash + 1) : "/";
+
+		this.dis = new DataInputStream(new BufferedInputStream(is));
 	}
 
 	public static Object3D[] load(byte[] data, int offset) throws IOException
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Jar requested to load M3G object from byte data of size " + data.length + " starting at offset " + offset);
-		try { return new Loader(data, offset).load(); }
+
+		try { return new Loader(data, offset, new Vector<String>()).load(); }
 		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loader(byte[], int) could not load data.");
@@ -79,47 +124,9 @@ public class Loader
 		}
 	}
 
-	private Loader(String name) throws IOException
-	{
-		if(name == null) { throw new NullPointerException("Cannot load M3G object from null path"); }
-		if(currentCycleReferences.contains(name)) { throw new IOException("Detected a cyclic reference loop"); }
-
-		InputStream is;
-		if (name.startsWith("/")) { is = Mobile.getMIDletResourceAsStream(name); }
-		else
-		{
-			resDir.concat(name); // resDir will become a directory again down below if a relative path is passed here
-			Mobile.log(Mobile.LOG_WARNING, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loader(String) relative path untested. Trying Path: " + resDir + ".");
-			is = Mobile.getMIDletResourceAsStream(resDir);
-		}
-
-		currentCycleReferences.addElement(name);
-
-		if (is == null) { throw new IOException("Can't load " + name); }
-		this.resName = name;
-		resDir = name.substring(0, name.lastIndexOf("/") + 1);
-		dis = new DataInputStream(new BufferedInputStream(is));
-
-		currentCycleReferences.removeElement(name);
-	}
-
 	public static Object3D[] load(String name) throws IOException
 	{
-		Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Jar requested to load M3G object from path " + name);
-		try { return new Loader(name).load(); }
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Failed to load() " + name + ".");
-			e.printStackTrace();
-			throw new IOException("Invalid M3G data.");
-		}
-	}
-
-	private Loader(byte[] data, Vector<Object3D> objects, Vector<String> roots)
-	{
-		this.dis = new DataInputStream(new ByteArrayInputStream(data));
-		this.objs = objects;
-		this.roots = roots;
+		return new Loader(name, new Vector<String>()).load();
 	}
 
 	private Object3D[] loadPNG() throws IOException
@@ -291,9 +298,9 @@ public class Loader
 			}
 			else if (objectType == 1) // AnimationController
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				AnimationController cont = new AnimationController();
-				header.applyToObject3D(cont);
+				sObj.applyToObject3D(cont);
 
 				float speed = readFloat();
 				float weight = readFloat();
@@ -310,23 +317,23 @@ public class Loader
 			}
 			else if (objectType == 2) // AnimationTrack
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				KeyframeSequence ks = (KeyframeSequence) getObject(readInt());
 				AnimationController cont = (AnimationController) getObject(readInt());
 				int property = readInt();
 				AnimationTrack track = new AnimationTrack(ks, property);
 				track.setController(cont);
 
-				header.applyToObject3D(track);
+				sObj.applyToObject3D(track);
 
 				objs.addElement(track);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 3) // Appearance
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				Appearance appearance = new Appearance();
-				header.applyToObject3D(appearance);
+				sObj.applyToObject3D(appearance);
 
 				appearance.setLayer(readByte());
 				appearance.setCompositingMode((CompositingMode) getObject(readInt()));
@@ -346,9 +353,9 @@ public class Loader
 			}
 			else if (objectType == 4) // Background
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				Background background = new Background();
-				header.applyToObject3D(background);
+				sObj.applyToObject3D(background);
 
 				background.setColor(readRGBA());
 				Object bgImage = getObject(readInt());
@@ -364,14 +371,14 @@ public class Loader
 				background.setCrop(cropX, cropY, cropWidth, cropHeight);
 				background.setDepthClearEnable(readBoolean());
 				background.setColorClearEnable(readBoolean());
-				objs.addElement(background); // dummy
+				objs.addElement(background);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 5) // Camera
 			{
-				SuperObject header = loadNode();
+				SuperObject sObj = loadNode();
 				Camera camera = new Camera();
-				header.applyToNode(camera);
+				sObj.applyToNode(camera);
 
 				int projectionType = readByte();
 				if (projectionType == Camera.GENERIC)
@@ -394,9 +401,9 @@ public class Loader
 			}
 			else if (objectType == 6) // CompositingMode
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				CompositingMode compositingMode = new CompositingMode();
-				header.applyToObject3D(compositingMode);
+				sObj.applyToObject3D(compositingMode);
 
 				compositingMode.setDepthTestEnable(readBoolean());
 				compositingMode.setDepthWriteEnable(readBoolean());
@@ -410,9 +417,9 @@ public class Loader
 			}
 			else if (objectType == 7) // Fog
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				Fog fog = new Fog();
-				header.applyToObject3D(fog);
+				sObj.applyToObject3D(fog);
 
 				fog.setColor(readRGB());
 				fog.setMode(readByte());
@@ -423,9 +430,9 @@ public class Loader
 			}
 			else if (objectType == 8) // PolygonMode
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				PolygonMode polygonMode = new PolygonMode();
-				header.applyToObject3D(polygonMode);
+				sObj.applyToObject3D(polygonMode);
 
 				polygonMode.setCulling(readByte());
 				polygonMode.setShading(readByte());
@@ -438,16 +445,16 @@ public class Loader
 			}
 			else if (objectType == 9) // Group
 			{
-				SuperObject header = loadGroup();
+				SuperObject sObj = loadGroup();
 				Group group = new Group();
-				header.applyToGroup(group, this);
+				sObj.applyToGroup(group, this);
 
 				objs.addElement(group);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 10) // Image2D
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				Image2D image = null;
 				int format = readByte();
 				boolean isMutable = readBoolean();
@@ -473,14 +480,14 @@ public class Loader
 				}
 				else { image = new Image2D(format, width, height); }
 
-				header.applyToObject3D(image);
+				sObj.applyToObject3D(image);
 
 				objs.addElement(image);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 11) // TriangleStripArray
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 
 				int encoding = readByte();
 				int firstIndex = 0;
@@ -515,16 +522,16 @@ public class Loader
 				if (indices == null) { triStrip = new TriangleStripArray(firstIndex, stripLengths); }
 				else { triStrip = new TriangleStripArray(indices, stripLengths); }
 
-				header.applyToObject3D(triStrip);
+				sObj.applyToObject3D(triStrip);
 
 				objs.addElement(triStrip);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 12) // Light
 			{
-				SuperObject header = loadNode();
+				SuperObject sObj = loadNode();
 				Light light = new Light();
-				header.applyToNode(light);
+				sObj.applyToNode(light);
 
 				float constant = readFloat();
 				float linear = readFloat();
@@ -540,9 +547,9 @@ public class Loader
 			}
 			else if (objectType == 13) // Material
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				Material material = new Material();
-				header.applyToObject3D(material);
+				sObj.applyToObject3D(material);
 
 				material.setColor(Material.AMBIENT, readRGB());
 				material.setColor(Material.DIFFUSE, readRGBA());
@@ -555,7 +562,7 @@ public class Loader
 			}
 			else if (objectType == 14) // Mesh
 			{
-				SuperObject header = loadNode(); // dummy
+				SuperObject sObj = loadNode();
 
 				VertexBuffer vertices = (VertexBuffer) getObject(readInt());
 				int subMeshCount = readInt();
@@ -572,14 +579,14 @@ public class Loader
 				}
 				Mesh mesh = new Mesh(vertices, submeshes, appearances);
 
-				header.applyToNode(mesh);
+				sObj.applyToNode(mesh);
 
 				objs.addElement(mesh);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 15) // MorphingMesh
 			{
-				SuperObject header = loadNode();
+				SuperObject sObj = loadNode();
 				VertexBuffer vb = (VertexBuffer) getObject(readInt());
 				int subMeshCount = readInt();
 				IndexBuffer[] ib = new IndexBuffer[subMeshCount];
@@ -606,14 +613,14 @@ public class Loader
 				MorphingMesh mesh = new MorphingMesh(vb, targets, ib, aps);
 				mesh.setWeights(weights);
 
-				header.applyToNode(mesh);
+				sObj.applyToNode(mesh);
 
 				objs.addElement(mesh);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 16) // SkinnedMesh
 			{
-				SuperObject header = loadNode();
+				SuperObject sObj = loadNode();
 				VertexBuffer vb = (VertexBuffer) getObject(readInt());
 				int subMeshCount = readInt();
 				IndexBuffer[] ib = new IndexBuffer[subMeshCount];
@@ -641,14 +648,14 @@ public class Loader
 					mesh.addTransform(bone, weight, firstVertex, vertexCount);
 				}
 
-				header.applyToNode(mesh);
+				sObj.applyToNode(mesh);
 
 				objs.addElement(mesh);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 17) // Texture2D
 			{
-				SuperObject header = loadTransformable();
+				SuperObject sObj = loadTransformable();
 				Texture2D texture = new Texture2D((Image2D) getObject(readInt()));
 				texture.setBlendColor(readRGB());
 				texture.setBlending(readByte());
@@ -659,14 +666,14 @@ public class Loader
 				int imageFilter = readByte();
 				texture.setFiltering(levelFilter, imageFilter);
 
-				header.applyToTransformable(texture);
+				sObj.applyToTransformable(texture);
 
 				objs.addElement(texture);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 18) // Sprite3D
 			{
-				SuperObject header = loadNode();
+				SuperObject sObj = loadNode();
 				Image2D image = (Image2D) getObject(readInt()); // Image cannot be null
 				Object ap = getObject(readInt());
 				Sprite3D sprite = new Sprite3D(readBoolean(), image, ap != null ? (Appearance) ap : null);
@@ -676,14 +683,14 @@ public class Loader
 				int height = readInt();
 				sprite.setCrop(x, y, width, height);
 
-				header.applyToNode(sprite);
+				sObj.applyToNode(sprite);
 
 				objs.addElement(sprite);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 19) // KeyframeSequence
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				int interpolation = readByte();
 				int repeatMode = readByte();
 				int encoding = readByte();
@@ -740,14 +747,14 @@ public class Loader
 					}
 				}
 
-				header.applyToObject3D(seq);
+				sObj.applyToObject3D(seq);
 
 				objs.addElement(seq);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 20) // VertexArray
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 
 				int componentSize = readByte();
 				int components = readByte();
@@ -765,11 +772,12 @@ public class Loader
 						dis.readFully(values);
 						bytesRead += size;
 					}
-					else {
+					else
+					{
 						byte last = 0;
 						for (int i = 0; i < size; ++i)
 						{
-							last += readByte();
+							last += (byte) readByte();
 							values[i] = last;
 						}
 					}
@@ -791,16 +799,16 @@ public class Loader
 					va.set(0, vertices, values);
 				}
 
-				header.applyToObject3D(va);
+				sObj.applyToObject3D(va);
 
 				objs.addElement(va);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 21) // VertexBuffer
 			{
-				SuperObject header = loadObject3D();
+				SuperObject sObj = loadObject3D();
 				VertexBuffer vertices = new VertexBuffer();
-				header.applyToObject3D(vertices);
+				sObj.applyToObject3D(vertices);
 
 				vertices.setDefaultColor(readRGBA());
 
@@ -831,10 +839,10 @@ public class Loader
 			}
 			else if (objectType == 22) // World
 			{
-				SuperObject header = loadGroup();
+				SuperObject sObj = loadGroup();
 				World world = new World();
 
-				header.applyToGroup(world, this);
+				sObj.applyToGroup(world, this);
 				world.setActiveCamera((Camera) getObject(readInt()));
 				Object bg = getObject(readInt());
 				world.setBackground(bg != null ? (Background) bg : null);
@@ -842,63 +850,7 @@ public class Loader
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 255) // External reference
-			{
-				String uri = readString();
-				Object3D[] objArray;
-
-				if (resName != null)
-				{
-					if (uri.charAt(0) == '/')  // It's using absolute path
-					{
-						Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loading M3G External Reference from path " + uri + ".");
-						objArray = Loader.load(uri);
-					}
-					else // It's using relative path, and since we have the reference name, get the directory from it
-					{
-						objArray = Loader.load(resName.substring(resName.lastIndexOf("/") + 1) + uri);
-						Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loading M3G External Reference from path " + resName.substring(resName.lastIndexOf("/") + 1) + uri + ".");
-					}
-				}
-				else // If we don't have the reference name
-				{
-					if (uri.charAt(0) == '/')  // It's using absolute path
-					{
-						Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loading M3G External Reference from path " + uri + ".");
-						objArray = Loader.load(uri);
-					}
-					else // It's using relative path. Use the last path known to resDir (which should be the directory of the current file)
-					{
-						objArray = Loader.load(resDir + uri);
-						Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loading M3G External Reference from path " + resDir + uri + ".");
-
-						// Assuming the relative path in question doesn't return a valid file, it's possible that this is an absolute path but to a resource at the root of the Jar
-						if(objArray == null)
-						{
-							objArray = Loader.load("/" + uri);
-							Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Couldn't load M3G External Reference from path " + resDir + uri + ". Trying from /" + uri);
-						}
-					}
-				}
-
-				if (objArray != null && objArray.length > 0)
-				{
-					for (int i = 0; i < objArray.length; i++)
-					{
-						// Add only the root-level object at the External reference position
-						if(objArray[i] != null)
-						{
-							objs.addElement(objArray[i]);
-							roots.addElement("" + (objs.size()-1));
-							break;
-						}
-					}
-				}
-				else
-				{
-					Mobile.log(Mobile.LOG_ERROR, "Failed to load external resource: " + uri);
-					throw new IOException("Could not load external resource: " + uri);
-				}
-			}
+				{ loadExternalReference(); }
 			else { Mobile.log(Mobile.LOG_WARNING, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Unsupported objectType " + objectType + "."); }
 
 			if (bytesRead != length) { Mobile.log(Mobile.LOG_WARNING, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Length mismatch, expected: " + length + ", bytesRead: " + bytesRead + ", objectType: " + objectType); }
@@ -913,6 +865,7 @@ public class Loader
 		this.objs.addElement(null); // Index 1 is the header, which is not a valid object.
 
 		this.bytesRead = 0;
+
 		// First section must be header
 		int compressionScheme = readByte();
 		int totalSectionLength = readInt();
@@ -927,11 +880,10 @@ public class Loader
 		int totalFileSize = readInt();
 		int approximateContentSize = readInt();
 		String authoringField = readString();
-
 		int checkSum = readInt();
 
 		int read = bytesRead + M3G_FILE_IDENTIFIER.length;
-		int size = (dis.available() != 0) ? (dis.available() + bytesRead) : 2048;
+
 		while (read < totalFileSize)
 		{
 		//while (dis.available() > 0) {
@@ -961,7 +913,7 @@ public class Loader
 
 			checkSum = readInt();
 
-			new Loader(uncompressedData, objs, roots).loadM3GSectionData();
+			new Loader(uncompressedData, objs, roots, this.resDir, this.activeRefs).loadM3GSectionData();
 
 			read += totalSectionLength;
 		}
@@ -986,6 +938,7 @@ public class Loader
 			int read = dis.read(identifier, 0, 12);
 			int type = getIdentifierType(identifier, 0);
 			dis.reset();
+
 			if (type == M3G_TYPE)
 			{
 				dis.skipBytes(M3G_FILE_IDENTIFIER.length);
@@ -999,6 +952,14 @@ public class Loader
 			Mobile.log(Mobile.LOG_ERROR, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Exception: " + e.getMessage());
 			e.printStackTrace();
 			throw new IOException("Invalid M3G data.");
+		}
+		finally
+		{
+			// Remove the path from active references before throwing an
+			// exception. Some apps expecti this and catch, so we must keep
+			// the active references array valid
+			if (this.resName != null && this.activeRefs != null)
+				{ this.activeRefs.removeElement(this.resName); }
 		}
 
 		return null;
@@ -1019,21 +980,13 @@ public class Loader
 
 	private int readRGB() throws IOException
 	{
-		byte r = dis.readByte();
-		byte g = dis.readByte();
-		byte b = dis.readByte();
-		bytesRead += 3;
-		return (r << 16) | (g << 8) | b;
+		return (readByte() << 16) | (readByte() << 8) | readByte();
 	}
 
+	// Reads RGBA, returns ARGB for methods that use it (they expect ARGB)
 	private int readRGBA() throws IOException
 	{
-		byte r = dis.readByte();
-		byte g = dis.readByte();
-		byte b = dis.readByte();
-		byte a = dis.readByte();
-		bytesRead += 4;
-		return (a << 24) | (r << 16) | (g << 8) | b;
+		return (readByte() << 16) | (readByte() << 8) | readByte() | (readByte()<< 24);
 	}
 
 	private float readFloat() throws IOException
@@ -1043,12 +996,11 @@ public class Loader
 
 	private int readInt() throws IOException
 	{
-		int a = dis.readUnsignedByte();
-		int b = dis.readUnsignedByte();
-		int c = dis.readUnsignedByte();
-		int d = dis.readUnsignedByte();
+		int a = readByte();
+		int b = readByte();
+		int c = readByte();
+		int d = readByte();
 		int i = (d << 24) | (c << 16) | (b << 8) | a;
-		bytesRead += 4;
 		return i;
 	}
 
@@ -1076,6 +1028,19 @@ public class Loader
 				int c3 = readByte();
 				if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80)) { throw new IOException("Invalid UTF-8 string."); }
 				else { result.append((char)(((c & 0x0F) << 12) | ((c2 & 0x3F) <<6) | (c3 & 0x3F))); }
+			}
+			else if ((c & 0xF8) == 0xF0)
+			{
+				int c2 = readByte();
+				int c3 = readByte();
+				int c4 = readByte();
+				if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80) || ((c4 & 0xC0) != 0x80)) { throw new IOException("Invalid UTF-8 string."); }
+				int codePoint = ((c & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) << 6) | (c4 & 0x3F);
+
+				// Convert code point to UTF-16 surrogate pair
+				codePoint -= 0x10000;
+				result.append((char) (0xD800 | (codePoint >> 10)));
+				result.append((char) (0xDC00 | (codePoint & 0x3FF)));
 			}
 			else { throw new IOException("Invalid UTF-8 string."); }
 		}
@@ -1106,6 +1071,51 @@ public class Loader
 			// The referenced object is no longer root-level.
 			roots.remove("" + index);
 			return objs.get(index);
+		}
+	}
+
+	private void loadExternalReference() throws IOException
+	{
+		String uri = readString();
+		Object3D[] extObjects = null;
+
+		// Resolve URI against current resDir context
+		String targetPath;
+		if (uri.startsWith("/")) { targetPath = uri; }
+		else
+		{
+			if (resDir == null || resDir.length() == 0)
+				{ targetPath = uri.startsWith("/") ? uri : "/" + uri; }
+
+			targetPath = resDir + uri;
+		}
+
+		Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": Loading External Reference from: " + targetPath);
+
+		try { extObjects = new Loader(targetPath, this.activeRefs).load(); }
+		catch (IOException e)
+		{
+			// Fallback attempt: if relative lookup failed, try root-relative
+			if (!uri.startsWith("/"))
+			{
+				Mobile.log(Mobile.LOG_WARNING, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": Relative load failed. Trying fallback /" + uri);
+				extObjects = new Loader("/" + uri, this.activeRefs).load();
+			}
+			else { throw new IOException("Failed to load resource:" + e.getMessage()); }
+		}
+
+		if (extObjects != null && extObjects.length > 0)
+		{
+			// Place primary root external object into reserved objs index
+			Object3D mainExtObj = extObjects[0];
+			objs.addElement(mainExtObj);
+
+			int extIdx = objs.size() - 1;
+			roots.addElement(String.valueOf(extIdx));
+		}
+		else
+		{
+			throw new IOException("Could not load external resource: " + uri);
 		}
 	}
 
