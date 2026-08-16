@@ -73,12 +73,12 @@ class Triangle
 			// the size increases, as we can just reuse the same references.
 			final int oldLen = (Triangle.result == null) ? 0 : Triangle.result.length;
 
-		    Triangle[] newRef = new Triangle[totalTris * 2];
-		    if (oldLen > 0) { System.arraycopy(Triangle.result, 0, newRef, 0, oldLen); }
+			Triangle[] newRef = new Triangle[totalTris * 2];
+			if (oldLen > 0) { System.arraycopy(Triangle.result, 0, newRef, 0, oldLen); }
 
-		    for (int i = oldLen; i < totalTris * 2; i++) {newRef[i] = new Triangle(); }
+			for (int i = oldLen; i < totalTris * 2; i++) {newRef[i] = new Triangle(); }
 
-		    Triangle.result = newRef;
+			Triangle.result = newRef;
 		}
 
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
