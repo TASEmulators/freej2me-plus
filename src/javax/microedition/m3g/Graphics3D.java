@@ -578,10 +578,14 @@ public class Graphics3D
 
 		for (int y = pixT; y < pixB; y++)
 		{
+			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
+			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
+
 			final float v = (y + 0.5f - sy0) / spanY;
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
 			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
 
+			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
 			for (int x = pixL; x < pixR; x++)
 			{
 				/* Depth test against the same buffer and convention used by triangles. */
@@ -598,10 +602,11 @@ public class Graphics3D
 				if (fog != null && fogFactor < 255.0f)
 					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 
-				final int finalPixel = blendPixels(rasterData[(y+viewy) * canvasWidth + (x+viewx)],
-					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
+				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
+					paintPixel, alpha, compositingMode.getBlending(), 0, 0);;
 
-				rasterData[(y+viewy) * canvasWidth + (x+viewx)] = finalPixel;
+				// Rendering at half res?
+				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 
 				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
 			}
@@ -1106,13 +1111,11 @@ public class Graphics3D
 							}
 
 							// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
-							final int finalPixel = blendPixels(rasterData[rasterIdxY + x],
+							rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
 								paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
 
-							rasterData[rasterIdxY + x] = finalPixel;
-
 							// Rendering at half res?
-							if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = finalPixel; }
+							if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 						}
 					}
 				}
