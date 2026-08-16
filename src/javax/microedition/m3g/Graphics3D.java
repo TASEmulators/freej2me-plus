@@ -1385,17 +1385,17 @@ public class Graphics3D
 				 * that the fog's contribution to the resulting color should be
 				 * 1 - fogFactor;
 				 */
-			    final int bgRB = bg & 0x00FF00FF;
-			    final int bgG  = (bg >> 8) & 0xFF;
+				final int bgRB = bg & 0x00FF00FF;
+				final int bgG  = (bg >> 8) & 0xFF;
 
-			    final int fgRB = fg & 0x00FF00FF;
-			    final int fgG  = (fg >> 8) & 0xFF;
+				final int fgRB = fg & 0x00FF00FF;
+				final int fgG  = (fg >> 8) & 0xFF;
 
-			    final int r = ((fgRB >> 16) + ((((bgRB >> 16) - (fgRB >> 16)) * alpha) >> 8)) & 0xFF;
-			    final int g = (fgG          + ((((bgG)          - (fgG))          * alpha) >> 8)) & 0xFF;
-			    final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * alpha) >> 8)) & 0xFF;
+				final int r = ((fgRB >> 16) + ((((bgRB >> 16) - (fgRB >> 16)) * alpha) >> 8)) & 0xFF;
+				final int g = (fgG          + ((((bgG)          - (fgG))          * alpha) >> 8)) & 0xFF;
+				final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * alpha) >> 8)) & 0xFF;
 
-			    return (bg & 0xFF000000) | (r << 16) | (g << 8) | b;
+				return (bg & 0xFF000000) | (r << 16) | (g << 8) | b;
 
 			default:
 				return bg;

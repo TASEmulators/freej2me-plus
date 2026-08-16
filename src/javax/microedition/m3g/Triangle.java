@@ -29,17 +29,11 @@ class Triangle
 	private static final float[] outV = new float[16];
 	private static final float[] outT = new float[16];
 
-	// Let's reuse this when clipping, quite a bit faster than creating ArrayLists each time
-	private static final float[] clipVert = new float[4];
-
 	// Output array of triangles. Allows us to reuse the memory block allocated for triangle
 	// data without needing to GC it every render pass (it'll still reallocate if the triangle count increases)
 	private static Triangle[] result;
 
 	private boolean hasVertexColors = false;
-
-	/* Triangle id on the indices array. */
-	private int triangleID;
 
 	/* Vertex indices of the source triangle. */
 	private int[] idx;
@@ -70,9 +64,22 @@ class Triangle
 		final int totalTris = tris.length / 3;
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
-		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`.
+		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`, as
+		// the worst case here is a single triangle that takes the whole screen and is clipped to 2.
 		if(Triangle.result == null || totalTris * 2 > Triangle.result.length)
-			{ Triangle.result = new Triangle[totalTris * 2]; }
+		{
+			// Let's start off by copying the references of the old array to the
+			// new one. Saves having to reallocate all objects again whenever
+			// the size increases, as we can just reuse the same references.
+			final int oldLen = (Triangle.result == null) ? 0 : Triangle.result.length;
+
+		    Triangle[] newRef = new Triangle[totalTris * 2];
+		    if (oldLen > 0) { System.arraycopy(Triangle.result, 0, newRef, 0, oldLen); }
+
+		    for (int i = oldLen; i < totalTris * 2; i++) {newRef[i] = new Triangle(); }
+
+		    Triangle.result = newRef;
+		}
 
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
 		{
@@ -102,17 +109,11 @@ class Triangle
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
 			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
-				// Create a new triangle if we don't already have one available on the static array.
-				// This saves a bunch of temporary memory allocations once the array is built and no longer increases
-				// in size.
-				if(Triangle.result[renderableTriangles[0]] == null)
-					{ Triangle.result[renderableTriangles[0]] = new Triangle(); }
-
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
 				tri.setVertexCoords(Triangle.outV, fan);
 				tri.setTexCoords(texc == null ? null : Triangle.outT, fan);
 				tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
-				tri.setVertexIndices(tris, tri_id);
+				tri.setVertexIndices(tris);
 
 				final boolean isFrontFace = polygonClockwise ? !tri.isCounterClockwise() : tri.isCounterClockwise();
 
@@ -185,21 +186,14 @@ class Triangle
 
 				if (inC != null)
 				{
-					final int cA = inC[i];
-				    final int cB = inC[j];
+					final int cA = inC[i], cB = inC[j];
+					final int alpha = (int) (amt * 256f);
 
-				    final int alpha = (int) (amt * 256f);
+					final int rbA = cA & 0x00FF00FF, rbB = cB & 0x00FF00FF;
+					final int agA = (cA >>> 8) & 0x00FF00FF, agB = (cB >>> 8) & 0x00FF00FF;
 
-				    final int rbA = cA & 0x00FF00FF;
-				    final int rbB = cB & 0x00FF00FF;
-
-				    final int agA = (cA >>> 8) & 0x00FF00FF;
-				    final int agB = (cB >>> 8) & 0x00FF00FF;
-
-				    final int rb = rbA + (((rbB - rbA) * alpha) >> 8) & 0x00FF00FF;
-				    final int ag = agA + (((agB - agA) * alpha) >> 8) & 0x00FF00FF;
-
-				    outC[outCount] = (ag << 8) | rb;
+					final int rb = rbA + (((rbB - rbA) * alpha) >> 8) & 0x00FF00FF;
+					final int ag = agA + (((agB - agA) * alpha) >> 8) & 0x00FF00FF;
 				}
 				outCount++;
 			}
@@ -336,11 +330,7 @@ class Triangle
 	}
 
 	// This one is also for memory reuse, so `this.idx` is expected to be allocated by now.
-	public final void setVertexIndices(int[] indices, int tri_id)
-	{
-		this.idx = indices;
-		this.triangleID = tri_id;
-	}
+	public final void setVertexIndices(int[] indices) { this.idx = indices; }
 
 	public final boolean hasVertexColors() { return this.hasVertexColors; }
 }
