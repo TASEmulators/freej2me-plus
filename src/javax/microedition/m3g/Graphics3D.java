@@ -176,13 +176,13 @@ public class Graphics3D
 		else if (target instanceof Graphics)
 		{
 			Graphics pgrp = (Graphics) target;
-			this.viewx = pgrp.getClipX();
-			this.viewy = pgrp.getClipY();
-			this.vieww = pgrp.getClipWidth();
-			this.viewh = pgrp.getClipHeight();
 			rasterData = ((DataBufferInt) pgrp.getCanvas().getRaster().getDataBuffer()).getData();
 			canvasWidth = pgrp.getCanvas().getWidth();
 			canvasHeight = pgrp.getCanvas().getHeight();
+			this.viewx = M3GMath.max(0, pgrp.getClipX());
+			this.viewy = M3GMath.max(0, pgrp.getClipY());
+			this.vieww = M3GMath.min(canvasWidth, pgrp.getClipWidth());
+			this.viewh = M3GMath.min(canvasWidth, pgrp.getClipHeight());
 		} else
 		{
 			/* If it is neither of those, throw an IllegalArgumentException as per JSR-184. */
@@ -1115,7 +1115,7 @@ public class Graphics3D
 								paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
 
 							// Rendering at half res?
-							if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
+							if (Mobile.halfResM3GRaster) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 						}
 					}
 				}
