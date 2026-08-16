@@ -182,7 +182,7 @@ public class Graphics3D
 			this.viewx = M3GMath.max(0, pgrp.getClipX());
 			this.viewy = M3GMath.max(0, pgrp.getClipY());
 			this.vieww = M3GMath.min(canvasWidth, pgrp.getClipWidth());
-			this.viewh = M3GMath.min(canvasWidth, pgrp.getClipHeight());
+			this.viewh = M3GMath.min(canvasHeight, pgrp.getClipHeight());
 		} else
 		{
 			/* If it is neither of those, throw an IllegalArgumentException as per JSR-184. */
@@ -1002,7 +1002,7 @@ public class Graphics3D
 							? pwTop + drawY * (pwMidR - pwTop)
 							: pwBot + drawY * (pwMidR - pwBot);
 
-						int depthIdxY = this.vieww * y;
+						int depthIdxY = y * this.vieww;
 						int rasterIdxY = (y + viewy) * canvasWidth + viewx;
 
 						// Draw the pixels for the current y-coordinate
