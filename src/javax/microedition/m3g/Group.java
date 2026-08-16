@@ -74,8 +74,8 @@ public class Group extends Node
 
 	public Node getChild(int idx)
 	{
-		if (idx < 0 || idx > getChildCount())
-			{ throw new IllegalArgumentException("Negative child index"); }
+		if (idx < 0 || idx >= getChildCount())
+			{ throw new IndexOutOfBoundsException("Negative child index"); }
 
 		if (firstChild == null)
 		{

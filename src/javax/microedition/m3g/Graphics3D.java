@@ -412,14 +412,13 @@ public class Graphics3D
 		/* Also per JSR-184, throw IllegalStateException if if node is not a Sprite3D, Mesh, or Group Object. */
 		if (!(node instanceof Mesh || node instanceof Sprite3D || node instanceof Group)) { throw new IllegalArgumentException("Node is not an instance of any of the following: Sprite3D, Mesh, Group"); }
 
+		// Node not renderable? Skip it and its children.
+		if(!node.isRenderingEnabled()) { return; }
+
 		if(transform == null) { transform = new Transform(); } // If transform is null, it indicates an identity matrix is to be used
-		// if any Mesh that is rendered violates the constraints defined in
-		//    Mesh, MorphingMesh, SkinnedMesh, VertexBuffer, or IndexBuffer
-		//    throw new java.lang.IllegalStateException();
 
 		if (node instanceof Mesh)
 		{
-			if(!node.isRenderingEnabled()) { return; }
 			Mesh mesh = (Mesh) node;
 			int subMeshes = mesh.getSubmeshCount();
 			VertexBuffer vertices = mesh.getVertexBuffer();
@@ -430,7 +429,6 @@ public class Graphics3D
 		}
 		else if (node instanceof Sprite3D)
 		{
-			if(!node.isRenderingEnabled()) { return; }
 			renderSprite((Sprite3D) node, transform);
 		}
 		else if (node instanceof Group)
@@ -440,17 +438,14 @@ public class Graphics3D
 			{
 				do
 				{
-					if (child != (Object3D) node)
+					if(child instanceof Sprite3D || child instanceof Mesh || child instanceof Group)
 					{
-						if(child instanceof Sprite3D || child instanceof Mesh || child instanceof Group)
-						{
-							Transform t = new Transform();
-							child.getCompositeTransform(t);
-							t.preMultiply(transform);
+						Transform t = new Transform();
+						child.getCompositeTransform(t);
+						t.preMultiply(transform);
 
-							if (child instanceof Sprite3D) { renderSprite((Sprite3D) child, t); }
-							else { render(child, t); }
-						}
+						if (child instanceof Sprite3D) { renderSprite((Sprite3D) child, t); }
+						else { render(child, t); }
 					}
 					child = child.right;
 				} while (child != ((Group) node).firstChild);

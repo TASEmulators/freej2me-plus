@@ -208,6 +208,8 @@ public abstract class Object3D implements Cloneable
 				float[] weight = new float[1];
 				int[] trackValidity = new int[1];
 
+				for (int c = 0; c < components; c++) { tempValues[c] = 0.0f; }
+
 				track.getContribution(time, tempValues, weight, trackValidity);
 
 				if (trackValidity[0] > 0 && weight[0] > 0.0f)
@@ -235,11 +237,6 @@ public abstract class Object3D implements Cloneable
 				{
 					sumValues[c] *= invWeight;
 				}
-				updateProperty(property, sumValues);
-			}
-			else
-			{
-				for (int c = 0; c < components; c++) { sumValues[c] = 0.0f; }
 				updateProperty(property, sumValues);
 			}
 		}

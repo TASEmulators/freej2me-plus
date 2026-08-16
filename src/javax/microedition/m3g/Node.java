@@ -16,6 +16,7 @@
 */
 package javax.microedition.m3g;
 
+import java.util.Vector;
 import org.recompile.mobile.Mobile;
 
 public abstract class Node extends Transformable
@@ -104,8 +105,9 @@ public abstract class Node extends Transformable
 		float[] targetAxis = new float[4];
 
 		getOrientation(orientation);
-		getMatrix(transformMatrix);
 
+		float[] translation = new float[3];
+		getTranslation(translation);
 		transform.postTranslate(transformMatrix[12], transformMatrix[13], transformMatrix[14]);
 
 		if (constraint != NONE)
@@ -233,34 +235,52 @@ public abstract class Node extends Transformable
 			return true;
 		}
 
-		// If the nodes do not share a root, we have no way to iransform to it
-		if (this.getRootNode() != target.getRootNode()) { return false; }
+		Vector<Node> pathThis = new Vector<Node>();
+		for (Node n = this; n != null; n = n.parent)
+			{ pathThis.addElement(n); }
 
-		// We accumulate transforms from this node all the way to the root node
-		Transform transformToRoot = new Transform();
-		Transform temp = new Transform();
-		Node curr = this;
-		while (curr.parent != null)
+		Vector<Node> pathTarget = new Vector<Node>();
+		for (Node n = target; n != null; n = n.parent)
+			{ pathTarget.addElement(n); }
+
+		// Check this and target share the same root.
+		if (pathThis.elementAt(pathThis.size() - 1) != pathTarget.elementAt(pathTarget.size() - 1))
+			{ return false; }
+
+		int i = pathThis.size() - 1;
+		int j = pathTarget.size() - 1;
+		while (i >= 0 && j >= 0 && pathThis.elementAt(i) == pathTarget.elementAt(j))
 		{
-			curr.getTransform(temp);
-			transformToRoot.preMultiply(temp);
-			curr = curr.parent;
+			i--;
+			j--;
+		}
+		int lcaIndexThis = i + 1;
+		int lcaIndexTarget = j + 1;
+
+		// We accumulate transforms from this node all the way to the
+		// lowest ancestor common to both nodes
+		Transform thisToRoot = new Transform();
+		Transform temp = new Transform();
+		for (int k = lcaIndexThis - 1; k >= 0; k--)
+		{
+			Node n = (Node) pathThis.elementAt(k);
+			n.getTransform(temp);
+			thisToRoot.postMultiply(temp);
 		}
 
-		// We also accumulate transforms for target in the same way
+		// Same for the target
 		Transform targetToRoot = new Transform();
-		curr = target;
-		while (curr.parent != null)
+		for (int k = lcaIndexTarget - 1; k >= 0; k--)
 		{
-			curr.getTransform(temp);
-			targetToRoot.preMultiply(temp);
-			curr = curr.parent;
+			Node n = (Node) pathTarget.elementAt(k);
+			n.getTransform(temp);
+			targetToRoot.postMultiply(temp);
 		}
 
 		// Will throw exception if matrix is not invertible
 		targetToRoot.invert();
 
-		targetToRoot.postMultiply(transformToRoot);
+		targetToRoot.postMultiply(thisToRoot);
 		transform.set(targetToRoot);
 		return true;
 	}

@@ -177,6 +177,7 @@ public class MorphingMesh extends Mesh
 
 	private void morphMesh(VertexBuffer base)
 	{
+		// TODO: Vertex normals and colors
 		float[] scaleBias = new float[4];
 		VertexArray basePositions = base.getPositions(scaleBias);
 		VertexArray blendedPositions = morphedVertices.getPositions(null);

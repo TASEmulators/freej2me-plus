@@ -980,13 +980,24 @@ public class Loader
 
 	private int readRGB() throws IOException
 	{
-		return (readByte() << 16) | (readByte() << 8) | readByte();
+		byte r = dis.readByte();
+		byte g = dis.readByte();
+		byte b = dis.readByte();
+		bytesRead += 3;
+
+		return (r << 16) | (g << 8) | b;
 	}
 
 	// Reads RGBA, returns ARGB for methods that use it (they expect ARGB)
 	private int readRGBA() throws IOException
 	{
-		return (readByte() << 16) | (readByte() << 8) | readByte() | (readByte()<< 24);
+		byte r = dis.readByte();
+		byte g = dis.readByte();
+		byte b = dis.readByte();
+		byte a = dis.readByte();
+		bytesRead += 4;
+
+		return a | (r << 24) | (g << 16) | (b << 8);
 	}
 
 	private float readFloat() throws IOException
