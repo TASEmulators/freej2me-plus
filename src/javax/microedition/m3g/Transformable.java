@@ -188,11 +188,34 @@ public abstract class Transformable extends Object3D
 	@Override
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Transformable property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Transformable property");
 		switch (property)
 		{
 			case AnimationTrack.ORIENTATION:
-				setOrientation(value[0], value[1], value[2], value[3]);
+				// Orientation is saved as a quaternion, so we must convert to
+				// what setOrientation expects, which is (angle, ax, ay, az)
+				float qx = value[0];
+	            float qy = value[1];
+	            float qz = value[2];
+	            float qw = value[3];
+
+	            float sinHalfAngleSq = qx * qx + qy * qy + qz * qz;
+
+	            if (sinHalfAngleSq < 1e-6f) { setOrientation(0.0f, 0.0f, 1.0f, 0.0f); }
+	            else
+	            {
+	                float sinHalfAngle = M3GMath.sqrt(sinHalfAngleSq);
+
+	                float angleRad = 2.0f * M3GMath.atan2(sinHalfAngle, qw);
+	                float angleDeg = M3GMath.toDegrees(angleRad);
+
+	                float invSin = M3GMath.fastReciprocal(sinHalfAngle);
+	                float ax = qx * invSin;
+	                float ay = qy * invSin;
+	                float az = qz * invSin;
+
+	                setOrientation(angleDeg, ax, ay, az);
+	            }
 				break;
 			case AnimationTrack.TRANSLATION:
 				setTranslation(value[0], value[1], value[2]);

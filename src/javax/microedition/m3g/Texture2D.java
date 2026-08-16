@@ -168,7 +168,7 @@ public class Texture2D extends Transformable
 	@Override
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Texture2D property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating Texture2D property");
 		switch (property)
 		{
 			case AnimationTrack.COLOR:

@@ -91,7 +91,7 @@ public class Material extends Object3D
 
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating material property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating material property");
 
 		switch (property)
 		{

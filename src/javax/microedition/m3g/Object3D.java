@@ -237,6 +237,11 @@ public abstract class Object3D implements Cloneable
 				}
 				updateProperty(property, sumValues);
 			}
+			else
+			{
+				for (int c = 0; c < components; c++) { sumValues[c] = 0.0f; }
+				updateProperty(property, sumValues);
+			}
 		}
 
 		return validity;

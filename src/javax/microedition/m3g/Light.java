@@ -107,7 +107,7 @@ public class Light extends Node
 
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating light property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating light property");
 		switch (property)
 		{
 			case AnimationTrack.COLOR:

@@ -364,7 +364,7 @@ public abstract class Node extends Transformable
 	@Override
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Node.class.getPackage().getName() + "." + Node.class.getSimpleName() + ": " + "AnimTrack updating Node property");
+		Mobile.log(Mobile.LOG_DEBUG, Node.class.getPackage().getName() + "." + Node.class.getSimpleName() + ": " + "AnimTrack updating Node property");
 		switch (property)
 		{
 			case AnimationTrack.ALPHA:
@@ -375,6 +375,7 @@ public abstract class Node extends Transformable
 				break;
 			case AnimationTrack.VISIBILITY:
 				setRenderingEnable(value[0] >= 0.5f);
+				this.dirtyBits[0] = true;
 				break;
 			default:
 				super.updateProperty(property, value);

@@ -93,7 +93,7 @@ public class AnimationTrack extends Object3D
 			{ this.sample = new float[sampleLength]; }
 
 		float speed = controller.getSpeed();
-		int sampleTime = (int) controller.getPosition(time);
+		float sampleTime = controller.getPosition(time);
 		validity[0] = sequence.getSample(sampleTime, this.sample);
 
 		int worldValidity;
@@ -103,7 +103,7 @@ public class AnimationTrack extends Object3D
 		int timeToDeact = controller.timeToDeactivation(time);
 		validity[0] = M3GMath.max(1, M3GMath.min(worldValidity, timeToDeact));
 
-		for (int i = 0; i < sampleLength; i++) { accumSamples[i] += this.sample[i] * weight[0]; }
+		for (int i = 0; i < sampleLength; i++) { accumSamples[i] += this.sample[i]; }
 	}
 
 	public AnimationController getController() { return controller; }

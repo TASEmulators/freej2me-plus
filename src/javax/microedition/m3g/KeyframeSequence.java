@@ -191,24 +191,22 @@ public class KeyframeSequence extends Object3D
 		return keyFrameTimes[index];
 	}
 
-	public int getSample(int time, float[] sample)
+	public int getSample(float time, float[] sample)
 	{
 		if (sample == null || sample.length < componentCount) {
 			throw new IllegalArgumentException("Sample array is null or too small");
 		}
 
-		if (repeat == LOOP)
+		if (repeat == LOOP && duration > 0)
 		{
-			if (duration > 0) {
-				time = time % duration;
-				if (time < 0) time += duration;
-			}
+			time = time % duration;
+			if (time < 0.0f) { time += duration; }
 		}
 
 		if (time < keyFrameTimes[rangeFirst])
 		{
 			System.arraycopy(keyFrames[rangeFirst], 0, sample, 0, componentCount);
-			return keyFrameTimes[rangeFirst] - time;
+			return M3GMath.roundPositive(keyFrameTimes[rangeFirst] - time);
 		}
 		else if (time >= keyFrameTimes[rangeLast])
 		{
@@ -218,12 +216,11 @@ public class KeyframeSequence extends Object3D
 
 		// Find surrounding keyframes
 		int start = nextKeyframe;
-		if (keyFrameTimes[start] > time || start < rangeFirst || start >= rangeLast) {
-			start = rangeFirst;
-		}
-		while (start < rangeLast && keyFrameTimes[start + 1] <= time) {
-			start++;
-		}
+		if (keyFrameTimes[start] > time || start < rangeFirst || start >= rangeLast)
+			{ start = rangeFirst; }
+
+		while (start < rangeLast && keyFrameTimes[start + 1] <= time) { start++; }
+
 		nextKeyframe = start;
 		int end = start + 1;
 
@@ -231,10 +228,10 @@ public class KeyframeSequence extends Object3D
 		if (dt == 0 || time == keyFrameTimes[start] || intType == STEP)
 		{
 			System.arraycopy(keyFrames[start], 0, sample, 0, componentCount);
-			return (intType == STEP) ? (keyFrameTimes[end] - time) : 1;
+			return (intType == STEP) ? M3GMath.roundPositive(keyFrameTimes[end] - time) : 1;
 		}
 
-		float s = (float)(time - keyFrameTimes[start]) / (float)dt;
+		float s = (time - (float) keyFrameTimes[start]) / (float) dt;
 
 		switch (intType)
 		{

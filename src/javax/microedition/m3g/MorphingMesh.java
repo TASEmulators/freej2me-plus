@@ -16,12 +16,14 @@
 */
 package javax.microedition.m3g;
 
+import java.util.Arrays;
 import org.recompile.mobile.Mobile;
 
 public class MorphingMesh extends Mesh
 {
 	private VertexBuffer[] targets;
 	private float[] weights;
+	private VertexBuffer morphedVertices;
 
 	private MorphingMesh() { }
 
@@ -97,6 +99,7 @@ public class MorphingMesh extends Mesh
 		}
 
 		System.arraycopy(weights, 0, this.weights, 0, targets.length);
+		this.dirtyBits[1] = true;
 	}
 
 	public void getWeights(float[] weights)
@@ -142,15 +145,117 @@ public class MorphingMesh extends Mesh
 	}
 
 	@Override
+	public VertexBuffer getVertexBuffer()
+	{
+		VertexBuffer base = super.getVertexBuffer();
+		if (targets == null || targets.length == 0 || base == null)
+		{
+			return base;
+		}
+
+		if (morphedVertices == null)
+		{
+			morphedVertices = (VertexBuffer) base.duplicate();
+			float[] scaleBias = new float[4];
+			VertexArray basePositions = base.getPositions(scaleBias);
+			if (basePositions != null)
+			{
+				VertexArray clonedPositions = (VertexArray) basePositions.duplicate();
+				morphedVertices.setPositions(clonedPositions, scaleBias[0],
+					new float[] { scaleBias[1], scaleBias[2], scaleBias[3] });
+			}
+		}
+
+		if (this.dirtyBits[1])
+		{
+			this.morphMesh(base);
+			this.dirtyBits[1] = false;
+		}
+
+		return morphedVertices;
+	}
+
+	private void morphMesh(VertexBuffer base)
+	{
+		float[] scaleBias = new float[4];
+		VertexArray basePositions = base.getPositions(scaleBias);
+		VertexArray blendedPositions = morphedVertices.getPositions(null);
+
+		if (basePositions == null || blendedPositions == null) { return; }
+
+		int numVertices = basePositions.getVertexCount();
+		int components = basePositions.getComponentCount();
+		int totalElements = numVertices * components;
+
+		float weightSum = 0.0f;
+		for (float w : weights) { weightSum += w; }
+		float baseWeight = 1.0f - weightSum;
+
+		int componentType = basePositions.getComponentType();
+
+		// VertexArray may have positions as either byte size, or short size.
+		// We must handle both cases separately.
+		if (componentType == 1)
+		{
+			byte[] baseRaw = new byte[totalElements];
+			byte[] targetRaw = new byte[totalElements];
+			byte[] outRaw = new byte[totalElements];
+			basePositions.get(0, numVertices, baseRaw);
+
+			for (int i = 0; i < totalElements; i++)
+			{
+				float acc = baseRaw[i] * baseWeight;
+				for (int t = 0; t < targets.length; t++)
+				{
+					if (M3GMath.abs(weights[t]) < 0.0001f) { continue; }
+					VertexArray targetPositions = targets[t].getPositions(null);
+					if (targetPositions == null) { continue; }
+
+					targetPositions.get(0, numVertices, targetRaw);
+					acc += targetRaw[i] * weights[t];
+				}
+				int val = M3GMath.round(acc);
+				outRaw[i] = (byte) M3GMath.max(-128, M3GMath.min(127, val));
+			}
+			blendedPositions.set(0, numVertices, outRaw);
+		}
+		else if (componentType == 2)
+		{
+			short[] baseRaw = new short[totalElements];
+			short[] targetRaw = new short[totalElements];
+			short[] outRaw = new short[totalElements];
+			basePositions.get(0, numVertices, baseRaw);
+
+			for (int i = 0; i < totalElements; i++)
+			{
+				float acc = baseRaw[i] * baseWeight;
+				for (int t = 0; t < targets.length; t++)
+				{
+					if (M3GMath.abs(weights[t]) < 0.0001f) { continue; }
+					VertexArray targetPositions = targets[t].getPositions(null);
+					if (targetPositions == null) { continue; }
+
+					targetPositions.get(0, numVertices, targetRaw);
+					acc += targetRaw[i] * weights[t];
+				}
+				int val = M3GMath.round(acc);
+				outRaw[i] = (short) M3GMath.max(-32768, M3GMath.min(32767, val));
+			}
+			blendedPositions.set(0, numVertices, outRaw);
+		}
+	}
+
+	@Override
 	public void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating morphingMesh property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating MorphingMesh property");
 		switch (property)
 		{
 			case AnimationTrack.MORPH_WEIGHTS:
 				int count = Math.min(targets.length, value.length);
 				for (int i = 0; i < count; i++) { weights[i] = value[i]; }
 				for (int i = count; i < targets.length; i++) { weights[i] = 0.0f; }
+				this.dirtyBits[1] = true;
 				break;
 			default:
 				super.updateProperty(property, value);

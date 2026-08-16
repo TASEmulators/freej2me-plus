@@ -104,7 +104,7 @@ public class CompositingMode extends Object3D
 
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating compositingMode property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating compositingMode property");
 		switch (property)
 		{
 			case AnimationTrack.ALPHA:

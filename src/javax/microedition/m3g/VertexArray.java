@@ -58,7 +58,7 @@ public class VertexArray extends Object3D
 		if(componentType == 1)
 		{
 			copy.vertArrayByteSize = new byte[vertArrayByteSize.length];
-			System.arraycopy(this.vertArrayShortSize, 0, copy.vertArrayShortSize, 0, this.vertArrayShortSize.length);
+			System.arraycopy(this.vertArrayByteSize, 0, copy.vertArrayByteSize, 0, this.vertArrayByteSize.length);
 		}
 		else
 		{

@@ -293,7 +293,7 @@ public class VertexBuffer extends Object3D
 	@Override
 	void updateProperty(int property, float[] value)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating VertexBuffer property");
+		Mobile.log(Mobile.LOG_DEBUG, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "AnimTrack updating VertexBuffer property");
 		switch (property)
 		{
 			case AnimationTrack.ALPHA:
