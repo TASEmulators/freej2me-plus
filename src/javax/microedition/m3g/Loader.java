@@ -64,7 +64,7 @@ public class Loader
 		// TODO: Check for cyclic references here, although it might not be needed
 
 		dis = new DataInputStream(new ByteArrayInputStream(data));
-		if (offset > 0) { dis.skip(offset); }
+		if (offset > 0) { dis.skipBytes(offset); }
 	}
 
 	public static Object3D[] load(byte[] data, int offset) throws IOException
@@ -125,9 +125,9 @@ public class Loader
 	private Object3D[] loadPNG() throws IOException
 	{
 		int format = Image2D.RGB;
-		dis.mark(Integer.MAX_VALUE);
+		dis.mark(1024 * 1024);
 		// Scan chunks that have effect on Image2D format
-		dis.skip(PNG_FILE_IDENTIFIER.length);
+		dis.skipBytes(PNG_FILE_IDENTIFIER.length);
 		try
 		{
 			while (true)
@@ -137,7 +137,7 @@ public class Loader
 				// IHDR
 				if (type == PNG_IHDR)
 				{
-					dis.skip(9);
+					dis.skipBytes(9);
 					int colourType = dis.readUnsignedByte();
 					length -= 10;
 					switch (colourType)
@@ -158,6 +158,10 @@ public class Loader
 							format = Image2D.RGBA;
 							break;
 					}
+
+					// Is it luminance or alpha? They don't use tRNS.
+					if (format == Image2D.LUMINANCE_ALPHA
+						|| format == Image2D.RGBA) { break; }
 				}
 				// tRNS
 				if (type == PNG_tRNS)
@@ -171,10 +175,11 @@ public class Loader
 							format = Image2D.RGBA;
 							break;
 					}
+					break;
 				}
 				// IDAT
 				if (type == PNG_IDAT) { break; }
-				dis.skip(length + 4);
+				dis.skipBytes(length + 4);
 			}
 		} // EOF
 		catch (Exception e) { throw new IOException("M3G Loader: Failed to load PNG Image"); }
@@ -182,12 +187,13 @@ public class Loader
 		return buildImage2D(format);
 	}
 
+
 	private Object3D[] loadJPEG() throws IOException
 	{
 		int format = JPEG_INVALID_COLOUR_FORMAT;
-		dis.mark(Integer.MAX_VALUE);
+		dis.mark(1024 * 1024);
 		// Skip file identifier
-		dis.skip(JPEG_FILE_IDENTIFIER.length);
+		dis.skipBytes(JPEG_FILE_IDENTIFIER.length);
 		try
 		{
 			int marker;
@@ -202,21 +208,11 @@ public class Loader
 				switch (marker)
 				{
 					// 'SOFn' (Start Of Frame n)
-					case 0xC0:
-					case 0xC1:
-					case 0xC2:
-					case 0xC3:
-					case 0xC5:
-					case 0xC6:
-					case 0xC7:
-					case 0xC9:
-					case 0xCA:
-					case 0xCB:
-					case 0xCD:
-					case 0xCE:
-					case 0xCF:
+					case 0xC0: case 0xC1: case 0xC2: case 0xC3:
+					case 0xC5: case 0xC6: case 0xC7: case 0xC9:
+					case 0xCA: case 0xCB: case 0xCD: case 0xCE: case 0xCF:
 						// Skip length(2), precision(1), width(2), height(2)
-						dis.skip(JPEG_SOFn_DELTA);
+						dis.skipBytes(JPEG_SOFn_DELTA);
 						switch (dis.readUnsignedByte())
 						{
 							case 1:
@@ -226,18 +222,23 @@ public class Loader
 								format = Image2D.RGB;
 								break;
 							default:
+								Mobile.log(Mobile.LOG_ERROR, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Unknown jpeg format. ");
 								throw new IOException("Unknown JPG format.");
 						}
 						break;
 					// APP0 (0xe0) marker segments and constrains certain parameters in the frame.
 					case 0xe0:
 						int length = dis.readUnsignedShort();
-						if (JPEG_JFIF != dis.readInt()) { throw new IOException("Not a valid JPG file."); }
-						dis.skip(length - 4 - 2);
+						if (JPEG_JFIF != dis.readInt())
+						{
+							Mobile.log(Mobile.LOG_ERROR, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Unknown jpeg format. ");
+							throw new IOException("Not a valid JPG file.");
+						}
+						dis.skipBytes(length - 4 - 2);
 						break;
 					default:
 						// Skip variable data
-						dis.skip(dis.readUnsignedShort() - 2);
+						dis.skipBytes(dis.readUnsignedShort() - 2);
 						break;
 				}
 			}
@@ -247,16 +248,9 @@ public class Loader
 		return buildImage2D(format);
 	}
 
-	private Object3D[] buildImage2D(int aColourFormat) throws IOException {
-		// Create an image object
-		Image2D i2d;
-		try { i2d = new Image2D(aColourFormat, Image.createImage(dis)); }
-		finally
-		{
-			try { dis.close(); }
-			catch (Exception e) { throw new IOException("M3G Loader: Failed to close Image2D inputStream."); }
-		}
-		return new Object3D[]{i2d};
+	private Object3D[] buildImage2D(int aColourFormat) throws IOException
+	{
+		return new Object3D[]{new Image2D(aColourFormat, Image.createImage(dis))};
 	}
 
 	private int getIdentifierType(byte[] aData, int aOffset)
@@ -286,8 +280,6 @@ public class Loader
 			int length = readInt();
 			bytesRead = 0;
 
-			dis.mark(Integer.MAX_VALUE);
-
 			if (objectType == 0) // M3G Header
 			{
 				int versionHigh = readByte();
@@ -299,8 +291,10 @@ public class Loader
 			}
 			else if (objectType == 1) // AnimationController
 			{
+				SuperObject header = loadObject3D();
 				AnimationController cont = new AnimationController();
-				loadObject3D(cont);
+				header.applyToObject3D(cont);
+
 				float speed = readFloat();
 				float weight = readFloat();
 				int start = readInt();
@@ -316,22 +310,24 @@ public class Loader
 			}
 			else if (objectType == 2) // AnimationTrack
 			{
-				loadObject3D(new Group());
-				bytesRead = 0;
+				SuperObject header = loadObject3D();
 				KeyframeSequence ks = (KeyframeSequence) getObject(readInt());
 				AnimationController cont = (AnimationController) getObject(readInt());
 				int property = readInt();
 				AnimationTrack track = new AnimationTrack(ks, property);
 				track.setController(cont);
-				dis.reset();
-				loadObject3D(track);
+
+				header.applyToObject3D(track);
+
 				objs.addElement(track);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 3) // Appearance
 			{
+				SuperObject header = loadObject3D();
 				Appearance appearance = new Appearance();
-				loadObject3D(appearance);
+				header.applyToObject3D(appearance);
+
 				appearance.setLayer(readByte());
 				appearance.setCompositingMode((CompositingMode) getObject(readInt()));
 				appearance.setFog((Fog) getObject(readInt()));
@@ -350,8 +346,10 @@ public class Loader
 			}
 			else if (objectType == 4) // Background
 			{
+				SuperObject header = loadObject3D();
 				Background background = new Background();
-				loadObject3D(background);
+				header.applyToObject3D(background);
+
 				background.setColor(readRGBA());
 				Object bgImage = getObject(readInt());
 				if (bgImage != null) { background.setImage((Image2D) bgImage); }
@@ -371,8 +369,9 @@ public class Loader
 			}
 			else if (objectType == 5) // Camera
 			{
+				SuperObject header = loadNode();
 				Camera camera = new Camera();
-				loadNode(camera);
+				header.applyToNode(camera);
 
 				int projectionType = readByte();
 				if (projectionType == Camera.GENERIC)
@@ -395,8 +394,10 @@ public class Loader
 			}
 			else if (objectType == 6) // CompositingMode
 			{
+				SuperObject header = loadObject3D();
 				CompositingMode compositingMode = new CompositingMode();
-				loadObject3D(compositingMode);
+				header.applyToObject3D(compositingMode);
+
 				compositingMode.setDepthTestEnable(readBoolean());
 				compositingMode.setDepthWriteEnable(readBoolean());
 				compositingMode.setColorWriteEnable(readBoolean());
@@ -409,8 +410,10 @@ public class Loader
 			}
 			else if (objectType == 7) // Fog
 			{
+				SuperObject header = loadObject3D();
 				Fog fog = new Fog();
-				loadObject3D(fog);
+				header.applyToObject3D(fog);
+
 				fog.setColor(readRGB());
 				fog.setMode(readByte());
 				if (fog.getMode() == Fog.EXPONENTIAL) { fog.setDensity(readFloat()); }
@@ -420,8 +423,10 @@ public class Loader
 			}
 			else if (objectType == 8) // PolygonMode
 			{
+				SuperObject header = loadObject3D();
 				PolygonMode polygonMode = new PolygonMode();
-				loadObject3D(polygonMode);
+				header.applyToObject3D(polygonMode);
+
 				polygonMode.setCulling(readByte());
 				polygonMode.setShading(readByte());
 				polygonMode.setWinding(readByte());
@@ -433,16 +438,17 @@ public class Loader
 			}
 			else if (objectType == 9) // Group
 			{
+				SuperObject header = loadGroup();
 				Group group = new Group();
-				loadGroup(group);
+				header.applyToGroup(group, this);
+
 				objs.addElement(group);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 10) // Image2D
 			{
+				SuperObject header = loadObject3D();
 				Image2D image = null;
-				loadObject3D(new Group()); // dummy
-				bytesRead = 0;
 				int format = readByte();
 				boolean isMutable = readBoolean();
 				int width = readInt();
@@ -467,16 +473,14 @@ public class Loader
 				}
 				else { image = new Image2D(format, width, height); }
 
-				dis.reset();
-				loadObject3D(image);
+				header.applyToObject3D(image);
 
 				objs.addElement(image);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 11) // TriangleStripArray
 			{
-				loadObject3D(new Group()); // dummy
-				bytesRead = 0;
+				SuperObject header = loadObject3D();
 
 				int encoding = readByte();
 				int firstIndex = 0;
@@ -507,21 +511,21 @@ public class Loader
 				int[] stripLengths = new int[numStripLengths];
 				for (int i = 0; i < numStripLengths; i++) { stripLengths[i] = readInt(); }
 
-				dis.reset();
-
 				TriangleStripArray triStrip = null;
 				if (indices == null) { triStrip = new TriangleStripArray(firstIndex, stripLengths); }
 				else { triStrip = new TriangleStripArray(indices, stripLengths); }
 
-				loadObject3D(triStrip);
+				header.applyToObject3D(triStrip);
 
 				objs.addElement(triStrip);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 12) // Light
 			{
+				SuperObject header = loadNode();
 				Light light = new Light();
-				loadNode(light);
+				header.applyToNode(light);
+
 				float constant = readFloat();
 				float linear = readFloat();
 				float quadratic = readFloat();
@@ -536,8 +540,10 @@ public class Loader
 			}
 			else if (objectType == 13) // Material
 			{
+				SuperObject header = loadObject3D();
 				Material material = new Material();
-				loadObject3D(material);
+				header.applyToObject3D(material);
+
 				material.setColor(Material.AMBIENT, readRGB());
 				material.setColor(Material.DIFFUSE, readRGBA());
 				material.setColor(Material.EMISSIVE, readRGB());
@@ -549,8 +555,7 @@ public class Loader
 			}
 			else if (objectType == 14) // Mesh
 			{
-				loadNode(new Group()); // dummy
-				bytesRead = 0;
+				SuperObject header = loadNode(); // dummy
 
 				VertexBuffer vertices = (VertexBuffer) getObject(readInt());
 				int subMeshCount = readInt();
@@ -567,16 +572,14 @@ public class Loader
 				}
 				Mesh mesh = new Mesh(vertices, submeshes, appearances);
 
-				dis.reset();
-				loadNode(mesh);
+				header.applyToNode(mesh);
 
 				objs.addElement(mesh);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 15) // MorphingMesh
 			{
-				loadNode(new Group());
-				bytesRead = 0;
+				SuperObject header = loadNode();
 				VertexBuffer vb = (VertexBuffer) getObject(readInt());
 				int subMeshCount = readInt();
 				IndexBuffer[] ib = new IndexBuffer[subMeshCount];
@@ -601,16 +604,16 @@ public class Loader
 				}
 
 				MorphingMesh mesh = new MorphingMesh(vb, targets, ib, aps);
-				dis.reset();
-				loadNode(mesh);
+				mesh.setWeights(weights);
+
+				header.applyToNode(mesh);
 
 				objs.addElement(mesh);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 16) // SkinnedMesh
 			{
-				loadNode(new Group());
-				bytesRead = 0;
+				SuperObject header = loadNode();
 				VertexBuffer vb = (VertexBuffer) getObject(readInt());
 				int subMeshCount = readInt();
 				IndexBuffer[] ib = new IndexBuffer[subMeshCount];
@@ -638,15 +641,14 @@ public class Loader
 					mesh.addTransform(bone, weight, firstVertex, vertexCount);
 				}
 
-				dis.reset();
-				loadNode(mesh);
+				header.applyToNode(mesh);
+
 				objs.addElement(mesh);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 17) // Texture2D
 			{
-				loadTransformable(new Group()); // dummy
-				bytesRead = 0;
+				SuperObject header = loadTransformable();
 				Texture2D texture = new Texture2D((Image2D) getObject(readInt()));
 				texture.setBlendColor(readRGB());
 				texture.setBlending(readByte());
@@ -657,16 +659,14 @@ public class Loader
 				int imageFilter = readByte();
 				texture.setFiltering(levelFilter, imageFilter);
 
-				dis.reset();
-				loadTransformable(texture);
+				header.applyToTransformable(texture);
 
 				objs.addElement(texture);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 18) // Sprite3D
 			{
-				loadNode(new Group());
-				bytesRead = 0;
+				SuperObject header = loadNode();
 				Image2D image = (Image2D) getObject(readInt()); // Image cannot be null
 				Object ap = getObject(readInt());
 				Sprite3D sprite = new Sprite3D(readBoolean(), image, ap != null ? (Appearance) ap : null);
@@ -675,15 +675,15 @@ public class Loader
 				int width = readInt();
 				int height = readInt();
 				sprite.setCrop(x, y, width, height);
-				dis.reset();
-				loadNode(sprite);
+
+				header.applyToNode(sprite);
+
 				objs.addElement(sprite);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 19) // KeyframeSequence
 			{
-				loadObject3D(new Group());
-				bytesRead = 0;
+				SuperObject header = loadObject3D();
 				int interpolation = readByte();
 				int repeatMode = readByte();
 				int encoding = readByte();
@@ -739,15 +739,15 @@ public class Loader
 						seq.setKeyframe(i, time, values);
 					}
 				}
-				dis.reset();
-				loadObject3D(seq);
+
+				header.applyToObject3D(seq);
+
 				objs.addElement(seq);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 20) // VertexArray
 			{
-				loadObject3D(new Group()); // dummy
-				bytesRead = 0;
+				SuperObject header = loadObject3D();
 
 				int componentSize = readByte();
 				int components = readByte();
@@ -791,16 +791,16 @@ public class Loader
 					va.set(0, vertices, values);
 				}
 
-				dis.reset();
-				loadObject3D(va);
+				header.applyToObject3D(va);
 
 				objs.addElement(va);
 				roots.addElement("" + (objs.size()-1));
 			}
 			else if (objectType == 21) // VertexBuffer
 			{
+				SuperObject header = loadObject3D();
 				VertexBuffer vertices = new VertexBuffer();
-				loadObject3D(vertices);
+				header.applyToObject3D(vertices);
 
 				vertices.setDefaultColor(readRGBA());
 
@@ -831,8 +831,10 @@ public class Loader
 			}
 			else if (objectType == 22) // World
 			{
+				SuperObject header = loadGroup();
 				World world = new World();
-				loadGroup(world);
+
+				header.applyToGroup(world, this);
 				world.setActiveCamera((Camera) getObject(readInt()));
 				Object bg = getObject(readInt());
 				world.setBackground(bg != null ? (Background) bg : null);
@@ -899,9 +901,7 @@ public class Loader
 			}
 			else { Mobile.log(Mobile.LOG_WARNING, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Unsupported objectType " + objectType + "."); }
 
-			dis.reset();
 			if (bytesRead != length) { Mobile.log(Mobile.LOG_WARNING, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Length mismatch, expected: " + length + ", bytesRead: " + bytesRead + ", objectType: " + objectType); }
-			dis.skipBytes(length);
 		}
 	}
 
@@ -988,7 +988,7 @@ public class Loader
 			dis.reset();
 			if (type == M3G_TYPE)
 			{
-				dis.skip(M3G_FILE_IDENTIFIER.length);
+				dis.skipBytes(M3G_FILE_IDENTIFIER.length);
 				return loadM3G();
 			}
 			else if (type == PNG_TYPE) { return loadPNG(); }
@@ -1078,11 +1078,11 @@ public class Loader
 				else { result.append((char)(((c & 0x0F) << 12) | ((c2 & 0x3F) <<6) | (c3 & 0x3F))); }
 			}
 			else { throw new IOException("Invalid UTF-8 string."); }
-	    }
+		}
 
 		String ret = result.toString();
 		Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "String: " + ret);
-	    return ret;
+		return ret;
 	}
 
 	private float[] readMatrix() throws IOException
@@ -1109,82 +1109,179 @@ public class Loader
 		}
 	}
 
-	private void loadObject3D(Object3D object) throws IOException
+	// Those two vectors will always house AnimationTracks and Object3Ds
+	@SuppressWarnings("unchecked")
+	private SuperObject loadObject3D() throws IOException
 	{
-		object.setUserID(readInt());
+		SuperObject sObj = new SuperObject();
+		sObj.userID = readInt();
 
-		int animationTracks = readInt();
-		for (int i = 0; i < animationTracks; ++i) { object.addAnimationTrack((AnimationTrack)getObject(readInt())); }
+		int animationTracksCount = readInt();
+		for (int i = 0; i < animationTracksCount; ++i)
+		{
+			sObj.animationTracks.addElement((AnimationTrack) getObject(readInt()));
+		}
 
 		int userParams = readInt();
-
-		if (userParams != 0)
-		{
-			Hashtable<Integer, byte[]> hashtable = new Hashtable<Integer, byte[]>();
-			for (int i = 0; i < userParams; ++i)
-			{
+		if (userParams != 0) {
+			Hashtable hashtable = new Hashtable();
+			for (int i = 0; i < userParams; ++i) {
 				int parameterID = readInt();
 				int numBytes = readInt();
 				byte[] parameterBytes = new byte[numBytes];
 				dis.readFully(parameterBytes);
 				bytesRead += numBytes;
 
-				hashtable.put(parameterID, parameterBytes);
+				hashtable.put(new Integer(parameterID), parameterBytes);
 			}
-			object.setUserObject(hashtable);
-			Mobile.log(Mobile.LOG_DEBUG, Loader.class.getPackage().getName() + "." + Loader.class.getSimpleName() + ": " + "Loaded " + userParams + " user objects");
+			sObj.userObjects = hashtable;
 		}
+		return sObj;
 	}
 
-	private void loadTransformable(Transformable transformable) throws IOException
+	private SuperObject loadTransformable() throws IOException
 	{
-		loadObject3D(transformable);
-		if (readBoolean()) // hasComponentTransform
+		SuperObject sObj = loadObject3D();
+		sObj.hasComponentTransform = readBoolean();
+		if (sObj.hasComponentTransform)
 		{
-			float tx = readFloat();
-			float ty = readFloat();
-			float tz = readFloat();
-			transformable.setTranslation(tx, ty, tz);
-			float sx = readFloat();
-			float sy = readFloat();
-			float sz = readFloat();
-			transformable.setScale(sx, sy, sz);
-			float angle = readFloat();
-			float ax = readFloat();
-			float ay = readFloat();
-			float az = readFloat();
-			transformable.setOrientation(angle, ax, ay, az);
+			sObj.tx = readFloat();
+			sObj.ty = readFloat();
+			sObj.tz = readFloat();
+			sObj.sx = readFloat();
+			sObj.sy = readFloat();
+			sObj.sz = readFloat();
+			sObj.angle = readFloat();
+			sObj.ax = readFloat();
+			sObj.ay = readFloat();
+			sObj.az = readFloat();
 		}
-		if (readBoolean()) // hasGeneralTransform
+		sObj.hasGeneralTransform = readBoolean();
+		if (sObj.hasGeneralTransform)
 		{
-			Transform t = new Transform();
-			t.set(readMatrix());
-			transformable.setTransform(t);
+			sObj.transform = new Transform();
+			sObj.transform.set(readMatrix());
 		}
+		return sObj;
 	}
 
-	private void loadNode(Node node) throws IOException
+	private SuperObject loadNode() throws IOException
 	{
-		loadTransformable(node);
-		node.setRenderingEnable(readBoolean());
-		node.setPickingEnable(readBoolean());
+		SuperObject sObj = loadTransformable();
+		sObj.renderingEnable = readBoolean();
+		sObj.pickingEnable = readBoolean();
 		int alpha = readByte();
-		node.setAlphaFactor((float) alpha / 255.0f);
-		node.setScope(readInt());
-		if (readBoolean()) // hasAlignment
+		sObj.alphaFactor = (float) alpha / 255.0f;
+		sObj.scope = readInt();
+		sObj.hasAlignment = readBoolean();
+		if (sObj.hasAlignment)
 		{
-			int zTarget = readByte();
-			int yTarget = readByte();
-			Node zReference = (Node) getObject(readInt());
-			Node yReference = (Node) getObject(readInt());
-			node.setAlignment(zReference, zTarget, yReference, yTarget);
+			sObj.zTarget = readByte();
+			sObj.yTarget = readByte();
+			sObj.zReference = (Node) getObject(readInt());
+			sObj.yReference = (Node) getObject(readInt());
 		}
+		return sObj;
 	}
 
-	private void loadGroup(Group group) throws IOException
+	private SuperObject loadGroup() throws IOException
 	{
-		loadNode(group);
+		SuperObject sObj = loadNode();
 		int count = readInt();
-		for (int i = 0; i < count; ++i) { group.addChild((Node) getObject(readInt())); }
+		sObj.childIDs = new int[count];
+		for (int i = 0; i < count; ++i)
+		{
+			sObj.childIDs[i] = readInt();
+		}
+		return sObj;
+	}
+
+	// This is a superclass (in the literal sense) that holds all fields of
+	// Object3D, Transformable, Node, Group all at once. Used for composite objects
+	// like MorphingMesh, Camera, etc. so we don't have to backtrack and check for
+	// animationTrack compatibility in a different way.
+	private static class SuperObject
+	{
+		// Object3D fields
+		int userID;
+		Vector animationTracks = new Vector();
+		Hashtable userObjects;
+
+		// Transformable fields
+		boolean hasComponentTransform;
+		float tx, ty, tz;
+		float sx = 1.0f, sy = 1.0f, sz = 1.0f;
+		float angle, ax, ay, az = 1.0f;
+		boolean hasGeneralTransform;
+		Transform transform;
+
+		// Node fields
+		boolean renderingEnable = true;
+		boolean pickingEnable = true;
+		float alphaFactor = 1.0f;
+		int scope = -1;
+		boolean hasAlignment;
+		int zTarget, yTarget;
+		Node zReference, yReference;
+
+		// Group fields
+		int[] childIDs;
+
+		public void applyToObject3D(Object3D obj)
+		{
+			obj.setUserID(this.userID);
+			for (int i = 0; i < this.animationTracks.size(); i++)
+			{
+				obj.addAnimationTrack((AnimationTrack) this.animationTracks.elementAt(i));
+			}
+			if (this.userObjects != null)
+			{
+				obj.setUserObject(this.userObjects);
+			}
+		}
+
+		public void applyToTransformable(Transformable t)
+		{
+			applyToObject3D(t);
+			if (this.hasComponentTransform)
+			{
+				t.setTranslation(tx, ty, tz);
+				t.setScale(sx, sy, sz);
+				t.setOrientation(angle, ax, ay, az);
+			}
+			if (this.hasGeneralTransform && this.transform != null)
+			{
+				t.setTransform(this.transform);
+			}
+		}
+
+		public void applyToNode(Node node)
+		{
+			applyToTransformable(node);
+			node.setRenderingEnable(this.renderingEnable);
+			node.setPickingEnable(this.pickingEnable);
+			node.setAlphaFactor(this.alphaFactor);
+			node.setScope(this.scope);
+			if (this.hasAlignment)
+			{
+				node.setAlignment(this.zReference, this.zTarget, this.yReference, this.yTarget);
+			}
+		}
+
+		public void applyToGroup(Group group, Loader loader)
+		{
+			applyToNode(group);
+			if (this.childIDs != null)
+			{
+				for (int i = 0; i < this.childIDs.length; i++)
+				{
+					Node child = (Node) loader.getObject(this.childIDs[i]);
+					if (child != null)
+					{
+						group.addChild(child);
+					}
+				}
+			}
+		}
 	}
 }

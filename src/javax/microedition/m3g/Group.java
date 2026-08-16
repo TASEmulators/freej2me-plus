@@ -18,8 +18,10 @@ package javax.microedition.m3g;
 
 public class Group extends Node
 {
-	public Node firstChild;
+	public Node firstChild = null;
 	public int numNonCullables = 0, numRenderables = 0;
+
+	public Group() { }
 
 	protected Object3D duplicateImpl()
 	{
@@ -44,8 +46,8 @@ public class Group extends Node
 
 	public void addChild(Node child)
 	{
-		if (child == null) { throw new NullPointerException("child can not be null"); }
-		if (child == this) { throw new IllegalArgumentException("can not add self as child"); }
+		if (child == null) { throw new NullPointerException("child cannot be null"); }
+		if (child == this) { throw new IllegalArgumentException("cannot add self as child"); }
 		if (child.getParent() != null) { throw new IllegalArgumentException("child already has parent"); }
 		if (isAncestor(child)) { throw new IllegalArgumentException("Cannot add an ancestor as a child"); }
 

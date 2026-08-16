@@ -59,12 +59,13 @@ public class MorphingMesh extends Mesh
 	{
 		MorphingMesh copy = (MorphingMesh) super.duplicateImpl();
 
-		copy.weights = (float[]) this.weights.clone();
 		copy.targets = new VertexBuffer[this.targets.length];
+		copy.weights = new float[this.targets.length];
 
 		for (int i = 0; i < this.targets.length; i++)
 		{
 			copy.targets[i] = this.targets[i];
+			copy.weights[i] = this.weights[i];
 			copy.addReference(copy.targets[i]);
 		}
 

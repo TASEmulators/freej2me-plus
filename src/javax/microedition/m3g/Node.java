@@ -43,8 +43,6 @@ public abstract class Node extends Transformable
 	boolean hasBones = false;
 	boolean[] dirtyBits = new boolean[2]; // {renderablesBit, bonesBit}
 
-	public Node() { }
-
 	protected Object3D duplicateImpl()
 	{
 		Node copy = (Node) super.duplicateImpl();

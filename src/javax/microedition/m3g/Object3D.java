@@ -32,7 +32,6 @@ public abstract class Object3D implements Cloneable
 
 	public final Object3D duplicate() { return this.duplicateImpl(); }
 
-	@SuppressWarnings("unchecked") // Those two vectors will always house AnimationTracks and Object3Ds
 	protected Object3D duplicateImpl()
 	{
 		try
