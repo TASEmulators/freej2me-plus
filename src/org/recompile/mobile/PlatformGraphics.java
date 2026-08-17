@@ -775,8 +775,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		// Fill rounded corners
 		drawArc(x + 1, y + 1, arcWidth - 1, arcHeight - 1, 90, 90); // Top-left corner
 		drawArc(x + width - arcWidth - 1, y + 1, arcWidth, arcHeight - 1, 0, 90); // Top-right corner
-		drawArc(x + 1, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
-		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth+1, arcHeight+1, 270, 90); // Bottom-right corner
+		drawArc(x + 1, y + height - arcHeight - 1, arcWidth - 1, arcHeight, 180, 90); // Bottom-left corner
+		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
 	// Patch: Line break support (May affect other games)
@@ -3088,11 +3088,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		else if(MobilePlatform.showFPS.equals("BottomRight")) { setOrigin(MobilePlatform.lcdWidth-scaledWidth-2, MobilePlatform.lcdHeight-scaledHeight-2 - (MobilePlatform.focusCommandBar ? font.getHeight() : 0)); }
 
 		// Set the overlay background and draw
-		setARGBColor(0x96000069); // BG is a semi-transparent dark blue
-		fillRoundRect(0, 2, scaledWidth, scaledHeight, 4, 4); // Cut a bit off from the height so that the counter is slimmer. We're not using chars that go below baseline like 'f' or 'q'
+		setARGBColor(0xAA000069); // BG is a semi-transparent dark blue
+		fillRoundRect(0, 2, scaledWidth, scaledHeight, 3, 3);
 		// Set the font color and draw it
 		setAlphaRGB(0xFFFFAF00); // Text color is orange
-		drawRoundRect(0, 2, scaledWidth, scaledHeight, 4, 4);
+		drawRoundRect(0, 2, scaledWidth, scaledHeight, 3, 3);
 		drawString(fpsText, 0, 0, TOP | LEFT);
 		setOrigin(0, 0);
 		setColor(0, 0, 0);
