@@ -43,7 +43,7 @@ public class Graphics3D
 	public static final boolean SUPPORT_MIPMAPPING = true;
 	public static final boolean SUPPORT_PERSPECTIVE_CORRECTION = true;
 	public static final boolean SUPPORT_LOCAL_CAMERA_LIGHTING = false;
-	public static final int MAX_LIGHTS = 8;
+	public static final int MAX_LIGHTS = 32;
 	public static final int MAX_VIEWPORT_WIDTH = 1024;
 	public static final int MAX_VIEWPORT_HEIGHT = 1024;
 	public static final int MAX_VIEWPORT_DIMENSION = 1024;
@@ -135,10 +135,16 @@ public class Graphics3D
 		/* As per JSR-184, addLight() must throw a NullPointerException if no light is given */
 		if (light == null) { throw new NullPointerException("addLight() was called but no light object was provided."); }
 
-		if (transform == null) { transform = new Transform(); }
+		// Are we going over the maximum allowed lights? Clear the light at
+		// the first position to make room for the new one
+		if (this.currLights.size() == MAX_LIGHTS)
+		{
+			this.currLights.remove(0);
+			this.currLightTrans.remove(0);
+		}
 
 		this.currLights.add(light);
-		this.currLightTrans.add(transform);
+		this.currLightTrans.add(transform == null ? new Transform() : new Transform(transform));
 		return this.currLights.size() - 1;
 	}
 
@@ -179,8 +185,8 @@ public class Graphics3D
 			rasterData = ((DataBufferInt) pgrp.getCanvas().getRaster().getDataBuffer()).getData();
 			canvasWidth = pgrp.getCanvas().getWidth();
 			canvasHeight = pgrp.getCanvas().getHeight();
-			this.viewx = M3GMath.max(0, pgrp.getClipX());
-			this.viewy = M3GMath.max(0, pgrp.getClipY());
+			this.viewx = M3GMath.max(0, pgrp.getClipX() + pgrp.getTranslateX());
+			this.viewy = M3GMath.max(0, pgrp.getClipY() + pgrp.getTranslateY());
 			this.vieww = M3GMath.min(canvasWidth, pgrp.getClipWidth());
 			this.viewh = M3GMath.min(canvasHeight, pgrp.getClipHeight());
 		} else
@@ -372,27 +378,21 @@ public class Graphics3D
 
 	public void render(World world)
 	{
-		/* Clear the background first */
-		clear(world.getBackground());
-
 		/* As per JSR-184, throw NullPointerException if the received world is null. */
 		if (world == null) { throw new NullPointerException("render(world) was called but no world was provided."); }
 
 		/* Also per JSR-184, throw IllegalStateException this object has no render target yet. */
 		if (this.target == null) { throw new IllegalStateException("render(world) was called but there is no render target."); }
 
-		Transform tr = new Transform();
-
 		Camera worldCamera = world.getActiveCamera();
 
 		if(worldCamera == null) { throw new IllegalStateException("Cannot render a world that has no active camera."); }
 
+		Transform tr = new Transform();
 		if(!worldCamera.getTransformTo(world, tr)) { throw new IllegalStateException("Active camera is not in world."); }
 
-		/*
-		 * if the bg-img of `world` is not the same format as `this.target`:
-		 * throw new IllegalStateException();
-		 */
+		/* Clear the background first */
+		clear(world.getBackground());
 
 		setCamera(worldCamera, tr);
 		resetLights();
@@ -427,10 +427,7 @@ public class Graphics3D
 				if (mesh.getAppearance(i) != null) { render(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope()); }
 			}
 		}
-		else if (node instanceof Sprite3D)
-		{
-			renderSprite((Sprite3D) node, transform);
-		}
+		else if (node instanceof Sprite3D) { render((Sprite3D) node, transform); }
 		else if (node instanceof Group)
 		{
 			Node child = ((Group) node).firstChild;
@@ -444,8 +441,7 @@ public class Graphics3D
 						child.getCompositeTransform(t);
 						t.preMultiply(transform);
 
-						if (child instanceof Sprite3D) { renderSprite((Sprite3D) child, t); }
-						else { render(child, t); }
+						render(child, t);
 					}
 					child = child.right;
 				} while (child != ((Group) node).firstChild);
@@ -460,7 +456,7 @@ public class Graphics3D
 	 * to the screen axes, projected, and the resulting NDC quad is rasterized directly
 	 * with the sprite's crop as texture source.
 	 */
-	private void renderSprite(Sprite3D sprite, Transform transform)
+	private void render(Sprite3D sprite, Transform transform)
 	{
 		final Image2D img = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
@@ -1118,23 +1114,17 @@ public class Graphics3D
 		}
 	}
 
-	private void positionLights(World world, Object3D obj)
+	private void positionLights(World world, Group group)
 	{
-		int numReferences = obj.getReferences(null);
-		if (numReferences > 0)
+		for (int i = 0; i < group.getChildCount(); ++i)
 		{
-			Object3D[] objArray = new Object3D[numReferences];
-			obj.getReferences(objArray);
-			for (int i = 0; i < numReferences; ++i)
-			{
-				if (objArray[i] instanceof Light)
-				{
-					Transform t = new Transform();
-					Light light = (Light) objArray[i];
-					if (light.isRenderingEnabled() && light.getTransformTo(world, t)) { addLight(light, t); }
-				}
-				positionLights(world, objArray[i]);
-			}
+			Transform t = new Transform();
+			Node node = group.getChild(i);
+
+			if (node instanceof Light && node.getTransformTo(world, t))
+				{ addLight((Light) node, t); }
+			else if (node instanceof Group)
+				{ positionLights(world, (Group) node);}
 		}
 	}
 
@@ -1176,7 +1166,7 @@ public class Graphics3D
 	public void setLight(int index, Light light, Transform transform)
 	{
 		/* As per JSR-184, throw IndexOutOfBoundsException if index < 0 or index > CurrentAmountOfLights. */
-		if (index < 0 || index > this.currLights.size()) { throw new IndexOutOfBoundsException("Tried to modify a Light on an out-of-bounds index."); }
+		if (index < 0 || index >= MAX_LIGHTS) { throw new IndexOutOfBoundsException("Tried to modify a Light on an out-of-bounds index."); }
 
 		/* If no transform is received, use the identity matrix. */
 		if (transform == null) { transform = new Transform(); }
