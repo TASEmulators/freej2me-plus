@@ -715,53 +715,6 @@ public class Graphics3D
 			renderableTriangles, clipNear, cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW,
 			perspectiveCorrection);
 
-		/*
-		 * Per-triangle flat lighting (JSR-184 lighting requires a Material on the
-		 * Appearance). Lights and vertices are brought to camera space once per
-		 * render; each triangle then gets a diffuse+ambient factor from its
-		 * geometric normal, applied to the rasterized color below.
-		 */
-		final Material material = appearance.getMaterial();
-		float[] litVerts = null;
-		/* per light: [mode, r, g, b, x, y, z] with color premultiplied by intensity */
-		float[][] litLights = null;
-
-		if (material != null && !this.currLights.isEmpty())
-		{
-			litVerts = new float[4 * vertPos.getVertexCount()];
-			final Transform mv = new Transform();
-			mv.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
-			mv.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
-			mv.preMultiply(transform);
-			mv.preMultiply(this.currCamTransInv);
-			mv.transform(vertPos, litVerts, true);
-
-			litLights = new float[this.currLights.size()][7];
-			final float[] lv = new float[16];
-			for (int li = 0; li < this.currLights.size(); li++)
-			{
-				final Light light = this.currLights.get(li);
-				if (light == null) { litLights[li][0] = -1; continue; }
-				final Transform lt = new Transform(this.currLightTrans.get(li));
-				lt.preMultiply(this.currCamTransInv);
-				lt.get(lv);
-				litLights[li][0] = light.getMode();
-				litLights[li][1] = ((light.getColor() >> 16) & 0xFF) / 255f * light.getIntensity();
-				litLights[li][2] = ((light.getColor() >> 8) & 0xFF) / 255f * light.getIntensity();
-				litLights[li][3] = (light.getColor() & 0xFF) / 255f * light.getIntensity();
-				if (light.getMode() == Light.DIRECTIONAL)
-				{
-					/* Light direction: -Z axis of the light's transform, in camera space. */
-					litLights[li][4] = -lv[2]; litLights[li][5] = -lv[6]; litLights[li][6] = -lv[10];
-				}
-				else /* OMNI and SPOT (treated as OMNI): light position in camera space. */
-				{
-					litLights[li][4] = lv[3]; litLights[li][5] = lv[7]; litLights[li][6] = lv[11];
-				}
-			}
-		}
-		float litR = 1f, litG = 1f, litB = 1f;
-
 		// At this point the triangles in `trisScreen` are actually
 		// projected to Normalized Device Coordinates, but they will be tranformed
 		// to Screen space in-place, hence the name.
@@ -803,48 +756,6 @@ public class Graphics3D
 				coS[0] = trisScreen[tri_id].sA(); coS[1] = trisScreen[tri_id].sB(); coS[2] = trisScreen[tri_id].sC();
 				coT[0] = trisScreen[tri_id].tA(); coT[1] = trisScreen[tri_id].tB(); coT[2] = trisScreen[tri_id].tC();
 				coW[0] = trisScreen[tri_id].iwA(); coW[1] = trisScreen[tri_id].iwB(); coW[2] = trisScreen[tri_id].iwC();
-
-				if (litVerts != null)
-				{
-					/* Flat lighting factor for this triangle from its geometric normal in camera space. */
-					final int liA = trisScreen[tri_id].getIndex(0) * 4;
-					final int liB = trisScreen[tri_id].getIndex(1) * 4;
-					final int liC = trisScreen[tri_id].getIndex(2) * 4;
-					final float e1x = litVerts[liB] - litVerts[liA], e1y = litVerts[liB+1] - litVerts[liA+1], e1z = litVerts[liB+2] - litVerts[liA+2];
-					final float e2x = litVerts[liC] - litVerts[liA], e2y = litVerts[liC+1] - litVerts[liA+1], e2z = litVerts[liC+2] - litVerts[liA+2];
-					float nx = e1y*e2z - e1z*e2y, ny = e1z*e2x - e1x*e2z, nz = e1x*e2y - e1y*e2x;
-					final float nlen = M3GMath.sqrt(nx*nx + ny*ny + nz*nz);
-					litR = 0f; litG = 0f; litB = 0f;
-					if (nlen > 0f)
-					{
-						nx /= nlen; ny /= nlen; nz /= nlen;
-						for (int li = 0; li < litLights.length; li++)
-						{
-							final float mode = litLights[li][0];
-							if (mode == Light.AMBIENT)
-							{
-								litR += litLights[li][1]; litG += litLights[li][2]; litB += litLights[li][3];
-							}
-							else if (mode == Light.DIRECTIONAL || mode == Light.OMNI || mode == Light.SPOT)
-							{
-								float lx, ly, lz;
-								if (mode == Light.DIRECTIONAL) { lx = -litLights[li][4]; ly = -litLights[li][5]; lz = -litLights[li][6]; }
-								else
-								{
-									/* Direction from the triangle towards the light position. */
-									lx = litLights[li][4] - litVerts[liA]; ly = litLights[li][5] - litVerts[liA+1]; lz = litLights[li][6] - litVerts[liA+2];
-								}
-								final float llen = M3GMath.sqrt(lx*lx + ly*ly + lz*lz);
-								if (llen <= 0f) { continue; }
-								/* Two-sided diffuse term, so winding/normal direction doesn't black out faces. */
-								final float ndl = M3GMath.abs((nx*lx + ny*ly + nz*lz) / llen);
-								litR += litLights[li][1] * ndl; litG += litLights[li][2] * ndl; litB += litLights[li][3] * ndl;
-							}
-						}
-					}
-					else { litR = 1f; litG = 1f; litB = 1f; }
-					if (litR > 1f) { litR = 1f; } if (litG > 1f) { litG = 1f; } if (litB > 1f) { litB = 1f; }
-				}
 
 				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
 				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
@@ -1070,15 +981,6 @@ public class Graphics3D
 								}
 
 								if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
-							}
-
-							if (litVerts != null)
-							{
-								/* Modulate the rasterized color with this triangle's flat lighting factor. */
-								paintPixel = (paintPixel & 0xFF000000)
-									| (((int) (((paintPixel >> 16) & 0xFF) * litR)) << 16)
-									| (((int) (((paintPixel >> 8) & 0xFF) * litG)) << 8)
-									| ((int) ((paintPixel & 0xFF) * litB));
 							}
 
 							// Update the depth buffer if depth write is enabled
