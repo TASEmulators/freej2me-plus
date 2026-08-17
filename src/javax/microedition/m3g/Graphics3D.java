@@ -81,6 +81,10 @@ public class Graphics3D
 	int canvasWidth, canvasHeight;
 	int[] rasterData;
 
+	// Texturing
+	boolean perspectiveCorrection, texRepeatS, texRepeatT;
+	int texH, texW;
+
 	// Vertex color blending
 	int alpha, r, g, b;
 
@@ -635,7 +639,7 @@ public class Graphics3D
 
 		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
-		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
+		perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
 
 		ord[0] = 0;
@@ -655,10 +659,10 @@ public class Graphics3D
 		final Transform texcomptr = new Transform();
 
 		/* Texture wrapping mode and dimensions, applied per-pixel while sampling */
-		final boolean texRepeatS = (tex != null) && tex.getWrappingS() == Texture2D.WRAP_REPEAT;
-		final boolean texRepeatT = (tex != null) && tex.getWrappingT() == Texture2D.WRAP_REPEAT;
-		final int texW = (teximg != null) ? teximg.getWidth() : 0;
-		final int texH = (teximg != null) ? teximg.getHeight() : 0;
+		texRepeatS = (tex != null) && tex.getWrappingS() == Texture2D.WRAP_REPEAT;
+		texRepeatT = (tex != null) && tex.getWrappingT() == Texture2D.WRAP_REPEAT;
+		texW = (teximg != null) ? teximg.getWidth() : 0;
+		texH = (teximg != null) ? teximg.getHeight() : 0;
 
 		if (tex != null) { tex.getCompositeTransform(texcomptr); }
 
@@ -801,218 +805,8 @@ public class Graphics3D
 					yStart = half == 0 ? M3GMath.max(M3GMath.roundPositive(yTop), 0) : M3GMath.max(M3GMath.roundPositive(yMid), 0);
 					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
 
-					// Adjust drawY calculation based on half
-					for (int y = yStart; y < yEnd; y++)
-					{
-						// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
-						if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
-
-						drawY = half == 0
-							? (y - yTop) / (yMid - yTop)  // Upper half
-							: 1f - (y - yMid) / (yBot - yMid); // Lower half
-						drawY = M3GMath.max(0f, M3GMath.min(drawY, 1f));
-
-						// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
-						xL = half == 0
-							? xTop + drawY * (xMidL - xTop)
-							: xBot + drawY * (xMidL - xBot);
-						xR = half == 0
-							? xTop + drawY * (xMidR - xTop)
-							: xBot + drawY * (xMidR - xBot);
-
-						ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
-						ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
-
-						final int spanWidth = ixR - ixL;
-
-						if (spanWidth <= 0) { continue; }
-
-						// Used for vertex color blending and nothing else.
-						final float invSpanWidth = M3GMath.fastReciprocal(spanWidth);
-
-						// Do we have vertex colors? If so, get the span edges' colors here,
-						// that way, the inner loop only needs to do a simple interpolation.
-						int aL = 0, rL = 0, gL = 0, bL = 0, aR = 0, rR = 0, gR = 0, bR = 0;
-						int deltaA = 0, deltaR = 0, deltaG = 0, deltaB = 0;
-						if (trisScreen[tri_id].hasVertexColors())
-						{
-							float xA = trisScreen[tri_id].xA();
-							float xB = trisScreen[tri_id].xB();
-							float xC = trisScreen[tri_id].xC();
-							float yA = trisScreen[tri_id].yA();
-							float yB = trisScreen[tri_id].yB();
-							float yC = trisScreen[tri_id].yC();
-
-							float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
-
-							if (M3GMath.abs(denominator) > M3GMath.EPSILON)
-							{
-								int colorA = trisScreen[tri_id].colorA();
-								int colorB = trisScreen[tri_id].colorB();
-								int colorC = trisScreen[tri_id].colorC();
-
-								// Calculate the left edge's color
-								float c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixL) * (yC - y) - (xC - ixL) * (yB - y)) / denominator));
-								float c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixL) * (yA - y) - (xA - ixL) * (yC - y)) / denominator));
-								float c3 = 1.0f - c1 - c2;
-
-								aL = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
-								rL = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
-								gL = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
-								bL = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
-
-								// Now the right edge's color
-								c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixR) * (yC - y) - (xC - ixR) * (yB - y)) / denominator));
-								c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixR) * (yA - y) - (xA - ixR) * (yC - y)) / denominator));
-								c3 = 1.0f - c1 - c2;
-
-								aR = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
-								rR = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
-								gR = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
-								bR = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
-
-								deltaA = aR - aL;
-								deltaR = rR - rL;
-								deltaG = gR - gL;
-								deltaB = bR - bL;
-							}
-						}
-
-						zL = half == 0
-							? zTop + drawY * (zMidL - zTop)
-							: zBot + drawY * (zMidL - zBot);
-						zR = half == 0
-							? zTop + drawY * (zMidR - zTop)
-							: zBot + drawY * (zMidR - zBot);
-
-						sL = half == 0
-							? sTop + drawY * (sMidL - sTop)
-							: sBot + drawY * (sMidL - sBot);
-						sR = half == 0
-							? sTop + drawY * (sMidR - sTop)
-							: sBot + drawY * (sMidR - sBot);
-						tL = half == 0
-							? tTop + drawY * (tMidL - tTop)
-							: tBot + drawY * (tMidL - tBot);
-						tR = half == 0
-							? tTop + drawY * (tMidR - tTop)
-							: tBot + drawY * (tMidR - tBot);
-						pwL = half == 0
-							? pwTop + drawY * (pwMidL - pwTop)
-							: pwBot + drawY * (pwMidL - pwBot);
-						pwR = half == 0
-							? pwTop + drawY * (pwMidR - pwTop)
-							: pwBot + drawY * (pwMidR - pwBot);
-
-						int depthIdxY = y * this.vieww;
-						int rasterIdxY = (y + viewy) * canvasWidth + viewx;
-
-						// Draw the pixels for the current y-coordinate
-						for (int x = ixL; x < ixR; x++)
-						{
-							// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
-							if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
-
-							drawX = M3GMath.max(0f, M3GMath.min((x - xL) / (xR - xL), 1f));
-							z = (zL + drawX * (zR - zL));
-
-							// Only depth test if the compositingMode has the feature enabled. If
-							// compositingMode is not set, check if this target has depthBuffer enabled.
-							if(depthEnabled && this.depthBuffer[depthIdxY + x] < z) { continue; }
-
-							s = sL + drawX * (sR - sL);
-							t = tL + drawX * (tR - tL);
-
-							int paintPixel;
-
-							// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
-							if (trisScreen[tri_id].hasVertexColors())
-							{
-								// Interpolate from xL to xR based on current X.
-								// No need to calculate barycentric coords on every pixel.
-								float xPos = (x - ixL) * invSpanWidth;
-
-								alpha = (int) (aL + xPos * deltaA);
-								r     = (int) (rL + xPos * deltaR);
-								g     = (int) (gL + xPos * deltaG);
-								b     = (int) (bL + xPos * deltaB);
-
-								paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b;
-							}
-							else
-							{
-								// If there's no texture coords or a texture image, we default to rendering with vertex colors. (also used for debug render modes)
-								// It's forced to opaque when blending mode is set to REPLACE.
-								paintPixel = compositingMode.getBlending() == CompositingMode.REPLACE ?
-									0xFF000000 | vertices.getDefaultColor() : vertices.getDefaultColor();
-							}
-
-							/*
-							 * Alpha test BEFORE any depth write: transparent fragments must not
-							 * occlude geometry drawn later (games rely on this — e.g. tree canopies
-							 * with alpha cutouts drawn before the ground). The depth buffer is only
-							 * updated by fragments that survive this test.
-							 */
-							if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
-
-							if(hasTexture)
-							{
-								// TODO: Allow perspective correction force-disable
-								if(perspectiveCorrection)
-								{
-									float pw = pwL + drawX * (pwR - pwL);
-									if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
-								}
-
-								// We can force-disable bilinear filter
-								if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
-								{
-									paintPixel = blendPixels(paintPixel,
-										sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT, tex.isNPOT()),
-										255, tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
-								}
-								else
-								{
-									int texX = (int) ((s - 0.001f));
-									int texY = (int) ((t - 0.001f));
-
-									texX = wrapX(texX, texW, texRepeatS, tex.isNPOT());
-									texY = wrapY(texY, texH, texRepeatT, tex.isNPOT());
-									paintPixel = blendPixels(paintPixel, teximg.getPixel(texX, texY), 255,
-										tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
-								}
-
-								if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
-							}
-
-							// Update the depth buffer if depth write is enabled
-							if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdxY + x] = z; }
-
-							// To blend the fog value here, we have to take the current pixel's z value into consideration
-							if (fog != null)
-							{
-								// Fog is always perspective-correct
-								final float zEye = M3GMath.fastReciprocal(pwL + drawX * (pwR - pwL));
-
-								if (fog.getMode() == Fog.LINEAR)
-								{
-									fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
-								}
-								else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
-
-								fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
-
-								if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
-							}
-
-							// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
-							rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
-								paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
-
-							// Rendering at half res?
-							if (Mobile.halfResM3GRaster) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
-						}
-					}
+					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasTexture, compositingMode,
+        				fog, invFogDiv, alphaThreshold, depthEnabled, tex, teximg);
 				}
 			}
 		}
@@ -1097,6 +891,222 @@ public class Graphics3D
 
 
 	/* Helper Methods */
+	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
+    Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
+    Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, Texture2D tex, Image2D teximg)
+	{
+		for (int y = yStart; y < yEnd; y++)
+		{
+			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
+			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
+
+			drawY = half == 0
+				? (y - yTop) / (yMid - yTop)  // Upper half
+				: 1f - (y - yMid) / (yBot - yMid); // Lower half
+			drawY = M3GMath.max(0f, M3GMath.min(drawY, 1f));
+
+			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
+			xL = half == 0
+				? xTop + drawY * (xMidL - xTop)
+				: xBot + drawY * (xMidL - xBot);
+			xR = half == 0
+				? xTop + drawY * (xMidR - xTop)
+				: xBot + drawY * (xMidR - xBot);
+
+			ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
+			ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
+
+			final int spanWidth = ixR - ixL;
+
+			if (spanWidth <= 0) { continue; }
+
+			// Used for vertex color blending and nothing else.
+			final float invSpanWidth = M3GMath.fastReciprocal(spanWidth);
+
+			// Do we have vertex colors? If so, get the span edges' colors here,
+			// that way, the inner loop only needs to do a simple interpolation.
+			int aL = 0, rL = 0, gL = 0, bL = 0, aR = 0, rR = 0, gR = 0, bR = 0;
+			int deltaA = 0, deltaR = 0, deltaG = 0, deltaB = 0;
+			if (trisScreen[tri_id].hasVertexColors())
+			{
+				float xA = trisScreen[tri_id].xA();
+				float xB = trisScreen[tri_id].xB();
+				float xC = trisScreen[tri_id].xC();
+				float yA = trisScreen[tri_id].yA();
+				float yB = trisScreen[tri_id].yB();
+				float yC = trisScreen[tri_id].yC();
+
+				float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
+
+				if (M3GMath.abs(denominator) > M3GMath.EPSILON)
+				{
+					int colorA = trisScreen[tri_id].colorA();
+					int colorB = trisScreen[tri_id].colorB();
+					int colorC = trisScreen[tri_id].colorC();
+
+					// Calculate the left edge's color
+					float c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixL) * (yC - y) - (xC - ixL) * (yB - y)) / denominator));
+					float c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixL) * (yA - y) - (xA - ixL) * (yC - y)) / denominator));
+					float c3 = 1.0f - c1 - c2;
+
+					aL = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
+					rL = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
+					gL = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
+					bL = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
+
+					// Now the right edge's color
+					c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixR) * (yC - y) - (xC - ixR) * (yB - y)) / denominator));
+					c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixR) * (yA - y) - (xA - ixR) * (yC - y)) / denominator));
+					c3 = 1.0f - c1 - c2;
+
+					aR = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
+					rR = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
+					gR = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
+					bR = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
+
+					deltaA = aR - aL;
+					deltaR = rR - rL;
+					deltaG = gR - gL;
+					deltaB = bR - bL;
+				}
+			}
+
+			zL = half == 0
+				? zTop + drawY * (zMidL - zTop)
+				: zBot + drawY * (zMidL - zBot);
+			zR = half == 0
+				? zTop + drawY * (zMidR - zTop)
+				: zBot + drawY * (zMidR - zBot);
+
+			sL = half == 0
+				? sTop + drawY * (sMidL - sTop)
+				: sBot + drawY * (sMidL - sBot);
+			sR = half == 0
+				? sTop + drawY * (sMidR - sTop)
+				: sBot + drawY * (sMidR - sBot);
+			tL = half == 0
+				? tTop + drawY * (tMidL - tTop)
+				: tBot + drawY * (tMidL - tBot);
+			tR = half == 0
+				? tTop + drawY * (tMidR - tTop)
+				: tBot + drawY * (tMidR - tBot);
+			pwL = half == 0
+				? pwTop + drawY * (pwMidL - pwTop)
+				: pwBot + drawY * (pwMidL - pwBot);
+			pwR = half == 0
+				? pwTop + drawY * (pwMidR - pwTop)
+				: pwBot + drawY * (pwMidR - pwBot);
+
+			int depthIdxY = y * this.vieww;
+			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
+
+			// Draw the pixels for the current y-coordinate
+			for (int x = ixL; x < ixR; x++)
+			{
+				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
+				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
+
+				drawX = M3GMath.max(0f, M3GMath.min((x - xL) / (xR - xL), 1f));
+				z = (zL + drawX * (zR - zL));
+
+				// Only depth test if the compositingMode has the feature enabled. If
+				// compositingMode is not set, check if this target has depthBuffer enabled.
+				if(depthEnabled && this.depthBuffer[depthIdxY + x] < z) { continue; }
+
+				s = sL + drawX * (sR - sL);
+				t = tL + drawX * (tR - tL);
+
+				int paintPixel;
+
+				// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
+				if (trisScreen[tri_id].hasVertexColors())
+				{
+					// Interpolate from xL to xR based on current X.
+					// No need to calculate barycentric coords on every pixel.
+					float xPos = (x - ixL) * invSpanWidth;
+
+					alpha = (int) (aL + xPos * deltaA);
+					r     = (int) (rL + xPos * deltaR);
+					g     = (int) (gL + xPos * deltaG);
+					b     = (int) (bL + xPos * deltaB);
+
+					paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b;
+				}
+				else
+				{
+					// If there's no texture coords or a texture image, we default to rendering with vertex colors. (also used for debug render modes)
+					// It's forced to opaque when blending mode is set to REPLACE.
+					paintPixel = compositingMode.getBlending() == CompositingMode.REPLACE ?
+						0xFF000000 | vertices.getDefaultColor() : vertices.getDefaultColor();
+				}
+
+				/*
+				 * Alpha test BEFORE any depth write: transparent fragments must not
+				 * occlude geometry drawn later (games rely on this — e.g. tree canopies
+				 * with alpha cutouts drawn before the ground). The depth buffer is only
+				 * updated by fragments that survive this test.
+				 */
+				if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
+
+				if(hasTexture)
+				{
+					// TODO: Allow perspective correction force-disable
+					if(perspectiveCorrection)
+					{
+						float pw = pwL + drawX * (pwR - pwL);
+						if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
+					}
+
+					// We can force-disable bilinear filter
+					if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
+					{
+						paintPixel = blendPixels(paintPixel,
+							sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT, tex.isNPOT()),
+							255, tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
+					}
+					else
+					{
+						int texX = (int) ((s - 0.001f));
+						int texY = (int) ((t - 0.001f));
+
+						texX = wrapX(texX, texW, texRepeatS, tex.isNPOT());
+						texY = wrapY(texY, texH, texRepeatT, tex.isNPOT());
+						paintPixel = blendPixels(paintPixel, teximg.getPixel(texX, texY), 255,
+							tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
+					}
+
+					if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
+				}
+
+				// Update the depth buffer if depth write is enabled
+				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdxY + x] = z; }
+
+				// To blend the fog value here, we have to take the current pixel's z value into consideration
+				if (fog != null)
+				{
+					// Fog is always perspective-correct
+					final float zEye = M3GMath.fastReciprocal(pwL + drawX * (pwR - pwL));
+
+					if (fog.getMode() == Fog.LINEAR)
+					{
+						fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
+					}
+					else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
+
+					fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
+
+					if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
+				}
+
+				// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
+				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
+					paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
+
+				// Rendering at half res?
+				if (Mobile.halfResM3GRaster) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
+			}
+		}
+	}
 
 	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
 	private final int blendPixels(int bg, int fg, int alpha, int blendMode, int texBlendColor, int texFormat)
