@@ -973,7 +973,9 @@ public class Graphics3D
 								}
 								else
 								{
-									int texX = M3GMath.roundPositive(s), texY = M3GMath.roundPositive(t);
+									int texX = (int) ((s - 0.001f));
+									int texY = (int) ((t - 0.001f));
+
 									texX = wrapX(texX, texW, texRepeatS, tex.isNPOT());
 									texY = wrapY(texY, texH, texRepeatT, tex.isNPOT());
 									paintPixel = blendPixels(paintPixel, teximg.getPixel(texX, texY), 255,
