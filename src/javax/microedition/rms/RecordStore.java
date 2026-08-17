@@ -106,7 +106,7 @@ public class RecordStore
 		this.vendorname = vendorname;
 		this.suitename = suitename;
 
-		try 
+		try
 		{
 			// For ISO-8859-1 encodings, we'll use UTF-8 for save paths, helps with chinese and special characters
 			rmsPath = new String((Mobile.getPlatform().dataPath + "./rms/"+suitename).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
@@ -129,28 +129,28 @@ public class RecordStore
 		// Load actual record data
 		file = new File(rmsFile);
 
-		if(!file.exists()) 
+		if(!file.exists())
 		{
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": New recordStore file format not found, checking for legacy one...");
 			file = new File(rmsPath+"/"+name);
-			if(!file.exists()) 
-			{ 
+			if(!file.exists())
+			{
 				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Legacy recordStore file not found either, will create if necessary...");
 				loadRecordStore(createIfNecessary);
 			}
-			else 
+			else
 			{
 				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Legacy recordStore file found! Converting to new format...");
 				loadLegacyRecordStore(rmsPath+"/"+name, createIfNecessary);
 			}
-			
+
 		}
 		else { loadRecordStore(createIfNecessary); }
 
 		// If no exceptions were thrown, the record was loaded, set the recordStoreIsOpen flag and increase the counter of opened stores
-		if(!recordStoreIsOpen) 
-		{ 
-			recordStoreIsOpen = true; 
+		if(!recordStoreIsOpen)
+		{
+			recordStoreIsOpen = true;
 			openedStores.add(this.name);
 		}
 		recordsOpened++;
@@ -210,7 +210,7 @@ public class RecordStore
 	private long getLong(byte[] data, int offset)
 	{
 		long out = 0;
-		
+
 		out |= (((long)data[offset])   & 0xFF) << 56;
 		out |= (((long)data[offset+1]) & 0xFF) << 48;
 		out |= (((long)data[offset+2]) & 0xFF) << 40;
@@ -222,7 +222,7 @@ public class RecordStore
 
 		return out;
 	}
-	
+
 	private void setLong(byte[] data, int offset, long val)
 	{
 		data[offset]   = (byte)((val>>56) & 0xFF);
@@ -250,7 +250,7 @@ public class RecordStore
 
 		try
 		{
-			
+
 			byte[] rec = new byte[]{};
 
 			// Only try to copy data if there's data to begin with, as some apps may try to store a record with zero-length data
@@ -269,7 +269,7 @@ public class RecordStore
 			lastModified = System.currentTimeMillis();
 			version++;
 			nextid++;
-			
+
 			saveRecordStore();
 
 			return nextid-1; // Return the new record's id, not the next one's.
@@ -278,7 +278,7 @@ public class RecordStore
 	}
 
 	public void closeRecordStore() throws RecordStoreNotOpenException
-	{ 
+	{
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Record Store is not open at this time"); }
 
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Close Record");
@@ -321,16 +321,16 @@ public class RecordStore
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Deleting RecordStore "+recordStoreName);
 			File folder = new File(Mobile.getPlatform().dataPath + "./rms/" + Mobile.getPlatform().loader.suitename);
 			File[] files = folder.listFiles();
-			
+
 			// Delete all files that match the received name (because binary data is saved separately from the RMS)
-			if (files != null) 
+			if (files != null)
 			{
-				for (File file : files) 
+				for (File file : files)
 				{
-					if (file.isFile() && file.getName().startsWith(generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName))) 
+					if (file.isFile() && file.getName().startsWith(generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName)))
 					{
 						boolean deleted = file.delete();
-						if (deleted) { Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Deleted " + file.getName()); } 
+						if (deleted) { Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Deleted " + file.getName()); }
 						else { Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Failed to delete " + file.getName()); }
 					}
 				}
@@ -377,21 +377,19 @@ public class RecordStore
 	{
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getRecord("+recordId+")");
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the record of a closed Record Store"); }
-		
-		if(recordId == 0) { recordId++; } // Records should always start at ID 1
 
-		if(!recordIds.contains(recordId)) { throw new InvalidRecordIDException("getRecord: Invalid Record ID: "+recordId); }
+		if(recordId <= 0 || !recordIds.contains(recordId)) { throw new InvalidRecordIDException("getRecord: Invalid Record ID: "+recordId); }
 
 		byte[] t = records.get(recordIds.indexOf(recordId));
 
-		return t == null ? t : t.clone();
+		return (t == null || t.length == 0) ? null : t.clone();
 	}
 
 	public int getRecord(int recordId, byte[] buffer, int offset) throws InvalidRecordIDException, RecordStoreNotOpenException, RecordStoreException
 	{
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> getRecord(" + recordId + ", " + buffer + ", " + offset + ")");
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the record of a closed Record Store"); }
-		if(!recordIds.contains(recordId)) { throw new InvalidRecordIDException("getRecord: Invalid Record ID: "+recordId); }
+		if(recordId <= 0 || !recordIds.contains(recordId)) { throw new InvalidRecordIDException("getRecord: Invalid Record ID: "+recordId); }
 		if(getRecord(recordIds.indexOf(recordId)).length > buffer.length-offset) { throw new ArrayIndexOutOfBoundsException("Record data won't fit on the provided buffer"); }
 
 		byte[] temp = getRecord(recordIds.indexOf(recordId));
@@ -420,7 +418,7 @@ public class RecordStore
 	}
 
 	public int getSize() throws RecordStoreNotOpenException
-	{ 
+	{
 		if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the size of a closed Record Store"); }
 
 		int size = 0;
@@ -437,37 +435,37 @@ public class RecordStore
 		int size = 0;
 		for(int i = 1; i < records.size(); i++) {size += records.get(i).length; }
 
-		return 16777216 - size; 
+		return 16777216 - size;
 	}
 
 	public int getVersion() { return version; }
 
 	public static String[] listRecordStores()
-	{		
+	{
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "List Record Stores");
 		if(rmsPath==null)
 		{
-			try 
-			{ 
+			try
+			{
 				rmsPath = new String((Mobile.getPlatform().dataPath + "./rms/"+Mobile.getPlatform().loader.suitename).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
 				File rmsDir = new File(rmsPath);
 				if (!rmsDir.exists()) { rmsDir.mkdirs(); }
 			}
 			catch (Exception e) { }
 		}
-		
-		try 
+
+		try
 		{
 			File folder = new File(rmsPath);
 			File[] files = folder.listFiles();
-			
+
 			// Filter for .rms files only, otherwise this will return a longer array than expected since binary data is saved separately with the same name
-			if (files != null) 
+			if (files != null)
 			{
 				List<String> outList = new ArrayList<String>();
-				for (File file : files) 
+				for (File file : files)
 				{
-					if (file.isFile() && file.getName().endsWith(".rms")) 
+					if (file.isFile() && file.getName().endsWith(".rms"))
 					{
 						Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ":   > '" + returnRecordStoreName(rmsPath+"/"+file.toString().substring(rmsPath.length() + 1)) +"'");
 						outList.add(returnRecordStoreName(rmsPath+"/"+file.toString().substring(rmsPath.length() + 1)));
@@ -476,7 +474,7 @@ public class RecordStore
 
 				return outList.toArray(new String[0]);
 			}
-		} 
+		}
 		catch (Exception e) { e.printStackTrace(); }
 
 		return null;
@@ -500,7 +498,7 @@ public class RecordStore
 		return new RecordStore(recordStoreName, createIfNecessary, Mobile.getPlatform().loader.vendorname, Mobile.getPlatform().loader.suitename, authmode, writable, password);
 	}
 
-	/* 
+	/*
 	 * These can open a record store from another vendor and suite, so default their access modes to PRIVATE and writable to false as these tokens will change in the constructor,
 	 * based on the writable and authentication flags that the file was last saved with.
 	 */
@@ -521,7 +519,7 @@ public class RecordStore
 	public void removeRecordListener(RecordListener listener) { listeners.remove(listener); }
 
 	public void setMode(int authmode, boolean writable) throws SecurityException
-	{  
+	{
 		if(authmode != AUTHMODE_ANY && authmode != AUTHMODE_PRIVATE) { throw new IllegalArgumentException("Invalid authentication mode"); }
 		if(!Mobile.getPlatform().loader.suitename.equals(this.suitename)) { throw new SecurityException("Cannot change another suite's recordStore mode"); }
 		this.authmode = authmode;
@@ -541,8 +539,7 @@ public class RecordStore
 
 		if(recordId == 0) { recordId++; } // Records should always start at ID 1
 		if(!recordIds.contains(recordId)) { throw new InvalidRecordIDException("setRecord: Invalid Record ID: "+recordId); }
-		if(offset < 0 || numBytes < 0 || (newData != null && offset + numBytes > newData.length))
-			{ throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
+		if(offset < 0 || numBytes < 0 || offset + numBytes > newData.length) { throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
 
 		try
 		{
@@ -567,7 +564,7 @@ public class RecordStore
 
 	/* ************************************************************
 				RecordEnumeration implementation
-	    *********************************************************** */
+		*********************************************************** */
 
 	// TODO: Implement tag handling for enumeration, although it might not be needed for MIDP up to 3.0
 	private class enumeration implements RecordEnumeration
@@ -579,14 +576,14 @@ public class RecordStore
 		RecordFilter filter;
 		RecordComparator comparator;
 
-		private final RecordListener recordListener = new RecordListener() 
+		private final RecordListener recordListener = new RecordListener()
 		{
 			public void recordAdded(RecordStore recordStore, int recordId) { rebuild(); }
-	
+
 			public void recordChanged(RecordStore recordStore, int recordId) { rebuild(); }
-	
+
 			public void recordDeleted(RecordStore recordStore, int recordId) { rebuild(); }
-	
+
 		};
 
 		public enumeration(RecordFilter filter, RecordComparator comparator, boolean keepUpdated)
@@ -605,14 +602,14 @@ public class RecordStore
 
 			rebuild();
 
-			if (keepUpdated) 
+			if (keepUpdated)
 			{
 				thisStore.addRecordListener(recordListener);
 			}
 		}
 
-		public void destroy() 
-		{ 
+		public void destroy()
+		{
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Enum Destroy called (not implemented)");
 		}
 
@@ -631,18 +628,18 @@ public class RecordStore
 
 		public boolean isKeptUpdated() { return keepUpdated; }
 
-		public void keepUpdated(boolean keepUpdated) 
+		public void keepUpdated(boolean keepUpdated)
 		{
-			if (keepUpdated) 
+			if (keepUpdated)
 			{
-				if (!this.keepUpdated) 
+				if (!this.keepUpdated)
 				{
 					rebuild();
 					thisStore.addRecordListener(recordListener);
 				}
-			} 
+			}
 			else { thisStore.removeRecordListener(recordListener); }
-	
+
 			this.keepUpdated = keepUpdated;
 		}
 
@@ -655,7 +652,7 @@ public class RecordStore
 			return records.get(elements[index++]).clone();
 		}
 
-		public int nextRecordId() throws InvalidRecordIDException, RecordStoreNotOpenException	
+		public int nextRecordId() throws InvalidRecordIDException, RecordStoreNotOpenException
 		{
 			if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the next record ID of a closed Record Store"); }
 			if(index < 0) { index = 0; }
@@ -674,11 +671,11 @@ public class RecordStore
 		{
 			if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the previous record of a closed Record Store"); }
 			if(index == 0 || count == 0) { throw new InvalidRecordIDException("Previous Record is out of bounds"); }
-			
+
 			if(index < 0) { index = records.size(); }
 
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Enum Previous Record " + (index-1));
-			
+
 			return records.get(elements[--index]).clone();
 		}
 
@@ -686,11 +683,11 @@ public class RecordStore
 		{
 			if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the previous record ID of a closed Record Store"); }
 			if(index == 0 || count == 0) { throw new InvalidRecordIDException("Previous Record is out of bounds"); }
-			
+
 			if(index < 0) { index = records.size(); }
 
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Enum Previous Record ID " + elements[index-1]);
-			
+
 			return elements[--index];
 		}
 
@@ -702,13 +699,13 @@ public class RecordStore
 
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Enumerator > " + (filter == null ? "Not Filtered" : "Filtered") + " Size:" + records.size());
 
-			for (int i = 1; i < records.size(); i++) 
+			for (int i = 1; i < records.size(); i++)
 			{
 				boolean matchesFilter = filter == null || filter.matches(records.get(i));
 				// If the tags array is null, return all records, if it exists but has length zero, basically return an empty enumeration (as there are no tags to match), else, match against available tags
 				boolean matchesTag = tagsToMatch == null || matchesTag(recordTags.get(i), tagsToMatch);
 
-				if (records.get(i).length > 0 && matchesFilter && matchesTag) 
+				if (records.get(i).length > 0 && matchesFilter && matchesTag)
 				{
 					elements[count++] = recordIds.get(i);
 				}
@@ -717,11 +714,11 @@ public class RecordStore
 			if(comparator!=null)
 			{
 				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Comparator");
-				for (int i = 0; i < count - 1; i++) 
+				for (int i = 0; i < count - 1; i++)
 				{
-					for (int j = 0; j < count - 1 - i; j++) 
+					for (int j = 0; j < count - 1 - i; j++)
 					{
-						if (comparator.compare(records.get(elements[j]), records.get(elements[j + 1])) == RecordComparator.FOLLOWS) 
+						if (comparator.compare(records.get(elements[j]), records.get(elements[j + 1])) == RecordComparator.FOLLOWS)
 						{
 							int temp = elements[j];
 							elements[j] = elements[j + 1];
@@ -732,9 +729,9 @@ public class RecordStore
 			}
 		}
 
-		private boolean matchesTag(int recordTag, int[] tags) 
+		private boolean matchesTag(int recordTag, int[] tags)
 		{
-			for (int tag : tags) 
+			for (int tag : tags)
 			{
 				if (recordTag == tag) { return true; }
 			}
@@ -746,33 +743,33 @@ public class RecordStore
 
 	/* ************************************************************
 				DoJa-specific methods
-	    *********************************************************** */
+		*********************************************************** */
 
 	public void setScratchPadIndex(int index) { scratchPadIndex = index; }
 
 	/* ************************************************************
 				Saving to and loading from disk
-	    *********************************************************** */
+		*********************************************************** */
 
-    public void saveRecordStore() 
+	public void saveRecordStore()
 	{
 		final String ownerVersion = Mobile.isDoJa ? Mobile.getPlatform().loader.getProperty("AppVer") : Mobile.getPlatform().loader.getProperty("MIDlet-Version");
-        String recordName = name; // TODO: For doja, get the sp index
+		String recordName = name; // TODO: For doja, get the sp index
 
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    	String lastModifiedDate = dateFormat.format(new Date(lastModified));
+		String lastModifiedDate = dateFormat.format(new Date(lastModified));
 
 		int[] validRecords = new int[recordIds.size()-1];
 
-        // Building JSON string
-        StringBuilder jsonBuilder = new StringBuilder();
-        jsonBuilder.append("{\n")
+		// Building JSON string
+		StringBuilder jsonBuilder = new StringBuilder();
+		jsonBuilder.append("{\n")
 			.append("  \"rmsVersion\": ").append("\""+RMS_VERSION+"\"").append(",\n")
 			.append("  \"rmsDate\": ").append("\""+lastModifiedDate+"\"").append(",\n")
 			.append("  \"ownerVersion\": \"").append(ownerVersion).append("\",\n")
 			.append("  \"otherWrite\": ").append(writablebyothers ? 1 : 0).append(",\n")
 			.append("  \"lastModified\": ").append(lastModified).append(",\n")
-        	.append("  \"modificationCount\": ").append(getVersion()).append(",\n")
+			.append("  \"modificationCount\": ").append(getVersion()).append(",\n")
 			.append("  \"authentication\": ").append(authmode).append(",\n")
 			.append("  \"ownerVendor\": \"").append(vendorname).append("\",\n")
 			.append("  \"password\": \"").append(password).append("\",\n")
@@ -798,7 +795,7 @@ public class RecordStore
 		try
 		{
 			FileOutputStream fos = new FileOutputStream(rmsPath + "/" + basename + ".rms");
-            fos.write(jsonBuilder.toString().getBytes());
+			fos.write(jsonBuilder.toString().getBytes());
 			fos.close();
 
 			for(int i = 1; i < recordIds.size(); i++) // Write Binary Data
@@ -808,19 +805,19 @@ public class RecordStore
 				fos.write(records.get(i));
 				fos.close();
 			}
-			
-        } 
-		catch (Exception e) 
-		{ 
-			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Couldn't save RecordStore " + name + " :" + e.getMessage());
-			e.printStackTrace(); 
+
 		}
-    }
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Couldn't save RecordStore " + name + " :" + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
 	public void loadRecordStore(boolean createIfNecessary) throws RecordStoreException, RecordStoreNotFoundException, SecurityException
 	{
 		file = new File(rmsFile);
-		if(!file.exists()) 
+		if(!file.exists())
 		{
 			if(!createIfNecessary)
 			{
@@ -842,8 +839,8 @@ public class RecordStore
 				throw(new RecordStoreException("Problem Opening Record Store (createIfNecessary "+createIfNecessary+"): "+rmsFile));
 			}
 		}
-		
-		try 
+
+		try
 		{
 			Map<String, Object> jsonMap = new HashMap<String, Object>();
 			StringBuilder jsonBuilder = new StringBuilder();
@@ -861,42 +858,42 @@ public class RecordStore
 			// Split by commas to get each entry
 			String[] entries = jsonString.split(",(?![^\\[]*\\])");
 
-			for (String entry : entries) 
+			for (String entry : entries)
 			{
 				// Split at the first colon
 				int colonIndex = entry.indexOf("\":");
-				if (colonIndex != -1) 
+				if (colonIndex != -1)
 				{
 					String key = entry.substring(1, colonIndex).trim().replace("\"", "");
-                	String value = entry.substring(colonIndex+2).trim();
+					String value = entry.substring(colonIndex+2).trim();
 
 					// Handle different value types
-					if (value.startsWith("\"") && value.endsWith("\"")) 
+					if (value.startsWith("\"") && value.endsWith("\""))
 					{
 						// String values
 
 						if(key.equals("lastModified"))  { lastModified = Integer.parseInt(value); } // lastModified date
 						else if(key.equals("password")) { password = value.substring(1, value.length() - 1); } // Retrieve password without quotes
 						// If the json representation expands further, this might have more keys being matched
-					} 
+					}
 					else if (value.startsWith("[") && value.endsWith("]"))
 					{
 						// Array values
-						
+
 						String arrayContent = value.endsWith("]") ? value.substring(1, value.length() - 1) : value.substring(1, value.length() - 2);
-						
+
 						if(arrayContent.equals("")) { continue; }
-						
+
 						String[] arrayItems = arrayContent.split(",");
 						int[] intArray = new int[arrayItems.length];
 						for (int i = 0; i < intArray.length; i++) { intArray[i] = Integer.parseInt(arrayItems[i].trim()); }
-						if(key.contains("ids")) 
+						if(key.contains("ids"))
 						{
 							for(int i = 0; i < intArray.length; i++) { recordIds.add(intArray[i]); }
 						}
-					} 
-					else 
-					{ 
+					}
+					else
+					{
 						// Numerical/boolean values
 						if(key.contains("tag:")) { recordTags.add(Integer.parseInt(value)); }
 						else if(key.equals("otherWrite")) { writablebyothers = (Integer.parseInt(value) == 1); }
@@ -918,11 +915,11 @@ public class RecordStore
 				records.add(binData);
 				binfis.close();
 			}
-		} 
-		catch (Exception e) 
-		{ 
+		}
+		catch (Exception e)
+		{
 			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Couldn't load recordStore:" + name + " :" + e.getMessage());
-			e.printStackTrace(); 
+			e.printStackTrace();
 		}
 	}
 
@@ -940,12 +937,12 @@ public class RecordStore
 		{
 			fis = new FileInputStream(file);
 			bos = new ByteArrayOutputStream();
-			
+
 			byte[] buffer = new byte[1024];
 			int bytesRead;
-			
+
 			while ((bytesRead = fis.read(buffer)) != -1) { bos.write(buffer, 0, bytesRead); }
-			
+
 			byte[] data = bos.toByteArray();
 
 			if(data.length>=4)
@@ -953,7 +950,7 @@ public class RecordStore
 				version = getUInt16(data, offset); offset+=2;
 				nextid = getUInt16(data, offset); offset+=2;
 				int recordcount = getUInt16(data, offset); offset+=2;
-				
+
 				Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Record count in "+filePath + ": " + recordcount);
 
 				// get each record's data
@@ -970,7 +967,7 @@ public class RecordStore
 				{
 					lastModified = System.currentTimeMillis();
 
-					for(int i = 0; i < recordcount; i++) 
+					for(int i = 0; i < recordcount; i++)
 					{
 						recordIds.addElement(i+1);
 						recordTags.addElement(0);
@@ -984,7 +981,7 @@ public class RecordStore
 					// get record Ids
 					if(data.length - offset >= 4) // Good, we already have record ids properly saved, load them up
 					{
-						for(int i = 0; i < recordcount; i++) 
+						for(int i = 0; i < recordcount; i++)
 						{
 							recordIds.addElement(getUint32(data, offset));
 							recordTags.addElement(0);
@@ -993,7 +990,7 @@ public class RecordStore
 					}
 					else // For compatibility with older saves, we'll populate recordIds with the records vector positions (hopefully a new save will correct the data)
 					{
-						for(int i = 0; i < recordcount; i++) 
+						for(int i = 0; i < recordcount; i++)
 						{
 							recordIds.addElement(i+1);
 							recordTags.addElement(0);
@@ -1010,13 +1007,13 @@ public class RecordStore
 			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + e.getMessage());
 			throw(new RecordStoreException("Problem Reading Record Store: "+filePath));
 		}
-		finally 
+		finally
 		{
-			try 
+			try
 			{
 				if (fis != null) { fis.close(); }
 				if (bos != null) { bos.close(); }
-			} 
+			}
 			catch (IOException e) { e.printStackTrace(); }
 		}
 	}
@@ -1024,7 +1021,7 @@ public class RecordStore
 
 	private static String returnRecordStoreName(String filePath) throws RecordStoreException, RecordStoreNotFoundException, SecurityException
 	{
-		try 
+		try
 		{
 			Map<String, Object> jsonMap = new HashMap<String, Object>();
 			StringBuilder jsonBuilder = new StringBuilder();
@@ -1040,14 +1037,14 @@ public class RecordStore
 
 			String[] entries = jsonString.split(",(?![^\\[]*\\])");
 
-			for (String entry : entries) 
+			for (String entry : entries)
 			{
 				// Split at the first colon
 				int colonIndex = entry.indexOf("\":");
-				if (colonIndex != -1) 
+				if (colonIndex != -1)
 				{
 					String key = entry.substring(1, colonIndex).trim().replace("\"", "");
-                	String value = entry.substring(colonIndex+2).trim();
+					String value = entry.substring(colonIndex+2).trim();
 
 					// Found the actual recordName inside the Store, retrieve it
 					if(key.equals("recordName")) { return value.substring(1, value.length() - 1).trim(); }
@@ -1055,46 +1052,47 @@ public class RecordStore
 			}
 		}
 		catch(Exception e) { Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Couldn't return the record Store Name:" + e.getMessage()); }
-		
+
 		Mobile.log(Mobile.LOG_WARNING, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Record does not have a recordName field. Expect bugs!");
 		return null;
 	}
 
-	public final void deleteOutdatedRecords(String rmsPath, String basename) 
+	public final void deleteOutdatedRecords(String rmsPath, String basename)
 	{
 		File directory = new File(rmsPath);
-		
-		if (directory.exists() && directory.isDirectory()) 
+
+		if (directory.exists() && directory.isDirectory())
 		{
 			// Get all files in the directory to then delete any that match the current record's basename
 			File[] files = directory.listFiles();
-			
-			if (files != null) 
+
+			if (files != null)
 			{
-				for (File file : files) 
+				for (File file : files)
 				{
 					if (file.getName().startsWith(basename)) { file.delete(); }
 				}
 			}
-		} 
+		}
 		else { } // Dir does not exist, nothing to delete
 	}
 
 
 	// These two are used so that FreeJ2ME-Plus matches SquirrelJME's save layout
-	public static final String generateBaseName(String owner, String name) 
+	public static final String generateBaseName(String owner, String name)
 	{
-        String base64Encoded = "";
-		
-		try 
+		String base64Encoded = "";
+
+		try
 		{
 			base64Encoded = Base64Util.encode(name.getBytes("UTF-8"))
-				.toLowerCase().replace('=', '_').replace('/', '~');
-		} 
+				.toLowerCase()
+				.replace('=', '_');
+		}
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Failed to properly encode the recordStores disk name!"); }
-		
-        return String.format("%08x%02d%s", ownerHashcode(owner, Mobile.getPlatform().loader.suitename), name.length(), base64Encoded);
-    }
+
+		return String.format("%08x%02d%s", ownerHashcode(owner, Mobile.getPlatform().loader.suitename), name.length(), base64Encoded);
+	}
 
 	public static final int ownerHashcode(String owner, String name) { return name.hashCode() ^ owner.hashCode(); }
 }
