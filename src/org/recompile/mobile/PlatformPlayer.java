@@ -25,6 +25,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import javax.sound.midi.Instrument;
@@ -662,7 +666,7 @@ public class PlatformPlayer implements Player
 		public Sequence getSequence() { return null; }
 	}
 
-	private class midiPlayer extends audioplayer
+	private class midiPlayer extends audioplayer implements MetaEventListener
 	{
 		private Sequencer midi;
 		private Sequence midiSequence;
@@ -722,26 +726,7 @@ public class PlatformPlayer implements Player
 				midi = MidiSystem.getSequencer(false);
 				transmitter = midi.getTransmitter();
 				midi.open();
-				midi.addMetaEventListener(new MetaEventListener()
-				{
-					@Override
-					public void meta(MetaMessage meta)
-					{
-						if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
-						{
-							state = Player.PREFETCHED;
-							curTime = getMediaTime();
-							if(numLoops != 0)
-							{
-								notifyListeners(PlayerListener.LOOPED, getMediaTime());
-								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-								setMediaTime(0);
-								start();
-							}
-							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); }
-						}
-					}
-				});
+				midi.addMetaEventListener(this);
 				prepareMidiSubsystem();
 				state = Player.PREFETCHED;
 			}
@@ -782,7 +767,12 @@ public class PlatformPlayer implements Player
 			transmitter = null;
 			receiver = null;
 			if(synthReserved) { Manager.synthIdxInUse[synthIdx] = false; synthReserved = false; }
-			if(midi != null) { midi.close(); }
+			if(midi != null)
+			{
+				midi.removeMetaEventListener(this);
+				midi.close();
+				midi = null;
+			}
 		}
 
 		public void close() { midiSequence = null; }
@@ -847,9 +837,27 @@ public class PlatformPlayer implements Player
 				midi.setSequence(midiSequence);
 			}
 		}
+
+		@Override
+		public void meta(MetaMessage meta)
+		{
+			if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
+			{
+				state = Player.PREFETCHED;
+				curTime = getMediaTime();
+				if(numLoops != 0)
+				{
+					notifyListeners(PlayerListener.LOOPED, getMediaTime());
+					if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
+					setMediaTime(0);
+					start();
+				}
+				else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); }
+			}
+		}
 	}
 
-	private class SMAFPlayer extends audioplayer
+	private class SMAFPlayer extends audioplayer implements MetaEventListener
 	{
 		// For SMAF, the Sequenced data will dictate player events
 		private Sequencer midi;
@@ -870,6 +878,9 @@ public class PlatformPlayer implements Player
 		public Clip[] wavClips = null;
 		private final Object pcmClipLock = new Object();
 		private Map<Integer, Integer> pcmPositions, pcmVelocities;
+
+		private ScheduledExecutorService smafExecutor;
+		private ScheduledFuture<?> playbackTask;
 
 		public SMAFPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
 		{
@@ -909,35 +920,12 @@ public class PlatformPlayer implements Player
 					state = Player.PREFETCHED;
 					return;
 				}
+
 				midi = MidiSystem.getSequencer(false);
 				if(hasMidiPlaybackEvents) { transmitter = midi.getTransmitter(); }
 				midi.open();
-				midi.addMetaEventListener(new MetaEventListener()
-				{
-					@Override
-					public void meta(MetaMessage meta)
-					{
-						handleSequenceMeta(meta);
-						if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
-						{
-							state = Player.PREFETCHED;
-							curTime = getMediaTime();
-							if(sequencerLoopConfigured)
-							{
-								notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-								isPlaying = false;
-							}
-							else if(numLoops != 0)
-							{
-								notifyListeners(PlayerListener.LOOPED, getMediaTime());
-								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-								setMediaTime(0);
-								start();
-							}
-							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); isPlaying = false; }
-						}
-					}
-				});
+				midi.addMetaEventListener(this);
+
 				if(hasMidiPlaybackEvents) { prepareMidiSubsystem(); }
 				else
 				{
@@ -977,46 +965,60 @@ public class PlatformPlayer implements Player
 				}
 				if(hasMidiPlaybackEvents && (!synthReserved || midi.getSequence() == null)) { prepareMidiSubsystem(); }
 
-				if(curTime >= getDuration()) { setMediaTime(0); } // If mediaTime >= getDuration, we should start playing from the beginning
-				else { setMediaTime(curTime); } // Else, resume from where it stopped
+				if(curTime >= getDuration()) { setMediaTime(0); }
+				else { setMediaTime(curTime); }
 
 				isPlaying = true;
 				state = Player.STARTED;
 				notifyListeners(PlayerListener.STARTED, getMediaTime());
 
-				// Start a separate thread to handle SMAF's sequence + PCM playback
-				new Thread(new Runnable()
-				{
-					@Override
-					public void run() { handleSmafPlayback(); }
-				}).start();
+				midi.start();
+				startPcmScheduler();
 			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to clean MIDI sequencer and start playback:" + e.getMessage()); }
+			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to start SMAF:" + e.getMessage()); }
 		}
 
-		private void handleSmafPlayback()
+		private void startPcmScheduler()
 		{
-			Set<Integer> playedPositions = new HashSet<Integer>();
+			if (wavClips == null || pcmPositions == null || pcmPositions.isEmpty()) { return; }
 
-			midi.start();
-			while (isPlaying && wavClips != null)
+			stopPcmScheduler(); // Cancel any lingering tasks
+
+			if (smafExecutor == null || smafExecutor.isShutdown())
 			{
-				int mediaTime = (int) (getMediaTime() / 1000);
+				smafExecutor = Executors.newSingleThreadScheduledExecutor();
+			}
 
-				// Check for PCM files with playback positions lower than mediaTime
-				for (Integer position : pcmPositions.keySet())
+			final Set<Integer> playedPositions = new HashSet<Integer>();
+
+			playbackTask = smafExecutor.scheduleAtFixedRate(new Runnable()
+			{
+				@Override
+				public void run()
 				{
-					if (position < mediaTime && !playedPositions.contains(position))
+					if (!isPlaying) { return; }
+
+					int mediaTime = (int) (getMediaTime() / 1000);
+
+					for (Map.Entry<Integer, Integer> entry : pcmPositions.entrySet())
 					{
-						int pcmIndex = pcmPositions.get(position);
-						playPcmStream(pcmIndex, pcmVelocities.get(position));
-						playedPositions.add(position); // Mark this position as played, otherwise it'll repeat when it shouldn't
+						Integer position = entry.getKey();
+						if (position < mediaTime && !playedPositions.contains(position))
+						{
+							playPcmStream(entry.getValue(), pcmVelocities.get(position));
+							playedPositions.add(position);
+						}
 					}
 				}
+			}, 0, 5, TimeUnit.MILLISECONDS);
+		}
 
-				// Sleep for a bit to not hammer the CPU too hard with constant checks (this can cause issues if the sequence has sub-5ms pcm requests, but that would be egregious)
-				try { Thread.sleep(5); }
-				catch (InterruptedException e) { }
+		private void stopPcmScheduler()
+		{
+			if (playbackTask != null)
+			{
+				playbackTask.cancel(false);
+				playbackTask = null;
 			}
 		}
 
@@ -1025,31 +1027,26 @@ public class PlatformPlayer implements Player
 			synchronized(pcmClipLock)
 			{
 				if (wavClips == null || pcmIndex < 0 || pcmIndex >= wavClips.length || wavClips[pcmIndex] == null) { return; }
-				for(int i = 0; i < wavClips.length; i++)
-				{
-					if(wavClips[i] == null) { continue; }
-					wavClips[i].stop();
-					wavClips[i].flush();
-				}
 
-				// Set volume based on matched "velocity" value
-				FloatControl volumeControl = (FloatControl) wavClips[pcmIndex].getControl(FloatControl.Type.MASTER_GAIN);
+				Clip target = wavClips[pcmIndex];
 
-				// Calculate volume based on velocity
+				// Target ONLY the requested clip rather than iterating and flushing all active clips
+				if (target.isRunning()) { target.stop(); }
+
+				FloatControl volumeControl = (FloatControl) target.getControl(FloatControl.Type.MASTER_GAIN);
 				float dB = -30.0f + ((velocity / 127.0f) * (30.0f));
-
 				if(dB > 6.0f) { dB = 6.0f; }
-				// Set the volume
 				volumeControl.setValue(dB);
 
-				wavClips[pcmIndex].setFramePosition(0);
-				wavClips[pcmIndex].start();
+				target.setFramePosition(0);
+				target.start();
 			}
 		}
 
 		public void stop()
 		{
-			midi.stop();
+			if (midi != null && midi.isRunning()) { midi.stop(); }
+			stopPcmScheduler();
 			stopActivePcmClips();
 			isPlaying = false;
 			state = Player.PREFETCHED;
@@ -1058,10 +1055,18 @@ public class PlatformPlayer implements Player
 
 		public void deallocate()
 		{
+			stopPcmScheduler();
+			if (smafExecutor != null) { smafExecutor.shutdownNow(); }
+
 			transmitter = null;
 			receiver = null;
 			if(synthReserved) { Manager.synthIdxInUse[synthIdx] = false; synthReserved = false; }
-			if(midi != null) { midi.close(); }
+			if(midi != null)
+			{
+				midi.removeMetaEventListener(this);
+				midi.close();
+				midi = null;
+			}
 
 			synchronized(pcmClipLock)
 			{
@@ -1075,7 +1080,6 @@ public class PlatformPlayer implements Player
 					}
 				}
 			}
-
 			isPlaying = false;
 		}
 
@@ -1223,7 +1227,6 @@ public class PlatformPlayer implements Player
 				{
 					if(wavClips[i] == null) { continue; }
 					wavClips[i].stop();
-					wavClips[i].flush();
 				}
 			}
 		}
@@ -1239,6 +1242,35 @@ public class PlatformPlayer implements Player
 		}
 
 		protected void configureSequencePlayback() throws InvalidMidiDataException { }
+
+		@Override
+		public void meta(MetaMessage meta)
+		{
+			handleSequenceMeta(meta);
+			if (meta.getType() == 0x2F) // END_OF_MEDIA
+			{
+				stopPcmScheduler();
+				state = Player.PREFETCHED;
+				curTime = getMediaTime();
+				if(sequencerLoopConfigured)
+				{
+					notifyListeners(PlayerListener.END_OF_MEDIA, curTime);
+					isPlaying = false;
+				}
+				else if(numLoops != 0)
+				{
+					notifyListeners(PlayerListener.LOOPED, curTime);
+					if(numLoops > 0) { numLoops--; }
+					setMediaTime(0);
+					start();
+				}
+				else
+				{
+					notifyListeners(PlayerListener.END_OF_MEDIA, curTime);
+					isPlaying = false;
+				}
+			}
+		}
 	}
 
 	private class MLDPlayer extends SMAFPlayer
@@ -1294,7 +1326,7 @@ public class PlatformPlayer implements Player
 		}
 	}
 
-	private class wavPlayer extends audioplayer
+	private class wavPlayer extends audioplayer implements LineListener
 	{
 		/* PCM WAV variables */
 		private byte[] tmpStream;
@@ -1328,7 +1360,12 @@ public class PlatformPlayer implements Player
 		{
 			try
 			{
-				if(wavClip == null) { wavClip = AudioSystem.getClip(); }
+				if(wavClip == null)
+				{
+					wavClip = AudioSystem.getClip();
+					/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
+					wavClip.addLineListener(this);
+				}
 
 				/* Process the wave data */
 				if(wavHeaderData[0] == 1) // standard PCM WAV, just upsample it
@@ -1352,26 +1389,6 @@ public class PlatformPlayer implements Player
 					Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "WAV Format is " + wavHeaderData[0] + " (Unsupported).");
 				}
 
-				/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
-				wavClip.addLineListener(new LineListener()
-				{
-					@Override
-					public void update(LineEvent event)
-					{
-						if (event.getType() == LineEvent.Type.STOP)
-						{
-							state = Player.PREFETCHED;
-							if(numLoops != 0)
-							{
-								notifyListeners(PlayerListener.LOOPED, getMediaTime());
-								if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-								setMediaTime(0);
-								start();
-							}
-							else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); }
-						}
-					}
-				});
 				state = Player.PREFETCHED;
 			}
 			catch (Exception e)
@@ -1394,7 +1411,6 @@ public class PlatformPlayer implements Player
 		public void stop()
 		{
 			wavClip.stop();
-			wavClip.flush();
 			state = Player.PREFETCHED;
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
 		}
@@ -1406,7 +1422,11 @@ public class PlatformPlayer implements Player
 				@Override
 				public void run()
 				{
-					if(wavClip != null && wavClip.isOpen()) { wavClip.close(); }
+					if(wavClip != null && wavClip.isOpen())
+					{
+						wavClip.removeLineListener(wavPlayer.this);
+						wavClip.close();
+					}
 				}
 			}).start();
 		}
@@ -1447,6 +1467,26 @@ public class PlatformPlayer implements Player
 		public long getDuration() { return  wavClip.getMicrosecondLength(); }
 
 		public boolean isRunning() { return wavClip.isRunning(); }
+
+		@Override
+		public void update(LineEvent event)
+		{
+			if (event.getType() == LineEvent.Type.STOP)
+			{
+				state = Player.PREFETCHED;
+				if (numLoops != 0)
+				{
+					notifyListeners(PlayerListener.LOOPED, getMediaTime());
+					if (numLoops > 0) { numLoops--; }
+					setMediaTime(0);
+					start();
+				}
+				else
+				{
+					notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
+				}
+			}
+		}
 	}
 
 	private class MP3Player extends audioplayer
