@@ -1060,8 +1060,9 @@ public class Graphics3D
 		if (near < 0 || far < 0 || 1 < near || 1 < far) { throw new IllegalArgumentException("The requested Depth Range values are invalid."); }
 		else
 		{
-			this.near=near; this.far=far;
-			Arrays.fill(this.depthBuffer, this.far);
+			this.near=near;
+			this.far=far;
+			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, this.far); }
 		}
 	}
 
