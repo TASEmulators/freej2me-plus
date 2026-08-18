@@ -33,7 +33,7 @@ public class Graphics3D
 
 	public static final int ANTIALIAS = 2;
 	public static final int DITHER = 4;
-	public static final int OVERWRITE = 16; // This might be unused here, as SW rasterization gives us direct control over pixels
+	public static final int OVERWRITE = 16; // This is unused here, as SW rasterization gives us direct control over pixels
 	public static final int TRUE_COLOR = 8;
 
 
@@ -635,6 +635,13 @@ public class Graphics3D
 		Triangle.transform(trisScreen, renderableTriangles[0], tr, textr);
 
 		final boolean depthEnabled = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
+		final float depthUnits = compositingMode.getDepthOffsetUnits();
+		final float depthFactor = compositingMode.getDepthOffsetFactor();
+		final boolean hasDepthOffset = depthEnabled && (depthFactor != 0.0f || depthUnits != 0.0f);
+		float depthOffset = 0.0f;
+
+
+		final boolean colorEnabled = compositingMode.isColorWriteEnabled();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
 
 		if (this.target instanceof Image2D)
@@ -654,6 +661,31 @@ public class Graphics3D
 				coY[0] = trisScreen[tri_id].yA(); coY[1] = trisScreen[tri_id].yB(); coY[2] = trisScreen[tri_id].yC();
 				coZ[0] = trisScreen[tri_id].zA(); coZ[1] = trisScreen[tri_id].zB(); coZ[2] = trisScreen[tri_id].zC();
 				coW[0] = trisScreen[tri_id].iwA(); coW[1] = trisScreen[tri_id].iwB(); coW[2] = trisScreen[tri_id].iwC();
+
+				if(hasDepthOffset)
+				{
+					final float dx10 = coX[1] - coX[0];
+					final float dy10 = coY[1] - coY[0];
+					final float dz10 = coZ[1] - coZ[0];
+
+					final float dx20 = coX[2] - coX[0];
+					final float dy20 = coY[2] - coY[0];
+					final float dz20 = coZ[2] - coZ[0];
+
+					final float det = dx10 * dy20 - dx20 * dy10;
+
+					if (M3GMath.abs(det) > M3GMath.EPSILON)
+					{
+						final float invDet = M3GMath.fastReciprocal(det);
+						final float dzdx = (dz10 * dy20 - dz20 * dy10) * invDet;
+						final float dzdy = (dx10 * dz20 - dx20 * dz10) * invDet;
+
+						final float m = (float) Math.sqrt(dzdx * dzdx + dzdy * dzdy);
+
+						// 1e-7f is the minimum Z step for a float depth buffer
+						depthOffset = (depthFactor * m) + (depthUnits * 1e-7f);
+					}
+				}
 
 				if(hasTexture)
 				{
@@ -734,7 +766,7 @@ public class Graphics3D
 					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
 
 					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasTexture, compositingMode,
-						fog, invFogDiv, alphaThreshold, depthEnabled);
+						fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset);
 				}
 			}
 		}
@@ -978,7 +1010,8 @@ public class Graphics3D
 
 	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
 	Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
-	Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled)
+	Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
+	float depthOffset)
 	{
 		for (int y = yStart; y < yEnd; y++)
 		{
@@ -1096,11 +1129,11 @@ public class Graphics3D
 				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
 				drawX = M3GMath.max(0f, (x - xL) * invDrawSpanWidth);
-				z = (zL + drawX * (zR - zL));
+				z = (zL + drawX * (zR - zL)) + depthOffset;
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(depthEnabled && this.depthBuffer[depthIdxY + x] < z) { continue; }
+				if(depthEnabled && this.depthBuffer[depthIdxY + x] <= z) { continue; }
 
 				// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
 				if (trisScreen[tri_id].hasVertexColors())
@@ -1195,12 +1228,15 @@ public class Graphics3D
 					if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 				}
 
-				// Handle compositing mode with background pixel [rasterData] AFTER the fog calculation, otherwise alpha values won't be correct.
-				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
-					paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
+				// Only write to the screen if color write is enabled.
+				if(colorEnabled)
+				{
+					rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
+						paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
 
-				// Rendering at half res?
-				if (Mobile.halfResM3GRaster) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
+					// Rendering at half res? Next scanline gets painted too.
+					if (Mobile.halfResM3GRaster) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
+				}
 			}
 		}
 	}
