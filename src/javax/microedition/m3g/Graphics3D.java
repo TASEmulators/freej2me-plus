@@ -453,7 +453,7 @@ public class Graphics3D
 				if (mesh.getAppearance(i) != null) { render(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope()); }
 			}
 		}
-		else if (node instanceof Sprite3D) { render((Sprite3D) node, transform); }
+		else if (node instanceof Sprite3D) { renderSprite((Sprite3D) node, transform); }
 		else if (node instanceof Group)
 		{
 			Node child = ((Group) node).firstChild;
@@ -471,162 +471,6 @@ public class Graphics3D
 					}
 					child = child.right;
 				} while (child != ((Group) node).firstChild);
-			}
-		}
-	}
-
-	/*
-	 * Renders a Sprite3D as a screen-aligned textured rectangle, following the same
-	 * math as the JSR-184 Reference Implementation (m3g_sprite.c, m3gGetSpriteCoordinates):
-	 * the node origin and half-unit axis vectors are measured in eye space, re-aligned
-	 * to the screen axes, projected, and the resulting NDC quad is rasterized directly
-	 * with the sprite's crop as texture source.
-	 */
-	private void render(Sprite3D sprite, Transform transform)
-	{
-		final Image2D img = sprite.getImage();
-		final Appearance appearance = sprite.getAppearance();
-
-		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
-		if (img == null || appearance == null) { return; }
-		if (!(this.target instanceof Graphics)) { return; }
-
-		// JSR-184 scope culling, same rule as for meshes.
-		if ((sprite.getScope() & this.currCam.getScope()) == 0) { return; }
-
-		// The crop rectangle keeps its sign; negative dimensions flip the image on that axis.
-		final int cropX = sprite.getCropX(), cropY = sprite.getCropY();
-		int cropW = sprite.getCropWidth(), cropH = sprite.getCropHeight();
-		final boolean flipX = cropW < 0, flipY = cropH < 0;
-		if (flipX) { cropW = -cropW; }
-		if (flipY) { cropH = -cropH; }
-		if (cropW == 0 || cropH == 0) { return; }
-
-		// Intersect the crop rectangle with the image rectangle; nothing to render without overlap.
-		final int isectX = M3GMath.max(cropX, 0), isectY = M3GMath.max(cropY, 0);
-		final int isectW = M3GMath.min(cropX + cropW, img.getWidth()) - isectX;
-		final int isectH = M3GMath.min(cropY + cropH, img.getHeight()) - isectY;
-		if (isectW <= 0 || isectH <= 0) { return; }
-
-		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
-		final Transform modelView = (transform == null) ? new Transform() : new Transform(transform);
-		modelView.preMultiply(this.currCamTransInv);
-
-		// Origin and half-unit axis points in eye space (affine transform, w stays 1).
-		final float[] eye = { 0,0,0,1,  0.5f,0,0,1,  0,0.5f,0,1 };
-		modelView.transform(eye);
-		final float ox = eye[0]/eye[3], oy = eye[1]/eye[3], oz = eye[2]/eye[3];
-		final float dx0 = eye[4]/eye[7] - ox, dy0 = eye[5]/eye[7] - oy, dz0 = eye[6]/eye[7] - oz;
-		final float dx1 = eye[8]/eye[11] - ox, dy1 = eye[9]/eye[11] - oy, dz1 = eye[10]/eye[11] - oz;
-		final float halfUnitX = M3GMath.sqrt(dx0*dx0 + dy0*dy0 + dz0*dz0);
-		final float halfUnitY = M3GMath.sqrt(dx1*dx1 + dy1*dy1 + dz1*dz1);
-
-		// Project the origin plus screen-aligned extent points.
-		this.currCam.getProjection(projectionMatrix);
-		final float[] clip = { ox,oy,oz,1,  ox+halfUnitX,oy,oz,1,  ox,oy+halfUnitY,oz,1 };
-		projectionMatrix.transform(clip);
-		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
-
-		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
-		final float ndcZ = clip[2]/clip[3];
-		if (ndcZ < -1f || ndcZ > 1f) { return; }
-
-		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
-		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
-
-		if (sprite.isScaled())
-		{
-			// Adjust the position and size according to the (possibly partly outside) crop rectangle.
-			final float unitX = halfW / (float) cropW, unitY = halfH / (float) cropH;
-			ndcX -= (2*cropX + cropW - 2*isectX - isectW) * unitX;
-			ndcY += (2*cropY + cropH - 2*isectY - isectH) * unitY;
-			halfW = unitX * isectW;
-			halfH = unitY * isectH;
-		}
-		else
-		{
-			// Non-scaled sprites take their size in pixels from the crop rectangle.
-			ndcX -= (float)(2*cropX + cropW - 2*isectX - isectW) / (float) vieww;
-			ndcY += (float)(2*cropY + cropH - 2*isectY - isectH) / (float) viewh;
-			halfW = (float) isectW / (float) vieww;
-			halfH = (float) isectH / (float) viewh;
-		}
-
-		// NDC -> viewport-relative pixels (same mapping as the triangle rasterizer).
-		final float sx0 = (ndcX - halfW + 1f) * vieww / 2f;
-		final float sx1 = (ndcX + halfW + 1f) * vieww / 2f;
-		final float sy0 = (1f - (ndcY + halfH)) * viewh / 2f;
-		final float sy1 = (1f - (ndcY - halfH)) * viewh / 2f;
-		final float spanX = sx1 - sx0, spanY = sy1 - sy0;
-		if (spanX <= 0f || spanY <= 0f) { return; }
-
-		final int pixL = M3GMath.max(M3GMath.roundPositive(sx0), 0);
-		final int pixR = M3GMath.min(M3GMath.roundPositive(sx1), vieww);
-		final int pixT = M3GMath.max(M3GMath.roundPositive(sy0), 0);
-		final int pixB = M3GMath.min(M3GMath.roundPositive(sy1), viewh);
-		if (pixL >= pixR || pixT >= pixB) { return; }
-
-		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
-		final Fog fog = appearance.getFog();
-		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
-		final float alphaFactor = sprite.getAlphaFactor();
-		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
-		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
-
-		// The Sprite3D has the same depth for its entire area, so we only need
-		// to calculate fog once.
-		if (fog != null)
-		{
-			// Distance in eye space along the camera's viewing axis
-			final float zEye = -oz;
-
-			float fogFactor;
-			if (fog.getMode() == Fog.LINEAR)
-			{
-				fogFactor = (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance());
-			}
-			else
-			{
-				fogFactor = M3GMath.exp(-fog.getDensity() * zEye);
-			}
-
-			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
-		}
-
-		for (int y = pixT; y < pixB; y++)
-		{
-			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
-			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
-
-			final float v = (y + 0.5f - sy0) / spanY;
-			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
-			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
-
-			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
-			for (int x = pixL; x < pixR; x++)
-			{
-				// Depth test against the same buffer and convention used by triangles.
-				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
-
-				final float u = (x + 0.5f - sx0) / spanX;
-				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
-				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
-
-				int paintPixel = img.getPixel(texX, texY);
-				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
-
-				if (alpha < alphaThreshold || alpha == 0) { continue; }
-
-				if (fog != null && fogFactor < 255.0f)
-					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
-
-				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
-					paintPixel, alpha, compositingMode.getBlending(), 0, 0);;
-
-				// Rendering at half res?
-				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
-
-				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
 			}
 		}
 	}
@@ -975,6 +819,163 @@ public class Graphics3D
 
 
 	/* Helper Methods */
+
+	/*
+	 * Renders a Sprite3D as a screen-aligned textured rectangle, following the same
+	 * math as the JSR-184 Reference Implementation (m3g_sprite.c, m3gGetSpriteCoordinates):
+	 * the node origin and half-unit axis vectors are measured in eye space, re-aligned
+	 * to the screen axes, projected, and the resulting NDC quad is rasterized directly
+	 * with the sprite's crop as texture source.
+	 */
+	private void renderSprite(Sprite3D sprite, Transform transform)
+	{
+		final Image2D img = sprite.getImage();
+		final Appearance appearance = sprite.getAppearance();
+
+		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
+		if (img == null || appearance == null) { return; }
+		if (!(this.target instanceof Graphics)) { return; }
+
+		// JSR-184 scope culling, same rule as for meshes.
+		if ((sprite.getScope() & this.currCam.getScope()) == 0) { return; }
+
+		// The crop rectangle keeps its sign; negative dimensions flip the image on that axis.
+		final int cropX = sprite.getCropX(), cropY = sprite.getCropY();
+		int cropW = sprite.getCropWidth(), cropH = sprite.getCropHeight();
+		final boolean flipX = cropW < 0, flipY = cropH < 0;
+		if (flipX) { cropW = -cropW; }
+		if (flipY) { cropH = -cropH; }
+		if (cropW == 0 || cropH == 0) { return; }
+
+		// Intersect the crop rectangle with the image rectangle; nothing to render without overlap.
+		final int isectX = M3GMath.max(cropX, 0), isectY = M3GMath.max(cropY, 0);
+		final int isectW = M3GMath.min(cropX + cropW, img.getWidth()) - isectX;
+		final int isectH = M3GMath.min(cropY + cropH, img.getHeight()) - isectY;
+		if (isectW <= 0 || isectH <= 0) { return; }
+
+		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
+		final Transform modelView = (transform == null) ? new Transform() : new Transform(transform);
+		modelView.preMultiply(this.currCamTransInv);
+
+		// Origin and half-unit axis points in eye space (affine transform, w stays 1).
+		final float[] eye = { 0,0,0,1,  0.5f,0,0,1,  0,0.5f,0,1 };
+		modelView.transform(eye);
+		final float ox = eye[0]/eye[3], oy = eye[1]/eye[3], oz = eye[2]/eye[3];
+		final float dx0 = eye[4]/eye[7] - ox, dy0 = eye[5]/eye[7] - oy, dz0 = eye[6]/eye[7] - oz;
+		final float dx1 = eye[8]/eye[11] - ox, dy1 = eye[9]/eye[11] - oy, dz1 = eye[10]/eye[11] - oz;
+		final float halfUnitX = M3GMath.sqrt(dx0*dx0 + dy0*dy0 + dz0*dz0);
+		final float halfUnitY = M3GMath.sqrt(dx1*dx1 + dy1*dy1 + dz1*dz1);
+
+		// Project the origin plus screen-aligned extent points.
+		this.currCam.getProjection(projectionMatrix);
+		final float[] clip = { ox,oy,oz,1,  ox+halfUnitX,oy,oz,1,  ox,oy+halfUnitY,oz,1 };
+		projectionMatrix.transform(clip);
+		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
+
+		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
+		final float ndcZ = clip[2]/clip[3];
+		if (ndcZ < -1f || ndcZ > 1f) { return; }
+
+		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
+		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
+
+		if (sprite.isScaled())
+		{
+			// Adjust the position and size according to the (possibly partly outside) crop rectangle.
+			final float unitX = halfW / (float) cropW, unitY = halfH / (float) cropH;
+			ndcX -= (2*cropX + cropW - 2*isectX - isectW) * unitX;
+			ndcY += (2*cropY + cropH - 2*isectY - isectH) * unitY;
+			halfW = unitX * isectW;
+			halfH = unitY * isectH;
+		}
+		else
+		{
+			// Non-scaled sprites take their size in pixels from the crop rectangle.
+			ndcX -= (float)(2*cropX + cropW - 2*isectX - isectW) / (float) vieww;
+			ndcY += (float)(2*cropY + cropH - 2*isectY - isectH) / (float) viewh;
+			halfW = (float) isectW / (float) vieww;
+			halfH = (float) isectH / (float) viewh;
+		}
+
+		// NDC -> viewport-relative pixels (same mapping as the triangle rasterizer).
+		final float sx0 = (ndcX - halfW + 1f) * vieww / 2f;
+		final float sx1 = (ndcX + halfW + 1f) * vieww / 2f;
+		final float sy0 = (1f - (ndcY + halfH)) * viewh / 2f;
+		final float sy1 = (1f - (ndcY - halfH)) * viewh / 2f;
+		final float spanX = sx1 - sx0, spanY = sy1 - sy0;
+		if (spanX <= 0f || spanY <= 0f) { return; }
+
+		final int pixL = M3GMath.max(M3GMath.roundPositive(sx0), 0);
+		final int pixR = M3GMath.min(M3GMath.roundPositive(sx1), vieww);
+		final int pixT = M3GMath.max(M3GMath.roundPositive(sy0), 0);
+		final int pixB = M3GMath.min(M3GMath.roundPositive(sy1), viewh);
+		if (pixL >= pixR || pixT >= pixB) { return; }
+
+		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
+		final Fog fog = appearance.getFog();
+		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
+		final float alphaFactor = sprite.getAlphaFactor();
+		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
+		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
+
+		// The Sprite3D has the same depth for its entire area, so we only need
+		// to calculate fog once.
+		if (fog != null)
+		{
+			// Distance in eye space along the camera's viewing axis
+			final float zEye = -oz;
+
+			float fogFactor;
+			if (fog.getMode() == Fog.LINEAR)
+			{
+				fogFactor = (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance());
+			}
+			else
+			{
+				fogFactor = M3GMath.exp(-fog.getDensity() * zEye);
+			}
+
+			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
+		}
+
+		for (int y = pixT; y < pixB; y++)
+		{
+			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
+			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
+
+			final float v = (y + 0.5f - sy0) / spanY;
+			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
+			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
+
+			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
+			for (int x = pixL; x < pixR; x++)
+			{
+				// Depth test against the same buffer and convention used by triangles.
+				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
+
+				final float u = (x + 0.5f - sx0) / spanX;
+				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
+				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
+
+				int paintPixel = img.getPixel(texX, texY);
+				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
+
+				if (alpha < alphaThreshold || alpha == 0) { continue; }
+
+				if (fog != null && fogFactor < 255.0f)
+					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
+
+				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
+					paintPixel, alpha, compositingMode.getBlending(), 0, 0);;
+
+				// Rendering at half res?
+				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
+
+				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
+			}
+		}
+	}
+
 	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
 	Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
 	Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled)
