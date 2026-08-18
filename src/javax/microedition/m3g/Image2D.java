@@ -32,6 +32,7 @@ public class Image2D extends Object3D
 	private int width;
 	private int height;
 	private int format;
+	private int bpp;
 	private boolean mutable;
 
 	public static final String[] formatNames = {"ALPHA", "LUMINANCE", "LUMINANCE_ALPHA", "RGB", "RGBA"};
@@ -46,7 +47,8 @@ public class Image2D extends Object3D
 		this.width = w;
 		this.height = h;
 		this.format = format;
-		this.image = new byte[w * h * bpp()];
+		setBpp();
+		this.image = new byte[w * h * this.bpp];
 	}
 
 	public Image2D(int format, int w, int h, byte[] image)
@@ -59,8 +61,9 @@ public class Image2D extends Object3D
 		validateDimensions(w, h);
 
 		this.format = format;
+		setBpp();
 
-		int len = w * h * this.bpp();
+		int len = w * h * this.bpp;
 		if (image.length < len)
 		{
 			throw new IllegalArgumentException("Image byte array too small. Expected size: " + len + ", actual size: " + image.length);
@@ -90,9 +93,9 @@ public class Image2D extends Object3D
 		 * where C is the number of color components (for instance, 3 for RGB).
 		 */
 		this.format = format;
-		int bpp = this.bpp();
+		setBpp();
 
-		if (palette.length < 256 * bpp && (palette.length % bpp) != 0)
+		if (palette.length < 256 * this.bpp && (palette.length % this.bpp) != 0)
 			{ throw new IllegalArgumentException("Illegal palette length: " + palette.length); }
 
 		Mobile.log(Mobile.LOG_DEBUG, Image2D.class.getPackage().getName() + "." + Image2D.class.getSimpleName() + ": " +  "M3G Paletted Image Format: " + formatNames[format-96] + " indices len: " + image.length + " palette len:" + palette.length);
@@ -102,7 +105,7 @@ public class Image2D extends Object3D
 		this.height = h;
 
 		// We now start to copy the received "image" comprised of palette indices, as well as the palette colors themselves.
-		this.image = new byte[image.length * this.bpp()];
+		this.image = new byte[image.length * this.bpp];
 
 		for(int i = 0; i < image.length; i++)
 		{
@@ -111,8 +114,8 @@ public class Image2D extends Object3D
 			 * are unsigned (as there will be 256 entries in the palette), while java treats its native types
 			 * as signed. So we are required to do that bitwise AND operation to make them unsigned when reading
 			*/
-			int pIdx = (image[i] & 0xFF) * bpp;
-			int offset = i * bpp;
+			int pIdx = (image[i] & 0xFF) * this.bpp;
+			int offset = i * this.bpp;
 			// The pallete will be 256 entries multiplied by the format's amount of bytes per pixel
 			for (int k = 0; k < bpp; k++) { this.image[offset + k] = palette[pIdx + k]; }
 		}
@@ -137,9 +140,9 @@ public class Image2D extends Object3D
 		this.width = img.getWidth();
 		this.height = img.getHeight();
 		this.format = format;
+		setBpp();
 
-		int bpp = this.bpp();
-		this.image = new byte[this.width * this.height * bpp];
+		this.image = new byte[this.width * this.height * this.bpp];
 
 		int[] argb = new int[this.width * this.height];
 		img.getRGB(argb, 0, this.width, 0, 0, this.width, this.height);
@@ -186,6 +189,7 @@ public class Image2D extends Object3D
 		copy.width = this.width;
 		copy.height = this.height;
 		copy.format = this.format;
+		copy.bpp = this.bpp;
 		copy.mutable = this.mutable;
 		return copy;
 	}
@@ -212,25 +216,23 @@ public class Image2D extends Object3D
 		if (x < 0 || y < 0 || w <= 0 || h <= 0 || (x + w) > this.width || (y + h) > this.height)
 			{ throw new java.lang.IllegalArgumentException("Tried to set image with invalid parameters."); }
 
-		final int bpp = this.bpp();
-		if (image.length < w * h * bpp)
+		if (image.length < w * h * this.bpp)
 		{
 			throw new IllegalArgumentException("Source image cannot smaller than specified region");
 		}
 
 		for (int row = 0; row < h; row++)
 		{
-			int src = row * w * bpp;
-			int dest = ((y + row) * this.width + x) * bpp;
-			System.arraycopy(image, src, this.image, dest, w * bpp);
+			int src = row * w * this.bpp;
+			int dest = ((y + row) * this.width + x) * this.bpp;
+			System.arraycopy(image, src, this.image, dest, w * this.bpp);
 		}
 	}
 
 	// We do not handle OOB x and y positions here, Graphics3D does that in the clear/render loops
 	int getPixel(int x, int y)
 	{
-		int offset = this.bpp() * (this.width * y + x);
-		int result = 0;
+		int offset = this.bpp * (this.width * y + x);
 
 		switch (this.format)
 		{
@@ -274,22 +276,27 @@ public class Image2D extends Object3D
 		}
 	}
 
-	private int bpp()
+	private void setBpp()
 	{
 		switch (this.format)
 		{
 			case ALPHA:
-				return 1;
+				this.bpp = 1;
+				break;
 			case LUMINANCE:
-				return 1;
+				this.bpp = 1;
+				break;
 			case LUMINANCE_ALPHA:
-				return 2;
+				this.bpp = 2;
+				break;
 			case RGB:
-				return 3;
+				this.bpp = 3;
+				break;
 			case RGBA:
-				return 4;
+				this.bpp = 4;
+				break;
 			default:
-				return 0;
+				this.bpp = 0;
 		}
 	}
 

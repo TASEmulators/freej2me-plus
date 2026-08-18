@@ -25,9 +25,9 @@ class Triangle
 	private static final int[] inC = new int[3];
 	private static final int[] outC = new int[4];
 	private static final float[] inV = new float[12];
-	private static final float[] inT = new float[12];
+	private static final float[][] inT = new float[Graphics3D.NUM_TEXTURE_UNITS][12];
 	private static final float[] outV = new float[16];
-	private static final float[] outT = new float[16];
+	private static final float[][] outT = new float[Graphics3D.NUM_TEXTURE_UNITS][16];
 
 	// Output array of triangles. Allows us to reuse the memory block allocated for triangle
 	// data without needing to GC it every render pass (it'll still reallocate if the triangle count increases)
@@ -49,19 +49,25 @@ class Triangle
 		// xC, yC, zC, wC;
 		// 0   1   2   3
 
-	private final float[] t = new float[12];
-		// sA, tA, rA, qA,
+	private final float[][] t = new float[Graphics3D.NUM_TEXTURE_UNITS][12];
+		// For each texture unit:
+		// [sA, tA, rA, qA,
 		// sB, tB, rB, qB,
-		// sC, tC, rC, qC;
+		// sC, tC, rC, qC];
 		// 0   1   2   3
 
 	Triangle() { }
 
-	public static final Triangle[] fromVertAndTris(float[] vert, float[] texc, int[] tris, int[] renderableTriangles,
+	public static final Triangle[] fromVertAndTris(float[] vert, float[][] texc, int[] tris, int[] renderableTriangles,
 		float near, int cullingMode, VertexBuffer vertices, boolean polygonClockwise, boolean perspectiveCorrect)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
+		boolean hasTex = false;
+		for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+		{
+			if(texc[i] != null) { hasTex = true; break; }
+		}
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`, as
@@ -77,7 +83,6 @@ class Triangle
 			if (oldLen > 0) { System.arraycopy(Triangle.result, 0, newRef, 0, oldLen); }
 
 			for (int i = oldLen; i < totalTris * 2; i++) {newRef[i] = new Triangle(); }
-
 			Triangle.result = newRef;
 		}
 
@@ -89,11 +94,14 @@ class Triangle
 				Triangle.inV[4*i]   = vert[idx];     Triangle.inV[4*i+1] = vert[idx + 1];
 				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
 
-				if (texc != null)
-				{
-					Triangle.inT[4*i]   = texc[idx];     Triangle.inT[4*i+1] = texc[idx + 1];
-					Triangle.inT[4*i+2] = texc[idx + 2]; Triangle.inT[4*i+3] = texc[idx + 3];
-				}
+				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+                {
+                    if (texc[u] != null)
+                    {
+                        Triangle.inT[u][4*i]   = texc[u][idx];     Triangle.inT[u][4*i+1] = texc[u][idx + 1];
+                        Triangle.inT[u][4*i+2] = texc[u][idx + 2]; Triangle.inT[u][4*i+3] = texc[u][idx + 3];
+                    }
+                }
 			}
 
 			/*
@@ -101,8 +109,8 @@ class Triangle
 			 * positions, texture coordinates and vertex colors. Vertices behind the
 			 * camera would otherwise explode to huge coordinates after perspective division.
 			 */
-			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tris, tri_id, vertices,
-				texc != null, near, Triangle.outV, Triangle.outT, Triangle.outC);
+			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tris, tri_id,
+				vertices, hasTex, texc, near, Triangle.outV, Triangle.outT, Triangle.outC);
 
 			if (outCount < 3) { continue; }
 
@@ -111,7 +119,7 @@ class Triangle
 			{
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
 				tri.setVertexCoords(Triangle.outV, fan);
-				tri.setTexCoords(texc == null ? null : Triangle.outT, fan);
+				tri.setTexCoords(Triangle.outT, fan);
 				tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
 				tri.setVertexIndices(tris);
 
@@ -140,8 +148,8 @@ class Triangle
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static int clipNearPlane(float[] inV, float[] inT, int[] inC, int[] indices, int tri_id,
-		VertexBuffer vertices, boolean hasTex, float near, float[] outV, float[] outT, int[] outC)
+	private static int clipNearPlane(float[] inV, float[][] inT, int[] inC, int[] indices, int tri_id,
+		VertexBuffer vertices, boolean hasTex, float texc[][], float near, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
 
@@ -171,7 +179,14 @@ class Triangle
 			if (insideI)
 			{
 				System.arraycopy(inV, 4*i, outV, 4*outCount, 4);
-				if (hasTex) { System.arraycopy(inT, 4*i, outT, 4*outCount, 4); }
+				if(hasTex)
+				{
+					for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+	                {
+	                    if (texc[u] != null) { System.arraycopy(inT[u], 4*i, outT[u], 4*outCount, 4); }
+	                }
+				}
+
 				if (inC != null) { outC[outCount] = inC[i]; }
 				outCount++;
 			}
@@ -181,7 +196,16 @@ class Triangle
 				for (int c = 0; c < 4; c++)
 				{
 					outV[4*outCount + c] = inV[4*i + c] + amt * (inV[4*j + c] - inV[4*i + c]);
-					if (hasTex) { outT[4*outCount + c] = inT[4*i + c] + amt * (inT[4*j + c] - inT[4*i + c]); }
+					if (hasTex)
+					{
+						for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+	                    {
+	                        if (texc[u] != null)
+	                        {
+	                            outT[u][4*outCount + c] = inT[u][4*i + c] + amt * (inT[u][4*j + c] - inT[u][4*i + c]);
+	                        }
+	                    }
+					}
 				}
 
 				if (inC != null)
@@ -192,8 +216,10 @@ class Triangle
 					final int rbA = cA & 0x00FF00FF, rbB = cB & 0x00FF00FF;
 					final int agA = (cA >>> 8) & 0x00FF00FF, agB = (cB >>> 8) & 0x00FF00FF;
 
-					final int rb = rbA + (((rbB - rbA) * alpha) >> 8) & 0x00FF00FF;
-					final int ag = agA + (((agB - agA) * alpha) >> 8) & 0x00FF00FF;
+					final int rb = (rbA + (((rbB - rbA) * alpha) >> 8)) & 0x00FF00FF;
+                	final int ag = (agA + (((agB - agA) * alpha) >> 8)) & 0x00FF00FF;
+
+					outC[outCount] = rb | (ag << 8);
 				}
 				outCount++;
 			}
@@ -211,12 +237,21 @@ class Triangle
 			(v[2] >  1f && v[6] >  1f && v[10] >  1f);
 	}
 
-	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform trTex)
+	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform[] trTex)
 	{
 		for (int i = 0; i < visibleTris; i++)
 		{
 			trVert.transform(triangles[i].v);
-			if (triangles[i].t != null && trTex != null) { trTex.transform(triangles[i].t); }
+
+			for(int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+			{
+				if (trTex != null)
+	            {
+	                // Each trTex transform is bound to a texture unit, so it is
+					// safe to use it as a check to see if we have these coords.
+	                trTex[u].transform(triangles[i].t[u]);
+	            }
+			}
 		}
 	}
 
@@ -239,10 +274,14 @@ class Triangle
 
 			// Texture coordinates are stored as s/w and t/w if
 			// perspective correction is enabled (undone per-pixel in rasterizer)
-			if (t != null && perspectiveCorrect)
+			if (perspectiveCorrect)
 			{
-				t[4 * i + 0] *= invW[i]; // s / w
-				t[4 * i + 1] *= invW[i]; // t / w
+				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+                {
+                	if(t[u] == null) { continue; }
+                    t[u][4 * i + 0] *= invW[i]; // s / w
+                    t[u][4 * i + 1] *= invW[i]; // t / w
+                }
 			}
 		}
 	}
@@ -272,18 +311,18 @@ class Triangle
 	public final float zC() { return v[4 * 2 + 2]; }
 	public final float wC() { return v[4 * 2 + 3]; }
 
-	public final float sA() { return t[4 * 0 + 0]; }
-	public final float tA() { return t[4 * 0 + 1]; }
-	public final float rA() { return t[4 * 0 + 2]; }
-	public final float qA() { return t[4 * 0 + 3]; }
-	public final float sB() { return t[4 * 1 + 0]; }
-	public final float tB() { return t[4 * 1 + 1]; }
-	public final float rB() { return t[4 * 1 + 2]; }
-	public final float qB() { return t[4 * 1 + 3]; }
-	public final float sC() { return t[4 * 2 + 0]; }
-	public final float tC() { return t[4 * 2 + 1]; }
-	public final float rC() { return t[4 * 2 + 2]; }
-	public final float qC() { return t[4 * 2 + 3]; }
+	public final float sA(int unit) { return t[unit][4 * 0 + 0]; }
+	public final float tA(int unit) { return t[unit][4 * 0 + 1]; }
+	public final float rA(int unit) { return t[unit][4 * 0 + 2]; }
+	public final float qA(int unit) { return t[unit][4 * 0 + 3]; }
+	public final float sB(int unit) { return t[unit][4 * 1 + 0]; }
+	public final float tB(int unit) { return t[unit][4 * 1 + 1]; }
+	public final float rB(int unit) { return t[unit][4 * 1 + 2]; }
+	public final float qB(int unit) { return t[unit][4 * 1 + 3]; }
+	public final float sC(int unit) { return t[unit][4 * 2 + 0]; }
+	public final float tC(int unit) { return t[unit][4 * 2 + 1]; }
+	public final float rC(int unit) { return t[unit][4 * 2 + 2]; }
+	public final float qC(int unit) { return t[unit][4 * 2 + 3]; }
 
 	public final float iwA() { return invW[0]; }
 	public final float iwB() { return invW[1]; }
@@ -296,16 +335,18 @@ class Triangle
 	public final int getIndex(int index) { return idx[index]; }
 
 	// This one is for memory reuse, so `this.t` is expected to be allocated by now.
-	public final void setTexCoords(float[] tCoords, int fan)
+	public final void setTexCoords(float[][] tCoords, int fan)
 	{
-		if (tCoords == null) { return; }
-
 		final int f1 = 4 * (fan + 1);
 		final int f2 = 4 * (fan + 2);
 
-		System.arraycopy(tCoords, 0,  t, 0, 4);
-		System.arraycopy(tCoords, f1, t, 4, 4);
-		System.arraycopy(tCoords, f2, t, 8, 4);
+		for (int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+        {
+            if (tCoords[i] == null) { continue; }
+            System.arraycopy(tCoords[i], 0,  t[i], 0, 4);
+            System.arraycopy(tCoords[i], f1, t[i], 4, 4);
+            System.arraycopy(tCoords[i], f2, t[i], 8, 4);
+        }
 	}
 
 	// This one is also for memory reuse, so `this.v` is expected to be allocated by now.

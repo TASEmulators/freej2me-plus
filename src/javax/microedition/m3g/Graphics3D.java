@@ -50,7 +50,7 @@ public class Graphics3D
 	public static final int MAX_TEXTURE_DIMENSION = 512;
 	public static final int MAX_SPRITE_CROP_DIMENSION = 256;
 	public static final int MAX_TRANSFORMS_PER_VERTEX = 4;
-	public static final int NUM_TEXTURE_UNITS = 1;
+	public static final int NUM_TEXTURE_UNITS = 4;
 	private static Hashtable properties;
 
 	// Render target
@@ -76,29 +76,57 @@ public class Graphics3D
 	private Transform currCamTransInv;
 	private ArrayList<Light> currLights;
 	private ArrayList<Transform> currLightTrans;
+	private Transform camTr;
 
 	// Reusable rendering variables
 	int canvasWidth, canvasHeight;
 	int[] rasterData;
 
 	// Texturing
-	boolean perspectiveCorrection, texRepeatS, texRepeatT;
-	int texH, texW;
+	boolean perspectiveCorrection;
+	final Transform texcomptr;
+	final float[] texScaleBias = new float[4];
+	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
+	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
+	final Image2D[] texImages = new Image2D[NUM_TEXTURE_UNITS];
+	final boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
+	final boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
+	final int[] texH = new int[NUM_TEXTURE_UNITS];
+	final int[] texW = new int[NUM_TEXTURE_UNITS];
+	final float[] sL = new float[NUM_TEXTURE_UNITS];
+	final float[] sR = new float[NUM_TEXTURE_UNITS];
+	final float[] tL = new float[NUM_TEXTURE_UNITS];
+	final float[] tR = new float[NUM_TEXTURE_UNITS];
+	final float[] sBot = new float[NUM_TEXTURE_UNITS];
+	final float[] tBot = new float[NUM_TEXTURE_UNITS];
+	final float[] sMidL = new float[NUM_TEXTURE_UNITS];
+	final float[] tMidL = new float[NUM_TEXTURE_UNITS];
+	final float[] sMidR = new float[NUM_TEXTURE_UNITS];
+	final float[] tMidR = new float[NUM_TEXTURE_UNITS];
+	final float[] sTop = new float[NUM_TEXTURE_UNITS];
+	final float[] tTop = new float[NUM_TEXTURE_UNITS];
+	final float[][] coS = new float[NUM_TEXTURE_UNITS][3];
+	final float[][] coT = new float[NUM_TEXTURE_UNITS][3];
+	float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 
 	// Vertex color blending
 	int alpha, r, g, b;
 
 	// 3D rendering variables
+	final Transform tr;
 	int yStart, yEnd, ixL, ixR;
 	final int[] ord = new int[3];
 	float[] vertClip = null;
-	float[] texVert = null;
+	final float[] coX = new float[3];
+	final float[] coY = new float[3];
+	final float[] coZ = new float[3];
+	final float[] coW = new float[3];
 	final float[] projParams = new float[4];
-	float xTop, yTop, zTop, sTop, tTop;
-	float xMidL, yMid, zMidL, sMidL, tMidL;
-	float xBot, yBot, zBot, sBot, tBot;
-	float rHorizon, xMidR, zMidR, sMidR, tMidR;
-	float drawY, drawX, xL, xR, zL, zR, sL, sR, tL, tR;
+	float xTop, yTop, zTop;
+	float xMidL, yMid, zMidL;
+	float xBot, yBot, zBot;
+	float rHorizon, xMidR, zMidR;
+	float drawY, drawX, xL, xR, zL, zR;
 	float pwTop, pwMidL, pwBot, pwMidR, pwL, pwR;
 
 	float z, s, t;
@@ -109,14 +137,6 @@ public class Graphics3D
 
 	// fog blending factor
 	float fogFactor = 0.0f;
-
-	// Textured polygon variables
-	final float[] coX = new float[3];
-	final float[] coY = new float[3];
-	final float[] coZ = new float[3];
-	final float[] coS = new float[3];
-	final float[] coT = new float[3];
-	final float[] coW = new float[3];
 
 	public Graphics3D()
 	{
@@ -131,6 +151,10 @@ public class Graphics3D
 		this.currCamTransInv = null;
 		this.currLights = new ArrayList<Light>();
 		this.currLightTrans = new ArrayList<Transform>();
+		camTr = new Transform();
+		tr = new Transform();
+		texcomptr = new Transform();
+		for(int i = 0; i < NUM_TEXTURE_UNITS; i++) { textr[i] = new Transform(); }
 	}
 
 
@@ -392,17 +416,17 @@ public class Graphics3D
 
 		if(worldCamera == null) { throw new IllegalStateException("Cannot render a world that has no active camera."); }
 
-		Transform tr = new Transform();
-		if(!worldCamera.getTransformTo(world, tr)) { throw new IllegalStateException("Active camera is not in world."); }
+		camTr.setIdentity();
+		if(!worldCamera.getTransformTo(world, camTr)) { throw new IllegalStateException("Active camera is not in world."); }
 
 		/* Clear the background first */
 		clear(world.getBackground());
 
-		setCamera(worldCamera, tr);
+		setCamera(worldCamera, camTr);
 		resetLights();
 		positionLights(world, world);
 
-		render((Group) world, new Transform());
+		render((Group) world, null);
 	}
 
 	public void render(Node node, Transform transform)
@@ -418,8 +442,6 @@ public class Graphics3D
 
 		// Node not renderable? Skip it and its children.
 		if(!node.isRenderingEnabled()) { return; }
-
-		if(transform == null) { transform = new Transform(); } // If transform is null, it indicates an identity matrix is to be used
 
 		if (node instanceof Mesh)
 		{
@@ -443,7 +465,7 @@ public class Graphics3D
 					{
 						Transform t = new Transform();
 						child.getCompositeTransform(t);
-						t.preMultiply(transform);
+						if(transform != null) { t.preMultiply(transform); }
 
 						render(child, t);
 					}
@@ -465,13 +487,14 @@ public class Graphics3D
 		final Image2D img = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
 
-		/* As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered. */
+		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
 		if (img == null || appearance == null) { return; }
 		if (!(this.target instanceof Graphics)) { return; }
-		/* JSR-184 scope culling, same rule as for meshes. */
+
+		// JSR-184 scope culling, same rule as for meshes.
 		if ((sprite.getScope() & this.currCam.getScope()) == 0) { return; }
 
-		/* The crop rectangle keeps its sign; negative dimensions flip the image on that axis. */
+		// The crop rectangle keeps its sign; negative dimensions flip the image on that axis.
 		final int cropX = sprite.getCropX(), cropY = sprite.getCropY();
 		int cropW = sprite.getCropWidth(), cropH = sprite.getCropHeight();
 		final boolean flipX = cropW < 0, flipY = cropH < 0;
@@ -479,19 +502,17 @@ public class Graphics3D
 		if (flipY) { cropH = -cropH; }
 		if (cropW == 0 || cropH == 0) { return; }
 
-		/* Intersect the crop rectangle with the image rectangle; nothing to render without overlap. */
+		// Intersect the crop rectangle with the image rectangle; nothing to render without overlap.
 		final int isectX = M3GMath.max(cropX, 0), isectY = M3GMath.max(cropY, 0);
 		final int isectW = M3GMath.min(cropX + cropW, img.getWidth()) - isectX;
 		final int isectH = M3GMath.min(cropY + cropH, img.getHeight()) - isectY;
 		if (isectW <= 0 || isectH <= 0) { return; }
 
-		if (transform == null) { transform = new Transform(); }
-
-		/* Model-view: the sprite's rotation/scale only affect its size, never its screen alignment. */
-		final Transform modelView = new Transform(transform);
+		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
+		final Transform modelView = (transform == null) ? new Transform() : new Transform(transform);
 		modelView.preMultiply(this.currCamTransInv);
 
-		/* Origin and half-unit axis points in eye space (affine transform, w stays 1). */
+		// Origin and half-unit axis points in eye space (affine transform, w stays 1).
 		final float[] eye = { 0,0,0,1,  0.5f,0,0,1,  0,0.5f,0,1 };
 		modelView.transform(eye);
 		final float ox = eye[0]/eye[3], oy = eye[1]/eye[3], oz = eye[2]/eye[3];
@@ -500,21 +521,22 @@ public class Graphics3D
 		final float halfUnitX = M3GMath.sqrt(dx0*dx0 + dy0*dy0 + dz0*dz0);
 		final float halfUnitY = M3GMath.sqrt(dx1*dx1 + dy1*dy1 + dz1*dz1);
 
-		/* Project the origin plus screen-aligned extent points. */
+		// Project the origin plus screen-aligned extent points.
 		this.currCam.getProjection(projectionMatrix);
 		final float[] clip = { ox,oy,oz,1,  ox+halfUnitX,oy,oz,1,  ox,oy+halfUnitY,oz,1 };
 		projectionMatrix.transform(clip);
-		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; } /* Behind the camera */
+		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
 
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
 		final float ndcZ = clip[2]/clip[3];
-		if (ndcZ < -1f || ndcZ > 1f) { return; } /* Outside the depth range */
+		if (ndcZ < -1f || ndcZ > 1f) { return; }
+
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
 
 		if (sprite.isScaled())
 		{
-			/* Adjust the position and size according to the (possibly partly outside) crop rectangle. */
+			// Adjust the position and size according to the (possibly partly outside) crop rectangle.
 			final float unitX = halfW / (float) cropW, unitY = halfH / (float) cropH;
 			ndcX -= (2*cropX + cropW - 2*isectX - isectW) * unitX;
 			ndcY += (2*cropY + cropH - 2*isectY - isectH) * unitY;
@@ -523,14 +545,14 @@ public class Graphics3D
 		}
 		else
 		{
-			/* Non-scaled sprites take their size in pixels from the crop rectangle. */
+			// Non-scaled sprites take their size in pixels from the crop rectangle.
 			ndcX -= (float)(2*cropX + cropW - 2*isectX - isectW) / (float) vieww;
 			ndcY += (float)(2*cropY + cropH - 2*isectY - isectH) / (float) viewh;
 			halfW = (float) isectW / (float) vieww;
 			halfH = (float) isectH / (float) viewh;
 		}
 
-		/* NDC -> viewport-relative pixels (same mapping as the triangle rasterizer). */
+		// NDC -> viewport-relative pixels (same mapping as the triangle rasterizer).
 		final float sx0 = (ndcX - halfW + 1f) * vieww / 2f;
 		final float sx1 = (ndcX + halfW + 1f) * vieww / 2f;
 		final float sy0 = (1f - (ndcY + halfH)) * viewh / 2f;
@@ -551,7 +573,7 @@ public class Graphics3D
 		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
 
-		// The Sprite3D has the same dapth for its entire area, so we only need
+		// The Sprite3D has the same depth for its entire area, so we only need
 		// to calculate fog once.
 		if (fog != null)
 		{
@@ -583,7 +605,7 @@ public class Graphics3D
 			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
 			for (int x = pixL; x < pixR; x++)
 			{
-				/* Depth test against the same buffer and convention used by triangles. */
+				// Depth test against the same buffer and convention used by triangles.
 				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
 
 				final float u = (x + 0.5f - sx0) / spanX;
@@ -592,7 +614,8 @@ public class Graphics3D
 
 				int paintPixel = img.getPixel(texX, texY);
 				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
-				if (alpha < alphaThreshold || alpha == 0) { continue; } /* Alpha test discards the fragment before any writes */
+
+				if (alpha < alphaThreshold || alpha == 0) { continue; }
 
 				if (fog != null && fogFactor < 255.0f)
 					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
@@ -626,85 +649,109 @@ public class Graphics3D
 		 */
 		if ((scope & this.currCam.getScope()) == 0) { return; }
 
-		// if `vertices` or `triangles` violates the constraints
-		//    defined in VertexBuffer or IndexBuffer
-		//    throw new java.lang.IllegalStateException();
-
 		final int projType = this.currCam.getProjection(projParams);
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
 
 		// TODO: Shading mode is not implemented
 		final int shadingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getShading() : PolygonMode.SHADE_SMOOTH;
-
 		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
+
 		perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
 
-		ord[0] = 0;
-		ord[1] = 1;
-		ord[2] = 2;
+		ord[0] = 0; ord[1] = 1; ord[2] = 2;
 
 		// Set up fog properties
 		final Fog fog = appearance.getFog();
 		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
 
 		final VertexArray vertPos = vertices.getPositions(scaleBias);
-		final Texture2D tex = appearance.getTexture(0);
-		final Image2D teximg = tex == null ? null : tex.getImage();
 
-		final Transform tr = new Transform();
-		final Transform textr = new Transform();
-		final Transform texcomptr = new Transform();
+		// Setup texture units first, if we have to use any. Texturing is done
+		// by layer, with each texture unit blending on top of another.
+		boolean hasTexture = false;
 
-		/* Texture wrapping mode and dimensions, applied per-pixel while sampling */
-		texRepeatS = (tex != null) && tex.getWrappingS() == Texture2D.WRAP_REPEAT;
-		texRepeatT = (tex != null) && tex.getWrappingT() == Texture2D.WRAP_REPEAT;
-		texW = (teximg != null) ? teximg.getWidth() : 0;
-		texH = (teximg != null) ? teximg.getHeight() : 0;
+		if(!Mobile.M3GRenderUntexturedPolygons && !Mobile.M3GRenderWireframe)
+		{
+			for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+			{
+				Texture2D t = appearance.getTexture(i);
+				VertexArray texCoords = (t != null) ? vertices.getTexCoords(i, texScaleBias) : null;
 
-		if (tex != null) { tex.getCompositeTransform(texcomptr); }
+				if (t != null && texCoords != null)
+				{
+					// We have at least one texture, so texturing must be done.
+					hasTexture = true;
 
-		/* Receiving a null transform indicates that the identity matrix must be used. */
-		if (transform == null) { transform = new Transform(); }
+					textures[i] = t;
+					texImages[i] = t.getImage();
+					texRepeatS[i] = (t.getWrappingS() == Texture2D.WRAP_REPEAT);
+					texRepeatT[i] = (t.getWrappingT() == Texture2D.WRAP_REPEAT);
+					texW[i] = (texImages[i] != null) ? texImages[i].getWidth() : 0;
+					texH[i] = (texImages[i] != null) ? texImages[i].getHeight() : 0;
 
-		// -> Local space
+					textr[i].setIdentity();
+					if (texImages[i] != null)
+					{
+						textr[i].postScale(texImages[i].getWidth(), texImages[i].getHeight(), 1.0f);
+					}
 
-		// Scale and translate mesh (P = (S * V) + B)
+					texcomptr.setIdentity();
+					t.getCompositeTransform(texcomptr);
+					textr[i].postMultiply(texcomptr);
+
+					textr[i].postTranslate(texScaleBias[1], texScaleBias[2], texScaleBias[3]);
+					textr[i].postScale(texScaleBias[0], texScaleBias[0], texScaleBias[0]);
+
+					if (texVerts[i] == null || 4 * vertPos.getVertexCount() > texVerts[i].length)
+											{ texVerts[i] = new float[4 * vertPos.getVertexCount()]; }
+
+					// Transform texture coordinates into NDC
+					textr[i].transform(texCoords, texVerts[i], true);
+				}
+				else
+				{
+					// Clear the references if this unit is unused or was disabled.
+					textures[i] = null;
+					texImages[i] = null;
+					texVerts[i] = null;
+				}
+			}
+		}
+
+
+		// Now that we're done with textures, we transform the vertices and
+		// build the triangles themselves.
+
+		tr.setIdentity();
+
+		// Apply projection matrix (Clip space)
+		this.currCam.getProjection(projectionMatrix);
+		tr.postMultiply(projectionMatrix);
+
+		// Apply the inverse of the camera's transform to the mesh (Eye/View Space)
+		if (this.currCamTransInv != null) {
+			tr.postMultiply(this.currCamTransInv);
+		}
+
+		// Transform mesh from local space to world space
+		// Receiving a null "transform" indicates that the identity matrix must
+		// be used, which just means we don't need to postMultiply.
+		if (transform != null) { tr.postMultiply(transform); }
+
+		// Scale and translate mesh (P = (S * V) + B) in local space
 		tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
 		tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
 
-		// Get Texture coordinates
-		final VertexArray texCoords = vertices.getTexCoords(0, scaleBias);
-
-		// Scale and translate texture coordinates (same scaleBias)
-		textr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
-		textr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
-
-		textr.preMultiply(texcomptr);
-
-		// Transform mesh from local coords to world coords
-		tr.preMultiply(transform);
-		// -> World space
-
-		// Apply the inverse of the camera's transform to the mesh
-		tr.preMultiply(this.currCamTransInv);
-		// -> Eye/View space
-
-		// Apply projection matrix
-		this.currCam.getProjection(projectionMatrix);
-		tr.preMultiply(projectionMatrix);
-		// -> Clip space
-
-		// Do the transformation
+		// Transform vertex positions
 		if(vertClip == null || 4 * vertPos.getVertexCount() > vertClip.length)
-			vertClip = new float[4 * vertPos.getVertexCount()];
+			{ vertClip = new float[4 * vertPos.getVertexCount()]; }
 		tr.transform(vertPos, vertClip, true);
 
-		if(texVert == null || 4 * vertPos.getVertexCount() > texVert.length)
-			texVert = new float[4 * vertPos.getVertexCount()];
-		if (texCoords != null) { textr.transform(texCoords, texVert, true); }
+		// Now with texture and vertex coordinates transformed, we generate the
+		// actual geometry, clip/cull it, and move it to NDC.
 
 		/*
 		 * Near-plane distance for clipping: the camera's actual near plane (where
@@ -714,9 +761,10 @@ public class Graphics3D
 		 */
 		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
-		// Create Triangle objects (fromVertsAndTris already does culling and clipping)
-		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVert, triangles.getIndexArray(),
-			renderableTriangles, clipNear, cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW,
+		// Create Triangle objects (fromVertAndTris already does culling and clipping)
+		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVerts,
+			triangles.getIndexArray(), renderableTriangles, clipNear,
+			cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW,
 			perspectiveCorrection);
 
 		// At this point the triangles in `trisScreen` are actually
@@ -725,10 +773,15 @@ public class Graphics3D
 
 		// Reset transform
 		tr.setIdentity();
-		textr.setIdentity();
+
+		// TODO: THIS NEEDS TO BE DONE???
+		for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+		{
+			if (textures[i] != null) { textr[i].setIdentity(); }
+		}
+		//textr.setIdentity();
 
 		// Fit to viewport
-		if (teximg != null) { textr.postScale(teximg.getWidth(), teximg.getHeight(), 1); }
 		tr.postScale(vieww / 2f, -viewh / 2f, 1f);
 		tr.postTranslate(1, -1, 0);
 
@@ -738,7 +791,6 @@ public class Graphics3D
 		Triangle.transform(trisScreen, renderableTriangles[0], tr, textr);
 
 		final boolean depthEnabled = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
-		final boolean hasTexture = tex != null && texCoords != null && !Mobile.M3GRenderUntexturedPolygons && !Mobile.M3GRenderWireframe;
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
 
 		if (this.target instanceof Image2D)
@@ -757,9 +809,17 @@ public class Graphics3D
 				coX[0] = trisScreen[tri_id].xA(); coX[1] = trisScreen[tri_id].xB(); coX[2] = trisScreen[tri_id].xC();
 				coY[0] = trisScreen[tri_id].yA(); coY[1] = trisScreen[tri_id].yB(); coY[2] = trisScreen[tri_id].yC();
 				coZ[0] = trisScreen[tri_id].zA(); coZ[1] = trisScreen[tri_id].zB(); coZ[2] = trisScreen[tri_id].zC();
-				coS[0] = trisScreen[tri_id].sA(); coS[1] = trisScreen[tri_id].sB(); coS[2] = trisScreen[tri_id].sC();
-				coT[0] = trisScreen[tri_id].tA(); coT[1] = trisScreen[tri_id].tB(); coT[2] = trisScreen[tri_id].tC();
 				coW[0] = trisScreen[tri_id].iwA(); coW[1] = trisScreen[tri_id].iwB(); coW[2] = trisScreen[tri_id].iwC();
+
+				if(hasTexture)
+				{
+					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					{
+						if(textures[i] == null) { continue; }
+						coS[i][0] = trisScreen[tri_id].sA(i); coS[i][1] = trisScreen[tri_id].sB(i); coS[i][2] = trisScreen[tri_id].sC(i);
+						coT[i][0] = trisScreen[tri_id].tA(i); coT[i][1] = trisScreen[tri_id].tB(i); coT[i][2] = trisScreen[tri_id].tC(i);
+					}
+				}
 
 				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
 				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
@@ -773,17 +833,33 @@ public class Graphics3D
 				xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
 				yTop = coY[ord[0]]; yMid = coY[ord[1]]; yBot = coY[ord[2]];
 				zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
-				sTop = coS[ord[0]]; sMidL = coS[ord[1]]; sBot = coS[ord[2]];
-				tTop = coT[ord[0]]; tMidL = coT[ord[1]]; tBot = coT[ord[2]];
 				pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
+
+				if(hasTexture)
+				{
+					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					{
+						if(textures[i] == null) { continue; }
+						sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
+						tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
+					}
+				}
 
 				// Calculate the right horizon
 				rHorizon = (yMid - yTop) / (yBot - yTop);
 				xMidR = xTop + rHorizon * (xBot - xTop);
 				zMidR = zTop + rHorizon * (zBot - zTop);
-				sMidR = sTop + rHorizon * (sBot - sTop);
-				tMidR = tTop + rHorizon * (tBot - tTop);
 				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
+
+				if(hasTexture)
+				{
+					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					{
+						if(textures[i] == null) { continue; }
+						sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
+						tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
+					}
+				}
 
 				// Swap midpoints if necessary
 				if (xMidL > xMidR)
@@ -793,9 +869,17 @@ public class Graphics3D
 					// Swap values between left and right midpoints
 					temp = xMidL; xMidL = xMidR; xMidR = temp;
 					temp = zMidL; zMidL = zMidR; zMidR = temp;
-					temp = sMidL; sMidL = sMidR; sMidR = temp;
-					temp = tMidL; tMidL = tMidR; tMidR = temp;
 					temp = pwMidL; pwMidL = pwMidR; pwMidR = temp;
+
+					if(hasTexture)
+					{
+						for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+						{
+							if(textures[i] == null) { continue; }
+							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
+							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
+						}
+					}
 				}
 
 				// Draw both halves of the triangle
@@ -806,7 +890,7 @@ public class Graphics3D
 					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
 
 					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasTexture, compositingMode,
-        				fog, invFogDiv, alphaThreshold, depthEnabled, tex, teximg);
+						fog, invFogDiv, alphaThreshold, depthEnabled);
 				}
 			}
 		}
@@ -892,8 +976,8 @@ public class Graphics3D
 
 	/* Helper Methods */
 	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
-    Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
-    Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, Texture2D tex, Image2D teximg)
+	Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
+	Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled)
 	{
 		for (int y = yStart; y < yEnd; y++)
 		{
@@ -903,7 +987,7 @@ public class Graphics3D
 			drawY = half == 0
 				? (y - yTop) / (yMid - yTop)  // Upper half
 				: 1f - (y - yMid) / (yBot - yMid); // Lower half
-			drawY = M3GMath.max(0f, M3GMath.min(drawY, 1f));
+			drawY = M3GMath.min(drawY, 1f);
 
 			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
 			xL = half == 0
@@ -919,6 +1003,9 @@ public class Graphics3D
 			final int spanWidth = ixR - ixL;
 
 			if (spanWidth <= 0) { continue; }
+
+			// Saves a division for each x step.
+			final float invDrawSpanWidth = M3GMath.fastReciprocal(xR - xL);
 
 			// Used for vertex color blending and nothing else.
 			final float invSpanWidth = M3GMath.fastReciprocal(spanWidth);
@@ -945,8 +1032,8 @@ public class Graphics3D
 					int colorC = trisScreen[tri_id].colorC();
 
 					// Calculate the left edge's color
-					float c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixL) * (yC - y) - (xC - ixL) * (yB - y)) / denominator));
-					float c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixL) * (yA - y) - (xA - ixL) * (yC - y)) / denominator));
+					float c1 = ((xB - ixL) * (yC - y) - (xC - ixL) * (yB - y)) / denominator;
+					float c2 = ((xC - ixL) * (yA - y) - (xA - ixL) * (yC - y)) / denominator;
 					float c3 = 1.0f - c1 - c2;
 
 					aL = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
@@ -955,8 +1042,8 @@ public class Graphics3D
 					bL = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
 
 					// Now the right edge's color
-					c1 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xB - ixR) * (yC - y) - (xC - ixR) * (yB - y)) / denominator));
-					c2 = M3GMath.min(1.0f, M3GMath.max(0.0f, ((xC - ixR) * (yA - y) - (xA - ixR) * (yC - y)) / denominator));
+					c1 = ((xB - ixR) * (yC - y) - (xC - ixR) * (yB - y)) / denominator;
+					c2 = ((xC - ixR) * (yA - y) - (xA - ixR) * (yC - y)) / denominator;
 					c3 = 1.0f - c1 - c2;
 
 					aR = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
@@ -978,18 +1065,19 @@ public class Graphics3D
 				? zTop + drawY * (zMidR - zTop)
 				: zBot + drawY * (zMidR - zBot);
 
-			sL = half == 0
-				? sTop + drawY * (sMidL - sTop)
-				: sBot + drawY * (sMidL - sBot);
-			sR = half == 0
-				? sTop + drawY * (sMidR - sTop)
-				: sBot + drawY * (sMidR - sBot);
-			tL = half == 0
-				? tTop + drawY * (tMidL - tTop)
-				: tBot + drawY * (tMidL - tBot);
-			tR = half == 0
-				? tTop + drawY * (tMidR - tTop)
-				: tBot + drawY * (tMidR - tBot);
+			if(hasTexture)
+			{
+				for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+				{
+					if (textures[i] == null || texImages[i] == null) { continue; }
+
+					sL[i] = half == 0 ? sTop[i] + drawY * (sMidL[i] - sTop[i]) : sBot[i] + drawY * (sMidL[i] - sBot[i]);
+					sR[i] = half == 0 ? sTop[i] + drawY * (sMidR[i] - sTop[i]) : sBot[i] + drawY * (sMidR[i] - sBot[i]);
+					tL[i] = half == 0 ? tTop[i] + drawY * (tMidL[i] - tTop[i]) : tBot[i] + drawY * (tMidL[i] - tBot[i]);
+					tR[i] = half == 0 ? tTop[i] + drawY * (tMidR[i] - tTop[i]) : tBot[i] + drawY * (tMidR[i] - tBot[i]);
+				}
+			}
+
 			pwL = half == 0
 				? pwTop + drawY * (pwMidL - pwTop)
 				: pwBot + drawY * (pwMidL - pwBot);
@@ -1006,15 +1094,12 @@ public class Graphics3D
 				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
-				drawX = M3GMath.max(0f, M3GMath.min((x - xL) / (xR - xL), 1f));
+				drawX = (x - xL) * invDrawSpanWidth;
 				z = (zL + drawX * (zR - zL));
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
 				if(depthEnabled && this.depthBuffer[depthIdxY + x] < z) { continue; }
-
-				s = sL + drawX * (sR - sL);
-				t = tL + drawX * (tR - tL);
 
 				int paintPixel;
 
@@ -1046,33 +1131,46 @@ public class Graphics3D
 				 * with alpha cutouts drawn before the ground). The depth buffer is only
 				 * updated by fragments that survive this test.
 				 */
-				if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
+				if (!hasTexture && ((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
 
 				if(hasTexture)
 				{
-					// TODO: Allow perspective correction force-disable
-					if(perspectiveCorrection)
+					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
 					{
-						float pw = pwL + drawX * (pwR - pwL);
-						if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
-					}
+						// Skip this texture unit right away if it is disabled/unused
+						if (textures[i] == null || texImages[i] == null) { continue; }
 
-					// We can force-disable bilinear filter
-					if (tex.getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
-					{
-						paintPixel = blendPixels(paintPixel,
-							sampleBilinear(teximg, s, t, texW, texH, texRepeatS, texRepeatT, tex.isNPOT()),
-							255, tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
-					}
-					else
-					{
-						int texX = (int) ((s - 0.001f));
-						int texY = (int) ((t - 0.001f));
+						s = sL[i] + drawX * (sR[i] - sL[i]);
+						t = tL[i] + drawX * (tR[i] - tL[i]);
 
-						texX = wrapX(texX, texW, texRepeatS, tex.isNPOT());
-						texY = wrapY(texY, texH, texRepeatT, tex.isNPOT());
-						paintPixel = blendPixels(paintPixel, teximg.getPixel(texX, texY), 255,
-							tex.getBlending(), tex.getBlendColor(), teximg.getFormat());
+						// TODO: Allow perspective correction force-disable
+						if(perspectiveCorrection)
+						{
+							float pw = pwL + drawX * (pwR - pwL);
+							if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
+						}
+
+						// We can force-disable bilinear filter
+						if (textures[i].getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
+						{
+							paintPixel = blendPixels(paintPixel,
+								sampleBilinear(texImages[i], s, t, texW[i], texH[i], texRepeatS[i],
+									texRepeatT[i], textures[i].isNPOT()),
+									255, textures[i].getBlending(), textures[i].getBlendColor(),
+									texImages[i].getFormat());
+						}
+						else
+						{
+							int texX = (int) ((s - 0.001f));
+							int texY = (int) ((t - 0.001f));
+
+							texX = wrapX(texX, texW[i], texRepeatS[i], textures[i].isNPOT());
+							texY = wrapY(texY, texH[i], texRepeatT[i], textures[i].isNPOT());
+
+							paintPixel = blendPixels(paintPixel, texImages[i].getPixel(texX, texY),
+								255, textures[i].getBlending(), textures[i].getBlendColor(),
+								texImages[i].getFormat());
+						}
 					}
 
 					if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
@@ -1091,9 +1189,9 @@ public class Graphics3D
 					{
 						fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
 					}
-					else { fogFactor = M3GMath.abs(M3GMath.exp(-fog.getDensity() * zEye)); }
+					else { fogFactor = M3GMath.exp(-fog.getDensity() * zEye); }
 
-					fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
+					fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
 
 					if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 				}
