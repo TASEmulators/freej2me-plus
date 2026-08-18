@@ -79,7 +79,7 @@ public class Graphics3D
 	private Transform camTr;
 
 	// Reusable rendering variables
-	int canvasWidth, canvasHeight;
+	int canvasWidth, canvasHeight, paintPixel;
 	int[] rasterData;
 
 	// Texturing
@@ -957,7 +957,7 @@ public class Graphics3D
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
-				int paintPixel = img.getPixel(texX, texY);
+				paintPixel = img.getPixel(texX, texY);
 				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
@@ -1095,14 +1095,12 @@ public class Graphics3D
 				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
-				drawX = (x - xL) * invDrawSpanWidth;
+				drawX = M3GMath.max(0f, (x - xL) * invDrawSpanWidth);
 				z = (zL + drawX * (zR - zL));
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
 				if(depthEnabled && this.depthBuffer[depthIdxY + x] < z) { continue; }
-
-				int paintPixel;
 
 				// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
 				if (trisScreen[tri_id].hasVertexColors())
