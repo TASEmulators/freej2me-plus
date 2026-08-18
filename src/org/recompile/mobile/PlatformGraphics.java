@@ -2176,63 +2176,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		drawScaledImage(image, dx, dy, width, height, sx, sy, width, height);
 	}
 
-	private int[] adjustCoordinates(int imageWidth, int imageHeight, int sx, int sy, int width, int height, int transform)
-	{
-		/* These swap width and height */
-		if(transform == FLIP_ROTATE_LEFT || transform == FLIP_ROTATE_RIGHT ||
-			transform == FLIP_ROTATE_RIGHT_HORIZONTAL || transform == FLIP_ROTATE_RIGHT_VERTICAL)
-		{
-			int tempHeight = height;
-			height = width;
-			width = height;
-		}
-
-		switch (transform)
-		{
-			case FLIP_HORIZONTAL:
-				sx = imageWidth - sx - width;
-				break;
-
-			case FLIP_VERTICAL:
-				sy = imageHeight - sy - height;
-				break;
-
-			case FLIP_ROTATE_RIGHT: // 90 degree rotation to the right (clockwise 90)
-				int tempX = sx;
-				sx = imageHeight - sy - width;
-				sy = tempX;
-				break;
-
-			case FLIP_ROTATE_LEFT: // 90 degree rotation to the left (clockwise 270)
-				int tempY = sy;
-				sy = imageWidth - sx - height;
-				sx = tempY;
-				break;
-
-			case FLIP_ROTATE: // 180 degree rotation
-				sx = imageWidth - sx - width;
-				sy = imageHeight - sy - height;
-				break;
-
-			case FLIP_ROTATE_RIGHT_VERTICAL: // Same as a mirrored 90 degree clockwise rotation
-				Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa FLIP_ROTATE_RIGHT_VERTICAL untested");
-				tempY = sy;
-				sy = imageWidth - sx - height;
-				sx = imageHeight - tempY - width;
-				break;
-
-			case FLIP_ROTATE_RIGHT_HORIZONTAL: // Same as a mirrored 270 degree clockwise rotation
-				Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa FLIP_ROTATE_RIGHT_HORIZONTAL untested");
-				tempX = sx;
-				sx = sy;
-				sy = tempX;
-				break;
-		}
-
-		// Return adjusted coordinates via reference parameters
-		return new int[]{sx, sy, width, height};
-	}
-
 	public void setOrigin(int x, int y)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
@@ -2364,56 +2307,125 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void drawScaledImage(com.nttdocomo.ui.Image image, int dx, int dy, int width, int height, int sx, int sy, int swidth, int sheight)
 	{
-		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
+		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
+
+		// Nothing to draw?
+		if (width <= 0 || height <= 0 || swidth <= 0 || sheight <= 0) { return; }
 
 		try
 		{
-			if (dojaflipMode != FLIP_NONE)
-			{
-				int[] adjustedCoordinates = adjustCoordinates(image.getCanvas().getWidth(), image.getCanvas().getHeight(), sx, sy, width, height, dojaflipMode);
-				sx      = adjustedCoordinates[0];
-				sy      = adjustedCoordinates[1];
-				swidth  = adjustedCoordinates[2];
-				sheight = adjustedCoordinates[3];
-
-				width  = adjustedCoordinates[2];
-				height = adjustedCoordinates[3];
-			}
-
-			dx+=translateX;
-			dy+=translateY;
+			dx += translateX;
+			dy += translateY;
 
 			final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 			final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
 			final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
 			final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
-			BufferedImage newImg = manipulateImage(image.getCanvas(), dojaflipMode);
-			int[] imgData = ((DataBufferInt) newImg.getRaster().getDataBuffer()).getData();
+			int drawX = Math.max(dx, clipX);
+			int drawY = Math.max(dy, clipY);
+			int drawWidth = Math.min(dx + width, clipWidth);
+			int drawHeight = Math.min(dy + height, clipHeight);
 
-			swidth = Math.min(swidth, image.getWidth());
-			sheight = Math.min(sheight, image.getHeight());
-			width = Math.min(width, image.getWidth());
-			height = Math.min(height, image.getHeight());
+			// Area entirely clipped out, skip rendering altogether
+			if (drawX >= drawWidth || drawY >= drawHeight) { return; }
 
-			for (int j = dy; j < dy + height; j++)
+			// Some of the following transforms require temp variables
+			int tmpSw = swidth;
+			int tmpSh = sheight;
+
+			BufferedImage srcCanvas = image.getCanvas();
+			int imgWidth = srcCanvas.getWidth();
+			int imgHeight = srcCanvas.getHeight();
+			int[] imgData = ((DataBufferInt) srcCanvas.getRaster().getDataBuffer()).getData();
+
+			boolean flipX = false, flipY = false, rotate90 = false;
+			switch (dojaflipMode)
 			{
-				int srcY = sy + (j - dy) * sheight / height;
-				for (int i = dx; i < dx + width; i++)
-				{
-					int srcX = sx + (i - dx) * swidth / width;
+				case FLIP_HORIZONTAL:
+					flipX = true;
+					break;
+				case FLIP_VERTICAL:
+					flipY = true;
+					break;
+				case FLIP_ROTATE_RIGHT: // HV90
+					tmpSw = sheight;
+					tmpSh = swidth;
+					break;
+				case FLIP_ROTATE_LEFT: // HV270
+					tmpSw = sheight;
+					tmpSh = swidth;
+					flipX = true;
+					flipY = true;
+					break;
+				case FLIP_ROTATE: // HV / ROT_180
+					flipX = true;
+					flipY = true;
+					break;
+				case FLIP_ROTATE_RIGHT_VERTICAL:
+					tmpSw = sheight;
+					tmpSh = swidth;
+					flipY = true;
+					break;
+				case FLIP_ROTATE_RIGHT_HORIZONTAL:
+					tmpSw = sheight;
+					tmpSh = swidth;
+					flipX = true;
+					break;
+			}
 
-					if (srcX >= sx && srcX < sx + swidth && srcY >= sy && srcY < sy + sheight && srcY * image.getWidth() + srcX >= 0 &&
-					srcY * image.getWidth() + srcX < imgData.length-1 && j * canvasWidth + i >= 0 && j * canvasWidth + i < canvasData.length-1
-					&& i < clipWidth && i >= clipX && j < clipHeight && j >= clipY)
+			rotate90 = (dojaflipMode == FLIP_ROTATE_RIGHT ||
+				dojaflipMode == FLIP_ROTATE_LEFT ||
+				dojaflipMode == FLIP_ROTATE_RIGHT_VERTICAL ||
+				dojaflipMode == FLIP_ROTATE_RIGHT_HORIZONTAL);
+
+			long stepX = ((long) tmpSw << 16) / width;
+			long stepY = ((long) tmpSh << 16) / height;
+
+			long startX = (long) (drawX - dx) * stepX + (stepX >> 1);
+			long startY = (long) (drawY - dy) * stepY + (stepY >> 1);
+
+			int imgX, imgY, destRow;
+
+			for (int y = drawY; y < drawHeight; y++)
+			{
+				int baseY = (int) ((startY + (long) (y - drawY) * stepY) >> 16);
+
+				if (baseY >= tmpSh) { baseY = tmpSh - 1; }
+				if (baseY < 0) { baseY = 0; }
+
+				if (flipY) { baseY = (tmpSh - 1) - baseY; }
+
+				destRow = y * canvasWidth;
+
+				for (int x = drawX; x < drawWidth; x++)
+				{
+					int baseX = (int) ((startX + (long) (x - drawX) * stepX) >> 16);
+
+					if (baseX >= tmpSw) { baseX = tmpSw - 1; }
+					if (baseX < 0) { baseX = 0; }
+
+					if (flipX) { baseX = (tmpSw - 1) - baseX; }
+
+					if (rotate90)
 					{
-						setPixel(i, j, blendPixels(imgData[srcY * image.getWidth() + srcX], canvasData[j * canvasWidth + i]));
+						imgX = sx + baseY;
+						imgY = sy + (tmpSw - 1 - baseX);
 					}
+					else
+					{
+						imgX = sx + baseX;
+						imgY = sy + baseY;
+					}
+
+					canvasData[destRow + x] = blendPixels(imgData[imgY * imgWidth + imgX], canvasData[destRow + x]);
 				}
 			}
-			//gc.drawImage(manipulateImage(image.getCanvas(), dojaflipMode), dx, dy, dx + width, dy + height, sx, sy, sx + swidth, sy + sheight, null);
 		}
-		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawScaledImage: " + e.getMessage()); }
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawScaledImage: " + e.getMessage());
+		}
 	}
 
 	public void drawSpriteSet(com.nttdocomo.ui.SpriteSet sprites)
