@@ -59,11 +59,13 @@ import javax.sound.sampled.LineListener;
 import com.nokia.mid.sound.Sound;
 import com.nokia.mid.sound.SoundListener;
 
-import javax.microedition.media.Player;
-import javax.microedition.media.PlayerListener;
-import javax.microedition.media.control.ToneControl;
 import javax.microedition.media.Control;
 import javax.microedition.media.Manager;
+import javax.microedition.media.Player;
+import javax.microedition.media.PlayerListener;
+import javax.microedition.media.TimeBase;
+import javax.microedition.media.control.ToneControl;
+
 
 /* Patcher for MIDI files with running status bytes */
 import javax.microedition.media.decoders.MIDIPatcher;
@@ -644,6 +646,17 @@ public class PlatformPlayer implements Player
 		{
 			return;
 		}
+	}
+
+	public TimeBase getTimeBase()
+	{
+		Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "getTimeBase() not implemented.");
+		return null;
+	}
+
+	public void setTimeBase(TimeBase master)
+	{
+		Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setTimeBase(TimeBase) not implemented.");
 	}
 
 	// Players //

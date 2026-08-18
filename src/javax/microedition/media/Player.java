@@ -19,7 +19,7 @@ package javax.microedition.media;
 
 public interface Player extends Controllable
 {
-	
+
 	public static final int CLOSED = 0;
 	public static final int PREFETCHED = 300;
 	public static final int REALIZED = 200;
@@ -40,6 +40,8 @@ public interface Player extends Controllable
 
 	public long getMediaTime();
 
+	public TimeBase getTimeBase();
+
 	public int getState();
 
 	public void prefetch();
@@ -51,6 +53,8 @@ public interface Player extends Controllable
 	public void setLoopCount(int count);
 
 	public long setMediaTime(long now);
+
+	public void setTimeBase(TimeBase master);
 
 	public void start();
 
