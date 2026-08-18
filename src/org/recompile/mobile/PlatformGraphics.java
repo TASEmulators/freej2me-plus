@@ -1876,40 +1876,41 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Used everywhere alpha blending might be needed, be it getPixels, flushGraphics, etc.
 	private final int blendPixels(final int srcPixel, final int destPixel)
 	{
-		final int srcAlpha = (srcPixel >> 24) & 0xFF; // Source alpha
-		int newRed = 0, newGreen = 0, newBlue = 0;
-
+		final int srcAlpha = (srcPixel >>> 24); // Source alpha
 		if(srcAlpha == 0) { return destPixel; } // No blending needed in any of the cases below, return early
+
+		int newRed = 0, newGreen = 0, newBlue = 0;
 
 		switch (renderMode)
 		{
 			case com.nttdocomo.opt.ui.Graphics2.OP_REPL: // Also used by MIDP, which does this operation by default (SRC_OVER)
-				if(srcAlpha == 255) { return srcPixel; }
-				else // Blending is needed
-				{
-					final int destAlpha = (destPixel >> 24) & 0xFF;
+				if (srcAlpha == 255) { return srcPixel; }
 
-					final int invSrcAlpha = (255 - srcAlpha);
+				final int invAlpha = 255 - srcAlpha;
+				final int destAlpha = destPixel >>> 24;
+				final int newAlpha = Math.min(255, srcAlpha + destAlpha);
 
-					final int newAlpha = (srcAlpha + destAlpha > 255) ? 255 : (srcAlpha + destAlpha);
+				final int srcRB  = srcPixel & 0x00FF00FF;
+				final int destRB = destPixel & 0x00FF00FF;
+				final int blendedRB = (((srcRB * srcAlpha + destRB * invAlpha) >> 8) & 0x00FF00FF);
 
-					newRed = ((((srcPixel >> 16) & 0xFF) * srcAlpha) + (((destPixel >> 16) & 0xFF) * invSrcAlpha)) / 255;
-					newGreen =  ((((srcPixel >> 8) & 0xFF) * srcAlpha) + (((destPixel >> 8) & 0xFF) * invSrcAlpha)) / 255;
-					newBlue = (((srcPixel & 0xFF) * srcAlpha) + ((destPixel & 0xFF) * invSrcAlpha)) / 255;
+				final int srcG   = srcPixel & 0x0000FF00;
+				final int destG  = destPixel & 0x0000FF00;
+				final int blendedG = (((srcG * srcAlpha + destG * invAlpha) >> 8) & 0x0000FF00);
 
-					return (newAlpha << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
-				}
+				return (newAlpha << 24) | blendedRB | blendedG;
+
 			// ADD and SUB never take alpha into consideration for RGB values
 			case com.nttdocomo.opt.ui.Graphics2.OP_ADD:
-				newRed   = clamp(((destPixel >> 16) & 0xFF) * dstRatio / 255 + ((srcPixel >> 16) & 0xFF) * srcRatio / 255);
-				newGreen = clamp(((destPixel >> 8) & 0xFF) * dstRatio / 255 + ((srcPixel >> 8) & 0xFF) * srcRatio / 255);
-				newBlue  = clamp((destPixel & 0xFF) * dstRatio / 255 + (srcPixel & 0xFF) * srcRatio / 255);
-				return (0xFF << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+				newRed = clamp((((destPixel >> 16) & 0xFF) * dstRatio + ((srcPixel >> 16) & 0xFF) * srcRatio) >> 8);
+				newGreen = clamp((((destPixel >> 8) & 0xFF) * dstRatio + ((srcPixel >> 8) & 0xFF) * srcRatio) >> 8);
+				newBlue = clamp(((destPixel & 0xFF) * dstRatio + (srcPixel & 0xFF) * srcRatio) >> 8);
+				return 0xFF000000 | (newRed << 16) | (newGreen << 8) | newBlue;
 			case com.nttdocomo.opt.ui.Graphics2.OP_SUB:
-				newRed   = clamp(((destPixel >> 16) & 0xFF) * dstRatio / 255 - ((srcPixel >> 16) & 0xFF) * srcRatio / 255);
-				newGreen = clamp(((destPixel >> 8) & 0xFF) * dstRatio / 255 - ((srcPixel >> 8) & 0xFF) * srcRatio / 255);
-				newBlue  = clamp((destPixel & 0xFF) * dstRatio / 255 - (srcPixel & 0xFF) * srcRatio / 255);
-				return (0xFF << 24) | (newRed << 16) | (newGreen << 8) | newBlue;
+				newRed = clamp((((destPixel >> 16) & 0xFF) * dstRatio - ((srcPixel >> 16) & 0xFF) * srcRatio) >> 8);
+				newGreen = clamp((((destPixel >> 8) & 0xFF) * dstRatio - ((srcPixel >> 8) & 0xFF) * srcRatio) >> 8);
+				newBlue = clamp(((destPixel & 0xFF) * dstRatio - (srcPixel & 0xFF) * srcRatio) >> 8);
+				return 0xFF000000 | (newRed << 16) | (newGreen << 8) | newBlue;
 
 			default:
 				return srcPixel;
