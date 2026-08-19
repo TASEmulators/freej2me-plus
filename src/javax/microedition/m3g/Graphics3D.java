@@ -22,9 +22,9 @@ import javax.microedition.lcdui.Graphics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.awt.image.DataBufferInt;
 
 import org.recompile.mobile.Mobile;
+import org.recompile.mobile.PlatformGraphics;
 
 public class Graphics3D
 {
@@ -81,6 +81,8 @@ public class Graphics3D
 	// Reusable rendering variables
 	int canvasWidth, canvasHeight, paintPixel;
 	int[] rasterData;
+	final CompositingMode defaultCompositing;
+	final Transform nodetr;
 
 	// Texturing
 	boolean perspectiveCorrection;
@@ -144,11 +146,13 @@ public class Graphics3D
 		 * The default depth range used is that of window coordinates, so 0 to near, and 1 to far
 		 * JSR-184 specifies that Normalized Device Coordinates (NDC) can also be used, which ranges from -1 to 1.
 		 */
+		this.defaultCompositing = new CompositingMode();
+		this.nodetr = new Transform();
 		this.near = 0f;
 		this.far = 1f;
 		this.currCam = null;
-		this.currCamTrans = null;
-		this.currCamTransInv = null;
+		this.currCamTrans = new Transform();
+		this.currCamTransInv = new Transform();
 		this.currLights = new ArrayList<Light>();
 		this.currLightTrans = new ArrayList<Transform>();
 		camTr = new Transform();
@@ -210,7 +214,8 @@ public class Graphics3D
 		else if (target instanceof Graphics)
 		{
 			Graphics pgrp = (Graphics) target;
-			rasterData = ((DataBufferInt) pgrp.getCanvas().getRaster().getDataBuffer()).getData();
+			// We can get the framebuffer directly from PlatformGraphics for less memory pressure
+			rasterData = ((PlatformGraphics) pgrp).getFrameBuffer();
 			canvasWidth = pgrp.getCanvas().getWidth();
 			canvasHeight = pgrp.getCanvas().getHeight();
 			this.viewx = M3GMath.max(0, pgrp.getClipX() + pgrp.getTranslateX());
@@ -463,11 +468,10 @@ public class Graphics3D
 				{
 					if(child instanceof Sprite3D || child instanceof Mesh || child instanceof Group)
 					{
-						Transform t = new Transform();
-						child.getCompositeTransform(t);
-						if(transform != null) { t.preMultiply(transform); }
+						child.getCompositeTransform(nodetr);
+						if(transform != null) { nodetr.preMultiply(transform); }
 
-						render(child, t);
+						render(child, nodetr);
 					}
 					child = child.right;
 				} while (child != ((Group) node).firstChild);
@@ -495,7 +499,7 @@ public class Graphics3D
 
 		final int projType = this.currCam.getProjection(projParams);
 
-		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
+		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : this.defaultCompositing;
 
 		// TODO: Shading mode is not implemented
 		final int shadingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getShading() : PolygonMode.SHADE_SMOOTH;
@@ -799,13 +803,13 @@ public class Graphics3D
 		/* If no transform is given, the identity matrix is used as per JSR-184. */
 		if (transform == null)
 		{
-			this.currCamTrans = new Transform();
-			this.currCamTransInv = new Transform();
+			this.currCamTrans.setIdentity();
+			this.currCamTransInv.setIdentity();
 		}
 		else /* Else, set the transform and its inverse accordingly. */
 		{
-			this.currCamTrans = new Transform(transform);
-			this.currCamTransInv = new Transform(transform);
+			this.currCamTrans.set(transform);
+			this.currCamTransInv.set(transform);
 		}
 		this.currCamTransInv.invert(); /* This one will execute regardless of the given transform above. */
 	}
@@ -1122,14 +1126,16 @@ public class Graphics3D
 			int depthIdxY = y * this.vieww;
 			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
 
+			float zStep = (zR - zL) * invDrawSpanWidth;
+			z  = zL + (ixL - xL) * zStep + depthOffset;
+
 			// Draw the pixels for the current y-coordinate
-			for (int x = ixL; x < ixR; x++)
+			for (int x = ixL; x < ixR; x++, z += zStep)
 			{
 				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
 				drawX = M3GMath.max(0f, (x - xL) * invDrawSpanWidth);
-				z = (zL + drawX * (zR - zL)) + depthOffset;
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
