@@ -699,7 +699,6 @@ public class Loader
 				int rangeLast = readInt();
 				int components = readInt();
 				int keyFrames = readInt();
-				int size = (encoding == 0) ? (keyFrames * (4 + components * 4)) : (components * 8 + keyFrames * (4 + components * (encoding == 1 ? 1 : 2)));
 
 				KeyframeSequence seq = new KeyframeSequence(keyFrames, components, interpolation);
 				seq.setRepeatMode(repeatMode);

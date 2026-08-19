@@ -65,6 +65,8 @@ public class VertexBuffer extends Object3D
 	{
 		VertexBuffer copy = (VertexBuffer) super.duplicateImpl();
 
+		copy.fixed = this.fixed;
+		copy.length = this.length;
 		copy.positions = this.positions;
         copy.normals = this.normals;
         copy.colors = this.colors;
@@ -131,7 +133,8 @@ public class VertexBuffer extends Object3D
 				{ throw new IllegalArgumentException("Invalid scaleBias length."); }
 
 			scaleBias[0] = this.texCoordScale[index];
-			System.arraycopy(this.texCoordBias[index], 0, scaleBias, 1, components);
+			if (this.texCoordBias[index] != null)
+				{ System.arraycopy(this.texCoordBias[index], 0, scaleBias, 1, components); }
 		}
 
 		return this.texCoords[index];

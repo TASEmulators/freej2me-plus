@@ -104,8 +104,8 @@ public class VertexArray extends Object3D
 		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-			System.arraycopy(this.vertArrayShortSize, firstVertex * this.numComponents,
-				values, 0, numVertices * this.numComponents);
+		System.arraycopy(this.vertArrayShortSize, firstVertex * this.numComponents,
+			values, 0, numVertices * this.numComponents);
 	}
 
 	public int getComponentCount() { return this.numComponents; }
@@ -129,8 +129,8 @@ public class VertexArray extends Object3D
 		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-			System.arraycopy(values, 0,this.vertArrayByteSize,
-				firstVertex * this.numComponents, numVertices * this.numComponents);
+		System.arraycopy(values, 0,this.vertArrayByteSize,
+			firstVertex * this.numComponents, numVertices * this.numComponents);
 	}
 
 	public void set(int firstVertex, int numVertices, short[] values)
@@ -148,8 +148,8 @@ public class VertexArray extends Object3D
 		if(firstVertex < 0 || firstVertex + numVertices > this.numVertices)
 			{ throw new IndexOutOfBoundsException("Tried to get a range of values that's out of bounds."); }
 
-			System.arraycopy(values, 0,this.vertArrayShortSize,
-				firstVertex * this.numComponents, numVertices * this.numComponents);
+		System.arraycopy(values, 0,this.vertArrayShortSize,
+			firstVertex * this.numComponents, numVertices * this.numComponents);
 	}
 
 }
