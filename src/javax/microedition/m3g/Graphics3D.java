@@ -1157,14 +1157,6 @@ public class Graphics3D
 						0xFF000000 | vertices.getDefaultColor() : vertices.getDefaultColor();
 				}
 
-				/*
-				 * Alpha test BEFORE any depth write: transparent fragments must not
-				 * occlude geometry drawn later (games rely on this — e.g. tree canopies
-				 * with alpha cutouts drawn before the ground). The depth buffer is only
-				 * updated by fragments that survive this test.
-				 */
-				if (!hasTexture && ((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
-
 				if(hasTexture)
 				{
 					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
@@ -1204,9 +1196,19 @@ public class Graphics3D
 								texImages[i].getFormat());
 						}
 					}
-
-					if (((paintPixel >> 24) & 0xFF) <= alphaThreshold) { continue; }
 				}
+
+				/*
+				 * Alpha test BEFORE any depth write: transparent fragments must not
+				 * occlude geometry drawn later (games rely on this — e.g. tree canopies
+				 * with alpha cutouts drawn before the ground). The depth buffer is only
+				 * updated by fragments that survive this test.
+				 *
+				 * TODO: Spec says that a threshold of 0 should make ALL fragments go through,
+				 * but doing so evidently breaks transparency in apps like Speed Spirit, Coast Racer
+				 * and a few others on vegetation when the texel alpha is also 0. So what gives?
+				 */
+				if (((paintPixel >> 24) & 0xFF) == 0 || ((paintPixel >> 24) & 0xFF) < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled
 				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdxY + x] = z; }
