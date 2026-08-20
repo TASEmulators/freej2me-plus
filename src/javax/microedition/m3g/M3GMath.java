@@ -18,7 +18,7 @@ package javax.microedition.m3g;
 
 public class M3GMath
 {
-	static final float EPSILON = Float.MIN_VALUE * 16f;
+	static final float EPSILON = 0.0001f;
 
 	// Faster alternatives to Java's Math library, we don't need the more robust checks.
 
@@ -202,27 +202,6 @@ public class M3GMath
 		return div(vector, length);
 	}
 
-	public static float[][] intersectTriangle(
-		float[] p,
-		float[] pn,
-		float[] a,
-		float[] b,
-		float[] ta,
-		float[] tb
-	)
-	{
-		float pd, ad, bd, ratio;
-		pd = dotProduct(p, pn);
-		ad = dotProduct(a, pn);
-		bd = dotProduct(b, pn);
-		ratio = (pd - ad) / (bd - ad);
-		return new float[][]
-		{
-			add(a, mul(sub(b, a), ratio)),
-			add(ta, mul(sub(tb, ta), ratio))
-		};
-	}
-
 	public static float[] add(float[] a, float[] b)
 	{
 		if (a.length != b.length) { throw new java.lang.IllegalArgumentException(); }
@@ -268,18 +247,6 @@ public class M3GMath
 		for (int i = 0; i < vec.length; i++) { vec[i] *= s; }
 	}
 
-	public static void subVec(float[] vec, float[] other)
-	{
-		if (vec.length != other.length) { throw new java.lang.IllegalArgumentException(); }
-		for (int i = 0; i < vec.length; i++) { vec[i] -= other[i]; }
-	}
-
-	public static void addVec(float[] vec, float[] other)
-	{
-		if (vec.length != other.length) { throw new java.lang.IllegalArgumentException(); }
-		for (int i = 0; i < vec.length; i++) { vec[i] += other[i]; }
-	}
-
 	// Vector3 / float[3] helpers
 	// For Vector3, the following disposition is used:
 	// [0] = x
@@ -298,17 +265,6 @@ public class M3GMath
 	// [1] = y
 	// [2] = z
 	// [3] = w
-	public static void logDiffQuat(float[] orig, float[] from, float[] to)
-	{
-		float[] temp = new float[4];
-		temp[0] = -from[0];
-		temp[1] = -from[1];
-		temp[2] = -from[2];
-		temp[3] = from[3];
-		temp = mulQuat(to);
-		orig = logQuat(temp);
-	}
-
 	public static float[] mulQuat(float[] other)
 	{
 		float[] q = new float[4];
@@ -318,28 +274,6 @@ public class M3GMath
 		float y = q[3] * other[1] - q[0] * other[2] + q[1] * other[3] + q[2] * other[0];
 		float z = q[3] * other[2] + q[0] * other[1] - q[1] * other[0] + q[2] * other[3];
 		return new float[] {x,y,z,w};
-	}
-
-	public static float[] logQuat(float[] quat)
-	{
-		float sinTheta = sqrt(norm3(quat));
-		float s, x, y, z;
-
-		if (sinTheta > EPSILON)
-		{
-			s = atan2(sinTheta, quat[3]) / sinTheta;
-			x = s * quat[0];
-			y = s * quat[1];
-			z = s * quat[2];
-		}
-		else { x = y = z = 0.0f; }
-
-		return new float[] {x,y,z,quat[3]};
-	}
-
-	public static float norm3(float[] quat)
-	{
-		return (quat[0] * quat[0] + quat[1] * quat[1] + quat[2] * quat[2]);
 	}
 
 	public static float[] normalizeQuat(float[] vec4)
@@ -354,25 +288,6 @@ public class M3GMath
 		else { return identityQuat(); }
 
 		return vec4;
-	}
-
-	public static void expQuat(float[] vec4, float[] vec3Exp)
-	{
-		float theta = sqrt(vec3Exp[0] * vec3Exp[0] + vec3Exp[1] * vec3Exp[1] + vec3Exp[2] * vec3Exp[2]);
-
-		if (theta > EPSILON)
-		{
-			float s = sin(theta) * (1.0f / theta);
-			vec4[0] = vec3Exp[0] * s;
-			vec4[1] = vec3Exp[1] * s;
-			vec4[2] = vec3Exp[2] * s;
-			vec4[3] = cos(theta);
-		}
-		else
-		{
-			vec4[0] = vec4[1] = vec4[2] = 0.0f;
-			vec4[3] = 1.0f;
-		}
 	}
 
 	public static void slerpQuat(float[] orig, float s, float[] q0, float[] q1)

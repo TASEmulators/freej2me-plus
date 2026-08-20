@@ -116,7 +116,7 @@ public class Graphics3D
 
 	// 3D rendering variables
 	final Transform tr;
-	int yStart, yEnd, ixL, ixR;
+	int yStart, yEnd;
 	final int[] ord = new int[3];
 	float[] vertClip = null;
 	final float[] coX = new float[3];
@@ -128,10 +128,8 @@ public class Graphics3D
 	float xMidL, yMid, zMidL;
 	float xBot, yBot, zBot;
 	float rHorizon, xMidR, zMidR;
-	float drawY, drawX, xL, xR, zL, zR;
-	float pwTop, pwMidL, pwBot, pwMidR, pwL, pwR;
+	float pwTop, pwMidL, pwBot, pwMidR;
 
-	float z, s, t;
 	final float[] scaleBias = new float[4];
 
 	final Transform projectionMatrix = new Transform();
@@ -1013,30 +1011,83 @@ public class Graphics3D
 	}
 
 	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
-	Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
-	Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
-	float depthOffset)
+		Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
+		Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
+		float depthOffset)
 	{
+		float rStepX = 0, gStepX = 0, bStepX = 0, aStepX = 0;
+		float rStepY = 0, gStepY = 0, bStepY = 0, aStepY = 0;
+		float deltaR = 0, deltaG = 0, deltaB = 0, deltaA = 0;
+
+		boolean hasColors = trisScreen[tri_id].hasVertexColors();
+
+		// Calculate the starting vertex color with the barycentric of the
+		// triangle. Then at each scanline we only need to determine the
+		// left and right color spans with quick add and mult operations, and
+		// at the inner pixel loop, all we need is a simple addition.
+		if (hasColors)
+		{
+		    float xA = trisScreen[tri_id].xA();
+			float yA = trisScreen[tri_id].yA();
+		    float xB = trisScreen[tri_id].xB();
+			float yB = trisScreen[tri_id].yB();
+		    float xC = trisScreen[tri_id].xC();
+			float yC = trisScreen[tri_id].yC();
+
+		    float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
+
+		    if (M3GMath.abs(denominator) > M3GMath.EPSILON)
+		    {
+		        float invDet = M3GMath.fastReciprocal(denominator);
+
+		        int colorA = trisScreen[tri_id].colorA();
+		        int colorB = trisScreen[tri_id].colorB();
+		        int colorC = trisScreen[tri_id].colorC();
+
+		        float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
+		        float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
+		        float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
+
+				// To properly use additions in the loops below, we need to
+				// calculate the derivatives for each color channel, on each
+				// axis.
+		        float dR_B = rB - rA, dR_C = rC - rA;
+		        float dG_B = gB - gA, dG_C = gC - gA;
+		        float dB_B = bB - bA, dB_C = bC - bA;
+		        float dA_B = aB - aA, dA_C = aC - aA;
+
+		        rStepX = (dR_B * (yC - yA) - dR_C * (yB - yA)) * invDet;
+		        gStepX = (dG_B * (yC - yA) - dG_C * (yB - yA)) * invDet;
+		        bStepX = (dB_B * (yC - yA) - dB_C * (yB - yA)) * invDet;
+		        aStepX = (dA_B * (yC - yA) - dA_C * (yB - yA)) * invDet;
+
+		        rStepY = (dR_C * (xB - xA) - dR_B * (xC - xA)) * invDet;
+		        gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
+		        bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
+		        aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
+		    }
+		}
+
 		for (int y = yStart; y < yEnd; y++)
 		{
 			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
 			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
 
-			drawY = half == 0
+			float drawY = half == 0
 				? (y - yTop) / (yMid - yTop)  // Upper half
 				: 1f - (y - yMid) / (yBot - yMid); // Lower half
 			drawY = M3GMath.min(drawY, 1f);
 
 			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
-			xL = half == 0
+			float xL = half == 0
 				? xTop + drawY * (xMidL - xTop)
 				: xBot + drawY * (xMidL - xBot);
-			xR = half == 0
+			float xR = half == 0
 				? xTop + drawY * (xMidR - xTop)
 				: xBot + drawY * (xMidR - xBot);
 
-			ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
-			ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
+			int ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
+			int ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
 
 			final int spanWidth = ixR - ixL;
 
@@ -1045,61 +1096,27 @@ public class Graphics3D
 			// Saves a division for each x step.
 			final float invDrawSpanWidth = M3GMath.fastReciprocal(xR - xL);
 
-			// Used for vertex color blending and nothing else.
-			final float invSpanWidth = M3GMath.fastReciprocal(spanWidth);
-
 			// Do we have vertex colors? If so, get the span edges' colors here,
-			// that way, the inner loop only needs to do a simple interpolation.
-			int aL = 0, rL = 0, gL = 0, bL = 0, aR = 0, rR = 0, gR = 0, bR = 0;
-			int deltaA = 0, deltaR = 0, deltaG = 0, deltaB = 0;
-			if (trisScreen[tri_id].hasVertexColors())
+			// that way, the inner loop only needs to do a simple addition.
+			if (hasColors)
 			{
 				float xA = trisScreen[tri_id].xA();
-				float xB = trisScreen[tri_id].xB();
-				float xC = trisScreen[tri_id].xC();
-				float yA = trisScreen[tri_id].yA();
-				float yB = trisScreen[tri_id].yB();
-				float yC = trisScreen[tri_id].yC();
+		        float yA = trisScreen[tri_id].yA();
+		        int colorA = trisScreen[tri_id].colorA();
 
-				float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
+		        float dx = ixL - xA;
+		        float dy = y - yA;
 
-				if (M3GMath.abs(denominator) > M3GMath.EPSILON)
-				{
-					int colorA = trisScreen[tri_id].colorA();
-					int colorB = trisScreen[tri_id].colorB();
-					int colorC = trisScreen[tri_id].colorC();
-
-					// Calculate the left edge's color
-					float c1 = ((xB - ixL) * (yC - y) - (xC - ixL) * (yB - y)) / denominator;
-					float c2 = ((xC - ixL) * (yA - y) - (xA - ixL) * (yC - y)) / denominator;
-					float c3 = 1.0f - c1 - c2;
-
-					aL = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
-					rL = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
-					gL = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
-					bL = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
-
-					// Now the right edge's color
-					c1 = ((xB - ixR) * (yC - y) - (xC - ixR) * (yB - y)) / denominator;
-					c2 = ((xC - ixR) * (yA - y) - (xA - ixR) * (yC - y)) / denominator;
-					c3 = 1.0f - c1 - c2;
-
-					aR = (int) (c1 * ((colorA >> 24) & 0xFF) + c2 * ((colorB >> 24) & 0xFF) + c3 * ((colorC >> 24) & 0xFF));
-					rR = (int) (c1 * ((colorA >> 16) & 0xFF) + c2 * ((colorB >> 16) & 0xFF) + c3 * ((colorC >> 16) & 0xFF));
-					gR = (int) (c1 * ((colorA >> 8) & 0xFF) + c2 * ((colorB >> 8) & 0xFF) + c3 * ((colorC >> 8) & 0xFF));
-					bR = (int) (c1 * (colorA & 0xFF) + c2 * (colorB & 0xFF) + c3 * (colorC & 0xFF));
-
-					deltaA = aR - aL;
-					deltaR = rR - rL;
-					deltaG = gR - gL;
-					deltaB = bR - bL;
-				}
+		        deltaA = ((colorA >> 24) & 0xFF) + dx * aStepX + dy * aStepY;
+		        deltaR = ((colorA >> 16) & 0xFF) + dx * rStepX + dy * rStepY;
+		        deltaG = ((colorA >> 8) & 0xFF)  + dx * gStepX + dy * gStepY;
+		        deltaB = (colorA & 0xFF)         + dx * bStepX + dy * bStepY;
 			}
 
-			zL = half == 0
+			float zL = half == 0
 				? zTop + drawY * (zMidL - zTop)
 				: zBot + drawY * (zMidL - zBot);
-			zR = half == 0
+			float zR = half == 0
 				? zTop + drawY * (zMidR - zTop)
 				: zBot + drawY * (zMidR - zBot);
 
@@ -1116,44 +1133,51 @@ public class Graphics3D
 				}
 			}
 
-			pwL = half == 0
+			float pwL = half == 0
 				? pwTop + drawY * (pwMidL - pwTop)
 				: pwBot + drawY * (pwMidL - pwBot);
-			pwR = half == 0
+			float pwR = half == 0
 				? pwTop + drawY * (pwMidR - pwTop)
 				: pwBot + drawY * (pwMidR - pwBot);
 
-			int depthIdxY = y * this.vieww;
-			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
+			int depthIdx = (y * this.vieww) + ixL;
+			int rasterIdx = ((y + viewy) * canvasWidth + viewx) + ixL;
 
-			float zStep = (zR - zL) * invDrawSpanWidth;
-			z  = zL + (ixL - xL) * zStep + depthOffset;
+			final float zStep = (zR - zL) * invDrawSpanWidth;
+			final float pwStep = (pwR - pwL) * invDrawSpanWidth;
+
+			float pw = pwL + (ixL - xL) * pwStep;
+			float z  = zL + (ixL - xL) * zStep + depthOffset;
+			float drawX = (ixL - xL) * invDrawSpanWidth;
 
 			// Draw the pixels for the current y-coordinate
-			for (int x = ixL; x < ixR; x++, z += zStep)
+			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, drawX += invDrawSpanWidth, depthIdx++, rasterIdx++)
 			{
 				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
 
-				drawX = M3GMath.max(0f, (x - xL) * invDrawSpanWidth);
-
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(depthEnabled && this.depthBuffer[depthIdxY + x] <= z) { continue; }
+				if(depthEnabled && this.depthBuffer[depthIdx] <= z)
+				{
+					// We need to increment the color deltas even when discarding by depth,
+					// otherwise vertex color spans on objects partially occluded by others
+					// won't be correct.
+					if (hasColors) { deltaA += aStepX; deltaR += rStepX; deltaG += gStepX; deltaB += bStepX; }
+					continue;
+				}
 
 				// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
-				if (trisScreen[tri_id].hasVertexColors())
+				if (hasColors)
 				{
-					// Interpolate from xL to xR based on current X.
+					// Interpolate from xL to xR based on current pixel xy coordinate..
 					// No need to calculate barycentric coords on every pixel.
-					float xPos = (x - ixL) * invSpanWidth;
+					paintPixel = ((int) deltaA << 24) | ((int) deltaR << 16) | ((int) deltaG << 8) | (int) deltaB;
 
-					alpha = (int) (aL + xPos * deltaA);
-					r     = (int) (rL + xPos * deltaR);
-					g     = (int) (gL + xPos * deltaG);
-					b     = (int) (bL + xPos * deltaB);
-
-					paintPixel = (alpha << 24) | (r << 16) | (g << 8) | b;
+		            deltaA += aStepX;
+		            deltaR += rStepX;
+		            deltaG += gStepX;
+		            deltaB += bStepX;
 				}
 				else
 				{
@@ -1170,14 +1194,14 @@ public class Graphics3D
 						// Skip this texture unit right away if it is disabled/unused
 						if (textures[i] == null || texImages[i] == null) { continue; }
 
-						s = sL[i] + drawX * (sR[i] - sL[i]);
-						t = tL[i] + drawX * (tR[i] - tL[i]);
+						float s = sL[i] + drawX * (sR[i] - sL[i]);
+						float t = tL[i] + drawX * (tR[i] - tL[i]);
 
 						// TODO: Allow perspective correction force-disable
 						if(perspectiveCorrection)
 						{
-							float pw = pwL + drawX * (pwR - pwL);
-							if (pw > 1e-9f || pw < -1e-9f) { s /= pw; t /= pw; }
+							s /= pw;
+							t /= pw;
 						}
 
 						// We can force-disable bilinear filter
@@ -1191,8 +1215,10 @@ public class Graphics3D
 						}
 						else
 						{
-							int texX = (int) ((s - 0.001f));
-							int texY = (int) ((t - 0.001f));
+							// This minor EPSILON decrement fixes UV bounds in a number of games,
+							// such as Speed Spirit and 4x4 Extreme Rally 3D.
+							int texX = (int) ((s - M3GMath.EPSILON));
+							int texY = (int) ((t - M3GMath.EPSILON));
 
 							texX = wrapX(texX, texW[i], texRepeatS[i], textures[i].isNPOT());
 							texY = wrapY(texY, texH[i], texRepeatT[i], textures[i].isNPOT());
@@ -1214,16 +1240,16 @@ public class Graphics3D
 				 * but doing so evidently breaks transparency in apps like Speed Spirit, Coast Racer
 				 * and a few others on vegetation when the texel alpha is also 0. So what gives?
 				 */
-				if (((paintPixel >> 24) & 0xFF) == 0 || ((paintPixel >> 24) & 0xFF) < alphaThreshold) { continue; }
+				if ((paintPixel >>> 24) == 0 || (paintPixel >>> 24) < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled
-				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdxY + x] = z; }
+				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdx] = z; }
 
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
 				if (fog != null)
 				{
 					// Fog is always perspective-correct
-					final float zEye = M3GMath.fastReciprocal(pwL + drawX * (pwR - pwL));
+					final float zEye = M3GMath.fastReciprocal(pw);
 
 					if (fog.getMode() == Fog.LINEAR)
 					{
@@ -1239,11 +1265,11 @@ public class Graphics3D
 				// Only write to the screen if color write is enabled.
 				if(colorEnabled)
 				{
-					rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
+					rasterData[rasterIdx] = blendPixels(rasterData[rasterIdx],
 						paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
 
 					// Rendering at half res? Next scanline gets painted too.
-					if (Mobile.halfResM3GRaster) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
+					if (Mobile.halfResM3GRaster) { rasterData[rasterIdx + canvasWidth] = rasterData[rasterIdx]; }
 				}
 			}
 		}
