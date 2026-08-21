@@ -264,7 +264,7 @@ public abstract class Node extends Transformable
 		for (int k = lcaIndexThis - 1; k >= 0; k--)
 		{
 			Node n = (Node) pathThis.elementAt(k);
-			n.getTransform(temp);
+			n.getCompositeTransform(temp);
 			thisToRoot.postMultiply(temp);
 		}
 
@@ -273,7 +273,7 @@ public abstract class Node extends Transformable
 		for (int k = lcaIndexTarget - 1; k >= 0; k--)
 		{
 			Node n = (Node) pathTarget.elementAt(k);
-			n.getTransform(temp);
+			n.getCompositeTransform(temp);
 			targetToRoot.postMultiply(temp);
 		}
 
