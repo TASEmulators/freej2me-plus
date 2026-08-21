@@ -688,11 +688,12 @@ public class Graphics3D
 		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertAndTris already does culling and clipping)
+        final boolean twoSided = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isTwoSidedLightingEnabled() : false;
 		final Triangle[] trisScreen = Triangle.fromVertAndTris(
 			// Position and texture vertex data
 			vertClip, texVerts,
 			// Material and shading
-			material, shadingMode, appearance.getPolygonMode().isTwoSidedLightingEnabled(),
+			material, shadingMode, twoSided,
 			// Normal data
 			eyePos, vertNorms, normalMatrix,
 			// Lights
