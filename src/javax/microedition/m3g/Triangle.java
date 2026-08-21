@@ -16,10 +16,19 @@
 */
 package javax.microedition.m3g;
 
+import java.util.ArrayList;
+
 class Triangle
 {
 	// Temporary buffer for vertex colors
 	private static final byte[] COLOR_VERTEX = new byte[4];
+
+	// Temporary buffer for normals and lighting calculations
+	private static final byte[] B_NORM  = new byte[3];
+	private static final short[] S_NORM = new short[3];
+	private static final float[] N_EYE = new float[4];
+	private static final float[] V_EYE = new float[4];
+	private static final float[] L_MAT = new float[16];
 
 	// Temporary buffer for input and output vertices/texCoords/vertex colors.
 	private static final int[] inC = new int[3];
@@ -34,9 +43,6 @@ class Triangle
 	private static Triangle[] result;
 
 	private boolean hasVertexColors = false;
-
-	/* Vertex indices of the source triangle. */
-	private int[] idx;
 
 	private final int[] colors = new int[3];
 
@@ -58,8 +64,18 @@ class Triangle
 
 	Triangle() { }
 
-	public static final Triangle[] fromVertAndTris(float[] vert, float[][] texc, int[] tris, int[] renderableTriangles,
-		float near, int cullingMode, VertexBuffer vertices, boolean polygonClockwise, boolean perspectiveCorrect)
+	public static final Triangle[] fromVertAndTris(
+		// Position and texture vertex data
+		float[] vert, float[][] texc,
+		// Material and shading
+		Material material, int shadingMode, boolean twoSide,
+		// Normal data
+		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
+		// Lights
+		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
+		// IndexArray, clipping, winding order and perspectiveCorrection
+		int[] tris, int[] renderableTriangles, float near, int cullingMode,
+		VertexBuffer vertices, boolean polygonClockwise, boolean perspectiveCorrect)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
@@ -95,13 +111,45 @@ class Triangle
 				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
 
 				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
-                {
-                    if (texc[u] != null)
-                    {
-                        Triangle.inT[u][4*i]   = texc[u][idx];     Triangle.inT[u][4*i+1] = texc[u][idx + 1];
-                        Triangle.inT[u][4*i+2] = texc[u][idx + 2]; Triangle.inT[u][4*i+3] = texc[u][idx + 3];
-                    }
-                }
+				{
+					if (texc[u] != null)
+					{
+						Triangle.inT[u][4*i]   = texc[u][idx];     Triangle.inT[u][4*i+1] = texc[u][idx + 1];
+						Triangle.inT[u][4*i+2] = texc[u][idx + 2]; Triangle.inT[u][4*i+3] = texc[u][idx + 3];
+					}
+				}
+			}
+
+			// Do we have vertex colors? If so, prep them here
+			if (vertices.getColors() != null)
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					vertices.getColors().get(tris[3 * tri_id + i], 1, Triangle.COLOR_VERTEX);
+					inC[i] = (vertices.getColors().getComponentCount() == 3) ?
+						(0xFF << 24) | (Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
+						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
+						Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]) :
+						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[3]) << 24) |
+						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
+						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
+						Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]);
+				}
+			}
+			else
+			{
+				inC[0] = vertices.getDefaultColor();
+				inC[1] = vertices.getDefaultColor();
+				inC[2] = vertices.getDefaultColor();
+			}
+
+			// Is the app using lights? Then calculate per-vertex lighting.
+			boolean hasLighting = (vertNorms != null && material != null &&
+				lights != null && !lights.isEmpty());
+			if (hasLighting)
+			{
+				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide,
+					lights, lightEyePos, lightEyeDir, tris, tri_id, Triangle.inC);
 			}
 
 			/*
@@ -109,7 +157,7 @@ class Triangle
 			 * positions, texture coordinates and vertex colors. Vertices behind the
 			 * camera would otherwise explode to huge coordinates after perspective division.
 			 */
-			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tris, tri_id,
+			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tri_id,
 				vertices, hasTex, texc, near, Triangle.outV, Triangle.outT, Triangle.outC);
 
 			if (outCount < 3) { continue; }
@@ -119,9 +167,6 @@ class Triangle
 			{
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
 				tri.setVertexCoords(Triangle.outV, fan);
-				tri.setTexCoords(Triangle.outT, fan);
-				tri.setVertexColors(vertices.getColors() == null ? null : Triangle.outC, fan);
-				tri.setVertexIndices(tris);
 
 				final boolean isFrontFace = polygonClockwise ? !tri.isCounterClockwise() : tri.isCounterClockwise();
 
@@ -129,6 +174,10 @@ class Triangle
 							 (cullingMode == PolygonMode.CULL_FRONT && isFrontFace);
 
 				if (cullTriangle) { continue; }
+
+				tri.setTexCoords(Triangle.outT, fan);
+				boolean hasColors = hasLighting || (vertices.getColors() != null);
+				tri.setVertexColors(hasColors ? Triangle.outC : null, fan);
 
 				tri.project(perspectiveCorrect);
 
@@ -142,33 +191,223 @@ class Triangle
 		return Triangle.result;
 	}
 
+	private static void calculateLighting(
+		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
+		Material material, int shadingMode, boolean twoSided,
+		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
+		int[] tris, int tri_id, int[] outColors)
+	{
+		// Material Colors
+		int matAmbient  = material.getColor(Material.AMBIENT);
+		int matDiffuse  = material.getColor(Material.DIFFUSE);
+		int matSpecular = material.getColor(Material.SPECULAR);
+		int matEmissive = material.getColor(Material.EMISSIVE);
+		float shininess = material.getShininess();
+
+		float maR = ((matAmbient >> 16) & 0xFF) / 255.0f, maG = ((matAmbient >> 8) & 0xFF) / 255.0f, maB = (matAmbient & 0xFF) / 255.0f;
+		float mdR = ((matDiffuse >> 16) & 0xFF) / 255.0f, mdG = ((matDiffuse >> 8) & 0xFF) / 255.0f, mdB = (matDiffuse & 0xFF) / 255.0f;
+		float msR = ((matSpecular >> 16) & 0xFF) / 255.0f, msG = ((matSpecular >> 8) & 0xFF) / 255.0f, msB = (matSpecular & 0xFF) / 255.0f;
+		float meR = ((matEmissive >> 16) & 0xFF) / 255.0f, meG = ((matEmissive >> 8) & 0xFF) / 255.0f, meB = (matEmissive & 0xFF) / 255.0f;
+		int alpha = (matDiffuse >>> 24);
+
+		boolean vertColorTrackingEnabled = material.isVertexColorTrackingEnabled();
+
+		// Cache the normal matrix into a local reference.
+		normalMatrix.get(L_MAT);
+
+		// Flat Shading? We calculate only vertex 2 (C) and copy to others
+		int firstVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 2 : 0;
+		for (int v = firstVertex; v <= 2; v++)
+		{
+			int vertIndex = tris[3 * tri_id + v];
+
+			// Vertex color tracking is enabled? Then the vertex colors replace
+			// the material's diffuse and ambient ones.
+			if (vertColorTrackingEnabled)
+			{
+				int vertColor = outColors[v];
+				alpha = (vertColor >>> 24);
+
+				final float vR = ((vertColor >> 16) & 0xFF) / 255.0f;
+				final float vG = ((vertColor >> 8)  & 0xFF) / 255.0f;
+				final float vB = (vertColor         & 0xFF) / 255.0f;
+
+				mdR = vR; mdG = vG; mdB = vB;
+				maR = vR; maG = vG; maB = vB;
+			}
+
+			// Normals may be stored as either short or byte
+			if (vertNorms.getComponentType() == 1)
+			{
+				vertNorms.get(vertIndex, 1, B_NORM);
+				N_EYE[0] = B_NORM[0] / 127.0f;
+				N_EYE[1] = B_NORM[1] / 127.0f;
+				N_EYE[2] = B_NORM[2] / 127.0f;
+			}
+			else
+			{
+				vertNorms.get(vertIndex, 1, S_NORM);
+				N_EYE[0] = S_NORM[0] / 32767.0f;
+				N_EYE[1] = S_NORM[1] / 32767.0f;
+				N_EYE[2] = S_NORM[2] / 32767.0f;
+			}
+
+			// Vertex normals must now be multiplied by the normal matrix to
+			// reach eye space.
+			float nx = N_EYE[0], ny = N_EYE[1], nz = N_EYE[2];
+			N_EYE[0] = L_MAT[0] * nx + L_MAT[1] * ny + L_MAT[2] * nz;
+			N_EYE[1] = L_MAT[4] * nx + L_MAT[5] * ny + L_MAT[6] * nz;
+			N_EYE[2] = L_MAT[8] * nx + L_MAT[9] * ny + L_MAT[10] * nz;
+
+			M3GMath.normalize(N_EYE);
+
+			V_EYE[0] = eyePos[vertIndex * 4];
+			V_EYE[1] = eyePos[vertIndex * 4 + 1];
+			V_EYE[2] = eyePos[vertIndex * 4 + 2];
+
+			// Emission color is our base here.
+			float r = meR, g = meG, b = meB;
+
+			float viewX = -V_EYE[0], viewY = -V_EYE[1], viewZ = -V_EYE[2];
+			float viewLen = M3GMath.sqrt(viewX * viewX + viewY * viewY + viewZ * viewZ);
+			if (viewLen > M3GMath.EPSILON) { viewX /= viewLen; viewY /= viewLen; viewZ /= viewLen; }
+
+			for (int l = 0; l < lights.size(); l++)
+			{
+				Light light = lights.get(l);
+				int lMode = light.getMode();
+				float lIntensity = light.getIntensity();
+
+				int lColor = light.getColor();
+				float lR = (((lColor >> 16) & 0xFF) / 255.0f) * lIntensity;
+				float lG = (((lColor >> 8) & 0xFF)  / 255.0f) * lIntensity;
+				float lB = ((lColor & 0xFF)         / 255.0f) * lIntensity;
+
+				// Ambient Lights only affect the material's ambient according to M3G.
+				if (lMode == Light.AMBIENT)
+				{
+					r += maR * lR;
+					g += maG * lG;
+					b += maB * lB;
+					continue; // Skip diffuse and specular entirely on this light.
+				}
+
+				// Now for directional, omni or spot lights, we calculate diffuse and specular,
+				// so we need their direction and attenuation.
+				float lightDirX, lightDirY, lightDirZ;
+				float attenuation = 1.0f;
+
+				if (lMode == Light.DIRECTIONAL)
+				{
+					lightDirX = -lightEyeDir[l * 4];
+					lightDirY = -lightEyeDir[l * 4 + 1];
+					lightDirZ = -lightEyeDir[l * 4 + 2];
+
+					float lLen = M3GMath.sqrt(lightDirX * lightDirX + lightDirY * lightDirY + lightDirZ * lightDirZ);
+					if (lLen > M3GMath.EPSILON) { lightDirX /= lLen; lightDirY /= lLen; lightDirZ /= lLen; }
+				}
+				else
+				{
+					// Positional lights use distance attenuation
+					float lx = lightEyePos[l * 4] - V_EYE[0];
+					float ly = lightEyePos[l * 4 + 1] - V_EYE[1];
+					float lz = lightEyePos[l * 4 + 2] - V_EYE[2];
+					float dist = M3GMath.sqrt(lx * lx + ly * ly + lz * lz);
+
+					if (dist > M3GMath.EPSILON) { lightDirX = lx / dist; lightDirY = ly / dist; lightDirZ = lz / dist; }
+					else { lightDirX = 0; lightDirY = 0; lightDirZ = 1; }
+
+					attenuation = M3GMath.fastReciprocal(light.getConstantAttenuation() +
+						light.getLinearAttenuation() * dist +
+						light.getQuadraticAttenuation() * dist * dist);
+
+					// Additional directional cone attenuation for SPOT lights
+					if (lMode == Light.SPOT)
+					{
+						float sdX = lightEyeDir[l * 4];
+						float sdY = lightEyeDir[l * 4 + 1];
+						float sdZ = lightEyeDir[l * 4 + 2];
+
+						float spotDot = (lightDirX * sdX + lightDirY * sdY + lightDirZ * sdZ);
+						float cutoffCos = M3GMath.cos(M3GMath.toRadians(light.getSpotAngle()));
+
+						if (spotDot >= cutoffCos)
+						{
+							attenuation *= (float) Math.pow(spotDot, light.getSpotExponent());
+						}
+						else { attenuation = 0.0f; }
+					}
+				}
+
+				if (attenuation <= 0.0f) { continue; }
+
+				// Calculate Dot Product between the normal and light (N . L)
+				float nDotL = N_EYE[0] * lightDirX + N_EYE[1] * lightDirY + N_EYE[2] * lightDirZ;
+
+				// Handle Two-Sided Materials by flipping normals. TODO: UNTESTED!
+				if (twoSided && nDotL < 0.0f)
+				{
+					nDotL = -nDotL;
+					nx = -nx; ny = -ny; nz = -nz;
+				}
+
+				if (nDotL > 0.0f)
+				{
+					// Diffuse lighting
+					float diffFactor = nDotL * attenuation;
+					r += mdR * lR * diffFactor;
+					g += mdG * lG * diffFactor;
+					b += mdB * lB * diffFactor;
+
+					// Specular lighting (Gouraud, since we do it per-vertex)
+					float hX = lightDirX + viewX, hY = lightDirY + viewY, hZ = lightDirZ + viewZ;
+					float hLen = M3GMath.sqrt(hX * hX + hY * hY + hZ * hZ);
+
+					if (hLen > M3GMath.EPSILON)
+					{
+						hX /= hLen; hY /= hLen; hZ /= hLen;
+						float nDotH = N_EYE[0] * hX + N_EYE[1] * hY + N_EYE[2] * hZ;
+						if (twoSided && nDotH < 0.0f) { nDotH = -nDotH; }
+
+						if (nDotH > 0.0f)
+						{
+							float specFactor = (float) Math.pow(nDotH, shininess) * attenuation;
+							r += msR * lR * specFactor;
+							g += msG * lG * specFactor;
+							b += msB * lB * specFactor;
+						}
+					}
+				}
+			}
+
+			// We now have the final color for the vertex
+			int ir = (int) (M3GMath.min(1.0f, r) * 255.0f);
+			int ig = (int) (M3GMath.min(1.0f, g) * 255.0f);
+			int ib = (int) (M3GMath.min(1.0f, b) * 255.0f);
+			int color = (alpha << 24) | (ir << 16) | (ig << 8) | ib;
+
+			outColors[v] = color;
+
+			// On flat shading we just apply vertex 2's color to the others.
+			if (shadingMode == PolygonMode.SHADE_FLAT)
+			{
+				outColors[0] = color;
+				outColors[1] = color;
+				break;
+			}
+		}
+	}
+
 	/*
 	 * Sutherland-Hodgman clip of one triangle against the near plane (w >= near).
 	 * Writes the resulting polygon (0, 3 or 4 vertices) into outV/outT and returns
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static int clipNearPlane(float[] inV, float[][] inT, int[] inC, int[] indices, int tri_id,
+	private static int clipNearPlane(float[] inV, float[][] inT, int[] inC, int tri_id,
 		VertexBuffer vertices, boolean hasTex, float texc[][], float near, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
-
-		// Do we have vertex colors? If so, prep them here
-		if (vertices.getColors() != null)
-		{
-			for (int i = 0; i < 3; i++)
-			{
-				vertices.getColors().get(indices[3 * tri_id + i], 1, Triangle.COLOR_VERTEX);
-				inC[i] = (vertices.getColors().getComponentCount() == 3) ?
-					(0xFF << 24) | (Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
-					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
-					Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]) :
-					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[3]) << 24) |
-					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
-					(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
-					Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]);
-			}
-		}
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -182,9 +421,9 @@ class Triangle
 				if(hasTex)
 				{
 					for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
-	                {
-	                    if (texc[u] != null) { System.arraycopy(inT[u], 4*i, outT[u], 4*outCount, 4); }
-	                }
+					{
+						if (texc[u] != null) { System.arraycopy(inT[u], 4*i, outT[u], 4*outCount, 4); }
+					}
 				}
 
 				if (inC != null) { outC[outCount] = inC[i]; }
@@ -199,12 +438,12 @@ class Triangle
 					if (hasTex)
 					{
 						for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
-	                    {
-	                        if (texc[u] != null)
-	                        {
-	                            outT[u][4*outCount + c] = inT[u][4*i + c] + amt * (inT[u][4*j + c] - inT[u][4*i + c]);
-	                        }
-	                    }
+						{
+							if (texc[u] != null)
+							{
+								outT[u][4*outCount + c] = inT[u][4*i + c] + amt * (inT[u][4*j + c] - inT[u][4*i + c]);
+							}
+						}
 					}
 				}
 
@@ -217,7 +456,7 @@ class Triangle
 					final int agA = (cA >>> 8) & 0x00FF00FF, agB = (cB >>> 8) & 0x00FF00FF;
 
 					final int rb = (rbA + (((rbB - rbA) * alpha) >> 8)) & 0x00FF00FF;
-                	final int ag = (agA + (((agB - agA) * alpha) >> 8)) & 0x00FF00FF;
+					final int ag = (agA + (((agB - agA) * alpha) >> 8)) & 0x00FF00FF;
 
 					outC[outCount] = rb | (ag << 8);
 				}
@@ -246,11 +485,11 @@ class Triangle
 			for(int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
 			{
 				if (trTex != null)
-	            {
-	                // Each trTex transform is bound to a texture unit, so it is
+				{
+					// Each trTex transform is bound to a texture unit, so it is
 					// safe to use it as a check to see if we have these coords.
-	                trTex[u].transform(triangles[i].t[u]);
-	            }
+					trTex[u].transform(triangles[i].t[u]);
+				}
 			}
 		}
 	}
@@ -277,11 +516,11 @@ class Triangle
 			if (perspectiveCorrect)
 			{
 				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
-                {
-                	if(t[u] == null) { continue; }
-                    t[u][4 * i + 0] *= invW[i]; // s / w
-                    t[u][4 * i + 1] *= invW[i]; // t / w
-                }
+				{
+					if(t[u] == null) { continue; }
+					t[u][4 * i + 0] *= invW[i]; // s / w
+					t[u][4 * i + 1] *= invW[i]; // t / w
+				}
 			}
 		}
 	}
@@ -332,8 +571,6 @@ class Triangle
 	public final int colorB() { return colors[1]; }
 	public final int colorC() { return colors[2]; }
 
-	public final int getIndex(int index) { return idx[index]; }
-
 	// This one is for memory reuse, so `this.t` is expected to be allocated by now.
 	public final void setTexCoords(float[][] tCoords, int fan)
 	{
@@ -341,12 +578,12 @@ class Triangle
 		final int f2 = 4 * (fan + 2);
 
 		for (int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
-        {
-            if (tCoords[i] == null) { continue; }
-            System.arraycopy(tCoords[i], 0,  t[i], 0, 4);
-            System.arraycopy(tCoords[i], f1, t[i], 4, 4);
-            System.arraycopy(tCoords[i], f2, t[i], 8, 4);
-        }
+		{
+			if (tCoords[i] == null) { continue; }
+			System.arraycopy(tCoords[i], 0,  t[i], 0, 4);
+			System.arraycopy(tCoords[i], f1, t[i], 4, 4);
+			System.arraycopy(tCoords[i], f2, t[i], 8, 4);
+		}
 	}
 
 	// This one is also for memory reuse, so `this.v` is expected to be allocated by now.
@@ -369,9 +606,6 @@ class Triangle
 		this.colors[1] = vColors[fan + 1];
 		this.colors[2] = vColors[fan + 2];
 	}
-
-	// This one is also for memory reuse, so `this.idx` is expected to be allocated by now.
-	public final void setVertexIndices(int[] indices) { this.idx = indices; }
 
 	public final boolean hasVertexColors() { return this.hasVertexColors; }
 }

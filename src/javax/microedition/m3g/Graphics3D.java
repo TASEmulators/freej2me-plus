@@ -115,10 +115,16 @@ public class Graphics3D
 	int alpha, r, g, b;
 
 	// 3D rendering variables
+	final Transform normalMatrix;
+	final Transform posLocalToEye;
 	final Transform tr;
 	int yStart, yEnd;
 	final int[] ord = new int[3];
 	float[] vertClip = null;
+	float[] eyePos = null;
+	float[] lightEyePos = null;
+	float[] lightEyeDir = null;
+	final float[] lightVec = new float[4];
 	final float[] coX = new float[3];
 	final float[] coY = new float[3];
 	final float[] coZ = new float[3];
@@ -155,6 +161,8 @@ public class Graphics3D
 		this.currLightTrans = new ArrayList<Transform>();
 		camTr = new Transform();
 		tr = new Transform();
+		normalMatrix = new Transform();
+		posLocalToEye = new Transform();
 		texcomptr = new Transform();
 		for(int i = 0; i < NUM_TEXTURE_UNITS; i++) { textr[i] = new Transform(); }
 	}
@@ -501,6 +509,7 @@ public class Graphics3D
 
 		// TODO: Shading mode is not implemented
 		final int shadingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getShading() : PolygonMode.SHADE_SMOOTH;
+		final Material material = appearance.getMaterial();
 		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
 
@@ -513,6 +522,10 @@ public class Graphics3D
 		final Fog fog = appearance.getFog();
 		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
 
+		// We'll need the projection matrix for the next transformations
+		this.currCam.getProjection(projectionMatrix);
+
+		// This one is also used by all position calculations
 		final VertexArray vertPos = vertices.getPositions(scaleBias);
 
 		// Setup texture units first, if we have to use any. Texturing is done
@@ -552,7 +565,7 @@ public class Graphics3D
 					textr[i].postScale(texScaleBias[0], texScaleBias[0], texScaleBias[0]);
 
 					if (texVerts[i] == null || 4 * vertPos.getVertexCount() > texVerts[i].length)
-											{ texVerts[i] = new float[4 * vertPos.getVertexCount()]; }
+						{ texVerts[i] = new float[4 * vertPos.getVertexCount()]; }
 
 					// Transform texture coordinates into NDC
 					textr[i].transform(texCoords, texVerts[i], true);
@@ -567,20 +580,88 @@ public class Graphics3D
 			}
 		}
 
+		// Done with texture transforms, next up is preparing normals for
+		// lighting calculations
 
-		// Now that we're done with textures, we transform the vertices and
-		// build the triangles themselves.
+		final VertexArray vertNorms = vertices.getNormals();
+
+		tr.setIdentity();
+
+		// Transform mesh from local space to world space
+		// Receiving a null "transform" indicates that the identity matrix must
+		// be used, which just means we don't need to postMultiply.
+		if (transform != null) { tr.postMultiply(transform); }
+
+		// Apply the inverse of the camera's transform to the mesh (Eye/View Space)
+		if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
+
+		if (vertNorms != null && material != null)
+		{
+			normalMatrix.set(tr);
+			normalMatrix.invert();
+			normalMatrix.transpose();
+
+			posLocalToEye.set(tr);
+			posLocalToEye.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
+			posLocalToEye.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
+
+			if (eyePos == null || 4 * vertPos.getVertexCount() > eyePos.length)
+				{ eyePos = new float[4 * vertPos.getVertexCount()]; }
+
+			posLocalToEye.transform(vertPos, eyePos, true);
+		}
+
+		// Normals done, so set up the lights.
+		final int numLights = (this.currLights != null) ? this.currLights.size() : 0;
+
+			if (lightEyePos == null || lightEyePos.length < numLights * 4)
+			{
+				lightEyePos = new float[numLights * 4];
+				lightEyeDir = new float[numLights * 4];
+			}
+
+		for (int i = 0; i < numLights; i++)
+		{
+			Light light = this.currLights.get(i);
+			Transform lightTrans = this.currLightTrans.get(i);
+
+			// Compute Light World-to-Eye Transform
+			tr.setIdentity();
+			if (lightTrans != null) { tr.postMultiply(lightTrans); }
+			if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
+
+			// Light Position in Eye Space
+			lightVec[0] = 0.0f;
+			lightVec[1] = 0.0f;
+			lightVec[2] = 0.0f;
+			lightVec[3] = 1.0f;
+			tr.transform(lightVec);
+			System.arraycopy(lightVec, 0, lightEyePos, i * 4, 4);
+
+			// Light Direction in Eye Space (M3G's default direction is
+			// [0, 0, -1, 0] due to negative Z)
+			lightVec[0] = 0.0f;
+			lightVec[1] = 0.0f;
+			lightVec[2] = -1.0f;
+			lightVec[3] = 0.0f;
+			tr.transform(lightVec);
+			lightVec[3] = 0.0f; // TODO: Check if W is actually needed. Shouldn't be.
+			System.arraycopy(lightVec, 0, lightEyeDir, i * 4, 4);
+		}
+
+
+		// Now that we're done with textures, normals, and lights we transform
+		// the vertices and build the triangles themselves. Follows most of the
+		// same transforms as the normal step, except this time we go all the
+		// way to screen space and account for scaling.
 
 		tr.setIdentity();
 
 		// Apply projection matrix (Clip space)
-		this.currCam.getProjection(projectionMatrix);
 		tr.postMultiply(projectionMatrix);
 
 		// Apply the inverse of the camera's transform to the mesh (Eye/View Space)
-		if (this.currCamTransInv != null) {
-			tr.postMultiply(this.currCamTransInv);
-		}
+		if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
 
 		// Transform mesh from local space to world space
 		// Receiving a null "transform" indicates that the identity matrix must
@@ -608,10 +689,19 @@ public class Graphics3D
 		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertAndTris already does culling and clipping)
-		final Triangle[] trisScreen = Triangle.fromVertAndTris(vertClip, texVerts,
-			triangles.getIndexArray(), renderableTriangles, clipNear,
-			cullingMode, vertices, windingOrder == PolygonMode.WINDING_CW,
-			perspectiveCorrection);
+		final Triangle[] trisScreen = Triangle.fromVertAndTris(
+			// Position and texture vertex data
+			vertClip, texVerts,
+			// Material and shading
+			material, shadingMode, appearance.getPolygonMode().isTwoSidedLightingEnabled(),
+			// Normal data
+			eyePos, vertNorms, normalMatrix,
+			// Lights
+			this.currLights, lightEyePos, lightEyeDir,
+			// IndexArray, clipping, winding order and perspectiveCorrection
+			triangles.getIndexArray(),
+			renderableTriangles, clipNear, cullingMode, vertices,
+			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection);
 
 		// At this point the triangles in `trisScreen` are actually
 		// projected to Normalized Device Coordinates, but they will be tranformed
@@ -620,12 +710,10 @@ public class Graphics3D
 		// Reset transform
 		tr.setIdentity();
 
-		// TODO: THIS NEEDS TO BE DONE???
 		for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
 		{
 			if (textures[i] != null) { textr[i].setIdentity(); }
 		}
-		//textr.setIdentity();
 
 		// Fit to viewport
 		tr.postScale(vieww / 2f, -viewh / 2f, 1f);
@@ -641,7 +729,6 @@ public class Graphics3D
 		final float depthFactor = compositingMode.getDepthOffsetFactor();
 		final boolean hasDepthOffset = depthEnabled && (depthFactor != 0.0f || depthUnits != 0.0f);
 		float depthOffset = 0.0f;
-
 
 		final boolean colorEnabled = compositingMode.isColorWriteEnabled();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
@@ -682,7 +769,7 @@ public class Graphics3D
 						final float dzdx = (dz10 * dy20 - dz20 * dy10) * invDet;
 						final float dzdy = (dx10 * dz20 - dx20 * dz10) * invDet;
 
-						final float m = (float) Math.sqrt(dzdx * dzdx + dzdy * dzdy);
+						final float m = M3GMath.sqrt(dzdx * dzdx + dzdy * dzdy);
 
 						// 1e-7f is the minimum Z step for a float depth buffer
 						depthOffset = (depthFactor * m) + (depthUnits * 1e-7f);
@@ -1027,45 +1114,45 @@ public class Graphics3D
 		// at the inner pixel loop, all we need is a simple addition.
 		if (hasColors)
 		{
-		    float xA = trisScreen[tri_id].xA();
+			float xA = trisScreen[tri_id].xA();
 			float yA = trisScreen[tri_id].yA();
-		    float xB = trisScreen[tri_id].xB();
+			float xB = trisScreen[tri_id].xB();
 			float yB = trisScreen[tri_id].yB();
-		    float xC = trisScreen[tri_id].xC();
+			float xC = trisScreen[tri_id].xC();
 			float yC = trisScreen[tri_id].yC();
 
-		    float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
+			float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
 
-		    if (M3GMath.abs(denominator) > M3GMath.EPSILON)
-		    {
-		        float invDet = M3GMath.fastReciprocal(denominator);
+			if (M3GMath.abs(denominator) > M3GMath.EPSILON)
+			{
+				float invDet = M3GMath.fastReciprocal(denominator);
 
-		        int colorA = trisScreen[tri_id].colorA();
-		        int colorB = trisScreen[tri_id].colorB();
-		        int colorC = trisScreen[tri_id].colorC();
+				int colorA = trisScreen[tri_id].colorA();
+				int colorB = trisScreen[tri_id].colorB();
+				int colorC = trisScreen[tri_id].colorC();
 
-		        float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
-		        float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
-		        float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
+				float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
+				float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
+				float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
 
 				// To properly use additions in the loops below, we need to
 				// calculate the derivatives for each color channel, on each
 				// axis.
-		        float dR_B = rB - rA, dR_C = rC - rA;
-		        float dG_B = gB - gA, dG_C = gC - gA;
-		        float dB_B = bB - bA, dB_C = bC - bA;
-		        float dA_B = aB - aA, dA_C = aC - aA;
+				float dR_B = rB - rA, dR_C = rC - rA;
+				float dG_B = gB - gA, dG_C = gC - gA;
+				float dB_B = bB - bA, dB_C = bC - bA;
+				float dA_B = aB - aA, dA_C = aC - aA;
 
-		        rStepX = (dR_B * (yC - yA) - dR_C * (yB - yA)) * invDet;
-		        gStepX = (dG_B * (yC - yA) - dG_C * (yB - yA)) * invDet;
-		        bStepX = (dB_B * (yC - yA) - dB_C * (yB - yA)) * invDet;
-		        aStepX = (dA_B * (yC - yA) - dA_C * (yB - yA)) * invDet;
+				rStepX = (dR_B * (yC - yA) - dR_C * (yB - yA)) * invDet;
+				gStepX = (dG_B * (yC - yA) - dG_C * (yB - yA)) * invDet;
+				bStepX = (dB_B * (yC - yA) - dB_C * (yB - yA)) * invDet;
+				aStepX = (dA_B * (yC - yA) - dA_C * (yB - yA)) * invDet;
 
-		        rStepY = (dR_C * (xB - xA) - dR_B * (xC - xA)) * invDet;
-		        gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
-		        bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
-		        aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
-		    }
+				rStepY = (dR_C * (xB - xA) - dR_B * (xC - xA)) * invDet;
+				gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
+				bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
+				aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
+			}
 		}
 
 		for (int y = yStart; y < yEnd; y++)
@@ -1101,16 +1188,16 @@ public class Graphics3D
 			if (hasColors)
 			{
 				float xA = trisScreen[tri_id].xA();
-		        float yA = trisScreen[tri_id].yA();
-		        int colorA = trisScreen[tri_id].colorA();
+				float yA = trisScreen[tri_id].yA();
+				int colorA = trisScreen[tri_id].colorA();
 
-		        float dx = ixL - xA;
-		        float dy = y - yA;
+				float dx = ixL - xA;
+				float dy = y - yA;
 
-		        deltaA = ((colorA >> 24) & 0xFF) + dx * aStepX + dy * aStepY;
-		        deltaR = ((colorA >> 16) & 0xFF) + dx * rStepX + dy * rStepY;
-		        deltaG = ((colorA >> 8) & 0xFF)  + dx * gStepX + dy * gStepY;
-		        deltaB = (colorA & 0xFF)         + dx * bStepX + dy * bStepY;
+				deltaA = ((colorA >> 24) & 0xFF) + dx * aStepX + dy * aStepY;
+				deltaR = ((colorA >> 16) & 0xFF) + dx * rStepX + dy * rStepY;
+				deltaG = ((colorA >> 8) & 0xFF)  + dx * gStepX + dy * gStepY;
+				deltaB = (colorA & 0xFF)         + dx * bStepX + dy * bStepY;
 			}
 
 			float zL = half == 0
@@ -1174,10 +1261,10 @@ public class Graphics3D
 					// No need to calculate barycentric coords on every pixel.
 					paintPixel = ((int) deltaA << 24) | ((int) deltaR << 16) | ((int) deltaG << 8) | (int) deltaB;
 
-		            deltaA += aStepX;
-		            deltaR += rStepX;
-		            deltaG += gStepX;
-		            deltaB += bStepX;
+					deltaA += aStepX;
+					deltaR += rStepX;
+					deltaG += gStepX;
+					deltaB += bStepX;
 				}
 				else
 				{

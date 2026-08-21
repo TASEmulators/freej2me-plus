@@ -114,92 +114,35 @@ public class M3GMath
 		return Math.copySign(angle, y); // Negate if y is negative
 	}
 
+	// Fast float reciprocal (1 / x) using Newton-Raphson step
+	public static final float fastReciprocal(float x)
+	{
+		if (x == 0.0f) { return Float.POSITIVE_INFINITY; }
+		int i = Float.floatToRawIntBits(x);
+		i = 0x7EF127EA - i;
+		float y = Float.intBitsToFloat(i);
+		return y * (2.0f - x * y);
+	}
+
 	// Now we get to stuff specific to M3G
 
-	public static float[] calculateNormal(float[] vector)
-	{
-		float[] v1 = {vector[4 * 1 + 0] - vector[4 * 0 + 0], vector[4 * 1 + 1] - vector[4 * 0 + 1], vector[4 * 1 + 2] - vector[4 * 0 + 2]};
-		float[] v2 = {vector[4 * 2 + 0] - vector[4 * 0 + 0], vector[4 * 2 + 1] - vector[4 * 0 + 1], vector[4 * 2 + 2] - vector[4 * 0 + 2]};
-		return normalize(crossProduct(v1, v2));
-	}
-
-	public static void transformNormal(float[] normal, Transform transform)
-	{
-		float[] transformMatrix = new float[16];
-		float[] normalMatrix = new float[9]; // 3x3 normal matrix
-		float[] transformedNormal = new float[4];
-
-		transform.get(transformMatrix);
-
-		// Extract the upper-left 3x3 part of the 4x4 transformation matrix
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				normalMatrix[i * 3 + j] = transformMatrix[i * 4 + j];
-			}
-		}
-
-		// Transform the normal
-		transformedNormal[0] = normalMatrix[0] * normal[0] + normalMatrix[1] * normal[1] + normalMatrix[2] * normal[2];
-		transformedNormal[1] = normalMatrix[3] * normal[0] + normalMatrix[4] * normal[1] + normalMatrix[5] * normal[2];
-		transformedNormal[2] = normalMatrix[6] * normal[0] + normalMatrix[7] * normal[1] + normalMatrix[8] * normal[2];
-		transformedNormal[3] = 0; // Homogeneous coordinate for normal is always 0
-
-		float length = sqrt(transformedNormal[0] * transformedNormal[0] +
-								transformedNormal[1] * transformedNormal[1] +
-								transformedNormal[2] * transformedNormal[2]);
-
-		if (length > 0)
-		{
-			normal[0] = transformedNormal[0] / length;
-			normal[1] = transformedNormal[1] / length;
-			normal[2] = transformedNormal[2] / length;
-		}
-	}
-
-	// Cross product
-	public static float[] crossProduct(float[] a, float[] b)
-	{
-		return new float[]
-		{
-			a[1] * b[2] - a[2] * b[1],
-			a[2] * b[0] - a[0] * b[2],
-			a[0] * b[1] - a[1] * b[0]
-		};
-	}
-
-	// Calculates the length of a vector
-	public static float length(float[] vector)
-	{
-		float sum = 0.0f;
-
-		for (float component : vector) { sum += component * component; }
-
-		return sqrt(sum);
-	}
-
-	// Calculates the distance between two vectors
-	public static float distance(float[] a, float[] b)
-	{
-		float sum = 0.0f;
-		float diff = 0.0f;
-
-		for (int i = 0; i < a.length; i++)
-		{
-			diff = a[i] - b[i];
-			sum += diff * diff;
-		}
-
-		return sqrt(sum);
-	}
-
 	// Normalize a vector
-	public static float[] normalize(float[] vector)
+	public static void normalize(float[] vector)
 	{
-		float length = sqrt(dotProduct(vector, vector));
-		if (length < EPSILON) { return new float[] {0, 0, 0}; } // Handle zero-length case
-		return div(vector, length);
+		float lengthSq = vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2];
+
+		if (lengthSq < EPSILON)
+		{
+			vector[0] = 0.0f;
+			vector[1] = 0.0f;
+			vector[2] = 1.0f;
+			return;
+		}
+
+		float invLength = fastReciprocal(sqrt(lengthSq));
+		vector[0] *= invLength;
+		vector[1] *= invLength;
+		vector[2] *= invLength;
 	}
 
 	public static float[] add(float[] a, float[] b)
@@ -215,15 +158,6 @@ public class M3GMath
 	{
 		for (int i = 0; i < a.length; i++) { a[i] *= b; }
 		return a;
-	}
-
-	// Fast float reciprocal (1 / x) using Newton-Raphson step
-	public static float fastReciprocal(float x)
-	{
-		int i = Float.floatToRawIntBits(x);
-		i = 0x7EF311C2 - i;
-		float y = Float.intBitsToFloat(i);
-		return y * (2.0f - x * y);
 	}
 
 	public static float[] div(float[] a, float b) { return mul(a, 1f / b); }
