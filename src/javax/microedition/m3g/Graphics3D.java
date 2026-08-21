@@ -146,6 +146,10 @@ public class Graphics3D
 	float rHorizon, xMidR, zMidR;
 	float pwTop, pwMidL, pwBot, pwMidR;
 
+	float rStepX = 0, gStepX = 0, bStepX = 0, aStepX = 0;
+	float rStepY = 0, gStepY = 0, bStepY = 0, aStepY = 0;
+	float deltaR = 0, deltaG = 0, deltaB = 0, deltaA = 0;
+
 	final float[] scaleBias = new float[4];
 
 	final Transform projectionMatrix = new Transform();
@@ -876,6 +880,57 @@ public class Graphics3D
 					}
 				}
 
+				boolean hasColors = trisScreen[tri_id].hasVertexColors();
+
+				// Calculate the triangle area denominator, used by texturing
+				// and vertex color blending.
+				float xA = trisScreen[tri_id].xA();
+				float yA = trisScreen[tri_id].yA();
+				float xB = trisScreen[tri_id].xB();
+				float yB = trisScreen[tri_id].yB();
+				float xC = trisScreen[tri_id].xC();
+				float yC = trisScreen[tri_id].yC();
+
+				float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
+
+				// Calculate the starting vertex color with the barycentric of the
+				// triangle. Then at each scanline we only need to determine the
+				// left and right color spans with quick add and mult operations, and
+				// at the inner pixel loop, all we need is a simple addition.
+				if (hasColors)
+				{
+					if (M3GMath.abs(denominator) > M3GMath.EPSILON)
+					{
+						float invDet = M3GMath.fastReciprocal(denominator);
+
+						int colorA = trisScreen[tri_id].colorA();
+						int colorB = trisScreen[tri_id].colorB();
+						int colorC = trisScreen[tri_id].colorC();
+
+						float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
+						float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
+						float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
+
+						// To properly use additions in the triangle render loops
+						// below, we need to calculate the derivatives for each
+						// color channel, on each axis.
+						float dR_B = rB - rA, dR_C = rC - rA;
+						float dG_B = gB - gA, dG_C = gC - gA;
+						float dB_B = bB - bA, dB_C = bC - bA;
+						float dA_B = aB - aA, dA_C = aC - aA;
+
+						rStepX = (dR_B * (yC - yA) - dR_C * (yB - yA)) * invDet;
+						gStepX = (dG_B * (yC - yA) - dG_C * (yB - yA)) * invDet;
+						bStepX = (dB_B * (yC - yA) - dB_C * (yB - yA)) * invDet;
+						aStepX = (dA_B * (yC - yA) - dA_C * (yB - yA)) * invDet;
+
+						rStepY = (dR_C * (xB - xA) - dR_B * (xC - xA)) * invDet;
+						gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
+						bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
+						aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
+					}
+				}
+
 				// Draw both halves of the triangle
 				for (int half = 0; half < 2; half++)
 				{
@@ -883,7 +938,7 @@ public class Graphics3D
 					yStart = half == 0 ? M3GMath.max(M3GMath.roundPositive(yTop), 0) : M3GMath.max(M3GMath.roundPositive(yMid), 0);
 					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
 
-					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasTexture, compositingMode,
+					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasColors, hasTexture, compositingMode,
 						fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset);
 				}
 			}
@@ -1127,63 +1182,10 @@ public class Graphics3D
 	}
 
 	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
-		Triangle[] trisScreen, int tri_id, boolean hasTexture, CompositingMode compositingMode,
+		Triangle[] trisScreen, int tri_id, boolean hasColors, boolean hasTexture, CompositingMode compositingMode,
 		Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
 		float depthOffset)
 	{
-		float rStepX = 0, gStepX = 0, bStepX = 0, aStepX = 0;
-		float rStepY = 0, gStepY = 0, bStepY = 0, aStepY = 0;
-		float deltaR = 0, deltaG = 0, deltaB = 0, deltaA = 0;
-
-		boolean hasColors = trisScreen[tri_id].hasVertexColors();
-
-		// Calculate the starting vertex color with the barycentric of the
-		// triangle. Then at each scanline we only need to determine the
-		// left and right color spans with quick add and mult operations, and
-		// at the inner pixel loop, all we need is a simple addition.
-		if (hasColors)
-		{
-			float xA = trisScreen[tri_id].xA();
-			float yA = trisScreen[tri_id].yA();
-			float xB = trisScreen[tri_id].xB();
-			float yB = trisScreen[tri_id].yB();
-			float xC = trisScreen[tri_id].xC();
-			float yC = trisScreen[tri_id].yC();
-
-			float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
-
-			if (M3GMath.abs(denominator) > M3GMath.EPSILON)
-			{
-				float invDet = M3GMath.fastReciprocal(denominator);
-
-				int colorA = trisScreen[tri_id].colorA();
-				int colorB = trisScreen[tri_id].colorB();
-				int colorC = trisScreen[tri_id].colorC();
-
-				float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
-				float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
-				float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
-
-				// To properly use additions in the loops below, we need to
-				// calculate the derivatives for each color channel, on each
-				// axis.
-				float dR_B = rB - rA, dR_C = rC - rA;
-				float dG_B = gB - gA, dG_C = gC - gA;
-				float dB_B = bB - bA, dB_C = bC - bA;
-				float dA_B = aB - aA, dA_C = aC - aA;
-
-				rStepX = (dR_B * (yC - yA) - dR_C * (yB - yA)) * invDet;
-				gStepX = (dG_B * (yC - yA) - dG_C * (yB - yA)) * invDet;
-				bStepX = (dB_B * (yC - yA) - dB_C * (yB - yA)) * invDet;
-				aStepX = (dA_B * (yC - yA) - dA_C * (yB - yA)) * invDet;
-
-				rStepY = (dR_C * (xB - xA) - dR_B * (xC - xA)) * invDet;
-				gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
-				bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
-				aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
-			}
-		}
-
 		for (int y = yStart; y < yEnd; y++)
 		{
 			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
