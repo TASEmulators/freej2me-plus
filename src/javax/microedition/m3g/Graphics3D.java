@@ -28,21 +28,31 @@ import org.recompile.mobile.PlatformGraphics;
 
 public class Graphics3D
 {
-	// Special blend mode for fog
+	// Dither pattern matrix (fast ordered dithering))
+	private static final int[] BAYER_PATTERN =
+	{
+		 -8,   0, -6,  2,
+		  4, -4,  6, -2,
+		 -5,  3, -7,  1,
+		  7, -1,  5, -3
+	};
+
+	// Special blend modes for fog and AA coverage
 	public static final int BLEND_FOG = -1;
+	public static final int BLEND_COVERAGE = -2;
 
 	public static final int ANTIALIAS = 2;
 	public static final int DITHER = 4;
 	public static final int OVERWRITE = 16; // This is unused here, as SW rasterization gives us direct control over pixels
-	public static final int TRUE_COLOR = 8;
+	public static final int TRUE_COLOR = 8; // Also unused here, we always render at true color
 
 
-	public static final boolean SUPPORT_ANTIALIASING = false;
+	public static final boolean SUPPORT_ANTIALIASING = true;
 	public static final boolean SUPPORT_TRUE_COLOR = true;
-	public static final boolean SUPPORT_DITHERING = false;
+	public static final boolean SUPPORT_DITHERING = true;
 	public static final boolean SUPPORT_MIPMAPPING = true;
 	public static final boolean SUPPORT_PERSPECTIVE_CORRECTION = true;
-	public static final boolean SUPPORT_LOCAL_CAMERA_LIGHTING = false;
+	public static final boolean SUPPORT_LOCAL_CAMERA_LIGHTING = true;
 	public static final int MAX_LIGHTS = 32;
 	public static final int MAX_VIEWPORT_WIDTH = 1024;
 	public static final int MAX_VIEWPORT_HEIGHT = 1024;
@@ -316,10 +326,29 @@ public class Graphics3D
 							int sx = cropX + (int) (px * cropW / vieww);
 							sx = wrapY(sx, bgImg.getWidth(), repeatX, bgImg.isPowerOfTwo(bgImg.getWidth()));
 
+							int paintPixel = bgImg.getPixel(sx, sy);
+
+							// Dither available? Apply it to the BG Image.
+							if ((this.hints & DITHER) != 0)
+							{
+								int ditherOffset = BAYER_PATTERN[((sy & 3) << 2) | (sx & 3)];
+
+								int a = (paintPixel >>> 24) & 0xFF;
+								int r = (paintPixel >> 16) & 0xFF;
+								int g = (paintPixel >> 8) & 0xFF;
+								int b = paintPixel & 0xFF;
+
+								r = ditherChannel(r, ditherOffset);
+								g = ditherChannel(g, ditherOffset);
+								b = ditherChannel(b, ditherOffset);
+
+								paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
+							}
+
 							// Image format argument shouldn't matter here
 							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =
-								blendPixels(rasterData[(py + viewy) * canvasWidth + (px + viewx)], bgImg.getPixel(sx, sy),
-									(bgImg.getPixel(sx, sy) >> 24) & 0xFF, CompositingMode.ALPHA, 0, 0);
+								blendPixels(rasterData[(py + viewy) * canvasWidth + (px + viewx)], paintPixel,
+									(paintPixel >> 24) & 0xFF, CompositingMode.ALPHA, 0, 0);
 						}
 					}
 				}
@@ -511,7 +540,8 @@ public class Graphics3D
 		final Material material = appearance.getMaterial();
 		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
-
+		final boolean twoSidedLighting = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isTwoSidedLightingEnabled() : false;
+		final boolean localCameraLight = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isLocalCameraLightingEnabled() : false;
 		perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
 
@@ -692,7 +722,7 @@ public class Graphics3D
 			// Position and texture vertex data
 			vertClip, texVerts,
 			// Material and shading
-			material, shadingMode, appearance.getPolygonMode().isTwoSidedLightingEnabled(),
+			material, shadingMode, twoSidedLighting, localCameraLight,
 			// Normal data
 			eyePos, vertNorms, normalMatrix,
 			// Lights
@@ -1351,8 +1381,47 @@ public class Graphics3D
 				// Only write to the screen if color write is enabled.
 				if(colorEnabled)
 				{
+					int compBlending = compositingMode.getBlending();
+
+					// Apply ordered Bayer dithering if the setting is enabled.
+					if ((this.hints & DITHER) != 0)
+					{
+						int ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
+
+						int a = (paintPixel >>> 24) & 0xFF;
+						int r = ditherChannel((paintPixel >> 16) & 0xFF, ditherOffset);
+						int g = ditherChannel((paintPixel >> 8) & 0xFF, ditherOffset);
+						int b = ditherChannel(paintPixel & 0xFF, ditherOffset);
+
+						paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
+					}
+
+					// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
+					if ((this.hints & ANTIALIAS) != 0 && (x == ixL || x == ixR - 1))
+					{
+						// The way this works is that we "extend" the geometry size a bit
+						// for the antialiased output, that way triangles don't get smoothed
+						// inwards, causing transparent edges between them to manifest.
+						if (x == ixL)
+						{
+							int distFx = (int) (((ixL + 1.0f) - xL) * 65536.0f);
+							int scaledDist = (distFx * 84) >> 16;
+
+							applyEdgeAA(x - 1, rasterIdx - 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
+							applyEdgeAA(x - 2, rasterIdx - 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
+						}
+						else
+						{
+							int distFx = (int) ((xR - (ixR - 1)) * 65536.0f);
+							int scaledDist = (distFx * 84) >> 16;
+
+							applyEdgeAA(x + 1, rasterIdx + 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
+							applyEdgeAA(x + 2, rasterIdx + 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
+						}
+					}
+
 					rasterData[rasterIdx] = blendPixels(rasterData[rasterIdx],
-						paintPixel, (paintPixel >> 24) & 0xFF, compositingMode.getBlending(), 0, 0);
+						paintPixel, (paintPixel >> 24) & 0xFF, compBlending, 0, 0);
 
 					// Rendering at half res? Next scanline gets painted too.
 					if (Mobile.halfResM3GRaster) { rasterData[rasterIdx + canvasWidth] = rasterData[rasterIdx]; }
@@ -1361,8 +1430,33 @@ public class Graphics3D
 		}
 	}
 
+	private static final void applyEdgeAA(int targetX, int targetIdx, int canvasWidth, int paintPixel,
+							int[] rasterData, int compBlending, int coverageAlpha)
+	{
+		if (coverageAlpha > 0 && targetX >= 0 && targetX < canvasWidth)
+		{
+			int bgPixel = rasterData[targetIdx];
+
+			int extPixel = blendPixels(bgPixel, paintPixel, coverageAlpha, Graphics3D.BLEND_COVERAGE, 0, 0);
+
+			rasterData[targetIdx] = blendPixels(bgPixel, extPixel, (extPixel >> 24) & 0xFF, compBlending, 0, 0);
+
+			if (Mobile.halfResM3GRaster && (targetIdx + canvasWidth) < rasterData.length)
+			{
+				rasterData[targetIdx + canvasWidth] = rasterData[targetIdx];
+			}
+		}
+	}
+
+	// Applies dithering to a specific color channel.
+	private static final int ditherChannel(int channel, int dither)
+	{
+		int val = channel + dither;
+		return val < 0 ? 0 : (val > 255 ? 255 : val);
+	}
+
 	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
-	private final int blendPixels(int bg, int fg, int alpha, int blendMode, int texBlendColor, int texFormat)
+	private static final int blendPixels(int bg, int fg, int alpha, int blendMode, int texBlendColor, int texFormat)
 	{
 		switch (blendMode)
 		{
@@ -1535,6 +1629,7 @@ public class Graphics3D
 
 			// Special case for fog blending
 			case Graphics3D.BLEND_FOG:
+			{
 				/*
 				 * M3G specifies that, the smaller the fogFactor value, the more we
 				 * should blend the fog color into the received color... which means
@@ -1552,6 +1647,24 @@ public class Graphics3D
 				final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * alpha) >> 8)) & 0xFF;
 
 				return (bg & 0xFF000000) | (r << 16) | (g << 8) | b;
+			}
+
+			// Special case for AA coverage blending
+			case Graphics3D.BLEND_COVERAGE:
+			{
+				if (alpha <= 0)   { return bg; }
+				if (alpha >= 255) { return fg; }
+
+				int bgRB = bg & 0x00FF00FF;
+				int fgRB = fg & 0x00FF00FF;
+				int outRB = (bgRB + ((((fgRB - bgRB) * alpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+				int bgAG = (bg >>> 8) & 0x00FF00FF;
+				int fgAG = (fg >>> 8) & 0x00FF00FF;
+				int outAG = (bgAG + ((((fgAG - bgAG) * alpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+				return outRB | (outAG << 8);
+			}
 
 			default:
 				return bg;
@@ -1559,7 +1672,7 @@ public class Graphics3D
 	}
 
 	// For bilinear filtering support
-	private final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
+	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
 		// Shift by 0.5 for OpenGL-like filtering,
 		int uFixed = (int) ((s - 0.5f) * 256.0f);
@@ -1601,7 +1714,7 @@ public class Graphics3D
 	// Helpers for texture wrapping/clamping
 	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
 	// Out-of-range coordinates must never index outside the image.
-	private final int wrapX(int x, int width, boolean repeat, boolean isNPOT)
+	private static final int wrapX(int x, int width, boolean repeat, boolean isNPOT)
 	{
 		if (repeat)
 		{
@@ -1627,7 +1740,7 @@ public class Graphics3D
 		return x;
 	}
 
-	private final int wrapY(int y, int height, boolean repeat, boolean isNPOT)
+	private static final int wrapY(int y, int height, boolean repeat, boolean isNPOT)
 	{
 		if (repeat)
 		{

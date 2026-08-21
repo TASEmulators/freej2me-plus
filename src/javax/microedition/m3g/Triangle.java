@@ -68,7 +68,7 @@ class Triangle
 		// Position and texture vertex data
 		float[] vert, float[][] texc,
 		// Material and shading
-		Material material, int shadingMode, boolean twoSide,
+		Material material, int shadingMode, boolean twoSide, boolean localCameraLight,
 		// Normal data
 		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
 		// Lights
@@ -149,7 +149,7 @@ class Triangle
 			if (hasLighting)
 			{
 				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide,
-					lights, lightEyePos, lightEyeDir, tris, tri_id, Triangle.inC);
+					localCameraLight, lights, lightEyePos, lightEyeDir, tris, tri_id, Triangle.inC);
 			}
 
 			/*
@@ -191,9 +191,9 @@ class Triangle
 		return Triangle.result;
 	}
 
-	private static void calculateLighting(
+	private static final void calculateLighting(
 		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
-		Material material, int shadingMode, boolean twoSided,
+		Material material, int shadingMode, boolean twoSided, boolean localCameraLight,
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
 		int[] tris, int tri_id, int[] outColors)
 	{
@@ -268,9 +268,22 @@ class Triangle
 			// Emission color is our base here.
 			float r = meR, g = meG, b = meB;
 
-			float viewX = -V_EYE[0], viewY = -V_EYE[1], viewZ = -V_EYE[2];
-			float viewLen = M3GMath.sqrt(viewX * viewX + viewY * viewY + viewZ * viewZ);
-			if (viewLen > M3GMath.EPSILON) { viewX /= viewLen; viewY /= viewLen; viewZ /= viewLen; }
+			float viewX, viewY, viewZ;
+
+			if(localCameraLight)
+			{
+				viewX = -V_EYE[0];
+				viewY = -V_EYE[1];
+				viewZ = -V_EYE[2];
+				float viewLen = M3GMath.sqrt(viewX * viewX + viewY * viewY + viewZ * viewZ);
+				if (viewLen > M3GMath.EPSILON) { viewX /= viewLen; viewY /= viewLen; viewZ /= viewLen; }
+			}
+			else
+			{
+				viewX = 0.0f;
+				viewY = 0.0f;
+				viewZ = 1.0f;
+			}
 
 			for (int l = 0; l < lights.size(); l++)
 			{
@@ -404,7 +417,7 @@ class Triangle
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static int clipNearPlane(float[] inV, float[][] inT, int[] inC, int tri_id,
+	private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC, int tri_id,
 		VertexBuffer vertices, boolean hasTex, float texc[][], float near, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
