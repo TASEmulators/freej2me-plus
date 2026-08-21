@@ -507,7 +507,6 @@ public class Graphics3D
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : this.defaultCompositing;
 
-		// TODO: Shading mode is not implemented
 		final int shadingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getShading() : PolygonMode.SHADE_SMOOTH;
 		final Material material = appearance.getMaterial();
 		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
