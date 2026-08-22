@@ -153,9 +153,8 @@ class Triangle
 			}
 
 			/*
-			 * Clip against the near plane (w >= near) in clip space, interpolating both
-			 * positions, texture coordinates and vertex colors. Vertices behind the
-			 * camera would otherwise explode to huge coordinates after perspective division.
+             * Clip against the homogeneous near plane (z >= -w), interpolating
+             * positions, texture coordinates and vertex colors before perspective division.
 			 */
             final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
                     hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
@@ -412,7 +411,9 @@ class Triangle
 	}
 
 	/*
-	 * Sutherland-Hodgman clip of one triangle against the near plane (w >= near).
+     * Sutherland-Hodgman clip of one triangle against the homogeneous near plane
+     * z + w >= 0. This is valid for perspective, parallel and generic projection
+     * matrices; camera-space distances are not available for a generic matrix.
 	 * Writes the resulting polygon (0, 3 or 4 vertices) into outV/outT and returns
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
