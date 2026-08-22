@@ -74,8 +74,8 @@ class Triangle
 		// Lights
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
 		// IndexArray, clipping, winding order and perspectiveCorrection
-		int[] tris, int[] renderableTriangles, float near, int cullingMode,
-		VertexBuffer vertices, boolean polygonClockwise, boolean perspectiveCorrect)
+		int[] tris, int[] renderableTriangles, int cullingMode, VertexBuffer vertices,
+        boolean polygonClockwise, boolean perspectiveCorrect)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
@@ -157,8 +157,8 @@ class Triangle
 			 * positions, texture coordinates and vertex colors. Vertices behind the
 			 * camera would otherwise explode to huge coordinates after perspective division.
 			 */
-			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tri_id,
-				vertices, hasTex, texc, near, Triangle.outV, Triangle.outT, Triangle.outC);
+            final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
+                    hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
 
 			if (outCount < 3) { continue; }
 
@@ -417,8 +417,8 @@ class Triangle
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC, int tri_id,
-		VertexBuffer vertices, boolean hasTex, float texc[][], float near, float[] outV, float[][] outT, int[] outC)
+    private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC,
+                                           boolean hasTex, float[][] texc, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
 
@@ -426,7 +426,9 @@ class Triangle
 		{
 			final int j = (i + 1) % 3;
 			final float wi = inV[4*i+3], wj = inV[4*j+3];
-			final boolean insideI = wi >= near, insideJ = wj >= near;
+            final float distanceI = inV[4*i+2] + wi;
+            final float distanceJ = inV[4*j+2] + wj;
+            final boolean insideI = distanceI >= 0.0f, insideJ = distanceJ >= 0.0f;
 
 			if (insideI)
 			{
@@ -444,7 +446,7 @@ class Triangle
 			}
 			if (insideI != insideJ)
 			{
-				final float amt = (near - wi) / (wj - wi);
+                final float amt = distanceI / (distanceI - distanceJ);
 				for (int c = 0; c < 4; c++)
 				{
 					outV[4*outCount + c] = inV[4*i + c] + amt * (inV[4*j + c] - inV[4*i + c]);

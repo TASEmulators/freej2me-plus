@@ -721,13 +721,6 @@ public class Graphics3D
 		// Now with texture and vertex coordinates transformed, we generate the
 		// actual geometry, clip/cull it, and move it to NDC.
 
-		/*
-		 * Near-plane distance for clipping: the camera's actual near plane (where
-		 * w_clip == -z_eye == near), NOT the depth-range near (which defaults to 0).
-		 * Clipping against w >= 0 leaves vertices at w == 0 that blow up to infinity
-		 * in the perspective division, dropping every triangle that crosses the plane.
-		 */
-		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertAndTris already does culling and clipping)
 		final Triangle[] trisScreen = Triangle.fromVertAndTris(
@@ -740,8 +733,7 @@ public class Graphics3D
 			// Lights
 			this.currLights, lightEyePos, lightEyeDir,
 			// IndexArray, clipping, winding order and perspectiveCorrection
-			triangles.getIndexArray(),
-			renderableTriangles, clipNear, cullingMode, vertices,
+                triangles.getIndexArray(), renderableTriangles, cullingMode, vertices,
 			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection);
 
 		// At this point the triangles in `trisScreen` are actually
