@@ -97,7 +97,6 @@ public class Graphics3D
 	int canvasWidth, canvasHeight, paintPixel;
 	int[] rasterData;
 	final CompositingMode defaultCompositing;
-	final Transform nodetr;
 
 	// Texturing
 	final Transform texcomptr;
@@ -170,7 +169,6 @@ public class Graphics3D
 		 * JSR-184 specifies that Normalized Device Coordinates (NDC) can also be used, which ranges from -1 to 1.
 		 */
 		this.defaultCompositing = new CompositingMode();
-		this.nodetr = new Transform();
 		this.near = 0f;
 		this.far = 1f;
 		this.currCam = null;
@@ -512,6 +510,7 @@ public class Graphics3D
 				{
 					if(child instanceof Sprite3D || child instanceof Mesh || child instanceof Group)
 					{
+						Transform nodetr = new Transform();
 						child.getCompositeTransform(nodetr);
 						if(transform != null) { nodetr.preMultiply(transform); }
 
