@@ -77,10 +77,15 @@ public class Mobile
 
 	// Mobile should contain flags to any and all "speedhacks" present in FreeJ2ME
 	public static boolean noAlphaOnBlankImages = true;
-	public static boolean halfResM3GRaster = false;
-	public static boolean m3gDisableBilinearFilter = false;
 	public static boolean halfResMCV3Raster = false;
 	public static boolean MCV3NoLighting = false;
+
+	// M3G menu specifics
+	public static boolean halfResM3GRaster = false;
+	public static int m3gAntiAliasingMode = 1;
+	public static int m3gBilinearFilterMode = 1;
+	public static int m3gDitheringMode = 1;
+	public static int m3gPerspectiveCorrectionMode = 1;
 
 	// Config file handle
 	public static Config config;
@@ -1023,23 +1028,40 @@ public class Mobile
 		// Speedhacks
 		String speedHackNoAlpha = config.settings.get("spdhacknoalpha");
 		if(speedHackNoAlpha.equals("on"))        { noAlphaOnBlankImages = true; }
-		else if (speedHackNoAlpha.equals("off")) { noAlphaOnBlankImages = false; };
-
-		String speedHackM3GHalfRes = config.settings.get("spdhackm3ghalfres");
-		if(speedHackM3GHalfRes.equals("on"))        { halfResM3GRaster = true; }
-		else if (speedHackM3GHalfRes.equals("off")) { halfResM3GRaster = false; };
-
-		String speedHackM3GDisableBilinear = config.settings.get("spdhackm3gdisablebilinear");
-		if(speedHackM3GDisableBilinear.equals("on"))        { m3gDisableBilinearFilter = true; }
-		else if (speedHackM3GDisableBilinear.equals("off")) { m3gDisableBilinearFilter = false; };
+		else if (speedHackNoAlpha.equals("off")) { noAlphaOnBlankImages = false; }
 
 		String speedHackMCV3HalfRes = config.settings.get("spdhackmcv3halfres");
 		if(speedHackMCV3HalfRes.equals("on"))        { halfResMCV3Raster = true; }
-		else if (speedHackMCV3HalfRes.equals("off")) { halfResMCV3Raster = false; };
+		else if (speedHackMCV3HalfRes.equals("off")) { halfResMCV3Raster = false; }
 
 		String speedHackMCV3NoLighting = config.settings.get("spdhackmcv3nolighting");
 		if(speedHackMCV3NoLighting.equals("on"))        { MCV3NoLighting = true; }
-		else if (speedHackMCV3NoLighting.equals("off")) { MCV3NoLighting = false; };
+		else if (speedHackMCV3NoLighting.equals("off")) { MCV3NoLighting = false; }
+
+		// M3G Menu
+		String speedHackM3GHalfRes = config.settings.get("spdhackm3ghalfres");
+		if(speedHackM3GHalfRes.equals("on"))        { halfResM3GRaster = true; }
+		else if (speedHackM3GHalfRes.equals("off")) { halfResM3GRaster = false; }
+
+		String m3gantialias = config.settings.get("m3gantialiasmode");
+		if(m3gantialias.equals("on"))        { m3gAntiAliasingMode = 2; }
+		else if(m3gantialias.equals("app"))  { m3gAntiAliasingMode = 1; }
+		else if (m3gantialias.equals("off")) { m3gAntiAliasingMode = 0; }
+
+		String m3gbilinear = config.settings.get("m3gbilinearmode");
+		if(m3gbilinear.equals("on"))        { m3gBilinearFilterMode = 2; }
+		else if(m3gbilinear.equals("app"))  { m3gBilinearFilterMode = 1; }
+		else if (m3gbilinear.equals("off")) { m3gBilinearFilterMode = 0; }
+
+		String m3gdithering = config.settings.get("m3gditheringmode");
+		if(m3gdithering.equals("on"))        { m3gDitheringMode = 2; }
+		else if(m3gdithering.equals("app"))  { m3gDitheringMode = 1; }
+		else if (m3gdithering.equals("off")) { m3gDitheringMode = 0; }
+
+		String m3gperspcorr = config.settings.get("m3gperspcorrmode");
+		if(m3gperspcorr.equals("on"))        { m3gPerspectiveCorrectionMode = 2; }
+		else if(m3gperspcorr.equals("app"))  { m3gPerspectiveCorrectionMode = 1; }
+		else if (m3gperspcorr.equals("off")) { m3gPerspectiveCorrectionMode = 0; }
 
 		// Compatibility settings (this will probably expand in the future)
 		String fantasyZoneFix = config.settings.get("compatfantasyzonefix");
@@ -1048,27 +1070,27 @@ public class Mobile
 
 		String translateToOriginOnReset = config.settings.get("compattranstooriginonreset");
 		if(translateToOriginOnReset.equals("on"))        { compatTranslateToOriginOnReset = true; }
-		else if (translateToOriginOnReset.equals("off")) { compatTranslateToOriginOnReset = false; };
+		else if (translateToOriginOnReset.equals("off")) { compatTranslateToOriginOnReset = false; }
 
 		String immediateRepaints = config.settings.get("compatimmediaterepaints");
 		if(immediateRepaints.equals("on"))        { compatImmediateRepaints = true; }
-		else if (immediateRepaints.equals("off")) { compatImmediateRepaints = false; };
+		else if (immediateRepaints.equals("off")) { compatImmediateRepaints = false; }
 
 		String overridePlatChecks = config.settings.get("compatoverrideplatchecks");
 		if(overridePlatChecks.equals("on"))        { compatOverridePlatformChecks = true; }
-		else if (overridePlatChecks.equals("off")) { compatOverridePlatformChecks = false; };
+		else if (overridePlatChecks.equals("off")) { compatOverridePlatformChecks = false; }
 
 		String siemensFriendlyDrawing = config.settings.get("compatsiemensfriendlydrawing");
 		if(siemensFriendlyDrawing.equals("on"))        { compatSiemensFriendlyDrawing = true; }
-		else if (siemensFriendlyDrawing.equals("off")) { compatSiemensFriendlyDrawing = false; };
+		else if (siemensFriendlyDrawing.equals("off")) { compatSiemensFriendlyDrawing = false; }
 
 		String ignoreVolumeChanges = config.settings.get("compatignorevolumechanges");
 		if(ignoreVolumeChanges.equals("on"))        { compatIgnoreVolumeChanges = true; }
-		else if (ignoreVolumeChanges.equals("off")) { compatIgnoreVolumeChanges = false; };
+		else if (ignoreVolumeChanges.equals("off")) { compatIgnoreVolumeChanges = false; }
 
 		String MCV3HorizFovFix = config.settings.get("compatmcv3horizfovfix");
 		if(MCV3HorizFovFix.equals("on"))        { compatMCV3HorizontalFovFix = true; }
-		else if (MCV3HorizFovFix.equals("off")) { compatMCV3HorizontalFovFix = false; };
+		else if (MCV3HorizFovFix.equals("off")) { compatMCV3HorizontalFovFix = false; }
 
 		// Other settings
 		String fontOffset = config.settings.get("fontoffset");

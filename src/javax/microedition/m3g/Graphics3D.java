@@ -28,6 +28,11 @@ import org.recompile.mobile.PlatformGraphics;
 
 public class Graphics3D
 {
+	// Flag values for FJ2ME+ rendering overrides (bilinear, AA, dithering, etc)
+	public static final int MODE_FORCE_DISABLE = 0;
+	public static final int MODE_APP_CONTROLLED = 1;
+	public static final int MODE_FORCE_ENABLE  = 2;
+
 	// Dither pattern matrix (fast ordered dithering))
 	private static final int[] BAYER_PATTERN =
 	{
@@ -95,8 +100,8 @@ public class Graphics3D
 	final Transform nodetr;
 
 	// Texturing
-	boolean perspectiveCorrection;
 	final Transform texcomptr;
+	boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
 	final float[] texScaleBias = new float[4];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
 	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
@@ -546,8 +551,12 @@ public class Graphics3D
 		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
 		final boolean twoSidedLighting = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isTwoSidedLightingEnabled() : false;
 		final boolean localCameraLight = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isLocalCameraLightingEnabled() : false;
-		perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
+
+		// This one can be overridden by FJ2ME+
+		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
+		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
+	    || (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
 		ord[0] = 0; ord[1] = 1; ord[2] = 2;
 
@@ -939,7 +948,7 @@ public class Graphics3D
 					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
 
 					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasColors, hasTexture, compositingMode,
-						fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset);
+						fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset, perspectiveCorrection);
 				}
 			}
 		}
@@ -1184,8 +1193,28 @@ public class Graphics3D
 	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
 		Triangle[] trisScreen, int tri_id, boolean hasColors, boolean hasTexture, CompositingMode compositingMode,
 		Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
-		float depthOffset)
+		float depthOffset, boolean doPerspective)
 	{
+		// Prepare the flags that can be overridden by the UI.
+		boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
+	    || (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
+
+		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
+	    || (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
+
+		if (hasTexture)
+		{
+		    for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+			{
+		        if (textures[i] == null) { continue; }
+		        useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+		            || (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
+		    }
+		}
+
+		// Get into the render loop proper.
+
 		for (int y = yStart; y < yEnd; y++)
 		{
 			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
@@ -1315,15 +1344,13 @@ public class Graphics3D
 						float s = sL[i] + drawX * (sR[i] - sL[i]);
 						float t = tL[i] + drawX * (tR[i] - tL[i]);
 
-						// TODO: Allow perspective correction force-disable
-						if(perspectiveCorrection)
+						if(doPerspective)
 						{
 							s /= pw;
 							t /= pw;
 						}
 
-						// We can force-disable bilinear filter
-						if (textures[i].getImageFilter() == Texture2D.FILTER_LINEAR && !Mobile.m3gDisableBilinearFilter)
+						if (useBilinear[i])
 						{
 							paintPixel = blendPixels(paintPixel,
 								sampleBilinear(texImages[i], s, t, texW[i], texH[i], texRepeatS[i],
@@ -1385,8 +1412,7 @@ public class Graphics3D
 				{
 					int compBlending = compositingMode.getBlending();
 
-					// Apply ordered Bayer dithering if the setting is enabled.
-					if ((this.hints & DITHER) != 0)
+					if (doDither)
 					{
 						int ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
 
@@ -1399,7 +1425,8 @@ public class Graphics3D
 					}
 
 					// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-					if ((this.hints & ANTIALIAS) != 0 && (x == ixL || x == ixR - 1))
+					// TODO: Mobile.m3gAntiAliasingMode flag
+					if (doAntiAlias && (x == ixL || x == ixR - 1))
 					{
 						// The way this works is that we "extend" the geometry size a bit
 						// for the antialiased output, that way triangles don't get smoothed

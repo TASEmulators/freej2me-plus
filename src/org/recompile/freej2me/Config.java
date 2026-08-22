@@ -140,7 +140,10 @@ public class Config
 				settings.put("compatmcv3horizfovfix", "off");
 				settings.put("fpshack", "Disabled");
 				settings.put("spdhackm3ghalfres", "off");
-				settings.put("spdhackm3gdisablebilinear", "off");
+				settings.put("m3gantialiasmode", "app");
+				settings.put("m3gbilinearmode", "app");
+				settings.put("m3gditheringmode", "app");
+				settings.put("m3gperspcorrmode", "app");
 				settings.put("spdhackmcv3halfres", "off");
 				settings.put("spdhackmcv3nolighting", "off");
 				settings.put("dojaversion", "200");
@@ -205,6 +208,7 @@ public class Config
 			if(settings.containsKey("soundfont")) { settings.remove("soundfont"); }
 			if(settings.containsKey("textfont")) { settings.remove("textfont"); }
 			if(settings.containsKey("phone") && settings.get("phone").equals("Sharp")) { settings.put("phone", "MotoTriplets"); }
+			if(settings.containsKey("spdhackm3gdisablebilinear")) { settings.remove("spdhackm3gdisablebilinear"); };
 
 			// Add any missing settings
 			if(!settings.containsKey("scrwidth")) { settings.put("scrwidth", ""+Mobile.lcdWidth); }
@@ -216,16 +220,22 @@ public class Config
 				{
 					case 0:
 						settings.put("backlightcolor", "Disabled");
+						break;
 					case 1:
 						settings.put("backlightcolor", "Green");
+						break;
 					case 2:
 						settings.put("backlightcolor", "Cyan");
+						break;
 					case 3:
 						settings.put("backlightcolor", "Orange");
+						break;
 					case 4:
 						settings.put("backlightcolor", "Violet");
+						break;
 					case 5:
 						settings.put("backlightcolor", "Red");
+						break;
 					default:
 						throw new IllegalArgumentException();
 				}
@@ -247,18 +257,89 @@ public class Config
 				{
 					case 0:
 						settings.put("fpshack", "Disabled");
+						break;
 					case 1:
 						settings.put("fpshack", "Safe");
+						break;
 					case 2:
 						settings.put("fpshack", "Extended");
+						break;
 					case 3:
 						settings.put("fpshack", "Aggressive");
+						break;
 					default:
 						throw new IllegalArgumentException();
 				}
 			}
 			if(!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off"); }
-			if(!settings.containsKey("spdhackm3gdisablebilinear")) { settings.put("spdhackm3gdisablebilinear", Mobile.m3gDisableBilinearFilter ? "on" : "off"); }
+			if(!settings.containsKey("m3gantialiasmode"))
+			{
+				switch(Mobile.m3gAntiAliasingMode)
+				{
+					case 0:
+						settings.put("m3gantialiasmode", "off");
+						break;
+					case 1:
+						settings.put("m3gantialiasmode", "app");
+						break;
+					case 2:
+						settings.put("m3gantialiasmode", "on");
+						break;
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("m3gbilinearmode"))
+			{
+				switch(Mobile.m3gBilinearFilterMode)
+				{
+					case 0:
+						settings.put("m3gbilinearmode", "off");
+						break;
+					case 1:
+						settings.put("m3gbilinearmode", "app");
+						break;
+					case 2:
+						settings.put("m3gbilinearmode", "on");
+						break;
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("m3gditheringmode"))
+			{
+				switch(Mobile.m3gDitheringMode)
+				{
+					case 0:
+						settings.put("m3gditheringmode", "off");
+						break;
+					case 1:
+						settings.put("m3gditheringmode", "app");
+						break;
+					case 2:
+						settings.put("m3gditheringmode", "on");
+						break;
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("m3gperspcorrmode"))
+			{
+				switch(Mobile.m3gPerspectiveCorrectionMode)
+				{
+					case 0:
+						settings.put("m3gperspcorrmode", "off");
+						break;
+					case 1:
+						settings.put("m3gperspcorrmode", "app");
+						break;
+					case 2:
+						settings.put("m3gperspcorrmode", "on");
+						break;
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
 			if(!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off"); }
 			if(!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off"); }
 			if(!settings.containsKey("dojaversion")) { settings.put("dojaversion", ""+Mobile.DoJaVersion); }
@@ -447,10 +528,34 @@ public class Config
 		onChange.run();
 	}
 
-	public void updateM3GBilinearSpeedHack(String value)
+	public void updateM3GAntiAliasMode(String value)
 	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhackm3gdisablebilinear "+value);
-		settings.put("spdhackm3gdisablebilinear", value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gantialiasmode "+value);
+		settings.put("m3gantialiasmode", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GBilinearMode(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gbilinearmode "+value);
+		settings.put("m3gbilinearmode", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GDitheringMode(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gditheringmode "+value);
+		settings.put("m3gditheringmode", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GPerspCorrectionMode(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gperspcorrmode "+value);
+		settings.put("m3gperspcorrmode", value);
 		saveConfig();
 		onChange.run();
 	}

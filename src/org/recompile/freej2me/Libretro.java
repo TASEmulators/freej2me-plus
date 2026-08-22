@@ -185,8 +185,17 @@ public class Libretro
 		/* MascotCapsuleV3 Show Heap debug setting */
 		Mobile.MCV3ShowTimeMetrics = Integer.parseInt(args[30]) != 0;
 
-		/* M3G Disable Biliniear filter speedhack */
-		Mobile.m3gDisableBilinearFilter = Integer.parseInt(args[31]) != 0;
+		/* M3G Anti Aliasing Mode */
+		Mobile.m3gAntiAliasingMode = Integer.parseInt(args[31]);
+
+		/* M3G Bilinear Filter Mode */
+		Mobile.m3gBilinearFilterMode = Integer.parseInt(args[32]);
+
+		/* M3G Dithering Mode */
+		Mobile.m3gDitheringMode = Integer.parseInt(args[33]);
+
+		/* M3G Perspective Correction Mode */
+		Mobile.m3gPerspectiveCorrectionMode = Integer.parseInt(args[34]);
 
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
@@ -372,9 +381,7 @@ public class Libretro
 										Mobile.config.settings.put("soundfont", Mobile.useCustomMidi ? "Custom" : "Default");
 
 										Mobile.config.settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off");
-										Mobile.config.settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off");
 										Mobile.config.settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off");
-										Mobile.config.settings.put("spdhackm3gdisablebilinear",  Mobile.m3gDisableBilinearFilter ? "on" : "off");
 										Mobile.config.settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off");
 
 										if(Mobile.maskIndex == 0)      { Mobile.config.settings.put("backlightcolor", "Disabled"); }
@@ -401,6 +408,24 @@ public class Libretro
 										else if(Mobile.unlockFramerateHack == 3) { Mobile.config.settings.put("fpshack", "Aggressive");  }
 
 										Mobile.config.settings.put("dojaversion", "" + Mobile.DoJaVersion);
+
+										Mobile.config.settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off");
+
+										if(Mobile.m3gAntiAliasingMode == 0) { Mobile.config.settings.put("m3gantialiasmode", "off");  }
+										else if(Mobile.m3gAntiAliasingMode == 1) { Mobile.config.settings.put("m3gantialiasmode", "app");  }
+										else if(Mobile.m3gAntiAliasingMode == 2) { Mobile.config.settings.put("m3gantialiasmode", "on");  }
+
+										if(Mobile.m3gBilinearFilterMode == 0) { Mobile.config.settings.put("m3gbilinearmode", "off");  }
+										else if(Mobile.m3gBilinearFilterMode == 1) { Mobile.config.settings.put("m3gbilinearmode", "app");  }
+										else if(Mobile.m3gBilinearFilterMode == 2) { Mobile.config.settings.put("m3gbilinearmode", "on");  }
+
+										if(Mobile.m3gDitheringMode == 0) { Mobile.config.settings.put("m3gditheringmode", "off");  }
+										else if(Mobile.m3gDitheringMode == 1) { Mobile.config.settings.put("m3gditheringmode", "app");  }
+										else if(Mobile.m3gDitheringMode == 2) { Mobile.config.settings.put("m3gditheringmode", "on");  }
+
+										if(Mobile.m3gPerspectiveCorrectionMode == 0) { Mobile.config.settings.put("m3gperspcorrmode", "off");  }
+										else if(Mobile.m3gPerspectiveCorrectionMode == 1) { Mobile.config.settings.put("m3gperspcorrmode", "app");  }
+										else if(Mobile.m3gPerspectiveCorrectionMode == 2) { Mobile.config.settings.put("m3gperspcorrmode", "on");  }
 
 										// Update system settings
 
@@ -544,8 +569,21 @@ public class Libretro
 
 									Mobile.config.settings.put("MCV3ShowTimeMetrics", Integer.parseInt(cfgtokens[31]) == 1 ? "on" : "off");
 
-									Mobile.config.settings.put("spdhackm3gdisablebilinear", Integer.parseInt(cfgtokens[32]) == 1 ? "on" : "off");
+									if(Integer.parseInt(cfgtokens[32])==0) { Mobile.config.settings.put("m3gantialiasmode", "off"); }
+									if(Integer.parseInt(cfgtokens[32])==1) { Mobile.config.settings.put("m3gantialiasmode", "app");  }
+									if(Integer.parseInt(cfgtokens[32])==2) { Mobile.config.settings.put("m3gantialiasmode", "on");  }
 
+									if(Integer.parseInt(cfgtokens[33])==0) { Mobile.config.settings.put("m3gbilinearmode", "off"); }
+									if(Integer.parseInt(cfgtokens[33])==1) { Mobile.config.settings.put("m3gbilinearmode", "app");  }
+									if(Integer.parseInt(cfgtokens[33])==2) { Mobile.config.settings.put("m3gbilinearmode", "on");  }
+
+									if(Integer.parseInt(cfgtokens[34])==0) { Mobile.config.settings.put("m3gditheringmode", "off"); }
+									if(Integer.parseInt(cfgtokens[34])==1) { Mobile.config.settings.put("m3gditheringmode", "app");  }
+									if(Integer.parseInt(cfgtokens[34])==2) { Mobile.config.settings.put("m3gditheringmode", "on");  }
+
+									if(Integer.parseInt(cfgtokens[35])==0) { Mobile.config.settings.put("m3gperspcorrmode", "off"); }
+									if(Integer.parseInt(cfgtokens[35])==1) { Mobile.config.settings.put("m3gperspcorrmode", "app");  }
+									if(Integer.parseInt(cfgtokens[35])==2) { Mobile.config.settings.put("m3gperspcorrmode", "on");  }
 
 									Mobile.config.saveConfig();
 									settingsChanged();
@@ -678,7 +716,7 @@ public class Libretro
 		{
 			lcdWidth = Mobile.lcdWidth;
 			lcdHeight = Mobile.lcdHeight;
-			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
+			Mobile.getPlatform().resizeLCD(lcdWidth, lcdHeight);
 			lcdData = Mobile.getPlatform().getLcdFrontbuffer().getDataBuffer();
 		}
 	}

@@ -120,6 +120,14 @@ public final class AWTGUI
 	/* Log Level submenu */
 	final Menu logLevel = new Menu("Log Level");
 
+	/* Main M3G submenu */
+	final Menu M3GSettings = new Menu("M3G Settings");
+
+	final Menu m3gAAMenu = new Menu("Anti-Aliasing");
+	final Menu m3gBilinearMenu = new Menu("Bilinear Filtering");
+	final Menu m3gDitheringMenu = new Menu("Dithering");
+	final Menu m3gPerspCorrMenu = new Menu("Perspective Correction");
+
 	/* M3G Debug submenu */
 	final Menu M3GDebug = new Menu("M3G Debugging");
 
@@ -300,7 +308,7 @@ public final class AWTGUI
 	{
 		new CheckboxMenuItem("Disabled", false),
 		new CheckboxMenuItem("Debug", false),
-		new CheckboxMenuItem("Info", false),
+		new CheckboxMenuItem("Info", true),
 		new CheckboxMenuItem("Warning", false),
 		new CheckboxMenuItem("Error", false)
 	};
@@ -308,10 +316,36 @@ public final class AWTGUI
 
 	// Speedhacks
 	final CheckboxMenuItem noAlphaOnBlankImages = new CheckboxMenuItem("No alpha on blank images");
-	final CheckboxMenuItem M3GHalfRes = new CheckboxMenuItem("Render M3G at Half Resolution");
-	final CheckboxMenuItem M3GDisableBilinear = new CheckboxMenuItem("Disable M3G Bilinear Filtering");
 	final CheckboxMenuItem MCV3HalfRes = new CheckboxMenuItem("Render MascotCapsuleV3 at Half Res");
 	final CheckboxMenuItem MCV3NoLighting = new CheckboxMenuItem("Disable MascotCapsuleV3's lighting");
+
+	// M3G Menu
+	final CheckboxMenuItem M3GHalfRes = new CheckboxMenuItem("Render M3G at Half Resolution");
+	final CheckboxMenuItem[] m3gAntiAliasValues =
+	{
+		new CheckboxMenuItem("Always Disabled", false),
+		new CheckboxMenuItem("App-Controlled (Default)", true),
+		new CheckboxMenuItem("Force-Enabled", false)
+	};
+	final CheckboxMenuItem[] m3gBilinearValues =
+	{
+		new CheckboxMenuItem("Always Disabled", false),
+		new CheckboxMenuItem("App-Controlled (Default)", true),
+		new CheckboxMenuItem("Force-Enabled", false)
+	};
+	final CheckboxMenuItem[] m3gDitheringValues =
+	{
+		new CheckboxMenuItem("Always Disabled", false),
+		new CheckboxMenuItem("App-Controlled (Default)", true),
+		new CheckboxMenuItem("Force-Enabled", false)
+	};
+	final CheckboxMenuItem[] m3gPerspCorrValues =
+	{
+		new CheckboxMenuItem("Always Disabled", false),
+		new CheckboxMenuItem("App-Controlled (Default)", true),
+		new CheckboxMenuItem("Force-Enabled", false)
+	};
+	final String[] m3gSettingValues = {"off", "app", "on"};
 
 	// Compatibility settings
 	final CheckboxMenuItem fantasyZoneFix = new CheckboxMenuItem("Fix for Fantasy Zone 176x208 weird mirroring");
@@ -731,15 +765,6 @@ public final class AWTGUI
 			}
 		});
 
-		M3GDisableBilinear.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(M3GDisableBilinear.getState()){ config.updateM3GBilinearSpeedHack("on"); hasPendingChange = true; }
-				else{ config.updateM3GBilinearSpeedHack("off"); hasPendingChange = true; }
-			}
-		});
-
 		MCV3HalfRes.addItemListener(new ItemListener()
 		{
 			public void itemStateChanged(ItemEvent e)
@@ -959,6 +984,86 @@ public final class AWTGUI
 			});
 		}
 
+		for(byte i = 0; i < m3gAntiAliasValues.length; i++)
+		{
+			final byte index = i;
+			m3gAntiAliasValues[i].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if(!m3gAntiAliasValues[index].getState()){ m3gAntiAliasValues[index].setState(true); }
+					if(m3gAntiAliasValues[index].getState())
+					{
+						config.updateM3GAntiAliasMode(m3gSettingValues[index]);
+						for(int j = 0; j < m3gAntiAliasValues.length; j++)
+						{
+							if(j != index) { m3gAntiAliasValues[j].setState(false); }
+						}
+					}
+				}
+			});
+		}
+
+		for(byte i = 0; i < m3gBilinearValues.length; i++)
+		{
+			final byte index = i;
+			m3gBilinearValues[i].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if(!m3gBilinearValues[index].getState()){ m3gBilinearValues[index].setState(true); }
+					if(m3gBilinearValues[index].getState())
+					{
+						config.updateM3GBilinearMode(m3gSettingValues[index]);
+						for(int j = 0; j < m3gBilinearValues.length; j++)
+						{
+							if(j != index) { m3gBilinearValues[j].setState(false); }
+						}
+					}
+				}
+			});
+		}
+
+		for(byte i = 0; i < m3gDitheringValues.length; i++)
+		{
+			final byte index = i;
+			m3gDitheringValues[i].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if(!m3gDitheringValues[index].getState()){ m3gDitheringValues[index].setState(true); }
+					if(m3gDitheringValues[index].getState())
+					{
+						config.updateM3GDitheringMode(m3gSettingValues[index]);
+						for(int j = 0; j < m3gDitheringValues.length; j++)
+						{
+							if(j != index) { m3gDitheringValues[j].setState(false); }
+						}
+					}
+				}
+			});
+		}
+
+		for(byte i = 0; i < m3gPerspCorrValues.length; i++)
+		{
+			final byte index = i;
+			m3gPerspCorrValues[i].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if(!m3gPerspCorrValues[index].getState()){ m3gPerspCorrValues[index].setState(true); }
+					if(m3gPerspCorrValues[index].getState())
+					{
+						config.updateM3GPerspCorrectionMode(m3gSettingValues[index]);
+						for(int j = 0; j < m3gPerspCorrValues.length; j++)
+						{
+							if(j != index) { m3gPerspCorrValues[j].setState(false); }
+						}
+					}
+				}
+			});
+		}
+
 		// Sys settings
 		for(byte i = 0; i < fpsCounterPos.length; i++)
 		{
@@ -1119,8 +1224,23 @@ public final class AWTGUI
 		optionMenu.add(fpsCap);
 		optionMenu.add(unlockFPSHack);
 		optionMenu.add(fontOffset);
+		optionMenu.add(M3GSettings);
 		optionMenu.add(speedHackMenu);
 		optionMenu.add(compatSettingsMenu);
+
+		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gAAMenu.add(m3gAntiAliasValues[i]); }
+		M3GSettings.add(m3gAAMenu);
+
+		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gBilinearMenu.add(m3gBilinearValues[i]); }
+		M3GSettings.add(m3gBilinearMenu);
+
+		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gDitheringMenu.add(m3gDitheringValues[i]); }
+		M3GSettings.add(m3gDitheringMenu);
+
+		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gPerspCorrMenu.add(m3gPerspCorrValues[i]); }
+		M3GSettings.add(m3gPerspCorrMenu);
+
+		M3GSettings.add(M3GHalfRes);
 
 		optionMenu.setEnabled(false);
 
@@ -1142,12 +1262,6 @@ public final class AWTGUI
 		logLevel.add(logLevels[0]);
 		for(int i = logLevels.length-1; i > 0; i--) { logLevel.add(logLevels[i]); }
 
-		logLevels[0].setState(false);
-		logLevels[1].setState(false);
-		logLevels[2].setState(true);
-		logLevels[3].setState(false);
-		logLevels[4].setState(false);
-
 		M3GDebug.add(M3GUntextured);
 		M3GDebug.add(M3GWireframe);
 
@@ -1165,8 +1279,6 @@ public final class AWTGUI
 		for(int i = 0; i < fontOffsets.length; i++) { fontOffset.add(fontOffsets[i]); }
 
 		speedHackMenu.add(noAlphaOnBlankImages);
-		speedHackMenu.add(M3GHalfRes);
-		speedHackMenu.add(M3GDisableBilinear);
 		speedHackMenu.add(MCV3HalfRes);
 		speedHackMenu.add(MCV3NoLighting);
 
@@ -1211,11 +1323,29 @@ public final class AWTGUI
 				backlightOptions[i].setState(config.settings.get("backlightcolor").equals(backlightValues[i]));
 			}
 
-			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));
+			for(int i = 0; i < m3gAntiAliasValues.length; i++)
+			{
+				m3gAntiAliasValues[i].setState(config.settings.get("m3gantialiasmode").equals(m3gSettingValues[i]));
+			}
+
+			for(int i = 0; i < m3gBilinearValues.length; i++)
+			{
+				m3gBilinearValues[i].setState(config.settings.get("m3gbilinearmode").equals(m3gSettingValues[i]));
+			}
+
+			for(int i = 0; i < m3gDitheringValues.length; i++)
+			{
+				m3gDitheringValues[i].setState(config.settings.get("m3gditheringmode").equals(m3gSettingValues[i]));
+			}
+
+			for(int i = 0; i < m3gPerspCorrValues.length; i++)
+			{
+				m3gPerspCorrValues[i].setState(config.settings.get("m3gperspcorrmode").equals(m3gSettingValues[i]));
+			}
 
 			M3GHalfRes.setState(config.settings.get("spdhackm3ghalfres").equals("on"));
 
-			M3GDisableBilinear.setState(config.settings.get("spdhackm3gdisablebilinear").equals("on"));
+			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));
 
 			MCV3HalfRes.setState(config.settings.get("spdhackmcv3halfres").equals("on"));
 

@@ -132,6 +132,11 @@ struct retro_core_option_v2_category option_categories[] =
 		"Options that can increase FreeJ2ME or app's performance in exchange for lower compatibility by going out of J2ME specifications."
 	},
 	{
+		"m3g_settings",
+		"M3G Renderer Settings",
+		"Settings that govern FreeJ2ME's M3G rendering speed and quality."
+	},
+	{
 		"compat_settings",
 		"Compatibility Settings",
 		"Options that help some specific games run, but that may break others."
@@ -386,6 +391,80 @@ struct retro_core_option_v2_definition core_options[] =
 		"off"
 	},
 	{
+		"freej2me_m3gantialiasmode",
+		"M3G Renderer Settings > Anti-Aliasing",
+		"Anti-Aliasing",
+		"Applications can request Anti-Aliasing to be applied. Usage is extremely rare, so FreeJ2ME-Plus allows you to override the render flag for better quality... This setting doesn't cost as much performance as one might think, but may cause issues.",
+		"Applications can request Anti-Aliasing to be applied. Usage is extremely rare, so FreeJ2ME-Plus allows you to override the render flag for better quality... This setting doesn't cost as much performance as one might think, but may cause issues.",
+		"m3g_settings",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_m3gbilinearmode",
+		"M3G Renderer Settings > Bilinear Texture Filtering",
+		"Bilinear Texture Filtering",
+		"Applications can enable or disable texture filtering by themselves. FreeJ2ME-Plus allows you to override the render flag for better quality or performance.",
+		"Applications can enable or disable texture filtering by themselves. FreeJ2ME-Plus allows you to override the render flag for better quality or performance.",
+		"m3g_settings",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_m3gditheringmode",
+		"M3G Renderer Settings > Dithering",
+		"Dithering",
+		"Applications can enable or disable dithering by themselves. Usage is quite rare, so FreeJ2ME-Plus allows you to override the render flag for better quality by reducing color banding.",
+		"Applications can enable or disable dithering by themselves. Usage is quite rare, so FreeJ2ME-Plus allows you to override the render flag for better quality by reducing color banding.",
+		"m3g_settings",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_m3gperspcorrmode",
+		"M3G Renderer Settings > Texture Perspective Correction",
+		"Texture Perspective Correction",
+		"Applications can enable or disable perspective correction by themselves. This is nearly free in FreeJ2ME-Plus, so force-enable it for apps that disable this feature and end up with texture distortion.",
+		"Applications can enable or disable perspective correction by themselves. This is nearly free in FreeJ2ME-Plus, so force-enable it for apps that disable this feature and end up with texture distortion.",
+		"m3g_settings",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_spdhackm3ghalfres",
+		"M3G Renderer Settings > Render M3G at Half Resolution",
+		"Render M3G at Half Resolution",
+		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+		"m3g_settings",
+		{
+			{ "on",  "Enabled"            },
+			{ "off", "Disabled (Default)" },
+			{ NULL, NULL },
+		},
+		"off"
+	},
+	{
 		"freej2me_logginglevel",
 		"Advanced Settings > Logging Level",
 		"Logging Level",
@@ -557,34 +636,6 @@ struct retro_core_option_v2_definition core_options[] =
 		"No Alpha on Blank Images (Restart Required)",
 		"J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with no transparency. Provides a measurable performance boost depending on the app with little to no side effects",
 		"J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with no transparency. Provides a measurable performance boost depending on the app with little to no side effects",
-		"speed_hacks",
-		{
-			{ "on",  "Enabled"            },
-			{ "off", "Disabled (Default)" },
-			{ NULL, NULL },
-		},
-		"off"
-	},
-	{
-		"freej2me_spdhackm3ghalfres",
-		"Speed Hacks > Render M3G at Half Resolution",
-		"Render M3G at Half Resolution",
-		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
-		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
-		"speed_hacks",
-		{
-			{ "on",  "Enabled"            },
-			{ "off", "Disabled (Default)" },
-			{ NULL, NULL },
-		},
-		"off"
-	},
-	{
-		"freej2me_spdhackm3gdisablebilinear",
-		"Speed Hacks > Force-Disable M3G Texture Filter",
-		"Force-Disable M3G Texture Filter",
-		"M3G allows applications to request texture filtering. With the FreeJ2ME-Plus implementation being software-based, this has a noticeable performance cost. Disabling it will make apps that request it run faster.",
-		"M3G allows applications to request texture filtering. With the FreeJ2ME-Plus implementation being software-based, this has a noticeable performance cost. Disabling it will make apps that request it run faster.",
 		"speed_hacks",
 		{
 			{ "on",  "Enabled"            },
@@ -1009,6 +1060,65 @@ struct retro_core_option_definition core_options_v1 [] =
 		"off"
 	},
 	{
+		"freej2me_m3gantialiasmode",
+		"M3G Anti-Aliasing",
+		"Applications can request Anti-Aliasing to be applied. Usage is extremely rare, so FreeJ2ME-Plus allows you to override the render flag for better quality... This setting doesn't cost as much performance as one might think, but may cause issues.",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_m3gbilinearmode",
+		"M3G Bilinear Texture Filtering",
+		"Applications can enable or disable texture filtering by themselves. FreeJ2ME-Plus allows you to override the render flag for better quality or performance.",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_m3gditheringmode",
+		"M3G Dithering",
+		"Applications can enable or disable dithering by themselves. Usage is quite rare, so FreeJ2ME-Plus allows you to override the render flag for better quality by reducing color banding.",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_m3gperspcorrmode",
+		"M3G Texture Perspective Correction",
+		"Applications can enable or disable perspective correction by themselves. This is nearly free in FreeJ2ME-Plus, so force-enable it for apps that disable this feature and end up with texture distortion.",
+		{
+			{ "off", "Always Disabled"  },
+			{ "app", "App Controlled (Default)"  },
+			{ "on",  "Force-Enable" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
+		"freej2me_spdhackm3ghalfres",
+		"Render M3G at Half Resolution",
+		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+		{
+			{ "on",  "Enabled"            },
+			{ "off", "Disabled (Default)" },
+			{ NULL, NULL },
+		},
+		"off"
+	},
+	{
 		"freej2me_logginglevel",
 		"Logging Level",
 		"When enabled, this option allows FreeJ2ME to log messages of the specified level and higher into 'freej2me_system/FreeJ2ME.log' to facilitate debugging",
@@ -1148,28 +1258,6 @@ struct retro_core_option_definition core_options_v1 [] =
 		"freej2me_spdhacknoalpha",
 		"No Alpha on Blank Images (Restart Required)",
 		"J2ME dictates that all images, including fully blank ones, have to be created with an alpha channel, and this includes the virtual phone's LCD screen. However, FreeJ2ME can create those without an alpha channel instead, cutting back on alpha processing for those images that usually are always fully painted with no transparency. Provides a measurable performance boost depending on the app with little to no side effects",
-		{
-			{ "on",  "Enabled"            },
-			{ "off", "Disabled (Default)" },
-			{ NULL, NULL },
-		},
-		"off"
-	},
-	{
-		"freej2me_spdhackm3ghalfres",
-		"Render M3G at Half Resolution",
-		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
-		{
-			{ "on",  "Enabled"            },
-			{ "off", "Disabled (Default)" },
-			{ NULL, NULL },
-		},
-		"off"
-	},
-	{
-		"freej2me_spdhackm3gdisablebilinear",
-		"Force-Disable M3G Texture Filter",
-		"M3G allows applications to request texture filtering. With the FreeJ2ME-Plus implementation being software-based, this has a noticeable performance cost. Disabling it will make apps that request it run faster.",
 		{
 			{ "on",  "Enabled"            },
 			{ "off", "Disabled (Default)" },
@@ -1386,9 +1474,29 @@ static const struct retro_variable vars[] =
 		"freej2me_analogasentirekeypad",
 		"Use Analog As Entire Keypad; off|on"
 	},
+	{ /* M3G Anti-Aliasing Mode */
+		"freej2me_m3gantialiasmode",
+		"M3G Anti-Aliasing; app|off|on"
+	},
+	{ /* M3G Bilinear Filtering Mode */
+		"freej2me_m3gbilinearmode",
+		"M3G Bilinear Texture Filtering; app|off|on"
+	},
+	{ /* M3G Dithering Mode */
+		"freej2me_m3gditheringmode",
+		"M3G Dithering; app|off|on"
+	},
+	{ /* M3G Perspective Correction Mode */
+		"freej2me_m3gperspcorrmode",
+		"M3G Texture Perspective Correction; app|off|on"
+	},
+	{ /* Half Res M3G Rendering */
+		"freej2me_spdhackm3ghalfres",
+		"Render M3G at Half Resolution(SpeedHack); off|on"
+	},
 	{ /* Logging Level */
 		"freej2me_logginglevel",
-		"Dump Audio Streams; 0|1|2|3|4"
+		"Logging Level; 0|1|2|3|4"
 	},
 	{ /* Dump Audio Streams */
 		"freej2me_dumpaudiostreams",
@@ -1396,11 +1504,11 @@ static const struct retro_variable vars[] =
 	},
 	{ /* Dump Graphics Streams */
 		"freej2me_dumpgraphicsdata",
-		"Dump Graphics Data (Stub); off|on",
+		"Dump Graphics Data (Stub); off|on"
 	},
 	{ /* Dump KJX files' temporary JAR/JAD */
 		"freej2me_deletetempkjxfiles",
-		"Delete KJX files' temporary JAR/JAD; on|off",
+		"Delete KJX files' temporary JAR/JAD; on|off"
 	},
 	{ /* Pointer Type */
 		"freej2me_pointertype",
@@ -1430,14 +1538,6 @@ static const struct retro_variable vars[] =
 		"freej2me_spdhacknoalpha",
 		"No Alpha on Blank Images(SpeedHack); off|on"
 	},
-	{ /* Render M3G at Half Resolution speed hack */
-		"freej2me_spdhackm3ghalfres",
-		"Render M3G at Half Resolution(SpeedHack); off|on",
-	},
-	{ /* Disable M3G Texture Filter speed hack */
-		"freej2me_spdhackm3gdisablebilinear",
-		"Force-Disable M3G Texture Filter(SpeedHack); off|on",
-	},
 	{ /* Render MascotCapsuleV3 at Half Resolution */
 		"freej2me_spdhackmcv3halfres",
 		"Render MascotCapsuleV3 at Half Resolution(SpeedHack); off|on",
@@ -1464,19 +1564,19 @@ static const struct retro_variable vars[] =
 	},
 	{ /* Override Mobile Platform checks */
 		"freej2me_compatoverrideplatcheck",
-		"Override Mobile Platform checks; on|off",
+		"Override Mobile Platform checks; on|off"
 	},
 	{ /* Siemens-friendly drawing methods */
 		"freej2me_compatsiemensfriendlydraw",
-		"Siemens-friendly drawing methods; off|on",
+		"Siemens-friendly drawing methods; off|on"
 	},
 	{ /* Ignore volume changes */
 		"freej2me_compatignorevolumechanges",
-		"Ignore volume changes; off|on",
+		"Ignore volume changes; off|on"
 	},
 	{ /* MascotCapsuleV3 Horizontal FOV Fix */
 		"freej2me_compatmcv3horfovfix",
-		"MascotCapsuleV3 Horizontal FOV Fix; off|on",
+		"MascotCapsuleV3 Horizontal FOV Fix; off|on"
 	},
 	{ /* M3G draw only vertex colors */
 		"freej2me_m3grenderuntextured",
