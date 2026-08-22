@@ -98,6 +98,12 @@ public class M3GMath
 		else { return (int) (value - 0.5f); }
 	}
 
+	public static int floor(float value)
+	{
+	    int i = (int) value;
+	    return (value < i) ? i - 1 : i;
+	}
+
 	// Those are slightly faster than using round() since we know the value will always be positive or negative
 	public static int roundPositive(float value) { return (int) (value + 0.5f); }
 

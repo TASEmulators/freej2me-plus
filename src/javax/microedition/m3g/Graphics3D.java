@@ -441,11 +441,6 @@ public class Graphics3D
 		/* Ignore the call if no render target is bound. */
 		if(this.target != null)
 		{
-			/*
-			 * TODO: Flush the rendered 3D image to this target before releasing it
-			 * in order to ensure that the 3D image becomes visible.
-			 */
-
 			/* If there is a render target, release it */
 			this.target = null;
 		}
@@ -686,7 +681,7 @@ public class Graphics3D
 			lightVec[2] = -1.0f;
 			lightVec[3] = 0.0f;
 			tr.transform(lightVec);
-			lightVec[3] = 0.0f; // TODO: Check if W is actually needed. Shouldn't be.
+			lightVec[3] = 0.0f;
 			System.arraycopy(lightVec, 0, lightEyeDir, i * 4, 4);
 		}
 
@@ -1318,7 +1313,15 @@ public class Graphics3D
 				{
 					// Interpolate from xL to xR based on current pixel xy coordinate..
 					// No need to calculate barycentric coords on every pixel.
-					paintPixel = ((int) deltaA << 24) | ((int) deltaR << 16) | ((int) deltaG << 8) | (int) deltaB;
+
+					// We could call M3GMath.max/min here, but a simple ternary to
+					// clamp these to [0,255] range is likely faster...
+					int r = deltaR < 0.0f ? 0 : (deltaR > 255.0f ? 255 : (int) deltaR);
+					int g = deltaG < 0.0f ? 0 : (deltaG > 255.0f ? 255 : (int) deltaG);
+					int b = deltaB < 0.0f ? 0 : (deltaB > 255.0f ? 255 : (int) deltaB);
+					int a = deltaA < 0.0f ? 0 : (deltaA > 255.0f ? 255 : (int) deltaA);
+
+					paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
 
 					deltaA += aStepX;
 					deltaR += rStepX;
@@ -1424,8 +1427,7 @@ public class Graphics3D
 					}
 
 					// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-					// TODO: Mobile.m3gAntiAliasingMode flag
-					if (doAntiAlias && (x == ixL || x == ixR - 1))
+					if (doAntiAlias && (x == ixL || x == ixR - 1) && (paintPixel >>> 24) >= 255)
 					{
 						// The way this works is that we "extend" the geometry size a bit
 						// for the antialiased output, that way triangles don't get smoothed
@@ -1463,11 +1465,9 @@ public class Graphics3D
 	{
 		if (coverageAlpha > 0 && targetX >= 0 && targetX < canvasWidth)
 		{
-			int bgPixel = rasterData[targetIdx];
+			int aaPixel = blendPixels(rasterData[targetIdx], paintPixel, coverageAlpha, Graphics3D.BLEND_COVERAGE, 0, 0);
 
-			int extPixel = blendPixels(bgPixel, paintPixel, coverageAlpha, Graphics3D.BLEND_COVERAGE, 0, 0);
-
-			rasterData[targetIdx] = blendPixels(bgPixel, extPixel, (extPixel >> 24) & 0xFF, compBlending, 0, 0);
+			rasterData[targetIdx] = blendPixels(rasterData[targetIdx], aaPixel, (aaPixel >> 24) & 0xFF, compBlending, 0, 0);
 
 			if (Mobile.halfResM3GRaster && (targetIdx + canvasWidth) < rasterData.length)
 			{
@@ -1702,9 +1702,9 @@ public class Graphics3D
 	// For bilinear filtering support
 	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
-		// Shift by 0.5 for OpenGL-like filtering,
-		int uFixed = (int) ((s - 0.5f) * 256.0f);
-		int vFixed = (int) ((t - 0.5f) * 256.0f);
+		// Shift s and t by 0.5 for OpenGL-like filtering,
+		int uFixed = M3GMath.floor((s - 0.5f) * 256.0f);
+		int vFixed = M3GMath.floor((t - 0.5f) * 256.0f);
 
 		int x0 = uFixed >> 8;
 		int y0 = vFixed >> 8;
@@ -1723,9 +1723,6 @@ public class Graphics3D
 		int c10 = teximg.getPixel(x1, y0);
 		int c01 = teximg.getPixel(x0, y1);
 		int c11 = teximg.getPixel(x1, y1);
-
-		// Are all colors the same? Don't waste time blending.
-		if (c00 == c10 && c00 == c01 && c00 == c11) { return c00; }
 
 		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 		int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
