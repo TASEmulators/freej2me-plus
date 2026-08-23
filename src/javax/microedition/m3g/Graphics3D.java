@@ -33,13 +33,13 @@ public class Graphics3D
 	public static final int MODE_APP_CONTROLLED = 1;
 	public static final int MODE_FORCE_ENABLE  = 2;
 
-	// Dither pattern matrix (fast ordered dithering))
-	private static final int[] BAYER_PATTERN =
+	// Dither pattern matrix (fast ordered dithering)
+	private static final byte[] BAYER_PATTERN =
 	{
-		 -8,   0, -6,  2,
-		  4, -4,  6, -2,
-		 -5,  3, -7,  1,
-		  7, -1,  5, -3
+		-8,  0, -6,  2,
+		 4, -4,  6, -2,
+		-5,  3, -7,  1,
+		 7, -1,  5, -3
 	};
 
 	// Special blend modes for fog and AA coverage
@@ -322,6 +322,8 @@ public class Graphics3D
 					if (cropH <= 0) { cropH = bgImg.getHeight(); }
 					final boolean repeatX = background.getImageModeX() == Background.REPEAT;
 					final boolean repeatY = background.getImageModeY() == Background.REPEAT;
+					final boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
+						|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
 
 					for (int py = 0; py < viewh; py++)
 					{
@@ -336,20 +338,23 @@ public class Graphics3D
 							int paintPixel = bgImg.getPixel(sx, sy);
 
 							// Dither available? Apply it to the BG Image.
-							if ((this.hints & DITHER) != 0)
+							if (doDither)
 							{
 								int ditherOffset = BAYER_PATTERN[((sy & 3) << 2) | (sx & 3)];
 
-								int a = (paintPixel >>> 24) & 0xFF;
 								int r = (paintPixel >> 16) & 0xFF;
-								int g = (paintPixel >> 8) & 0xFF;
-								int b = paintPixel & 0xFF;
+								int g = (paintPixel >>  8) & 0xFF;
+								int b =  paintPixel & 0xFF;
 
-								r = ditherChannel(r, ditherOffset);
-								g = ditherChannel(g, ditherOffset);
-								b = ditherChannel(b, ditherOffset);
+								r += ditherOffset;
+								g += ditherOffset;
+								b += ditherOffset;
 
-								paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
+								if ((r & ~0xFF) != 0) r = (r < 0) ? 0 : 255;
+								if ((g & ~0xFF) != 0) g = (g < 0) ? 0 : 255;
+								if ((b & ~0xFF) != 0) b = (b < 0) ? 0 : 255;
+
+								paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 							}
 
 							// Image format argument shouldn't matter here
@@ -550,7 +555,7 @@ public class Graphics3D
 		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
-	    || (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
+			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
 		ord[0] = 0; ord[1] = 1; ord[2] = 2;
 
@@ -1066,13 +1071,12 @@ public class Graphics3D
 		if (isectW <= 0 || isectH <= 0) { return; }
 
 		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
-		final Transform modelView = new Transform();
-	    modelView.set(this.currCamTransInv);
-	    if (transform != null) { modelView.postMultiply(transform); }
+		tr.set(this.currCamTransInv);
+		if (transform != null) { tr.postMultiply(transform); }
 
 		// Origin and half-unit axis points in eye space (affine transform, w stays 1).
 		final float[] eye = { 0,0,0,1,  0.5f,0,0,1,  0,0.5f,0,1 };
-		modelView.transform(eye);
+		tr.transform(eye);
 		final float ox = eye[0]/eye[3], oy = eye[1]/eye[3], oz = eye[2]/eye[3];
 		final float dx0 = eye[4]/eye[7] - ox, dy0 = eye[5]/eye[7] - oy, dz0 = eye[6]/eye[7] - oz;
 		final float dx1 = eye[8]/eye[11] - ox, dy1 = eye[9]/eye[11] - oy, dz1 = eye[10]/eye[11] - oz;
@@ -1200,20 +1204,20 @@ public class Graphics3D
 	{
 		// Prepare the flags that can be overridden by the UI.
 		boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
-	    || (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
+			|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
 
 		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
-	    || (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
+			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
 
 		if (hasTexture)
 		{
-		    for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+			for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
 			{
-		        if (textures[i] == null) { continue; }
-		        useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
-		            || (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+				if (textures[i] == null) { continue; }
+				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
 					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
-		    }
+			}
 		}
 
 		// Get into the render loop proper.
@@ -1425,14 +1429,25 @@ public class Graphics3D
 
 					if (doDither)
 					{
-						int ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
+						byte ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
 
-						int a = (paintPixel >>> 24) & 0xFF;
-						int r = ditherChannel((paintPixel >> 16) & 0xFF, ditherOffset);
-						int g = ditherChannel((paintPixel >> 8) & 0xFF, ditherOffset);
-						int b = ditherChannel(paintPixel & 0xFF, ditherOffset);
+						int r = (paintPixel >> 16) & 0xFF;
+						int g = (paintPixel >>  8) & 0xFF;
+						int b =  paintPixel & 0xFF;
 
-						paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
+						// Apply dither offset
+						r += ditherOffset;
+						g += ditherOffset;
+						b += ditherOffset;
+
+						// Fast-path branchless check for [0, 255] bounds.
+						// (c & ~0xFF) is non-zero ONLY if c < 0 or c > 255
+						if ((r & ~0xFF) != 0) r = (r < 0) ? 0 : 255;
+						if ((g & ~0xFF) != 0) g = (g < 0) ? 0 : 255;
+						if ((b & ~0xFF) != 0) b = (b < 0) ? 0 : 255;
+
+						// Repack keeping original Alpha intact
+						paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 					}
 
 					// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
@@ -1483,13 +1498,6 @@ public class Graphics3D
 				rasterData[targetIdx + canvasWidth] = rasterData[targetIdx];
 			}
 		}
-	}
-
-	// Applies dithering to a specific color channel.
-	private static final int ditherChannel(int channel, int dither)
-	{
-		int val = channel + dither;
-		return val < 0 ? 0 : (val > 255 ? 255 : val);
 	}
 
 	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
