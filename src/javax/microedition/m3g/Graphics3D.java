@@ -33,13 +33,13 @@ public class Graphics3D
 	public static final int MODE_APP_CONTROLLED = 1;
 	public static final int MODE_FORCE_ENABLE  = 2;
 
-	// Dither pattern matrix (fast ordered dithering))
-	private static final int[] BAYER_PATTERN =
+	// Dither pattern matrix (fast ordered dithering)
+	private static final byte[] BAYER_PATTERN =
 	{
-		 -8,   0, -6,  2,
-		  4, -4,  6, -2,
-		 -5,  3, -7,  1,
-		  7, -1,  5, -3
+		-8,  0, -6,  2,
+		 4, -4,  6, -2,
+		-5,  3, -7,  1,
+		 7, -1,  5, -3
 	};
 
 	// Special blend modes for fog and AA coverage
@@ -80,7 +80,7 @@ public class Graphics3D
 	private int viewh;
 
 	private boolean depthEnabled;
-	private float[] depthBuffer;
+	private short[] depthBuffer;
 	private float near;
 	private float far;
 
@@ -261,8 +261,8 @@ public class Graphics3D
 			{ throw new IllegalArgumentException("Render target either has larger dimensions than supported, or the render hint is invalid"); }
 
 		this.target = target;
-		this.depthBuffer = new float[this.vieww * this.viewh];
-		Arrays.fill(this.depthBuffer, this.far);
+		this.depthBuffer = new short[this.vieww * this.viewh];
+		Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f));
 		this.depthEnabled = depthBuffer;
 		this.hints = hints;
 	}
@@ -322,6 +322,8 @@ public class Graphics3D
 					if (cropH <= 0) { cropH = bgImg.getHeight(); }
 					final boolean repeatX = background.getImageModeX() == Background.REPEAT;
 					final boolean repeatY = background.getImageModeY() == Background.REPEAT;
+					final boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
+						|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
 
 					for (int py = 0; py < viewh; py++)
 					{
@@ -336,20 +338,23 @@ public class Graphics3D
 							int paintPixel = bgImg.getPixel(sx, sy);
 
 							// Dither available? Apply it to the BG Image.
-							if ((this.hints & DITHER) != 0)
+							if (doDither)
 							{
 								int ditherOffset = BAYER_PATTERN[((sy & 3) << 2) | (sx & 3)];
 
-								int a = (paintPixel >>> 24) & 0xFF;
 								int r = (paintPixel >> 16) & 0xFF;
-								int g = (paintPixel >> 8) & 0xFF;
-								int b = paintPixel & 0xFF;
+								int g = (paintPixel >>  8) & 0xFF;
+								int b =  paintPixel & 0xFF;
 
-								r = ditherChannel(r, ditherOffset);
-								g = ditherChannel(g, ditherOffset);
-								b = ditherChannel(b, ditherOffset);
+								r += ditherOffset;
+								g += ditherOffset;
+								b += ditherOffset;
 
-								paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
+								if ((r & ~0xFF) != 0) r = (r < 0) ? 0 : 255;
+								if ((g & ~0xFF) != 0) g = (g < 0) ? 0 : 255;
+								if ((b & ~0xFF) != 0) b = (b < 0) ? 0 : 255;
+
+								paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 							}
 
 							// Image format argument shouldn't matter here
@@ -362,7 +367,7 @@ public class Graphics3D
 			}
 		}
 
-		if (clearDepth) { Arrays.fill(this.depthBuffer, this.far); }
+		if (clearDepth) { Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f)); }
 	}
 
 	public Camera getCamera(Transform transform)
@@ -550,7 +555,7 @@ public class Graphics3D
 		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
-	    || (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
+			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
 		ord[0] = 0; ord[1] = 1; ord[2] = 2;
 
@@ -716,13 +721,6 @@ public class Graphics3D
 		// Now with texture and vertex coordinates transformed, we generate the
 		// actual geometry, clip/cull it, and move it to NDC.
 
-		/*
-		 * Near-plane distance for clipping: the camera's actual near plane (where
-		 * w_clip == -z_eye == near), NOT the depth-range near (which defaults to 0).
-		 * Clipping against w >= 0 leaves vertices at w == 0 that blow up to infinity
-		 * in the perspective division, dropping every triangle that crosses the plane.
-		 */
-		final float clipNear = (projType == Camera.PERSPECTIVE) ? M3GMath.max(projParams[2], 1e-4f) : 1e-4f;
 
 		// Create Triangle objects (fromVertAndTris already does culling and clipping)
 		final Triangle[] trisScreen = Triangle.fromVertAndTris(
@@ -735,8 +733,7 @@ public class Graphics3D
 			// Lights
 			this.currLights, lightEyePos, lightEyeDir,
 			// IndexArray, clipping, winding order and perspectiveCorrection
-			triangles.getIndexArray(),
-			renderableTriangles, clipNear, cullingMode, vertices,
+                triangles.getIndexArray(), renderableTriangles, cullingMode, vertices,
 			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection);
 
 		// At this point the triangles in `trisScreen` are actually
@@ -751,9 +748,13 @@ public class Graphics3D
 			if (textures[i] != null) { textr[i].setIdentity(); }
 		}
 
-		// Fit to viewport
-		tr.postScale(vieww / 2f, -viewh / 2f, 1f);
-		tr.postTranslate(1, -1, 0);
+
+		// Fit to viewport. Notice that Z is scaled slightly below the max limits
+		// for shorts (which is -32768, 32767), this is to make sure the
+		// multiplied Z values will always be in range and never overflow,
+		// saving us the need to clamp it for every pixel draw
+		tr.postScale(vieww / 2f, -viewh / 2f, (far - near) * 32759.5f);
+		tr.postTranslate(1f, -1f, 0);
 
 		// -> Screen space
 
@@ -847,7 +848,7 @@ public class Graphics3D
 				}
 
 				// Calculate the right horizon
-				rHorizon = (yMid - yTop) / (yBot - yTop);
+				rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
 				xMidR = xTop + rHorizon * (xBot - xTop);
 				zMidR = zTop + rHorizon * (zBot - zTop);
 				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
@@ -994,7 +995,7 @@ public class Graphics3D
 		{
 			this.near=near;
 			this.far=far;
-			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, this.far); }
+			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f)); }
 		}
 	}
 
@@ -1062,12 +1063,12 @@ public class Graphics3D
 		if (isectW <= 0 || isectH <= 0) { return; }
 
 		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
-		final Transform modelView = (transform == null) ? new Transform() : new Transform(transform);
-		modelView.preMultiply(this.currCamTransInv);
+		tr.set(this.currCamTransInv);
+		if (transform != null) { tr.postMultiply(transform); }
 
 		// Origin and half-unit axis points in eye space (affine transform, w stays 1).
 		final float[] eye = { 0,0,0,1,  0.5f,0,0,1,  0,0.5f,0,1 };
-		modelView.transform(eye);
+		tr.transform(eye);
 		final float ox = eye[0]/eye[3], oy = eye[1]/eye[3], oz = eye[2]/eye[3];
 		final float dx0 = eye[4]/eye[7] - ox, dy0 = eye[5]/eye[7] - oy, dz0 = eye[6]/eye[7] - oz;
 		final float dx1 = eye[8]/eye[11] - ox, dy1 = eye[9]/eye[11] - oy, dz1 = eye[10]/eye[11] - oz;
@@ -1081,8 +1082,13 @@ public class Graphics3D
 		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
 
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
-		final float ndcZ = clip[2]/clip[3];
+		float ndcZ = clip[2]/clip[3];
 		if (ndcZ < -1f || ndcZ > 1f) { return; }
+
+		// Our depth buffer is now comprised of short values, so ndcZ has to be
+		// multiplied by the same factor used by the buffer.
+		ndcZ = ndcZ * (this.far - this.near) * 32759.5f;
+		short z = (short) ndcZ;
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
@@ -1132,18 +1138,15 @@ public class Graphics3D
 		{
 			// Distance in eye space along the camera's viewing axis
 			final float zEye = -oz;
+			final float invFogDiv = M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance());
 
-			float fogFactor;
 			if (fog.getMode() == Fog.LINEAR)
 			{
-				fogFactor = (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance());
+				fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
 			}
-			else
-			{
-				fogFactor = M3GMath.exp(-fog.getDensity() * zEye);
-			}
+			else { fogFactor = M3GMath.exp(-fog.getDensity() * zEye); }
 
-			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
+			fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
 		}
 
 		for (int y = pixT; y < pixB; y++)
@@ -1159,7 +1162,7 @@ public class Graphics3D
 			for (int x = pixL; x < pixR; x++)
 			{
 				// Depth test against the same buffer and convention used by triangles.
-				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
+				if (depthTest && this.depthBuffer[this.vieww * y + x] <= z) { continue; }
 
 				final float u = (x + 0.5f - sx0) / spanX;
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
@@ -1174,12 +1177,12 @@ public class Graphics3D
 					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 
 				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
-					paintPixel, alpha, compositingMode.getBlending(), 0, 0);;
+					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
 
 				// Rendering at half res?
 				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 
-				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
+				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = z; }
 			}
 		}
 	}
@@ -1191,33 +1194,34 @@ public class Graphics3D
 	{
 		// Prepare the flags that can be overridden by the UI.
 		boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
-	    || (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
+			|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
 
 		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
-	    || (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
+			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
 
 		if (hasTexture)
 		{
-		    for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+			for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
 			{
-		        if (textures[i] == null) { continue; }
-		        useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
-		            || (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+				if (textures[i] == null) { continue; }
+				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
 					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
-		    }
+			}
 		}
 
 		// Get into the render loop proper.
 
+		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
 		for (int y = yStart; y < yEnd; y++)
 		{
 			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
 			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
 
 			float drawY = half == 0
-				? (y - yTop) / (yMid - yTop)  // Upper half
-				: 1f - (y - yMid) / (yBot - yMid); // Lower half
-			drawY = M3GMath.min(drawY, 1f);
+				? (y - yTop) * yDiv  // Upper half
+				: 1f - (y - yMid) * yDiv; // Lower half
+			drawY = M3GMath.min(drawY, 1.0f);
 
 			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
 			float xL = half == 0
@@ -1299,7 +1303,7 @@ public class Graphics3D
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(depthEnabled && this.depthBuffer[depthIdx] <= z)
+				if(depthEnabled && this.depthBuffer[depthIdx] <= (short) z)
 				{
 					// We need to increment the color deltas even when discarding by depth,
 					// otherwise vertex color spans on objects partially occluded by others
@@ -1338,6 +1342,8 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
+					float invPw = M3GMath.fastReciprocal(pw);
+
 					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
 					{
 						// Skip this texture unit right away if it is disabled/unused
@@ -1348,8 +1354,8 @@ public class Graphics3D
 
 						if(doPerspective)
 						{
-							s /= pw;
-							t /= pw;
+							s *= invPw;
+							t *= invPw;
 						}
 
 						if (useBilinear[i])
@@ -1389,8 +1395,9 @@ public class Graphics3D
 				 */
 				if ((paintPixel >>> 24) == 0 || (paintPixel >>> 24) < alphaThreshold) { continue; }
 
-				// Update the depth buffer if depth write is enabled
-				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdx] = z; }
+				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
+				if (depthEnabled && compositingMode.isDepthWriteEnabled() &&
+					(paintPixel >>> 24) == 255) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
 				if (fog != null)
@@ -1416,14 +1423,25 @@ public class Graphics3D
 
 					if (doDither)
 					{
-						int ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
+						byte ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
 
-						int a = (paintPixel >>> 24) & 0xFF;
-						int r = ditherChannel((paintPixel >> 16) & 0xFF, ditherOffset);
-						int g = ditherChannel((paintPixel >> 8) & 0xFF, ditherOffset);
-						int b = ditherChannel(paintPixel & 0xFF, ditherOffset);
+						int r = (paintPixel >> 16) & 0xFF;
+						int g = (paintPixel >>  8) & 0xFF;
+						int b =  paintPixel & 0xFF;
 
-						paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
+						// Apply dither offset
+						r += ditherOffset;
+						g += ditherOffset;
+						b += ditherOffset;
+
+						// Fast-path branchless check for [0, 255] bounds.
+						// (c & ~0xFF) is non-zero ONLY if c < 0 or c > 255
+						if ((r & ~0xFF) != 0) r = (r < 0) ? 0 : 255;
+						if ((g & ~0xFF) != 0) g = (g < 0) ? 0 : 255;
+						if ((b & ~0xFF) != 0) b = (b < 0) ? 0 : 255;
+
+						// Repack keeping original Alpha intact
+						paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 					}
 
 					// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
@@ -1474,13 +1492,6 @@ public class Graphics3D
 				rasterData[targetIdx + canvasWidth] = rasterData[targetIdx];
 			}
 		}
-	}
-
-	// Applies dithering to a specific color channel.
-	private static final int ditherChannel(int channel, int dither)
-	{
-		int val = channel + dither;
-		return val < 0 ? 0 : (val > 255 ? 255 : val);
 	}
 
 	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
@@ -1628,36 +1639,36 @@ public class Graphics3D
 				return bg;
 			}
 
-            case Texture2D.FUNC_MODULATE:
-            {
-                int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
-                int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
+      case Texture2D.FUNC_MODULATE:
+      {
+        int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
+        int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
 
-                int outR, outG, outB, outA;
+        int outR, outG, outB, outA;
 
-                if (texFormat == Image2D.ALPHA)
-                {
-                    outR = fR;
-                    outG = fG;
-                    outB = fB;
-                }
-                else
-                {
-                    int pR = fR * tR + 1; outR = (pR + (pR >> 8)) >> 8;
-                    int pG = fG * tG + 1; outG = (pG + (pG >> 8)) >> 8;
-                    int pB = fB * tB + 1; outB = (pB + (pB >> 8)) >> 8;
-                }
+        if (texFormat == Image2D.ALPHA)
+        {
+            outR = fR;
+            outG = fG;
+            outB = fB;
+        }
+        else
+        {
+            int pR = fR * tR + 1; outR = (pR + (pR >> 8)) >> 8;
+            int pG = fG * tG + 1; outG = (pG + (pG >> 8)) >> 8;
+            int pB = fB * tB + 1; outB = (pB + (pB >> 8)) >> 8;
+        }
 
-                if (texFormat == Image2D.ALPHA || texFormat == Image2D.LUMINANCE_ALPHA
-                        || texFormat == Image2D.RGBA)
-                {
-                    int pA = fA * tA + 1;
-                    outA = (pA + (pA >> 8)) >> 8;
-                }
-                else { outA = fA; }
+        if (texFormat == Image2D.ALPHA || texFormat == Image2D.LUMINANCE_ALPHA
+                || texFormat == Image2D.RGBA)
+        {
+            int pA = fA * tA + 1;
+            outA = (pA + (pA >> 8)) >> 8;
+        }
+        else { outA = fA; }
 
-                return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-            }
+        return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+      }
 
 			case Texture2D.FUNC_REPLACE:
 				// RGB & LUMINANCE don't carry an alpha channel, so we use the bg alpha

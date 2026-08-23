@@ -44,6 +44,9 @@ class Triangle
 
 	private boolean hasVertexColors = false;
 
+	// Used for sorting triangles front-to-back
+	private float sortZ;
+
 	private final int[] colors = new int[3];
 
 	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
@@ -74,8 +77,8 @@ class Triangle
 		// Lights
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
 		// IndexArray, clipping, winding order and perspectiveCorrection
-		int[] tris, int[] renderableTriangles, float near, int cullingMode,
-		VertexBuffer vertices, boolean polygonClockwise, boolean perspectiveCorrect)
+		int[] tris, int[] renderableTriangles, int cullingMode, VertexBuffer vertices,
+        boolean polygonClockwise, boolean perspectiveCorrect)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
@@ -153,12 +156,11 @@ class Triangle
 			}
 
 			/*
-			 * Clip against the near plane (w >= near) in clip space, interpolating both
-			 * positions, texture coordinates and vertex colors. Vertices behind the
-			 * camera would otherwise explode to huge coordinates after perspective division.
+             * Clip against the homogeneous near plane (z >= -w), interpolating
+             * positions, texture coordinates and vertex colors before perspective division.
 			 */
-			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC, tri_id,
-				vertices, hasTex, texc, near, Triangle.outV, Triangle.outT, Triangle.outC);
+            final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
+                    hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
 
 			if (outCount < 3) { continue; }
 
@@ -179,6 +181,9 @@ class Triangle
 				boolean hasColors = hasLighting || (vertices.getColors() != null);
 				tri.setVertexColors(hasColors ? Triangle.outC : null, fan);
 
+				// Calculate the average Z for front-to-back sorting.
+				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
+
 				tri.project(perspectiveCorrect);
 
 				if (tri.outsideFrustum()) { continue; }
@@ -188,7 +193,7 @@ class Triangle
 			}
 		}
 
-		return Triangle.result;
+		return sortFrontToBack(Triangle.result, renderableTriangles[0]);
 	}
 
 	private static final void calculateLighting(
@@ -412,13 +417,15 @@ class Triangle
 	}
 
 	/*
-	 * Sutherland-Hodgman clip of one triangle against the near plane (w >= near).
+     * Sutherland-Hodgman clip of one triangle against the homogeneous near plane
+     * z + w >= 0. This is valid for perspective, parallel and generic projection
+     * matrices; camera-space distances are not available for a generic matrix.
 	 * Writes the resulting polygon (0, 3 or 4 vertices) into outV/outT and returns
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-	private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC, int tri_id,
-		VertexBuffer vertices, boolean hasTex, float texc[][], float near, float[] outV, float[][] outT, int[] outC)
+    private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC,
+                                           boolean hasTex, float[][] texc, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
 
@@ -426,7 +433,9 @@ class Triangle
 		{
 			final int j = (i + 1) % 3;
 			final float wi = inV[4*i+3], wj = inV[4*j+3];
-			final boolean insideI = wi >= near, insideJ = wj >= near;
+            final float distanceI = inV[4*i+2] + wi;
+            final float distanceJ = inV[4*j+2] + wj;
+            final boolean insideI = distanceI >= 0.0f, insideJ = distanceJ >= 0.0f;
 
 			if (insideI)
 			{
@@ -444,7 +453,7 @@ class Triangle
 			}
 			if (insideI != insideJ)
 			{
-				final float amt = (near - wi) / (wj - wi);
+                final float amt = distanceI / (distanceI - distanceJ);
 				for (int c = 0; c < 4; c++)
 				{
 					outV[4*outCount + c] = inV[4*i + c] + amt * (inV[4*j + c] - inV[4*i + c]);
@@ -477,6 +486,29 @@ class Triangle
 			}
 		}
 		return outCount;
+	}
+
+	private static Triangle[] sortFrontToBack(Triangle[] array, int count)
+	{
+		// No use trying to sort less than 2 triangles
+		if (count < 2) { return array; }
+
+	    // Insertion sort should be good enough for most M3G apps, as triangle
+		// count is often very low.
+	    for (int i = 1; i < count; i++)
+	    {
+	        Triangle tri = array[i];
+	        int j = i - 1;
+
+	        while (j >= 0 && array[j].sortZ < tri.sortZ)
+	        {
+	            array[j + 1] = array[j];
+	            j--;
+	        }
+	        array[j + 1] = tri;
+	    }
+
+		return array;
 	}
 
 	public final boolean outsideFrustum()

@@ -140,6 +140,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	protected int translateX = 0;
 	protected int translateY = 0;
+	protected int clipX = 0;
+	protected int clipY = 0;
+	protected int clipWidth = 0;
+	protected int clipHeight = 0;
 
 	protected int resetTransX = 0;
 	protected int resetTransY = 0;
@@ -532,54 +536,72 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha)
 	{
-		if(width == 0 || height == 0) { return; }
+		if (width <= 0 || height <= 0) { return; }
 		if (rgbData == null) { throw new NullPointerException("RGB Data array is null"); }
 		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException("Invalid offset for RGB Data"); }
-
-		if (scanlength > 0)
-		{
-			if (offset + scanlength * (height - 1) + width > rgbData.length)
-			{
-				throw new ArrayIndexOutOfBoundsException("DrawRGB Area is out of bounds (len" + rgbData.length + " max" + (offset + scanlength * (height - 1) + width)  + " scanlength " + scanlength + " offset " + offset + ")");
-			}
-		}
-		else
-		{
-			if (offset + width > rgbData.length || offset + scanlength * (height - 1) < 0)
-			{
-				throw new ArrayIndexOutOfBoundsException("DrawRGB Area is out of bounds (scanlength " + scanlength + ")");
-			}
-		}
 
 		x += translateX;
 		y += translateY;
 
-		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
-		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
-		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
+		final int clipX = Math.max(0, getClipX() + translateX);
+		final int clipY = Math.max(0, getClipY() + translateY);
+		final int clipWidth = Math.min(canvasWidth, getClipWidth() + getClipX() + translateX);
+		final int clipHeight = Math.min(canvasHeight, getClipHeight() + getClipY() + translateY);
 
-		if(y + height > clipHeight) { height = clipHeight - y; }
-		if(x + width > clipWidth)   { width = clipWidth - x; }
+		if (x < clipX)
+		{
+			int diff = clipX - x;
+			offset += diff;
+			width -= diff;
+			x = clipX;
+		}
+		if (y < clipY)
+		{
+			int diff = clipY - y;
+			offset += diff * scanlength;
+			height -= diff;
+			y = clipY;
+		}
+
+		if (x + width > clipWidth)   { width = clipWidth - x; }
+		if (y + height > clipHeight) { height = clipHeight - y; }
 
 		/* If width or height ended up as zero, we can exit early */
-		if(width == 0 || height == 0) { return; }
+		if (width <= 0 || height <= 0) { return; }
 
-		final int icache = (x > clipX) ? 0 : (clipX - x);
-		final int jcache = (y > clipY) ? 0 : (clipY - y);
-
-		int rowOffset, destRow, j, i;
-		// The array's x and y positions start from either 0 or the first valid drawable position, as the offset is what dictates where the data should start being read from
-		for (j = jcache; j < height; j++) // This ternary only runs once, so there's no need to cache
+		// If we don't need to process alpha, just arraycopy rows right away.
+		if (!processAlpha)
 		{
-			rowOffset = offset + (j * scanlength);
-			destRow = (y + j) * canvasWidth;
+			int srcRow = offset;
+			int dstRow = y * canvasWidth + x;
 
-			for (i = icache; i < width; i++)
+			for (int j = 0; j < height; j++)
 			{
-				if (!processAlpha || (rgbData[rowOffset + i] >> 24 & 0xFF) == 255) { canvasData[destRow + x + i] = rgbData[rowOffset + i] | 0xFF000000; } // Set pixel as fully opaque
-				else { canvasData[destRow + x + i] = blendPixels(rgbData[rowOffset + i], canvasData[destRow + x + i]); } // Handle alpha blending
+				System.arraycopy(rgbData, srcRow, canvasData, dstRow, width);
+				srcRow += scanlength;
+				dstRow += canvasWidth;
 			}
+			return;
+		}
+
+		// Otherwise we need to blend each pixel.
+		int srcRow = offset;
+		int dstRow = y * canvasWidth + x;
+
+		for (int j = 0; j < height; j++)
+		{
+			for (int i = 0; i < width; i++)
+			{
+				int pixel = rgbData[srcRow + i];
+				int alpha = pixel >>> 24;
+
+				if (alpha == 255) { canvasData[dstRow + i] = pixel; }
+				else if (alpha > 0) { canvasData[dstRow + i] = blendPixels(pixel, canvasData[dstRow + i]);}
+
+				// Fully transparent pixels are just skipped entirely
+			}
+			srcRow += scanlength;
+			dstRow += canvasWidth;
 		}
 	}
 
@@ -682,9 +704,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int lastFillX = -1;
 		int lastFillY = -1;
 
+		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
+
 		if((firstFillX >= clipX && firstFillX < clipWidth && firstFillY >= clipY && firstFillY < clipHeight))
 		{
-			if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[(firstFillY * canvasWidth) + firstFillX] = getColor(); }
+			if(isOpaque) { canvasData[(firstFillY * canvasWidth) + firstFillX] = getColor(); }
 			else
 			{
 				canvasData[(firstFillY * canvasWidth) + firstFillX] = blendPixels(getColor(), canvasData[(firstFillY * canvasWidth) + firstFillX]);
@@ -714,7 +738,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			if((fillX >= clipX && fillX < clipWidth && fillY >= clipY && fillY < clipHeight) &&
 			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
 			{
-				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[(fillY * canvasWidth) + fillX] = getColor(); }
+				if(isOpaque) { canvasData[(fillY * canvasWidth) + fillX] = getColor(); }
 				else
 				{
 					canvasData[(fillY * canvasWidth) + fillX] = blendPixels(getColor(), canvasData[(fillY * canvasWidth) + fillX]);
@@ -739,6 +763,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
 		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
+		final boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
 		for (int j = 0; j < height; j++)
 		{
 			for (int i = 0; i < width;)
@@ -749,7 +774,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				(j == height-1 && i % 4 <= 1) || (i == width-1 && j % 4 <= 1)))
 				|| strokeStyle == SOLID))
 				{
-					if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[((y + j) * canvasWidth) + (x + i)] = getColor(); }
+					if(isOpaque) { canvasData[((y + j) * canvasWidth) + (x + i)] = getColor(); }
 					else
 					{
 						canvasData[((y + j) * canvasWidth) + (x + i)] = blendPixels(getColor(), canvasData[((y + j) * canvasWidth) + (x + i)]);
@@ -932,27 +957,61 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		x += translateX;
 		y += translateY;
 
-		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
-		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
-		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
+		final int clipX = Math.max(0, getClipX() + translateX);
+		final int clipY = Math.max(0, getClipY() + translateY);
+		final int clipWidth = Math.min(canvasWidth, getClipWidth() + getClipX() + translateX);
+		final int clipHeight = Math.min(canvasHeight, getClipHeight() + getClipY() + translateY);
+
+		if (x < clipX)
+		{
+			width -= (clipX - x);
+			x = clipX;
+		}
+
+		if (y < clipY)
+		{
+			height -= (clipY - y);
+			y = clipY;
+		}
 
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
 
 		/* If width or height ended up as zero, we can exit early */
-		if(width == 0 || height == 0) { return; }
+		if(width <= 0 || height <= 0) { return; }
 
-		final int icache = (x > clipX) ? 0 : (clipX - x);
-		final int jcache = (y > clipY) ? 0 : (clipY - y);
+		final int color = getColor();
+		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
+		int dstRow = y * canvasWidth + x;
 
-		for (int j = jcache; j < height; j++)
+		// For opaque, we fill the first row normally, then arraycopy for others
+		if (isOpaque)
 		{
-			for (int i = icache; i < width; i++)
+			int rowEnd = dstRow + width;
+			for (int idx = dstRow; idx < rowEnd; idx++) { canvasData[idx] = color; }
+
+			int nextRow = dstRow + canvasWidth;
+			for (int j = 1; j < height; j++)
 			{
-				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[((y+j) * canvasWidth) + x+i] = getColor(); }
-				else { canvasData[((y+j) * canvasWidth) + x+i] = blendPixels(getColor(), canvasData[((y+j) * canvasWidth) + x+i]); }
+				System.arraycopy(canvasData, dstRow, canvasData, nextRow, width);
+				nextRow += canvasWidth;
 			}
+			return;
+		}
+
+		// Alpha requires blending each pixel manually
+		for (int j = 0; j < height; j++)
+		{
+			int dstIdx = dstRow;
+			int count = width;
+
+			while (--count >= 0)
+			{
+				canvasData[dstIdx] = blendPixels(color, canvasData[dstIdx]);
+				dstIdx++;
+			}
+
+			dstRow += canvasWidth;
 		}
 	}
 
@@ -1049,6 +1108,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		if(!Mobile.isDoJa) { gc.setClip(x, y, width, height); }
 		else { gc.setClip(x-getTranslateX(), y-getTranslateY(), width, height); }
+
+		this.clipX = gc.getClipBounds().x;
+		this.clipY = gc.getClipBounds().y;
+		this.clipWidth = gc.getClipBounds().width;
+		this.clipHeight = gc.getClipBounds().height;
 	}
 
 	public void clipRect(int x, int y, int width, int height)
@@ -1056,19 +1120,24 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		gc.clipRect(x, y, width, height);
+
+		this.clipX = gc.getClipBounds().x;
+		this.clipY = gc.getClipBounds().y;
+		this.clipWidth = gc.getClipBounds().width;
+		this.clipHeight = gc.getClipBounds().height;
 	}
 
 	public int getTranslateX() { return translateX; }
 
 	public int getTranslateY() { return translateY; }
 
-	public int getClipHeight() { return gc.getClipBounds().height; }
+	public int getClipHeight() { return this.clipHeight; }
 
-	public int getClipWidth() { return gc.getClipBounds().width; }
+	public int getClipWidth() { return this.clipWidth; }
 
-	public int getClipX() { return gc.getClipBounds().x; }
+	public int getClipX() { return this.clipX; }
 
-	public int getClipY() { return gc.getClipBounds().y; }
+	public int getClipY() { return this.clipY; }
 
 	public void translate(int x, int y)
 	{
@@ -1471,8 +1540,12 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(ymin+translateY < clipY) { ymin = clipY-translateY; }
 		if(ymax+translateY >= clipHeight) { ymax = clipHeight-translateY; }
 
+		if (ymin >= ymax) { return; }
+
 		final int[] intersections = new int[nPoints];
 		int intersectionCount = 0;
+
+		final boolean isOpaque = ((argbColor >>> 24) == 255);
 
 		for (int y = ymin; y < ymax; y++)
 		{
@@ -1506,6 +1579,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				}
 			}
 
+			int rowOffset = (y + translateY) * canvasWidth;
 			for (int i = 0; i < intersectionCount; i += 2)
 			{
 				if (i + 1 < intersectionCount)
@@ -1514,12 +1588,19 @@ public abstract class PlatformGraphics implements DirectGraphics,
 					int xEnd = intersections[i + 1] + translateX;
 					if(xStart < clipX) { xStart = clipX; }
 					if(xEnd > clipWidth) { xEnd = clipWidth; }
-					for (int x = xStart; x < xEnd; x++)
+					if (xStart >= xEnd) { continue; }
+
+					int pixelIdx = rowOffset + xStart;
+					if (isOpaque)
 					{
-						if(((argbColor >> 24) & 0xFF) == 255) { canvasData[(y+translateY)*canvasWidth+x] = argbColor; }
-						else
+						for (int x = xStart; x < xEnd; x++) { canvasData[pixelIdx++] = argbColor; }
+					}
+					else
+					{
+						for (int x = xStart; x < xEnd; x++)
 						{
-							canvasData[(y+translateY)*canvasWidth+x] = blendPixels(argbColor, canvasData[(y+translateY)*canvasWidth+x]);
+							canvasData[pixelIdx] = blendPixels(argbColor, canvasData[pixelIdx]);
+							pixelIdx++;
 						}
 					}
 				}
@@ -1876,42 +1957,44 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Used everywhere alpha blending might be needed, be it getPixels, flushGraphics, etc.
 	private final int blendPixels(final int srcPixel, final int destPixel)
 	{
-		final int srcAlpha = (srcPixel >>> 24); // Source alpha
+		final int srcAlpha = (srcPixel >>> 24);
 		if(srcAlpha == 0) { return destPixel; } // No blending needed in any of the cases below, return early
-
-		int newRed = 0, newGreen = 0, newBlue = 0;
 
 		switch (renderMode)
 		{
 			case com.nttdocomo.opt.ui.Graphics2.OP_REPL: // Also used by MIDP, which does this operation by default (SRC_OVER)
+			{
 				if (srcAlpha == 255) { return srcPixel; }
 
 				final int invAlpha = 255 - srcAlpha;
-				final int destAlpha = destPixel >>> 24;
-				final int newAlpha = Math.min(255, srcAlpha + destAlpha);
 
 				final int srcRB  = srcPixel & 0x00FF00FF;
 				final int destRB = destPixel & 0x00FF00FF;
 				final int blendedRB = (((srcRB * srcAlpha + destRB * invAlpha) >> 8) & 0x00FF00FF);
 
-				final int srcG   = srcPixel & 0x0000FF00;
-				final int destG  = destPixel & 0x0000FF00;
-				final int blendedG = (((srcG * srcAlpha + destG * invAlpha) >> 8) & 0x0000FF00);
+				int srcAG = (srcPixel >>> 8) & 0x00FF00FF;
+				int destAG = (destPixel >>> 8) & 0x00FF00FF;
+				int blendedAG = (((srcAG * srcAlpha + destAG * invAlpha)) & 0xFF00FF00);
 
-				return (newAlpha << 24) | blendedRB | blendedG;
-
+				return blendedAG | blendedRB;
+			}
 			// ADD and SUB never take alpha into consideration for RGB values
 			case com.nttdocomo.opt.ui.Graphics2.OP_ADD:
+			{
+				int newRed = 0, newGreen = 0, newBlue = 0;
 				newRed = clamp((((destPixel >> 16) & 0xFF) * dstRatio + ((srcPixel >> 16) & 0xFF) * srcRatio) >> 8);
 				newGreen = clamp((((destPixel >> 8) & 0xFF) * dstRatio + ((srcPixel >> 8) & 0xFF) * srcRatio) >> 8);
 				newBlue = clamp(((destPixel & 0xFF) * dstRatio + (srcPixel & 0xFF) * srcRatio) >> 8);
 				return 0xFF000000 | (newRed << 16) | (newGreen << 8) | newBlue;
+			}
 			case com.nttdocomo.opt.ui.Graphics2.OP_SUB:
+			{
+				int newRed = 0, newGreen = 0, newBlue = 0;
 				newRed = clamp((((destPixel >> 16) & 0xFF) * dstRatio - ((srcPixel >> 16) & 0xFF) * srcRatio) >> 8);
 				newGreen = clamp((((destPixel >> 8) & 0xFF) * dstRatio - ((srcPixel >> 8) & 0xFF) * srcRatio) >> 8);
 				newBlue = clamp(((destPixel & 0xFF) * dstRatio - (srcPixel & 0xFF) * srcRatio) >> 8);
 				return 0xFF000000 | (newRed << 16) | (newGreen << 8) | newBlue;
-
+			}
 			default:
 				return srcPixel;
 		}

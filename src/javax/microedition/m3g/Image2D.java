@@ -230,14 +230,14 @@ public class Image2D extends Object3D
 	}
 
 	// We do not handle OOB x and y positions here, Graphics3D does that in the clear/render loops
-	int getPixel(int x, int y)
+	final int getPixel(int x, int y)
 	{
 		int offset = this.bpp * (this.width * y + x);
 
 		switch (this.format)
 		{
 			case ALPHA:
-				return ((this.image[offset] & 0xFF) << 24) | 0x00FFFFFF;
+				return ((this.image[offset] & 0xFF) << 24);
 			case LUMINANCE:
 				int lum = this.image[offset] & 0xFF;
 				return 0xFF000000 | (lum << 16) | (lum << 8) | lum;
@@ -260,7 +260,7 @@ public class Image2D extends Object3D
 		}
 	}
 
-	private static void validateFormat(int format)
+	private static final void validateFormat(int format)
 	{
 		if (format < ALPHA || format > RGBA)
 		{
@@ -268,7 +268,7 @@ public class Image2D extends Object3D
 		}
 	}
 
-	private static void validateDimensions(int w, int h)
+	private static final void validateDimensions(int w, int h)
 	{
 		if (w <= 0 || h <= 0)
 		{
@@ -276,7 +276,7 @@ public class Image2D extends Object3D
 		}
 	}
 
-	private void setBpp()
+	private final void setBpp()
 	{
 		switch (this.format)
 		{
@@ -300,5 +300,5 @@ public class Image2D extends Object3D
 		}
 	}
 
-	static boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
+	static final boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
 }
