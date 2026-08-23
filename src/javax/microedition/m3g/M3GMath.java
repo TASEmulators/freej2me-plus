@@ -120,14 +120,16 @@ public class M3GMath
 		return Math.copySign(angle, y); // Negate if y is negative
 	}
 
-	// Fast float reciprocal (1 / x) using Newton-Raphson step
+	// Fast float reciprocal (1 / x) using two Newton-Raphson steps
 	public static final float fastReciprocal(float x)
 	{
-		if (x == 0.0f) { return Float.POSITIVE_INFINITY; }
 		int i = Float.floatToRawIntBits(x);
 		i = 0x7EF127EA - i;
 		float y = Float.intBitsToFloat(i);
-		return y * (2.0f - x * y);
+
+		float e = 1.0f - x * y;
+
+		return y * (1.0f + e) * (1.0f + e * e);
 	}
 
 	// Now we get to stuff specific to M3G

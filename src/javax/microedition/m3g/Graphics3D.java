@@ -848,7 +848,7 @@ public class Graphics3D
 				}
 
 				// Calculate the right horizon
-				rHorizon = (yMid - yTop) / (yBot - yTop);
+				rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
 				xMidR = xTop + rHorizon * (xBot - xTop);
 				zMidR = zTop + rHorizon * (zBot - zTop);
 				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
@@ -1138,17 +1138,15 @@ public class Graphics3D
 		{
 			// Distance in eye space along the camera's viewing axis
 			final float zEye = -oz;
+			final float invFogDiv = M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance());
 
 			if (fog.getMode() == Fog.LINEAR)
 			{
-				fogFactor = (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance());
+				fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
 			}
-			else
-			{
-				fogFactor = M3GMath.exp(-fog.getDensity() * zEye);
-			}
+			else { fogFactor = M3GMath.exp(-fog.getDensity() * zEye); }
 
-			fogFactor = M3GMath.max(0.0f, M3GMath.min(255.0f, fogFactor * 256.0f));
+			fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
 		}
 
 		for (int y = pixT; y < pixB; y++)
@@ -1214,15 +1212,16 @@ public class Graphics3D
 
 		// Get into the render loop proper.
 
+		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
 		for (int y = yStart; y < yEnd; y++)
 		{
 			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
 			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
 
 			float drawY = half == 0
-				? (y - yTop) / (yMid - yTop)  // Upper half
-				: 1f - (y - yMid) / (yBot - yMid); // Lower half
-			drawY = M3GMath.min(drawY, 1f);
+				? (y - yTop) * yDiv  // Upper half
+				: 1f - (y - yMid) * yDiv; // Lower half
+			drawY = M3GMath.min(drawY, 1.0f);
 
 			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
 			float xL = half == 0
@@ -1343,6 +1342,8 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
+					float invPw = M3GMath.fastReciprocal(pw);
+
 					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
 					{
 						// Skip this texture unit right away if it is disabled/unused
@@ -1353,8 +1354,8 @@ public class Graphics3D
 
 						if(doPerspective)
 						{
-							s /= pw;
-							t /= pw;
+							s *= invPw;
+							t *= invPw;
 						}
 
 						if (useBilinear[i])
@@ -1394,8 +1395,9 @@ public class Graphics3D
 				 */
 				if ((paintPixel >>> 24) == 0 || (paintPixel >>> 24) < alphaThreshold) { continue; }
 
-				// Update the depth buffer if depth write is enabled
-				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdx] = (short) z; }
+				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
+				if (depthEnabled && compositingMode.isDepthWriteEnabled() &&
+					(paintPixel >>> 24) == 255) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
 				if (fog != null)

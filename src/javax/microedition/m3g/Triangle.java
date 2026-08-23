@@ -44,6 +44,9 @@ class Triangle
 
 	private boolean hasVertexColors = false;
 
+	// Used for sorting triangles front-to-back
+	private float sortZ;
+
 	private final int[] colors = new int[3];
 
 	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
@@ -178,6 +181,9 @@ class Triangle
 				boolean hasColors = hasLighting || (vertices.getColors() != null);
 				tri.setVertexColors(hasColors ? Triangle.outC : null, fan);
 
+				// Calculate the average Z for front-to-back sorting.
+				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
+
 				tri.project(perspectiveCorrect);
 
 				if (tri.outsideFrustum()) { continue; }
@@ -187,7 +193,7 @@ class Triangle
 			}
 		}
 
-		return Triangle.result;
+		return sortFrontToBack(Triangle.result, renderableTriangles[0]);
 	}
 
 	private static final void calculateLighting(
@@ -480,6 +486,29 @@ class Triangle
 			}
 		}
 		return outCount;
+	}
+
+	private static Triangle[] sortFrontToBack(Triangle[] array, int count)
+	{
+		// No use trying to sort less than 2 triangles
+		if (count < 2) { return array; }
+
+	    // Insertion sort should be good enough for most M3G apps, as triangle
+		// count is often very low.
+	    for (int i = 1; i < count; i++)
+	    {
+	        Triangle tri = array[i];
+	        int j = i - 1;
+
+	        while (j >= 0 && array[j].sortZ < tri.sortZ)
+	        {
+	            array[j + 1] = array[j];
+	            j--;
+	        }
+	        array[j + 1] = tri;
+	    }
+
+		return array;
 	}
 
 	public final boolean outsideFrustum()
