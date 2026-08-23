@@ -978,7 +978,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(x + width > clipWidth)   { width = clipWidth - x; }
 
 		/* If width or height ended up as zero, we can exit early */
-		if(width == 0 || height == 0) { return; }
+		if(width <= 0 || height <= 0) { return; }
 
 		final int color = getColor();
 		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;

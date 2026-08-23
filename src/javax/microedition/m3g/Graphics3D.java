@@ -80,7 +80,7 @@ public class Graphics3D
 	private int viewh;
 
 	private boolean depthEnabled;
-	private float[] depthBuffer;
+	private short[] depthBuffer;
 	private float near;
 	private float far;
 
@@ -261,8 +261,8 @@ public class Graphics3D
 			{ throw new IllegalArgumentException("Render target either has larger dimensions than supported, or the render hint is invalid"); }
 
 		this.target = target;
-		this.depthBuffer = new float[this.vieww * this.viewh];
-		Arrays.fill(this.depthBuffer, this.far);
+		this.depthBuffer = new short[this.vieww * this.viewh];
+		Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f));
 		this.depthEnabled = depthBuffer;
 		this.hints = hints;
 	}
@@ -362,7 +362,7 @@ public class Graphics3D
 			}
 		}
 
-		if (clearDepth) { Arrays.fill(this.depthBuffer, this.far); }
+		if (clearDepth) { Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f)); }
 	}
 
 	public Camera getCamera(Transform transform)
@@ -751,9 +751,13 @@ public class Graphics3D
 			if (textures[i] != null) { textr[i].setIdentity(); }
 		}
 
-		// Fit to viewport
-		tr.postScale(vieww / 2f, -viewh / 2f, 1f);
-		tr.postTranslate(1, -1, 0);
+
+		// Fit to viewport. Notice that Z is scaled slightly below the max limits
+		// for shorts (which is -32768, 32767), this is to make sure the
+		// multiplied Z values will always be in range and never overflow,
+		// saving us the need to clamp it for every pixel draw
+		tr.postScale(vieww / 2f, -viewh / 2f, (far - near) * 32759.5f);
+		tr.postTranslate(1f, -1f, 0);
 
 		// -> Screen space
 
@@ -994,7 +998,7 @@ public class Graphics3D
 		{
 			this.near=near;
 			this.far=far;
-			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, this.far); }
+			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f)); }
 		}
 	}
 
@@ -1062,8 +1066,9 @@ public class Graphics3D
 		if (isectW <= 0 || isectH <= 0) { return; }
 
 		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
-		final Transform modelView = (transform == null) ? new Transform() : new Transform(transform);
-		modelView.preMultiply(this.currCamTransInv);
+		final Transform modelView = new Transform();
+	    modelView.set(this.currCamTransInv);
+	    if (transform != null) { modelView.postMultiply(transform); }
 
 		// Origin and half-unit axis points in eye space (affine transform, w stays 1).
 		final float[] eye = { 0,0,0,1,  0.5f,0,0,1,  0,0.5f,0,1 };
@@ -1081,8 +1086,13 @@ public class Graphics3D
 		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
 
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
-		final float ndcZ = clip[2]/clip[3];
+		float ndcZ = clip[2]/clip[3];
 		if (ndcZ < -1f || ndcZ > 1f) { return; }
+
+		// Our depth buffer is now comprised of short values, so ndcZ has to be
+		// multiplied by the same factor used by the buffer.
+		ndcZ = ndcZ * (this.far - this.near) * 32759.5f;
+		short z = (short) ndcZ;
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
@@ -1133,7 +1143,6 @@ public class Graphics3D
 			// Distance in eye space along the camera's viewing axis
 			final float zEye = -oz;
 
-			float fogFactor;
 			if (fog.getMode() == Fog.LINEAR)
 			{
 				fogFactor = (fog.getFarDistance() - zEye) / (fog.getFarDistance() - fog.getNearDistance());
@@ -1159,7 +1168,7 @@ public class Graphics3D
 			for (int x = pixL; x < pixR; x++)
 			{
 				// Depth test against the same buffer and convention used by triangles.
-				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
+				if (depthTest && this.depthBuffer[this.vieww * y + x] <= z) { continue; }
 
 				final float u = (x + 0.5f - sx0) / spanX;
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
@@ -1174,12 +1183,12 @@ public class Graphics3D
 					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
 
 				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
-					paintPixel, alpha, compositingMode.getBlending(), 0, 0);;
+					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
 
 				// Rendering at half res?
 				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 
-				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
+				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = z; }
 			}
 		}
 	}
@@ -1299,7 +1308,7 @@ public class Graphics3D
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(depthEnabled && this.depthBuffer[depthIdx] <= z)
+				if(depthEnabled && this.depthBuffer[depthIdx] <= (short) z)
 				{
 					// We need to increment the color deltas even when discarding by depth,
 					// otherwise vertex color spans on objects partially occluded by others
@@ -1390,7 +1399,7 @@ public class Graphics3D
 				if ((paintPixel >>> 24) == 0 || (paintPixel >>> 24) < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled
-				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdx] = z; }
+				if (depthEnabled && compositingMode.isDepthWriteEnabled()) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
 				if (fog != null)
@@ -1639,6 +1648,7 @@ public class Graphics3D
 
 				boolean hasAlpha = (texFormat == Image2D.ALPHA ||
 					texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
+
 				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
