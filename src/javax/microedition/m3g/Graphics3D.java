@@ -733,7 +733,7 @@ public class Graphics3D
 			// Lights
 			this.currLights, lightEyePos, lightEyeDir,
 			// IndexArray, clipping, winding order and perspectiveCorrection
-                triangles.getIndexArray(), renderableTriangles, cullingMode, vertices,
+			triangles.getIndexArray(), renderableTriangles, cullingMode, vertices,
 			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection);
 
 		// At this point the triangles in `trisScreen` are actually
@@ -1644,14 +1644,28 @@ public class Graphics3D
 				int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
 				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
 
-				int outR = (texFormat == Image2D.ALPHA) ? fR : (fR * tR) >> 8;
-				int outG = (texFormat == Image2D.ALPHA) ? fG : (fG * tG) >> 8;
-				int outB = (texFormat == Image2D.ALPHA) ? fB : (fB * tB) >> 8;
+				int outR, outG, outB, outA;
 
-				boolean hasAlpha = (texFormat == Image2D.ALPHA ||
-					texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
+				if (texFormat == Image2D.ALPHA)
+				{
+					outR = fR;
+					outG = fG;
+					outB = fB;
+				}
+				else
+				{
+					int pR = fR * tR + 1; outR = (pR + (pR >> 8)) >> 8;
+					int pG = fG * tG + 1; outG = (pG + (pG >> 8)) >> 8;
+					int pB = fB * tB + 1; outB = (pB + (pB >> 8)) >> 8;
+				}
 
-				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
+				if (texFormat == Image2D.ALPHA || texFormat == Image2D.LUMINANCE_ALPHA
+						|| texFormat == Image2D.RGBA)
+				{
+					int pA = fA * tA + 1;
+					outA = (pA + (pA >> 8)) >> 8;
+				}
+				else { outA = fA; }
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
