@@ -139,10 +139,22 @@ public class M3GMath
 		return y * (1.0f + e) * (1.0f + e * e);
 	}
 
+	public static final float log(float val)
+	{
+	    if (val <= 0.0f) { return 0.0f; }
+
+	    int bits = Float.floatToRawIntBits(val);
+
+	    int exp = ((bits >> 23) & 0xFF) - 127;
+	    float mantissa = Float.intBitsToFloat((bits & 0x007FFFFF) | 0x3F800000) - 1.0f;
+
+	    return exp + mantissa;
+	}
+
 	// Now we get to stuff specific to M3G
 
 	// Normalize a vector
-	public static void normalize(float[] vector)
+	public static final void normalize(float[] vector)
 	{
 		float lengthSq = vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2];
 
@@ -160,36 +172,7 @@ public class M3GMath
 		vector[2] *= invLength;
 	}
 
-	public static float[] add(float[] a, float[] b)
-	{
-		for (int i = 0; i < a.length; i++) { a[i] += b[i]; }
-		return a;
-	}
-
-	public static float[] sub(float[] a, float[] b) { return add(a, neg(b)); }
-
-	public static float[] mul(float[] a, float b)
-	{
-		for (int i = 0; i < a.length; i++) { a[i] *= b; }
-		return a;
-	}
-
-	public static float[] div(float[] a, float b) { return mul(a, 1f / b); }
-
-	public static float[] neg(float[] a)
-	{
-		for (int i = 0; i < a.length; i++) { a[i] *= -1f; }
-		return a;
-	}
-
-	public static float dotProduct(float[] a, float[] b)
-	{
-		float sum = 0;
-		for (int i = 0; i < a.length; i++) { sum += a[i] * b[i]; }
-		return sum;
-	}
-
-	public static void scaleVec(float[] vec, float s)
+	public static final void scaleVec(float[] vec, float s)
 	{
 		for (int i = 0; i < vec.length; i++) { vec[i] *= s; }
 	}
@@ -199,7 +182,7 @@ public class M3GMath
 	// [0] = x
 	// [1] = y
 	// [2] = z
-	public static void lerpVec3(int size, float[] vec, float s, float[] start, float[] end)
+	public static final void lerpVec3(int size, float[] vec, float s, float[] start, float[] end)
 	{
 		float sCompl = 1.f - s;
 		for (int i = 0; i < size; i++) { vec[i] = (sCompl * start[i]) + (s * end[i]); }
@@ -212,7 +195,7 @@ public class M3GMath
 	// [1] = y
 	// [2] = z
 	// [3] = w
-	public static void mulQuat(float[] q1, float[] q2, float[] result)
+	public static final void mulQuat(float[] q1, float[] q2, float[] result)
 	{
 		result[0] = q1[3] * q2[0] + q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1]; // x
 		result[1] = q1[3] * q2[1] + q1[1] * q2[3] + q1[2] * q2[0] - q1[0] * q2[2]; // y
@@ -220,7 +203,7 @@ public class M3GMath
 		result[3] = q1[3] * q2[3] - q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2]; // w
 	}
 
-	public static float[] normalizeQuat(float[] vec4)
+	public static final float[] normalizeQuat(float[] vec4)
 	{
 		float norm = (vec4[0] * vec4[0] + vec4[1] * vec4[1] + vec4[2] * vec4[2] + vec4[3] * vec4[3]);
 
@@ -229,12 +212,18 @@ public class M3GMath
 			norm = (1.0f / sqrt(norm));
 			scaleVec(vec4, norm);
 		}
-		else { return identityQuat(); }
+		else
+		{
+			vec4[0] = 0.0f;
+			vec4[1] = 0.0f;
+			vec4[2] = 0.0f;
+			vec4[3] = 1.0f;
+		}
 
 		return vec4;
 	}
 
-	public static void slerpQuat(float[] orig, float s, float[] q0, float[] q1)
+	public static final void slerpQuat(float[] orig, float s, float[] q0, float[] q1)
 	{
 		float cosTheta = q0[0]*q1[0] + q0[1]*q1[1] + q0[2]*q1[2] + q0[3]*q1[3];
 		float q1x = q1[0], q1y = q1[1], q1z = q1[2], q1w = q1[3];
@@ -267,9 +256,7 @@ public class M3GMath
 		orig[3] = s0 * q0[3] + s1 * q1w;
 	}
 
-	public static float[] identityQuat() { return new float[] { 0.0f, 0.0f, 0.0f, 1.0f }; }
-
-	public static float[] setQuatRotation(float[] srcAxis, float[] targetAxis)
+	public static final float[] setQuatRotation(float[] srcAxis, float[] targetAxis)
 	{
 		float[] rot = new float[4];
 		float[] cross = new float[3];

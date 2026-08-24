@@ -1868,7 +1868,7 @@ public class Graphics3D
 
 		// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
 		// reorder it as this:
-		return (float) (Math.log(maxSq) * 0.7213475f); // 0.72... = 0.5 * ln2 reciprocal
+		return M3GMath.log(maxSq) * 0.7213475f; // 0.72... = 0.5 * ln2 reciprocal
 	}
 
 	// For bilinear filtering support
