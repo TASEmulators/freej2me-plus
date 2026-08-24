@@ -820,67 +820,6 @@ public class Graphics3D
 					}
 				}
 
-				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
-				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
-				if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
-				if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
-
-				// Degenerate triangle? Skip it.
-				if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
-
-				// Assign ordered vertex attributes based on their determined order
-				xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
-				yTop = coY[ord[0]]; yMid = coY[ord[1]]; yBot = coY[ord[2]];
-				zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
-				pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
-
-				if(hasTexture)
-				{
-					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
-					{
-						if(textures[i] == null) { continue; }
-						sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
-						tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
-					}
-				}
-
-				// Calculate the right horizon
-				rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
-				xMidR = xTop + rHorizon * (xBot - xTop);
-				zMidR = zTop + rHorizon * (zBot - zTop);
-				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
-
-				if(hasTexture)
-				{
-					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
-					{
-						if(textures[i] == null) { continue; }
-						sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
-						tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
-					}
-				}
-
-				// Swap midpoints if necessary
-				if (xMidL > xMidR)
-				{
-					float temp;
-
-					// Swap values between left and right midpoints
-					temp = xMidL; xMidL = xMidR; xMidR = temp;
-					temp = zMidL; zMidL = zMidR; zMidR = temp;
-					temp = pwMidL; pwMidL = pwMidR; pwMidR = temp;
-
-					if(hasTexture)
-					{
-						for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
-						{
-							if(textures[i] == null) { continue; }
-							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
-							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
-						}
-					}
-				}
-
 				boolean hasColors = trisScreen[tri_id].hasVertexColors();
 
 				// Calculate the triangle area denominator, used by texturing
@@ -905,14 +844,8 @@ public class Graphics3D
 
 					if (perspectiveCorrection)
 					{
-						// For perspective correction, we need the actual W of
-						// each vertex.
-						float wA = trisScreen[tri_id].iwA();
-						float wB = trisScreen[tri_id].iwB();
-						float wC = trisScreen[tri_id].iwC();
-
-						float dwB = wB - wA;
-						float dwC = wC - wA;
+						float dwB = coW[1] - coW[0];
+						float dwC = coW[2] - coW[0];
 
 						dwdx = (dwB * dyC - dwC * dyB) * invDet;
 						dwdy = (dwC * dxB - dwB * dxC) * invDet;
@@ -922,6 +855,8 @@ public class Graphics3D
 					{
 						if (textures[i] == null) { continue; }
 
+						// For perspective correction, we need the actual W of
+						// each vertex as well.
 						if (perspectiveCorrection)
 						{
 							float swA = coS[i][0] * trisScreen[tri_id].wA();
@@ -992,6 +927,67 @@ public class Graphics3D
 						gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
 						bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
 						aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
+					}
+				}
+
+				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
+				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
+				if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
+				if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
+
+				// Degenerate triangle? Skip it.
+				if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
+
+				// Assign ordered vertex attributes based on their determined order
+				xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
+				yTop = coY[ord[0]]; yMid = coY[ord[1]]; yBot = coY[ord[2]];
+				zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
+				pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
+
+				if(hasTexture)
+				{
+					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					{
+						if(textures[i] == null) { continue; }
+						sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
+						tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
+					}
+				}
+
+				// Calculate the right horizon
+				rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
+				xMidR = xTop + rHorizon * (xBot - xTop);
+				zMidR = zTop + rHorizon * (zBot - zTop);
+				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
+
+				if(hasTexture)
+				{
+					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					{
+						if(textures[i] == null) { continue; }
+						sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
+						tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
+					}
+				}
+
+				// Swap midpoints if necessary
+				if (xMidL > xMidR)
+				{
+					float temp;
+
+					// Swap values between left and right midpoints
+					temp = xMidL; xMidL = xMidR; xMidR = temp;
+					temp = zMidL; zMidL = zMidR; zMidR = temp;
+					temp = pwMidL; pwMidL = pwMidR; pwMidR = temp;
+
+					if(hasTexture)
+					{
+						for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+						{
+							if(textures[i] == null) { continue; }
+							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
+							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
+						}
 					}
 				}
 
@@ -1407,16 +1403,16 @@ public class Graphics3D
 					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
 					{
 						// Skip this texture unit right away if it is disabled/unused
-						if (textures[i] == null) { continue; }
+						Texture2D tex = textures[i];
+						if (tex == null) { continue; }
+
+						Image2D targetImage = tex.getImage();
+						int baseWidth = targetImage.getWidth();
+						int baseHeight = targetImage.getHeight();
+						final int levelFilter = tex.getLevelFilter();
 
 						float s = sL[i] + drawX * (sR[i] - sL[i]);
 						float t = tL[i] + drawX * (tR[i] - tL[i]);
-
-						// Start from the base mip level (highest resolution)
-						Image2D targetImage = textures[i].getImage();
-						int baseWidth = targetImage.getWidth();
-						int baseHeight = targetImage.getHeight();
-						int levelFilter = textures[i].getLevelFilter();
 
 						if(doPerspective)
 						{
@@ -1479,13 +1475,23 @@ public class Graphics3D
 									targetLevel = Math.min(targetLevel + 1, maxLevel);
 								}
 							}
-							targetImage = textures[i].getImageForLOD(targetLevel);
 
-							float scaleX = (float) targetImage.getWidth() / textures[i].getImage().getWidth();
-							float scaleY = (float) targetImage.getHeight() / textures[i].getImage().getHeight();
+							targetImage = tex.getImageForLOD(targetLevel);
 
-							s *= scaleX;
-							t *= scaleY;
+							// POT textures coming in with another fast path: Just shift
+							// right by the targetLevel!
+							if (!textures[i].isNPOT())
+							{
+								s = (float) ((int) s >> targetLevel);
+								t = (float) ((int) t >> targetLevel);
+							}
+							else
+							{
+								float scaleX = (float) targetImage.getWidth() / baseWidth;
+								float scaleY = (float) targetImage.getHeight() / baseHeight;
+								s *= scaleX;
+								t *= scaleY;
+							}
 						}
 
 						if (useBilinear[i])
@@ -1856,37 +1862,36 @@ public class Graphics3D
 	}
 
 	// Calculates the Mipmap LOD for a given pixel.
-	private float calculateLOD(float dsdx, float dtdx, float dsdy, float dtdy, boolean trilinear)
+	private float calculateLOD(float dsdx, float dtdx, float dsdy, float dtdy, boolean linear)
 	{
-		if(trilinear)
+		if (linear)
 		{
 			// Area-based geometric footprint (Determinant magnitude: |ds/dx * dt/dy - dt/dx * ds/dy|)
 			// Keeps elongated polygons (like ground planes/roads) much sharper along their primary axis,
-			// and seems to align with OpenGL's trilinear filter slope
+			// and seems to align with OpenGL's linear filter slope
 			float area = M3GMath.abs(dsdx * dtdy - dtdx * dsdy);
 
 			if (area <= 1.0f) { return 0.0f; }
 
-			// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
-			// reorder it as this:
-			float lod = M3GMath.log(area) * 0.7213475f; // 0.72... = 0.5 * ln2 reciprocal
-
-			return M3GMath.max(0.0f, lod);
+			// M3GMath.log(area) already returns log2(area).
+			// For area = scale^2, log2(scale^2) * 0.5 == 0.5 * log2(area).
+			return M3GMath.log(area) * 0.5f;
 		}
 		else
 		{
-			// Simpler max of squared distance, seems to aligb with OpenGL's bilinear
+			// Simpler max of squared distance, seems to align with OpenGL's nearest
 			// mipmap filter slope.
 			float lengthXSq = dsdx * dsdx + dtdx * dtdx;
 			float lengthYSq = dsdy * dsdy + dtdy * dtdy;
 
-			float maxSq = M3GMath.max(lengthXSq, lengthYSq);
+			float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
 
 			if (maxSq <= 1.0f) { return 0.0f; }
 
-			// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
-			// reorder it as this:
-			return M3GMath.log(maxSq) * 0.7213475f; // 0.72... = 0.5 * ln2 reciprocal
+			// Similar optimization to above.
+			// Since log2(x^2) = 2 * log2(x), taking 0.5 * log2(maxSq) simplifies
+			// this directly to M3GMath.log(maxSq) * 0.5f!
+			return M3GMath.log(maxSq) * 0.5f;
 		}
 	}
 

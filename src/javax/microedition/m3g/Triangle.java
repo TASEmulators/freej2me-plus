@@ -20,6 +20,9 @@ import java.util.ArrayList;
 
 class Triangle
 {
+	// 1.0f / 255.0f, to prevent a bunch of divisions in lighting calculations
+	private static final float INVDIV = 0.003921569f;
+
 	// Temporary buffer for vertex colors
 	private static final byte[] COLOR_VERTEX = new byte[4];
 
@@ -49,7 +52,7 @@ class Triangle
 
 	private final int[] colors = new int[3];
 
-	/* 1/w of each vertex after projection, for perspective-correct texture mapping. */
+	// 1/w of each vertex after projection, for perspective-correct texturing.
 	private final float[] invW = new float[] { 1f, 1f, 1f };
 
 	private final float[] v = new float[12];
@@ -58,12 +61,13 @@ class Triangle
 		// xC, yC, zC, wC;
 		// 0   1   2   3
 
-	private final float[][] t = new float[Graphics3D.NUM_TEXTURE_UNITS][12];
+	private final float[][] t = new float[Graphics3D.NUM_TEXTURE_UNITS][6];
 		// For each texture unit:
-		// [sA, tA, rA, qA,
-		// sB, tB, rB, qB,
-		// sC, tC, rC, qC];
-		// 0   1   2   3
+		// [sA, tA,
+		// sB, tB,
+		// sC, tC,];
+		// 0   1
+		// We have no use for the `r` and `q` coordinates.
 
 	Triangle() { }
 
@@ -78,7 +82,7 @@ class Triangle
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
 		// IndexArray, clipping, winding order and perspectiveCorrection
 		int[] tris, int[] renderableTriangles, int cullingMode, VertexBuffer vertices,
-        boolean polygonClockwise, boolean perspectiveCorrect)
+		boolean polygonClockwise, boolean perspectiveCorrect)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
@@ -156,11 +160,11 @@ class Triangle
 			}
 
 			/*
-             * Clip against the homogeneous near plane (z >= -w), interpolating
-             * positions, texture coordinates and vertex colors before perspective division.
+			 * Clip against the homogeneous near plane (z >= -w), interpolating
+			 * positions, texture coordinates and vertex colors before perspective division.
 			 */
-            final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
-                    hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
+			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
+					hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
 
 			if (outCount < 3) { continue; }
 
@@ -209,10 +213,10 @@ class Triangle
 		int matEmissive = material.getColor(Material.EMISSIVE);
 		float shininess = material.getShininess();
 
-		float maR = ((matAmbient >> 16) & 0xFF) / 255.0f, maG = ((matAmbient >> 8) & 0xFF) / 255.0f, maB = (matAmbient & 0xFF) / 255.0f;
-		float mdR = ((matDiffuse >> 16) & 0xFF) / 255.0f, mdG = ((matDiffuse >> 8) & 0xFF) / 255.0f, mdB = (matDiffuse & 0xFF) / 255.0f;
-		float msR = ((matSpecular >> 16) & 0xFF) / 255.0f, msG = ((matSpecular >> 8) & 0xFF) / 255.0f, msB = (matSpecular & 0xFF) / 255.0f;
-		float meR = ((matEmissive >> 16) & 0xFF) / 255.0f, meG = ((matEmissive >> 8) & 0xFF) / 255.0f, meB = (matEmissive & 0xFF) / 255.0f;
+		float maR = ((matAmbient >> 16) & 0xFF) * INVDIV, maG = ((matAmbient >> 8) & 0xFF) * INVDIV, maB = (matAmbient & 0xFF) * INVDIV;
+		float mdR = ((matDiffuse >> 16) & 0xFF) * INVDIV, mdG = ((matDiffuse >> 8) & 0xFF) * INVDIV, mdB = (matDiffuse & 0xFF) * INVDIV;
+		float msR = ((matSpecular >> 16) & 0xFF) * INVDIV, msG = ((matSpecular >> 8) & 0xFF) * INVDIV, msB = (matSpecular & 0xFF) * INVDIV;
+		float meR = ((matEmissive >> 16) & 0xFF) * INVDIV, meG = ((matEmissive >> 8) & 0xFF) * INVDIV, meB = (matEmissive & 0xFF) * INVDIV;
 		int alpha = (matDiffuse >>> 24);
 
 		boolean vertColorTrackingEnabled = material.isVertexColorTrackingEnabled();
@@ -233,9 +237,9 @@ class Triangle
 				int vertColor = outColors[v];
 				alpha = (vertColor >>> 24);
 
-				final float vR = ((vertColor >> 16) & 0xFF) / 255.0f;
-				final float vG = ((vertColor >> 8)  & 0xFF) / 255.0f;
-				final float vB = (vertColor         & 0xFF) / 255.0f;
+				final float vR = ((vertColor >> 16) & 0xFF) * INVDIV;
+				final float vG = ((vertColor >> 8)  & 0xFF) * INVDIV;
+				final float vB = (vertColor         & 0xFF) * INVDIV;
 
 				mdR = vR; mdG = vG; mdB = vB;
 				maR = vR; maG = vG; maB = vB;
@@ -297,9 +301,9 @@ class Triangle
 				float lIntensity = light.getIntensity();
 
 				int lColor = light.getColor();
-				float lR = (((lColor >> 16) & 0xFF) / 255.0f) * lIntensity;
-				float lG = (((lColor >> 8) & 0xFF)  / 255.0f) * lIntensity;
-				float lB = ((lColor & 0xFF)         / 255.0f) * lIntensity;
+				float lR = (((lColor >> 16) & 0xFF) * INVDIV) * lIntensity;
+				float lG = (((lColor >> 8) & 0xFF)  * INVDIV) * lIntensity;
+				float lB = ((lColor & 0xFF)         * INVDIV) * lIntensity;
 
 				// Ambient Lights only affect the material's ambient according to M3G.
 				if (lMode == Light.AMBIENT)
@@ -417,15 +421,15 @@ class Triangle
 	}
 
 	/*
-     * Sutherland-Hodgman clip of one triangle against the homogeneous near plane
-     * z + w >= 0. This is valid for perspective, parallel and generic projection
-     * matrices; camera-space distances are not available for a generic matrix.
+	 * Sutherland-Hodgman clip of one triangle against the homogeneous near plane
+	 * z + w >= 0. This is valid for perspective, parallel and generic projection
+	 * matrices; camera-space distances are not available for a generic matrix.
 	 * Writes the resulting polygon (0, 3 or 4 vertices) into outV/outT and returns
 	 * its vertex count. Positions, texture coordinates and vertex colors
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
-    private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC,
-                                           boolean hasTex, float[][] texc, float[] outV, float[][] outT, int[] outC)
+	private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC,
+										   boolean hasTex, float[][] texc, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
 
@@ -433,9 +437,9 @@ class Triangle
 		{
 			final int j = (i + 1) % 3;
 			final float wi = inV[4*i+3], wj = inV[4*j+3];
-            final float distanceI = inV[4*i+2] + wi;
-            final float distanceJ = inV[4*j+2] + wj;
-            final boolean insideI = distanceI >= 0.0f, insideJ = distanceJ >= 0.0f;
+			final float distanceI = inV[4*i+2] + wi;
+			final float distanceJ = inV[4*j+2] + wj;
+			final boolean insideI = distanceI >= 0.0f, insideJ = distanceJ >= 0.0f;
 
 			if (insideI)
 			{
@@ -453,7 +457,7 @@ class Triangle
 			}
 			if (insideI != insideJ)
 			{
-                final float amt = distanceI / (distanceI - distanceJ);
+				final float amt = distanceI / (distanceI - distanceJ);
 				for (int c = 0; c < 4; c++)
 				{
 					outV[4*outCount + c] = inV[4*i + c] + amt * (inV[4*j + c] - inV[4*i + c]);
@@ -493,20 +497,20 @@ class Triangle
 		// No use trying to sort less than 2 triangles
 		if (count < 2) { return array; }
 
-	    // Insertion sort should be good enough for most M3G apps, as triangle
+		// Insertion sort should be good enough for most M3G apps, as triangle
 		// count is often very low.
-	    for (int i = 1; i < count; i++)
-	    {
-	        Triangle tri = array[i];
-	        int j = i - 1;
+		for (int i = 1; i < count; i++)
+		{
+			Triangle tri = array[i];
+			int j = i - 1;
 
-	        while (j >= 0 && array[j].sortZ < tri.sortZ)
-	        {
-	            array[j + 1] = array[j];
-	            j--;
-	        }
-	        array[j + 1] = tri;
-	    }
+			while (j >= 0 && array[j].sortZ < tri.sortZ)
+			{
+				array[j + 1] = array[j];
+				j--;
+			}
+			array[j + 1] = tri;
+		}
 
 		return array;
 	}
@@ -533,7 +537,7 @@ class Triangle
 				{
 					// Each trTex transform is bound to a texture unit, so it is
 					// safe to use it as a check to see if we have these coords.
-					trTex[u].transform(triangles[i].t[u]);
+					trTex[u].transformTexCoords(triangles[i].t[u]);
 				}
 			}
 		}
@@ -544,17 +548,17 @@ class Triangle
 		// Apply perspective division to the triangle, it's going to NDC
 		for (int i = 0; i < 3; i++)
 		{
-			final float w = v[4 * i + 3];
-
-			/* Keep 1/w around: the rasterizer interpolates s/w, t/w and 1/w linearly in
-			 * screen space and divides per-pixel for perspective-correct texturing. */
-			invW[i] = (w > M3GMath.EPSILON) ? (1f / w) : 1f;
+			int baseIdx = 4 * i;
+			// It is faster to calculate the reciprocal of w (1/w) and just
+			// multiply vertices and texture coordinates by it, than it is to
+			// constantly divide them by W here.
+			invW[i] = M3GMath.fastReciprocal(v[baseIdx + 3]);
 
 			// Project vertex
-			v[4 * i + 0] /= w; // x / w
-			v[4 * i + 1] /= w; // y / w
-			v[4 * i + 2] /= w; // z / w
-			v[4 * i + 3] = 1f;  // Set w to 1
+			v[baseIdx + 0] *= invW[i]; // x / w
+			v[baseIdx + 1] *= invW[i]; // y / w
+			v[baseIdx + 2] *= invW[i]; // z / w
+			v[baseIdx + 3] = 1.0f;  // Set w to 1
 
 			// Texture coordinates are stored as s/w and t/w if
 			// perspective correction is enabled (undone per-pixel in rasterizer)
@@ -563,8 +567,8 @@ class Triangle
 				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
 				{
 					if(t[u] == null) { continue; }
-					t[u][4 * i + 0] *= invW[i]; // s / w
-					t[u][4 * i + 1] *= invW[i]; // t / w
+					t[u][2 * i + 0] *= invW[i]; // s / w
+					t[u][2 * i + 1] *= invW[i]; // t / w
 				}
 			}
 		}
@@ -582,31 +586,25 @@ class Triangle
 			(by * aw - ay * bw) * (cx * aw - ax * cw)) > 0.0f;
 	}
 
-	public final float xA() { return v[4 * 0 + 0]; }
-	public final float yA() { return v[4 * 0 + 1]; }
-	public final float zA() { return v[4 * 0 + 2]; }
-	public final float wA() { return v[4 * 0 + 3]; }
-	public final float xB() { return v[4 * 1 + 0]; }
-	public final float yB() { return v[4 * 1 + 1]; }
-	public final float zB() { return v[4 * 1 + 2]; }
-	public final float wB() { return v[4 * 1 + 3]; }
-	public final float xC() { return v[4 * 2 + 0]; }
-	public final float yC() { return v[4 * 2 + 1]; }
-	public final float zC() { return v[4 * 2 + 2]; }
-	public final float wC() { return v[4 * 2 + 3]; }
+	public final float xA() { return v[0]; }
+	public final float yA() { return v[1]; }
+	public final float zA() { return v[2]; }
+	public final float wA() { return v[3]; }
+	public final float xB() { return v[4]; }
+	public final float yB() { return v[5]; }
+	public final float zB() { return v[6]; }
+	public final float wB() { return v[7]; }
+	public final float xC() { return v[8]; }
+	public final float yC() { return v[9]; }
+	public final float zC() { return v[10]; }
+	public final float wC() { return v[11]; }
 
-	public final float sA(int unit) { return t[unit][4 * 0 + 0]; }
-	public final float tA(int unit) { return t[unit][4 * 0 + 1]; }
-	public final float rA(int unit) { return t[unit][4 * 0 + 2]; }
-	public final float qA(int unit) { return t[unit][4 * 0 + 3]; }
-	public final float sB(int unit) { return t[unit][4 * 1 + 0]; }
-	public final float tB(int unit) { return t[unit][4 * 1 + 1]; }
-	public final float rB(int unit) { return t[unit][4 * 1 + 2]; }
-	public final float qB(int unit) { return t[unit][4 * 1 + 3]; }
-	public final float sC(int unit) { return t[unit][4 * 2 + 0]; }
-	public final float tC(int unit) { return t[unit][4 * 2 + 1]; }
-	public final float rC(int unit) { return t[unit][4 * 2 + 2]; }
-	public final float qC(int unit) { return t[unit][4 * 2 + 3]; }
+	public final float sA(int unit) { return t[unit][0]; }
+	public final float tA(int unit) { return t[unit][1]; }
+	public final float sB(int unit) { return t[unit][2]; }
+	public final float tB(int unit) { return t[unit][3]; }
+	public final float sC(int unit) { return t[unit][4]; }
+	public final float tC(int unit) { return t[unit][5]; }
 
 	public final float iwA() { return invW[0]; }
 	public final float iwB() { return invW[1]; }
@@ -625,9 +623,9 @@ class Triangle
 		for (int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
 		{
 			if (tCoords[i] == null) { continue; }
-			System.arraycopy(tCoords[i], 0,  t[i], 0, 4);
-			System.arraycopy(tCoords[i], f1, t[i], 4, 4);
-			System.arraycopy(tCoords[i], f2, t[i], 8, 4);
+			t[i][0] = tCoords[i][0];  t[i][1] = tCoords[i][1];
+			t[i][2] = tCoords[i][f1]; t[i][3] = tCoords[i][f1 + 1];
+			t[i][4] = tCoords[i][f2]; t[i][5] = tCoords[i][f2 + 1];
 		}
 	}
 

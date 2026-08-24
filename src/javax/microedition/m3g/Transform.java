@@ -312,6 +312,30 @@ public class Transform
 		multiply(this.manipulationMatrix, this.matrix, this.matrix);
 	}
 
+	// Used so we can cut texture coordinate memory usage by half for each
+	// triangle, as we don't use all 4 components of the texture data for each
+	// vertex ('s', 't', 'r', 'q'), only 2 ('s' and 't').
+	void transformTexCoords(float[] vectors)
+	{
+	    float s, t;
+	    float[] m = this.matrix;
+
+	    for (int offset = 0; offset < vectors.length; offset += 2)
+	    {
+	        s = vectors[offset];
+	        t = vectors[offset + 1];
+
+	        // Transforms (s, t, 0, 1) using matrix indices 0, 1, 3 for S and
+			// 4, 5, 7 for T.
+			//
+	        // Ignores translation/scale on Z (m[2], m[6]) since z = 0.
+	        vectors[offset]     = m[0] * s + m[1] * t + m[3];
+	        vectors[offset + 1] = m[4] * s + m[5] * t + m[7];
+	    }
+	}
+
+	/* ------------------------- private methods ------------------------- */
+
 	private void computeRotationMatrix(float angle, float ax, float ay, float az)
 	{
 		resetManipulationMatrix();
@@ -372,8 +396,6 @@ public class Transform
 		manipulationMatrix[8] = 0.0f; manipulationMatrix[9] = 0.0f; manipulationMatrix[10]= 1.0f; manipulationMatrix[11]= 0.0f;
 		manipulationMatrix[12]= 0.0f; manipulationMatrix[13]= 0.0f; manipulationMatrix[14]= 0.0f; manipulationMatrix[15]= 1.0f;
 	}
-
-	/* ------------------------- private methods ------------------------- */
 
 	private void multiply(float[] left, float[] right, float[] target)
 	{

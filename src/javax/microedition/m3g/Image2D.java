@@ -34,6 +34,8 @@ public class Image2D extends Object3D
 	private int format;
 	private int bpp;
 	private boolean mutable;
+	private boolean isPOT = false;
+	private int widthShift = 0;
 
 	public static final String[] formatNames = {"ALPHA", "LUMINANCE", "LUMINANCE_ALPHA", "RGB", "RGBA"};
 
@@ -47,8 +49,11 @@ public class Image2D extends Object3D
 		this.width = w;
 		this.height = h;
 		this.format = format;
+		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
 		setBpp();
+		this.widthShift = Integer.numberOfTrailingZeros(w);
 		this.image = new byte[w * h * this.bpp];
+
 	}
 
 	public Image2D(int format, int w, int h, byte[] image)
@@ -61,7 +66,9 @@ public class Image2D extends Object3D
 		validateDimensions(w, h);
 
 		this.format = format;
+		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
 		setBpp();
+		this.widthShift = Integer.numberOfTrailingZeros(w);
 
 		int len = w * h * this.bpp;
 		if (image.length < len)
@@ -93,7 +100,9 @@ public class Image2D extends Object3D
 		 * where C is the number of color components (for instance, 3 for RGB).
 		 */
 		this.format = format;
+		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
 		setBpp();
+		this.widthShift = Integer.numberOfTrailingZeros(w);
 
 		if (palette.length < 256 * this.bpp && (palette.length % this.bpp) != 0)
 			{ throw new IllegalArgumentException("Illegal palette length: " + palette.length); }
@@ -140,6 +149,8 @@ public class Image2D extends Object3D
 		this.width = img.getWidth();
 		this.height = img.getHeight();
 		this.format = format;
+		this.isPOT = isPowerOfTwo(this.width) && isPowerOfTwo(this.height);
+		this.widthShift = Integer.numberOfTrailingZeros(this.width);
 		setBpp();
 
 		this.image = new byte[this.width * this.height * this.bpp];
@@ -191,6 +202,8 @@ public class Image2D extends Object3D
 		copy.format = this.format;
 		copy.bpp = this.bpp;
 		copy.mutable = this.mutable;
+		copy.isPOT = this.isPOT;
+		copy.widthShift = this.widthShift;
 		return copy;
 	}
 
@@ -232,7 +245,7 @@ public class Image2D extends Object3D
 	// We do not handle OOB x and y positions here, Graphics3D does that in the clear/render loops
 	final int getPixel(int x, int y)
 	{
-		int offset = this.bpp * (this.width * y + x);
+		int offset = this.bpp * (this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x);
 
 		switch (this.format)
 		{
@@ -305,7 +318,7 @@ public class Image2D extends Object3D
 	// Used for mipmap generation
 	void setPixel(int x, int y, int argb)
 	{
-		int offset = this.bpp * (this.width * y + x);
+		int offset = this.bpp * (this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x);
 
 		int a = (argb >> 24) & 0xFF;
 		int r = (argb >> 16) & 0xFF;
