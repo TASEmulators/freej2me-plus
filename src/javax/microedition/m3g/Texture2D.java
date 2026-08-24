@@ -42,6 +42,7 @@ public class Texture2D extends Transformable
 	private boolean isNPOT;
 
 	private Image2D texImage;
+	private Image2D[] mipmaps;
 
 	public Texture2D(Image2D image)
 	{
@@ -151,6 +152,9 @@ public class Texture2D extends Transformable
 		removeReference(this.texImage);
 		this.texImage = image;
 		addReference(this.texImage);
+
+		// Generate mipmaps for textures
+		generateMipmaps();
 	}
 
 	public void setWrapping(int wrapS, int wrapT)
@@ -163,7 +167,7 @@ public class Texture2D extends Transformable
 		this.wrapt = wrapT;
 	}
 
-	private static boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
+	private static final boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
 
 	@Override
 	void updateProperty(int property, float[] value)
@@ -195,5 +199,93 @@ public class Texture2D extends Transformable
 
 	// We make some texture coord optimizations in Graphics3D, NPOT
 	// breaks them so we must check whether this texture is NPOT.
-	boolean isNPOT() { return this.isNPOT; }
+	final boolean isNPOT() { return this.isNPOT; }
+
+	// Generates all mipmaps from the image set to this Texture2D.
+	private final void generateMipmaps()
+	{
+	    if (texImage == null) return;
+
+	    int w = texImage.getWidth();
+	    int h = texImage.getHeight();
+
+	    // Mipmaps will go all the way down to 1x1
+	    int numLevels = 1 + (int)(Math.log(Math.max(w, h)) / Math.log(2));
+	    mipmaps = new Image2D[numLevels];
+	    mipmaps[0] = texImage;
+
+	    Image2D current = texImage;
+	    for (int i = 1; i < numLevels; i++)
+	    {
+	        current = createDownsampledLevel(current);
+	        mipmaps[i] = current;
+	    }
+	}
+
+	// Creates a lower mipmap level of an image using 2x2 box filtering.
+	private final Image2D createDownsampledLevel(Image2D src)
+	{
+	    int srcW = src.getWidth();
+	    int srcH = src.getHeight();
+	    int dstW = Math.max(1, srcW >> 1);
+	    int dstH = Math.max(1, srcH >> 1);
+
+	    // Create target Image2D matching source format
+	    Image2D dst = new Image2D(src.getFormat(), dstW, dstH);
+
+	    for (int y = 0; y < dstH; y++)
+	    {
+	        int sy = y * 2;
+	        int sy2 = Math.min(sy + 1, srcH - 1);
+
+	        for (int x = 0; x < dstW; x++)
+	        {
+	            int sx = x * 2;
+	            int sx2 = Math.min(sx + 1, srcW - 1);
+
+	            // Fetch 2x2 neighborhood from source Image2D
+	            int c00 = src.getPixel(sx,  sy);
+	            int c10 = src.getPixel(sx2, sy);
+	            int c08 = src.getPixel(sx,  sy2);
+	            int c11 = src.getPixel(sx2, sy2);
+
+	            // Average RGBA channels (2x2 Box Filter)
+	            int a = (((c00 >>> 24) + (c10 >>> 24) + (c08 >>> 24) + (c11 >>> 24)) + 2) >> 2;
+	            int r = ((((c00 >> 16) & 0xFF) + ((c10 >> 16) & 0xFF) + ((c08 >> 16) & 0xFF) + ((c11 >> 16) & 0xFF)) + 2) >> 2;
+	            int g = ((((c00 >> 8)  & 0xFF) + ((c10 >> 8)  & 0xFF) + ((c08 >> 8)  & 0xFF) + ((c11 >> 8)  & 0xFF)) + 2) >> 2;
+	            int b = ((((c00)       & 0xFF) + ((c10)       & 0xFF) + ((c08)       & 0xFF) + ((c11)       & 0xFF)) + 2) >> 2;
+
+	            dst.setPixel(x, y, (a << 24) | (r << 16) | (g << 8) | b);
+	        }
+	    }
+	    return dst;
+	}
+
+	// Returns the image that matches the specified LOD level, with 0 being the base, max size.
+	public final Image2D getImageLevel(int level)
+	{
+	    if (mipmaps == null || level <= 0) { return texImage; }
+	    if (level >= mipmaps.length) { return mipmaps[mipmaps.length - 1]; }
+	    return mipmaps[level];
+	}
+
+	// Returns the image that matches a given constant LOD level.
+	public final Image2D getImageForLOD(float lod)
+	{
+	    if (levelFilter == FILTER_BASE_LEVEL || mipmaps == null) { return texImage; }
+
+	    if (lod <= 0.0f) { return texImage; }
+
+	    int levelIndex = Math.round(lod);
+	    if (levelIndex >= mipmaps.length)
+	    {
+	        levelIndex = mipmaps.length - 1;
+	    }
+	    return mipmaps[levelIndex];
+	}
+
+	public final int getMipmapLevelCount()
+	{
+	return (mipmaps != null) ? mipmaps.length : 1;
+	}
 }

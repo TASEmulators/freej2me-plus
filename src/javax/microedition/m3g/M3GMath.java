@@ -44,18 +44,19 @@ public class M3GMath
 
 	public static float tan(float a)
 	{
-		final float sine = sin(a);
 		final float cosine = cos(a);
-		return cosine != 0 ? sine / cosine : Float.POSITIVE_INFINITY;
+		return cosine != 0.0f ? sin(a) / cosine : Float.POSITIVE_INFINITY;
 	}
 
 	// Approximation: acos(a) ~= pi/2 + (ba + ca^3) / (1 + da^2 + ea^4)
 	public static float acos(float a)
 	{
-		return (float) (Math.PI / 2 +
-						((-0.939115566365855 * a) +(0.9217841528914573f * Math.pow(a, 3))) /
-						(1 + (-1.2845906244690837f * Math.pow(a, 2)) +
-						 (0.295624144969963174f * Math.pow(a, 4))));
+		float a2 = a * a;
+		float a3 = a2 * a;
+		float a4 = a2 * a2;
+		return (float) (Math.PI / 2.0) +
+			((-0.939115566f * a) + (0.921784152f * a3)) /
+			(1.0f + (-1.284590624f * a2) + (0.295624144f * a4));
 	}
 
 	// Those 'to*' methods are just backported from Java 9
@@ -63,21 +64,27 @@ public class M3GMath
 
 	public static float toDegrees(float angrad) { return angrad * 57.29577951f; } // angdeg * (180.0f / Math.PI)
 
+	public static float invSqrt(float x)
+	{
+		float xhalf = 0.5f * x;
+		int i = Float.floatToRawIntBits(x);
+		i = 0x5f3759df - (i >> 1);
+		x = Float.intBitsToFloat(i);
+		return x * (1.5f - (xhalf * x * x));
+	}
+
 	public static float sqrt(float x)
 	{
-		return Float.intBitsToFloat(532483686 + (Float.floatToRawIntBits(x) >> 1));
+		return x * invSqrt(x);
 	}
 
 	public static float abs(float value) { return (value < 0) ? -value : value; }
-
 	public static int abs(int value) { return (value < 0) ? -value : value; }
 
 	public static float max(float a, float b) { return (a > b) ? a : b; }
-
 	public static int max(int a, int b) { return a - ((a - b) & ((a - b) >> 31)); }
 
 	public static float min(float a, float b) { return (a < b) ? a : b; }
-
 	public static int min(int a, int b) { return b + ((a - b) & ((a - b) >> 31)); }
 
 	public static double exp(double val)
@@ -88,8 +95,8 @@ public class M3GMath
 
 	public static float exp(float val)
 	{
-		final int tmp = (int) (1512775 * val + (1072693248 - 60801));
-		return Float.intBitsToFloat(tmp << 32);
+		final int tmp = (int) (12102203 * val + 1064866805);
+		return Float.intBitsToFloat(tmp);
 	}
 
 	public static int round(float value)
@@ -100,8 +107,8 @@ public class M3GMath
 
 	public static int floor(float value)
 	{
-	    int i = (int) value;
-	    return (value < i) ? i - 1 : i;
+		int i = (int) value;
+		return (value < i) ? i - 1 : i;
 	}
 
 	// Those are slightly faster than using round() since we know the value will always be positive or negative
@@ -155,7 +162,6 @@ public class M3GMath
 
 	public static float[] add(float[] a, float[] b)
 	{
-		if (a.length != b.length) { throw new java.lang.IllegalArgumentException(); }
 		for (int i = 0; i < a.length; i++) { a[i] += b[i]; }
 		return a;
 	}
@@ -178,7 +184,6 @@ public class M3GMath
 
 	public static float dotProduct(float[] a, float[] b)
 	{
-		if (a.length != b.length) { throw new java.lang.IllegalArgumentException(); }
 		float sum = 0;
 		for (int i = 0; i < a.length; i++) { sum += a[i] * b[i]; }
 		return sum;
@@ -207,15 +212,12 @@ public class M3GMath
 	// [1] = y
 	// [2] = z
 	// [3] = w
-	public static float[] mulQuat(float[] other)
+	public static void mulQuat(float[] q1, float[] q2, float[] result)
 	{
-		float[] q = new float[4];
-		q = other;
-		float w = q[3] * other[3] - q[0] * other[0] - q[1] * other[1] - q[2] * other[2];
-		float x = q[3] * other[0] + q[0] * other[3] + q[1] * other[2] - q[2] * other[1];
-		float y = q[3] * other[1] - q[0] * other[2] + q[1] * other[3] + q[2] * other[0];
-		float z = q[3] * other[2] + q[0] * other[1] - q[1] * other[0] + q[2] * other[3];
-		return new float[] {x,y,z,w};
+		result[0] = q1[3] * q2[0] + q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1]; // x
+		result[1] = q1[3] * q2[1] + q1[1] * q2[3] + q1[2] * q2[0] - q1[0] * q2[2]; // y
+		result[2] = q1[3] * q2[2] + q1[2] * q2[3] + q1[0] * q2[1] - q1[1] * q2[0]; // z
+		result[3] = q1[3] * q2[3] - q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2]; // w
 	}
 
 	public static float[] normalizeQuat(float[] vec4)
@@ -234,43 +236,35 @@ public class M3GMath
 
 	public static void slerpQuat(float[] orig, float s, float[] q0, float[] q1)
 	{
+		float cosTheta = q0[0]*q1[0] + q0[1]*q1[1] + q0[2]*q1[2] + q0[3]*q1[3];
+		float q1x = q1[0], q1y = q1[1], q1z = q1[2], q1w = q1[3];
+
+		if (cosTheta < 0.0f)
+		{
+			cosTheta = -cosTheta;
+			q1x = -q1x; q1y = -q1y; q1z = -q1z; q1w = -q1w;
+		}
+
 		float s0, s1;
-		float cosTheta = dotProduct(q0, q1);
 		float oneMinusS = 1.0f - s;
 
-		if (cosTheta > (EPSILON - 1.0f))
+		if (cosTheta < (1.0f - EPSILON))
 		{
-			if (cosTheta < (1.0f - EPSILON))
-			{
-				float theta = acos(cosTheta);
-				float sinTheta = sin(theta);
-				s0 = sin(oneMinusS * theta) / sinTheta;
-				s1 = sin(s * theta) / sinTheta;
-			}
-			else
-			{
-				s0 = oneMinusS;
-				s1 = s;
-			}
-			orig[0] = s0 * q0[0] + s1 * q1[0];
-			orig[1] = s0 * q0[1] + s1 * q1[1];
-			orig[2] = s0 * q0[2] + s1 * q1[2];
-			orig[3] = s0 * q0[3] + s1 * q1[3];
+			float theta = acos(cosTheta);
+			float sinTheta = sin(theta);
+			s0 = sin(oneMinusS * theta) / sinTheta;
+			s1 = sin(s * theta) / sinTheta;
 		}
 		else
 		{
-			orig[0] = -q0[1];
-			orig[1] = q0[0];
-			orig[2] = -q0[3];
-			orig[3] = q0[2];
-
-			s0 = sin(oneMinusS * ((float) Math.PI / 2));
-			s1 = sin(s * ((float) Math.PI / 2));
-
-			orig[0] = s0 * q0[0] + s1 * orig[0];
-			orig[1] = s0 * q0[1] + s1 * orig[1];
-			orig[2] = s0 * q0[2] + s1 * orig[2];
+			s0 = oneMinusS;
+			s1 = s;
 		}
+
+		orig[0] = s0 * q0[0] + s1 * q1x;
+		orig[1] = s0 * q0[1] + s1 * q1y;
+		orig[2] = s0 * q0[2] + s1 * q1z;
+		orig[3] = s0 * q0[3] + s1 * q1w;
 	}
 
 	public static float[] identityQuat() { return new float[] { 0.0f, 0.0f, 0.0f, 1.0f }; }
@@ -294,13 +288,5 @@ public class M3GMath
 		rot[3] = cos(angle / 2); // w
 
 		return rot;
-	}
-
-	public static void mulQuat(float[] q1, float[] q2, float[] result)
-	{
-		result[0] = q1[3] * q2[0] + q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1]; // x
-		result[1] = q1[3] * q2[1] + q1[1] * q2[3] + q1[2] * q2[0] - q1[0] * q2[2]; // y
-		result[2] = q1[3] * q2[2] + q1[2] * q2[3] + q1[0] * q2[1] - q1[1] * q2[0]; // z
-		result[3] = q1[3] * q2[3] - q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2]; // w
 	}
 }

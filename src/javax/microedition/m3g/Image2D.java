@@ -301,4 +301,40 @@ public class Image2D extends Object3D
 	}
 
 	static final boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
+
+	// Used for mipmap generation
+	void setPixel(int x, int y, int argb)
+	{
+		int offset = this.bpp * (this.width * y + x);
+
+		int a = (argb >> 24) & 0xFF;
+		int r = (argb >> 16) & 0xFF;
+		int g = (argb >> 8) & 0xFF;
+		int b = argb & 0xFF;
+
+		switch (this.format)
+		{
+			case ALPHA:
+				this.image[offset] = (byte) a;
+				break;
+			case LUMINANCE:
+				this.image[offset] = (byte) ((r + g + b) / 3);
+				break;
+			case LUMINANCE_ALPHA:
+				this.image[offset]     = (byte) ((r + g + b) / 3);
+				this.image[offset + 1] = (byte) a;
+				break;
+			case RGB:
+				this.image[offset]     = (byte) r;
+				this.image[offset + 1] = (byte) g;
+				this.image[offset + 2] = (byte) b;
+				break;
+			case RGBA:
+				this.image[offset]     = (byte) r;
+				this.image[offset + 1] = (byte) g;
+				this.image[offset + 2] = (byte) b;
+				this.image[offset + 3] = (byte) a;
+				break;
+		}
+	}
 }

@@ -104,11 +104,8 @@ public class Graphics3D
 	final float[] texScaleBias = new float[4];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
 	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
-	final Image2D[] texImages = new Image2D[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
-	final int[] texH = new int[NUM_TEXTURE_UNITS];
-	final int[] texW = new int[NUM_TEXTURE_UNITS];
 	final float[] sL = new float[NUM_TEXTURE_UNITS];
 	final float[] sR = new float[NUM_TEXTURE_UNITS];
 	final float[] tL = new float[NUM_TEXTURE_UNITS];
@@ -123,6 +120,10 @@ public class Graphics3D
 	final float[] tTop = new float[NUM_TEXTURE_UNITS];
 	final float[][] coS = new float[NUM_TEXTURE_UNITS][3];
 	final float[][] coT = new float[NUM_TEXTURE_UNITS][3];
+	float[] sStepX = new float[NUM_TEXTURE_UNITS];
+	float[] sStepY = new float[NUM_TEXTURE_UNITS];
+	float[] tStepX = new float[NUM_TEXTURE_UNITS];
+	float[] tStepY = new float[NUM_TEXTURE_UNITS];
 	float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 
 	// Vertex color blending
@@ -149,6 +150,7 @@ public class Graphics3D
 	float xBot, yBot, zBot;
 	float rHorizon, xMidR, zMidR;
 	float pwTop, pwMidL, pwBot, pwMidR;
+	float dwdx, dwdy;
 
 	float rStepX = 0, gStepX = 0, bStepX = 0, aStepX = 0;
 	float rStepY = 0, gStepY = 0, bStepY = 0, aStepY = 0;
@@ -360,7 +362,7 @@ public class Graphics3D
 							// Image format argument shouldn't matter here
 							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =
 								blendPixels(rasterData[(py + viewy) * canvasWidth + (px + viewx)], paintPixel,
-									(paintPixel >> 24) & 0xFF, CompositingMode.ALPHA, 0, 0);
+									(paintPixel >>> 24), CompositingMode.ALPHA, 0, 0);
 						}
 					}
 				}
@@ -586,16 +588,13 @@ public class Graphics3D
 					hasTexture = true;
 
 					textures[i] = t;
-					texImages[i] = t.getImage();
 					texRepeatS[i] = (t.getWrappingS() == Texture2D.WRAP_REPEAT);
 					texRepeatT[i] = (t.getWrappingT() == Texture2D.WRAP_REPEAT);
-					texW[i] = (texImages[i] != null) ? texImages[i].getWidth() : 0;
-					texH[i] = (texImages[i] != null) ? texImages[i].getHeight() : 0;
 
 					textr[i].setIdentity();
-					if (texImages[i] != null)
+					if (t.getImage() != null)
 					{
-						textr[i].postScale(texImages[i].getWidth(), texImages[i].getHeight(), 1.0f);
+						textr[i].postScale(t.getImage().getWidth(), t.getImage().getHeight(), 1.0f);
 					}
 
 					texcomptr.setIdentity();
@@ -615,7 +614,6 @@ public class Graphics3D
 				{
 					// Clear the references if this unit is unused or was disabled.
 					textures[i] = null;
-					texImages[i] = null;
 					texVerts[i] = null;
 				}
 			}
@@ -896,6 +894,69 @@ public class Graphics3D
 				float yC = trisScreen[tri_id].yC();
 
 				float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
+
+				// Let's precalculate uv derivatives for mipmapping. Skips having
+				// to do expensive calculations inside the inner render loops.
+				if (hasTexture && M3GMath.abs(denominator) > M3GMath.EPSILON)
+				{
+					float invDet = M3GMath.fastReciprocal(denominator);
+
+					float dxB = xB - xA, dyB = yB - yA;
+					float dxC = xC - xA, dyC = yC - yA;
+
+					if (perspectiveCorrection)
+					{
+						// For perspective correction, we need the actual W of
+						// each vertex.
+						float wA = trisScreen[tri_id].wA();
+						float wB = trisScreen[tri_id].wB();
+						float wC = trisScreen[tri_id].wC();
+
+						float dwB = wB - wA;
+						float dwC = wC - wA;
+
+						dwdx = (dwB * dyC - dwC * dyB) * invDet;
+						dwdy = (dwC * dxB - dwB * dxC) * invDet;
+					}
+
+					for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+					{
+						if (textures[i] == null) { continue; }
+
+						if (perspectiveCorrection)
+						{
+							float swA = coS[i][0] * trisScreen[tri_id].wA();
+							float swB = coS[i][1] * trisScreen[tri_id].wB();
+							float swC = coS[i][2] * trisScreen[tri_id].wC();
+
+							float twA = coT[i][0] * trisScreen[tri_id].wA();
+							float twB = coT[i][1] * trisScreen[tri_id].wB();
+							float twC = coT[i][2] * trisScreen[tri_id].wC();
+
+							float dswB = swB - swA, dswC = swC - swA;
+							float dtwB = twB - twA, dtwC = twC - twA;
+
+							sStepX[i] = (dswB * dyC - dswC * dyB) * invDet; // d(s/w)/dx
+							tStepX[i] = (dtwB * dyC - dtwC * dyB) * invDet; // d(t/w)/dx
+
+							sStepY[i] = (dswC * dxB - dswB * dxC) * invDet; // d(s/w)/dy
+							tStepY[i] = (dtwC * dxB - dtwB * dxC) * invDet; // d(t/w)/dy
+						}
+						else
+						{
+							float dsB = coS[i][1] - coS[i][0];
+							float dsC = coS[i][2] - coS[i][0];
+							float dtB = coT[i][1] - coT[i][0];
+							float dtC = coT[i][2] - coT[i][0];
+
+							sStepX[i] = (dsB * dyC - dsC * dyB) * invDet; // ds/dx
+							tStepX[i] = (dtB * dyC - dtC * dyB) * invDet; // dt/dx
+
+							sStepY[i] = (dsC * dxB - dsB * dxC) * invDet; // ds/dy
+							tStepY[i] = (dtC * dxB - dtB * dxC) * invDet; // dt/dy
+						}
+					}
+				}
 
 				// Calculate the starting vertex color with the barycentric of the
 				// triangle. Then at each scanline we only need to determine the
@@ -1182,7 +1243,7 @@ public class Graphics3D
 				// Rendering at half res?
 				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 
-				if (depthWrite) { this.depthBuffer[this.vieww * y + x] = z; }
+				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
 			}
 		}
 	}
@@ -1269,7 +1330,7 @@ public class Graphics3D
 			{
 				for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
 				{
-					if (textures[i] == null || texImages[i] == null) { continue; }
+					if (textures[i] == null) { continue; }
 
 					sL[i] = half == 0 ? sTop[i] + drawY * (sMidL[i] - sTop[i]) : sBot[i] + drawY * (sMidL[i] - sBot[i]);
 					sR[i] = half == 0 ? sTop[i] + drawY * (sMidR[i] - sTop[i]) : sBot[i] + drawY * (sMidR[i] - sBot[i]);
@@ -1347,10 +1408,16 @@ public class Graphics3D
 					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
 					{
 						// Skip this texture unit right away if it is disabled/unused
-						if (textures[i] == null || texImages[i] == null) { continue; }
+						if (textures[i] == null) { continue; }
 
 						float s = sL[i] + drawX * (sR[i] - sL[i]);
 						float t = tL[i] + drawX * (tR[i] - tL[i]);
+
+						// Start from the base mip level (highest resolution)
+						Image2D targetImage = textures[i].getImage();
+						int baseWidth = targetImage.getWidth();
+						int baseHeight = targetImage.getHeight();
+						int levelFilter = textures[i].getLevelFilter();
 
 						if(doPerspective)
 						{
@@ -1358,27 +1425,91 @@ public class Graphics3D
 							t *= invPw;
 						}
 
+						// Mipmapping support requested.
+						if (levelFilter != Texture2D.FILTER_BASE_LEVEL)
+						{
+							float dsdx, dtdx, dsdy, dtdy;
+
+							if (doPerspective)
+							{
+								dsdx = (sStepX[i] - s * dwdx) * invPw;
+								dtdx = (tStepX[i] - t * dwdx) * invPw;
+								dsdy = (sStepY[i] - s * dwdy) * invPw;
+								dtdy = (tStepY[i] - t * dwdy) * invPw;
+							}
+							else
+							{
+								dsdx = sStepX[i];
+								dtdx = tStepX[i];
+								dsdy = sStepY[i];
+								dtdy = tStepY[i];
+							}
+
+							int maxLevel = textures[i].getMipmapLevelCount() - 1;
+
+							float lod = calculateLOD(dsdx, dtdx, dsdy, dtdy);
+							int targetLevel = (int) lod;
+
+							// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
+							// This saves us the need to do much slower trilinear filtering, while
+							// retaining most of the looks.
+							if (levelFilter == Texture2D.FILTER_LINEAR)
+							{
+								float lodFraction = lod - targetLevel;
+
+								// Blend on half of the transition band between each mip level
+								if (lodFraction > 0.25f && lodFraction < 0.75f)
+								{
+									// Remap lodFraction from the [0.25, 0.75] range to the expected
+									// [0.0, 1.0] for the dither threshold
+									float normalizedFraction = (lodFraction - 0.25f) * 2.0f;
+
+									// Manually tuned bayer coefficient. Looks good enough in
+									// Super Taxi Driver.
+									int bayerIndex = ((y & 3) << 2) | (x & 3);
+									float threshold = (BAYER_PATTERN[bayerIndex] + 4) * 0.0625f;
+
+									if (normalizedFraction > threshold)
+									{
+										targetLevel = Math.min(targetLevel + 1, maxLevel);
+									}
+								}
+								else if (lodFraction >= 0.75f)
+								{
+									// Unconditionally step to next MIP level once past the transition band
+									targetLevel = Math.min(targetLevel + 1, maxLevel);
+								}
+							}
+							targetImage = textures[i].getImageForLOD(targetLevel);
+
+							float scaleX = (float) targetImage.getWidth() / textures[i].getImage().getWidth();
+							float scaleY = (float) targetImage.getHeight() / textures[i].getImage().getHeight();
+
+							s *= scaleX;
+							t *= scaleY;
+						}
+
 						if (useBilinear[i])
 						{
 							paintPixel = blendPixels(paintPixel,
-								sampleBilinear(texImages[i], s, t, texW[i], texH[i], texRepeatS[i],
-									texRepeatT[i], textures[i].isNPOT()),
+								sampleBilinear(targetImage, s, t, targetImage.getWidth(), targetImage.getHeight(),
+									texRepeatS[i], texRepeatT[i], textures[i].isNPOT()),
 									255, textures[i].getBlending(), textures[i].getBlendColor(),
-									texImages[i].getFormat());
+									targetImage.getFormat());
 						}
 						else
 						{
 							// This minor EPSILON decrement fixes UV bounds in a number of games,
 							// such as Speed Spirit and 4x4 Extreme Rally 3D.
-							int texX = (int) ((s - M3GMath.EPSILON));
-							int texY = (int) ((t - M3GMath.EPSILON));
+							int texX = M3GMath.floor(s);
+							int texY = M3GMath.floor(t);
 
-							texX = wrapX(texX, texW[i], texRepeatS[i], textures[i].isNPOT());
-							texY = wrapY(texY, texH[i], texRepeatT[i], textures[i].isNPOT());
+							texX = wrapX(texX, targetImage.getWidth(), texRepeatS[i], textures[i].isNPOT());
+							texY = wrapY(texY, targetImage.getHeight(), texRepeatT[i], textures[i].isNPOT());
 
-							paintPixel = blendPixels(paintPixel, texImages[i].getPixel(texX, texY),
+							paintPixel = blendPixels(paintPixel, targetImage.getPixel(texX, texY),
 								255, textures[i].getBlending(), textures[i].getBlendColor(),
-								texImages[i].getFormat());
+								targetImage.getFormat());
 						}
 					}
 				}
@@ -1397,7 +1528,7 @@ public class Graphics3D
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
 				if (depthEnabled && compositingMode.isDepthWriteEnabled() &&
-					(paintPixel >>> 24) == 255) { this.depthBuffer[depthIdx] = (short) z; }
+					(paintPixel >>> 24) >= 255) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
 				if (fog != null)
@@ -1469,7 +1600,7 @@ public class Graphics3D
 					}
 
 					rasterData[rasterIdx] = blendPixels(rasterData[rasterIdx],
-						paintPixel, (paintPixel >> 24) & 0xFF, compBlending, 0, 0);
+						paintPixel, (paintPixel >>> 24), compBlending, 0, 0);
 
 					// Rendering at half res? Next scanline gets painted too.
 					if (Mobile.halfResM3GRaster) { rasterData[rasterIdx + canvasWidth] = rasterData[rasterIdx]; }
@@ -1723,6 +1854,21 @@ public class Graphics3D
 			default:
 				return bg;
 		}
+	}
+
+	// Calculates the Mipmap LOD for a given pixel.
+	private float calculateLOD(float dsdx, float dtdx, float dsdy, float dtdy)
+	{
+		float lengthXSq = dsdx * dsdx + dtdx * dtdx;
+		float lengthYSq = dsdy * dsdy + dtdy * dtdy;
+
+		float maxSq = M3GMath.max(lengthXSq, lengthYSq);
+
+		if (maxSq <= 1.0f) { return 0.0f; }
+
+		// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
+		// reorder it as this:
+		return (float) (Math.log(maxSq) * 0.7213475f); // 0.72... = 0.5 * ln2 reciprocal
 	}
 
 	// For bilinear filtering support
