@@ -500,6 +500,21 @@ public class Graphics3D
 			{
 				if (mesh.getAppearance(i) != null) { render(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope()); }
 			}
+
+			/*
+			 * Per JSR-184, the skeleton group of a SkinnedMesh is a regular
+			 * scene graph branch: it is traversed just like any other branch
+			 * during rendering. This is what allows, for example, a character
+			 * to render a separate weapon mesh attached to its hand bone.
+			 */
+			if (node instanceof SkinnedMesh)
+			{
+				Group skeleton = ((SkinnedMesh) node).getSkeleton();
+				Transform sktr = new Transform();
+				skeleton.getCompositeTransform(sktr);
+				if (transform != null) { sktr.preMultiply(transform); }
+				render(skeleton, sktr);
+			}
 		}
 		else if (node instanceof Sprite3D) { renderSprite((Sprite3D) node, transform); }
 		else if (node instanceof Group)
@@ -1016,6 +1031,9 @@ public class Graphics3D
 				{ addLight((Light) node, t); }
 			else if (node instanceof Group)
 				{ positionLights(world, (Group) node);}
+			else if (node instanceof SkinnedMesh)
+				/* A SkinnedMesh skeleton can hold lights in its own branch. */
+				{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
 		}
 	}
 
