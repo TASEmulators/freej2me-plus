@@ -1223,8 +1223,13 @@ public class Graphics3D
 
 		for (int y = pixT; y < pixB; y++)
 		{
-			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
-			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
+			// Odd scanlines just copy from even ones in half res mode.
+			if(Mobile.halfResM3GRaster && (y & 1) != 0)
+			{
+				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
+					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
+				continue;
+			}
 
 			final float v = (y + 0.5f - sy0) / spanY;
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
@@ -1250,9 +1255,6 @@ public class Graphics3D
 
 				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
 					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
-
-				// Rendering at half res?
-				if (Mobile.halfResM3GRaster && y+viewy < canvasHeight) { rasterData[rasterIdxY + canvasWidth + x] = rasterData[rasterIdxY + x]; }
 
 				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
 			}
@@ -1286,8 +1288,13 @@ public class Graphics3D
 		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
 		for (int y = yStart; y < yEnd; y++)
 		{
-			// Skip odd scanlines when in half res. The even scanlines repeat on the lower one as well
-			if(Mobile.halfResM3GRaster && (y & 1) != 0) { continue; }
+			// Odd scanlines just copy from even ones in half res mode.
+			if(Mobile.halfResM3GRaster && (y & 1) != 0)
+			{
+				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
+					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
+				continue;
+			}
 
 			float drawY = half == 0
 				? (y - yTop) * yDiv  // Upper half
@@ -1641,9 +1648,6 @@ public class Graphics3D
 
 					rasterData[rasterIdx] = blendPixels(rasterData[rasterIdx],
 						paintPixel, (paintPixel >>> 24), compBlending, 0, 0);
-
-					// Rendering at half res? Next scanline gets painted too.
-					if (Mobile.halfResM3GRaster) { rasterData[rasterIdx + canvasWidth] = rasterData[rasterIdx]; }
 				}
 			}
 		}
@@ -1657,11 +1661,6 @@ public class Graphics3D
 			int aaPixel = blendPixels(rasterData[targetIdx], paintPixel, coverageAlpha, Graphics3D.BLEND_COVERAGE, 0, 0);
 
 			rasterData[targetIdx] = blendPixels(rasterData[targetIdx], aaPixel, (aaPixel >> 24) & 0xFF, compBlending, 0, 0);
-
-			if (Mobile.halfResM3GRaster && (targetIdx + canvasWidth) < rasterData.length)
-			{
-				rasterData[targetIdx + canvasWidth] = rasterData[targetIdx];
-			}
 		}
 	}
 
@@ -1675,40 +1674,48 @@ public class Graphics3D
 
 			case CompositingMode.ALPHA:
 			{
-				if (alpha == 0)   { return bg; }
-				if (alpha >= 255) { return fg; }
+			    if (alpha <= 0)   { return bg; }
+			    if (alpha >= 255) { return fg; }
 
-				int bgRB = bg & 0x00FF00FF;
-				int fgRB = fg & 0x00FF00FF;
+			    int invA = 255 - alpha;
 
-				int bgR = (bg >> 16) & 0xFF, fgR = (fg >> 16) & 0xFF;
-				int bgB = bg & 0xFF,         fgB = fg & 0xFF;
+			    // Red & Blue channel SWAR blend
+			    int bgRB = bg & 0x00FF00FF;
+			    int fgRB = fg & 0x00FF00FF;
+			    int outRB = ((fgRB * alpha + bgRB * invA) >> 8) & 0x00FF00FF;
 
-				int bgA = bg >>> 24,         fgA = fg >>> 24;
-				int bgG = (bg >> 8) & 0xFF,  fgG = (fg >> 8) & 0xFF;
+			    // Alpha & Green channel SWAR blend
+			    int bgAG = (bg >>> 8) & 0x00FF00FF;
+			    int fgAG = (fg >>> 8) & 0x00FF00FF;
+			    int outAG = ((fgAG * alpha + bgAG * invA) >> 8) & 0x00FF00FF;
 
-				int outR = bgR + (((fgR - bgR) * alpha) >> 8);
-				int outG = bgG + (((fgG - bgG) * alpha) >> 8);
-				int outB = bgB + (((fgB - bgB) * alpha) >> 8);
-				int outA = bgA + (((fgA - bgA) * alpha) >> 8);
-
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			    return outRB | (outAG << 8);
 			}
 
 			case CompositingMode.ALPHA_ADD:
 			{
-				if (alpha == 0) { return bg; }
+			    if (alpha == 0) { return bg; }
 
-				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
-				int fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
+			    int bgA = bg >>> 24,          bgR = (bg >> 16) & 0xFF;
+			    int bgG = (bg >> 8) & 0xFF,   bgB = bg & 0xFF;
+			    int fgR = (fg >> 16) & 0xFF,  fgG = (fg >> 8) & 0xFF,  fgB = fg & 0xFF;
 
-				int outR = bgR + ((fgR * alpha) >> 8); if (outR > 255) outR = 255;
-				int outG = bgG + ((fgG * alpha) >> 8); if (outG > 255) outG = 255;
-				int outB = bgB + ((fgB * alpha) >> 8); if (outB > 255) outB = 255;
-				int outA = bgA + ((alpha * (255 - bgA)) >> 8);
-				if (outA > 255) { outA = 255; }
+			    int addR = (fgR * alpha) >> 8;
+			    int addG = (fgG * alpha) >> 8;
+			    int addB = (fgB * alpha) >> 8;
+			    int addA = (alpha * (255 - bgA)) >> 8;
 
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			    int sumR = bgR + addR;
+			    int sumG = bgG + addG;
+			    int sumB = bgB + addB;
+			    int sumA = bgA + addA;
+
+			    int outR = sumR | -(sumR >> 8);
+			    int outG = sumG | -(sumG >> 8);
+			    int outB = sumB | -(sumB >> 8);
+			    int outA = sumA | -(sumA >> 8);
+
+			    return ((outA & 0xFF) << 24) | ((outR & 0xFF) << 16) | ((outG & 0xFF) << 8) | (outB & 0xFF);
 			}
 
 			case CompositingMode.MODULATE:
