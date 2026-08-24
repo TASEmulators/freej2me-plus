@@ -189,6 +189,57 @@ public abstract class Node extends Transformable
 		return false;
 	}
 
+	/*
+	 * Returns the node in dstRoot occupying the same relative position as
+	 * srcNode in srcRoot, assuming both trees have an identical structure.
+	 * Used to rewire intra-tree references (e.g. bones, the active camera)
+	 * after duplicating a scene graph branch. Returns null if srcNode is
+	 * not a descendant of srcRoot.
+	 */
+	static Node matchingNode(Node srcRoot, Node srcNode, Node dstRoot)
+	{
+		if (srcNode == srcRoot) { return dstRoot; }
+
+		// Compute the depth of srcNode relative to the tree root.
+		int depth = 0;
+		for (Node n = srcNode; n != srcRoot; n = n.getParent())
+		{
+			if (n == null) { return null; }
+			depth++;
+		}
+
+		// Collect the child indices from the root down to the node.
+		int[] indices = new int[depth];
+		int i = depth;
+		for (Node n = srcNode; n != srcRoot; )
+		{
+			Node parent = n.getParent();
+			if (!(parent instanceof Group)) { return null; }
+
+			Group g = (Group) parent;
+			int idx = -1;
+			int children = g.getChildCount();
+			for (int c = 0; c < children; c++)
+			{
+				if (g.getChild(c) == n) { idx = c; break; }
+			}
+			if (idx < 0) { return null; }
+
+			indices[--i] = idx;
+			n = parent;
+		}
+
+		// Walk the same path in the destination tree.
+		Node dst = dstRoot;
+		for (i = 0; i < indices.length; i++)
+		{
+			if (!(dst instanceof Group) || indices[i] >= ((Group) dst).getChildCount()) { return null; }
+			dst = ((Group) dst).getChild(indices[i]);
+		}
+
+		return dst;
+	}
+
 	public Node getAlignmentReference(int axis)
 	{
 		if(axis == Y_AXIS) { return this.yRef; }
