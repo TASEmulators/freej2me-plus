@@ -62,9 +62,9 @@ public class Graphics3D
 	public static final int MAX_VIEWPORT_WIDTH = 1024;
 	public static final int MAX_VIEWPORT_HEIGHT = 1024;
 	public static final int MAX_VIEWPORT_DIMENSION = 1024;
-	public static final int MAX_TEXTURE_DIMENSION = 512;
-	public static final int MAX_SPRITE_CROP_DIMENSION = 256;
-	public static final int MAX_TRANSFORMS_PER_VERTEX = 4;
+	public static final int MAX_TEXTURE_DIMENSION = 2048;
+	public static final int MAX_SPRITE_CROP_DIMENSION = 1024;
+	public static final int MAX_TRANSFORMS_PER_VERTEX = 16;
 	public static final int NUM_TEXTURE_UNITS = 4;
 	private static Hashtable properties;
 
