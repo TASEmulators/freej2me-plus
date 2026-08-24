@@ -61,7 +61,7 @@ class Triangle
 		// xC, yC, zC, wC;
 		// 0   1   2   3
 
-	private final float[][] t = new float[Graphics3D.NUM_TEXTURE_UNITS][6];
+	private float[][] t = new float[Graphics3D.ACTIVE_TEXTURE_UNITS][6];
 		// For each texture unit:
 		// [sA, tA,
 		// sB, tB,
@@ -87,7 +87,7 @@ class Triangle
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
 		boolean hasTex = false;
-		for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+		for(int i = 0; i < Graphics3D.ACTIVE_TEXTURE_UNITS; i++)
 		{
 			if(texc[i] != null) { hasTex = true; break; }
 		}
@@ -117,7 +117,7 @@ class Triangle
 				Triangle.inV[4*i]   = vert[idx];     Triangle.inV[4*i+1] = vert[idx + 1];
 				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
 
-				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+				for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 				{
 					if (texc[u] != null)
 					{
@@ -446,7 +446,7 @@ class Triangle
 				System.arraycopy(inV, 4*i, outV, 4*outCount, 4);
 				if(hasTex)
 				{
-					for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+					for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 					{
 						if (texc[u] != null) { System.arraycopy(inT[u], 4*i, outT[u], 4*outCount, 4); }
 					}
@@ -463,7 +463,7 @@ class Triangle
 					outV[4*outCount + c] = inV[4*i + c] + amt * (inV[4*j + c] - inV[4*i + c]);
 					if (hasTex)
 					{
-						for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+						for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 						{
 							if (texc[u] != null)
 							{
@@ -531,7 +531,7 @@ class Triangle
 		{
 			trVert.transform(triangles[i].v);
 
-			for(int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+			for(int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 			{
 				if (trTex != null)
 				{
@@ -564,7 +564,7 @@ class Triangle
 			// perspective correction is enabled (undone per-pixel in rasterizer)
 			if (perspectiveCorrect)
 			{
-				for (int u = 0; u < Graphics3D.NUM_TEXTURE_UNITS; u++)
+				for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 				{
 					if(t[u] == null) { continue; }
 					t[u][2 * i + 0] *= invW[i]; // s / w
@@ -620,7 +620,12 @@ class Triangle
 		final int f1 = 4 * (fan + 1);
 		final int f2 = 4 * (fan + 2);
 
-		for (int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+		// The number of active texture units MAY have increased since this
+		// triangle was created, check here and resize properly..
+		if(Graphics3D.ACTIVE_TEXTURE_UNITS > this.t.length / 6)
+			{ this.t = new float[Graphics3D.ACTIVE_TEXTURE_UNITS][6]; }
+
+		for (int i = 0; i < Graphics3D.ACTIVE_TEXTURE_UNITS; i++)
 		{
 			if (tCoords[i] == null) { continue; }
 			t[i][0] = tCoords[i][0];  t[i][1] = tCoords[i][1];

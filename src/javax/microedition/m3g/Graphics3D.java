@@ -125,11 +125,16 @@ public class Graphics3D
 	float[] tStepX = new float[NUM_TEXTURE_UNITS];
 	float[] tStepY = new float[NUM_TEXTURE_UNITS];
 	float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
+	float[] curS = new float[NUM_TEXTURE_UNITS];
+	float[] curT = new float[NUM_TEXTURE_UNITS];
+	float[] stepS = new float[NUM_TEXTURE_UNITS];
+	float[] stepT = new float[NUM_TEXTURE_UNITS];
 
 	// Vertex color blending
 	int alpha, r, g, b;
 
 	// 3D rendering variables
+	static byte ACTIVE_TEXTURE_UNITS;
 	final Transform normalMatrix;
 	final Transform posLocalToEye;
 	final Transform tr;
@@ -589,6 +594,7 @@ public class Graphics3D
 		// by layer, with each texture unit blending on top of another.
 		boolean hasTexture = false;
 
+		ACTIVE_TEXTURE_UNITS = 0;
 		if(!Mobile.M3GRenderUntexturedPolygons && !Mobile.M3GRenderWireframe)
 		{
 			for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
@@ -601,7 +607,8 @@ public class Graphics3D
 					// We have at least one texture, so texturing must be done.
 					hasTexture = true;
 
-					textures[i] = t;
+					// joint-increment ACTIVE_TEXTURE_UNITS alongside assignment.
+					textures[ACTIVE_TEXTURE_UNITS++] = t;
 					texRepeatS[i] = (t.getWrappingS() == Texture2D.WRAP_REPEAT);
 					texRepeatT[i] = (t.getWrappingT() == Texture2D.WRAP_REPEAT);
 
@@ -755,10 +762,7 @@ public class Graphics3D
 		// Reset transform
 		tr.setIdentity();
 
-		for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
-		{
-			if (textures[i] != null) { textr[i].setIdentity(); }
-		}
+		for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++) { textr[i].setIdentity(); }
 
 
 		// Fit to viewport. Notice that Z is scaled slightly below the max limits
@@ -827,9 +831,8 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
-					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						if(textures[i] == null) { continue; }
 						coS[i][0] = trisScreen[tri_id].sA(i); coS[i][1] = trisScreen[tri_id].sB(i); coS[i][2] = trisScreen[tri_id].sC(i);
 						coT[i][0] = trisScreen[tri_id].tA(i); coT[i][1] = trisScreen[tri_id].tB(i); coT[i][2] = trisScreen[tri_id].tC(i);
 					}
@@ -866,10 +869,8 @@ public class Graphics3D
 						dwdy = (dwC * dxB - dwB * dxC) * invDet;
 					}
 
-					for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						if (textures[i] == null) { continue; }
-
 						// For perspective correction, we need the actual W of
 						// each vertex as well.
 						if (perspectiveCorrection)
@@ -961,9 +962,8 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
-					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						if(textures[i] == null) { continue; }
 						sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
 						tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
 					}
@@ -977,9 +977,8 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
-					for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						if(textures[i] == null) { continue; }
 						sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
 						tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
 					}
@@ -997,9 +996,8 @@ public class Graphics3D
 
 					if(hasTexture)
 					{
-						for(int i = 0; i < Graphics3D.NUM_TEXTURE_UNITS; i++)
+						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 						{
-							if(textures[i] == null) { continue; }
 							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
 							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
 						}
@@ -1275,9 +1273,8 @@ public class Graphics3D
 
 		if (hasTexture)
 		{
-			for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+			for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 			{
-				if (textures[i] == null) { continue; }
 				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
 					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
 					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
@@ -1341,10 +1338,8 @@ public class Graphics3D
 
 			if(hasTexture)
 			{
-				for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					if (textures[i] == null) { continue; }
-
 					sL[i] = half == 0 ? sTop[i] + drawY * (sMidL[i] - sTop[i]) : sBot[i] + drawY * (sMidL[i] - sBot[i]);
 					sR[i] = half == 0 ? sTop[i] + drawY * (sMidR[i] - sTop[i]) : sBot[i] + drawY * (sMidR[i] - sBot[i]);
 					tL[i] = half == 0 ? tTop[i] + drawY * (tMidL[i] - tTop[i]) : tBot[i] + drawY * (tMidL[i] - tBot[i]);
@@ -1366,11 +1361,27 @@ public class Graphics3D
 			final float pwStep = (pwR - pwL) * invDrawSpanWidth;
 
 			float pw = pwL + (ixL - xL) * pwStep;
+			float invPw = 1.00001f; // Small epsilon from 1.0f to check on fog calculations
 			float z  = zL + (ixL - xL) * zStep + depthOffset;
-			float drawX = (ixL - xL) * invDrawSpanWidth;
+
+			if (hasTexture)
+			{
+				// We'll use DDA for texturing as well, saves many multiply and
+				// add operations for each textured pixel.
+				final float subpixelOffset = ixL - xL;
+
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				{
+					stepS[i] = (sR[i] - sL[i]) * invDrawSpanWidth;
+					stepT[i] = (tR[i] - tL[i]) * invDrawSpanWidth;
+
+					curS[i] = sL[i] + subpixelOffset * stepS[i];
+					curT[i] = tL[i] + subpixelOffset * stepT[i];
+				}
+			}
 
 			// Draw the pixels for the current y-coordinate
-			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, drawX += invDrawSpanWidth, depthIdx++, rasterIdx++)
+			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, depthIdx++, rasterIdx++)
 			{
 				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
 				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
@@ -1379,10 +1390,18 @@ public class Graphics3D
 				// compositingMode is not set, check if this target has depthBuffer enabled.
 				if(depthEnabled && this.depthBuffer[depthIdx] <= (short) z)
 				{
-					// We need to increment the color deltas even when discarding by depth,
-					// otherwise vertex color spans on objects partially occluded by others
-					// won't be correct.
+					// We need to increment the color and texture deltas even when discarding
+					// by depth, otherwise color and texturing spans on objects partially
+					// occluded by others won't be correct.
 					if (hasColors) { deltaA += aStepX; deltaR += rStepX; deltaG += gStepX; deltaB += bStepX; }
+					if(hasTexture)
+					{
+						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+						{
+							curS[i] += stepS[i];
+							curT[i] += stepT[i];
+						}
+					}
 					continue;
 				}
 
@@ -1416,27 +1435,23 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
-					float invPw = M3GMath.fastReciprocal(pw);
+					if (doPerspective) { invPw = M3GMath.fastReciprocal(pw); }
 
-					for(int i = 0; i < NUM_TEXTURE_UNITS; i++)
+					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						// Skip this texture unit right away if it is disabled/unused
 						Texture2D tex = textures[i];
-						if (tex == null) { continue; }
 
 						Image2D targetImage = tex.getImage();
 						int baseWidth = targetImage.getWidth();
 						int baseHeight = targetImage.getHeight();
 						final int levelFilter = tex.getLevelFilter();
 
-						float s = sL[i] + drawX * (sR[i] - sL[i]);
-						float t = tL[i] + drawX * (tR[i] - tL[i]);
+						float s = curS[i];
+						float t = curT[i];
 
-						if(doPerspective)
-						{
-							s *= invPw;
-							t *= invPw;
-						}
+						s *= invPw;
+						t *= invPw;
 
 						// Mipmapping support requested.
 						if (levelFilter != Texture2D.FILTER_BASE_LEVEL)
@@ -1522,8 +1537,6 @@ public class Graphics3D
 						}
 						else
 						{
-							// This minor EPSILON decrement fixes UV bounds in a number of games,
-							// such as Speed Spirit and 4x4 Extreme Rally 3D.
 							int texX = M3GMath.floor(s);
 							int texY = M3GMath.floor(t);
 
@@ -1534,6 +1547,9 @@ public class Graphics3D
 								255, textures[i].getBlending(), textures[i].getBlendColor(),
 								targetImage.getFormat());
 						}
+
+						curS[i] += stepS[i];
+						curT[i] += stepT[i];
 					}
 				}
 
@@ -1556,18 +1572,19 @@ public class Graphics3D
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
 				if (fog != null)
 				{
-					// Fog is always perspective-correct
-					final float zEye = M3GMath.fastReciprocal(pw);
+					// Fog is always perspective-correct. If texturing is already perspective-correct,
+					// reuse that invPw instead of recalculating.
+					final float zEye = invPw < 1.00001f ? invPw : M3GMath.fastReciprocal(pw);
 
 					if (fog.getMode() == Fog.LINEAR)
 					{
-						fogFactor = M3GMath.max(0, M3GMath.min(1, (fog.getFarDistance() - zEye) * invFogDiv));
+						fogFactor = M3GMath.max(0, (fog.getFarDistance() - zEye) * invFogDiv);
 					}
 					else { fogFactor = M3GMath.exp(-fog.getDensity() * zEye); }
 
 					fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
 
-					if (fogFactor < 255.0f) { paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
+					paintPixel = fogFactor >= 255.0f ? paintPixel : blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0);
 				}
 
 				// Only write to the screen if color write is enabled.
