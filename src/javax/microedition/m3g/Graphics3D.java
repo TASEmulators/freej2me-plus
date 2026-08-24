@@ -144,7 +144,6 @@ public class Graphics3D
 	final float[] coY = new float[3];
 	final float[] coZ = new float[3];
 	final float[] coW = new float[3];
-	final float[] projParams = new float[4];
 	float xTop, yTop, zTop;
 	float xMidL, yMid, zMidL;
 	float xBot, yBot, zBot;
@@ -542,7 +541,7 @@ public class Graphics3D
 		 */
 		if ((scope & this.currCam.getScope()) == 0) { return; }
 
-		final int projType = this.currCam.getProjection(projParams);
+		final int projType = this.currCam.getProjection((float []) null);
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : this.defaultCompositing;
 
@@ -908,9 +907,9 @@ public class Graphics3D
 					{
 						// For perspective correction, we need the actual W of
 						// each vertex.
-						float wA = trisScreen[tri_id].wA();
-						float wB = trisScreen[tri_id].wB();
-						float wC = trisScreen[tri_id].wC();
+						float wA = trisScreen[tri_id].iwA();
+						float wB = trisScreen[tri_id].iwB();
+						float wC = trisScreen[tri_id].iwC();
 
 						float dwB = wB - wA;
 						float dwC = wC - wA;
@@ -1447,7 +1446,7 @@ public class Graphics3D
 
 							int maxLevel = textures[i].getMipmapLevelCount() - 1;
 
-							float lod = calculateLOD(dsdx, dtdx, dsdy, dtdy);
+							float lod = calculateLOD(dsdx, dtdx, dsdy, dtdy, levelFilter == Texture2D.FILTER_LINEAR);
 							int targetLevel = (int) lod;
 
 							// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
@@ -1857,18 +1856,38 @@ public class Graphics3D
 	}
 
 	// Calculates the Mipmap LOD for a given pixel.
-	private float calculateLOD(float dsdx, float dtdx, float dsdy, float dtdy)
+	private float calculateLOD(float dsdx, float dtdx, float dsdy, float dtdy, boolean trilinear)
 	{
-		float lengthXSq = dsdx * dsdx + dtdx * dtdx;
-		float lengthYSq = dsdy * dsdy + dtdy * dtdy;
+		if(trilinear)
+		{
+			// Area-based geometric footprint (Determinant magnitude: |ds/dx * dt/dy - dt/dx * ds/dy|)
+			// Keeps elongated polygons (like ground planes/roads) much sharper along their primary axis,
+			// and seems to align with OpenGL's trilinear filter slope
+			float area = M3GMath.abs(dsdx * dtdy - dtdx * dsdy);
 
-		float maxSq = M3GMath.max(lengthXSq, lengthYSq);
+			if (area <= 1.0f) { return 0.0f; }
 
-		if (maxSq <= 1.0f) { return 0.0f; }
+			// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
+			// reorder it as this:
+			float lod = M3GMath.log(area) * 0.7213475f; // 0.72... = 0.5 * ln2 reciprocal
 
-		// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
-		// reorder it as this:
-		return M3GMath.log(maxSq) * 0.7213475f; // 0.72... = 0.5 * ln2 reciprocal
+			return M3GMath.max(0.0f, lod);
+		}
+		else
+		{
+			// Simpler max of squared distance, seems to aligb with OpenGL's bilinear
+			// mipmap filter slope.
+			float lengthXSq = dsdx * dsdx + dtdx * dtdx;
+			float lengthYSq = dsdy * dsdy + dtdy * dtdy;
+
+			float maxSq = M3GMath.max(lengthXSq, lengthYSq);
+
+			if (maxSq <= 1.0f) { return 0.0f; }
+
+			// The formula for mipmap LODs is "0.5 * (ln(maxSq) / ln(2))", but we can
+			// reorder it as this:
+			return M3GMath.log(maxSq) * 0.7213475f; // 0.72... = 0.5 * ln2 reciprocal
+		}
 	}
 
 	// For bilinear filtering support
