@@ -24,6 +24,23 @@ public class World extends Group
 
 	public World() { }
 
+	protected Object3D duplicateImpl()
+	{
+		World copy = (World) super.duplicateImpl();
+
+		/*
+		 * The camera and background fields were shallow-copied by clone().
+		 * Per JSR-184, if the active camera is part of the duplicated set of
+		 * nodes, the duplicate must reference the corresponding duplicated
+		 * camera instead; any other references are left as they are.
+		 */
+		Node copyCamera = (this.camera != null) ? Node.matchingNode(this, this.camera, copy) : null;
+		copy.setActiveCamera((copyCamera instanceof Camera) ? (Camera) copyCamera : this.camera);
+		copy.setBackground(this.background);
+
+		return copy;
+	}
+
 	public Camera getActiveCamera() { return camera; }
 
 	public void setActiveCamera(Camera camera)
