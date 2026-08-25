@@ -70,7 +70,9 @@ public class M3GMath
 		int i = Float.floatToRawIntBits(x);
 		i = 0x5f3759df - (i >> 1);
 		x = Float.intBitsToFloat(i);
-		return x * (1.5f - (xhalf * x * x));
+        x = x * (1.5f - (xhalf * x * x));
+        x = x * (1.5f - (xhalf * x * x));
+        return x;
 	}
 
 	public static float sqrt(float x)
