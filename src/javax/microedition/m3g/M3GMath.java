@@ -111,6 +111,12 @@ public class M3GMath
 		return (value < i) ? i - 1 : i;
 	}
 
+	public static int ceil(float value)
+	{
+		int i = (int) value;
+		return (value > i) ? i + 1 : i;
+	}
+
 	// Those are slightly faster than using round() since we know the value will always be positive or negative
 	public static int roundPositive(float value) { return (int) (value + 0.5f); }
 
@@ -141,14 +147,14 @@ public class M3GMath
 
 	public static final float log(float val)
 	{
-	    if (val <= 0.0f) { return 0.0f; }
+		if (val <= 0.0f) { return 0.0f; }
 
-	    int bits = Float.floatToRawIntBits(val);
+		int bits = Float.floatToRawIntBits(val);
 
-	    int exp = ((bits >> 23) & 0xFF) - 127;
-	    float mantissa = Float.intBitsToFloat((bits & 0x007FFFFF) | 0x3F800000) - 1.0f;
+		int exp = ((bits >> 23) & 0xFF) - 127;
+		float mantissa = Float.intBitsToFloat((bits & 0x007FFFFF) | 0x3F800000) - 1.0f;
 
-	    return exp + mantissa;
+		return exp + mantissa;
 	}
 
 	// Now we get to stuff specific to M3G

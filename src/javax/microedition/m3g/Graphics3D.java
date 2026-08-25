@@ -36,10 +36,10 @@ public class Graphics3D
 	// Dither pattern matrix (fast ordered dithering)
 	private static final byte[] BAYER_PATTERN =
 	{
-		-8,  0, -6,  2,
-		 4, -4,  6, -2,
-		-5,  3, -7,  1,
-		 7, -1,  5, -3
+		0, 8, 2, 10,
+		12, 4, 14, 6,
+		3, 11, 1, 9,
+		15, 7, 13, 5
 	};
 
 	// Special blend modes for fog and AA coverage
@@ -158,7 +158,8 @@ public class Graphics3D
 
 	float rStepX = 0, gStepX = 0, bStepX = 0, aStepX = 0;
 	float rStepY = 0, gStepY = 0, bStepY = 0, aStepY = 0;
-	float deltaR = 0, deltaG = 0, deltaB = 0, deltaA = 0;
+	int deltaR = 0, deltaG = 0, deltaB = 0, deltaA = 0;
+	int stepA = 0, stepR = 0, stepG = 0, stepB = 0;
 
 	final float[] scaleBias = new float[4];
 
@@ -268,7 +269,7 @@ public class Graphics3D
 
 		this.target = target;
 		this.depthBuffer = new short[this.vieww * this.viewh];
-		Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f));
+		Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f));
 		this.depthEnabled = depthBuffer;
 		this.hints = hints;
 	}
@@ -334,12 +335,12 @@ public class Graphics3D
 					for (int py = 0; py < viewh; py++)
 					{
 						int sy = cropY + (int) (py * cropH / viewh);
-						sy = wrapY(sy, bgImg.getHeight(), repeatY, bgImg.isPowerOfTwo(bgImg.getHeight()));
+						sy = wrapCoord(sy, bgImg.getHeight(), repeatY, bgImg.isPowerOfTwo(bgImg.getHeight()));
 
 						for (int px = 0; px < vieww; px++)
 						{
 							int sx = cropX + (int) (px * cropW / vieww);
-							sx = wrapY(sx, bgImg.getWidth(), repeatX, bgImg.isPowerOfTwo(bgImg.getWidth()));
+							sx = wrapCoord(sx, bgImg.getWidth(), repeatX, bgImg.isPowerOfTwo(bgImg.getWidth()));
 
 							int paintPixel = bgImg.getPixel(sx, sy);
 
@@ -348,32 +349,29 @@ public class Graphics3D
 							{
 								int ditherOffset = BAYER_PATTERN[((sy & 3) << 2) | (sx & 3)];
 
-								int r = (paintPixel >> 16) & 0xFF;
-								int g = (paintPixel >>  8) & 0xFF;
-								int b =  paintPixel & 0xFF;
+								int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
+								int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
+								int b =  (paintPixel        & 0xFF) + ditherOffset;
 
-								r += ditherOffset;
-								g += ditherOffset;
-								b += ditherOffset;
+								r |= ((255 - r) >> 31); r &= 0xFF;
+								g |= ((255 - g) >> 31); g &= 0xFF;
+								b |= ((255 - b) >> 31); b &= 0xFF;
 
-								if ((r & ~0xFF) != 0) r = (r < 0) ? 0 : 255;
-								if ((g & ~0xFF) != 0) g = (g < 0) ? 0 : 255;
-								if ((b & ~0xFF) != 0) b = (b < 0) ? 0 : 255;
-
+								// Repack keeping Alpha intact
 								paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 							}
 
 							// Image format argument shouldn't matter here
 							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =
-								blendPixels(rasterData[(py + viewy) * canvasWidth + (px + viewx)], paintPixel,
-									(paintPixel >>> 24), CompositingMode.ALPHA, 0, 0);
+								blendCompositing(rasterData[(py + viewy) * canvasWidth + (px + viewx)],
+									paintPixel, (paintPixel >>> 24), CompositingMode.ALPHA);
 						}
 					}
 				}
 			}
 		}
 
-		if (clearDepth) { Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f)); }
+		if (clearDepth) { Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f)); }
 	}
 
 	public Camera getCamera(Transform transform)
@@ -768,9 +766,12 @@ public class Graphics3D
 		// Fit to viewport. Notice that Z is scaled slightly below the max limits
 		// for shorts (which is -32768, 32767), this is to make sure the
 		// multiplied Z values will always be in range and never overflow,
-		// saving us the need to clamp it for every pixel draw
-		tr.postScale(vieww / 2f, -viewh / 2f, (far - near) * 32759.5f);
-		tr.postTranslate(1f, -1f, 0);
+		// saving us the need to clamp it for every pixel draw.
+		//
+		// NOTE: The last 50.0f mult is a hack to vastly improve depth buffer
+		// range usage. No idea why it is so bad with the default transforms.
+		tr.postScale(vieww / 2f, -viewh / 2f, 32767.0f * 8.0f);
+		tr.postTranslate(1f, -1f, -0.88f);
 
 		// -> Screen space
 
@@ -794,7 +795,6 @@ public class Graphics3D
 		}
 		else if (this.target instanceof Graphics)
 		{
-			final Graphics pgrp = (Graphics) this.target;
 
 			for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
 			{
@@ -803,6 +803,16 @@ public class Graphics3D
 				coY[0] = trisScreen[tri_id].yA(); coY[1] = trisScreen[tri_id].yB(); coY[2] = trisScreen[tri_id].yC();
 				coZ[0] = trisScreen[tri_id].zA(); coZ[1] = trisScreen[tri_id].zB(); coZ[2] = trisScreen[tri_id].zC();
 				coW[0] = trisScreen[tri_id].iwA(); coW[1] = trisScreen[tri_id].iwB(); coW[2] = trisScreen[tri_id].iwC();
+
+				if(Mobile.M3GRenderWireframe)
+				{
+					final PlatformGraphics pgrp = (PlatformGraphics) this.target;
+					int tempcolor = pgrp.getColor();
+					pgrp.setColor(0xFF000000 | trisScreen[tri_id].colorA());
+					pgrp.drawTriangle((int) coX[0],(int) coY[0],(int) coX[1],(int) coY[1],(int) coX[2],(int) coY[2]);
+					pgrp.setColor(tempcolor);
+					continue;
+				}
 
 				if(hasDepthOffset)
 				{
@@ -943,6 +953,11 @@ public class Graphics3D
 						gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
 						bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
 						aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
+
+						stepA = (int) (aStepX * 65536.0f);
+						stepR = (int) (rStepX * 65536.0f);
+						stepG = (int) (gStepX * 65536.0f);
+						stepB = (int) (bStepX * 65536.0f);
 					}
 				}
 
@@ -1000,6 +1015,10 @@ public class Graphics3D
 						{
 							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
 							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
+
+							useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+								|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+								((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
 						}
 					}
 				}
@@ -1008,10 +1027,10 @@ public class Graphics3D
 				for (int half = 0; half < 2; half++)
 				{
 					// Determine the range for the y-coordinate
-					yStart = half == 0 ? M3GMath.max(M3GMath.roundPositive(yTop), 0) : M3GMath.max(M3GMath.roundPositive(yMid), 0);
-					yEnd = half == 0 ? M3GMath.min(M3GMath.roundPositive(yMid), viewh) : M3GMath.min(M3GMath.roundPositive(yBot), viewh);
+					yStart = half == 0 ? M3GMath.max(M3GMath.ceil(yTop), 0) : M3GMath.max(M3GMath.ceil(yMid), 0);
+					yEnd = half == 0 ? M3GMath.min(M3GMath.ceil(yMid), viewh) : M3GMath.min(M3GMath.ceil(yBot), viewh);
 
-					renderTriangleHalf(vertices, half, yStart, yEnd, trisScreen, tri_id, hasColors, hasTexture, compositingMode,
+					renderTriangleHalf(vertices.getDefaultColor(), half, yStart, yEnd, trisScreen[tri_id], hasColors, hasTexture, compositingMode,
 						fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset, perspectiveCorrection);
 				}
 			}
@@ -1067,7 +1086,7 @@ public class Graphics3D
 		{
 			this.near=near;
 			this.far=far;
-			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, (short) M3GMath.round((this.far * 65520.0f) - 32760.0f)); }
+			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f)); }
 		}
 	}
 
@@ -1154,12 +1173,15 @@ public class Graphics3D
 		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
 
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
-		float ndcZ = clip[2]/clip[3];
-		if (ndcZ < -1f || ndcZ > 1f) { return; }
+
 
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
 		// multiplied by the same factor used by the buffer.
-		ndcZ = ndcZ * (this.far - this.near) * 32759.5f;
+		// NOTE: that last mult by 8.0f and negative translation by 0.88 is
+		// just a hack to vastly improve depth buffer range usage.
+		float ndcZ = clip[2]/clip[3] - 0.88f;
+		if (ndcZ < -1f || ndcZ > 1f) { return; }
+		ndcZ = ndcZ * (this.far - this.near) * 32767.0f * 8.0f;
 		short z = (short) ndcZ;
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
@@ -1251,18 +1273,20 @@ public class Graphics3D
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
 
 				if (fog != null && fogFactor < 255.0f)
-					{ paintPixel = blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0); }
+					{ paintPixel = blendFog(paintPixel, fog.getColor(), (int) fogFactor); }
 
-				rasterData[rasterIdxY + x] = blendPixels(rasterData[rasterIdxY + x],
-					paintPixel, alpha, compositingMode.getBlending(), 0, 0);
+				rasterData[rasterIdxY + x] =
+					compositingMode.getBlending() == CompositingMode.REPLACE ? paintPixel :
+					blendCompositing(rasterData[rasterIdxY + x], paintPixel, alpha,
+						compositingMode.getBlending());
 
 				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
 			}
 		}
 	}
 
-	private void renderTriangleHalf(VertexBuffer vertices, int half, int yStart, int yEnd,
-		Triangle[] trisScreen, int tri_id, boolean hasColors, boolean hasTexture, CompositingMode compositingMode,
+	private void renderTriangleHalf(int defVertColor, int half, int yStart, int yEnd,
+		Triangle triScreen, boolean hasColors, boolean hasTexture, CompositingMode compositingMode,
 		Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
 		float depthOffset, boolean doPerspective)
 	{
@@ -1273,18 +1297,21 @@ public class Graphics3D
 		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
 
-		if (hasTexture)
-		{
-			for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-			{
-				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
-					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
-					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
-			}
-		}
+		// TODO: && !Mobile.m3gDisableFog flag
+		final boolean hasFog = fog != null;
+
+		int compBlending = compositingMode.getBlending();
+
+		float xA = triScreen.xA();
+		float yA = triScreen.yA();
+		int colorA = 0;
+		if (hasColors) { colorA = triScreen.colorA(); }
+		final float cA = (colorA >> 24) & 0xFF;
+		final float cR = (colorA >> 16) & 0xFF;
+		final float cG = (colorA >> 8) & 0xFF;
+		final float cB = colorA & 0xFF;
 
 		// Get into the render loop proper.
-
 		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
 		for (int y = yStart; y < yEnd; y++)
 		{
@@ -1296,10 +1323,8 @@ public class Graphics3D
 				continue;
 			}
 
-			float drawY = half == 0
-				? (y - yTop) * yDiv  // Upper half
-				: 1f - (y - yMid) * yDiv; // Lower half
-			drawY = M3GMath.min(drawY, 1.0f);
+			float drawY = (y - ((half == 0) ? yTop : yMid)) * yDiv;
+			if (half != 0) { drawY = M3GMath.min(1.0f - drawY, 1.0f); }
 
 			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
 			float xL = half == 0
@@ -1309,12 +1334,8 @@ public class Graphics3D
 				? xTop + drawY * (xMidR - xTop)
 				: xBot + drawY * (xMidR - xBot);
 
-			int ixL = M3GMath.max(M3GMath.roundPositive(xL), 0);
-			int ixR = M3GMath.min(M3GMath.roundPositive(xR), vieww);
-
-			final int spanWidth = ixR - ixL;
-
-			if (spanWidth <= 0) { continue; }
+			int ixL = M3GMath.max(M3GMath.ceil(xL), 0);
+			int ixR = M3GMath.min(M3GMath.ceil(xR), vieww);
 
 			// Saves a division for each x step.
 			final float invDrawSpanWidth = M3GMath.fastReciprocal(xR - xL);
@@ -1323,17 +1344,15 @@ public class Graphics3D
 			// that way, the inner loop only needs to do a simple addition.
 			if (hasColors)
 			{
-				float xA = trisScreen[tri_id].xA();
-				float yA = trisScreen[tri_id].yA();
-				int colorA = trisScreen[tri_id].colorA();
-
 				float dx = ixL - xA;
 				float dy = y - yA;
 
-				deltaA = ((colorA >> 24) & 0xFF) + dx * aStepX + dy * aStepY;
-				deltaR = ((colorA >> 16) & 0xFF) + dx * rStepX + dy * rStepY;
-				deltaG = ((colorA >> 8) & 0xFF)  + dx * gStepX + dy * gStepY;
-				deltaB = (colorA & 0xFF)         + dx * bStepX + dy * bStepY;
+				// Everyone goes to 16.16 fixed point, innermost X loop can get colors right away
+				// with this.
+				deltaA = (int) ((((colorA >> 24) & 0xFF) + dx * aStepX + dy * aStepY) * 65536.0f);
+				deltaR = (int) ((((colorA >> 16) & 0xFF) + dx * rStepX + dy * rStepY) * 65536.0f);
+				deltaG = (int) ((((colorA >> 8)  & 0xFF) + dx * gStepX + dy * gStepY) * 65536.0f);
+				deltaB = (int) (((colorA & 0xFF)         + dx * bStepX + dy * bStepY) * 65536.0f);
 			}
 
 			float zL = half == 0
@@ -1390,9 +1409,6 @@ public class Graphics3D
 			// Draw the pixels for the current y-coordinate
 			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, depthIdx++, rasterIdx++)
 			{
-				// This check is really only used for wireframe debugging, and it's not a perfect wireframe rendering
-				if(Mobile.M3GRenderWireframe && x > ixL && x < ixR) { continue; }
-
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
 				if(depthEnabled && this.depthBuffer[depthIdx] <= (short) z)
@@ -1400,7 +1416,7 @@ public class Graphics3D
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
 					// occluded by others won't be correct.
-					if (hasColors) { deltaA += aStepX; deltaR += rStepX; deltaG += gStepX; deltaB += bStepX; }
+					if (hasColors) { deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB; }
 					if(hasTexture)
 					{
 						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
@@ -1412,32 +1428,30 @@ public class Graphics3D
 					continue;
 				}
 
+				// If there's no texture coords nor a texture image, we always default
+				// to rendering with vertex colors.
+				// It's also forced to opaque when blending mode is set to REPLACE.
+				paintPixel = compBlending == CompositingMode.REPLACE ?
+					0xFF000000 | defVertColor : defVertColor;
+
 				// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
 				if (hasColors)
 				{
-					// Interpolate from xL to xR based on current pixel xy coordinate..
+					// Interpolate from xL to xR based on current pixel xy coordinate.
 					// No need to calculate barycentric coords on every pixel.
 
-					// We could call M3GMath.max/min here, but a simple ternary to
-					// clamp these to [0,255] range is likely faster...
-					int r = deltaR < 0.0f ? 0 : (deltaR > 255.0f ? 255 : (int) deltaR);
-					int g = deltaG < 0.0f ? 0 : (deltaG > 255.0f ? 255 : (int) deltaG);
-					int b = deltaB < 0.0f ? 0 : (deltaB > 255.0f ? 255 : (int) deltaB);
-					int a = deltaA < 0.0f ? 0 : (deltaA > 255.0f ? 255 : (int) deltaA);
+					// We could call M3GMath.max/min here, but a simple & to
+					// clamp these to [0,255] range is faster and should not
+					// cause overflow
+					paintPixel = ((deltaA >> 16 & 0xFF) << 24) |
+					 ((deltaR >> 16 & 0xFF) << 16) |
+					 ((deltaG >> 16 & 0xFF) << 8)  |
+					  (deltaB >> 16 & 0xFF);
 
-					paintPixel = (a << 24) | (r << 16) | (g << 8) | b;
-
-					deltaA += aStepX;
-					deltaR += rStepX;
-					deltaG += gStepX;
-					deltaB += bStepX;
-				}
-				else
-				{
-					// If there's no texture coords or a texture image, we default to rendering with vertex colors. (also used for debug render modes)
-					// It's forced to opaque when blending mode is set to REPLACE.
-					paintPixel = compositingMode.getBlending() == CompositingMode.REPLACE ?
-						0xFF000000 | vertices.getDefaultColor() : vertices.getDefaultColor();
+					deltaA += stepA;
+					deltaR += stepR;
+					deltaG += stepG;
+					deltaB += stepB;
 				}
 
 				if(hasTexture)
@@ -1482,7 +1496,9 @@ public class Graphics3D
 
 							int maxLevel = textures[i].getMipmapLevelCount() - 1;
 
-							float lod = calculateLOD(dsdx, dtdx, dsdy, dtdy, levelFilter == Texture2D.FILTER_LINEAR);
+							float lod = (levelFilter == Texture2D.FILTER_NEAREST) ?
+								calculateLODN(dsdx, dtdx, dsdy, dtdy) : calculateLODL(dsdx, dtdx, dsdy, dtdy);
+
 							int targetLevel = (int) lod;
 
 							// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
@@ -1490,69 +1506,39 @@ public class Graphics3D
 							// retaining most of the looks.
 							if (levelFilter == Texture2D.FILTER_LINEAR)
 							{
-								float lodFraction = lod - targetLevel;
+								int lodFractionInt = (int) ((lod - targetLevel) * 32.0f);
 
-								// Blend on half of the transition band between each mip level
-								if (lodFraction > 0.25f && lodFraction < 0.75f)
+								int threshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
+
+								if (lodFractionInt > threshold)
 								{
-									// Remap lodFraction from the [0.25, 0.75] range to the expected
-									// [0.0, 1.0] for the dither threshold
-									float normalizedFraction = (lodFraction - 0.25f) * 2.0f;
-
-									// Manually tuned bayer coefficient. Looks good enough in
-									// Super Taxi Driver.
-									int bayerIndex = ((y & 3) << 2) | (x & 3);
-									float threshold = (BAYER_PATTERN[bayerIndex] + 4) * 0.0625f;
-
-									if (normalizedFraction > threshold)
-									{
-										targetLevel = Math.min(targetLevel + 1, maxLevel);
-									}
-								}
-								else if (lodFraction >= 0.75f)
-								{
-									// Unconditionally step to next MIP level once past the transition band
-									targetLevel = Math.min(targetLevel + 1, maxLevel);
+									targetLevel = M3GMath.min(targetLevel + 1, maxLevel);
 								}
 							}
 
 							targetImage = tex.getImageForLOD(targetLevel);
 
 							// POT textures coming in with another fast path: Just shift
-							// right by the targetLevel!
-							if (!textures[i].isNPOT())
-							{
-								s = (float) ((int) s >> targetLevel);
-								t = (float) ((int) t >> targetLevel);
-							}
-							else
-							{
-								float scaleX = (float) targetImage.getWidth() / baseWidth;
-								float scaleY = (float) targetImage.getHeight() / baseHeight;
-								s *= scaleX;
-								t *= scaleY;
-							}
+							// right by the targetLevel! TODO: NPOT textures SHOULD be able
+							// to benefit from this as well although it's not guaranteed.
+							s = (float) ((int) s >> targetLevel);
+							t = (float) ((int) t >> targetLevel);
 						}
 
 						if (useBilinear[i])
 						{
-							paintPixel = blendPixels(paintPixel,
+							paintPixel = blendTexture(paintPixel,
 								sampleBilinear(targetImage, s, t, targetImage.getWidth(), targetImage.getHeight(),
 									texRepeatS[i], texRepeatT[i], textures[i].isNPOT()),
-									255, textures[i].getBlending(), textures[i].getBlendColor(),
-									targetImage.getFormat());
+									((textures[i].getBlending() & 7) << 3) | (targetImage.getFormat() & 7), textures[i].getBlendColor());
 						}
 						else
 						{
-							int texX = M3GMath.floor(s);
-							int texY = M3GMath.floor(t);
+							int texX = wrapCoord((int) s, targetImage.getWidth(), texRepeatS[i], textures[i].isNPOT());
+							int texY = wrapCoord((int) t, targetImage.getHeight(), texRepeatT[i], textures[i].isNPOT());
 
-							texX = wrapX(texX, targetImage.getWidth(), texRepeatS[i], textures[i].isNPOT());
-							texY = wrapY(texY, targetImage.getHeight(), texRepeatT[i], textures[i].isNPOT());
-
-							paintPixel = blendPixels(paintPixel, targetImage.getPixel(texX, texY),
-								255, textures[i].getBlending(), textures[i].getBlendColor(),
-								targetImage.getFormat());
+							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texX, texY),
+								((textures[i].getBlending() & 7) << 3) | (targetImage.getFormat() & 7), textures[i].getBlendColor());
 						}
 
 						curS[i] += stepS[i];
@@ -1576,8 +1562,11 @@ public class Graphics3D
 				if (depthEnabled && compositingMode.isDepthWriteEnabled() &&
 					(paintPixel >>> 24) >= 255) { this.depthBuffer[depthIdx] = (short) z; }
 
+				// Only write to the screen if color write is enabled.
+				if(!colorEnabled) { continue; }
+
 				// To blend the fog value here, we have to take the current pixel's z value into consideration
-				if (fog != null)
+				if (hasFog)
 				{
 					// Fog is always perspective-correct. If texturing is already perspective-correct,
 					// reuse that invPw instead of recalculating.
@@ -1591,64 +1580,51 @@ public class Graphics3D
 
 					fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
 
-					paintPixel = fogFactor >= 255.0f ? paintPixel : blendPixels(paintPixel, fog.getColor(), (int) fogFactor, Graphics3D.BLEND_FOG, 0, 0);
+					paintPixel = fogFactor >= 255.0f ? paintPixel : blendFog(paintPixel, fog.getColor(), (int) fogFactor);
 				}
 
-				// Only write to the screen if color write is enabled.
-				if(colorEnabled)
+				if (doDither)
 				{
-					int compBlending = compositingMode.getBlending();
+					int ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
 
-					if (doDither)
-					{
-						byte ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
+					int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
+					int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
+					int b =  (paintPixel        & 0xFF) + ditherOffset;
 
-						int r = (paintPixel >> 16) & 0xFF;
-						int g = (paintPixel >>  8) & 0xFF;
-						int b =  paintPixel & 0xFF;
+					r |= ((255 - r) >> 31); r &= 0xFF;
+					g |= ((255 - g) >> 31); g &= 0xFF;
+					b |= ((255 - b) >> 31); b &= 0xFF;
 
-						// Apply dither offset
-						r += ditherOffset;
-						g += ditherOffset;
-						b += ditherOffset;
-
-						// Fast-path branchless check for [0, 255] bounds.
-						// (c & ~0xFF) is non-zero ONLY if c < 0 or c > 255
-						if ((r & ~0xFF) != 0) r = (r < 0) ? 0 : 255;
-						if ((g & ~0xFF) != 0) g = (g < 0) ? 0 : 255;
-						if ((b & ~0xFF) != 0) b = (b < 0) ? 0 : 255;
-
-						// Repack keeping original Alpha intact
-						paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
-					}
-
-					// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-					if (doAntiAlias && (x == ixL || x == ixR - 1) && (paintPixel >>> 24) >= 255)
-					{
-						// The way this works is that we "extend" the geometry size a bit
-						// for the antialiased output, that way triangles don't get smoothed
-						// inwards, causing transparent edges between them to manifest.
-						if (x == ixL)
-						{
-							int distFx = (int) (((ixL + 1.0f) - xL) * 65536.0f);
-							int scaledDist = (distFx * 84) >> 16;
-
-							applyEdgeAA(x - 1, rasterIdx - 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
-							applyEdgeAA(x - 2, rasterIdx - 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
-						}
-						else
-						{
-							int distFx = (int) ((xR - (ixR - 1)) * 65536.0f);
-							int scaledDist = (distFx * 84) >> 16;
-
-							applyEdgeAA(x + 1, rasterIdx + 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
-							applyEdgeAA(x + 2, rasterIdx + 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
-						}
-					}
-
-					rasterData[rasterIdx] = blendPixels(rasterData[rasterIdx],
-						paintPixel, (paintPixel >>> 24), compBlending, 0, 0);
+					// Repack keeping Alpha intact
+					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 				}
+
+				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
+				if (doAntiAlias && (x == ixL || x == ixR - 1) && (paintPixel >>> 24) >= 255)
+				{
+					// The way this works is that we "extend" the geometry size a bit
+					// for the antialiased output, that way triangles don't get smoothed
+					// inwards, causing transparent edges between them to manifest.
+					if (x == ixL)
+					{
+						int distFx = (int) (((ixL + 1.0f) - xL) * 65536.0f);
+						int scaledDist = (distFx * 84) >> 16;
+
+						applyEdgeAA(x - 1, rasterIdx - 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
+						applyEdgeAA(x - 2, rasterIdx - 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
+					}
+					else
+					{
+						int distFx = (int) ((xR - (ixR - 1)) * 65536.0f);
+						int scaledDist = (distFx * 84) >> 16;
+
+						applyEdgeAA(x + 1, rasterIdx + 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
+						applyEdgeAA(x + 2, rasterIdx + 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
+					}
+				}
+
+				rasterData[rasterIdx] = compBlending == CompositingMode.REPLACE ? paintPixel : blendCompositing(rasterData[rasterIdx],
+					paintPixel, (paintPixel >>> 24), compBlending);
 			}
 		}
 	}
@@ -1658,14 +1634,20 @@ public class Graphics3D
 	{
 		if (coverageAlpha > 0 && targetX >= 0 && targetX < canvasWidth)
 		{
-			int aaPixel = blendPixels(rasterData[targetIdx], paintPixel, coverageAlpha, Graphics3D.BLEND_COVERAGE, 0, 0);
+			int bgRB = rasterData[targetIdx] & 0x00FF00FF, fgRB = paintPixel & 0x00FF00FF;
+			int outRB = (bgRB + ((((fgRB - bgRB) * coverageAlpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
 
-			rasterData[targetIdx] = blendPixels(rasterData[targetIdx], aaPixel, (aaPixel >> 24) & 0xFF, compBlending, 0, 0);
+			int bgAG = (rasterData[targetIdx] >>> 8) & 0x00FF00FF, fgAG = (paintPixel >>> 8) & 0x00FF00FF;
+			int outAG = (bgAG + ((((fgAG - bgAG) * coverageAlpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+			int aaPixel = outRB | (outAG << 8);
+
+			rasterData[targetIdx] = compBlending == CompositingMode.REPLACE ? aaPixel : blendCompositing(rasterData[targetIdx], aaPixel, (aaPixel >> 24) & 0xFF, compBlending);
 		}
 	}
 
-	// This one is used for texture/background blending, and also pixel blending when rendering to the screen
-	private static final int blendPixels(int bg, int fg, int alpha, int blendMode, int texBlendColor, int texFormat)
+	// This is basically the pixel blending to use when rendering to the screen
+	private static final int blendCompositing(int bg, int fg, int alpha, int blendMode)
 	{
 		switch (blendMode)
 		{
@@ -1674,48 +1656,46 @@ public class Graphics3D
 
 			case CompositingMode.ALPHA:
 			{
-			    if (alpha <= 0)   { return bg; }
-			    if (alpha >= 255) { return fg; }
+				if (alpha <= 0)   { return bg; }
+				if (alpha >= 255) { return fg; }
 
-			    int invA = 255 - alpha;
+				int invA = 255 - alpha;
 
-			    // Red & Blue channel SWAR blend
-			    int bgRB = bg & 0x00FF00FF;
-			    int fgRB = fg & 0x00FF00FF;
-			    int outRB = ((fgRB * alpha + bgRB * invA) >> 8) & 0x00FF00FF;
+				int bgRB = bg & 0x00FF00FF;
+				int fgRB = fg & 0x00FF00FF;
+				int outRB = ((fgRB * alpha + bgRB * invA) >> 8) & 0x00FF00FF;
 
-			    // Alpha & Green channel SWAR blend
-			    int bgAG = (bg >>> 8) & 0x00FF00FF;
-			    int fgAG = (fg >>> 8) & 0x00FF00FF;
-			    int outAG = ((fgAG * alpha + bgAG * invA) >> 8) & 0x00FF00FF;
+				int bgAG = (bg >>> 8) & 0x00FF00FF;
+				int fgAG = (fg >>> 8) & 0x00FF00FF;
+				int outAG = ((fgAG * alpha + bgAG * invA) >> 8) & 0x00FF00FF;
 
-			    return outRB | (outAG << 8);
+				return outRB | (outAG << 8);
 			}
 
 			case CompositingMode.ALPHA_ADD:
 			{
-			    if (alpha == 0) { return bg; }
+				if (alpha == 0) { return bg; }
 
-			    int bgA = bg >>> 24,          bgR = (bg >> 16) & 0xFF;
-			    int bgG = (bg >> 8) & 0xFF,   bgB = bg & 0xFF;
-			    int fgR = (fg >> 16) & 0xFF,  fgG = (fg >> 8) & 0xFF,  fgB = fg & 0xFF;
+				int bgA = bg >>> 24,          bgR = (bg >> 16) & 0xFF;
+				int bgG = (bg >> 8) & 0xFF,   bgB = bg & 0xFF;
+				int fgR = (fg >> 16) & 0xFF,  fgG = (fg >> 8) & 0xFF,  fgB = fg & 0xFF;
 
-			    int addR = (fgR * alpha) >> 8;
-			    int addG = (fgG * alpha) >> 8;
-			    int addB = (fgB * alpha) >> 8;
-			    int addA = (alpha * (255 - bgA)) >> 8;
+				int addR = (fgR * alpha) >> 8;
+				int addG = (fgG * alpha) >> 8;
+				int addB = (fgB * alpha) >> 8;
+				int addA = (alpha * (255 - bgA)) >> 8;
 
-			    int sumR = bgR + addR;
-			    int sumG = bgG + addG;
-			    int sumB = bgB + addB;
-			    int sumA = bgA + addA;
+				int sumR = bgR + addR;
+				int sumG = bgG + addG;
+				int sumB = bgB + addB;
+				int sumA = bgA + addA;
 
-			    int outR = sumR | -(sumR >> 8);
-			    int outG = sumG | -(sumG >> 8);
-			    int outB = sumB | -(sumB >> 8);
-			    int outA = sumA | -(sumA >> 8);
+				int outR = sumR | -(sumR >> 8);
+				int outG = sumG | -(sumG >> 8);
+				int outB = sumB | -(sumB >> 8);
+				int outA = sumA | -(sumA >> 8);
 
-			    return ((outA & 0xFF) << 24) | ((outR & 0xFF) << 16) | ((outG & 0xFF) << 8) | (outB & 0xFF);
+				return ((outA & 0xFF) << 24) | ((outR & 0xFF) << 16) | ((outG & 0xFF) << 8) | (outB & 0xFF);
 			}
 
 			case CompositingMode.MODULATE:
@@ -1752,150 +1732,159 @@ public class Graphics3D
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
 
-			case Texture2D.FUNC_ADD:
-			{
-				int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
-				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
-
-				int outR = fR, outG = fG, outB = fB;
-				if (texFormat != Image2D.ALPHA)
-				{
-					outR = fR + tR; if (outR > 255) outR = 255;
-					outG = fG + tG; if (outG > 255) outG = 255;
-					outB = fB + tB; if (outB > 255) outB = 255;
-				}
-
-				boolean hasAlpha = (texFormat == Image2D.ALPHA
-					|| texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
-				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
-
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-			}
-
-			case Texture2D.FUNC_BLEND:
-			{
-				int fA = bg >>> 24, tA = fg >>> 24;
-				boolean hasAlpha = (texFormat == Image2D.ALPHA || texFormat == Image2D.LUMINANCE_ALPHA || texFormat == Image2D.RGBA);
-				int outA = hasAlpha ? (fA * tA) >> 8 : fA;
-
-				if (texFormat == Image2D.ALPHA) { return (outA << 24) | (bg & 0x00FFFFFF); }
-
-				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF;
-				int factor = (tR + tG + tB) / 3;
-				if (factor == 0) { return (outA << 24) | (bg & 0x00FFFFFF); }
-
-				// Blend is the only one that uses the texture's blend color
-				int fRB = bg & 0x00FF00FF, cRB = texBlendColor & 0x00FF00FF;
-				int outRB = (fRB + ((((cRB - fRB) * factor) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-				int fAG = (bg >>> 8) & 0x00FF00FF, cAG = (texBlendColor >>> 8) & 0x00FF00FF;
-				int outAG = (fAG + ((((cAG - fAG) * factor) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-				return (outA << 24) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
-			}
-
-			case Texture2D.FUNC_DECAL:
-			{
-				if (texFormat == Image2D.RGB) { return (bg & 0xFF000000) | (fg & 0x00FFFFFF); }
-				else if (texFormat == Image2D.RGBA)
-				{
-					int tA = fg >>> 24;
-					if (tA == 0)   { return bg; }
-					if (tA == 255) { return (bg & 0xFF000000) | (fg & 0x00FFFFFF); }
-
-					int fRB = bg & 0x00FF00FF, tRB = fg & 0x00FF00FF;
-					int outRB = (fRB + ((((tRB - fRB) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-					int fAG = (bg >>> 8) & 0x00FF00FF, tAG = (fg >>> 8) & 0x00FF00FF;
-					int outAG = (fAG + ((((tAG - fAG) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-					return (bg & 0xFF000000) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
-				}
-
-				// TODO: DECAL is undefined for ALPHA, LUMINANCE, and LUMINANCE_ALPHA, so we just
-				// don't do any blending. Is this the same on vendor implementations? No idea.
+			default:
 				return bg;
-			}
+		}
+	}
 
-			case Texture2D.FUNC_MODULATE:
-			{
-				int fR = (bg >> 16) & 0xFF, fG = (bg >> 8) & 0xFF, fB = bg & 0xFF, fA = bg >>> 24;
-				int tR = (fg >> 16) & 0xFF, tG = (fg >> 8) & 0xFF, tB = fg & 0xFF, tA = fg >>> 24;
+	private static final int blendFog(int color, int fogColor, int fogAmount)
+	{
+		/*
+		 * M3G specifies that, the smaller the fogFactor value, the more we
+		 * should blend the fog color into the received color... which means
+		 * that the fog's contribution to the resulting color should be
+		 * 1 - fogFactor;
+		 */
+		final int bgRB = color & 0x00FF00FF;
+		final int bgG  = (color >> 8) & 0xFF;
 
-				int outR, outG, outB, outA;
+		final int fgRB = fogColor & 0x00FF00FF;
+		final int fgG  = (fogColor >> 8) & 0xFF;
 
-				if (texFormat == Image2D.ALPHA)
-				{
-					outR = fR;
-					outG = fG;
-					outB = fB;
-				}
-				else
-				{
-					int pR = fR * tR + 1; outR = (pR + (pR >> 8)) >> 8;
-					int pG = fG * tG + 1; outG = (pG + (pG >> 8)) >> 8;
-					int pB = fB * tB + 1; outB = (pB + (pB >> 8)) >> 8;
-				}
+		final int r = ((fgRB >> 16) + ((((bgRB >> 16) - (fgRB >> 16)) * fogAmount) >> 8)) & 0xFF;
+		final int g = (fgG          + ((((bgG)          - (fgG))          * fogAmount) >> 8)) & 0xFF;
+		final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * fogAmount) >> 8)) & 0xFF;
 
-				if (texFormat == Image2D.ALPHA || texFormat == Image2D.LUMINANCE_ALPHA
-						|| texFormat == Image2D.RGBA)
-				{
-					int pA = fA * tA + 1;
-					outA = (pA + (pA >> 8)) >> 8;
-				}
-				else { outA = fA; }
+		return (color & 0xFF000000) | (r << 16) | (g << 8) | b;
+	}
 
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-			}
+	private static final int blendTexture(int bg, int fg, int funcMode, int texBlendColor)
+	{
+		switch (funcMode)
+		{
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE & 7):
+			case ((Texture2D.FUNC_DECAL & 7) << 3)   | (Image2D.RGB & 7):
+				return (bg & 0xFF000000) | (fg & 0x00FFFFFF);
 
-			case Texture2D.FUNC_REPLACE:
-				// RGB & LUMINANCE don't carry an alpha channel, so we use the bg alpha
-				if (texFormat == Image2D.RGB || texFormat == Image2D.LUMINANCE)
-					{ return (bg & 0xFF000000) | (fg & 0x00FFFFFF); }
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
+				return (fg & 0xFF000000) | (bg & 0x00FFFFFF);
 
-				// ALPHA format only carries alpha, so we use the bg color
-				if (texFormat == Image2D.ALPHA) { return (fg & 0xFF000000) | (bg & 0x00FFFFFF); }
-
-				// RGBA and LUMINANCE_ALPHA just replace bg completely.
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
 				return fg;
 
-			// Special case for fog blending
-			case Graphics3D.BLEND_FOG:
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE & 7):
 			{
-				/*
-				 * M3G specifies that, the smaller the fogFactor value, the more we
-				 * should blend the fog color into the received color... which means
-				 * that the fog's contribution to the resulting color should be
-				 * 1 - fogFactor;
-				 */
-				final int bgRB = bg & 0x00FF00FF;
-				final int bgG  = (bg >> 8) & 0xFF;
+				int sumRB = (bg & 0x00FF00FF) + (fg & 0x00FF00FF);
+				int overRB = (sumRB & 0x01000100) - ((sumRB & 0x01000100) >>> 8);
+				int outRB = (sumRB | overRB) & 0x00FF00FF;
 
-				final int fgRB = fg & 0x00FF00FF;
-				final int fgG  = (fg >> 8) & 0xFF;
+				int sumG = (bg & 0x0000FF00) + (fg & 0x0000FF00);
+				int overG = (sumG & 0x00010000) - ((sumG & 0x00010000) >>> 8);
+				int outG = (sumG | overG) & 0x0000FF00;
 
-				final int r = ((fgRB >> 16) + ((((bgRB >> 16) - (fgRB >> 16)) * alpha) >> 8)) & 0xFF;
-				final int g = (fgG          + ((((bgG)          - (fgG))          * alpha) >> 8)) & 0xFF;
-				final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * alpha) >> 8)) & 0xFF;
-
-				return (bg & 0xFF000000) | (r << 16) | (g << 8) | b;
+				return (bg & 0xFF000000) | outG | outRB;
 			}
 
-			// Special case for AA coverage blending
-			case Graphics3D.BLEND_COVERAGE:
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
 			{
-				if (alpha <= 0)   { return bg; }
-				if (alpha >= 255) { return fg; }
+				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
 
-				int bgRB = bg & 0x00FF00FF;
-				int fgRB = fg & 0x00FF00FF;
-				int outRB = (bgRB + ((((fgRB - bgRB) * alpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+				int sumRB = (bg & 0x00FF00FF) + (fg & 0x00FF00FF);
+				int overRB = (sumRB & 0x01000100) - ((sumRB & 0x01000100) >>> 8);
+				int outRB = (sumRB | overRB) & 0x00FF00FF;
 
-				int bgAG = (bg >>> 8) & 0x00FF00FF;
-				int fgAG = (fg >>> 8) & 0x00FF00FF;
-				int outAG = (bgAG + ((((fgAG - bgAG) * alpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+				int sumG = (bg & 0x0000FF00) + (fg & 0x0000FF00);
+				int overG = (sumG & 0x00010000) - ((sumG & 0x00010000) >>> 8);
+				int outG = (sumG | overG) & 0x0000FF00;
 
-				return outRB | (outAG << 8);
+				return (outA << 24) | outG | outRB;
+			}
+
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.ALPHA & 7):
+			{
+				// Cv = Cf, Av = Af * At
+				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
+				return (outA << 24) | (bg & 0x00FFFFFF);
+			}
+
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
+			{
+				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
+
+				int fR = (bg >> 16) & 0xFF, cR = (texBlendColor >> 16) & 0xFF, tR = (fg >> 16) & 0xFF;
+				int fG = (bg >>  8) & 0xFF, cG = (texBlendColor >>  8) & 0xFF, tG = (fg >>  8) & 0xFF;
+				int fB =  bg        & 0xFF, cB =  texBlendColor        & 0xFF, tB =  fg        & 0xFF;
+
+				int outR = (fR + (((cR - fR) * tR + 128) >> 8)) & 0xFF;
+				int outG = (fG + (((cG - fG) * tG + 128) >> 8)) & 0xFF;
+				int outB = (fB + (((cB - fB) * tB + 128) >> 8)) & 0xFF;
+
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
+
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE & 7):
+			{
+				int fR = (bg >> 16) & 0xFF, cR = (texBlendColor >> 16) & 0xFF, tR = (fg >> 16) & 0xFF;
+				int fG = (bg >>  8) & 0xFF, cG = (texBlendColor >>  8) & 0xFF, tG = (fg >>  8) & 0xFF;
+				int fB =  bg        & 0xFF, cB =  texBlendColor        & 0xFF, tB =  fg        & 0xFF;
+
+				int outR = fR + (((cR - fR) * tR + 128) >> 8);
+				int outG = fG + (((cG - fG) * tG + 128) >> 8);
+				int outB = fB + (((cB - fB) * tB + 128) >> 8);
+
+				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
+			}
+
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.ALPHA & 7):
+			{
+				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
+				return (outA << 24) | (bg & 0x00FFFFFF);
+			}
+
+			case ((Texture2D.FUNC_DECAL & 7) << 3) | (Image2D.RGBA & 7):
+			{
+				int tA = fg >>> 24;
+
+				int fRB = bg & 0x00FF00FF, tRB = fg & 0x00FF00FF;
+				int outRB = (fRB + ((((tRB - fRB) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+				int fAG = (bg >>> 8) & 0x00FF00FF, tAG = (fg >>> 8) & 0x00FF00FF;
+				int outAG = (fAG + ((((tAG - fAG) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+				return (bg & 0xFF000000) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
+			}
+
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
+			{
+				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
+				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
+				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
+				int outA = ((bg >>> 24) * (fg >>> 24) + (bg >>> 24)) >> 8;
+
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+			}
+
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE & 7):
+			{
+				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
+				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
+				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
+
+				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
+			}
+
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.ALPHA & 7):
+			{
+				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
+				return (outA << 24) | (bg & 0x00FFFFFF);
 			}
 
 			default:
@@ -1903,46 +1892,44 @@ public class Graphics3D
 		}
 	}
 
-	// Calculates the Mipmap LOD for a given pixel.
-	private float calculateLOD(float dsdx, float dtdx, float dsdy, float dtdy, boolean linear)
+	// Calculates the Mipmap LOD for a given pixel. (L)inear and (N)earest versions.
+	private float calculateLODL(float dsdx, float dtdx, float dsdy, float dtdy)
 	{
-		if (linear)
-		{
-			// Area-based geometric footprint (Determinant magnitude: |ds/dx * dt/dy - dt/dx * ds/dy|)
-			// Keeps elongated polygons (like ground planes/roads) much sharper along their primary axis,
-			// and seems to align with OpenGL's linear filter slope
-			float area = M3GMath.abs(dsdx * dtdy - dtdx * dsdy);
+		// Area-based geometric footprint (Determinant magnitude: |ds/dx * dt/dy - dt/dx * ds/dy|)
+		// Keeps elongated polygons (like ground planes/roads) much sharper along their primary axis,
+		// and seems to align with OpenGL's linear filter slope
+		float area = M3GMath.abs(dsdx * dtdy - dtdx * dsdy);
 
-			if (area <= 1.0f) { return 0.0f; }
+		if (area <= 1.0f) { return 0.0f; }
 
-			// M3GMath.log(area) already returns log2(area).
-			// For area = scale^2, log2(scale^2) * 0.5 == 0.5 * log2(area).
-			return M3GMath.log(area) * 0.5f;
-		}
-		else
-		{
-			// Simpler max of squared distance, seems to align with OpenGL's nearest
-			// mipmap filter slope.
-			float lengthXSq = dsdx * dsdx + dtdx * dtdx;
-			float lengthYSq = dsdy * dsdy + dtdy * dtdy;
+		// M3GMath.log(area) already returns log2(area).
+		// For area = scale^2, log2(scale^2) * 0.5 == 0.5 * log2(area).
+		return M3GMath.log(area) * 0.5f;
+	}
 
-			float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
+	private final float calculateLODN(float dsdx, float dtdx, float dsdy, float dtdy)
+	{
+		// Simpler max of squared distance, seems to align with OpenGL's nearest
+		// mipmap filter slope.
+		float lengthXSq = dsdx * dsdx + dtdx * dtdx;
+		float lengthYSq = dsdy * dsdy + dtdy * dtdy;
 
-			if (maxSq <= 1.0f) { return 0.0f; }
+		float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
 
-			// Similar optimization to above.
-			// Since log2(x^2) = 2 * log2(x), taking 0.5 * log2(maxSq) simplifies
-			// this directly to M3GMath.log(maxSq) * 0.5f!
-			return M3GMath.log(maxSq) * 0.5f;
-		}
+		if (maxSq <= 1.0f) { return 0.0f; }
+
+		// Similar optimization to the method above.
+		// Since log2(x^2) = 2 * log2(x), taking 0.5 * log2(maxSq) simplifies
+		// this directly to M3GMath.log(maxSq) * 0.5f!
+		return M3GMath.log(maxSq) * 0.5f;
 	}
 
 	// For bilinear filtering support
 	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
 		// Shift s and t by 0.5 for OpenGL-like filtering,
-		int uFixed = M3GMath.floor((s - 0.5f) * 256.0f);
-		int vFixed = M3GMath.floor((t - 0.5f) * 256.0f);
+		int uFixed = (int) ((s - 0.5f) * 256.0f);
+		int vFixed = (int) ((t - 0.5f) * 256.0f);
 
 		int x0 = uFixed >> 8;
 		int y0 = vFixed >> 8;
@@ -1952,10 +1939,10 @@ public class Graphics3D
 		int fx = uFixed & 0xFF;
 		int fy = vFixed & 0xFF;
 
-		x0 = wrapX(x0, texW, texRepeatS, isNPOT);
-		x1 = wrapX(x1, texW, texRepeatS, isNPOT);
-		y0 = wrapY(y0, texH, texRepeatT, isNPOT);
-		y1 = wrapY(y1, texH, texRepeatT, isNPOT);
+		x0 = wrapCoord(x0, texW, texRepeatS, isNPOT);
+		x1 = wrapCoord(x1, texW, texRepeatS, isNPOT);
+		y0 = wrapCoord(y0, texH, texRepeatT, isNPOT);
+		y1 = wrapCoord(y1, texH, texRepeatT, isNPOT);
 
 		int c00 = teximg.getPixel(x0, y0);
 		int c10 = teximg.getPixel(x1, y0);
@@ -1974,10 +1961,10 @@ public class Graphics3D
 		return (ag << 8) | rb;
 	}
 
-	// Helpers for texture wrapping/clamping
+	// Helper for texture wrapping/clamping
 	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
 	// Out-of-range coordinates must never index outside the image.
-	private static final int wrapX(int x, int width, boolean repeat, boolean isNPOT)
+	private static final int wrapCoord(int t, int bound, boolean repeat, boolean isNPOT)
 	{
 		if (repeat)
 		{
@@ -1988,34 +1975,21 @@ public class Graphics3D
 			// 8 - 1 = 7 = `0b111`, and so on), so we always wrap around to the
 			// correct coordinate with an AND of size - 1, as overflowing data
 			// will naturally wrap back to the start.
-			if(!isNPOT) { return x & (width - 1); }
+			if(!isNPOT) { return t & (bound - 1); }
 
-			// If it is NPOT we must fallback to modulo, as an AND would not
-			// result in the proper coordinate.
-			int r = x % width;
-			return r < 0 ? r + width : r;
+			// EXPERIMENTAL VPOT (Virtual Power-Of-Two) hack for NPOT textures
+			// We bitwise wrap onto a 65,536 virtual grid (0xFFFF has the nice
+			// property of removing negative sign bits too) and then scale it
+			// back down to [0, bound-1] via a multiplication and 16-bit shift.
+			//
+			// If it works properly, it should run much faster than a modulo.
+			return ((t & 0xFFFF) * bound) >>> 16;
 		}
 
 		// CLAMP is fast for both POT and NPOT
-		if (x < 0) { return 0; }
-		if (x >= width) { return (width - 1); }
+		if (t < 0) { return 0; }
+		if (t >= bound) { return (bound - 1); }
 
-		return x;
-	}
-
-	private static final int wrapY(int y, int height, boolean repeat, boolean isNPOT)
-	{
-		if (repeat)
-		{
-			if(!isNPOT) { return y & (height - 1); }
-
-			int r = y % height;
-			return r < 0 ? r + height : r;
-		}
-
-		if (y < 0) { return 0; }
-		if (y >= height) { return (height - 1); }
-
-		return y;
+		return t;
 	}
 }
