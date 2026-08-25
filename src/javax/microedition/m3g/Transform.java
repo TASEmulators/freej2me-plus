@@ -345,17 +345,19 @@ public class Transform
 		// Angle or axis length as zero means no/invalid rotation. Return right away
 		if (angle == 0.0f || axisLen < M3GMath.EPSILON) { return; }
 
-		if (angle == 0) { return; }
-
 		float rad = M3GMath.toRadians(angle);
 		float s = M3GMath.sin(rad);
 		float c = M3GMath.cos(rad);
 		float d = 1.0f - c;
 
-		float l = M3GMath.sqrt(axisLen);
-		float x = ax / l;
-		float y = ay / l;
-		float z = az / l;
+        float x = ax, y = ay, z = az;
+        if (M3GMath.abs(axisLen - 1.0f) > 1.0e-6f)
+        {
+            final float invL = M3GMath.fastReciprocal(M3GMath.sqrt(axisLen));
+            x *= invL;
+            y *= invL;
+            z *= invL;
+        }
 
 		manipulationMatrix[0] = x*x*d + c;   manipulationMatrix[1] = y*x*d - z*s; manipulationMatrix[2] = z*x*d + y*s;
 		manipulationMatrix[4] = x*y*d + z*s; manipulationMatrix[5] = y*y*d + c;   manipulationMatrix[6] = z*y*d - x*s;
@@ -370,11 +372,11 @@ public class Transform
 			throw new IllegalArgumentException("Cannot rotate when all quaternion components are zero.");
 		}
 
-		float l = M3GMath.sqrt((qx * qx) + (qy * qy) + (qz * qz) + (qw * qw));
-		float x = qx / l;
-		float y = qy / l;
-		float z = qz / l;
-		float w = qw / l;
+        final float invL = M3GMath.fastReciprocal(M3GMath.sqrt((qx * qx) + (qy * qy) + (qz * qz) + (qw * qw)));
+        float x = qx * invL;
+        float y = qy * invL;
+        float z = qz * invL;
+        float w = qw * invL;
 
 		manipulationMatrix[0] = 1 - 2*y*y - 2*z*z;
 		manipulationMatrix[1] = 2*x*y - 2*z*w;
