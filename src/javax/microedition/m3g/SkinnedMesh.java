@@ -394,9 +394,15 @@ public class SkinnedMesh extends Mesh
 			}
 		}
 
-		float invScale = (scale != 0.0f) ? (1.0f / scale) : 1.0f;
 		float[] finalPos = new float[totalElements];
 		float[] finalNormals = (floatNormals != null) ? new float[totalElements] : null;
+
+		// Object-space bounding box of the posed (skinned) positions, used to
+		// pick a quantization range that the posed mesh actually fits in.
+		float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
+		float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+		float minZ = (components > 2) ? Float.MAX_VALUE : biasZ;
+		float maxZ = (components > 2) ? -Float.MAX_VALUE : biasZ;
 
 		for (int i = 0; i < numVertices; i++)
 		{
@@ -420,12 +426,21 @@ public class SkinnedMesh extends Mesh
 				finalZ = (components > 2) ? (floatPos[offset + 2] * scale + biasZ) : 0.0f;
 			}
 
-			finalPos[offset]     = (finalX - biasX) * invScale;
-			finalPos[offset + 1] = (finalY - biasY) * invScale;
+			// Keep the blended positions in object space for now; they are
+			// quantized during write-back, once the whole pose is known.
+			finalPos[offset]     = finalX;
+			finalPos[offset + 1] = finalY;
 			if (components > 2)
 			{
-				finalPos[offset + 2] = (finalZ - biasZ) * invScale;
+				finalPos[offset + 2] = finalZ;
+				minZ = M3GMath.min(minZ, finalZ);
+				maxZ = M3GMath.max(maxZ, finalZ);
 			}
+
+			minX = M3GMath.min(minX, finalX);
+			maxX = M3GMath.max(maxX, finalX);
+			minY = M3GMath.min(minY, finalY);
+			maxY = M3GMath.max(maxY, finalY);
 
 			if (floatNormals != null)
 			{
@@ -473,7 +488,43 @@ public class SkinnedMesh extends Mesh
 			}
 		}
 
-		// Quantize and write back the final vertex attributes
+		/*
+		 * Quantize and write back the final vertex attributes.
+		 *
+		 * The base buffer's scale/bias are fitted to the at-rest pose, and an
+		 * animated pose can (and, with world-space skeletons, routinely does)
+		 * move far outside that range: re-encoding the posed positions with
+		 * the original scale/bias would clamp most vertices to the short/byte
+		 * limits, collapsing the mesh into a garbled clump. Fit a fresh
+		 * scale/bias to the bounding box of the posed positions instead, and
+		 * publish it through the skinned buffer so the renderer dequantizes
+		 * with the matching values.
+		 */
+		float quantMax = (componentType == 1) ? 127.0f : 32767.0f;
+
+		float halfX = (maxX - minX) * 0.5f;
+		float halfY = (maxY - minY) * 0.5f;
+		float halfZ = (maxZ - minZ) * 0.5f;
+		float maxHalf = M3GMath.max(halfX, M3GMath.max(halfY, halfZ));
+
+		float newScale = (maxHalf > 0.0f) ? (maxHalf / quantMax) : scale;
+		if (newScale == 0.0f) { newScale = 1.0f; }
+		float newBiasX = (minX + maxX) * 0.5f;
+		float newBiasY = (minY + maxY) * 0.5f;
+		float newBiasZ = (minZ + maxZ) * 0.5f;
+		float newInvScale = 1.0f / newScale;
+
+		for (int i = 0; i < numVertices; i++)
+		{
+			int offset = i * components;
+			finalPos[offset]     = (finalPos[offset] - newBiasX) * newInvScale;
+			finalPos[offset + 1] = (finalPos[offset + 1] - newBiasY) * newInvScale;
+			if (components > 2)
+			{
+				finalPos[offset + 2] = (finalPos[offset + 2] - newBiasZ) * newInvScale;
+			}
+		}
+
 		if (componentType == 1) // byte write-back
 		{
 			byte[] outRaw = new byte[totalElements];
@@ -492,6 +543,10 @@ public class SkinnedMesh extends Mesh
 			}
 			blendedPositions.set(0, numVertices, outRaw);
 		}
+
+		// Publish the pose-fitted scale/bias alongside the quantized data.
+		skinnedVertices.setPositions(blendedPositions, newScale,
+			new float[] { newBiasX, newBiasY, newBiasZ });
 
 		if (finalNormals != null)
 		{
