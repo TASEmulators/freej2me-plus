@@ -79,7 +79,7 @@ class Triangle
 		// Normal data
 		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
 		// Lights
-		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
+		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir, int curScope,
 		// IndexArray, clipping, winding order and perspectiveCorrection
 		int[] tris, int[] renderableTriangles, int cullingMode, VertexBuffer vertices,
 		boolean polygonClockwise, boolean perspectiveCorrect)
@@ -156,7 +156,7 @@ class Triangle
 			if (hasLighting)
 			{
 				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide,
-					localCameraLight, lights, lightEyePos, lightEyeDir, tris, tri_id, Triangle.inC);
+					localCameraLight, lights, lightEyePos, lightEyeDir, curScope, tris, tri_id, Triangle.inC);
 			}
 
 			/*
@@ -204,7 +204,7 @@ class Triangle
 		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
 		Material material, int shadingMode, boolean twoSided, boolean localCameraLight,
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
-		int[] tris, int tri_id, int[] outColors)
+		int curScope, int[] tris, int tri_id, int[] outColors)
 	{
 		// Material Colors
 		int matAmbient  = material.getColor(Material.AMBIENT);
@@ -297,6 +297,13 @@ class Triangle
 			for (int l = 0; l < lights.size(); l++)
 			{
 				Light light = lights.get(l);
+
+				// Skip lights that aren't set to render or are at a different scope.
+				if (!light.isRenderingEnabled() || (light.getScope() & curScope) == 0)
+				{
+					continue;
+				}
+
 				int lMode = light.getMode();
 				float lIntensity = light.getIntensity();
 
@@ -350,7 +357,11 @@ class Triangle
 						float sdY = lightEyeDir[l * 4 + 1];
 						float sdZ = lightEyeDir[l * 4 + 2];
 
-						float spotDot = (lightDirX * sdX + lightDirY * sdY + lightDirZ * sdZ);
+						// Negate these light directions, as lightDir points from vertex to
+						// light and the spotlights's sd* variables point from
+						// light to scene. Evaluating them without any negation resulted
+						// in a negative dot product that just got it culled right below.
+						float spotDot = (-lightDirX * sdX + -lightDirY * sdY + -lightDirZ * sdZ);
 						float cutoffCos = M3GMath.cos(M3GMath.toRadians(light.getSpotAngle()));
 
 						if (spotDot >= cutoffCos)
@@ -367,10 +378,17 @@ class Triangle
 				float nDotL = N_EYE[0] * lightDirX + N_EYE[1] * lightDirY + N_EYE[2] * lightDirZ;
 
 				// Handle Two-Sided Materials by flipping normals. TODO: UNTESTED!
-				if (twoSided && nDotL < 0.0f)
+				if (twoSided)
 				{
-					nDotL = -nDotL;
-					nx = -nx; ny = -ny; nz = -nz;
+				    // Dot product between transformed normal and eye-to-vertex direction.
+					// Are they negative? Flip the eye normals so we can light the other side.
+				    float nDotV = N_EYE[0] * viewX + N_EYE[1] * viewY + N_EYE[2] * viewZ;
+				    if (nDotV < 0.0f)
+				    {
+				        N_EYE[0] = -N_EYE[0];
+				        N_EYE[1] = -N_EYE[1];
+				        N_EYE[2] = -N_EYE[2];
+				    }
 				}
 
 				if (nDotL > 0.0f)
@@ -389,7 +407,6 @@ class Triangle
 					{
 						hX /= hLen; hY /= hLen; hZ /= hLen;
 						float nDotH = N_EYE[0] * hX + N_EYE[1] * hY + N_EYE[2] * hZ;
-						if (twoSided && nDotH < 0.0f) { nDotH = -nDotH; }
 
 						if (nDotH > 0.0f)
 						{

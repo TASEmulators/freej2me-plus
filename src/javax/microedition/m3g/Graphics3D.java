@@ -197,14 +197,11 @@ public class Graphics3D
 		/* As per JSR-184, addLight() must throw a NullPointerException if no light is given */
 		if (light == null) { throw new NullPointerException("addLight() was called but no light object was provided."); }
 
-		// Are we going over the maximum allowed lights? Clear the light at
-		// the first position to make room for the new one
-		if (this.currLights.size() == MAX_LIGHTS)
-		{
-			this.currLights.remove(0);
-			this.currLightTrans.remove(0);
-		}
-
+		// We specify a limit, but only because its required,
+		// and i really doubt any app will use more than 32
+		// lights per mesh. SO even if they do, just accept
+		// silently as it doesn't result in such a massive
+		// increase to runtime due to when they're calculated.
 		this.currLights.add(light);
 		this.currLightTrans.add(transform == null ? new Transform() : new Transform(transform));
 		return this.currLights.size() - 1;
@@ -316,7 +313,7 @@ public class Graphics3D
 				grp.fillRect(viewx, viewy, vieww, viewh);
 
 				// Draw the background's image if any (and there's a background)
-				if(background != null && background.getImage() != null && false)
+				if(background != null && background.getImage() != null)
 				{
 					final Image2D bgImg = background.getImage();
 
@@ -332,22 +329,30 @@ public class Graphics3D
 					final boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
 						|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
 
+					final int bgW = bgImg.getWidth();
+					final int bgH = bgImg.getHeight();
+					final boolean isPOT = bgImg.isPowerOfTwo(bgW) && bgImg.isPowerOfTwo(bgH);
+
+					int stepX = (cropW << 16) / vieww;
+					int stepY = (cropH << 16) / viewh;
+					int currY = cropY << 16;
+
 					for (int py = 0; py < viewh; py++)
 					{
-						int sy = cropY + (int) (py * cropH / viewh);
-						sy = wrapCoord(sy, bgImg.getHeight(), repeatY, bgImg.isPowerOfTwo(bgImg.getHeight()));
+						int sy = wrapCoord(currY >> 16, bgH, repeatY, isPOT);
+						int currX = cropX << 16;
+						int screenY = py + viewy;
+						int rowOffset = screenY * canvasWidth + viewx;
 
 						for (int px = 0; px < vieww; px++)
 						{
-							int sx = cropX + (int) (px * cropW / vieww);
-							sx = wrapCoord(sx, bgImg.getWidth(), repeatX, bgImg.isPowerOfTwo(bgImg.getWidth()));
-
+							int sx = wrapCoord(currX >> 16, bgW, repeatX, isPOT);
 							int paintPixel = bgImg.getPixel(sx, sy);
 
 							// Dither available? Apply it to the BG Image.
 							if (doDither)
 							{
-								int ditherOffset = BAYER_PATTERN[((sy & 3) << 2) | (sx & 3)];
+								int ditherOffset = BAYER_PATTERN[((py & 3) << 2) | (px & 3)];
 
 								int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
 								int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
@@ -361,11 +366,13 @@ public class Graphics3D
 								paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 							}
 
-							// Image format argument shouldn't matter here
-							rasterData[(py + viewy) * canvasWidth + (px + viewx)] =
-								blendCompositing(rasterData[(py + viewy) * canvasWidth + (px + viewx)],
-									paintPixel, (paintPixel >>> 24), CompositingMode.ALPHA);
+							int dstIdx = rowOffset + px;
+	                        rasterData[dstIdx] = blendCompositing(rasterData[dstIdx], paintPixel,
+								(paintPixel >>> 24), CompositingMode.ALPHA);
+
+	                        currX += stepX;
 						}
+						currY += stepY;
 					}
 				}
 			}
@@ -748,7 +755,7 @@ public class Graphics3D
 			// Normal data
 			eyePos, vertNorms, normalMatrix,
 			// Lights
-			this.currLights, lightEyePos, lightEyeDir,
+			this.currLights, lightEyePos, lightEyeDir, scope,
 			// IndexArray, clipping, winding order and perspectiveCorrection
 			triangles.getIndexArray(), renderableTriangles, cullingMode, vertices,
 			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection);
