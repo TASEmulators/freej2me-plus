@@ -1071,6 +1071,21 @@ public class Graphics3D
 		this.viewy = y;
 		this.vieww = width;
 		this.viewh = height;
+
+		/*
+		 * The depth buffer is indexed in viewport-relative coordinates (y * vieww + x),
+		 * and bindTarget sizes it for the viewport in effect at bind time. JSR-184 allows
+		 * setViewport to be called at any point between bind and release with a viewport
+		 * larger than the bind-time one (e.g. binding with a small clip rect, then setting
+		 * a fullscreen viewport), so grow the buffer here or the rasterizer will index
+		 * out of bounds. Its previous contents are laid out for the old width and thus
+		 * meaningless for the new viewport either way, so reset it to the far plane.
+		 */
+		if (this.depthBuffer != null && this.depthBuffer.length < width * height)
+		{
+			this.depthBuffer = new short[width * height];
+			Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f));
+		}
 	}
 
 
