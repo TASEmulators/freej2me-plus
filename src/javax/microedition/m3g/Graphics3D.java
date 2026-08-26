@@ -768,10 +768,10 @@ public class Graphics3D
 		// multiplied Z values will always be in range and never overflow,
 		// saving us the need to clamp it for every pixel draw.
 		//
-		// NOTE: The last 50.0f mult is a hack to vastly improve depth buffer
-		// range usage. No idea why it is so bad with the default transforms.
-		tr.postScale(vieww / 2f, -viewh / 2f, 32767.0f * 8.0f);
-		tr.postTranslate(1f, -1f, -0.88f);
+		// NOTE: that last mult by 8.0f and negative translation by 0.88 is
+		// just a hack to vastly improve depth buffer range usage.
+		tr.postScale(vieww / 2f, -viewh / 2f, 32767.0f * 2.0f);
+		tr.postTranslate(1f, -1f, -0.5f);
 
 		// -> Screen space
 
@@ -795,106 +795,80 @@ public class Graphics3D
 		}
 		else if (this.target instanceof Graphics)
 		{
-
 			for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
 			{
-				// Collect vertex attributes
-				coX[0] = trisScreen[tri_id].xA(); coX[1] = trisScreen[tri_id].xB(); coX[2] = trisScreen[tri_id].xC();
-				coY[0] = trisScreen[tri_id].yA(); coY[1] = trisScreen[tri_id].yB(); coY[2] = trisScreen[tri_id].yC();
-				coZ[0] = trisScreen[tri_id].zA(); coZ[1] = trisScreen[tri_id].zB(); coZ[2] = trisScreen[tri_id].zC();
-				coW[0] = trisScreen[tri_id].iwA(); coW[1] = trisScreen[tri_id].iwB(); coW[2] = trisScreen[tri_id].iwC();
+				final Triangle tri = trisScreen[tri_id];
 
-				if(Mobile.M3GRenderWireframe)
+				final float xA = tri.xA(), xB = tri.xB(), xC = tri.xC();
+				final float yA = tri.yA(), yB = tri.yB(), yC = tri.yC();
+
+				final float dxB = xB - xA, dyB = yB - yA;
+				final float dxC = xC - xA, dyC = yC - yA;
+				final float denominator = dxB * dyC - dxC * dyB;
+
+				// Degenerate triangle? Skip it.
+				if (M3GMath.abs(denominator) <= M3GMath.EPSILON) { continue; }
+
+				if (Mobile.M3GRenderWireframe)
 				{
 					final PlatformGraphics pgrp = (PlatformGraphics) this.target;
 					int tempcolor = pgrp.getColor();
-					pgrp.setColor(0xFF000000 | trisScreen[tri_id].colorA());
-					pgrp.drawTriangle((int) coX[0],(int) coY[0],(int) coX[1],(int) coY[1],(int) coX[2],(int) coY[2]);
+					pgrp.setColor(0xFF000000 | tri.colorA());
+					pgrp.drawTriangle((int) xA, (int) yA, (int) xB, (int) yB, (int) xC, (int) yC);
 					pgrp.setColor(tempcolor);
 					continue;
 				}
 
-				if(hasDepthOffset)
-				{
-					final float dx10 = coX[1] - coX[0];
-					final float dy10 = coY[1] - coY[0];
-					final float dz10 = coZ[1] - coZ[0];
+				coX[0] = xA; coX[1] = xB; coX[2] = xC;
+				coY[0] = yA; coY[1] = yB; coY[2] = yC;
+				coZ[0] = tri.zA();  coZ[1] = tri.zB();  coZ[2] = tri.zC();
+				coW[0] = tri.iwA(); coW[1] = tri.iwB(); coW[2] = tri.iwC();
 
-					final float dx20 = coX[2] - coX[0];
-					final float dy20 = coY[2] - coY[0];
+				final float invDet = M3GMath.fastReciprocal(denominator);
+
+				if (hasDepthOffset)
+				{
+					final float dz10 = coZ[1] - coZ[0];
 					final float dz20 = coZ[2] - coZ[0];
 
-					final float det = dx10 * dy20 - dx20 * dy10;
+					final float dzdx = (dz10 * dyC - dz20 * dyB) * invDet;
+					final float dzdy = (dxB * dz20 - dxC * dz10) * invDet;
 
-					if (M3GMath.abs(det) > M3GMath.EPSILON)
-					{
-						final float invDet = M3GMath.fastReciprocal(det);
-						final float dzdx = (dz10 * dy20 - dz20 * dy10) * invDet;
-						final float dzdy = (dx10 * dz20 - dx20 * dz10) * invDet;
-
-						final float m = M3GMath.sqrt(dzdx * dzdx + dzdy * dzdy);
-
-						// 1e-7f is the minimum Z step for a float depth buffer
-						depthOffset = (depthFactor * m) + (depthUnits * 1e-7f);
-					}
+					final float m = M3GMath.sqrt(dzdx * dzdx + dzdy * dzdy);
+					depthOffset = (depthFactor * m) + (depthUnits * 1e-7f);
 				}
-
-				if(hasTexture)
-				{
-					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-					{
-						coS[i][0] = trisScreen[tri_id].sA(i); coS[i][1] = trisScreen[tri_id].sB(i); coS[i][2] = trisScreen[tri_id].sC(i);
-						coT[i][0] = trisScreen[tri_id].tA(i); coT[i][1] = trisScreen[tri_id].tB(i); coT[i][2] = trisScreen[tri_id].tC(i);
-					}
-				}
-
-				boolean hasColors = trisScreen[tri_id].hasVertexColors();
-
-				// Calculate the triangle area denominator, used by texturing
-				// and vertex color blending.
-				float xA = trisScreen[tri_id].xA();
-				float yA = trisScreen[tri_id].yA();
-				float xB = trisScreen[tri_id].xB();
-				float yB = trisScreen[tri_id].yB();
-				float xC = trisScreen[tri_id].xC();
-				float yC = trisScreen[tri_id].yC();
-
-				float denominator = (xB - xA) * (yC - yA) - (xC - xA) * (yB - yA);
 
 				// Let's precalculate uv derivatives for mipmapping. Skips having
 				// to do expensive calculations inside the inner render loops.
-				if (hasTexture && M3GMath.abs(denominator) > M3GMath.EPSILON)
+				if (hasTexture)
 				{
-					float invDet = M3GMath.fastReciprocal(denominator);
-
-					float dxB = xB - xA, dyB = yB - yA;
-					float dxC = xC - xA, dyC = yC - yA;
+					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					{
+						coS[i][0] = tri.sA(i); coS[i][1] = tri.sB(i); coS[i][2] = tri.sC(i);
+						coT[i][0] = tri.tA(i); coT[i][1] = tri.tB(i); coT[i][2] = tri.tC(i);
+					}
 
 					if (perspectiveCorrection)
 					{
-						float dwB = coW[1] - coW[0];
-						float dwC = coW[2] - coW[0];
+						final float dwB = coW[1] - coW[0];
+						final float dwC = coW[2] - coW[0];
 
 						dwdx = (dwB * dyC - dwC * dyB) * invDet;
 						dwdy = (dwC * dxB - dwB * dxC) * invDet;
 					}
 
+					// For perspective correction, we need the actual W of
+					// each vertex as well.
 					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						// For perspective correction, we need the actual W of
-						// each vertex as well.
 						if (perspectiveCorrection)
 						{
-							float swA = coS[i][0] * trisScreen[tri_id].wA();
-							float swB = coS[i][1] * trisScreen[tri_id].wB();
-							float swC = coS[i][2] * trisScreen[tri_id].wC();
+							final float wA = tri.wA(), wB = tri.wB(), wC = tri.wC();
+							final float swA = coS[i][0] * wA, swB = coS[i][1] * wB, swC = coS[i][2] * wC;
+							final float twA = coT[i][0] * wA, twB = coT[i][1] * wB, twC = coT[i][2] * wC;
 
-							float twA = coT[i][0] * trisScreen[tri_id].wA();
-							float twB = coT[i][1] * trisScreen[tri_id].wB();
-							float twC = coT[i][2] * trisScreen[tri_id].wC();
-
-							float dswB = swB - swA, dswC = swC - swA;
-							float dtwB = twB - twA, dtwC = twC - twA;
+							final float dswB = swB - swA, dswC = swC - swA;
+							final float dtwB = twB - twA, dtwC = twC - twA;
 
 							sStepX[i] = (dswB * dyC - dswC * dyB) * invDet; // d(s/w)/dx
 							tStepX[i] = (dtwB * dyC - dtwC * dyB) * invDet; // d(t/w)/dx
@@ -904,10 +878,8 @@ public class Graphics3D
 						}
 						else
 						{
-							float dsB = coS[i][1] - coS[i][0];
-							float dsC = coS[i][2] - coS[i][0];
-							float dtB = coT[i][1] - coT[i][0];
-							float dtC = coT[i][2] - coT[i][0];
+							final float dsB = coS[i][1] - coS[i][0], dsC = coS[i][2] - coS[i][0];
+							final float dtB = coT[i][1] - coT[i][0], dtC = coT[i][2] - coT[i][0];
 
 							sStepX[i] = (dsB * dyC - dsC * dyB) * invDet; // ds/dx
 							tStepX[i] = (dtB * dyC - dtC * dyB) * invDet; // dt/dx
@@ -922,46 +894,43 @@ public class Graphics3D
 				// triangle. Then at each scanline we only need to determine the
 				// left and right color spans with quick add and mult operations, and
 				// at the inner pixel loop, all we need is a simple addition.
+				final boolean hasColors = tri.hasVertexColors();
 				if (hasColors)
 				{
-					if (M3GMath.abs(denominator) > M3GMath.EPSILON)
-					{
-						float invDet = M3GMath.fastReciprocal(denominator);
+					final int colorA = tri.colorA();
+					final int colorB = tri.colorB();
+					final int colorC = tri.colorC();
 
-						int colorA = trisScreen[tri_id].colorA();
-						int colorB = trisScreen[tri_id].colorB();
-						int colorC = trisScreen[tri_id].colorC();
+					final float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
+					final float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
+					final float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
 
-						float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
-						float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
-						float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
+					// To properly use additions in the triangle render loops
+					// below, we need to calculate the derivatives for each
+					// color channel, on each axis.
+					final float dR_B = rB - rA, dR_C = rC - rA;
+					final float dG_B = gB - gA, dG_C = gC - gA;
+					final float dB_B = bB - bA, dB_C = bC - bA;
+					final float dA_B = aB - aA, dA_C = aC - aA;
 
-						// To properly use additions in the triangle render loops
-						// below, we need to calculate the derivatives for each
-						// color channel, on each axis.
-						float dR_B = rB - rA, dR_C = rC - rA;
-						float dG_B = gB - gA, dG_C = gC - gA;
-						float dB_B = bB - bA, dB_C = bC - bA;
-						float dA_B = aB - aA, dA_C = aC - aA;
+					rStepX = (dR_B * dyC - dR_C * dyB) * invDet;
+					gStepX = (dG_B * dyC - dG_C * dyB) * invDet;
+					bStepX = (dB_B * dyC - dB_C * dyB) * invDet;
+					aStepX = (dA_B * dyC - dA_C * dyB) * invDet;
 
-						rStepX = (dR_B * (yC - yA) - dR_C * (yB - yA)) * invDet;
-						gStepX = (dG_B * (yC - yA) - dG_C * (yB - yA)) * invDet;
-						bStepX = (dB_B * (yC - yA) - dB_C * (yB - yA)) * invDet;
-						aStepX = (dA_B * (yC - yA) - dA_C * (yB - yA)) * invDet;
+					rStepY = (dR_C * dxB - dR_B * dxC) * invDet;
+					gStepY = (dG_C * dxB - dG_B * dxC) * invDet;
+					bStepY = (dB_C * dxB - dB_B * dxC) * invDet;
+					aStepY = (dA_C * dxB - dA_B * dxC) * invDet;
 
-						rStepY = (dR_C * (xB - xA) - dR_B * (xC - xA)) * invDet;
-						gStepY = (dG_C * (xB - xA) - dG_B * (xC - xA)) * invDet;
-						bStepY = (dB_C * (xB - xA) - dB_B * (xC - xA)) * invDet;
-						aStepY = (dA_C * (xB - xA) - dA_B * (xC - xA)) * invDet;
-
-						stepA = (int) (aStepX * 65536.0f);
-						stepR = (int) (rStepX * 65536.0f);
-						stepG = (int) (gStepX * 65536.0f);
-						stepB = (int) (bStepX * 65536.0f);
-					}
+					stepA = (int) (aStepX * 65536.0f);
+					stepR = (int) (rStepX * 65536.0f);
+					stepG = (int) (gStepX * 65536.0f);
+					stepB = (int) (bStepX * 65536.0f);
 				}
 
 				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
+				ord[0] = 0; ord[1] = 1; ord[2] = 2;
 				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
 				if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
 				if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
@@ -975,43 +944,41 @@ public class Graphics3D
 				zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
 				pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
 
-				if(hasTexture)
+				if (hasTexture)
 				{
-					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
 						tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
 					}
 				}
 
-				// Calculate the right horizon
+				// Calculate Triangle's right horizon midpoints
 				rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
 				xMidR = xTop + rHorizon * (xBot - xTop);
 				zMidR = zTop + rHorizon * (zBot - zTop);
 				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
 
-				if(hasTexture)
+				if (hasTexture)
 				{
-					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
 						tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
 					}
 				}
 
-				// Swap midpoints if necessary
+				// Swap Midpoints if triangle left > triangle right
 				if (xMidL > xMidR)
 				{
 					float temp;
-
-					// Swap values between left and right midpoints
 					temp = xMidL; xMidL = xMidR; xMidR = temp;
 					temp = zMidL; zMidL = zMidR; zMidR = temp;
 					temp = pwMidL; pwMidL = pwMidR; pwMidR = temp;
 
-					if(hasTexture)
+					if (hasTexture)
 					{
-						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+						for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 						{
 							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
 							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
@@ -1022,16 +989,27 @@ public class Graphics3D
 						}
 					}
 				}
+				else if (hasTexture)
+				{
+					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					{
+						useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+							|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+							((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
+					}
+				}
 
 				// Draw both halves of the triangle
 				for (int half = 0; half < 2; half++)
 				{
-					// Determine the range for the y-coordinate
 					yStart = half == 0 ? M3GMath.max(M3GMath.ceil(yTop), 0) : M3GMath.max(M3GMath.ceil(yMid), 0);
 					yEnd = half == 0 ? M3GMath.min(M3GMath.ceil(yMid), viewh) : M3GMath.min(M3GMath.ceil(yBot), viewh);
 
-					renderTriangleHalf(vertices.getDefaultColor(), half, yStart, yEnd, trisScreen[tri_id], hasColors, hasTexture, compositingMode,
-						fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset, perspectiveCorrection);
+					if (yStart < yEnd)
+					{
+						renderTriangleHalf(vertices.getDefaultColor(), half, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
+							fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset, perspectiveCorrection);
+					}
 				}
 			}
 		}
@@ -1179,9 +1157,9 @@ public class Graphics3D
 		// multiplied by the same factor used by the buffer.
 		// NOTE: that last mult by 8.0f and negative translation by 0.88 is
 		// just a hack to vastly improve depth buffer range usage.
-		float ndcZ = clip[2]/clip[3] - 0.88f;
+		float ndcZ = clip[2]/clip[3] - 0.5f;
 		if (ndcZ < -1f || ndcZ > 1f) { return; }
-		ndcZ = ndcZ * (this.far - this.near) * 32767.0f * 8.0f;
+		ndcZ = ndcZ * (this.far - this.near) * 32767.0f * 2.0f;
 		short z = (short) ndcZ;
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
@@ -1334,8 +1312,11 @@ public class Graphics3D
 				? xTop + drawY * (xMidR - xTop)
 				: xBot + drawY * (xMidR - xBot);
 
-			int ixL = M3GMath.max(M3GMath.ceil(xL), 0);
-			int ixR = M3GMath.min(M3GMath.ceil(xR), vieww);
+			int ixL = (int) (xL + 0.999999f);
+			int ixR = (int) (xR + 0.999999f);
+
+			if (ixL < 0) { ixL = 0; }
+			if (ixR > vieww) { ixR = vieww; }
 
 			// Saves a division for each x step.
 			final float invDrawSpanWidth = M3GMath.fastReciprocal(xR - xL);
@@ -1987,9 +1968,6 @@ public class Graphics3D
 		}
 
 		// CLAMP is fast for both POT and NPOT
-		if (t < 0) { return 0; }
-		if (t >= bound) { return (bound - 1); }
-
-		return t;
+		return t < 0 ? 0 : (t >= bound ? bound - 1 : t);
 	}
 }
