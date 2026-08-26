@@ -768,8 +768,8 @@ public class Graphics3D
 		// multiplied Z values will always be in range and never overflow,
 		// saving us the need to clamp it for every pixel draw.
 		//
-		// NOTE: that last mult by 8.0f and negative translation by 0.88 is
-		// just a hack to vastly improve depth buffer range usage.
+		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
+		// just a hack to improve depth buffer range usage.
 		tr.postScale(vieww / 2f, -viewh / 2f, 32767.0f * 2.0f);
 		tr.postTranslate(1f, -1f, -0.5f);
 
@@ -1155,8 +1155,8 @@ public class Graphics3D
 
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
 		// multiplied by the same factor used by the buffer.
-		// NOTE: that last mult by 8.0f and negative translation by 0.88 is
-		// just a hack to vastly improve depth buffer range usage.
+		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
+		// just a hack to improve depth buffer range usage.
 		float ndcZ = clip[2]/clip[3] - 0.5f;
 		if (ndcZ < -1f || ndcZ > 1f) { return; }
 		ndcZ = ndcZ * (this.far - this.near) * 32767.0f * 2.0f;
