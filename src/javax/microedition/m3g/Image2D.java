@@ -113,6 +113,26 @@ public class Image2D extends Object3D
 		this.width = w;
 		this.height = h;
 
+		/*
+		 * Some exporters (e.g. Firemint's, seen in NFS Most Wanted) write RGBA palettes
+		 * where the alpha byte of EVERY entry is 0 - a leftover "reserved" byte rather
+		 * than real transparency data. Taken literally, every texel would be fully
+		 * transparent and the whole mesh invisible, which is clearly never intended
+		 * (a fully-transparent texture is useless). Detect that degenerate case and
+		 * treat such palettes as fully opaque. Palettes with any non-zero alpha entry
+		 * (i.e. real cutout/translucency data) are left untouched.
+		 * TODO: A hack, might cause issues. Should be revisited
+		 */
+		boolean forceOpaque = false;
+		if (this.format == RGBA)
+		{
+			forceOpaque = true;
+			for (int p = 3; p < palette.length; p += 4)
+			{
+				if (palette[p] != 0) { forceOpaque = false; break; }
+			}
+		}
+
 		// We now start to copy the received "image" comprised of palette indices, as well as the palette colors themselves.
 		this.image = new byte[image.length * this.bpp];
 
@@ -127,6 +147,7 @@ public class Image2D extends Object3D
 			int offset = i * this.bpp;
 			// The pallete will be 256 entries multiplied by the format's amount of bytes per pixel
 			for (int k = 0; k < bpp; k++) { this.image[offset + k] = palette[pIdx + k]; }
+			if (forceOpaque) { this.image[offset + 3] = (byte) 0xFF; }
 		}
 	}
 
