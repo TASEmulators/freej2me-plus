@@ -288,19 +288,9 @@ public class Graphics3D
 
 		if (clearColor)
 		{
-			if (this.target instanceof Image2D)
-			{
-				Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Clear to Image2D not Implemented");
-				Image2D i2d = (Image2D) this.target;
+			final Image2D bgImg = (background != null) ? background.getImage() : null;
 
-				// CHECK is the bg image used only if clearColor is true?
-
-				if (background.getImage() == null || background.getImage().getFormat() != i2d.getFormat())
-				{ throw new IllegalArgumentException("The background image to be cleared does not have the same format as the render target."); }
-
-				// TODO support clearing Image2D
-			}
-			else if (this.target instanceof Graphics)
+			if (this.target instanceof Graphics)
 			{
 				Graphics grp = (Graphics) this.target;
 
@@ -312,69 +302,26 @@ public class Graphics3D
 				grp.setColor(color);
 				grp.fillRect(viewx, viewy, vieww, viewh);
 
-				// Draw the background's image if any (and there's a background)
-				if(background != null && background.getImage() != null)
+				if (bgImg != null) { clearToTarget(background, bgImg, false); }
+			}
+			else if (this.target instanceof Image2D)
+			{
+				Image2D i2d = (Image2D) this.target;
+
+				if(bgImg != null && bgImg.getFormat() != i2d.getFormat())
+					{ throw new IllegalArgumentException("The background image to be cleared does not have the same format as the render target."); }
+
+				// Clear with color first
+				for (int py = 0; py < viewh; py++)
 				{
-					final Image2D bgImg = background.getImage();
-
-					/* The crop rectangle (defaulting to the whole image) is mapped onto the
-					 * viewport so that it fills it completely; the image mode governs sampling
-					 * outside the image bounds (BORDER = background color, REPEAT = tile). */
-					final int cropX = background.getCropX(), cropY = background.getCropY();
-					int cropW = background.getCropWidth(), cropH = background.getCropHeight();
-					if (cropW <= 0) { cropW = bgImg.getWidth(); }
-					if (cropH <= 0) { cropH = bgImg.getHeight(); }
-					final boolean repeatX = background.getImageModeX() == Background.REPEAT;
-					final boolean repeatY = background.getImageModeY() == Background.REPEAT;
-					final boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
-						|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
-
-					final int bgW = bgImg.getWidth();
-					final int bgH = bgImg.getHeight();
-					final boolean isPOT = bgImg.isPowerOfTwo(bgW) && bgImg.isPowerOfTwo(bgH);
-
-					int stepX = (cropW << 16) / vieww;
-					int stepY = (cropH << 16) / viewh;
-					int currY = cropY << 16;
-
-					for (int py = 0; py < viewh; py++)
+					int screenY = py + viewy;
+					for (int px = 0; px < vieww; px++)
 					{
-						int sy = wrapCoord(currY >> 16, bgH, repeatY, isPOT);
-						int currX = cropX << 16;
-						int screenY = py + viewy;
-						int rowOffset = screenY * canvasWidth + viewx;
-
-						for (int px = 0; px < vieww; px++)
-						{
-							int sx = wrapCoord(currX >> 16, bgW, repeatX, isPOT);
-							int paintPixel = bgImg.getPixel(sx, sy);
-
-							// Dither available? Apply it to the BG Image.
-							if (doDither)
-							{
-								int ditherOffset = BAYER_PATTERN[((py & 3) << 2) | (px & 3)];
-
-								int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
-								int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
-								int b =  (paintPixel        & 0xFF) + ditherOffset;
-
-								r |= ((255 - r) >> 31); r &= 0xFF;
-								g |= ((255 - g) >> 31); g &= 0xFF;
-								b |= ((255 - b) >> 31); b &= 0xFF;
-
-								// Repack keeping Alpha intact
-								paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
-							}
-
-							int dstIdx = rowOffset + px;
-	                        rasterData[dstIdx] = blendCompositing(rasterData[dstIdx], paintPixel,
-								(paintPixel >>> 24), CompositingMode.ALPHA);
-
-	                        currX += stepX;
-						}
-						currY += stepY;
+						i2d.setPixel(px + viewx, screenY, color);
 					}
 				}
+
+				if (bgImg != null) { clearToTarget(background, bgImg, true); }
 			}
 		}
 
@@ -785,241 +732,234 @@ public class Graphics3D
 		// Perform viewport transform only on renderable triangles (saves an Arrays.copyOf call)
 		Triangle.transform(trisScreen, renderableTriangles[0], tr, textr);
 
-		final boolean depthEnabled = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
+		final boolean usesDepth = this.depthEnabled && compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final float depthUnits = compositingMode.getDepthOffsetUnits();
 		final float depthFactor = compositingMode.getDepthOffsetFactor();
-		final boolean hasDepthOffset = depthEnabled && (depthFactor != 0.0f || depthUnits != 0.0f);
+		final boolean hasDepthOffset = usesDepth && (depthFactor != 0.0f || depthUnits != 0.0f);
 		float depthOffset = 0.0f;
 
 		final boolean colorEnabled = compositingMode.isColorWriteEnabled();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
 
-		if (this.target instanceof Image2D)
+		for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
 		{
-			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Render Target is instance of Image2D!");
-			Image2D i2d = (Image2D) this.target;
-			// TODO support rendering to Image2D
-		}
-		else if (this.target instanceof Graphics)
-		{
-			for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
+			final Triangle tri = trisScreen[tri_id];
+
+			final float xA = tri.xA(), xB = tri.xB(), xC = tri.xC();
+			final float yA = tri.yA(), yB = tri.yB(), yC = tri.yC();
+
+			final float dxB = xB - xA, dyB = yB - yA;
+			final float dxC = xC - xA, dyC = yC - yA;
+			final float denominator = dxB * dyC - dxC * dyB;
+
+			// Degenerate triangle? Skip it.
+			if (M3GMath.abs(denominator) <= M3GMath.EPSILON) { continue; }
+
+			// We don't draw wireframes to Image2Ds
+			if (Mobile.M3GRenderWireframe && !(this.target instanceof Image2D))
 			{
-				final Triangle tri = trisScreen[tri_id];
+				final PlatformGraphics pgrp = (PlatformGraphics) this.target;
+				int tempcolor = pgrp.getColor();
+				pgrp.setColor(0xFF000000 | tri.colorA());
+				pgrp.drawTriangle((int) xA, (int) yA, (int) xB, (int) yB, (int) xC, (int) yC);
+				pgrp.setColor(tempcolor);
+				continue;
+			}
 
-				final float xA = tri.xA(), xB = tri.xB(), xC = tri.xC();
-				final float yA = tri.yA(), yB = tri.yB(), yC = tri.yC();
+			coX[0] = xA; coX[1] = xB; coX[2] = xC;
+			coY[0] = yA; coY[1] = yB; coY[2] = yC;
+			coZ[0] = tri.zA();  coZ[1] = tri.zB();  coZ[2] = tri.zC();
+			coW[0] = tri.iwA(); coW[1] = tri.iwB(); coW[2] = tri.iwC();
 
-				final float dxB = xB - xA, dyB = yB - yA;
-				final float dxC = xC - xA, dyC = yC - yA;
-				final float denominator = dxB * dyC - dxC * dyB;
+			final float invDet = M3GMath.fastReciprocal(denominator);
 
-				// Degenerate triangle? Skip it.
-				if (M3GMath.abs(denominator) <= M3GMath.EPSILON) { continue; }
+			if (hasDepthOffset)
+			{
+				final float dz10 = coZ[1] - coZ[0];
+				final float dz20 = coZ[2] - coZ[0];
 
-				if (Mobile.M3GRenderWireframe)
+				final float dzdx = (dz10 * dyC - dz20 * dyB) * invDet;
+				final float dzdy = (dxB * dz20 - dxC * dz10) * invDet;
+
+				final float m = M3GMath.sqrt(dzdx * dzdx + dzdy * dzdy);
+				depthOffset = (depthFactor * m) + (depthUnits * 1e-7f);
+			}
+
+			// Let's precalculate uv derivatives for mipmapping. Skips having
+			// to do expensive calculations inside the inner render loops.
+			if (hasTexture)
+			{
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					final PlatformGraphics pgrp = (PlatformGraphics) this.target;
-					int tempcolor = pgrp.getColor();
-					pgrp.setColor(0xFF000000 | tri.colorA());
-					pgrp.drawTriangle((int) xA, (int) yA, (int) xB, (int) yB, (int) xC, (int) yC);
-					pgrp.setColor(tempcolor);
-					continue;
+					coS[i][0] = tri.sA(i); coS[i][1] = tri.sB(i); coS[i][2] = tri.sC(i);
+					coT[i][0] = tri.tA(i); coT[i][1] = tri.tB(i); coT[i][2] = tri.tC(i);
 				}
 
-				coX[0] = xA; coX[1] = xB; coX[2] = xC;
-				coY[0] = yA; coY[1] = yB; coY[2] = yC;
-				coZ[0] = tri.zA();  coZ[1] = tri.zB();  coZ[2] = tri.zC();
-				coW[0] = tri.iwA(); coW[1] = tri.iwB(); coW[2] = tri.iwC();
-
-				final float invDet = M3GMath.fastReciprocal(denominator);
-
-				if (hasDepthOffset)
+				if (perspectiveCorrection)
 				{
-					final float dz10 = coZ[1] - coZ[0];
-					final float dz20 = coZ[2] - coZ[0];
+					final float dwB = coW[1] - coW[0];
+					final float dwC = coW[2] - coW[0];
 
-					final float dzdx = (dz10 * dyC - dz20 * dyB) * invDet;
-					final float dzdy = (dxB * dz20 - dxC * dz10) * invDet;
-
-					final float m = M3GMath.sqrt(dzdx * dzdx + dzdy * dzdy);
-					depthOffset = (depthFactor * m) + (depthUnits * 1e-7f);
+					dwdx = (dwB * dyC - dwC * dyB) * invDet;
+					dwdy = (dwC * dxB - dwB * dxC) * invDet;
 				}
 
-				// Let's precalculate uv derivatives for mipmapping. Skips having
-				// to do expensive calculations inside the inner render loops.
-				if (hasTexture)
+				// For perspective correction, we need the actual W of
+				// each vertex as well.
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-					{
-						coS[i][0] = tri.sA(i); coS[i][1] = tri.sB(i); coS[i][2] = tri.sC(i);
-						coT[i][0] = tri.tA(i); coT[i][1] = tri.tB(i); coT[i][2] = tri.tC(i);
-					}
-
 					if (perspectiveCorrection)
 					{
-						final float dwB = coW[1] - coW[0];
-						final float dwC = coW[2] - coW[0];
+						final float wA = tri.wA(), wB = tri.wB(), wC = tri.wC();
+						final float swA = coS[i][0] * wA, swB = coS[i][1] * wB, swC = coS[i][2] * wC;
+						final float twA = coT[i][0] * wA, twB = coT[i][1] * wB, twC = coT[i][2] * wC;
 
-						dwdx = (dwB * dyC - dwC * dyB) * invDet;
-						dwdy = (dwC * dxB - dwB * dxC) * invDet;
+						final float dswB = swB - swA, dswC = swC - swA;
+						final float dtwB = twB - twA, dtwC = twC - twA;
+
+						sStepX[i] = (dswB * dyC - dswC * dyB) * invDet; // d(s/w)/dx
+						tStepX[i] = (dtwB * dyC - dtwC * dyB) * invDet; // d(t/w)/dx
+
+						sStepY[i] = (dswC * dxB - dswB * dxC) * invDet; // d(s/w)/dy
+						tStepY[i] = (dtwC * dxB - dtwB * dxC) * invDet; // d(t/w)/dy
 					}
-
-					// For perspective correction, we need the actual W of
-					// each vertex as well.
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					else
 					{
-						if (perspectiveCorrection)
-						{
-							final float wA = tri.wA(), wB = tri.wB(), wC = tri.wC();
-							final float swA = coS[i][0] * wA, swB = coS[i][1] * wB, swC = coS[i][2] * wC;
-							final float twA = coT[i][0] * wA, twB = coT[i][1] * wB, twC = coT[i][2] * wC;
+						final float dsB = coS[i][1] - coS[i][0], dsC = coS[i][2] - coS[i][0];
+						final float dtB = coT[i][1] - coT[i][0], dtC = coT[i][2] - coT[i][0];
 
-							final float dswB = swB - swA, dswC = swC - swA;
-							final float dtwB = twB - twA, dtwC = twC - twA;
+						sStepX[i] = (dsB * dyC - dsC * dyB) * invDet; // ds/dx
+						tStepX[i] = (dtB * dyC - dtC * dyB) * invDet; // dt/dx
 
-							sStepX[i] = (dswB * dyC - dswC * dyB) * invDet; // d(s/w)/dx
-							tStepX[i] = (dtwB * dyC - dtwC * dyB) * invDet; // d(t/w)/dx
-
-							sStepY[i] = (dswC * dxB - dswB * dxC) * invDet; // d(s/w)/dy
-							tStepY[i] = (dtwC * dxB - dtwB * dxC) * invDet; // d(t/w)/dy
-						}
-						else
-						{
-							final float dsB = coS[i][1] - coS[i][0], dsC = coS[i][2] - coS[i][0];
-							final float dtB = coT[i][1] - coT[i][0], dtC = coT[i][2] - coT[i][0];
-
-							sStepX[i] = (dsB * dyC - dsC * dyB) * invDet; // ds/dx
-							tStepX[i] = (dtB * dyC - dtC * dyB) * invDet; // dt/dx
-
-							sStepY[i] = (dsC * dxB - dsB * dxC) * invDet; // ds/dy
-							tStepY[i] = (dtC * dxB - dtB * dxC) * invDet; // dt/dy
-						}
+						sStepY[i] = (dsC * dxB - dsB * dxC) * invDet; // ds/dy
+						tStepY[i] = (dtC * dxB - dtB * dxC) * invDet; // dt/dy
 					}
 				}
+			}
 
-				// Calculate the starting vertex color with the barycentric of the
-				// triangle. Then at each scanline we only need to determine the
-				// left and right color spans with quick add and mult operations, and
-				// at the inner pixel loop, all we need is a simple addition.
-				final boolean hasColors = tri.hasVertexColors();
-				if (hasColors)
+			// Calculate the starting vertex color with the barycentric of the
+			// triangle. Then at each scanline we only need to determine the
+			// left and right color spans with quick add and mult operations, and
+			// at the inner pixel loop, all we need is a simple addition.
+			final boolean hasColors = tri.hasVertexColors();
+			if (hasColors)
+			{
+				final int colorA = tri.colorA();
+				final int colorB = tri.colorB();
+				final int colorC = tri.colorC();
+
+				final float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
+				final float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
+				final float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
+
+				// To properly use additions in the triangle render loops
+				// below, we need to calculate the derivatives for each
+				// color channel, on each axis.
+				final float dR_B = rB - rA, dR_C = rC - rA;
+				final float dG_B = gB - gA, dG_C = gC - gA;
+				final float dB_B = bB - bA, dB_C = bC - bA;
+				final float dA_B = aB - aA, dA_C = aC - aA;
+
+				rStepX = (dR_B * dyC - dR_C * dyB) * invDet;
+				gStepX = (dG_B * dyC - dG_C * dyB) * invDet;
+				bStepX = (dB_B * dyC - dB_C * dyB) * invDet;
+				aStepX = (dA_B * dyC - dA_C * dyB) * invDet;
+
+				rStepY = (dR_C * dxB - dR_B * dxC) * invDet;
+				gStepY = (dG_C * dxB - dG_B * dxC) * invDet;
+				bStepY = (dB_C * dxB - dB_B * dxC) * invDet;
+				aStepY = (dA_C * dxB - dA_B * dxC) * invDet;
+
+				stepA = (int) (aStepX * 65536.0f);
+				stepR = (int) (rStepX * 65536.0f);
+				stepG = (int) (gStepX * 65536.0f);
+				stepB = (int) (bStepX * 65536.0f);
+			}
+
+			// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
+			ord[0] = 0; ord[1] = 1; ord[2] = 2;
+			if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
+			if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
+			if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
+
+			// Degenerate triangle? Skip it.
+			if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
+
+			// Assign ordered vertex attributes based on their determined order
+			xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
+			yTop = coY[ord[0]]; yMid = coY[ord[1]]; yBot = coY[ord[2]];
+			zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
+			pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
+
+			if (hasTexture)
+			{
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					final int colorA = tri.colorA();
-					final int colorB = tri.colorB();
-					final int colorC = tri.colorC();
-
-					final float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
-					final float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
-					final float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
-
-					// To properly use additions in the triangle render loops
-					// below, we need to calculate the derivatives for each
-					// color channel, on each axis.
-					final float dR_B = rB - rA, dR_C = rC - rA;
-					final float dG_B = gB - gA, dG_C = gC - gA;
-					final float dB_B = bB - bA, dB_C = bC - bA;
-					final float dA_B = aB - aA, dA_C = aC - aA;
-
-					rStepX = (dR_B * dyC - dR_C * dyB) * invDet;
-					gStepX = (dG_B * dyC - dG_C * dyB) * invDet;
-					bStepX = (dB_B * dyC - dB_C * dyB) * invDet;
-					aStepX = (dA_B * dyC - dA_C * dyB) * invDet;
-
-					rStepY = (dR_C * dxB - dR_B * dxC) * invDet;
-					gStepY = (dG_C * dxB - dG_B * dxC) * invDet;
-					bStepY = (dB_C * dxB - dB_B * dxC) * invDet;
-					aStepY = (dA_C * dxB - dA_B * dxC) * invDet;
-
-					stepA = (int) (aStepX * 65536.0f);
-					stepR = (int) (rStepX * 65536.0f);
-					stepG = (int) (gStepX * 65536.0f);
-					stepB = (int) (bStepX * 65536.0f);
+					sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
+					tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
 				}
+			}
 
-				// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
-				ord[0] = 0; ord[1] = 1; ord[2] = 2;
-				if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
-				if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
-				if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
+			// Calculate Triangle's right horizon midpoints
+			rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
+			xMidR = xTop + rHorizon * (xBot - xTop);
+			zMidR = zTop + rHorizon * (zBot - zTop);
+			pwMidR = pwTop + rHorizon * (pwBot - pwTop);
 
-				// Degenerate triangle? Skip it.
-				if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
+			if (hasTexture)
+			{
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				{
+					sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
+					tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
+				}
+			}
 
-				// Assign ordered vertex attributes based on their determined order
-				xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
-				yTop = coY[ord[0]]; yMid = coY[ord[1]]; yBot = coY[ord[2]];
-				zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
-				pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
+			// Swap Midpoints if triangle left > triangle right
+			if (xMidL > xMidR)
+			{
+				float temp;
+				temp = xMidL; xMidL = xMidR; xMidR = temp;
+				temp = zMidL; zMidL = zMidR; zMidR = temp;
+				temp = pwMidL; pwMidL = pwMidR; pwMidR = temp;
 
 				if (hasTexture)
 				{
 					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
-						tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
-					}
-				}
+						temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
+						temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
 
-				// Calculate Triangle's right horizon midpoints
-				rHorizon = (yMid - yTop) * M3GMath.fastReciprocal(yBot - yTop);
-				xMidR = xTop + rHorizon * (xBot - xTop);
-				zMidR = zTop + rHorizon * (zBot - zTop);
-				pwMidR = pwTop + rHorizon * (pwBot - pwTop);
-
-				if (hasTexture)
-				{
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-					{
-						sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
-						tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
-					}
-				}
-
-				// Swap Midpoints if triangle left > triangle right
-				if (xMidL > xMidR)
-				{
-					float temp;
-					temp = xMidL; xMidL = xMidR; xMidR = temp;
-					temp = zMidL; zMidL = zMidR; zMidR = temp;
-					temp = pwMidL; pwMidL = pwMidR; pwMidR = temp;
-
-					if (hasTexture)
-					{
-						for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-						{
-							temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
-							temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
-
-							useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
-								|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
-								((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
-						}
-					}
-				}
-				else if (hasTexture)
-				{
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-					{
 						useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
 							|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
 							((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
 					}
 				}
-
-				// Draw both halves of the triangle
-				for (int half = 0; half < 2; half++)
+			}
+			else if (hasTexture)
+			{
+				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					yStart = half == 0 ? M3GMath.max(M3GMath.ceil(yTop), 0) : M3GMath.max(M3GMath.ceil(yMid), 0);
-					yEnd = half == 0 ? M3GMath.min(M3GMath.ceil(yMid), viewh) : M3GMath.min(M3GMath.ceil(yBot), viewh);
+					useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+						|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+						((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
+				}
+			}
 
-					if (yStart < yEnd)
-					{
-						renderTriangleHalf(vertices.getDefaultColor(), half, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
-							fog, invFogDiv, alphaThreshold, depthEnabled, colorEnabled, depthOffset, perspectiveCorrection);
-					}
+			// Draw both halves of the triangle
+			for (int half = 0; half < 2; half++)
+			{
+				yStart = half == 0 ? M3GMath.max(M3GMath.ceil(yTop), 0) : M3GMath.max(M3GMath.ceil(yMid), 0);
+				yEnd = half == 0 ? M3GMath.min(M3GMath.ceil(yMid), viewh) : M3GMath.min(M3GMath.ceil(yBot), viewh);
+
+				if (yStart < yEnd)
+				{
+					renderTriangleHalf(vertices.getDefaultColor(), half, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
+						fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection);
 				}
 			}
 		}
+
 	}
 
 	private void positionLights(World world, Group group)
@@ -1114,11 +1054,20 @@ public class Graphics3D
 	 */
 	private void renderSprite(Sprite3D sprite, Transform transform)
 	{
-		final Image2D img = sprite.getImage();
+		boolean renderToImage = false;
+		Image2D imageData = null;
+
+		if((this.target instanceof Image2D))
+		{
+			renderToImage = true;
+			imageData = (Image2D) this.target;
+		}
+
+		final Image2D spr = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
 
 		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
-		if (img == null || appearance == null) { return; }
+		if (spr == null || appearance == null) { return; }
 		if (!(this.target instanceof Graphics)) { return; }
 
 		// JSR-184 scope culling, same rule as for meshes.
@@ -1134,8 +1083,8 @@ public class Graphics3D
 
 		// Intersect the crop rectangle with the image rectangle; nothing to render without overlap.
 		final int isectX = M3GMath.max(cropX, 0), isectY = M3GMath.max(cropY, 0);
-		final int isectW = M3GMath.min(cropX + cropW, img.getWidth()) - isectX;
-		final int isectH = M3GMath.min(cropY + cropH, img.getHeight()) - isectY;
+		final int isectW = M3GMath.min(cropX + cropW, spr.getWidth()) - isectX;
+		final int isectH = M3GMath.min(cropY + cropH, spr.getHeight()) - isectY;
 		if (isectW <= 0 || isectH <= 0) { return; }
 
 		// Model-view: the sprite's rotation/scale only affect its size, never its screen alignment.
@@ -1231,7 +1180,7 @@ public class Graphics3D
 		for (int y = pixT; y < pixB; y++)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
-			if(Mobile.halfResM3GRaster && (y & 1) != 0)
+			if(Mobile.halfResM3GRaster && (y & 1) != 0 && !(this.target instanceof Image2D))
 			{
 				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
 					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
@@ -1252,7 +1201,7 @@ public class Graphics3D
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
-				paintPixel = img.getPixel(texX, texY);
+				paintPixel = spr.getPixel(texX, texY);
 				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
@@ -1260,10 +1209,20 @@ public class Graphics3D
 				if (fog != null && fogFactor < 255.0f)
 					{ paintPixel = blendFog(paintPixel, fog.getColor(), (int) fogFactor); }
 
-				rasterData[rasterIdxY + x] =
-					compositingMode.getBlending() == CompositingMode.REPLACE ? paintPixel :
-					blendCompositing(rasterData[rasterIdxY + x], paintPixel, alpha,
-						compositingMode.getBlending());
+				if(!renderToImage)
+				{
+					rasterData[rasterIdxY + x] =
+						compositingMode.getBlending() == CompositingMode.REPLACE ? paintPixel :
+						blendCompositing(rasterData[rasterIdxY + x], paintPixel, alpha,
+							compositingMode.getBlending());
+				}
+				else
+				{
+					imageData.setPixel((x+viewx), (y + viewy),
+						compositingMode.getBlending() == CompositingMode.REPLACE ? paintPixel :
+						blendCompositing(imageData.getPixel((x+viewx), (y + viewy)), paintPixel, alpha,
+							compositingMode.getBlending()));
+				}
 
 				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
 			}
@@ -1272,7 +1231,7 @@ public class Graphics3D
 
 	private void renderTriangleHalf(int defVertColor, int half, int yStart, int yEnd,
 		Triangle triScreen, boolean hasColors, boolean hasTexture, CompositingMode compositingMode,
-		Fog fog, float invFogDiv, int alphaThreshold, boolean depthEnabled, boolean colorEnabled,
+		Fog fog, float invFogDiv, int alphaThreshold, boolean usesDepth, boolean colorEnabled,
 		float depthOffset, boolean doPerspective)
 	{
 		// Prepare the flags that can be overridden by the UI.
@@ -1284,6 +1243,15 @@ public class Graphics3D
 
 		// TODO: && !Mobile.m3gDisableFog flag
 		final boolean hasFog = fog != null;
+
+		boolean renderToImage = false;
+		Image2D imageData = null;
+
+		if((this.target instanceof Image2D))
+		{
+			renderToImage = true;
+			imageData = (Image2D) this.target;
+		}
 
 		int compBlending = compositingMode.getBlending();
 
@@ -1301,7 +1269,7 @@ public class Graphics3D
 		for (int y = yStart; y < yEnd; y++)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
-			if(Mobile.halfResM3GRaster && (y & 1) != 0)
+			if(!renderToImage && Mobile.halfResM3GRaster && (y & 1) != 0)
 			{
 				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
 					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
@@ -1399,7 +1367,7 @@ public class Graphics3D
 			{
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(depthEnabled && this.depthBuffer[depthIdx] <= (short) z)
+				if(usesDepth && this.depthBuffer[depthIdx] <= (short) z)
 				{
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
@@ -1547,7 +1515,7 @@ public class Graphics3D
 				if ((paintPixel >>> 24) == 0 || (paintPixel >>> 24) < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
-				if (depthEnabled && compositingMode.isDepthWriteEnabled() &&
+				if (usesDepth && compositingMode.isDepthWriteEnabled() &&
 					(paintPixel >>> 24) >= 255) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// Only write to the screen if color write is enabled.
@@ -1588,7 +1556,7 @@ public class Graphics3D
 				}
 
 				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-				if (doAntiAlias && (x == ixL || x == ixR - 1) && (paintPixel >>> 24) >= 255)
+				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) && (paintPixel >>> 24) >= 255)
 				{
 					// The way this works is that we "extend" the geometry size a bit
 					// for the antialiased output, that way triangles don't get smoothed
@@ -1611,8 +1579,17 @@ public class Graphics3D
 					}
 				}
 
-				rasterData[rasterIdx] = compBlending == CompositingMode.REPLACE ? paintPixel : blendCompositing(rasterData[rasterIdx],
-					paintPixel, (paintPixel >>> 24), compBlending);
+				if(!renderToImage)
+				{
+					rasterData[rasterIdx] = compBlending == CompositingMode.REPLACE ? paintPixel : blendCompositing(rasterData[rasterIdx],
+						paintPixel, (paintPixel >>> 24), compBlending);
+				}
+				else
+				{
+					imageData.setPixel((x+viewx), (y+viewy), compBlending == CompositingMode.REPLACE ? paintPixel :
+						blendCompositing(imageData.getPixel((x+viewx), (y+viewy)), paintPixel,
+							(paintPixel >>> 24), compBlending));
+				}
 			}
 		}
 	}
@@ -1910,6 +1887,65 @@ public class Graphics3D
 		// Since log2(x^2) = 2 * log2(x), taking 0.5 * log2(maxSq) simplifies
 		// this directly to M3GMath.log(maxSq) * 0.5f!
 		return M3GMath.log(maxSq) * 0.5f;
+	}
+
+	private void clearToTarget(Background background, Image2D bgImg, boolean isImageTarget)
+	{
+		final int cropX = background.getCropX(), cropY = background.getCropY();
+		int cropW = background.getCropWidth(), cropH = background.getCropHeight();
+		if (cropW <= 0) { cropW = bgImg.getWidth(); }
+		if (cropH <= 0) { cropH = bgImg.getHeight(); }
+
+		final boolean repeatX = background.getImageModeX() == Background.REPEAT;
+		final boolean repeatY = background.getImageModeY() == Background.REPEAT;
+		final boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
+			|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
+
+		final int bgW = bgImg.getWidth();
+		final int bgH = bgImg.getHeight();
+		final boolean isPOT = bgImg.isPowerOfTwo(bgW) && bgImg.isPowerOfTwo(bgH);
+
+		int stepX = (cropW << 16) / vieww;
+		int stepY = (cropH << 16) / viewh;
+		int currY = cropY << 16;
+
+		Image2D destImg = isImageTarget ? (Image2D) this.target : null;
+
+		for (int py = 0; py < viewh; py++)
+		{
+			int sy = wrapCoord(currY >> 16, bgH, repeatY, isPOT);
+			int currX = cropX << 16;
+			int screenY = py + viewy;
+			int rowOffset = screenY * canvasWidth + viewx;
+
+			for (int px = 0; px < vieww; px++)
+			{
+				int sx = wrapCoord(currX >> 16, bgW, repeatX, isPOT);
+				int paintPixel = bgImg.getPixel(sx, sy);
+
+				if (doDither)
+				{
+					int ditherOffset = BAYER_PATTERN[((py & 3) << 2) | (px & 3)];
+					int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
+					int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
+					int b =  (paintPixel        & 0xFF) + ditherOffset;
+
+					r |= ((255 - r) >> 31); r &= 0xFF;
+					g |= ((255 - g) >> 31); g &= 0xFF;
+					b |= ((255 - b) >> 31); b &= 0xFF;
+
+					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
+				}
+
+				int screenX = px + viewx;
+
+				// Both are actually rather similar due to how FreeJ2ME+ implements these
+				if (isImageTarget) { destImg.setPixel(screenX, screenY, paintPixel); }
+				else { rasterData[rowOffset + px] = paintPixel; }
+				currX += stepX;
+			}
+			currY += stepY;
+		}
 	}
 
 	// For bilinear filtering support
