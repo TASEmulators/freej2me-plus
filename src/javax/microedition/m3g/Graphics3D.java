@@ -555,17 +555,19 @@ public class Graphics3D
 		final boolean twoSidedLighting = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isTwoSidedLightingEnabled() : false;
 		final boolean localCameraLight = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isLocalCameraLightingEnabled() : false;
 
+		// Set up fog properties
+		final Fog fog = appearance.getFog();
+		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
+
 		// This one can be overridden by FJ2ME+
 		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
-		perspectiveCorrection = perspectiveCorrection && (projType == Camera.PERSPECTIVE);
+		perspectiveCorrection = fog != null || (perspectiveCorrection && (projType == Camera.PERSPECTIVE)); // fog usage enables it
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
 		ord[0] = 0; ord[1] = 1; ord[2] = 2;
 
-		// Set up fog properties
-		final Fog fog = appearance.getFog();
-		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
+
 
 		// We'll need the projection matrix for the next transformations
 		this.currCam.getProjection(projectionMatrix);
@@ -1293,8 +1295,20 @@ public class Graphics3D
 		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
 
+		// We subsample perspective correction here (piecewise linear
+		// interpolation), similar to Quake and other old 3D renderers.
+		// TODO: Make this configurable (Mobile.m3gPCorrSubsampleFactor)
+		byte pSubsampleFactor = 15;
+
 		// TODO: && !Mobile.m3gDisableFog flag
 		final boolean hasFog = fog != null;
+		final float fogFarNorm = hasFog ? fog.getFarDistance() * invFogDiv : 0.0f;
+		final float fogNearNorm = hasFog ? fog.getNearDistance() * invFogDiv : 0.0f;
+		final float fogDensity = hasFog ? fog.getDensity() : 0.0f;
+		final int fogMode = hasFog ? fog.getMode() : 0;
+
+		float fogFactor = 255.0f;
+		float stepFogFactor = 0.0f;
 
 		boolean renderToImage = false;
 		Image2D imageData = null;
@@ -1344,6 +1358,8 @@ public class Graphics3D
 
 			if (ixL < 0) { ixL = 0; }
 			if (ixR > vieww) { ixR = vieww; }
+
+			if (ixL >= ixR) { continue; }
 
 			// Saves a division for each x step.
 			final float invDrawSpanWidth = M3GMath.fastReciprocal(xR - xL);
@@ -1395,7 +1411,8 @@ public class Graphics3D
 			final float pwStep = (pwR - pwL) * invDrawSpanWidth;
 
 			float pw = pwL + (ixL - xL) * pwStep;
-			float invPw = 1.00001f; // Small epsilon from 1.0f to check on fog calculations
+			float invPw = 1.0f;
+			float stepInvPw = 0.0f;
 			float z  = zL + (ixL - xL) * zStep + depthOffset;
 
 			if (hasTexture)
@@ -1415,7 +1432,7 @@ public class Graphics3D
 			}
 
 			// Draw the pixels for the current y-coordinate
-			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, depthIdx++, rasterIdx++)
+			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, invPw += stepInvPw, fogFactor += stepFogFactor, depthIdx++, rasterIdx++)
 			{
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
@@ -1433,7 +1450,72 @@ public class Graphics3D
 							curT[i] += stepT[i];
 						}
 					}
+
+					if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
+					{
+						int spanLen = M3GMath.min(pSubsampleFactor, ixR - x);
+						float invSpanLen = M3GMath.fastReciprocal(spanLen);
+						float nextInvPw = M3GMath.fastReciprocal(pw + pwStep * spanLen);
+						invPw = M3GMath.fastReciprocal(pw);
+						stepInvPw = (nextInvPw - invPw) * invSpanLen;
+
+						// Compute start and end fog factors for this 16-pixel span
+						if (hasFog)
+						{
+							float zEyeStart = invPw;
+							float zEyeEnd = nextInvPw;
+
+							float fStart, fEnd;
+							if (fogMode == Fog.LINEAR)
+							{
+								fStart = (fogFarNorm - zEyeStart * invFogDiv) * 256.0f;
+								fEnd   = (fogFarNorm - zEyeEnd   * invFogDiv) * 256.0f;
+							}
+							else
+							{
+								fStart = M3GMath.exp(-fogDensity * zEyeStart) * 256.0f;
+								fEnd   = M3GMath.exp(-fogDensity * zEyeEnd)   * 256.0f;
+							}
+
+							fogFactor = M3GMath.min(255.0f, M3GMath.max(0.0f, fStart));
+							float targetFogEnd = M3GMath.min(255.0f, M3GMath.max(0.0f, fEnd));
+							stepFogFactor = (targetFogEnd - fogFactor) * invSpanLen;
+						}
+					}
 					continue;
+				}
+
+				// Perspective correction enabled? Calculate the inverse of W.
+				if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
+				{
+					int spanLen = M3GMath.min(pSubsampleFactor+1, ixR - x);
+					float invSpanLen = M3GMath.fastReciprocal(spanLen);
+					float nextInvPw = M3GMath.fastReciprocal(pw + pwStep * spanLen);
+					invPw = M3GMath.fastReciprocal(pw);
+					stepInvPw = (nextInvPw - invPw) * invSpanLen;
+
+					// Compute start and end fog factors for this 16-pixel span
+					if (hasFog)
+					{
+						float zEyeStart = invPw;
+						float zEyeEnd = nextInvPw;
+
+						float fStart, fEnd;
+						if (fogMode == Fog.LINEAR)
+						{
+							fStart = (fogFarNorm - zEyeStart * invFogDiv) * 256.0f;
+							fEnd   = (fogFarNorm - zEyeEnd   * invFogDiv) * 256.0f;
+						}
+						else
+						{
+							fStart = M3GMath.exp(-fogDensity * zEyeStart) * 256.0f;
+							fEnd   = M3GMath.exp(-fogDensity * zEyeEnd)   * 256.0f;
+						}
+
+						fogFactor = M3GMath.min(255.0f, M3GMath.max(0.0f, fStart));
+						float targetFogEnd = M3GMath.min(255.0f, M3GMath.max(0.0f, fEnd));
+						stepFogFactor = (targetFogEnd - fogFactor) * invSpanLen;
+					}
 				}
 
 				// If there's no texture coords nor a texture image, we always default
@@ -1464,8 +1546,6 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
-					if (doPerspective) { invPw = M3GMath.fastReciprocal(pw); }
-
 					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						// Skip this texture unit right away if it is disabled/unused
@@ -1575,22 +1655,10 @@ public class Graphics3D
 				// Only write to the screen if color write is enabled.
 				if(!colorEnabled) { continue; }
 
-				// To blend the fog value here, we have to take the current pixel's z value into consideration
-				if (hasFog)
+				// Blend the fog, all important calculations were done prior.
+				if (hasFog && fogFactor < 255.0f)
 				{
-					// Fog is always perspective-correct. If texturing is already perspective-correct,
-					// reuse that invPw instead of recalculating.
-					final float zEye = invPw < 1.00001f ? invPw : M3GMath.fastReciprocal(pw);
-
-					if (fog.getMode() == Fog.LINEAR)
-					{
-						fogFactor = M3GMath.max(0, (fog.getFarDistance() - zEye) * invFogDiv);
-					}
-					else { fogFactor = M3GMath.exp(-fog.getDensity() * zEye); }
-
-					fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
-
-					paintPixel = fogFactor >= 255.0f ? paintPixel : blendFog(paintPixel, fog.getColor(), (int) fogFactor);
+					paintPixel = blendFog(paintPixel, fog.getColor(), (int) fogFactor);
 				}
 
 				if (doDither)
@@ -1756,7 +1824,7 @@ public class Graphics3D
 		}
 	}
 
-	private static final int blendFog(int color, int fogColor, int fogAmount)
+	private static int blendFog(int color, int fogColor, int fogAmount)
 	{
 		/*
 		 * M3G specifies that, the smaller the fogFactor value, the more we
@@ -1764,17 +1832,16 @@ public class Graphics3D
 		 * that the fog's contribution to the resulting color should be
 		 * 1 - fogFactor;
 		 */
-		final int bgRB = color & 0x00FF00FF;
-		final int bgG  = (color >> 8) & 0xFF;
+		final int pixRB = color & 0x00FF00FF;
+		final int pixG  = (color >> 8) & 0xFF;
 
-		final int fgRB = fogColor & 0x00FF00FF;
-		final int fgG  = (fogColor >> 8) & 0xFF;
+		final int fogRB = fogColor & 0x00FF00FF;
+		final int fogG  = (fogColor >> 8) & 0xFF;
 
-		final int r = ((fgRB >> 16) + ((((bgRB >> 16) - (fgRB >> 16)) * fogAmount) >> 8)) & 0xFF;
-		final int g = (fgG          + ((((bgG)          - (fgG))          * fogAmount) >> 8)) & 0xFF;
-		final int b = ((fgRB & 0xFF)+ ((((bgRB & 0xFF)  - (fgRB & 0xFF))  * fogAmount) >> 8)) & 0xFF;
+		final int outRB = (fogRB + ((((pixRB - fogRB) * fogAmount) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+		final int outG = fogG + (((pixG - fogG) * fogAmount) >> 8);
 
-		return (color & 0xFF000000) | (r << 16) | (g << 8) | b;
+		return (color & 0xFF000000) | outRB | (outG << 8);
 	}
 
 	private static final int blendTexture(int bg, int fg, int funcMode, int texBlendColor)
@@ -2064,13 +2131,13 @@ public class Graphics3D
 			// the short range (-32768,32767), so we also do not cast to long,
 			// remaining entirely within 32-bit range.
 			int mask = t >> 31;
-	        int absT = (t ^ mask) - mask;
+			int absT = (t ^ mask) - mask;
 
-	        // 32-bit int multiplication to replace need for 64-bit math
-	        t = (absT * bound) >> 16;
+			// 32-bit int multiplication to replace need for 64-bit math
+			t = (absT * bound) >> 16;
 
-	        // Wrap any negative coordinates back into [0, bound - 1] range
-	        return (mask != 0 && t != 0) ? (bound - t) : t;
+			// Wrap any negative coordinates back into [0, bound - 1] range
+			return (mask != 0 && t != 0) ? (bound - t) : t;
 		}
 
 		// CLAMP is fast for both POT and NPOT
