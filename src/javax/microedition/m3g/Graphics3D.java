@@ -1955,7 +1955,7 @@ public class Graphics3D
 
 		final int bgW = bgImg.getWidth();
 		final int bgH = bgImg.getHeight();
-		final boolean isPOT = bgImg.isPowerOfTwo(bgW) && bgImg.isPowerOfTwo(bgH);
+		final boolean isNPOT = !(bgImg.isPowerOfTwo(bgW) && bgImg.isPowerOfTwo(bgH));
 
 		int stepX = (cropW << 16) / vieww;
 		int stepY = (cropH << 16) / viewh;
@@ -1965,14 +1965,14 @@ public class Graphics3D
 
 		for (int py = 0; py < viewh; py++)
 		{
-			int sy = wrapCoord(currY >> 16, bgH, repeatY, isPOT);
+			int sy = wrapCoord(currY >> 16, bgH, repeatY, isNPOT);
 			int currX = cropX << 16;
 			int screenY = py + viewy;
 			int rowOffset = screenY * canvasWidth + viewx;
 
 			for (int px = 0; px < vieww; px++)
 			{
-				int sx = wrapCoord(currX >> 16, bgW, repeatX, isPOT);
+				int sx = wrapCoord(currX >> 16, bgW, repeatX, isNPOT);
 				int paintPixel = bgImg.getPixel(sx, sy);
 
 				if (doDither)
@@ -2053,13 +2053,22 @@ public class Graphics3D
 			// will naturally wrap back to the start.
 			if(!isNPOT) { return t & (bound - 1); }
 
-			// EXPERIMENTAL VPOT (Virtual Power-Of-Two) hack for NPOT textures
-			// We bitwise wrap onto a 65,536 virtual grid (0xFFFF has the nice
-			// property of removing negative sign bits too) and then scale it
-			// back down to [0, bound-1] via a multiplication and 16-bit shift.
-			//
-			// If it works properly, it should run much faster than a modulo.
-			return ((t & 0xFFFF) * bound) >>> 16;
+			// Go to the slower NPOT path... try to make it a bit faster by
+			// returning outright if the texture is within bounds.
+			if (t >= 0 && t < bound) { return t; }
+
+			// Not within bounds? Escape the usage of modulo by using Lemire's
+			// fast reduction. We are hardly ever going to get coordinates over
+			// the short range (-32768,32767), so we also do not cast to long,
+			// remaining entirely within 32-bit range.
+			int mask = t >> 31;
+	        int absT = (t ^ mask) - mask;
+
+	        // 32-bit int multiplication to replace need for 64-bit math
+	        t = (absT * bound) >> 16;
+
+	        // Wrap any negative coordinates back into [0, bound - 1] range
+	        return (mask != 0 && t != 0) ? (bound - t) : t;
 		}
 
 		// CLAMP is fast for both POT and NPOT
