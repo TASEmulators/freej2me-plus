@@ -273,8 +273,17 @@ public class Graphics3D
 
 	public void clear(Background background)
 	{
-		/* As per JSR-184, throw IllegalStateException if this Graphics3D object does not have a render target. */
-		if (this.target == null) { throw new IllegalStateException("Cannot clear Background on a Graphics3D without a render target."); }
+		/*
+		 * As per JSR-184, this should throw IllegalStateException if this Graphics3D object does not
+		 * have a render target. However, some games and demos were written against lenient phone
+		 * implementations that treated clear() without a bound target as a silent no-op, and calling
+		 * it mid-paint would abort the whole frame here, so just warn and ignore the call instead.
+		 */
+		if (this.target == null)
+		{
+			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "clear() called without a render target, ignoring.");
+			return;
+		}
 
 		final int color = (background != null) ? background.getColor() : 0x00000000;
 		final boolean clearColor = (background == null) || background.isColorClearEnabled();
@@ -414,8 +423,15 @@ public class Graphics3D
 		/* As per JSR-184, throw NullPointerException if the received world is null. */
 		if (world == null) { throw new NullPointerException("render(world) was called but no world was provided."); }
 
-		/* Also per JSR-184, throw IllegalStateException this object has no render target yet. */
-		if (this.target == null) { throw new IllegalStateException("render(world) was called but there is no render target."); }
+		/*
+		 * Also per JSR-184, this should throw IllegalStateException when there's no render target
+		 * yet. Lenient no-op instead (see the comment in clear() for the rationale).
+		 */
+		if (this.target == null)
+		{
+			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "render(world) called without a render target, ignoring.");
+			return;
+		}
 
 		Camera worldCamera = world.getActiveCamera();
 
@@ -439,8 +455,15 @@ public class Graphics3D
 		/* As per JSR-184, throw NullPointerException if no node is received. */
 		if(node == null) { throw new NullPointerException("render() was called but no node was provided."); }
 
-		/* Also per JSR-184, throw IllegalStateException if this method is called but there's no camera or render target available. */
-		if (this.target == null || this.currCam == null) { throw new IllegalStateException("render() was called but there is no camera or render target."); }
+		/*
+		 * Also per JSR-184, this should throw IllegalStateException when there's no camera or render
+		 * target available. Lenient no-op instead (see the comment in clear() for the rationale).
+		 */
+		if (this.target == null || this.currCam == null)
+		{
+			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "render(node) called without a camera or render target, ignoring.");
+			return;
+		}
 
 		/* Also per JSR-184, throw IllegalStateException if if node is not a Sprite3D, Mesh, or Group Object. */
 		if (!(node instanceof Mesh || node instanceof Sprite3D || node instanceof Group)) { throw new IllegalArgumentException("Node is not an instance of any of the following: Sprite3D, Mesh, Group"); }
@@ -503,8 +526,16 @@ public class Graphics3D
 		/* As per JSR-184, if vertices, triangles or appearence are null, throw a NullPointerException. */
 		if (vertices == null || triangles == null || appearance == null) { throw new NullPointerException("Tried to render a submesh with incomplete info."); }
 
-		/* Also per JSR-184, throw IllegalStateException if the application tries to render without having set up a render target or camera beforehand. */
-		if (this.target == null || this.currCam == null) { throw new IllegalStateException("Tried to render a submesh without having a render target or camera first."); }
+		/*
+		 * Also per JSR-184, this should throw IllegalStateException if the application tries to render
+		 * without having set up a render target or camera beforehand. Lenient no-op instead (see the
+		 * comment in clear() for the rationale).
+		 */
+		if (this.target == null || this.currCam == null)
+		{
+			Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "render(submesh) called without a camera or render target, ignoring.");
+			return;
+		}
 
 		/*
 		 * JSR-184 scope culling: geometry is only rendered if its scope intersects the
@@ -1109,14 +1140,20 @@ public class Graphics3D
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
 
 
+		// Frustum cull on the raw NDC depth. This must be done BEFORE the -0.5
+		// depth hack shift below, otherwise sprites close to the camera (anything
+		// nearer than NDC z = -0.5, which covers a large chunk of the frustum due
+		// to the non-linear depth mapping) get wrongly discarded while visible.
+		float ndcZ = clip[2]/clip[3];
+		if (ndcZ < -1f || ndcZ > 1f) { return; }
+
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
 		// multiplied by the same factor used by the buffer.
 		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
-		// just a hack to improve depth buffer range usage.
-		float ndcZ = clip[2]/clip[3] - 0.5f;
-		if (ndcZ < -1f || ndcZ > 1f) { return; }
-		ndcZ = ndcZ * (this.far - this.near) * 32767.0f * 2.0f;
-		short z = (short) ndcZ;
+		// just a hack to improve depth buffer range usage, mirroring the triangle
+		// path. Clamp to short range so near depths don't wrap around when cast.
+		ndcZ = (ndcZ - 0.5f) * (this.far - this.near) * 32767.0f * 2.0f;
+		final short z = (short) M3GMath.max(-32768.0f, M3GMath.min(32767.0f, ndcZ));
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
