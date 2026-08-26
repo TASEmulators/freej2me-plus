@@ -1247,7 +1247,7 @@ public class Graphics3D
 			for (int x = pixL; x < pixR; x++)
 			{
 				// Depth test against the same buffer and convention used by triangles.
-				if (depthTest && this.depthBuffer[this.vieww * y + x] <= z) { continue; }
+				if (depthTest && this.depthBuffer[this.vieww * y + x] < z) { continue; }
 
 				final float u = (x + 0.5f - sx0) / spanX;
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
@@ -1419,7 +1419,7 @@ public class Graphics3D
 			{
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(usesDepth && this.depthBuffer[depthIdx] <= (short) z)
+				if(usesDepth && this.depthBuffer[depthIdx] < (short) z)
 				{
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
