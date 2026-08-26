@@ -1472,8 +1472,6 @@ public class Graphics3D
 						Texture2D tex = textures[i];
 
 						Image2D targetImage = tex.getImage();
-						int baseWidth = targetImage.getWidth();
-						int baseHeight = targetImage.getHeight();
 						final int levelFilter = tex.getLevelFilter();
 
 						float s = curS[i];
@@ -1528,22 +1526,26 @@ public class Graphics3D
 
 							// POT textures coming in with another fast path: Just shift
 							// right by the targetLevel! TODO: NPOT textures SHOULD be able
-							// to benefit from this as well although it's not guaranteed.
+							// to benefit from this as well although it's untested and
+							// none of the NPOT test cases so far use mipmaps.
 							s = (float) ((int) s >> targetLevel);
 							t = (float) ((int) t >> targetLevel);
 						}
 
+						int baseWidth = targetImage.getWidth();
+						int baseHeight = targetImage.getHeight();
+
 						if (useBilinear[i])
 						{
 							paintPixel = blendTexture(paintPixel,
-								sampleBilinear(targetImage, s, t, targetImage.getWidth(), targetImage.getHeight(),
+								sampleBilinear(targetImage, s, t, baseWidth, baseHeight,
 									texRepeatS[i], texRepeatT[i], textures[i].isNPOT()),
 									((textures[i].getBlending() & 7) << 3) | (targetImage.getFormat() & 7), textures[i].getBlendColor());
 						}
 						else
 						{
-							int texX = wrapCoord((int) s, targetImage.getWidth(), texRepeatS[i], textures[i].isNPOT());
-							int texY = wrapCoord((int) t, targetImage.getHeight(), texRepeatT[i], textures[i].isNPOT());
+							int texX = wrapCoord((int) s, baseWidth, texRepeatS[i], textures[i].isNPOT());
+							int texY = wrapCoord((int) t, baseHeight, texRepeatT[i], textures[i].isNPOT());
 
 							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texX, texY),
 								((textures[i].getBlending() & 7) << 3) | (targetImage.getFormat() & 7), textures[i].getBlendColor());
