@@ -147,18 +147,6 @@ public class M3GMath
 		return y * (1.0f + e) * (1.0f + e * e);
 	}
 
-	public static final float log(float val)
-	{
-		if (val <= 0.0f) { return 0.0f; }
-
-		int bits = Float.floatToRawIntBits(val);
-
-		int exp = ((bits >> 23) & 0xFF) - 127;
-		float mantissa = Float.intBitsToFloat((bits & 0x007FFFFF) | 0x3F800000) - 1.0f;
-
-		return exp + mantissa;
-	}
-
 	// Now we get to stuff specific to M3G
 
 	// Normalize a vector

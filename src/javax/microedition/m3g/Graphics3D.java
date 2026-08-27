@@ -1539,6 +1539,7 @@ public class Graphics3D
 						if (levelFilter != Texture2D.FILTER_BASE_LEVEL)
 						{
 							float dsdx, dtdx, dsdy, dtdy;
+							int targetLevel = 0;
 
 							dsdx = (sStepX[i] - s * dwdx) * invPw;
 							dtdx = (tStepX[i] - t * dwdx) * invPw;
@@ -1547,23 +1548,34 @@ public class Graphics3D
 
 							int maxLevel = textures[i].getMipmapLevelCount() - 1;
 
-							float lod = (levelFilter == Texture2D.FILTER_NEAREST) ?
-								calculateLODN(dsdx, dtdx, dsdy, dtdy) : calculateLODL(dsdx, dtdx, dsdy, dtdy);
-
-							int targetLevel = (int) lod;
-
-							// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
-							// This saves us the need to do much slower trilinear filtering, while
-							// retaining most of the looks.
-							if (levelFilter == Texture2D.FILTER_LINEAR)
+							if (levelFilter == Texture2D.FILTER_NEAREST)
 							{
-								int lodFractionInt = (int) ((lod - targetLevel) * 32.0f);
+								float lengthXSq = dsdx * dsdx + dtdx * dtdx;
+								float lengthYSq = dsdy * dsdy + dtdy * dtdy;
+								float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
 
-								int threshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
+								int rawBits = Float.floatToRawIntBits(maxSq);
+								if (rawBits > 0x3F800000) { targetLevel = (rawBits - 0x3F800000) >> 24; }
+							}
+							else // Trilinear
+							{
+								float area = dsdx * dtdy - dtdx * dsdy;
+								if (area < 0.0f) { area = -area; }
 
-								if (lodFractionInt > threshold)
+								int rawBits = Float.floatToRawIntBits(area);
+
+								if (rawBits > 0x3F000000)
 								{
-									targetLevel = M3GMath.min(targetLevel + 1, maxLevel);
+									int deltaBits = rawBits - 0x3F000000;
+									targetLevel = deltaBits >> 24;
+
+									// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
+									// This saves us the need to do much slower trilinear filtering, while
+									// retaining most of the looks.
+									int lodFract = (deltaBits >> 19) & 0x1F;
+									int threshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
+
+									if (lodFract > threshold) { targetLevel++; }
 								}
 							}
 
@@ -1941,38 +1953,6 @@ public class Graphics3D
 			default:
 				return bg;
 		}
-	}
-
-	// Calculates the Mipmap LOD for a given pixel. (L)inear and (N)earest versions.
-	private float calculateLODL(float dsdx, float dtdx, float dsdy, float dtdy)
-	{
-		// Area-based geometric footprint (Determinant magnitude: |ds/dx * dt/dy - dt/dx * ds/dy|)
-		// Keeps elongated polygons (like ground planes/roads) much sharper along their primary axis,
-		// and seems to align with OpenGL's linear filter slope
-		float area = M3GMath.abs(dsdx * dtdy - dtdx * dsdy);
-
-		if (area <= 1.0f) { return 0.0f; }
-
-		// M3GMath.log(area) already returns log2(area).
-		// For area = scale^2, log2(scale^2) * 0.5 == 0.5 * log2(area).
-		return M3GMath.log(area) * 0.5f;
-	}
-
-	private final float calculateLODN(float dsdx, float dtdx, float dsdy, float dtdy)
-	{
-		// Simpler max of squared distance, seems to align with OpenGL's nearest
-		// mipmap filter slope.
-		float lengthXSq = dsdx * dsdx + dtdx * dtdx;
-		float lengthYSq = dsdy * dsdy + dtdy * dtdy;
-
-		float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
-
-		if (maxSq <= 1.0f) { return 0.0f; }
-
-		// Similar optimization to the method above.
-		// Since log2(x^2) = 2 * log2(x), taking 0.5 * log2(maxSq) simplifies
-		// this directly to M3GMath.log(maxSq) * 0.5f!
-		return M3GMath.log(maxSq) * 0.5f;
 	}
 
 	private void clearToTarget(Background background, Image2D bgImg, boolean isImageTarget)
