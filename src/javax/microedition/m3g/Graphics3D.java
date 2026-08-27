@@ -1847,17 +1847,17 @@ public class Graphics3D
 	{
 		switch (funcMode)
 		{
+			// RGB and LUMINANCE are opaque by default, so REPLACE and
+			// DECAL may also return them outright.
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGB & 7):
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE & 7):
 			case ((Texture2D.FUNC_DECAL & 7) << 3)   | (Image2D.RGB & 7):
-				return (bg & 0xFF000000) | (fg & 0x00FFFFFF);
-
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
-				return (fg & 0xFF000000) | (bg & 0x00FFFFFF);
-
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE & 7):
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
 				return fg;
+
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
+				return (fg & 0xFF000000) | (bg & 0x00FFFFFF);
 
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGB & 7):
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE & 7):
