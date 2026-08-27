@@ -638,8 +638,23 @@ public class Graphics3D
 		if (vertNorms != null && material != null)
 		{
 			normalMatrix.set(tr);
-			normalMatrix.invert();
-			normalMatrix.transpose();
+
+			/*
+			 * JSR-184 states that lighting is undefined for a non-invertible
+			 * local-to-camera transform, and since undefined means we can treat
+			 * this any way we want, we'll set the matrix as the identity and
+			 * soldier onwards.
+			 */
+			try
+			{
+				normalMatrix.invert();
+				normalMatrix.transpose();
+			}
+			catch (ArithmeticException ae)
+			{
+				Mobile.log(Mobile.LOG_WARNING, Graphics3D.class.getPackage().getName() + "." + Graphics3D.class.getSimpleName() + ": " + "Normal matrix not invertible. Using identity...");
+				normalMatrix.setIdentity();
+			}
 
 			posLocalToEye.set(tr);
 			posLocalToEye.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
