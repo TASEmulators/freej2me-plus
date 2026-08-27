@@ -1948,22 +1948,29 @@ public class Graphics3D
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
 			{
-				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
-				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
-				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
-				int outA = ((bg >>> 24) * (fg >>> 24) + (bg >>> 24)) >> 8;
+				int outR = ((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF);
+				int outB = ( bg        & 0xFF) * ( fg        & 0xFF);
 
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+				int outG = ((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF);
+				int outA = ( bg >>> 24       ) * ( fg >>> 24       );
+
+				return (outA & 0xFF00) << 16
+					 | (outR & 0xFF00) << 8
+					 | (outG & 0xFF00)
+					 | (outB >> 8);
 			}
 
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGB & 7):
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE & 7):
 			{
-				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
-				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
-				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
+				int outR = ((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF);
+				int outG = ((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF);
+				int outB = ( bg        & 0xFF) * ( fg        & 0xFF);
 
-				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
+				return (bg & 0xFF000000)
+					 | ((outR & 0xFF00) << 8)
+					 |  (outG & 0xFF00)
+					 |  (outB >> 8);
 			}
 
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.ALPHA & 7):
@@ -2081,8 +2088,8 @@ public class Graphics3D
 		int xy0 = wrapCoords(uFixed >> 8, vFixed >> 8, texW, texH,
 			texRepeatS, texRepeatT, isNPOT);
 
-    	int xy1 = wrapCoords((uFixed >> 8) + 1, (vFixed >> 8) + 1, texW, texH,
-     		texRepeatS, texRepeatT, isNPOT);
+		int xy1 = wrapCoords((uFixed >> 8) + 1, (vFixed >> 8) + 1, texW, texH,
+			texRepeatS, texRepeatT, isNPOT);
 
 		int c00 = teximg.getPixel(xy0 & 0xFFFF, xy0 >>> 16);
 		int c10 = teximg.getPixel(xy1 & 0xFFFF, xy0 >>> 16);
