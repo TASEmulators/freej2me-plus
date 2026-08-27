@@ -1911,16 +1911,12 @@ public class Graphics3D
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
 			{
-				int outR = ((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF);
-				int outB = ( bg        & 0xFF) * ( fg        & 0xFF);
+				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
+				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
+				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
+				int outA = ((bg >>> 24) * (fg >>> 24) + (bg >>> 24)) >> 8;
 
-				int outG = ((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF);
-				int outA = ( bg >>> 24       ) * ( fg >>> 24       );
-
-				return (outA & 0xFF00) << 16
-					 | (outR & 0xFF00) << 8
-					 | (outG & 0xFF00)
-					 | (outB >> 8);
+				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
 
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGB & 7):
