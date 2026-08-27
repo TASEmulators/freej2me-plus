@@ -191,6 +191,26 @@ public class M3GMath
 	// [1] = y
 	// [2] = z
 	// [3] = w
+	// Converts an (angleDegrees, ax, ay, az) angle-axis rotation, as returned by
+	// Transformable.getOrientation, into a unit quaternion.
+	public static final float[] angleAxisToQuat(float angleDeg, float ax, float ay, float az)
+	{
+		float[] quat = new float[4];
+		float axisLenSq = (ax * ax) + (ay * ay) + (az * az);
+
+		if (axisLenSq < EPSILON) { quat[3] = 1.0f; return quat; }
+
+		float halfAngle = toRadians(angleDeg) * 0.5f;
+		float s = sin(halfAngle) * fastReciprocal(sqrt(axisLenSq));
+
+		quat[0] = ax * s;
+		quat[1] = ay * s;
+		quat[2] = az * s;
+		quat[3] = cos(halfAngle);
+
+		return quat;
+	}
+
 	public static final void mulQuat(float[] q1, float[] q2, float[] result)
 	{
 		result[0] = q1[3] * q2[0] + q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1]; // x
@@ -252,24 +272,42 @@ public class M3GMath
 		orig[3] = s0 * q0[3] + s1 * q1w;
 	}
 
+	// Returns the shortest-arc rotation taking srcAxis to targetAxis, as a unit quaternion.
+	// Uses the standard "half-way" construction: q = (srcAxis x targetAxis, |srcAxis||targetAxis| + dot),
+	// normalized. Note that the cross product already carries a sin(angle) factor, so scaling it
+	// by sin(angle/2) (as done previously) yields a non-unit quaternion and a wrong rotation.
 	public static final float[] setQuatRotation(float[] srcAxis, float[] targetAxis)
 	{
 		float[] rot = new float[4];
-		float[] cross = new float[3];
 		float dot = srcAxis[0] * targetAxis[0] + srcAxis[1] * targetAxis[1] + srcAxis[2] * targetAxis[2];
 
-		cross[0] = srcAxis[1] * targetAxis[2] - srcAxis[2] * targetAxis[1];
-		cross[1] = srcAxis[2] * targetAxis[0] - srcAxis[0] * targetAxis[2];
-		cross[2] = srcAxis[0] * targetAxis[1] - srcAxis[1] * targetAxis[0];
+		rot[0] = srcAxis[1] * targetAxis[2] - srcAxis[2] * targetAxis[1]; // x
+		rot[1] = srcAxis[2] * targetAxis[0] - srcAxis[0] * targetAxis[2]; // y
+		rot[2] = srcAxis[0] * targetAxis[1] - srcAxis[1] * targetAxis[0]; // z
 
-		float angle = acos(dot);
-		float sinHalfAngle = sin(angle / 2);
+		float srcLenSq = srcAxis[0] * srcAxis[0] + srcAxis[1] * srcAxis[1] + srcAxis[2] * srcAxis[2];
+		float targetLenSq = targetAxis[0] * targetAxis[0] + targetAxis[1] * targetAxis[1] + targetAxis[2] * targetAxis[2];
 
-		rot[0] = cross[0] * sinHalfAngle; // x
-		rot[1] = cross[1] * sinHalfAngle; // y
-		rot[2] = cross[2] * sinHalfAngle; // z
-		rot[3] = cos(angle / 2); // w
+		// Degenerate axes carry no direction. Return the identity rotation, as per
+		// JSR-184 (coincident target vector maps to the identity rotation).
+		if (srcLenSq < EPSILON || targetLenSq < EPSILON)
+		{
+			rot[0] = 0.0f; rot[1] = 0.0f; rot[2] = 0.0f; rot[3] = 1.0f;
+			return rot;
+		}
 
-		return rot;
+		rot[3] = sqrt(srcLenSq * targetLenSq) + dot; // w
+
+		float normSq = rot[0] * rot[0] + rot[1] * rot[1] + rot[2] * rot[2] + rot[3] * rot[3];
+		if (normSq < EPSILON)
+		{
+			// Vectors are (nearly) opposite, the rotation is ambiguous. As per JSR-184,
+			// pick a deterministic result: 180 degrees about any axis perpendicular to srcAxis.
+			if (abs(srcAxis[0]) > abs(srcAxis[2])) { rot[0] = -srcAxis[1]; rot[1] = srcAxis[0]; rot[2] = 0.0f; }
+			else                                   { rot[0] = 0.0f; rot[1] = -srcAxis[2]; rot[2] = srcAxis[1]; }
+			rot[3] = 0.0f;
+		}
+
+		return normalizeQuat(rot);
 	}
 }
