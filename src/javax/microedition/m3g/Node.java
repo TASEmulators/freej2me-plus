@@ -351,7 +351,7 @@ public abstract class Node extends Transformable
 		if ((zTarget != NONE && zTarget != X_AXIS && zTarget != Y_AXIS && zTarget != Z_AXIS && zTarget != ORIGIN) ||
 			(yTarget != NONE && yTarget != X_AXIS && yTarget != Y_AXIS && yTarget != Z_AXIS && yTarget != ORIGIN))
 			{ throw new IllegalArgumentException("Node target axis is invalid."); }
-		if (zRef != null && yRef != null && zRef == yRef && zTarget != NONE && yTarget != NONE)
+		if (zRef == yRef && zTarget == yTarget && zTarget != NONE)
 			{ throw new IllegalArgumentException("Tried to align with two references having the same axis."); }
 		if (zRef == this || yRef == this)
 			{ throw new IllegalArgumentException("Tried to use this node as one of the reference nodes."); }

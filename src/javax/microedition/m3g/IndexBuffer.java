@@ -25,6 +25,7 @@ public abstract class IndexBuffer extends Object3D
 	{
 		IndexBuffer copy = (IndexBuffer) super.duplicateImpl();
 		copy.indices = this.indices == null ? null : (int[]) this.indices.clone();
+		copy.indexCount = this.indexCount;
 		return copy;
 	}
 
