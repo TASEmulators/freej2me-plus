@@ -266,7 +266,7 @@ public class Image2D extends Object3D
 	// We do not handle OOB x and y positions here, Graphics3D does that in the clear/render loops
 	final int getPixel(int x, int y)
 	{
-		int offset = this.bpp * (this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x);
+		int offset = (this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x) * this.bpp;
 
 		switch (this.format)
 		{
