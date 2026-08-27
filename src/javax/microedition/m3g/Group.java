@@ -204,6 +204,14 @@ public class Group extends Node {
             cameraPoints[offset]     *= invW;
             cameraPoints[offset + 1] *= invW;
             cameraPoints[offset + 2] *= invW;
+
+            // The W component must be normalized along with x/y/z: these are
+            // points (not directions), and the camera-to-group transform below
+            // scales its translation column by W. Leaving the post-projection
+            // W here would shift the ray origin by (W - 1) times the camera
+            // position, breaking picking whenever the camera is not at the
+            // scene origin.
+            cameraPoints[offset + 3] = 1.0f;
         }
 
         if (!camera.getTransformTo(this, t2))
