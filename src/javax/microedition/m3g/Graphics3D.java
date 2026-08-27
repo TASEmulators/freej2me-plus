@@ -106,10 +106,10 @@ public class Graphics3D
 	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
+	final float[] dsL_dy = new float[NUM_TEXTURE_UNITS];
+	final float[] dtL_dy = new float[NUM_TEXTURE_UNITS];
 	final float[] sL = new float[NUM_TEXTURE_UNITS];
-	final float[] sR = new float[NUM_TEXTURE_UNITS];
 	final float[] tL = new float[NUM_TEXTURE_UNITS];
-	final float[] tR = new float[NUM_TEXTURE_UNITS];
 	final float[] sBot = new float[NUM_TEXTURE_UNITS];
 	final float[] tBot = new float[NUM_TEXTURE_UNITS];
 	final float[] sMidL = new float[NUM_TEXTURE_UNITS];
@@ -1331,27 +1331,64 @@ public class Graphics3D
 		final float cB = colorA & 0xFF;
 
 		// Get into the render loop proper.
+
+		float invMidSpan = M3GMath.fastReciprocal(xMidR - xMidL);
+		float zStep  = (zMidR - zMidL) * invMidSpan;
+		float pwStep = (pwMidR - pwMidL) * invMidSpan;
+
+		if (hasTexture)
+		{
+		    for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			{
+		        stepS[i] = (sMidR[i] - sMidL[i]) * invMidSpan;
+		        stepT[i] = (tMidR[i] - tMidL[i]) * invMidSpan;
+		    }
+		}
+
 		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
-		for (int y = yStart; y < yEnd; y++)
+
+		float subY = yStart - (half == 0 ? yTop : yMid);
+
+		float dxL_dy  = (half == 0 ? xMidL - xTop : xBot - xMidL) * yDiv;
+		float dxR_dy  = (half == 0 ? xMidR - xTop : xBot - xMidR) * yDiv;
+		float dzL_dy  = (half == 0 ? zMidL - zTop  : zBot - zMidL)  * yDiv;
+		float dpwL_dy = (half == 0 ? pwMidL - pwTop : pwBot - pwMidL) * yDiv;
+
+		if (hasTexture)
+		{
+		    for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+		    {
+		        dsL_dy[i] = (half == 0 ? sMidL[i] - sTop[i] : sBot[i] - sMidL[i]) * yDiv;
+		        dtL_dy[i] = (half == 0 ? tMidL[i] - tTop[i] : tBot[i] - tMidL[i]) * yDiv;
+
+		        sL[i] = (half == 0 ? sTop[i] : sMidL[i]) + subY * dsL_dy[i];
+		        tL[i] = (half == 0 ? tTop[i] : tMidL[i]) + subY * dtL_dy[i];
+		    }
+		}
+
+		float xL  = (half == 0 ? xTop  : xMidL)  + subY * dxL_dy;
+		float xR  = (half == 0 ? xTop  : xMidR)  + subY * dxR_dy;
+		float zL  = (half == 0 ? zTop  : zMidL)  + subY * dzL_dy;
+		float pwL = (half == 0 ? pwTop : pwMidL) + subY * dpwL_dy;
+
+		for (int y = yStart; y < yEnd; y++, xL += dxL_dy, xR += dxR_dy, zL += dzL_dy, pwL += dpwL_dy)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
 			if(!renderToImage && Mobile.halfResM3GRaster && (y & 1) != 0)
 			{
 				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
 					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
+
+				if (hasTexture)
+				{
+				    for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				    {
+				        sL[i] += dsL_dy[i];
+				        tL[i] += dtL_dy[i];
+				    }
+				}
 				continue;
 			}
-
-			float drawY = (y - ((half == 0) ? yTop : yMid)) * yDiv;
-			if (half != 0) { drawY = M3GMath.min(1.0f - drawY, 1.0f); }
-
-			// Calculate interpolated values (xL and xR allow us to skip early, so do them first)
-			float xL = half == 0
-				? xTop + drawY * (xMidL - xTop)
-				: xBot + drawY * (xMidL - xBot);
-			float xR = half == 0
-				? xTop + drawY * (xMidR - xTop)
-				: xBot + drawY * (xMidR - xBot);
 
 			int ixL = (int) (xL + 0.999999f);
 			int ixR = (int) (xR + 0.999999f);
@@ -1359,10 +1396,18 @@ public class Graphics3D
 			if (ixL < 0) { ixL = 0; }
 			if (ixR > vieww) { ixR = vieww; }
 
-			if (ixL >= ixR) { continue; }
-
-			// Saves a division for each x step.
-			final float invDrawSpanWidth = M3GMath.fastReciprocal(xR - xL);
+			if (ixL >= ixR)
+			{
+			    if (hasTexture)
+			    {
+			        for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			        {
+			            sL[i] += dsL_dy[i];
+			            tL[i] += dtL_dy[i];
+			        }
+			    }
+			    continue;
+			}
 
 			// Do we have vertex colors? If so, get the span edges' colors here,
 			// that way, the inner loop only needs to do a simple addition.
@@ -1379,41 +1424,13 @@ public class Graphics3D
 				deltaB = (int) (((colorA & 0xFF)         + dx * bStepX + dy * bStepY) * 65536.0f);
 			}
 
-			float zL = half == 0
-				? zTop + drawY * (zMidL - zTop)
-				: zBot + drawY * (zMidL - zBot);
-			float zR = half == 0
-				? zTop + drawY * (zMidR - zTop)
-				: zBot + drawY * (zMidR - zBot);
-
-			if(hasTexture)
-			{
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-				{
-					sL[i] = half == 0 ? sTop[i] + drawY * (sMidL[i] - sTop[i]) : sBot[i] + drawY * (sMidL[i] - sBot[i]);
-					sR[i] = half == 0 ? sTop[i] + drawY * (sMidR[i] - sTop[i]) : sBot[i] + drawY * (sMidR[i] - sBot[i]);
-					tL[i] = half == 0 ? tTop[i] + drawY * (tMidL[i] - tTop[i]) : tBot[i] + drawY * (tMidL[i] - tBot[i]);
-					tR[i] = half == 0 ? tTop[i] + drawY * (tMidR[i] - tTop[i]) : tBot[i] + drawY * (tMidR[i] - tBot[i]);
-				}
-			}
-
-			float pwL = half == 0
-				? pwTop + drawY * (pwMidL - pwTop)
-				: pwBot + drawY * (pwMidL - pwBot);
-			float pwR = half == 0
-				? pwTop + drawY * (pwMidR - pwTop)
-				: pwBot + drawY * (pwMidR - pwBot);
-
 			int depthIdx = (y * this.vieww) + ixL;
 			int rasterIdx = ((y + viewy) * canvasWidth + viewx) + ixL;
-
-			final float zStep = (zR - zL) * invDrawSpanWidth;
-			final float pwStep = (pwR - pwL) * invDrawSpanWidth;
 
 			float pw = pwL + (ixL - xL) * pwStep;
 			float invPw = 1.0f;
 			float stepInvPw = 0.0f;
-			float z  = zL + (ixL - xL) * zStep + depthOffset;
+			float z  = zL  + (ixL - xL) * zStep + depthOffset;
 
 			if (hasTexture)
 			{
@@ -1423,72 +1440,20 @@ public class Graphics3D
 
 				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					stepS[i] = (sR[i] - sL[i]) * invDrawSpanWidth;
-					stepT[i] = (tR[i] - tL[i]) * invDrawSpanWidth;
-
 					curS[i] = sL[i] + subpixelOffset * stepS[i];
 					curT[i] = tL[i] + subpixelOffset * stepT[i];
+
+					sL[i] += dsL_dy[i];
+        			tL[i] += dtL_dy[i];
 				}
 			}
 
 			// Draw the pixels for the current y-coordinate
 			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, invPw += stepInvPw, fogFactor += stepFogFactor, depthIdx++, rasterIdx++)
 			{
-				// Only depth test if the compositingMode has the feature enabled. If
-				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(usesDepth && this.depthBuffer[depthIdx] < (short) z)
-				{
-					// We need to increment the color and texture deltas even when discarding
-					// by depth, otherwise color and texturing spans on objects partially
-					// occluded by others won't be correct.
-					if (hasColors) { deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB; }
-					if(hasTexture)
-					{
-						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-						{
-							curS[i] += stepS[i];
-							curT[i] += stepT[i];
-						}
-					}
-
-					if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
-					{
-						int spanLen = M3GMath.min(pSubsampleFactor, ixR - x);
-						float invSpanLen = M3GMath.fastReciprocal(spanLen);
-						float nextInvPw = M3GMath.fastReciprocal(pw + pwStep * spanLen);
-						invPw = M3GMath.fastReciprocal(pw);
-						stepInvPw = (nextInvPw - invPw) * invSpanLen;
-
-						// Compute start and end fog factors for this 16-pixel span
-						if (hasFog)
-						{
-							float zEyeStart = invPw;
-							float zEyeEnd = nextInvPw;
-
-							float fStart, fEnd;
-							if (fogMode == Fog.LINEAR)
-							{
-								fStart = (fogFarNorm - zEyeStart * invFogDiv) * 256.0f;
-								fEnd   = (fogFarNorm - zEyeEnd   * invFogDiv) * 256.0f;
-							}
-							else
-							{
-								fStart = M3GMath.exp(-fogDensity * zEyeStart) * 256.0f;
-								fEnd   = M3GMath.exp(-fogDensity * zEyeEnd)   * 256.0f;
-							}
-
-							fogFactor = M3GMath.min(255.0f, M3GMath.max(0.0f, fStart));
-							float targetFogEnd = M3GMath.min(255.0f, M3GMath.max(0.0f, fEnd));
-							stepFogFactor = (targetFogEnd - fogFactor) * invSpanLen;
-						}
-					}
-					continue;
-				}
-
-				// Perspective correction enabled? Calculate the inverse of W.
 				if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
 				{
-					int spanLen = M3GMath.min(pSubsampleFactor+1, ixR - x);
+					int spanLen = M3GMath.min(pSubsampleFactor + 1, ixR - x);
 					float invSpanLen = M3GMath.fastReciprocal(spanLen);
 					float nextInvPw = M3GMath.fastReciprocal(pw + pwStep * spanLen);
 					invPw = M3GMath.fastReciprocal(pw);
@@ -1516,6 +1481,25 @@ public class Graphics3D
 						float targetFogEnd = M3GMath.min(255.0f, M3GMath.max(0.0f, fEnd));
 						stepFogFactor = (targetFogEnd - fogFactor) * invSpanLen;
 					}
+				}
+
+				// Only depth test if the compositingMode has the feature enabled. If
+				// compositingMode is not set, check if this target has depthBuffer enabled.
+				if(usesDepth && this.depthBuffer[depthIdx] < (short) z)
+				{
+					// We need to increment the color and texture deltas even when discarding
+					// by depth, otherwise color and texturing spans on objects partially
+					// occluded by others won't be correct.
+					if (hasColors) { deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB; }
+					if(hasTexture)
+					{
+						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+						{
+							curS[i] += stepS[i];
+							curT[i] += stepT[i];
+						}
+					}
+					continue;
 				}
 
 				// If there's no texture coords nor a texture image, we always default
@@ -2122,19 +2106,32 @@ public class Graphics3D
 
 		if (repeatS)
 		{
-			if (!isNPOT)
-			{
-				texX = s & (boundW - 1);
-			}
-			else if (s >= 0 && s < boundW)
-			{
-				texX = s;
-			}
+			// If the texture is Power-Of-Two, repeat wrapping can be done
+			// quickly as just an AND of the coordinate with the the edge
+			// mask (which is width - 1). Why is that? A POT texture has
+			// the following property: (2 - 1 = 1 = `0b1`, 4 - 1 = 3 = `0b11`,
+			// 8 - 1 = 7 = `0b111`, and so on), so we always wrap around to the
+			// correct coordinate with an AND of size - 1, as overflowing data
+			// will naturally wrap back to the start.
+			if (!isNPOT) { texX = s & (boundW - 1); }
+
+			// Go to the slower NPOT path... try to make it a bit faster by
+			// returning outright if the texture is within bounds.
+			else if (s >= 0 && s < boundW) { texX = s; }
+
+			// Not within bounds? Escape the usage of modulo by using Lemire's
+			// fast reduction. We are hardly ever going to get coordinates over
+			// the short range (-32768,32767), so we also do not cast to long,
+			// remaining entirely within 32-bit range.
 			else
 			{
 				int mask = s >> 31;
 				int absT = (s ^ mask) - mask;
+
+				// 32-bit int multiplication to replace need for 64-bit math
 				texX = (absT * boundW) >> 16;
+
+				// Wrap any negative coordinates back into [0, bound - 1] range
 				texX = (mask != 0 && texX != 0) ? (boundW - texX) : texX;
 			}
 		}
@@ -2146,14 +2143,8 @@ public class Graphics3D
 		// This one just repeats the above, but for T/Y
 		if (repeatT)
 		{
-			if (!isNPOT)
-			{
-				texY = t & (boundH - 1);
-			}
-			else if (t >= 0 && t < boundH)
-			{
-				texY = t;
-			}
+			if (!isNPOT) { texY = t & (boundH - 1); }
+			else if (t >= 0 && t < boundH) { texY = t; }
 			else
 			{
 				int mask = t >> 31;
@@ -2162,7 +2153,7 @@ public class Graphics3D
 				texY = (mask != 0 && texY != 0) ? (boundH - texY) : texY;
 			}
 		}
-		else // CLAMP
+		else
 		{
 			texY = t < 0 ? 0 : (t >= boundH ? boundH - 1 : t);
 		}
