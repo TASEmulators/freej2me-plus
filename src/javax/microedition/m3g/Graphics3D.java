@@ -1553,6 +1553,8 @@ public class Graphics3D
 
 						Image2D targetImage = tex.getImage();
 						final int levelFilter = tex.getLevelFilter();
+						final int blendMode = ((tex.getBlending() & 7) << 3) |
+							(targetImage.getFormat() & 7);
 
 						float s = curS[i];
 						float t = curT[i];
@@ -1612,23 +1614,20 @@ public class Graphics3D
 							t = (float) ((int) t >> targetLevel);
 						}
 
-						int baseWidth = targetImage.getWidth();
-						int baseHeight = targetImage.getHeight();
-
 						if (useBilinear[i])
 						{
 							paintPixel = blendTexture(paintPixel,
-								sampleBilinear(targetImage, s, t, baseWidth, baseHeight,
-									texRepeatS[i], texRepeatT[i], textures[i].isNPOT()),
-									((textures[i].getBlending() & 7) << 3) | (targetImage.getFormat() & 7), textures[i].getBlendColor());
+								sampleBilinear(targetImage, s, t, targetImage.getWidth(),
+									targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
+									tex.isNPOT()), blendMode, tex.getBlendColor());
 						}
 						else
 						{
-							int texX = wrapCoord((int) s, baseWidth, texRepeatS[i], textures[i].isNPOT());
-							int texY = wrapCoord((int) t, baseHeight, texRepeatT[i], textures[i].isNPOT());
+							int texCoord = wrapCoords((int) s, (int) t, targetImage.getWidth(),
+								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], tex.isNPOT());
 
-							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texX, texY),
-								((textures[i].getBlending() & 7) << 3) | (targetImage.getFormat() & 7), textures[i].getBlendColor());
+							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texCoord & 0xFFFF, texCoord >>> 16),
+								blendMode, textures[i].getBlendColor());
 						}
 
 						curS[i] += stepS[i];
@@ -2034,15 +2033,15 @@ public class Graphics3D
 
 		for (int py = 0; py < viewh; py++)
 		{
-			int sy = wrapCoord(currY >> 16, bgH, repeatY, isNPOT);
 			int currX = cropX << 16;
 			int screenY = py + viewy;
 			int rowOffset = screenY * canvasWidth + viewx;
 
 			for (int px = 0; px < vieww; px++)
 			{
-				int sx = wrapCoord(currX >> 16, bgW, repeatX, isNPOT);
-				int paintPixel = bgImg.getPixel(sx, sy);
+				final int texCoord = wrapCoords(currX >> 16, currY >> 16, bgW, bgH,
+					repeatX, repeatY, isNPOT);
+				int paintPixel = bgImg.getPixel(texCoord & 0xFFFF, texCoord >>> 16);
 
 				if (doDither)
 				{
@@ -2076,23 +2075,19 @@ public class Graphics3D
 		int uFixed = (int) ((s - 0.5f) * 256.0f);
 		int vFixed = (int) ((t - 0.5f) * 256.0f);
 
-		int x0 = uFixed >> 8;
-		int y0 = vFixed >> 8;
-		int x1 = x0 + 1;
-		int y1 = y0 + 1;
-
 		int fx = uFixed & 0xFF;
 		int fy = vFixed & 0xFF;
 
-		x0 = wrapCoord(x0, texW, texRepeatS, isNPOT);
-		x1 = wrapCoord(x1, texW, texRepeatS, isNPOT);
-		y0 = wrapCoord(y0, texH, texRepeatT, isNPOT);
-		y1 = wrapCoord(y1, texH, texRepeatT, isNPOT);
+		int xy0 = wrapCoords(uFixed >> 8, vFixed >> 8, texW, texH,
+			texRepeatS, texRepeatT, isNPOT);
 
-		int c00 = teximg.getPixel(x0, y0);
-		int c10 = teximg.getPixel(x1, y0);
-		int c01 = teximg.getPixel(x0, y1);
-		int c11 = teximg.getPixel(x1, y1);
+    	int xy1 = wrapCoords((uFixed >> 8) + 1, (vFixed >> 8) + 1, texW, texH,
+     		texRepeatS, texRepeatT, isNPOT);
+
+		int c00 = teximg.getPixel(xy0 & 0xFFFF, xy0 >>> 16);
+		int c10 = teximg.getPixel(xy1 & 0xFFFF, xy0 >>> 16);
+		int c01 = teximg.getPixel(xy0 & 0xFFFF, xy1 >>> 16);
+		int c11 = teximg.getPixel(xy1 & 0xFFFF, xy1 >>> 16);
 
 		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 		int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
@@ -2109,38 +2104,62 @@ public class Graphics3D
 	// Helper for texture wrapping/clamping
 	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
 	// Out-of-range coordinates must never index outside the image.
-	private static final int wrapCoord(int t, int bound, boolean repeat, boolean isNPOT)
+	//
+	// This method assumes that no texture larger than 32Kx32K will be used,
+	// and this, it processes both X and Y coordinates in one go and returns
+	// them packed in an integer as follows: XY = (texY << 16) | (texX & 0xFFFF).
+	private static final int wrapCoords(int s, int t, int boundW, int boundH,
+		boolean repeatS, boolean repeatT, boolean isNPOT)
 	{
-		if (repeat)
+		int texX, texY;
+
+		if (repeatS)
 		{
-			// If the texture is Power-Of-Two, repeat wrapping can be done
-			// quickly as just an AND of the coordinate with the the edge
-			// mask (which is width - 1). Why is that? A POT texture has
-			// the following property: (2 - 1 = 1 = `0b1`, 4 - 1 = 3 = `0b11`,
-			// 8 - 1 = 7 = `0b111`, and so on), so we always wrap around to the
-			// correct coordinate with an AND of size - 1, as overflowing data
-			// will naturally wrap back to the start.
-			if(!isNPOT) { return t & (bound - 1); }
-
-			// Go to the slower NPOT path... try to make it a bit faster by
-			// returning outright if the texture is within bounds.
-			if (t >= 0 && t < bound) { return t; }
-
-			// Not within bounds? Escape the usage of modulo by using Lemire's
-			// fast reduction. We are hardly ever going to get coordinates over
-			// the short range (-32768,32767), so we also do not cast to long,
-			// remaining entirely within 32-bit range.
-			int mask = t >> 31;
-			int absT = (t ^ mask) - mask;
-
-			// 32-bit int multiplication to replace need for 64-bit math
-			t = (absT * bound) >> 16;
-
-			// Wrap any negative coordinates back into [0, bound - 1] range
-			return (mask != 0 && t != 0) ? (bound - t) : t;
+			if (!isNPOT)
+			{
+				texX = s & (boundW - 1);
+			}
+			else if (s >= 0 && s < boundW)
+			{
+				texX = s;
+			}
+			else
+			{
+				int mask = s >> 31;
+				int absT = (s ^ mask) - mask;
+				texX = (absT * boundW) >> 16;
+				texX = (mask != 0 && texX != 0) ? (boundW - texX) : texX;
+			}
+		}
+		else // CLAMP mode
+		{
+			texX = s < 0 ? 0 : (s >= boundW ? boundW - 1 : s);
 		}
 
-		// CLAMP is fast for both POT and NPOT
-		return t < 0 ? 0 : (t >= bound ? bound - 1 : t);
+		// This one just repeats the above, but for T/Y
+		if (repeatT)
+		{
+			if (!isNPOT)
+			{
+				texY = t & (boundH - 1);
+			}
+			else if (t >= 0 && t < boundH)
+			{
+				texY = t;
+			}
+			else
+			{
+				int mask = t >> 31;
+				int absT = (t ^ mask) - mask;
+				texY = (absT * boundH) >> 16;
+				texY = (mask != 0 && texY != 0) ? (boundH - texY) : texY;
+			}
+		}
+		else // CLAMP
+		{
+			texY = t < 0 ? 0 : (t >= boundH ? boundH - 1 : t);
+		}
+
+		return (texY << 16) | (texX & 0xFFFF);
 	}
 }
