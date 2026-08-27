@@ -979,24 +979,35 @@ public class Loader
 
 	private int readRGB() throws IOException
 	{
-		byte r = dis.readByte();
-		byte g = dis.readByte();
-		byte b = dis.readByte();
-		bytesRead += 3;
+		/*
+		 * Color components must be read as UNSIGNED bytes. Reading them as
+		 * signed bytes sign-extends any component above 127 across the whole
+		 * int, smearing 0xFF over every higher channel (e.g. specular
+		 * (229,229,229) became (255,255,229)).
+		 */
+		int r = readByte();
+		int g = readByte();
+		int b = readByte();
 
 		return (r << 16) | (g << 8) | b;
 	}
 
-	// Reads RGBA, returns ARGB for methods that use it (they expect ARGB)
+	// Reads RGBA from the file, returns ARGB for methods that use it (they expect ARGB)
 	private int readRGBA() throws IOException
 	{
-		byte r = dis.readByte();
-		byte g = dis.readByte();
-		byte b = dis.readByte();
-		byte a = dis.readByte();
-		bytesRead += 4;
+		/*
+		 * Same unsigned handling as readRGB. Additionally, the components
+		 * must be packed as ARGB: the old RGBA packing (alpha in the low
+		 * byte), combined with the sign extension, turned e.g. a deliberately
+		 * invisible material (alpha=0, used by games for hit-flash meshes
+		 * faded in via an ALPHA animation track) into a fully opaque one.
+		 */
+		int r = readByte();
+		int g = readByte();
+		int b = readByte();
+		int a = readByte();
 
-		return a | (r << 24) | (g << 16) | (b << 8);
+		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
 	private float readFloat() throws IOException
