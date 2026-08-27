@@ -103,10 +103,10 @@ public class Graphics3D
 	final boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
-	final int[] curS = new int[NUM_TEXTURE_UNITS];
-	final int[] curT = new int[NUM_TEXTURE_UNITS];
-	final int[] stepS = new int[NUM_TEXTURE_UNITS];
-	final int[] stepT = new int[NUM_TEXTURE_UNITS];
+	final float[] curS = new float[NUM_TEXTURE_UNITS];
+	final float[] curT = new float[NUM_TEXTURE_UNITS];
+	final float[] stepS = new float[NUM_TEXTURE_UNITS];
+	final float[] stepT = new float[NUM_TEXTURE_UNITS];
 	final float[] texScaleBias = new float[4];
 	final float[] dsL_dy = new float[NUM_TEXTURE_UNITS];
 	final float[] dtL_dy = new float[NUM_TEXTURE_UNITS];
@@ -742,7 +742,7 @@ public class Graphics3D
 		// Reset transform
 		tr.setIdentity();
 
-		for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++) { textr[i].setIdentity(); }
+		for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++) { textr[i].setIdentity(); }
 
 
 		// Fit to viewport. Notice that Z is scaled slightly below the max limits
@@ -771,7 +771,7 @@ public class Graphics3D
 
 		if (hasTexture)
 		{
-			for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 			{
 				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
 					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
@@ -827,11 +827,14 @@ public class Graphics3D
 			// to do expensive calculations inside the inner render loops.
 			if (hasTexture)
 			{
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
 					coS[i][0] = tri.sA(i); coS[i][1] = tri.sB(i); coS[i][2] = tri.sC(i);
 					coT[i][0] = tri.tA(i); coT[i][1] = tri.tB(i); coT[i][2] = tri.tC(i);
 				}
+
+				dwdx = 0.0f;
+				dwdy = 0.0f;
 
 				if (perspectiveCorrection)
 				{
@@ -844,7 +847,7 @@ public class Graphics3D
 
 				// For perspective correction, we need the actual W of
 				// each vertex as well.
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
 					if (perspectiveCorrection)
 					{
@@ -931,7 +934,7 @@ public class Graphics3D
 
 			if (hasTexture)
 			{
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
 					sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
 					tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
@@ -946,7 +949,7 @@ public class Graphics3D
 
 			if (hasTexture)
 			{
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
 					sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
 					tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
@@ -963,7 +966,7 @@ public class Graphics3D
 
 				if (hasTexture)
 				{
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
 						temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
@@ -1291,7 +1294,7 @@ public class Graphics3D
 		// We subsample perspective correction here (piecewise linear
 		// interpolation), similar to Quake and other old 3D renderers.
 		// TODO: Make this configurable (Mobile.m3gPCorrSubsampleFactor)
-		byte pSubsampleFactor = 15;
+		byte pSubsampleFactor = 3;
 
 		// TODO: && !Mobile.m3gDisableFog flag
 		final boolean hasFog = fog != null;
@@ -1330,10 +1333,10 @@ public class Graphics3D
 
 		if (hasTexture)
 		{
-			for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 			{
-				stepS[i] = (int) ((sMidR[i] - sMidL[i]) * invMidSpan * 65536.0f);
-				stepT[i] = (int) ((tMidR[i] - tMidL[i]) * invMidSpan * 65536.0f);
+				stepS[i] = (sMidR[i] - sMidL[i]) * invMidSpan;
+				stepT[i] = (tMidR[i] - tMidL[i]) * invMidSpan;
 			}
 		}
 
@@ -1348,7 +1351,7 @@ public class Graphics3D
 
 		if (hasTexture)
 		{
-			for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 			{
 				dsL_dy[i] = (half == 0 ? sMidL[i] - sTop[i] : sBot[i] - sMidL[i]) * yDiv;
 				dtL_dy[i] = (half == 0 ? tMidL[i] - tTop[i] : tBot[i] - tMidL[i]) * yDiv;
@@ -1373,7 +1376,7 @@ public class Graphics3D
 
 				if (hasTexture)
 				{
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						sL[i] += dsL_dy[i];
 						tL[i] += dtL_dy[i];
@@ -1392,7 +1395,7 @@ public class Graphics3D
 			{
 				if (hasTexture)
 				{
-					for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						sL[i] += dsL_dy[i];
 						tL[i] += dtL_dy[i];
@@ -1430,10 +1433,10 @@ public class Graphics3D
 				// add operations for each textured pixel.
 				final float subpixelOffset = ixL - xL;
 
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					curS[i] = (int) (sL[i] * 65536.0f) + (int) (subpixelOffset * stepS[i]);
-					curT[i] = (int) (tL[i] * 65536.0f) + (int) (subpixelOffset * stepT[i]);
+					curS[i] = (sL[i]) + (subpixelOffset * stepS[i]);
+					curT[i] = (tL[i]) + (subpixelOffset * stepT[i]);
 
 					sL[i] += dsL_dy[i];
 					tL[i] += dtL_dy[i];
@@ -1485,7 +1488,7 @@ public class Graphics3D
 					if (hasColors) { deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB; }
 					if(hasTexture)
 					{
-						for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+						for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 						{
 							curS[i] += stepS[i];
 							curT[i] += stepT[i];
@@ -1522,48 +1525,25 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
-					for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+					for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						// Skip this texture unit right away if it is disabled/unused
-						Texture2D tex = textures[i];
-
-						Image2D targetImage = tex.getImage();
-						final int levelFilter = tex.getLevelFilter();
-						final int blendMode = ((tex.getBlending() & 7) << 3) |
+						Image2D targetImage = textures[i].getImage();
+						final int levelFilter = textures[i].getLevelFilter();
+						final int blendMode = ((textures[i].getBlending() & 7) << 3) |
 							(targetImage.getFormat() & 7);
 
-						int s, t;
-
-						if(doPerspective)
-						{
-							s = (int) (curS[i] * invPw);
-							t = (int) (curT[i] * invPw);
-						}
-						else
-						{
-							s = curS[i];
-							t = curT[i];
-						}
+						float s = curS[i] * invPw;
+						float t = curT[i] * invPw;
 
 						// Mipmapping support requested.
 						if (levelFilter != Texture2D.FILTER_BASE_LEVEL)
 						{
 							float dsdx, dtdx, dsdy, dtdy;
 
-							if (doPerspective)
-							{
-								dsdx = (sStepX[i] - (s >> 16) * dwdx) * invPw;
-								dtdx = (tStepX[i] - (t >> 16) * dwdx) * invPw;
-								dsdy = (sStepY[i] - (s >> 16) * dwdy) * invPw;
-								dtdy = (tStepY[i] - (t >> 16) * dwdy) * invPw;
-							}
-							else
-							{
-								dsdx = sStepX[i];
-								dtdx = tStepX[i];
-								dsdy = sStepY[i];
-								dtdy = tStepY[i];
-							}
+							dsdx = (sStepX[i] - s * dwdx) * invPw;
+							dtdx = (tStepX[i] - t * dwdx) * invPw;
+							dsdy = (sStepY[i] - s * dwdy) * invPw;
+							dtdy = (tStepY[i] - t * dwdy) * invPw;
 
 							int maxLevel = textures[i].getMipmapLevelCount() - 1;
 
@@ -1587,14 +1567,14 @@ public class Graphics3D
 								}
 							}
 
-							targetImage = tex.getImageForLOD(targetLevel);
+							targetImage = textures[i].getImageForLOD(targetLevel);
 
 							// POT textures coming in with another fast path: Just shift
 							// right by the targetLevel! TODO: NPOT textures SHOULD be able
 							// to benefit from this as well although it's untested and
 							// none of the NPOT test cases so far use mipmaps.
-							s >>= targetLevel;
-							t >>= targetLevel;
+							s = (float) ((int) s >> targetLevel);
+							t = (float) ((int) t >> targetLevel);
 						}
 
 						if (useBilinear[i])
@@ -1602,12 +1582,12 @@ public class Graphics3D
 							paintPixel = blendTexture(paintPixel,
 								sampleBilinear(targetImage, s, t, targetImage.getWidth(),
 									targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
-									tex.isNPOT()), blendMode, tex.getBlendColor());
+									textures[i].isNPOT()), blendMode, textures[i].getBlendColor());
 						}
 						else
 						{
-							int texCoord = wrapCoords(s >> 16, t >> 16, targetImage.getWidth(),
-								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], tex.isNPOT());
+							int texCoord = wrapCoords((int) s, (int) t, targetImage.getWidth(),
+								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
 
 							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texCoord & 0xFFFF, texCoord >>> 16),
 								blendMode, textures[i].getBlendColor());
@@ -2059,11 +2039,11 @@ public class Graphics3D
 	}
 
 	// For bilinear filtering support
-	private static final int sampleBilinear(Image2D teximg, int s, int t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
+	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
 		// Shift s and t by 0.5 on the texel center for OpenGL-like filtering,
-		int sFixed = (s >> 8) - 128;
-		int tFixed = (t >> 8) - 128;
+		int sFixed = (int) ((s - 0.5f) * 256.0f);
+		int tFixed = (int) ((t - 0.5f) * 256.0f);
 
 		// Fractional components
 		int fx = sFixed & 0xFF;
