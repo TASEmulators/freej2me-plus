@@ -130,9 +130,6 @@ public class Graphics3D
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
 	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
 
-	// Vertex color blending
-	int alpha, r, g, b;
-
 	// 3D rendering variables
 	static byte ACTIVE_TEXTURE_UNITS;
 	final Transform normalMatrix;
@@ -166,8 +163,6 @@ public class Graphics3D
 	final Transform projectionMatrix = new Transform();
 	final int[] renderableTriangles = {0}; // Counter for visible triangles
 
-	// fog blending factor
-	float fogFactor = 0.0f;
 
 	public Graphics3D()
 	{
@@ -1215,7 +1210,7 @@ public class Graphics3D
 		final float alphaFactor = sprite.getAlphaFactor();
 		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
-
+		float fogFactor = 255.0f;
 		// The Sprite3D has the same depth for its entire area, so we only need
 		// to calculate fog once.
 		if (fog != null)
@@ -1258,7 +1253,7 @@ public class Graphics3D
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
 				paintPixel = spr.getPixel(texX, texY);
-				alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
+				int alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
 
