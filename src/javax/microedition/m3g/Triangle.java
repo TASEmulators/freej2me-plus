@@ -86,11 +86,11 @@ class Triangle
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
-		boolean hasTex = false;
-		for(int i = 0; i < Graphics3D.ACTIVE_TEXTURE_UNITS; i++)
-		{
-			if(texc[i] != null) { hasTex = true; break; }
-		}
+		boolean hasTex = texc[0] != null;
+		// Is the app using lights? Set up to calculate per-vertex lighting.
+		boolean hasLighting = (vertNorms != null && material != null &&
+			lights != null && !lights.isEmpty());
+		boolean hasColors = hasLighting || (vertices.getColors() != null);
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`, as
@@ -127,6 +127,13 @@ class Triangle
 				}
 			}
 
+			final boolean isFrontFace = polygonClockwise ? !isCounterClockwise() : isCounterClockwise();
+
+			final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && !isFrontFace) ||
+						 (cullingMode == PolygonMode.CULL_FRONT && isFrontFace);
+
+			if (cullTriangle || outsideFrustum()) { continue; }
+
 			// Do we have vertex colors? If so, prep them here
 			if (vertices.getColors() != null)
 			{
@@ -150,9 +157,6 @@ class Triangle
 				inC[2] = vertices.getDefaultColor();
 			}
 
-			// Is the app using lights? Then calculate per-vertex lighting.
-			boolean hasLighting = (vertNorms != null && material != null &&
-				lights != null && !lights.isEmpty());
 			if (hasLighting)
 			{
 				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide,
@@ -173,24 +177,13 @@ class Triangle
 			{
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
 				tri.setVertexCoords(Triangle.outV, fan);
-
-				final boolean isFrontFace = polygonClockwise ? !tri.isCounterClockwise() : tri.isCounterClockwise();
-
-				final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && !isFrontFace) ||
-							 (cullingMode == PolygonMode.CULL_FRONT && isFrontFace);
-
-				if (cullTriangle) { continue; }
-
 				tri.setTexCoords(Triangle.outT, fan);
-				boolean hasColors = hasLighting || (vertices.getColors() != null);
 				tri.setVertexColors(hasColors ? Triangle.outC : null, fan);
 
 				// Calculate the average Z for front-to-back sorting.
 				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
 
 				tri.project(perspectiveCorrect);
-
-				if (tri.outsideFrustum()) { continue; }
 
 				Triangle.result[renderableTriangles[0]] = tri;
 				renderableTriangles[0]++;
@@ -380,15 +373,15 @@ class Triangle
 				// Handle Two-Sided Materials by flipping normals. TODO: UNTESTED!
 				if (twoSided)
 				{
-				    // Dot product between transformed normal and eye-to-vertex direction.
+					// Dot product between transformed normal and eye-to-vertex direction.
 					// Are they negative? Flip the eye normals so we can light the other side.
-				    float nDotV = N_EYE[0] * viewX + N_EYE[1] * viewY + N_EYE[2] * viewZ;
-				    if (nDotV < 0.0f)
-				    {
-				        N_EYE[0] = -N_EYE[0];
-				        N_EYE[1] = -N_EYE[1];
-				        N_EYE[2] = -N_EYE[2];
-				    }
+					float nDotV = N_EYE[0] * viewX + N_EYE[1] * viewY + N_EYE[2] * viewZ;
+					if (nDotV < 0.0f)
+					{
+						N_EYE[0] = -N_EYE[0];
+						N_EYE[1] = -N_EYE[1];
+						N_EYE[2] = -N_EYE[2];
+					}
 				}
 
 				if (nDotL > 0.0f)
@@ -469,7 +462,7 @@ class Triangle
 					}
 				}
 
-				if (inC != null) { outC[outCount] = inC[i]; }
+				outC[outCount] = inC[i];
 				outCount++;
 			}
 			if (insideI != insideJ)
@@ -490,19 +483,16 @@ class Triangle
 					}
 				}
 
-				if (inC != null)
-				{
-					final int cA = inC[i], cB = inC[j];
-					final int alpha = (int) (amt * 256f);
+				final int cA = inC[i], cB = inC[j];
+				final int alpha = (int) (amt * 256f);
 
-					final int rbA = cA & 0x00FF00FF, rbB = cB & 0x00FF00FF;
-					final int agA = (cA >>> 8) & 0x00FF00FF, agB = (cB >>> 8) & 0x00FF00FF;
+				final int rbA = cA & 0x00FF00FF, rbB = cB & 0x00FF00FF;
+				final int agA = (cA >>> 8) & 0x00FF00FF, agB = (cB >>> 8) & 0x00FF00FF;
 
-					final int rb = (rbA + (((rbB - rbA) * alpha) >> 8)) & 0x00FF00FF;
-					final int ag = (agA + (((agB - agA) * alpha) >> 8)) & 0x00FF00FF;
+				final int rb = (rbA + (((rbB - rbA) * alpha) >> 8)) & 0x00FF00FF;
+				final int ag = (agA + (((agB - agA) * alpha) >> 8)) & 0x00FF00FF;
 
-					outC[outCount] = rb | (ag << 8);
-				}
+				outC[outCount] = rb | (ag << 8);
 				outCount++;
 			}
 		}
@@ -532,14 +522,20 @@ class Triangle
 		return array;
 	}
 
-	public final boolean outsideFrustum()
+	private static final boolean outsideFrustum()
 	{
-		return (v[0] < -1f && v[4] < -1f && v[8] < -1f) ||
-			(v[0] >  1f && v[4] >  1f && v[8] >  1f) ||
-			(v[1] < -1f && v[5] < -1f && v[9] < -1f) ||
-			(v[1] >  1f && v[5] >  1f && v[9] >  1f) ||
-			(v[2] < -1f && v[6] < -1f && v[10] < -1f) ||
-			(v[2] >  1f && v[6] >  1f && v[10] >  1f);
+		final float w0 = inV[3],  w1 = inV[7],  w2 = inV[11];
+
+		if (inV[0] < -w0 && inV[4] < -w1 && inV[8] < -w2)  { return true; }
+		if (inV[0] >  w0 && inV[4] >  w1 && inV[8] >  w2)  { return true; }
+
+		if (inV[1] < -w0 && inV[5] < -w1 && inV[9] < -w2)  { return true; }
+		if (inV[1] >  w0 && inV[5] >  w1 && inV[9] >  w2)  { return true; }
+
+		if (inV[2] < -w0 && inV[6] < -w1 && inV[10] < -w2) { return true; }
+		if (inV[2] >  w0 && inV[6] >  w1 && inV[10] > w2)  { return true; }
+
+		return false;
 	}
 
 	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform[] trTex)
@@ -583,7 +579,6 @@ class Triangle
 			{
 				for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 				{
-					if(t[u] == null) { continue; }
 					t[u][2 * i + 0] *= invW[i]; // s / w
 					t[u][2 * i + 1] *= invW[i]; // t / w
 				}
@@ -591,16 +586,16 @@ class Triangle
 		}
 	}
 
-	public final boolean isCounterClockwise()
+	private static final boolean isCounterClockwise()
 	{
-		float ax = v[0], ay = v[1], aw = v[3];
-		float bx = v[4], by = v[5], bw = v[7];
-		float cx = v[8], cy = v[9], cw = v[11];
+		float ax = inV[0], ay = inV[1], aw = inV[3];
+		float bx = inV[4], by = inV[5], bw = inV[7];
+		float cx = inV[8], cy = inV[9], cw = inV[11];
 
 		// Usually counterClockWise would be <= 0.0, but we're in Clip space
 		// here where Y is the inverse of NDC, so invert to > 0.0;
-		return ((bx * aw - ax * bw) * (cy * aw - ay * cw) -
-			(by * aw - ay * bw) * (cx * aw - ax * cw)) > 0.0f;
+		return ax * (by * cw - cy * bw) + bx * (cy * aw - ay * cw)
+			+ cx * (ay * bw - by * aw) > 0.0f;
 	}
 
 	public final float xA() { return v[0]; }

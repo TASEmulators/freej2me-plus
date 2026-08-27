@@ -100,13 +100,13 @@ public class Graphics3D
 
 	// Texturing
 	final Transform texcomptr;
-	boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
+	final boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
 	final boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
-	int[] curS = new int[NUM_TEXTURE_UNITS];
-	int[] curT = new int[NUM_TEXTURE_UNITS];
-	int[] stepS = new int[NUM_TEXTURE_UNITS];
-	int[] stepT = new int[NUM_TEXTURE_UNITS];
+	final int[] curS = new int[NUM_TEXTURE_UNITS];
+	final int[] curT = new int[NUM_TEXTURE_UNITS];
+	final int[] stepS = new int[NUM_TEXTURE_UNITS];
+	final int[] stepT = new int[NUM_TEXTURE_UNITS];
 	final float[] texScaleBias = new float[4];
 	final float[] dsL_dy = new float[NUM_TEXTURE_UNITS];
 	final float[] dtL_dy = new float[NUM_TEXTURE_UNITS];
@@ -769,6 +769,16 @@ public class Graphics3D
 		final boolean colorEnabled = compositingMode.isColorWriteEnabled();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
 
+		if (hasTexture)
+		{
+			for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			{
+				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
+					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
+			}
+		}
+
 		for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
 		{
 			final Triangle tri = trisScreen[tri_id];
@@ -957,20 +967,7 @@ public class Graphics3D
 					{
 						temp = sMidL[i]; sMidL[i] = sMidR[i]; sMidR[i] = temp;
 						temp = tMidL[i]; tMidL[i] = tMidR[i]; tMidR[i] = temp;
-
-						useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
-							|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
-							((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
 					}
-				}
-			}
-			else if (hasTexture)
-			{
-				for (int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-				{
-					useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
-						|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
-						((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
 				}
 			}
 
@@ -989,7 +986,6 @@ public class Graphics3D
 				}
 			}
 		}
-
 	}
 
 	private void positionLights(World world, Group group)
