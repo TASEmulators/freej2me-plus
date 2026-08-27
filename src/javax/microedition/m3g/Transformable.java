@@ -134,6 +134,16 @@ public abstract class Transformable extends Object3D
 		invalidateTransformable();
 	}
 
+	// Internal helper: sets the R component directly from a quaternion,
+	// avoiding a lossy quaternion -> angle-axis -> matrix round trip.
+	// Used by Node alignment, where the alignment rotation is a quaternion.
+	void setOrientationQuat(float qx, float qy, float qz, float qw)
+	{
+		this.rotate.setIdentity();
+		this.rotate.preRotateQuat(qx, qy, qz, qw);
+		invalidateTransformable();
+	}
+
 	public void setScale(float sx, float sy, float sz)
 	{
 		this.scale.setIdentity();

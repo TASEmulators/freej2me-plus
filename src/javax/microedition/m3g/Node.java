@@ -62,7 +62,7 @@ public abstract class Node extends Transformable
 
 	public final void align(Node reference)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Node.class.getPackage().getName() + "." + Node.class.getSimpleName() + ": " + "Node Alignment requested (untested)");
+		Mobile.log(Mobile.LOG_DEBUG, Node.class.getPackage().getName() + "." + Node.class.getSimpleName() + ": " + "Node Alignment requested");
 		if (reference != null && (this.getRootNode() != reference.getRootNode())) { throw new IllegalArgumentException(); }
 
 		doAlign(reference == null ? this : reference);
@@ -106,14 +106,31 @@ public abstract class Node extends Transformable
 
 		getOrientation(orientation);
 
+		/*
+		 * As per JSR-184, the alignment rotation is computed in the reference frame
+		 * defined by the T component of this node's transformation alone. Axis targets
+		 * are transformed as vectors and are unaffected, but ORIGIN targets are
+		 * transformed as points and must be made relative to this node's position,
+		 * so premultiply the target-to-parent transform by T^-1 (which only offsets
+		 * its translation column).
+		 */
 		float[] translation = new float[3];
 		getTranslation(translation);
-		transform.postTranslate(transformMatrix[12], transformMatrix[13], transformMatrix[14]);
+		transform.get(transformMatrix);
+		transformMatrix[3] -= translation[0];
+		transformMatrix[7] -= translation[1];
+		transformMatrix[11] -= translation[2];
+		transform.set(transformMatrix);
 
 		if (constraint != NONE)
 		{
-			float[] rot = new float[]{ orientation[0], orientation[1], orientation[2], -orientation[3] };
-			transform.preRotate(rot[0], rot[1], rot[2], rot[3]);
+			/*
+			 * Constrained (Y axis) alignment: as per JSR-184, the Y target must be
+			 * expressed in the frame resulting from the Z rotation computed just
+			 * before, i.e. tY' = Rz^-1 * tY. The inverse rotation is obtained by
+			 * negating the angle, not the axis' Z component.
+			 */
+			transform.preRotate(-orientation[0], orientation[1], orientation[2], orientation[3]);
 		}
 
 		transform.get(transformMatrix);
@@ -144,16 +161,19 @@ public abstract class Node extends Transformable
 
 		if (constraint != NONE)
 		{
+			/* Final alignment rotation as per JSR-184: A = Rz * Ry. */
+			float[] quatZ = M3GMath.angleAxisToQuat(orientation[0], orientation[1], orientation[2], orientation[3]);
 			float[] newOrientation = new float[4];
-			M3GMath.mulQuat(orientation, rot, newOrientation);
-			System.arraycopy(newOrientation, 0, orientation, 0, 4);
-		}
-		else
-		{
-			System.arraycopy(rot, 0, orientation, 0, 4);
+			M3GMath.mulQuat(quatZ, rot, newOrientation);
+			rot = newOrientation;
 		}
 
-		setOrientation(orientation[0], orientation[1], orientation[2], orientation[3]);
+		/*
+		 * As per JSR-184, align() overwrites the R component of the node transform.
+		 * Note that rot is a quaternion, NOT the (angleDegrees, ax, ay, az) tuple
+		 * that setOrientation expects, so it must be applied as a quaternion.
+		 */
+		setOrientationQuat(rot[0], rot[1], rot[2], rot[3]);
 		return true;
 	}
 
