@@ -261,25 +261,9 @@ public class Texture2D extends Transformable
 		return dst;
 	}
 
-	// Returns the image that matches the specified LOD level, with 0 being the base, max size.
-	public final Image2D getImageLevel(int level)
+	// Returns the image that matches a given LOD level.
+	public final Image2D getImageForLOD(int lod)
 	{
-		return mipmaps[level];
-	}
-
-	// Returns the image that matches a given constant LOD level.
-	public final Image2D getImageForLOD(float lod)
-	{
-		int levelIndex = Math.round(lod);
-		if (levelIndex >= mipmaps.length)
-		{
-			levelIndex = mipmaps.length - 1;
-		}
-		return mipmaps[levelIndex];
-	}
-
-	public final int getMipmapLevelCount()
-	{
-		return mipmaps.length;
+		return mipmaps[lod >= mipmaps.length ? mipmaps.length - 1 : lod];
 	}
 }

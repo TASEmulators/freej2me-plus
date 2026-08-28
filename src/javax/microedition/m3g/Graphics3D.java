@@ -126,6 +126,8 @@ public class Graphics3D
 	final float[] sStepY = new float[NUM_TEXTURE_UNITS];
 	final float[] tStepX = new float[NUM_TEXTURE_UNITS];
 	final float[] tStepY = new float[NUM_TEXTURE_UNITS];
+	final int[] texblendMode = new int[NUM_TEXTURE_UNITS];
+	final int[] levelFilters = new int[NUM_TEXTURE_UNITS];
 	final float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
 	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
@@ -968,6 +970,9 @@ public class Graphics3D
 				{
 					sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
 					tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
+					texblendMode[i] = ((textures[i].getBlending() & 7) << 3) |
+						(textures[i].getImage().getFormat() & 7);
+					levelFilters[i] = textures[i].getLevelFilter();
 				}
 			}
 
@@ -1461,6 +1466,9 @@ public class Graphics3D
 			// Draw the pixels for the current y-coordinate
 			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, invPw += stepInvPw, fogFactor += stepFogFactor, depthIdx++, rasterIdx++)
 			{
+				// Subsampling block. A.K.A, where we calculate anything that
+				// is too expensive to run per-pixel but cannot be done only once
+				// for the whole triangle Y scanline due to large precision loss.
 				if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
 				{
 					int spanLen = M3GMath.min(pSubsampleFactor + 1, ixR - x);
@@ -1540,18 +1548,16 @@ public class Graphics3D
 
 				if(hasTexture)
 				{
+					int bayerThreshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
 					for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						Image2D targetImage = textures[i].getImage();
-						final int levelFilter = textures[i].getLevelFilter();
-						final int blendMode = ((textures[i].getBlending() & 7) << 3) |
-							(targetImage.getFormat() & 7);
 
 						float s = curS[i] * invPw;
 						float t = curT[i] * invPw;
 
 						// Mipmapping support requested.
-						if (levelFilter != Texture2D.FILTER_BASE_LEVEL)
+						if (levelFilters[i] != Texture2D.FILTER_BASE_LEVEL)
 						{
 							float dsdx, dtdx, dsdy, dtdy;
 							int targetLevel = 0;
@@ -1561,37 +1567,30 @@ public class Graphics3D
 							dsdy = (sStepY[i] - s * dwdy) * invPw;
 							dtdy = (tStepY[i] - t * dwdy) * invPw;
 
-							int maxLevel = textures[i].getMipmapLevelCount() - 1;
-
-							if (levelFilter == Texture2D.FILTER_NEAREST)
+							if (levelFilters[i] == Texture2D.FILTER_NEAREST)
 							{
 								float lengthXSq = dsdx * dsdx + dtdx * dtdx;
 								float lengthYSq = dsdy * dsdy + dtdy * dtdy;
 								float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
 
-								int rawBits = Float.floatToRawIntBits(maxSq);
-								if (rawBits > 0x3F800000) { targetLevel = (rawBits - 0x3F800000) >> 24; }
+								int rawBits = Float.floatToRawIntBits(maxSq) - 0x3F800000;
+								rawBits = rawBits & ~(rawBits >> 31);
+								targetLevel = rawBits>> 24;
 							}
 							else // Trilinear
 							{
 								float area = dsdx * dtdy - dtdx * dsdy;
-								if (area < 0.0f) { area = -area; }
+								int rawBits = (Float.floatToRawIntBits(area) & 0x7FFFFFFF) - 0x3F000000;
 
-								int rawBits = Float.floatToRawIntBits(area);
+								// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
+								// This saves us the need to do much slower trilinear filtering, while
+								// retaining most of the looks.
+								int lodFract = ((rawBits >> 19) & 0x1F) & ~(rawBits >> 31);
 
-								if (rawBits > 0x3F000000)
-								{
-									int deltaBits = rawBits - 0x3F000000;
-									targetLevel = deltaBits >> 24;
+								rawBits = rawBits & ~(rawBits >> 31);
+								targetLevel = rawBits >> 24;
 
-									// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
-									// This saves us the need to do much slower trilinear filtering, while
-									// retaining most of the looks.
-									int lodFract = (deltaBits >> 19) & 0x1F;
-									int threshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
-
-									if (lodFract > threshold) { targetLevel++; }
-								}
+								targetLevel -= (bayerThreshold - lodFract) >> 31;
 							}
 
 							targetImage = textures[i].getImageForLOD(targetLevel);
@@ -1609,7 +1608,7 @@ public class Graphics3D
 							paintPixel = blendTexture(paintPixel,
 								sampleBilinear(targetImage, s, t, targetImage.getWidth(),
 									targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
-									textures[i].isNPOT()), blendMode, textures[i].getBlendColor());
+									textures[i].isNPOT()), texblendMode[i], textures[i].getBlendColor());
 						}
 						else
 						{
@@ -1617,7 +1616,7 @@ public class Graphics3D
 								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
 
 							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texCoord & 0xFFFF, texCoord >>> 16),
-								blendMode, textures[i].getBlendColor());
+								texblendMode[i], textures[i].getBlendColor());
 						}
 
 						curS[i] += stepS[i];
