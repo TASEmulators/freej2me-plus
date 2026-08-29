@@ -948,22 +948,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		x += translateX;
 		y += translateY;
 
-		final int clipX = Math.max(0, getClipX() + translateX);
-		final int clipY = Math.max(0, getClipY() + translateY);
-		final int clipWidth = Math.min(canvasWidth, getClipWidth() + getClipX() + translateX);
-		final int clipHeight = Math.min(canvasHeight, getClipHeight() + getClipY() + translateY);
-
-		if (x < clipX)
-		{
-			width -= (clipX - x);
-			x = clipX;
-		}
-
-		if (y < clipY)
-		{
-			height -= (clipY - y);
-			y = clipY;
-		}
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
@@ -1099,11 +1087,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		if(!Mobile.isDoJa) { gc.setClip(x, y, width, height); }
 		else { gc.setClip(x-getTranslateX(), y-getTranslateY(), width, height); }
-
-		this.clipX = gc.getClipBounds().x;
-		this.clipY = gc.getClipBounds().y;
-		this.clipWidth = gc.getClipBounds().width;
-		this.clipHeight = gc.getClipBounds().height;
 	}
 
 	public void clipRect(int x, int y, int width, int height)
@@ -1111,24 +1094,19 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		gc.clipRect(x, y, width, height);
-
-		this.clipX = gc.getClipBounds().x;
-		this.clipY = gc.getClipBounds().y;
-		this.clipWidth = gc.getClipBounds().width;
-		this.clipHeight = gc.getClipBounds().height;
 	}
 
 	public int getTranslateX() { return translateX; }
 
 	public int getTranslateY() { return translateY; }
 
-	public int getClipHeight() { return this.clipHeight; }
+	public int getClipHeight() { return gc.getClipBounds().height; }
 
-	public int getClipWidth() { return this.clipWidth; }
+	public int getClipWidth() { return gc.getClipBounds().width; }
 
-	public int getClipX() { return this.clipX; }
+	public int getClipX() { return gc.getClipBounds().x; }
 
-	public int getClipY() { return this.clipY; }
+	public int getClipY() { return gc.getClipBounds().y; }
 
 	public void translate(int x, int y)
 	{
