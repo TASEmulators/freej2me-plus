@@ -313,14 +313,16 @@ public class RecordStore
 	}
 
 	// This should only delete records that are tied to the current MIDlet suite
-	public static void deleteRecordStore(String recordStoreName) throws RecordStoreException
+	public static void deleteRecordStore(String recordStoreName) throws RecordStoreException, RecordStoreNotFoundException
 	{
 		if(openedStores.contains(recordStoreName)) { throw new RecordStoreException("Cannot delete an open record store"); }
+
 		try
 		{
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Deleting RecordStore "+recordStoreName);
 			File folder = new File(Mobile.getPlatform().dataPath + "./rms/" + Mobile.getPlatform().loader.suitename);
 			File[] files = folder.listFiles();
+			boolean exists = false; // For checking whether the recordStore exists or not.
 
 			// Delete all files that match the received name (because binary data is saved separately from the RMS)
 			if (files != null)
@@ -329,12 +331,16 @@ public class RecordStore
 				{
 					if (file.isFile() && file.getName().startsWith(generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName)))
 					{
+						exists = true;
 						boolean deleted = file.delete();
 						if (deleted) { Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Deleted " + file.getName()); }
 						else { Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Failed to delete " + file.getName()); }
 					}
 				}
 			}
+
+			// Doesn't exist, throw the exception.
+			if (!exists) { throw new RecordStoreNotFoundException("RecordStore not found: " + recordStoreName); }
 		}
 		catch (Exception e)
 		{
