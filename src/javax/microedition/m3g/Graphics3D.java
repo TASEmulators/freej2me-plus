@@ -769,8 +769,8 @@ public class Graphics3D
 		//
 		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
 		// just a hack to improve depth buffer range usage.
-		tr.postScale(vieww / 2f, -viewh / 2f, 32767.0f * 2.0f);
-		tr.postTranslate(1f, -1f, -0.5f);
+		tr.postScale(vieww / 2f, -viewh / 2f, (this.far - this.near) * 32767.0f);
+		tr.postTranslate(1f, -1f, 0f);
 
 		// -> Screen space
 
@@ -1173,20 +1173,12 @@ public class Graphics3D
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
 
 
-		// Frustum cull on the raw NDC depth. This must be done BEFORE the -0.5
-		// depth hack shift below, otherwise sprites close to the camera (anything
-		// nearer than NDC z = -0.5, which covers a large chunk of the frustum due
-		// to the non-linear depth mapping) get wrongly discarded while visible.
-		float ndcZ = clip[2]/clip[3];
-		if (ndcZ < -1f || ndcZ > 1f) { return; }
-
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
 		// multiplied by the same factor used by the buffer.
 		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
 		// just a hack to improve depth buffer range usage, mirroring the triangle
 		// path. Clamp to short range so near depths don't wrap around when cast.
-		ndcZ = (ndcZ - 0.5f) * (this.far - this.near) * 32767.0f * 2.0f;
-		final short z = (short) M3GMath.max(-32768.0f, M3GMath.min(32767.0f, ndcZ));
+		short ndcZ = (short) (clip[2]/clip[3] * 32767.0f);
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
@@ -1265,7 +1257,7 @@ public class Graphics3D
 			for (int x = pixL; x < pixR; x++)
 			{
 				// Depth test against the same buffer and convention used by triangles.
-				if (depthTest && this.depthBuffer[this.vieww * y + x] < z) { continue; }
+				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
 
 				final float u = (x + 0.5f - sx0) / spanX;
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
@@ -1294,7 +1286,7 @@ public class Graphics3D
 							compositingMode.getBlending()));
 				}
 
-				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = z; }
+				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
 			}
 		}
 	}
