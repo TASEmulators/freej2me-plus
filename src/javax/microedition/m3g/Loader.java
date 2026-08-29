@@ -883,9 +883,8 @@ public class Loader
 
 		int read = bytesRead + M3G_FILE_IDENTIFIER.length;
 
-		while (read < totalFileSize)
+		while (dis.available() > 0)
 		{
-		//while (dis.available() > 0) {
 			compressionScheme = readByte();
 			totalSectionLength = readInt();
 			uncompressedLength = readInt();
