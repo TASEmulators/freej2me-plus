@@ -135,7 +135,6 @@ public class Graphics3D
 	// 3D rendering variables
 	static byte ACTIVE_TEXTURE_UNITS;
 	final Transform normalMatrix;
-	final Transform posLocalToEye;
 	final Transform tr;
 	int yStart, yEnd;
 	final int[] ord = new int[3];
@@ -183,7 +182,6 @@ public class Graphics3D
 		camTr = new Transform();
 		tr = new Transform();
 		normalMatrix = new Transform();
-		posLocalToEye = new Transform();
 		texcomptr = new Transform();
 		for(int i = 0; i < NUM_TEXTURE_UNITS; i++) { textr[i] = new Transform(); }
 	}
@@ -658,24 +656,26 @@ public class Graphics3D
 				normalMatrix.setIdentity();
 			}
 
-			posLocalToEye.set(tr);
-			posLocalToEye.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
-			posLocalToEye.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
+			tr.setIdentity();
+			if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
+			if (transform != null) { tr.postMultiply(transform); }
+			tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
+			tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
 
 			if (eyePos == null || 4 * vertPos.getVertexCount() > eyePos.length)
 				{ eyePos = new float[4 * vertPos.getVertexCount()]; }
 
-			posLocalToEye.transform(vertPos, eyePos, true);
+			tr.transform(vertPos, eyePos, true);
 		}
 
 		// Normals done, so set up the lights.
 		final int numLights = (this.currLights != null) ? this.currLights.size() : 0;
 
-			if (lightEyePos == null || lightEyePos.length < numLights * 4)
-			{
-				lightEyePos = new float[numLights * 4];
-				lightEyeDir = new float[numLights * 4];
-			}
+		if (lightEyePos == null || lightEyePos.length < numLights * 4)
+		{
+			lightEyePos = new float[numLights * 4];
+			lightEyeDir = new float[numLights * 4];
+		}
 
 		for (int i = 0; i < numLights; i++)
 		{
@@ -684,8 +684,8 @@ public class Graphics3D
 
 			// Compute Light World-to-Eye Transform
 			tr.setIdentity();
-			if (lightTrans != null) { tr.postMultiply(lightTrans); }
 			if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
+			if (lightTrans != null) { tr.postMultiply(lightTrans); }
 
 			// Light Position in Eye Space
 			lightVec[0] = 0.0f;
@@ -702,6 +702,16 @@ public class Graphics3D
 			lightVec[2] = -1.0f;
 			lightVec[3] = 0.0f;
 			tr.transform(lightVec);
+
+			// We also need to normalize the light direction vector.
+			float dirLen = M3GMath.sqrt(lightVec[0]*lightVec[0] + lightVec[1]*lightVec[1] +
+				lightVec[2]*lightVec[2]);
+			if (dirLen > 0.0f)
+			{
+				lightVec[0] /= dirLen;
+				lightVec[1] /= dirLen;
+				lightVec[2] /= dirLen;
+			}
 			lightVec[3] = 0.0f;
 			System.arraycopy(lightVec, 0, lightEyeDir, i * 4, 4);
 		}

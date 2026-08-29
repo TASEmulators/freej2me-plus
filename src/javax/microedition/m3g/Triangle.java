@@ -217,9 +217,9 @@ class Triangle
 		// Cache the normal matrix into a local reference.
 		normalMatrix.get(L_MAT);
 
-		// Flat Shading? We calculate only vertex 2 (C) and copy to others
-		int firstVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 2 : 0;
-		for (int v = firstVertex; v <= 2; v++)
+		// Flat Shading? We calculate only vertex 0 (A) and copy to others
+		int lastVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 0 : 2;
+		for (int v = 0; v <= lastVertex; v++)
 		{
 			int vertIndex = tris[3 * tri_id + v];
 
@@ -367,9 +367,7 @@ class Triangle
 
 				if (attenuation <= 0.0f) { continue; }
 
-				// Calculate Dot Product between the normal and light (N . L)
-				float nDotL = N_EYE[0] * lightDirX + N_EYE[1] * lightDirY + N_EYE[2] * lightDirZ;
-
+				nx = N_EYE[0]; ny = N_EYE[1]; nz = N_EYE[2];
 				// Handle Two-Sided Materials by flipping normals. TODO: UNTESTED!
 				if (twoSided)
 				{
@@ -378,11 +376,14 @@ class Triangle
 					float nDotV = N_EYE[0] * viewX + N_EYE[1] * viewY + N_EYE[2] * viewZ;
 					if (nDotV < 0.0f)
 					{
-						N_EYE[0] = -N_EYE[0];
-						N_EYE[1] = -N_EYE[1];
-						N_EYE[2] = -N_EYE[2];
+						nx = -nx;
+						ny = -ny;
+						nz = -nz;
 					}
 				}
+
+				// Calculate Dot Product between the normal and light (N . L)
+				float nDotL = nx * lightDirX + ny * lightDirY + nz * lightDirZ;
 
 				if (nDotL > 0.0f)
 				{
@@ -399,7 +400,7 @@ class Triangle
 					if (hLen > M3GMath.EPSILON)
 					{
 						hX /= hLen; hY /= hLen; hZ /= hLen;
-						float nDotH = N_EYE[0] * hX + N_EYE[1] * hY + N_EYE[2] * hZ;
+						float nDotH = nx * hX + ny * hY + nz * hZ;
 
 						if (nDotH > 0.0f)
 						{
@@ -416,15 +417,15 @@ class Triangle
 			int ir = (int) (M3GMath.min(1.0f, r) * 255.0f);
 			int ig = (int) (M3GMath.min(1.0f, g) * 255.0f);
 			int ib = (int) (M3GMath.min(1.0f, b) * 255.0f);
-			int color = (alpha << 24) | (ir << 16) | (ig << 8) | ib;
+			int color = ((alpha & 0xFF) << 24) | (ir << 16) | (ig << 8) | ib;
 
 			outColors[v] = color;
 
 			// On flat shading we just apply vertex 2's color to the others.
 			if (shadingMode == PolygonMode.SHADE_FLAT)
 			{
-				outColors[0] = color;
 				outColors[1] = color;
+				outColors[2] = color;
 				break;
 			}
 		}
