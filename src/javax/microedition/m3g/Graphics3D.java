@@ -137,7 +137,6 @@ public class Graphics3D
 	final Transform normalMatrix;
 	final Transform tr;
 	int yStart, yEnd;
-	final int[] ord = new int[3];
 	float[] vertClip = null;
 	float[] eyePos = null;
 	float[] lightEyePos = null;
@@ -560,9 +559,6 @@ public class Graphics3D
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
-		ord[0] = 0; ord[1] = 1; ord[2] = 2;
-
-
 
 		// We'll need the projection matrix for the next transformations
 		this.currCam.getProjection(projectionMatrix);
@@ -945,26 +941,27 @@ public class Graphics3D
 			}
 
 			// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
-			ord[0] = 0; ord[1] = 1; ord[2] = 2;
-			if (coY[ord[1]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[1]; ord[1] = temp; }
-			if (coY[ord[2]] < coY[ord[0]]) { int temp = ord[0]; ord[0] = ord[2]; ord[2] = temp; }
-			if (coY[ord[2]] < coY[ord[1]]) { int temp = ord[1]; ord[1] = ord[2]; ord[2] = temp; }
+			coY[0] = yA; coY[1] = yB; coY[2] = yC;
+			int top = 0, mid = 1, bot = 2;
+			if (coY[mid] < coY[top]) { int t = top; top = mid; mid = t; }
+			if (coY[bot] < coY[top]) { int t = top; top = bot; bot = t; }
+			if (coY[bot] < coY[mid]) { int t = mid; mid = bot; bot = t; }
 
 			// Degenerate triangle? Skip it.
-			if (M3GMath.abs(coY[ord[2]] - coY[ord[0]]) < M3GMath.EPSILON) { continue; }
+			if (M3GMath.abs(coY[bot] - coY[top]) < M3GMath.EPSILON) { continue; }
 
 			// Assign ordered vertex attributes based on their determined order
-			xTop = coX[ord[0]]; xMidL = coX[ord[1]]; xBot = coX[ord[2]];
-			yTop = coY[ord[0]]; yMid = coY[ord[1]]; yBot = coY[ord[2]];
-			zTop = coZ[ord[0]]; zMidL = coZ[ord[1]]; zBot = coZ[ord[2]];
-			pwTop = coW[ord[0]]; pwMidL = coW[ord[1]]; pwBot = coW[ord[2]];
+			xTop = coX[top]; xMidL = coX[mid]; xBot = coX[bot];
+			yTop = coY[top]; yMid = coY[mid]; yBot = coY[bot];
+			zTop = coZ[top]; zMidL = coZ[mid]; zBot = coZ[bot];
+			pwTop = coW[top]; pwMidL = coW[mid]; pwBot = coW[bot];
 
 			if (hasTexture)
 			{
 				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					sTop[i] = coS[i][ord[0]]; sMidL[i] = coS[i][ord[1]]; sBot[i] = coS[i][ord[2]];
-					tTop[i] = coT[i][ord[0]]; tMidL[i] = coT[i][ord[1]]; tBot[i] = coT[i][ord[2]];
+					sTop[i] = coS[i][top]; sMidL[i] = coS[i][mid]; sBot[i] = coS[i][bot];
+					tTop[i] = coT[i][top]; tMidL[i] = coT[i][mid]; tBot[i] = coT[i][bot];
 				}
 			}
 
@@ -1004,19 +1001,30 @@ public class Graphics3D
 				}
 			}
 
-			float invMidSpan = M3GMath.fastReciprocal(xMidR - xMidL);
-			// Draw both halves of the triangle
-			for (int half = 0; half < 2; half++)
-			{
-				yStart = half == 0 ? M3GMath.max(M3GMath.ceil(yTop), 0) : M3GMath.max(M3GMath.ceil(yMid), 0);
-				yEnd = half == 0 ? M3GMath.min(M3GMath.ceil(yMid), viewh) : M3GMath.min(M3GMath.ceil(yBot), viewh);
+			// 0 width triangles get skipped entirely too.
+			if (xMidR - xMidL < M3GMath.EPSILON) { continue; }
 
-				if (yStart < yEnd)
-				{
-					renderTriangleHalf(vertices.getDefaultColor(), half, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
-						fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
-						invMidSpan);
-				}
+			float invMidSpan = M3GMath.fastReciprocal(xMidR - xMidL);
+
+			// Draw both halves of the triangle, starting with the top one.
+			yStart = M3GMath.max(M3GMath.ceil(yTop), 0);
+			yEnd = M3GMath.min(M3GMath.ceil(yMid), viewh);
+
+			if (yStart < yEnd)
+			{
+				renderTriangleHalf(vertices.getDefaultColor(), 0, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
+					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
+					invMidSpan);
+			}
+
+			yStart = M3GMath.max(M3GMath.ceil(yMid), 0);
+			yEnd = M3GMath.min(M3GMath.ceil(yBot), viewh);
+
+			if (yStart < yEnd)
+			{
+				renderTriangleHalf(vertices.getDefaultColor(), 1, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
+					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
+					invMidSpan);
 			}
 		}
 	}
