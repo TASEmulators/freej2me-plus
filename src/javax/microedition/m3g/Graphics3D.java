@@ -42,6 +42,22 @@ public class Graphics3D
 		15, 7, 13, 5
 	};
 
+	// Pre-computed 1/N lookup table for span sizes 1 to 32. FreeJ2ME+ will
+	// allow configurable span sizes for piecewise linear perspective correction
+	// from 8 to 32 pixels in the future, so by precalculating these here at
+	// the start, we don't need to keep throwing fastReciprocals on the inner
+	// render loop.
+	private static final float[] INV_SPAN_TABLE = new float[33];
+
+	static
+	{
+	    INV_SPAN_TABLE[0] = 0.0f;
+	    for (int i = 1; i <= 32; i++)
+		{
+	        INV_SPAN_TABLE[i] = M3GMath.fastReciprocal((float) i);
+	    }
+	}
+
 	// Special blend modes for fog and AA coverage
 	public static final int BLEND_FOG = -1;
 	public static final int BLEND_COVERAGE = -2;
@@ -1324,7 +1340,7 @@ public class Graphics3D
 		// We subsample perspective correction here (piecewise linear
 		// interpolation), similar to Quake and other old 3D renderers.
 		// TODO: Make this configurable (Mobile.m3gPCorrSubsampleFactor)
-		byte pSubsampleFactor = 3;
+		byte pSubsampleFactor = 15;
 
 		// TODO: && !Mobile.m3gDisableFog flag
 		final boolean hasFog = fog != null;
@@ -1346,6 +1362,10 @@ public class Graphics3D
 		}
 
 		int compBlending = compositingMode.getBlending();
+		final boolean usesReplace = (compBlending == CompositingMode.REPLACE);
+		final boolean usesDepthWrite = usesDepth &&
+			compositingMode.isDepthWriteEnabled();
+		final int opaqueAlpha = usesReplace ? 0xFF000000 : 0x00000000;
 
 		float xA = triScreen.xA();
 		float yA = triScreen.yA();
@@ -1453,7 +1473,7 @@ public class Graphics3D
 			int rasterIdx = ((y + viewy) * canvasWidth + viewx) + ixL;
 
 			float pw = pwL + (ixL - xL) * pwStep;
-			float invPw = 1.0f;
+			float invPw = doPerspective ? M3GMath.fastReciprocal(pw) : 1.0f;
 			float stepInvPw = 0.0f;
 			float z  = zL  + (ixL - xL) * zStep + depthOffset;
 
@@ -1481,17 +1501,28 @@ public class Graphics3D
 				// for the whole triangle Y scanline due to large precision loss.
 				if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
 				{
-					int spanLen = M3GMath.min(pSubsampleFactor + 1, ixR - x);
-					float invSpanLen = M3GMath.fastReciprocal(spanLen);
-					float nextInvPw = M3GMath.fastReciprocal(pw + pwStep * spanLen);
-					invPw = M3GMath.fastReciprocal(pw);
-					stepInvPw = (nextInvPw - invPw) * invSpanLen;
+					int maxSpan = (pSubsampleFactor + 1) - (x & pSubsampleFactor);
+					int spanLen = (ixR - x < maxSpan) ? ixR - x : maxSpan;
+					float invSpanLen = INV_SPAN_TABLE[spanLen];
+
+					float nextPw = pw + pwStep * spanLen;
+
+					// Calling M3GMath.fastReciprocal() in here was deemed
+					// too expensive by the profiler, so we'll be inlining an
+					// even simpler alternative in here instead
+					// (single Newton-Raphson step)).
+					float denom = pw * nextPw;
+					int bits = Float.floatToRawIntBits(denom);
+					float invDenom = Float.intBitsToFloat(0x7EF127EA - bits);
+					invDenom = invDenom * (2.0f - denom * invDenom);
+
+					stepInvPw = -pwStep * invDenom;
 
 					// Compute start and end fog factors for this 16-pixel span
 					if (hasFog)
 					{
 						float zEyeStart = invPw;
-						float zEyeEnd = nextInvPw;
+						float zEyeEnd = invPw + stepInvPw * spanLen;
 
 						float fStart, fEnd;
 						if (fogMode == Fog.LINEAR)
@@ -1530,12 +1561,6 @@ public class Graphics3D
 					continue;
 				}
 
-				// If there's no texture coords nor a texture image, we always default
-				// to rendering with vertex colors.
-				// It's also forced to opaque when blending mode is set to REPLACE.
-				paintPixel = compBlending == CompositingMode.REPLACE ?
-					0xFF000000 | defVertColor : defVertColor;
-
 				// We have to do texture blending if we have vertex colors, as any available texture goes on top of them
 				if (hasColors)
 				{
@@ -1555,6 +1580,8 @@ public class Graphics3D
 					deltaG += stepG;
 					deltaB += stepB;
 				}
+				// Otherwise, we just use the default vertex color for this triangle
+				else { paintPixel = opaqueAlpha | defVertColor; }
 
 				if(hasTexture)
 				{
@@ -1644,11 +1671,12 @@ public class Graphics3D
 				 * but doing so evidently breaks transparency in apps like Speed Spirit, Coast Racer
 				 * and a few others on vegetation when the texel alpha is also 0. So what gives?
 				 */
-				if ((paintPixel >>> 24) == 0 || (paintPixel >>> 24) < alphaThreshold) { continue; }
+				final int alpha = paintPixel >>> 24;
+
+				if (alpha == 0 || alpha < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
-				if (usesDepth && compositingMode.isDepthWriteEnabled() &&
-					(paintPixel >>> 24) >= 255) { this.depthBuffer[depthIdx] = (short) z; }
+				if (usesDepthWrite && alpha >= 255) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// Only write to the screen if color write is enabled.
 				if(!colorEnabled) { continue; }
@@ -1676,7 +1704,7 @@ public class Graphics3D
 				}
 
 				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) && (paintPixel >>> 24) >= 255)
+				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) && alpha >= 255)
 				{
 					// The way this works is that we "extend" the geometry size a bit
 					// for the antialiased output, that way triangles don't get smoothed
@@ -1702,13 +1730,13 @@ public class Graphics3D
 				if(!renderToImage)
 				{
 					rasterData[rasterIdx] = compBlending == CompositingMode.REPLACE ? paintPixel : blendCompositing(rasterData[rasterIdx],
-						paintPixel, (paintPixel >>> 24), compBlending);
+						paintPixel, alpha, compBlending);
 				}
 				else
 				{
 					imageData.setPixel((x+viewx), (y+viewy), compBlending == CompositingMode.REPLACE ? paintPixel :
 						blendCompositing(imageData.getPixel((x+viewx), (y+viewy)), paintPixel,
-							(paintPixel >>> 24), compBlending));
+							alpha, compBlending));
 				}
 			}
 		}
