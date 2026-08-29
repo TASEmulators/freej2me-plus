@@ -548,60 +548,51 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = Math.min(canvasWidth, getClipWidth() + getClipX() + translateX);
 		final int clipHeight = Math.min(canvasHeight, getClipHeight() + getClipY() + translateY);
 
-		if (x < clipX)
-		{
-			int diff = clipX - x;
-			offset += diff;
-			width -= diff;
-			x = clipX;
-		}
-		if (y < clipY)
-		{
-			int diff = clipY - y;
-			offset += diff * scanlength;
-			height -= diff;
-			y = clipY;
-		}
-
-		if (x + width > clipWidth)   { width = clipWidth - x; }
-		if (y + height > clipHeight) { height = clipHeight - y; }
+		if(y + height > clipHeight) { height = clipHeight - y; }
+		if(x + width > clipWidth)   { width = clipWidth - x; }
 
 		/* If width or height ended up as zero, we can exit early */
 		if (width <= 0 || height <= 0) { return; }
 
-		// If we don't need to process alpha, just arraycopy rows right away.
+		final int icache = (x > clipX) ? 0 : (clipX - x);
+		final int jcache = (y > clipY) ? 0 : (clipY - y);
+
+		int rowOffset, destRow;
+
+		// If we don't need to process alpha, copy opaque masked colors directly
+		// into the framebuffer. Saves having to do if checks for every pixel.
 		if (!processAlpha)
 		{
-			int srcRow = offset;
-			int dstRow = y * canvasWidth + x;
+		    for (int j = jcache; j < height; j++)
+		    {
+		        rowOffset = offset + (j * scanlength);
+		        destRow = (y + j) * canvasWidth;
 
-			for (int j = 0; j < height; j++)
-			{
-				System.arraycopy(rgbData, srcRow, canvasData, dstRow, width);
-				srcRow += scanlength;
-				dstRow += canvasWidth;
-			}
-			return;
+		        int srcIdx = rowOffset + icache;
+		        int destIdx = destRow + x + icache;
+		        int endIdx = rowOffset + width;
+
+		        for (; srcIdx < endIdx; srcIdx++, destIdx++)
+		        	{ canvasData[destIdx] = rgbData[srcIdx] | 0xFF000000; }
+		    }
 		}
-
-		// Otherwise we need to blend each pixel.
-		int srcRow = offset;
-		int dstRow = y * canvasWidth + x;
-
-		for (int j = 0; j < height; j++)
+		else
 		{
-			for (int i = 0; i < width; i++)
-			{
-				int pixel = rgbData[srcRow + i];
-				int alpha = pixel >>> 24;
+		    for (int j = jcache; j < height; j++)
+		    {
+		        rowOffset = offset + (j * scanlength);
+		        destRow = (y + j) * canvasWidth;
 
-				if (alpha == 255) { canvasData[dstRow + i] = pixel; }
-				else if (alpha > 0) { canvasData[dstRow + i] = blendPixels(pixel, canvasData[dstRow + i]);}
+		        for (int i = icache; i < width; i++)
+		        {
+		            int srcPixel = rgbData[rowOffset + i];
+		            int destIdx = destRow + x + i;
 
-				// Fully transparent pixels are just skipped entirely
-			}
-			srcRow += scanlength;
-			dstRow += canvasWidth;
+		            if ((srcPixel >>> 24) == 255) { canvasData[destIdx] = srcPixel | 0xFF000000; }
+		            else
+		            	{ canvasData[destIdx] = blendPixels(srcPixel, canvasData[destIdx]); }
+		        }
+		    }
 		}
 	}
 
