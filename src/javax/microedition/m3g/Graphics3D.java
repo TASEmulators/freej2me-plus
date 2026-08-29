@@ -1649,7 +1649,7 @@ public class Graphics3D
 						}
 						else
 						{
-							int texCoord = wrapCoords((int) s, (int) t, targetImage.getWidth(),
+							int texCoord = wrapCoords(M3GMath.floor(s), M3GMath.floor(t), targetImage.getWidth(),
 								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
 
 							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texCoord & 0xFFFF, texCoord >>> 16),
