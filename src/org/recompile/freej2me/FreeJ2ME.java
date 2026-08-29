@@ -786,6 +786,11 @@ public class FreeJ2ME
 		{
 			setDropTarget();
 			setBackground(Color.WHITE);
+
+			// macOS Cocoa stops updating the window entirely if we
+			// setIgnoreRepaint to true, so check explicitly against it.
+			if(!System.getProperty("os.name").toLowerCase().contains("mac"))
+			 { setIgnoreRepaint(true); }
 		}
 
 		public void updateScale(int vw, int vh)
