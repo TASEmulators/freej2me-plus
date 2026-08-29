@@ -953,6 +953,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
 		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
+		final int icache = (x > clipX) ? 0 : (clipX - x);
+	    final int jcache = (y > clipY) ? 0 : (clipY - y);
+
+	    x += icache;
+	    y += jcache;
+	    width -= icache;
+	    height -= jcache;
+
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
 
