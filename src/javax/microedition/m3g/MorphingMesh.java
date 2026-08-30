@@ -16,7 +16,6 @@
 */
 package javax.microedition.m3g;
 
-import java.util.Arrays;
 import org.recompile.mobile.Mobile;
 
 public class MorphingMesh extends Mesh
@@ -71,6 +70,9 @@ public class MorphingMesh extends Mesh
 			copy.addReference(copy.targets[i]);
 		}
 
+		/* The morphed buffer is a lazily built cache; the copy builds its own. */
+		copy.morphedVertices = null;
+
 		return copy;
 	}
 
@@ -124,25 +126,28 @@ public class MorphingMesh extends Mesh
 			throw new IllegalArgumentException("Targets array is empty");
 		}
 
-		VertexBuffer baseBuffer = getVertexBuffer();
-		int baseVertexCount = (baseBuffer != null) ? baseBuffer.getVertexCount() : -1;
-
 		for (int i = 0; i < targets.length; i++)
 		{
+			/* As per JSR-184, a null element in targets is a NullPointerException. */
 			if (targets[i] == null)
 			{
-				throw new IllegalArgumentException("Morph target at index " + i + " is null");
-			}
-			if (targets[i].getVertexCount() == 0)
-			{
-				throw new IllegalArgumentException("Morph target at index " + i + " has no vertices");
-			}
-			if (baseVertexCount != -1 && targets[i].getVertexCount() != baseVertexCount)
-			{
-				throw new IllegalArgumentException("Morth target count and vertex count differ.");
+				throw new NullPointerException("Morph target at index " + i + " is null");
 			}
 		}
+
+		/*
+		 * As per JSR-184 ("Deferred exceptions"), the requirements that all targets
+		 * share the same array set and layout, and that the base is a superset of
+		 * them, cannot be enforced until morphing is actually done, that is, when
+		 * rendering or picking.
+		 */
 	}
+
+	/* Attribute selectors for the morphing helpers below. */
+	private static final int ATTR_POSITIONS = 0;
+	private static final int ATTR_NORMALS = 1;
+	private static final int ATTR_COLORS = 2;
+	private static final int ATTR_TEXCOORDS = 3;
 
 	@Override
 	public VertexBuffer getVertexBuffer()
@@ -155,15 +160,13 @@ public class MorphingMesh extends Mesh
 
 		if (morphedVertices == null)
 		{
-			morphedVertices = (VertexBuffer) base.duplicate();
-			float[] scaleBias = new float[4];
-			VertexArray basePositions = base.getPositions(scaleBias);
-			if (basePositions != null)
-			{
-				VertexArray clonedPositions = (VertexArray) basePositions.duplicate();
-				morphedVertices.setPositions(clonedPositions, scaleBias[0],
-					new float[] { scaleBias[1], scaleBias[2], scaleBias[3] });
-			}
+			/*
+			 * As per JSR-184 ("Deferred exceptions"), target layout constraints are
+			 * validated here, when the resultant mesh is needed for rendering or picking.
+			 */
+			validateMorphLayout(base);
+			createMorphedBuffer(base);
+			this.dirtyBits[1] = true;
 		}
 
 		if (this.dirtyBits[1])
@@ -175,74 +178,171 @@ public class MorphingMesh extends Mesh
 		return morphedVertices;
 	}
 
+	/*
+	 * As per JSR-184, all morph targets must have the same types of arrays with the
+	 * same vertex counts, component counts and component sizes, and the base mesh
+	 * must be a superset of the targets.
+	 */
+	private void validateMorphLayout(VertexBuffer base)
+	{
+		validateArrayFamily(base.getPositions(null), ATTR_POSITIONS, 0);
+		validateArrayFamily(base.getNormals(), ATTR_NORMALS, 0);
+		validateArrayFamily(base.getColors(), ATTR_COLORS, 0);
+		for (int unit = 0; unit < Graphics3D.NUM_TEXTURE_UNITS; unit++)
+			{ validateArrayFamily(base.getTexCoords(unit, null), ATTR_TEXCOORDS, unit); }
+	}
+
+	private void validateArrayFamily(VertexArray baseArray, int attribute, int unit)
+	{
+		final VertexArray first = getArray(targets[0], attribute, unit);
+		for (int i = 1; i < targets.length; i++)
+		{
+			final VertexArray other = getArray(targets[i], attribute, unit);
+			if ((first == null) != (other == null) || (first != null && !sameLayout(first, other)))
+				{ throw new IllegalStateException("Morph targets have different vertex array sets or layouts"); }
+		}
+		if (first != null && (baseArray == null || !sameLayout(first, baseArray)))
+			{ throw new IllegalStateException("Base mesh is not a superset of the morph targets"); }
+	}
+
+	private static boolean sameLayout(VertexArray a, VertexArray b)
+	{
+		return a.getVertexCount() == b.getVertexCount() &&
+			a.getComponentCount() == b.getComponentCount() &&
+			a.getComponentType() == b.getComponentType();
+	}
+
+	private static VertexArray getArray(VertexBuffer buffer, int attribute, int unit)
+	{
+		switch (attribute)
+		{
+			case ATTR_POSITIONS: return buffer.getPositions(null);
+			case ATTR_NORMALS: return buffer.getNormals();
+			case ATTR_COLORS: return buffer.getColors();
+			default: return buffer.getTexCoords(unit, null);
+		}
+	}
+
+	/*
+	 * The resultant buffer clones every base array that will be morphed and shares
+	 * the rest. As per JSR-184, scale and bias are always taken from the base mesh
+	 * as such, and arrays absent from the targets are copied from the base.
+	 */
+	private void createMorphedBuffer(VertexBuffer base)
+	{
+		morphedVertices = (VertexBuffer) base.duplicate();
+
+		float[] scaleBias = new float[4];
+		VertexArray array = base.getPositions(scaleBias);
+		if (array != null && getArray(targets[0], ATTR_POSITIONS, 0) != null)
+		{
+			morphedVertices.setPositions((VertexArray) array.duplicate(), scaleBias[0],
+				new float[] { scaleBias[1], scaleBias[2], scaleBias[3] });
+		}
+
+		array = base.getNormals();
+		if (array != null && getArray(targets[0], ATTR_NORMALS, 0) != null)
+			{ morphedVertices.setNormals((VertexArray) array.duplicate()); }
+
+		array = base.getColors();
+		if (array != null && getArray(targets[0], ATTR_COLORS, 0) != null)
+			{ morphedVertices.setColors((VertexArray) array.duplicate()); }
+
+		for (int unit = 0; unit < Graphics3D.NUM_TEXTURE_UNITS; unit++)
+		{
+			array = base.getTexCoords(unit, scaleBias);
+			if (array != null && getArray(targets[0], ATTR_TEXCOORDS, unit) != null)
+			{
+				float[] bias = new float[array.getComponentCount()];
+				System.arraycopy(scaleBias, 1, bias, 0, bias.length);
+				morphedVertices.setTexCoords(unit, (VertexArray) array.duplicate(), scaleBias[0], bias);
+			}
+		}
+	}
+
+	/*
+	 * As per JSR-184, the resultant mesh is R = B + sum[ wi (Ti - B) ], applied to
+	 * the VertexBuffer default color and to every array present in the morph targets.
+	 */
 	private void morphMesh(VertexBuffer base)
 	{
-		// TODO: Vertex normals and colors
-		float[] scaleBias = new float[4];
-		VertexArray basePositions = base.getPositions(scaleBias);
-		VertexArray blendedPositions = morphedVertices.getPositions(null);
+		morphDefaultColor(base);
+		morphArray(base.getPositions(null), ATTR_POSITIONS, 0, false);
+		morphArray(base.getNormals(), ATTR_NORMALS, 0, false);
+		/* Colors are unsigned 8-bit values, as rendering reads them via toUnsignedInt. */
+		morphArray(base.getColors(), ATTR_COLORS, 0, true);
+		for (int unit = 0; unit < Graphics3D.NUM_TEXTURE_UNITS; unit++)
+			{ morphArray(base.getTexCoords(unit, null), ATTR_TEXCOORDS, unit, false); }
+	}
 
-		if (basePositions == null || blendedPositions == null) { return; }
+	private void morphDefaultColor(VertexBuffer base)
+	{
+		final int baseColor = base.getDefaultColor();
+		int result = 0;
 
-		int numVertices = basePositions.getVertexCount();
-		int components = basePositions.getComponentCount();
-		int totalElements = numVertices * components;
+		/* Morph each ARGB channel independently and clamp to the unsigned byte range. */
+		for (int shift = 0; shift <= 24; shift += 8)
+		{
+			final int baseComponent = (baseColor >>> shift) & 0xFF;
+			float acc = baseComponent;
+			for (int t = 0; t < targets.length; t++)
+				{ acc += weights[t] * (((targets[t].getDefaultColor() >>> shift) & 0xFF) - baseComponent); }
+			result |= M3GMath.max(0, M3GMath.min(255, M3GMath.round(acc))) << shift;
+		}
+		morphedVertices.setDefaultColor(result);
+	}
 
-		float weightSum = 0.0f;
-		for (float w : weights) { weightSum += w; }
-		float baseWeight = 1.0f - weightSum;
+	private void morphArray(VertexArray baseArray, int attribute, int unit, boolean unsigned)
+	{
+		if (baseArray == null || getArray(targets[0], attribute, unit) == null) { return; }
 
-		int componentType = basePositions.getComponentType();
+		final VertexArray output = getArray(morphedVertices, attribute, unit);
+		final int numVertices = baseArray.getVertexCount();
+		final int totalElements = numVertices * baseArray.getComponentCount();
 
-		// VertexArray may have positions as either byte size, or short size.
+		// VertexArray components are either byte or short sized.
 		// We must handle both cases separately.
-		if (componentType == 1)
+		if (baseArray.getComponentType() == 1)
 		{
 			byte[] baseRaw = new byte[totalElements];
-			byte[] targetRaw = new byte[totalElements];
+			byte[][] targetRaw = new byte[targets.length][totalElements];
 			byte[] outRaw = new byte[totalElements];
-			basePositions.get(0, numVertices, baseRaw);
+			baseArray.get(0, numVertices, baseRaw);
+			for (int t = 0; t < targets.length; t++)
+				{ getArray(targets[t], attribute, unit).get(0, numVertices, targetRaw[t]); }
 
 			for (int i = 0; i < totalElements; i++)
 			{
-				float acc = baseRaw[i] * baseWeight;
+				final int baseValue = unsigned ? Byte.toUnsignedInt(baseRaw[i]) : baseRaw[i];
+				float acc = baseValue;
 				for (int t = 0; t < targets.length; t++)
 				{
-					if (M3GMath.abs(weights[t]) < 0.0001f) { continue; }
-					VertexArray targetPositions = targets[t].getPositions(null);
-					if (targetPositions == null) { continue; }
-
-					targetPositions.get(0, numVertices, targetRaw);
-					acc += targetRaw[i] * weights[t];
+					final int targetValue = unsigned ? Byte.toUnsignedInt(targetRaw[t][i]) : targetRaw[t][i];
+					acc += weights[t] * (targetValue - baseValue);
 				}
-				int val = M3GMath.round(acc);
-				outRaw[i] = (byte) M3GMath.max(-128, M3GMath.min(127, val));
+				final int val = M3GMath.round(acc);
+				outRaw[i] = (byte) (unsigned ? M3GMath.max(0, M3GMath.min(255, val))
+					: M3GMath.max(-128, M3GMath.min(127, val)));
 			}
-			blendedPositions.set(0, numVertices, outRaw);
+			output.set(0, numVertices, outRaw);
 		}
-		else if (componentType == 2)
+		else
 		{
 			short[] baseRaw = new short[totalElements];
-			short[] targetRaw = new short[totalElements];
+			short[][] targetRaw = new short[targets.length][totalElements];
 			short[] outRaw = new short[totalElements];
-			basePositions.get(0, numVertices, baseRaw);
+			baseArray.get(0, numVertices, baseRaw);
+			for (int t = 0; t < targets.length; t++)
+				{ getArray(targets[t], attribute, unit).get(0, numVertices, targetRaw[t]); }
 
 			for (int i = 0; i < totalElements; i++)
 			{
-				float acc = baseRaw[i] * baseWeight;
+				float acc = baseRaw[i];
 				for (int t = 0; t < targets.length; t++)
-				{
-					if (M3GMath.abs(weights[t]) < 0.0001f) { continue; }
-					VertexArray targetPositions = targets[t].getPositions(null);
-					if (targetPositions == null) { continue; }
-
-					targetPositions.get(0, numVertices, targetRaw);
-					acc += targetRaw[i] * weights[t];
-				}
-				int val = M3GMath.round(acc);
-				outRaw[i] = (short) M3GMath.max(-32768, M3GMath.min(32767, val));
+					{ acc += weights[t] * (targetRaw[t][i] - baseRaw[i]); }
+				outRaw[i] = (short) M3GMath.max(-32768, M3GMath.min(32767, M3GMath.round(acc)));
 			}
-			blendedPositions.set(0, numVertices, outRaw);
+			output.set(0, numVertices, outRaw);
 		}
 	}
 
