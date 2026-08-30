@@ -17,18 +17,62 @@
 package javax.microedition.io.file;
 
 import java.util.Enumeration;
+import java.util.Vector;
 
 public class FileSystemRegistry extends Object
 {
-	
-	Enumeration roots; /* A zero-length Enumeration to be used below */
+
+	private static final Vector<FileSystemListener> listeners = new Vector<FileSystemListener>();
+	private static final String SYSTEM_ROOT = "freej2me_system/";
+
+	// Static immutable Enumeration for the "freej2me_system/" path. If MIDlets
+	// are going to have any kind of access to files through here, it'll be on
+	// the directory we already created and have permissions for.
+	private static final Enumeration<String> SYSTEM_ROOTS = new Enumeration<String>()
+	{
+		private boolean hasMore = true;
+
+		@Override
+		public boolean hasMoreElements() { return hasMore; }
+
+		@Override
+		public String nextElement()
+		{
+			if (!hasMore)
+			{
+				throw new SecurityException("No more roots available");
+			}
+			hasMore = false;
+			return SYSTEM_ROOT;
+		}
+	};
 
 	/* Returns true if the fileSystemListener was added. */
-    public static boolean addFileSystemListener(FileSystemListener listener) throws SecurityException, NullPointerException { return false; }
+	public static boolean addFileSystemListener(FileSystemListener listener) throws SecurityException, NullPointerException
+	{
+		if (listener == null) { throw new NullPointerException("Listener cannot be null"); }
 
-    public Enumeration listRoots() { return roots; }; /*If no roots are found, or it's not supported, return a zero-len enum*/
+		synchronized (listeners)
+		{
+			if (!listeners.contains(listener))
+			{
+				listeners.addElement(listener);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static Enumeration listRoots() { return SYSTEM_ROOTS; };
 
 	/* Returns true if the fileSystemListener was removed. */
-    public static boolean removeFileSystemListener(FileSystemListener listener) throws NullPointerException { return false; };
+	public static boolean removeFileSystemListener(FileSystemListener listener) throws NullPointerException
+	{
+		if (listener == null) { throw new NullPointerException("Listener cannot be null"); }
 
+		synchronized (listeners)
+		{
+			return listeners.removeElement(listener);
+		}
+	};
 }

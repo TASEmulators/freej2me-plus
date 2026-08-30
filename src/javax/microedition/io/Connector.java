@@ -22,6 +22,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import javax.microedition.io.file.FileConnectionImpl;
 import javax.wireless.messaging.MessageConnectionImpl;
 
 import org.recompile.mobile.Mobile;
@@ -34,13 +35,18 @@ public class Connector
 	public static final int WRITE = 2;
 
 	private static OutputStream output = null;
-	
+
 	public static InputStream openInputStream(String name) throws IOException
 	{
 		if (name.startsWith("scratchpad:"))
 		{
 			return new com.nttdocomo.util.ScratchPadConnection(name).openInputStream();
 		}
+		if (name.startsWith("file://"))
+        {
+            InputConnection conn = (InputConnection) open(name, READ, false);
+            return conn.openInputStream();
+        }
 		return new InputConnectionImpl(name).openInputStream();
 	}
 
@@ -50,6 +56,11 @@ public class Connector
 		{
 			return new com.nttdocomo.util.ScratchPadConnection(name).openDataInputStream();
 		}
+		if (name.startsWith("file://"))
+        {
+            InputConnection conn = (InputConnection) open(name, READ, false);
+            return conn.openDataInputStream();
+        }
 		return new InputConnectionImpl(name).openDataInputStream();
 	}
 
@@ -59,7 +70,7 @@ public class Connector
 
 	public static Connection open(String name, int mode, boolean timeouts) throws IOException
 	{
-		
+
 		if (name.startsWith("scratchpad:"))
 		{
 			return new com.nttdocomo.util.ScratchPadConnection(name);
@@ -72,30 +83,46 @@ public class Connector
 
 		if (name.startsWith("http://") || name.startsWith("https://") || name.startsWith("socket://")) { return new HttpConnectionImpl(name); }
 
-		if(Mobile.usingMessagingAPI) 
+		// JSR-75 File Connection API
+        if (name.startsWith("file://"))
+        {
+            return new FileConnectionImpl(name, mode);
+        }
+
+		if(Mobile.usingMessagingAPI)
 		{
 			return new MessageConnectionImpl(name);
 		}
-		
-		return null; 
+
+		throw new ConnectionNotFoundException("Unsupported protocol: " + name);
 	}
 
-	public static DataOutputStream openDataOutputStream(String name) 
+	public static DataOutputStream openDataOutputStream(String name) throws IOException
 	{
 		if (name.startsWith("scratchpad:"))
 		{
 			return new com.nttdocomo.util.ScratchPadConnection(name).openDataOutputStream();
 		}
-		return new DataOutputStream(output); 
+		if (name.startsWith("file://"))
+        {
+            OutputConnection conn = (OutputConnection) open(name, WRITE, false);
+            return conn.openDataOutputStream();
+        }
+		return new DataOutputStream(output);
 	}
 
-	public static OutputStream openOutputStream(String name) 
+	public static OutputStream openOutputStream(String name) throws IOException
 	{
 		if (name.startsWith("scratchpad:"))
 		{
 			return new com.nttdocomo.util.ScratchPadConnection(name).openOutputStream();
 		}
-		return output; 
+		if (name.startsWith("file://"))
+        {
+            OutputConnection conn = (OutputConnection) open(name, WRITE, false);
+            return conn.openOutputStream();
+        }
+		return output;
 	}
 
 }

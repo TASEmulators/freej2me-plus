@@ -25,7 +25,7 @@ import java.util.Enumeration;
 
 import javax.microedition.io.StreamConnection;
 
-public interface FileConnection extends StreamConnection 
+public interface FileConnection extends StreamConnection
 {
 
     long availableSize() throws SecurityException, IllegalModeException, ConnectionClosedException;
@@ -55,7 +55,7 @@ public interface FileConnection extends StreamConnection
     boolean isHidden() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
     boolean isOpen();
-    
+
     long lastModified() throws SecurityException, IllegalModeException, ConnectionClosedException;
 
     Enumeration list() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
@@ -64,7 +64,7 @@ public interface FileConnection extends StreamConnection
 
     void mkdir() throws IOException, SecurityException, IllegalModeException, ConnectionClosedException;
 
-    @Override 
+    @Override
     DataInputStream openDataInputStream() throws SecurityException, IllegalModeException;
 
     @Override
