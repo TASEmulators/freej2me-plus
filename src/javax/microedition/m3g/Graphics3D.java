@@ -95,6 +95,22 @@ public class Graphics3D
 	private int vieww;
 	private int viewh;
 
+	/*
+	 * Rendering-target state captured by bindTarget. As per JSR-184, viewport
+	 * coordinates are relative to the Graphics origin in effect when binding, and
+	 * all rendering is clipped against the clip rectangle in effect when binding;
+	 * later changes to the bound Graphics must not affect 3D rendering.
+	 */
+	private int originX, originY;
+	private int targetClipX, targetClipY, targetClipW, targetClipH;
+
+	/*
+	 * The visible part of the viewport (in viewport-local coordinates): its
+	 * intersection with the target clip rectangle. Rendering operations must not
+	 * touch pixels outside of it, but clipping to it must not affect projection.
+	 */
+	private int viewClipL, viewClipT, viewClipR, viewClipB;
+
 	private boolean depthEnabled;
 	private short[] depthBuffer;
 	private float near;
@@ -242,11 +258,20 @@ public class Graphics3D
 			if (i2d.getFormat() != Image2D.RGB && i2d.getFormat() != Image2D.RGBA)
 			{ throw new IllegalArgumentException("Received a 2D render target with invalid internal format"); }
 
-			/* It's a 2D image, so paint the canvas with it starting from the top-left corner */
+			/* It's a 2D image: the origin is its top-left corner, and the clip rectangle
+			 * comprises all of its pixels, as per JSR-184. */
+			canvasWidth = i2d.getWidth();
+			canvasHeight = i2d.getHeight();
+			originX = 0;
+			originY = 0;
+			targetClipX = 0;
+			targetClipY = 0;
+			targetClipW = canvasWidth;
+			targetClipH = canvasHeight;
 			this.viewx = 0;
 			this.viewy = 0;
-			this.vieww = i2d.getWidth();
-			this.viewh = i2d.getHeight();
+			this.vieww = canvasWidth;
+			this.viewh = canvasHeight;
 		}
 		else if (target instanceof Graphics)
 		{
@@ -255,10 +280,26 @@ public class Graphics3D
 			rasterData = ((PlatformGraphics) pgrp).getFrameBuffer();
 			canvasWidth = pgrp.getCanvas().getWidth();
 			canvasHeight = pgrp.getCanvas().getHeight();
-			this.viewx = M3GMath.max(0, pgrp.getClipX() + pgrp.getTranslateX());
-			this.viewy = M3GMath.max(0, pgrp.getClipY() + pgrp.getTranslateY());
-			this.vieww = M3GMath.min(canvasWidth, pgrp.getClipWidth());
-			this.viewh = M3GMath.min(canvasHeight, pgrp.getClipHeight());
+
+			/*
+			 * As per JSR-184, the viewport position is relative to the Graphics origin
+			 * in effect when calling bindTarget, and rendering is clipped against the
+			 * Graphics clip rectangle in effect at that same time. Capture both here.
+			 * The clip rectangle is stored in physical target pixels, limited to the
+			 * target's bounds.
+			 */
+			originX = pgrp.getTranslateX();
+			originY = pgrp.getTranslateY();
+			targetClipX = M3GMath.max(0, pgrp.getClipX() + originX);
+			targetClipY = M3GMath.max(0, pgrp.getClipY() + originY);
+			targetClipW = M3GMath.min(canvasWidth, pgrp.getClipX() + originX + pgrp.getClipWidth()) - targetClipX;
+			targetClipH = M3GMath.min(canvasHeight, pgrp.getClipY() + originY + pgrp.getClipHeight()) - targetClipY;
+
+			/* The default viewport covers the target clip rectangle. */
+			this.viewx = targetClipX - originX;
+			this.viewy = targetClipY - originY;
+			this.vieww = M3GMath.max(1, targetClipW);
+			this.viewh = M3GMath.max(1, targetClipH);
 		} else
 		{
 			/* If it is neither of those, throw an IllegalArgumentException as per JSR-184. */
@@ -275,7 +316,17 @@ public class Graphics3D
 			{ throw new IllegalArgumentException("Render target either has larger dimensions than supported, or the render hint is invalid"); }
 
 		this.target = target;
-		this.depthBuffer = new short[this.vieww * this.viewh];
+		updateViewportClip();
+
+		/*
+		 * Depth values belong to physical render-target pixels and are indexed just
+		 * like the color buffer. JSR-184 allows the viewport to be freely repositioned
+		 * between bind and release (e.g. portal renderers narrowing the viewport per
+		 * room), and the depth of a pixel must survive those changes, so the viewport
+		 * dimensions must never determine the buffer's size or row stride.
+		 */
+		if (this.depthBuffer == null || this.depthBuffer.length < canvasWidth * canvasHeight)
+			{ this.depthBuffer = new short[canvasWidth * canvasHeight]; }
 		Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f));
 		this.depthEnabled = depthBuffer;
 		this.hints = hints;
@@ -311,15 +362,19 @@ public class Graphics3D
 
 			if (this.target instanceof Graphics)
 			{
-				Graphics grp = (Graphics) this.target;
-
 				/*
-				 * As per JSR-184, clear() always affects the whole viewport: fill it with the
-				 * background color first. The Background crop rectangle is a sampling window
-				 * into the background image, NOT the destination rectangle.
+				 * As per JSR-184, clear() affects the visible part of the viewport: fill it
+				 * with the background color first. The Background crop rectangle is a sampling
+				 * window into the background image, NOT the destination rectangle. Painting
+				 * the framebuffer directly keeps this independent from any origin or clip
+				 * changes made to the bound Graphics after bindTarget.
 				 */
-				grp.setColor(color);
-				grp.fillRect(viewx, viewy, vieww, viewh);
+				final int paintColor = 0xFF000000 | color;
+				for (int py = viewClipT; py < viewClipB; py++)
+				{
+					final int rowStart = targetIndex(viewClipL, py);
+					Arrays.fill(rasterData, rowStart, rowStart + (viewClipR - viewClipL), paintColor);
+				}
 
 				if (bgImg != null) { clearToTarget(background, bgImg, false); }
 			}
@@ -331,10 +386,10 @@ public class Graphics3D
 					{ throw new IllegalArgumentException("The background image to be cleared does not have the same format as the render target."); }
 
 				// Clear with color first
-				for (int py = 0; py < viewh; py++)
+				for (int py = viewClipT; py < viewClipB; py++)
 				{
 					int screenY = py + viewy;
-					for (int px = 0; px < vieww; px++)
+					for (int px = viewClipL; px < viewClipR; px++)
 					{
 						i2d.setPixel(px + viewx, screenY, color);
 					}
@@ -344,7 +399,16 @@ public class Graphics3D
 			}
 		}
 
-		if (clearDepth) { Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f)); }
+		/* The depth buffer is likewise cleared only inside the visible viewport. */
+		if (clearDepth)
+		{
+			final short farDepth = (short) M3GMath.round(this.far * 32767.0f);
+			for (int py = viewClipT; py < viewClipB; py++)
+			{
+				final int rowStart = targetIndex(viewClipL, py);
+				Arrays.fill(this.depthBuffer, rowStart, rowStart + (viewClipR - viewClipL), farDepth);
+			}
+		}
 	}
 
 	public Camera getCamera(Transform transform)
@@ -1037,9 +1101,11 @@ public class Graphics3D
 
 			float invMidSpan = M3GMath.fastReciprocal(xMidR - xMidL);
 
-			// Draw both halves of the triangle, starting with the top one.
-			yStart = M3GMath.max(M3GMath.ceil(yTop), 0);
-			yEnd = M3GMath.min(M3GMath.ceil(yMid), viewh);
+			// Draw both halves of the triangle, starting with the top one. The scanline
+			// range is clamped to the visible viewport, which discards clipped pixels
+			// without changing the viewport mapping.
+			yStart = M3GMath.max(M3GMath.ceil(yTop), viewClipT);
+			yEnd = M3GMath.min(M3GMath.ceil(yMid), viewClipB);
 
 			if (yStart < yEnd)
 			{
@@ -1048,8 +1114,8 @@ public class Graphics3D
 					invMidSpan);
 			}
 
-			yStart = M3GMath.max(M3GMath.ceil(yMid), 0);
-			yEnd = M3GMath.min(M3GMath.ceil(yBot), viewh);
+			yStart = M3GMath.max(M3GMath.ceil(yMid), viewClipT);
+			yEnd = M3GMath.min(M3GMath.ceil(yBot), viewClipB);
 
 			if (yStart < yEnd)
 			{
@@ -1140,23 +1206,41 @@ public class Graphics3D
 		this.viewh = height;
 
 		/*
-		 * The depth buffer is indexed in viewport-relative coordinates (y * vieww + x),
-		 * and bindTarget sizes it for the viewport in effect at bind time. JSR-184 allows
-		 * setViewport to be called at any point between bind and release with a viewport
-		 * larger than the bind-time one (e.g. binding with a small clip rect, then setting
-		 * a fullscreen viewport), so grow the buffer here or the rasterizer will index
-		 * out of bounds. Its previous contents are laid out for the old width and thus
-		 * meaningless for the new viewport either way, so reset it to the far plane.
+		 * As per JSR-184, the viewport can be freely repositioned relative to the
+		 * rendering target without rebinding; parts outside the target clip rectangle
+		 * are silently clipped off without affecting projection. The depth buffer is
+		 * indexed by physical target pixel, so it survives this unchanged.
 		 */
-		if (this.depthBuffer != null && this.depthBuffer.length < width * height)
-		{
-			this.depthBuffer = new short[width * height];
-			Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f));
-		}
+		if (this.target != null) { updateViewportClip(); }
 	}
 
 
 	/* Helper Methods */
+
+	/*
+	 * Recomputes the visible part of the viewport: its intersection with the target
+	 * clip rectangle, expressed in viewport-local coordinates. Rasterization clamps
+	 * its loops to these bounds, which discards clipped pixels without altering the
+	 * viewport-to-screen mapping (and therefore the projection), as per JSR-184.
+	 */
+	private void updateViewportClip()
+	{
+		final int viewOriginX = originX + viewx, viewOriginY = originY + viewy;
+		viewClipL = M3GMath.max(0, M3GMath.min(vieww, targetClipX - viewOriginX));
+		viewClipT = M3GMath.max(0, M3GMath.min(viewh, targetClipY - viewOriginY));
+		viewClipR = M3GMath.max(viewClipL, M3GMath.min(vieww, targetClipX + targetClipW - viewOriginX));
+		viewClipB = M3GMath.max(viewClipT, M3GMath.min(viewh, targetClipY + targetClipH - viewOriginY));
+	}
+
+	/*
+	 * Returns the physical render-target index of a viewport-local pixel. Color and
+	 * depth buffers share this indexing, so a pixel keeps its depth value when the
+	 * viewport is repositioned between bind and release.
+	 */
+	private int targetIndex(int x, int y)
+	{
+		return (originY + viewy + y) * canvasWidth + originX + viewx + x;
+	}
 
 	/*
 	 * Renders a Sprite3D as a screen-aligned textured rectangle, following the same
@@ -1258,10 +1342,10 @@ public class Graphics3D
 		final float spanX = sx1 - sx0, spanY = sy1 - sy0;
 		if (spanX <= 0f || spanY <= 0f) { return; }
 
-		final int pixL = M3GMath.max(M3GMath.roundPositive(sx0), 0);
-		final int pixR = M3GMath.min(M3GMath.roundPositive(sx1), vieww);
-		final int pixT = M3GMath.max(M3GMath.roundPositive(sy0), 0);
-		final int pixB = M3GMath.min(M3GMath.roundPositive(sy1), viewh);
+		final int pixL = M3GMath.max(M3GMath.roundPositive(sx0), viewClipL);
+		final int pixR = M3GMath.min(M3GMath.roundPositive(sx1), viewClipR);
+		final int pixT = M3GMath.max(M3GMath.roundPositive(sy0), viewClipT);
+		final int pixB = M3GMath.min(M3GMath.roundPositive(sy1), viewClipB);
 		if (pixL >= pixR || pixT >= pixB) { return; }
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
@@ -1293,8 +1377,11 @@ public class Graphics3D
 			// Odd scanlines just copy from even ones in half res mode.
 			if(Mobile.halfResM3GRaster && (y & 1) != 0 && !(this.target instanceof Image2D))
 			{
-				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
-					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
+				if (y > viewClipT && viewClipR > viewClipL)
+				{
+					System.arraycopy(rasterData, targetIndex(viewClipL, y - 1),
+						rasterData, targetIndex(viewClipL, y), viewClipR - viewClipL);
+				}
 				continue;
 			}
 
@@ -1302,11 +1389,11 @@ public class Graphics3D
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
 			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
 
-			int rasterIdxY = (y + viewy) * canvasWidth + viewx;
+			int rasterIdxY = targetIndex(0, y);
 			for (int x = pixL; x < pixR; x++)
 			{
-				// Depth test against the same buffer and convention used by triangles.
-				if (depthTest && this.depthBuffer[this.vieww * y + x] < ndcZ) { continue; }
+				// Depth test against the same buffer, index and convention used by triangles.
+				if (depthTest && this.depthBuffer[rasterIdxY + x] < ndcZ) { continue; }
 
 				final float u = (x + 0.5f - sx0) / spanX;
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
@@ -1335,7 +1422,7 @@ public class Graphics3D
 							compositingMode.getBlending()));
 				}
 
-				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[this.vieww * y + x] = ndcZ; }
+				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[rasterIdxY + x] = ndcZ; }
 			}
 		}
 	}
@@ -1431,8 +1518,11 @@ public class Graphics3D
 			// Odd scanlines just copy from even ones in half res mode.
 			if(!renderToImage && Mobile.halfResM3GRaster && (y & 1) != 0)
 			{
-				System.arraycopy(rasterData, ((y + viewy - 1) * canvasWidth + viewx),
-					rasterData, ((y + viewy) * canvasWidth + viewx), canvasWidth);
+				if (y > viewClipT && viewClipR > viewClipL)
+				{
+					System.arraycopy(rasterData, targetIndex(viewClipL, y - 1),
+						rasterData, targetIndex(viewClipL, y), viewClipR - viewClipL);
+				}
 
 				if (hasTexture)
 				{
@@ -1448,8 +1538,8 @@ public class Graphics3D
 			int ixL = (int) (xL + 0.999999f);
 			int ixR = (int) (xR + 0.999999f);
 
-			if (ixL < 0) { ixL = 0; }
-			if (ixR > vieww) { ixR = vieww; }
+			if (ixL < viewClipL) { ixL = viewClipL; }
+			if (ixR > viewClipR) { ixR = viewClipR; }
 
 			if (ixL >= ixR)
 			{
@@ -1479,8 +1569,9 @@ public class Graphics3D
 				deltaB = (int) (((colorA & 0xFF)         + dx * bStepX + dy * bStepY) * 65536.0f);
 			}
 
-			int depthIdx = (y * this.vieww) + ixL;
-			int rasterIdx = ((y + viewy) * canvasWidth + viewx) + ixL;
+			// Color and depth share the same physical render-target index.
+			int rasterIdx = targetIndex(ixL, y);
+			int depthIdx = rasterIdx;
 
 			float pw = pwL + (ixL - xL) * pwStep;
 			float invPw = doPerspective ? M3GMath.fastReciprocal(pw) : 1.0f;
@@ -1722,16 +1813,16 @@ public class Graphics3D
 						int distFx = (int) (((ixL + 1.0f) - xL) * 65536.0f);
 						int scaledDist = (distFx * 85) >> 16;
 
-						applyEdgeAA(x - 1, rasterIdx - 1, canvasWidth, paintPixel, rasterData, 85 + scaledDist);
-						applyEdgeAA(x, rasterIdx, canvasWidth, paintPixel, rasterData, 164 + scaledDist);
+						applyEdgeAA(x - 1, rasterIdx - 1, viewClipL, viewClipR, paintPixel, rasterData, 85 + scaledDist);
+						applyEdgeAA(x, rasterIdx, viewClipL, viewClipR, paintPixel, rasterData, 164 + scaledDist);
 					}
 					else
 					{
 						int distFx = (int) ((xR - (ixR - 1)) * 65536.0f);
 						int scaledDist = (distFx * 85) >> 16;
 
-						applyEdgeAA(x, rasterIdx, canvasWidth, paintPixel, rasterData, 164 + scaledDist);
-						applyEdgeAA(x + 1, rasterIdx + 1, canvasWidth, paintPixel, rasterData, 85 + scaledDist);
+						applyEdgeAA(x, rasterIdx, viewClipL, viewClipR, paintPixel, rasterData, 164 + scaledDist);
+						applyEdgeAA(x + 1, rasterIdx + 1, viewClipL, viewClipR, paintPixel, rasterData, 85 + scaledDist);
 					}
 
 					continue;
@@ -1752,10 +1843,11 @@ public class Graphics3D
 		}
 	}
 
-	private static final void applyEdgeAA(int targetX, int targetIdx, int canvasWidth, int paintPixel,
-							int[] rasterData, int coverageAlpha)
+	/* AA spill pixels are viewport-local, and must stay inside the visible viewport. */
+	private static final void applyEdgeAA(int targetX, int targetIdx, int clipLeft, int clipRight,
+							int paintPixel, int[] rasterData, int coverageAlpha)
 	{
-		if (coverageAlpha > 0 && targetX >= 0 && targetX < canvasWidth)
+		if (coverageAlpha > 0 && targetX >= clipLeft && targetX < clipRight)
 		{
 			if (coverageAlpha > 255) { coverageAlpha = 255; }
 
@@ -2037,17 +2129,21 @@ public class Graphics3D
 
 		int stepX = (cropW << 16) / vieww;
 		int stepY = (cropH << 16) / viewh;
-		int currY = cropY << 16;
 
 		Image2D destImg = isImageTarget ? (Image2D) this.target : null;
 
-		for (int py = 0; py < viewh; py++)
+		/*
+		 * The crop-to-viewport mapping always spans the full viewport; only the rows
+		 * and columns inside the visible part of it are actually painted.
+		 */
+		for (int py = viewClipT; py < viewClipB; py++)
 		{
-			int currX = cropX << 16;
+			int currY = (cropY << 16) + py * stepY;
+			int currX = (cropX << 16) + viewClipL * stepX;
 			int screenY = py + viewy;
-			int rowOffset = screenY * canvasWidth + viewx;
+			int rowOffset = targetIndex(0, py);
 
-			for (int px = 0; px < vieww; px++)
+			for (int px = viewClipL; px < viewClipR; px++)
 			{
 				final int texCoord = wrapCoords(currX >> 16, currY >> 16, bgW, bgH,
 					repeatX, repeatY, isNPOT);
@@ -2074,7 +2170,6 @@ public class Graphics3D
 				else { rasterData[rowOffset + px] = paintPixel; }
 				currX += stepX;
 			}
-			currY += stepY;
 		}
 	}
 
