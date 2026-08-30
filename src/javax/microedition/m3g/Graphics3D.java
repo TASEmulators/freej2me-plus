@@ -1677,17 +1677,13 @@ public class Graphics3D
 				 * occlude geometry drawn later (games rely on this — e.g. tree canopies
 				 * with alpha cutouts drawn before the ground). The depth buffer is only
 				 * updated by fragments that survive this test.
-				 *
-				 * TODO: Spec says that a threshold of 0 should make ALL fragments go through,
-				 * but doing so evidently breaks transparency in apps like Speed Spirit, Coast Racer
-				 * and a few others on vegetation when the texel alpha is also 0. So what gives?
 				 */
 				final int alpha = paintPixel >>> 24;
 
 				if (alpha == 0 || alpha < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
-				if (usesDepthWrite && alpha >= 255) { this.depthBuffer[depthIdx] = (short) z; }
+				if (usesDepthWrite) { this.depthBuffer[depthIdx] = (short) z; }
 
 				// Only write to the screen if color write is enabled.
 				if(!colorEnabled) { continue; }
