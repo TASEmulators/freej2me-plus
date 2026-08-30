@@ -74,9 +74,9 @@ public abstract class Canvas extends Displayable
 
 	// We now coalesce multiple paint calls into a single one spanning the
 	// union of all the areas passed to repaint(int, int, int, int).
-	private final Object paintLock = new Object();
-	private boolean needsRepaint = false;
-	private int paintX, paintY, paintW, paintH;
+	protected final Object paintLock = new Object();
+	protected boolean needsRepaint = false;
+	protected int paintX, paintY, paintW, paintH;
 
 	protected Canvas()
 	{

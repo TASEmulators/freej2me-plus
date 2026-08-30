@@ -37,7 +37,7 @@ public abstract class SpriteCanvas extends Canvas
 
 	// The "virtual screen" here is just the lcd backbuffer that any Displayable gets when being created
 
-	public SpriteCanvas(int numPalettes, int numPatterns) 
+	public SpriteCanvas(int numPalettes, int numPatterns)
     {
 		super();
 		this.palettes = new int[numPalettes];
@@ -45,7 +45,7 @@ public abstract class SpriteCanvas extends Canvas
 		this.pixels = new int[64];
 	}
 
-	public void createFrameBuffer(int fw, int fh) 
+	public void createFrameBuffer(int fw, int fh)
     {
 		if(spriteImage != null) { throw new IllegalStateException("FrameBuffer already exists!"); }
 		if(fw > getVirtualWidth() || fh > getVirtualHeight()) { throw new IllegalArgumentException("Size is larger than the screen"); }
@@ -58,8 +58,8 @@ public abstract class SpriteCanvas extends Canvas
 	public void disposeFrameBuffer() { spriteGraphics = null; spriteImage = null; }
 
     // Copies from the virtual screen (back buffer) to the currently set FrameBuffer
-	public void copyArea(int sx, int sy, int fw, int fh, int tx, int ty) 
-    { 
+	public void copyArea(int sx, int sy, int fw, int fh, int tx, int ty)
+    {
 		if(sx < 0 || sy < 0 || fw > getVirtualWidth() || fh > getVirtualHeight()) { throw new IllegalArgumentException("Invalid position and/or size received"); }
 		if(spriteImage == null) { throw new IllegalStateException("FrameBuffer is not ready!"); }
 		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "copyArea: " + sx + " " + sy + " " + fw + " " + fh + " " + tx + " " + ty);
@@ -68,7 +68,7 @@ public abstract class SpriteCanvas extends Canvas
     }
 
 	// TODO: This should copy from an area of the virtual screen into another to allow features like scrolling, but is untested
-    public void copyFullScreen(int tx, int ty) 
+    public void copyFullScreen(int tx, int ty)
     {
 		if(spriteImage == null) { throw new IllegalStateException("FrameBuffer is not ready!"); }
 		Mobile.log(Mobile.LOG_WARNING, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "copyFullscreen (Untested): " + tx + " " + ty);
@@ -76,7 +76,7 @@ public abstract class SpriteCanvas extends Canvas
         graphics.copyArea(0, 0, getVirtualWidth(), getVirtualHeight(), tx, ty);
     }
 
-	public void drawFrameBuffer(final int tx, final int ty) 
+	public void drawFrameBuffer(final int tx, final int ty)
     {
 		if(spriteImage == null) { throw new IllegalStateException("FrameBuffer is not ready!"); }
 		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "drawFrameBuffer: " + tx + " " + ty);
@@ -92,40 +92,78 @@ public abstract class SpriteCanvas extends Canvas
 	 */
 	public void repaint(final int x, final int y, final int width, final int height)
 	{
-		if (!isShown() || listCommands || servicing) { return; }
+		if (!isShown() || listCommands) { return; }
 
-		if(!Mobile.compatImmediateRepaints) 
+		if (!isShown() || listCommands) { return; }
+
+		if(!Mobile.compatImmediateRepaints)
 		{
-			Mobile.getDisplay().postPaintRequest(new Runnable() 
+			boolean postEvent = false;
+			synchronized (paintLock)
 			{
-				@Override
-				public void run() 
-				{ 
-					repaintRequest(x, y, width, height); 
-					Mobile.getPlatform().flushGraphics(spriteImage, x, y, spriteImage.getWidth(), spriteImage.getHeight()); // draw sprite FB
-					pendingRepaint.set(false);
+				if (!needsRepaint)
+				{
+					paintX = x;
+					paintY = y;
+					paintW = width;
+					paintH = height;
+					needsRepaint = true;
+					postEvent = true;
 				}
-			}); 
-			pendingRepaint.set(true);
+				else
+				{
+					// Unionize clipping bounds for consecutive repaints, so
+					// we don't keep stacking draw operations on top of others.
+					int x2 = Math.max(paintX + paintW, x + width);
+					int y2 = Math.max(paintY + paintH, y + height);
+					paintX = Math.min(paintX, x);
+					paintY = Math.min(paintY, y);
+					paintW = x2 - paintX;
+					paintH = y2 - paintY;
+				}
+			}
+			// Schedule the paint request for later processing
+			if(postEvent)
+			{
+				Mobile.getDisplay().postPaintRequest(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						repaintRequest();
+						// draw sprite FB
+						Mobile.getPlatform().flushGraphics(spriteImage, x, y, spriteImage.getWidth(), spriteImage.getHeight());
+					}
+				});
+			}
 		}
-		else
+		else // Immediately process the paint event
 		{
-			repaintRequest(x, y, width, height);
-			Mobile.getPlatform().flushGraphics(spriteImage, x, y, spriteImage.getWidth(), spriteImage.getHeight()); // draw sprite FB in immediate repaints mode
+			synchronized (paintLock)
+			{
+				paintX = x;
+				paintY = y;
+				paintW = width;
+				paintH = height;
+				needsRepaint = true;
+			}
+			repaintRequest();
+			// draw sprite FB in immediate repaints mode
+			Mobile.getPlatform().flushGraphics(spriteImage, x, y, spriteImage.getWidth(), spriteImage.getHeight());
 		}
 	}
 
-	public void setPalette(int index, int palette) 
-	{ 
+	public void setPalette(int index, int palette)
+	{
 		if(index > palettes.length) { throw new ArrayIndexOutOfBoundsException("Received invalid palette index!"); }
-		this.palettes[index] = palette | 0xFF000000; 
+		this.palettes[index] = palette | 0xFF000000;
 	}
 
-	public void setPattern(int index, byte[] data) 
-	{ 
+	public void setPattern(int index, byte[] data)
+	{
 		if(index * 64 > patternData.length) { throw new ArrayIndexOutOfBoundsException("Received invalid pattern index!"); }
 		if(data.length != 64) { throw new IllegalArgumentException("Pattern size is not 64!"); }
-		System.arraycopy(data, 0, patternData, index * 64, data.length); 
+		System.arraycopy(data, 0, patternData, index * 64, data.length);
 	}
 
 	public static short createCharacterCommand(int offset, boolean transparent, int rotation, boolean isUpsideDown, boolean isRightsideLeft, int patternNo)
@@ -141,7 +179,7 @@ public abstract class SpriteCanvas extends Canvas
 		return (short) cmd;
 	}
 
-    public void drawBackground(short command, short x, short y) 
+    public void drawBackground(short command, short x, short y)
     {
 		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "drawBackground: " + command + " " + x + " " + y);
         if(Mobile.getDisplay().getCurrent() != this) { return; }
@@ -154,9 +192,9 @@ public abstract class SpriteCanvas extends Canvas
 		boolean isRightsideLeft = (command & 0x100) != 0;
 		int patternNo = command & 0xff;
 
-		for (int x1 = 0; x1 < 8; x1++) 
+		for (int x1 = 0; x1 < 8; x1++)
         {
-			for (int y1 = 0; y1 < 8; y1++) 
+			for (int y1 = 0; y1 < 8; y1++)
             {
 				int cmd = (isUpsideDown ? 7 - y1 : y1) * 8 + (isRightsideLeft ? 7 - x1 : x1);
 				int colorId = patternData[patternNo * 64 + cmd] & 0xFF;
@@ -186,9 +224,9 @@ public abstract class SpriteCanvas extends Canvas
 		boolean isRightsideLeft = (command & 0x100) != 0;
 		int patternNo = command & 0xff;
 
-		for (int x1 = 0; x1 < 8; x1++) 
+		for (int x1 = 0; x1 < 8; x1++)
         {
-			for (int y1 = 0; y1 < 8; y1++) 
+			for (int y1 = 0; y1 < 8; y1++)
             {
 				int cmd = (isUpsideDown ? 7 - y1 : y1) * 8 + (isRightsideLeft ? 7 - x1 : x1);
 				int colorId = patternData[patternNo * 64 + cmd] & 0xFF;
