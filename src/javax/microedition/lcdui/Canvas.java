@@ -71,10 +71,12 @@ public abstract class Canvas extends Displayable
 	private int barHeight;
 	private boolean suppressKeyEvents = false; // For GameCanvas
 	private boolean fullscreen = false;
-	protected boolean servicing = false;
-	private boolean firstDrawn = false;
 
-	protected AtomicBoolean pendingRepaint = new AtomicBoolean(false);
+	// We now coalesce multiple paint calls into a single one spanning the
+	// union of all the areas passed to repaint(int, int, int, int).
+	private final Object paintLock = new Object();
+	private boolean needsRepaint = false;
+	private int paintX, paintY, paintW, paintH;
 
 	protected Canvas()
 	{
@@ -109,7 +111,7 @@ public abstract class Canvas extends Displayable
 			case LEFT:       return Mobile.getMobileKey(2);
 			case RIGHT:      return Mobile.getMobileKey(3);
 			case FIRE:       return Mobile.getMobileKey(7);
-	
+
 			case GAME_A: case KEY_NUM1: return Mobile.getMobileKey(10);
 			case GAME_B: case KEY_NUM3: return Mobile.getMobileKey(11);
 			case GAME_C: case KEY_NUM7: return Mobile.getMobileKey(5);
@@ -122,10 +124,10 @@ public abstract class Canvas extends Displayable
 		return 0;
 	}
 
-	// Used in SKT lcdui classes so we can put them on top of MIDP ones 
-	public int SKTToMIDPKey(int sktKey) 
+	// Used in SKT lcdui classes so we can put them on top of MIDP ones
+	public int SKTToMIDPKey(int sktKey)
 	{
-		switch(sktKey) 
+		switch(sktKey)
 		{
 			case KEY_CLR: return 0;
 			case KEY_COML: return 0;
@@ -205,89 +207,147 @@ public abstract class Canvas extends Displayable
 	public void repaint(final int x, final int y, final int width, final int height)
 	{
 		// Also check if repaints are being serviced here, some jars like Garfield's House add repaint calls in a separate thread from that blocked by serviceRepaints
-		if (!isShown() || listCommands || servicing) { return; }
+		if (!isShown() || listCommands) { return; }
 
-		if(!Mobile.compatImmediateRepaints) 
+		if(!Mobile.compatImmediateRepaints)
 		{
-			Mobile.getDisplay().postPaintRequest(new Runnable() 
+			boolean postEvent = false;
+			synchronized (paintLock)
 			{
-				@Override
-				public void run() 
-				{ 
-					repaintRequest(x, y, width, height); 
-					pendingRepaint.set(false);
+				if (!needsRepaint)
+				{
+					paintX = x;
+					paintY = y;
+					paintW = width;
+					paintH = height;
+					needsRepaint = true;
+					postEvent = true;
 				}
-			}); 
-			pendingRepaint.set(true);
+				else
+				{
+					// Unionize clipping bounds for consecutive repaints, so
+					// we don't keep stacking draw operations on top of others.
+					int x2 = Math.max(paintX + paintW, x + width);
+					int y2 = Math.max(paintY + paintH, y + height);
+					paintX = Math.min(paintX, x);
+					paintY = Math.min(paintY, y);
+					paintW = x2 - paintX;
+					paintH = y2 - paintY;
+				}
+			}
+			// Schedule the paint request for later processing
+			if(postEvent)
+			{
+				Mobile.getDisplay().postPaintRequest(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						repaintRequest();
+					}
+				});
+			}
 		}
 		else // Immediately process the paint event
 		{
-			repaintRequest(x, y, width, height); 
+			synchronized (paintLock)
+			{
+				paintX = x;
+				paintY = y;
+				paintW = width;
+				paintH = height;
+				needsRepaint = true;
+			}
+			repaintRequest();
 		}
 	}
 
-	public void repaintRequest(final int x, final int y, final int width, final int height) 
+	public void repaintRequest()
 	{
-		// These can be called from another thread, at any time (even if the canvas is no longer visible), so ignore any repaints in cases where it isn't visible
+		// These can be called from another thread, at any time (even if the canvas is no longer visible),
+		// so ignore any repaints in cases where it isn't visible
 		if (!isShown() || listCommands) { return; }
 
-		firstDrawn = true; // So that setCurrent knows whether this canvas has been shown by the application before forcing a repaint of its own (we don't need to finalize the paint call)
+		int renderX, renderY, renderW, renderH;
 
-		try 
+		synchronized (paintLock)
 		{
-			synchronized(graphics) 
+			if (!needsRepaint)
 			{
-				graphics.reset(x, y, width, height); 
-				paint(graphics); 
+				paintLock.notifyAll();
+				return;
+			}
+			renderX = paintX;
+			renderY = paintY;
+			renderW = paintW;
+			renderH = paintH;
+			needsRepaint = false;
+		}
+
+		try
+		{
+			synchronized(graphics)
+			{
+				graphics.reset(renderX, renderY, renderW, renderH);
+				paint(graphics);
 			}
 		}
-		catch(NullPointerException npe) 
+		catch(NullPointerException npe)
 		{
 			Mobile.log(Mobile.LOG_ERROR, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Null Pointer Exception in draw event: " + npe.getMessage());
 			npe.printStackTrace();
 			//throw new NullPointerException("Null Pointer Exception in draw event");
 		}
-		catch (Exception e) 
+		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Serious Exception hit in repaint(): " + e.getMessage());
 			e.printStackTrace();
 		}
+		finally
+		{
+			// Unblock any threads waiting in serviceRepaints()
+			synchronized (paintLock)
+			{
+				paintLock.notifyAll();
+			}
+		}
 
 		// Draw command bar whenever the canvas is not fullscreen and there are commands in the bar, and always queue it to draw after the flush
-		if (!fullscreen && !commands.isEmpty()) 
-		{ 
-			Mobile.getPlatform().setPostFlushDraw(new Runnable() 
+		if (!fullscreen && !commands.isEmpty())
+		{
+			Mobile.getPlatform().setPostFlushDraw(new Runnable()
 			{
 				@Override
 				public void run() { paintCommandsBar(); }
 			});
 		}
 
-		Mobile.getPlatform().flushGraphics(platformImage, x, y, width, height); 
+		Mobile.getPlatform().flushGraphics(platformImage, renderX, renderY, renderW, renderH);
 	}
 
-	public void serviceRepaints() 
+	public void serviceRepaints()
 	{
-		if(!isShown() || !pendingRepaint.get()) { return; }
-	
-		servicing = true;
-		if(!MobilePlatform.pressedKeys[20]) // If the fast-forward key is pressed, ignore the waiting and force a repaint immediately
+		if (!isShown()) { return; }
+
+		// If it was called directly from the Paint/EDT Thread, process now
+		// to avoid possible deadlocks (java threading is finicky for J2ME,
+		// so you never know)
+		if (Mobile.getDisplay().isEventThread())
 		{
-			// serviceRepaints has to force pending repaints to happen, so initially wait until they have time to be serviced normally, or multiple retries were attempted and unsuccessful
-			for(byte waitTime = 0; waitTime < 16; waitTime++) 
-			{
-				if(pendingRepaint.get()) 
-				{
-					try { Thread.sleep(1); } // Worst case scenario, this will sleep for a total of 16ms before serviceRepaints forces repaints to happen (60fps min force-refresh)
-					catch (Exception e) { }
-				}
-				else { break; } // Good, the pending repaint was serviced, break out of the loop
-			}
+			repaintRequest();
+			return;
 		}
 
-		// If Repaints weren't serviced in a timely manner above, the alternative is to force them to happen
-		Mobile.getDisplay().processPaintsNow(); 
-		servicing = false;
+		synchronized (paintLock)
+		{
+			// Block caller thread until the event thread clears the paint flag
+			while (needsRepaint)
+			{
+				try { paintLock.wait(); }
+				catch (InterruptedException ignored)
+					{ Thread.currentThread().interrupt(); }
+			}
+		}
 	}
 
 	public void setFullScreenMode(boolean mode)
@@ -303,7 +363,7 @@ public abstract class Canvas extends Displayable
 		height = h;
 	}
 
-	public int getHeight() 
+	public int getHeight()
 	{
 		if (Mobile.isKDDI) { return (height - ((!fullscreen ) ? barHeight : 0)); }
 		return height;
@@ -311,29 +371,29 @@ public abstract class Canvas extends Displayable
 
 	public boolean getFullScreen() { return fullscreen; }
 
-	private void paintCommandsBar() 
+	private void paintCommandsBar()
 	{
 		// The command bar shouldn't influence canvas drawing operations, so it's added directly to the frontBuffer after swapping.
 		javax.microedition.lcdui.Graphics graphics = Mobile.getPlatform().getLcdFrontbufferGraphics();
 
 		// Fade the command bar if there's one second left to hide it
 		long fadeStart = 1000000000L;
-		if (MobilePlatform.timeToUnfocus < fadeStart) 
+		if (MobilePlatform.timeToUnfocus < fadeStart)
 		{
 			graphics.setAlphaRGB(((byte)(0xFF * Math.max(0, Math.min(1, MobilePlatform.timeToUnfocus / 1000000000.0))) << 24) | Mobile.lcduiBGColor);
 			graphics.fillRect(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, barHeight);
 			graphics.setAlphaRGB(((byte)(0xFF * Math.max(0, Math.min(1, MobilePlatform.timeToUnfocus / 1000000000.0))) << 24) | Mobile.lcduiTextColor);
-		} 
-		else 
-		{ 
-			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiBGColor); 
+		}
+		else
+		{
+			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiBGColor);
 			graphics.fillRect(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, barHeight);
 			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiTextColor);
 		}
-		
+
 		graphics.drawLine(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, Mobile.lcdHeight-barHeight);
 		graphics.drawLine(Mobile.lcdWidth/2, Mobile.lcdHeight-barHeight, Mobile.lcdWidth/2, Mobile.lcdHeight);
-		
+
 		// Command text drawing
 		int textCenter;
 		int xPos;
@@ -355,13 +415,11 @@ public abstract class Canvas extends Displayable
 
 	public void removeCommand(Command cmd) { super.removeCommand(cmd); }
 
-	protected void render() 
+	protected void render()
 	{
-		if (listCommands) { super.render(); } 
+		if (listCommands) { super.render(); }
 		else { repaint(); }
 	}
-
-	public final boolean hasBeenDrawnAfterSet() { return firstDrawn; }
 
 	public final boolean areKeysSuppressed() { return suppressKeyEvents; }
 }

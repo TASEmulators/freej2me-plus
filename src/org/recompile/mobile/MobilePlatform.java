@@ -269,7 +269,6 @@ public class MobilePlatform
 				}
 			});
 		}
-		// TODO: DoJa
 	}
 
 	public static void pointerDragged(final int x, final int y)
