@@ -1704,7 +1704,8 @@ public class Graphics3D
 				}
 
 				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) && alpha >= 255)
+				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) &&
+					compBlending == CompositingMode.REPLACE && alpha >= 255)
 				{
 					// The way this works is that we "extend" the geometry size a bit
 					// for the antialiased output, that way triangles don't get smoothed
@@ -1712,19 +1713,21 @@ public class Graphics3D
 					if (x == ixL)
 					{
 						int distFx = (int) (((ixL + 1.0f) - xL) * 65536.0f);
-						int scaledDist = (distFx * 84) >> 16;
+						int scaledDist = (distFx * 85) >> 16;
 
-						applyEdgeAA(x - 1, rasterIdx - 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
-						applyEdgeAA(x - 2, rasterIdx - 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
+						applyEdgeAA(x - 1, rasterIdx - 1, canvasWidth, paintPixel, rasterData, 85 + scaledDist);
+						applyEdgeAA(x, rasterIdx, canvasWidth, paintPixel, rasterData, 164 + scaledDist);
 					}
 					else
 					{
 						int distFx = (int) ((xR - (ixR - 1)) * 65536.0f);
-						int scaledDist = (distFx * 84) >> 16;
+						int scaledDist = (distFx * 85) >> 16;
 
-						applyEdgeAA(x + 1, rasterIdx + 1, canvasWidth, paintPixel, rasterData, compBlending, 84 + scaledDist);
-						applyEdgeAA(x + 2, rasterIdx + 2, canvasWidth, paintPixel, rasterData, compBlending, scaledDist);
+						applyEdgeAA(x, rasterIdx, canvasWidth, paintPixel, rasterData, 164 + scaledDist);
+						applyEdgeAA(x + 1, rasterIdx + 1, canvasWidth, paintPixel, rasterData, 85 + scaledDist);
 					}
+
+					continue;
 				}
 
 				if(!renderToImage)
@@ -1743,10 +1746,12 @@ public class Graphics3D
 	}
 
 	private static final void applyEdgeAA(int targetX, int targetIdx, int canvasWidth, int paintPixel,
-							int[] rasterData, int compBlending, int coverageAlpha)
+							int[] rasterData, int coverageAlpha)
 	{
 		if (coverageAlpha > 0 && targetX >= 0 && targetX < canvasWidth)
 		{
+			if (coverageAlpha > 255) { coverageAlpha = 255; }
+
 			int bgRB = rasterData[targetIdx] & 0x00FF00FF, fgRB = paintPixel & 0x00FF00FF;
 			int outRB = (bgRB + ((((fgRB - bgRB) * coverageAlpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
 
@@ -1755,7 +1760,7 @@ public class Graphics3D
 
 			int aaPixel = outRB | (outAG << 8);
 
-			rasterData[targetIdx] = compBlending == CompositingMode.REPLACE ? aaPixel : blendCompositing(rasterData[targetIdx], aaPixel, (aaPixel >> 24) & 0xFF, compBlending);
+			rasterData[targetIdx] = aaPixel;
 		}
 	}
 
