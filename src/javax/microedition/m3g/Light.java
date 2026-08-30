@@ -77,7 +77,7 @@ public class Light extends Node
 		this.quadratic = q;
 	}
 
-	public void setColor(int RGB) { this.color = RGB & 0x00FFFFFF;; }
+	public void setColor(int RGB) { this.color = RGB & 0x00FFFFFF; }
 
 	public void setIntensity(float value) { this.intensity = value; }
 
