@@ -311,7 +311,7 @@ struct retro_core_option_v2_definition core_options[] =
 			{ "10",   "10 FPS"   },
 			{ NULL, NULL },
 		},
-		"Auto"
+		"60"
 	},
 	{
 		"freej2me_sound",
@@ -1041,7 +1041,7 @@ struct retro_core_option_definition core_options_v1 [] =
 			{ "10",   "10 FPS"   },
 			{ NULL, NULL },
 		},
-		"Auto"
+		"60"
 	},
 	{
 		"freej2me_sound",
@@ -1535,7 +1535,7 @@ static const struct retro_variable vars[] =
 	},
 	{ /* Game FPS limit */
 		"freej2me_fps",
-		"Game FPS Limit; Auto|60|55|50|45|40|35|30|25|20|15|10"
+		"Game FPS Limit; 60|Auto|55|50|45|40|35|30|25|20|15|10"
 	},
 	{ /* Virtual Phone Sound */
 		"freej2me_sound",

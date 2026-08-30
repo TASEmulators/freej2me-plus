@@ -197,7 +197,7 @@ public class Mobile
 	public static boolean sound = true;
 
 	// Support for explicit FPS limit on jars that require it to work properly
-	public static int limitFPS = 0;
+	public static int limitFPS = 60;
 
 	// First ever real hack in FreeJ2ME. Tries to unlock the framerate based on agressiveness
 	// 0 = disabled

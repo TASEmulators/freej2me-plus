@@ -128,7 +128,7 @@ public class Config
 				settings.put("phone", "Standard");
 				settings.put("backlightcolor", "Disabled");
 				settings.put("rotate", "0");
-				settings.put("fps", "0");
+				settings.put("fps", "60");
 				settings.put("fontoffset", "0");
 				settings.put("spdhacknoalpha", "off");
 				settings.put("compatfantasyzonefix", "off");

@@ -164,7 +164,7 @@ unsigned long int screenRes[2]; /* {width, height} */
 int rotateScreen = 0; /* Allows rotations between 0, 90, 180 and 270 degrees */
 int phoneType = 0; /* 0=Standard (Nokia/Sony/Samsung), 1=LG, 2=Motorola/SoftBank, 3=Motorola Triplets... */
 int backlightColor = 1; /* 0=Disabled, 1=Green, etc. */
-int gameFPS; /* Auto(0), 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10 */
+int gameFPS = 60; /* Auto(0), 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10 */
 int soundEnabled; /* also acts as a boolean */
 int customMidi; /* Also acts as a boolean */
 int customFont; /* Also acts as a boolean */
