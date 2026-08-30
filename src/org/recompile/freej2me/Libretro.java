@@ -197,6 +197,15 @@ public class Libretro
 		/* M3G Perspective Correction Mode */
 		Mobile.m3gPerspectiveCorrectionMode = Integer.parseInt(args[34]);
 
+		/* M3G Perspective Correction Subsample Factor */
+		Mobile.m3gPerspCorrSubFactor = Integer.parseInt(args[35]);
+
+		/* M3G Mipmapping Mode */
+		Mobile.m3gMipmapMode = Integer.parseInt(args[36]);
+
+		/* M3G Disable fog */
+		Mobile.m3gDisableFog = Integer.parseInt(args[37]) != 0;
+
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -410,6 +419,7 @@ public class Libretro
 										Mobile.config.settings.put("dojaversion", "" + Mobile.DoJaVersion);
 
 										Mobile.config.settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off");
+										Mobile.config.settings.put("m3gdisablefog", Mobile.m3gDisableFog ? "on" : "off");
 
 										if(Mobile.m3gAntiAliasingMode == 0) { Mobile.config.settings.put("m3gantialiasmode", "off");  }
 										else if(Mobile.m3gAntiAliasingMode == 1) { Mobile.config.settings.put("m3gantialiasmode", "app");  }
@@ -426,6 +436,16 @@ public class Libretro
 										if(Mobile.m3gPerspectiveCorrectionMode == 0) { Mobile.config.settings.put("m3gperspcorrmode", "off");  }
 										else if(Mobile.m3gPerspectiveCorrectionMode == 1) { Mobile.config.settings.put("m3gperspcorrmode", "app");  }
 										else if(Mobile.m3gPerspectiveCorrectionMode == 2) { Mobile.config.settings.put("m3gperspcorrmode", "on");  }
+
+										if(Mobile.m3gPerspCorrSubFactor == 3) { Mobile.config.settings.put("m3gperspcorrsubfactor", "extra");  }
+										else if(Mobile.m3gPerspCorrSubFactor == 7) { Mobile.config.settings.put("m3gperspcorrsubfactor", "high");  }
+										else if(Mobile.m3gPerspCorrSubFactor == 15) { Mobile.config.settings.put("m3gperspcorrsubfactor", "medium");  }
+										else if(Mobile.m3gPerspCorrSubFactor == 31) { Mobile.config.settings.put("m3gperspcorrsubfactor", "low");  }
+
+										if(Mobile.m3gMipmapMode == 3) { Mobile.config.settings.put("m3gmipmapmode", "linear");  }
+										else if(Mobile.m3gMipmapMode == 2) { Mobile.config.settings.put("m3gmipmapmode", "nearest");  }
+										else if(Mobile.m3gMipmapMode == 1) { Mobile.config.settings.put("m3gmipmapmode", "app");  }
+										else if(Mobile.m3gMipmapMode == 0) { Mobile.config.settings.put("m3gmipmapmode", "off");  }
 
 										// Update system settings
 
@@ -584,6 +604,18 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[35])==0) { Mobile.config.settings.put("m3gperspcorrmode", "off"); }
 									if(Integer.parseInt(cfgtokens[35])==1) { Mobile.config.settings.put("m3gperspcorrmode", "app");  }
 									if(Integer.parseInt(cfgtokens[35])==2) { Mobile.config.settings.put("m3gperspcorrmode", "on");  }
+
+									if(Integer.parseInt(cfgtokens[36])==3)  { Mobile.config.settings.put("m3gperspcorrsubfactor", "extra"); }
+									if(Integer.parseInt(cfgtokens[36])==7)  { Mobile.config.settings.put("m3gperspcorrsubfactor", "high");  }
+									if(Integer.parseInt(cfgtokens[36])==15) { Mobile.config.settings.put("m3gperspcorrsubfactor", "medium");  }
+									if(Integer.parseInt(cfgtokens[36])==31) { Mobile.config.settings.put("m3gperspcorrsubfactor", "low");  }
+
+									if(Integer.parseInt(cfgtokens[37])==3) { Mobile.config.settings.put("m3gmipmapmode", "linear"); }
+									if(Integer.parseInt(cfgtokens[37])==2) { Mobile.config.settings.put("m3gmipmapmode", "nearest");  }
+									if(Integer.parseInt(cfgtokens[37])==1) { Mobile.config.settings.put("m3gmipmapmode", "app");  }
+									if(Integer.parseInt(cfgtokens[37])==0) { Mobile.config.settings.put("m3gmipmapmode", "off");  }
+
+									Mobile.config.settings.put("m3gdisablefog", Integer.parseInt(cfgtokens[38]) == 1 ? "on" : "off");
 
 									Mobile.config.saveConfig();
 									settingsChanged();

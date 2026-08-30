@@ -451,11 +451,57 @@ struct retro_core_option_v2_definition core_options[] =
 		"app"
 	},
 	{
+		"freej2me_m3gperspcorrfact",
+		"M3G Renderer Settings > Perspective Correction Quality",
+		"Perspective Correction Quality",
+		"Perspective Correction is a costly operation. To solve that, FreeJ2ME-Plus subsamples and interpolates that operation over a given span of pixels. This setting allows you to define how big that span is for better quality or performance.",
+		"Perspective Correction is a costly operation. To solve that, FreeJ2ME-Plus subsamples and interpolates that operation over a given span of pixels. This setting allows you to define how big that span is for better quality or performance.",
+		"m3g_settings",
+		{
+			{ "extra",  "Extra (4 Pixels)" },
+			{ "high",   "High (8 Pixels, Default)" },
+			{ "medium", "Average (16 Pixels)"  },
+			{ "low",    "Low (32 Pixels)"  },
+			{ NULL, NULL },
+		},
+		"high"
+	},
+	{
+		"freej2me_m3gmipmapmode",
+		"M3G Renderer Settings > Mipmapping Mode",
+		"Mipmapping Mode",
+		"M3G supports mipmapping, which may be requested by applications in either nearest or linear filter modes. Contrary to GPUs, this setting has a small performance cost on Software Rasterization, so it can be force-disabled for better performance, or forced to either Nearest or Linear for better quality.",
+		"M3G supports mipmapping, which may be requested by applications in either nearest or linear filter modes. Contrary to GPUs, this setting has a small performance cost on Software Rasterization, so it can be force-disabled for better performance, or forced to either Nearest or Linear for better quality.",
+		"m3g_settings",
+		{
+			{ "off",     "Always Disabled"  },
+			{ "app",     "App Controlled (Default)"  },
+			{ "nearest", "Force-Nearest" },
+			{ "linear",  "Force-Linear" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
 		"freej2me_spdhackm3ghalfres",
 		"M3G Renderer Settings > Render M3G at Half Resolution",
 		"Render M3G at Half Resolution",
 		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
 		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+		"m3g_settings",
+		{
+			{ "on",  "Enabled"            },
+			{ "off", "Disabled (Default)" },
+			{ NULL, NULL },
+		},
+		"off"
+	},
+	{
+		"freej2me_m3gdisablefog",
+		"M3G Renderer Settings > Disable Fog",
+		"Disable Fog",
+		"M3G supports fog volumes (either linear or exponential) which apps may use. Disable it for a small performance gain in said apps, or if your want/need to eee further.",
+		"M3G supports fog volumes (either linear or exponential) which apps may use. Disable it for a small performance gain in said apps, or if your want/need to eee further.",
 		"m3g_settings",
 		{
 			{ "on",  "Enabled"            },
@@ -1108,9 +1154,46 @@ struct retro_core_option_definition core_options_v1 [] =
 		"app"
 	},
 	{
+		"freej2me_m3gperspcorrfact",
+		"Perspective Correction Quality",
+		"Perspective Correction is a costly operation. To solve that, FreeJ2ME-Plus subsamples and interpolates that operation over a given span of pixels. This setting allows you to define how big that span is for better quality or performance.",
+		{
+			{ "extra",  "Extra (4 Pixels)" },
+			{ "high",   "High (8 Pixels, Default)" },
+			{ "medium", "Average (16 Pixels)"  },
+			{ "low",    "Low (32 Pixels)"  },
+			{ NULL, NULL },
+		},
+		"high"
+	},
+	{
+		"freej2me_m3gmipmapmode",
+		"Mipmapping Mode",
+		"M3G supports mipmapping, which may be requested by applications in either nearest or linear filter modes. Contrary to GPUs, this setting has a small performance cost on Software Rasterization, so it can be force-disabled for better performance, or forced to either Nearest or Linear for better quality.",
+		{
+			{ "off",     "Always Disabled"  },
+			{ "app",     "App Controlled (Default)"  },
+			{ "nearest", "Force-Nearest" },
+			{ "linear",  "Force-Linear" },
+			{ NULL, NULL },
+		},
+		"app"
+	},
+	{
 		"freej2me_spdhackm3ghalfres",
 		"Render M3G at Half Resolution",
 		"FreeJ2ME-Plus uses a software renderer for M3G (Mobile 3D Graphics), which can be intensive in more complex applications and higher phone resolutions. Use this if your cpu cannot keep up with full resolution rendering.",
+		{
+			{ "on",  "Enabled"            },
+			{ "off", "Disabled (Default)" },
+			{ NULL, NULL },
+		},
+		"off"
+	},
+	{
+		"freej2me_m3gdisablefog",
+		"Disable Fog",
+		"M3G supports fog volumes (either linear or exponential) which apps may use. Disable it for a small performance gain in said apps, or if your want/need to eee further.",
 		{
 			{ "on",  "Enabled"            },
 			{ "off", "Disabled (Default)" },
@@ -1490,9 +1573,21 @@ static const struct retro_variable vars[] =
 		"freej2me_m3gperspcorrmode",
 		"M3G Texture Perspective Correction; app|off|on"
 	},
+	{ /* M3G Perspective Correction Quality */
+		"freej2me_m3gperspcorrfact",
+		"M3G Perspective Correction Quality; high|low|medium|extra",
+	},
+	{ /* M3G Mipmapping Mode */
+		"freej2me_m3gmipmapmode",
+		"M3G Mipmapping Mode; app|off|nearest|linear",
+	},
 	{ /* Half Res M3G Rendering */
 		"freej2me_spdhackm3ghalfres",
 		"Render M3G at Half Resolution(SpeedHack); off|on"
+	},
+	{ /* M3G Disable Fog */
+		"freej2me_m3gdisablefog",
+		"M3G Disable Fog; off|on"
 	},
 	{ /* Logging Level */
 		"freej2me_logginglevel",

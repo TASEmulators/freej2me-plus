@@ -86,6 +86,10 @@ public class Mobile
 	public static int m3gBilinearFilterMode = 1;
 	public static int m3gDitheringMode = 1;
 	public static int m3gPerspectiveCorrectionMode = 1;
+	public static int m3gPerspCorrSubFactor = 7;
+	public static boolean m3gDisableFog = false;
+	public static int m3gMipmapMode = 1;
+
 
 	// Config file handle
 	public static Config config;
@@ -1062,6 +1066,22 @@ public class Mobile
 		if(m3gperspcorr.equals("on"))        { m3gPerspectiveCorrectionMode = 2; }
 		else if(m3gperspcorr.equals("app"))  { m3gPerspectiveCorrectionMode = 1; }
 		else if (m3gperspcorr.equals("off")) { m3gPerspectiveCorrectionMode = 0; }
+
+		String m3gperspcorrfact = config.settings.get("m3gperspcorrsubfactor");
+		if(m3gperspcorrfact.equals("extra"))        { m3gPerspCorrSubFactor = 3; }
+		else if(m3gperspcorrfact.equals("high"))    { m3gPerspCorrSubFactor = 7; }
+		else if (m3gperspcorrfact.equals("medium")) { m3gPerspCorrSubFactor = 15; }
+		else if (m3gperspcorrfact.equals("low"))    { m3gPerspCorrSubFactor = 31; }
+
+		String m3gfog = config.settings.get("m3gdisablefog");
+		if(m3gfog.equals("on"))        { m3gDisableFog = true; }
+		else if (m3gfog.equals("off")) { m3gDisableFog = false; }
+
+		String m3gmipmap = config.settings.get("m3gmipmapmode");
+		if(m3gmipmap.equals("linear"))    { m3gMipmapMode = 3; }
+		if(m3gmipmap.equals("nearest"))   { m3gMipmapMode = 2; }
+		else if(m3gmipmap.equals("app"))  { m3gMipmapMode = 1; }
+		else if (m3gmipmap.equals("off")) { m3gMipmapMode = 0; }
 
 		// Compatibility settings (this will probably expand in the future)
 		String fantasyZoneFix = config.settings.get("compatfantasyzonefix");

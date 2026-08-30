@@ -30,7 +30,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
-#define NUM_ARGUMENTS 40
+#define NUM_ARGUMENTS 43
 
 const char *slash = path_default_slash();
 
@@ -179,6 +179,9 @@ int M3GAntiAliasMode = 1;
 int M3GBilinearMode = 1;
 int M3GDitheringMode = 1;
 int M3GPerspCorrMode = 1;
+int M3GPerspCorrFact = 7;
+int M3GMipmapMode = 1;
+int M3GDisableFog = 0; // Boolean
 int spdHackM3GHalfRes = 0; // Boolean
 int mcv3Heap;
 int mcv3TimeStats;
@@ -518,6 +521,31 @@ static void check_variables(bool first_time_startup)
 		else if (!strcmp(var.value, "on"))   { M3GPerspCorrMode = 2; }
 	}
 
+	var.key = "freej2me_m3gperspcorrfact";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (!strcmp(var.value, "extra"))       { M3GPerspCorrFact = 3; }
+		else if (!strcmp(var.value, "high"))   { M3GPerspCorrFact = 7; }
+		else if (!strcmp(var.value, "medium")) { M3GPerspCorrFact = 15; }
+		else if (!strcmp(var.value, "low"))    { M3GPerspCorrFact = 31; }
+	}
+
+	var.key = "freej2me_m3gmipmapmode";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (!strcmp(var.value, "off"))           { M3GMipmapMode = 0; }
+		else if (!strcmp(var.value, "app"))      { M3GMipmapMode = 1; }
+		else if (!strcmp(var.value, "nearest"))  { M3GMipmapMode = 2; }
+		else if (!strcmp(var.value, "linear"))   { M3GMipmapMode = 3; }
+	}
+
+	var.key = "freej2me_m3gdisablefog";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (!strcmp(var.value, "off"))       { M3GDisableFog = 0; }
+		else if (!strcmp(var.value, "on"))   { M3GDisableFog = 1; }
+	}
+
 	var.key = "freej2me_spdhackm3ghalfres";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
@@ -751,11 +779,11 @@ static void check_variables(bool first_time_startup)
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1],
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1],
 		rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams, loggingLevel, spdHackNoAlpha, backlightColor, compatFantasyZoneFix,
 		compatTransToOriginOnGFXReset, customFont, fontOffset, dumpGraphicsData, deleteTemporaryKJXFiles, m3gUntextured, m3gWireframe, spdFrameRateUnlock, compatImmediateRepaintCalls,
 		compatOverridePlatCheck, compatSiemensFriendlyDraw, spdHackM3GHalfRes, dojaVersion, compatIgnoreVolumeChanges, spdHackMCV3HalfRes, spdHackMCV3NoLight, compatMCV3HorFovFix,
-		mcv3Heap, mcv3TimeStats, M3GAntiAliasMode, M3GBilinearMode, M3GDitheringMode, M3GPerspCorrMode);
+		mcv3Heap, mcv3TimeStats, M3GAntiAliasMode, M3GBilinearMode, M3GDitheringMode, M3GPerspCorrMode, M3GPerspCorrFact, M3GMipmapMode, M3GDisableFog);
 	optstrlen = strlen(options_update);
 
 	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
@@ -791,7 +819,7 @@ void retro_init(void)
 	char compatFantasyZoneFixArg[2], compatTransToOriginOnGFXResetArg[2], fontArg[2], offsetArg[3], dumpGFXArg[2], tempKJXArg[2], m3gUntexArg[2], m3gWireArg[2];
 	char fpsunlockHack[2], compatImmediateRepaintArg[2], compatOverridePlatCheckArg[2], compatSiemensFriendlyDrawArg[2], spdHackM3GHalfResArg[2], dojaVersionArg[4];
 	char compatIgnoreVolumeChangesArg[2], spdHackMCV3HalfResArg[2], spdHackMCV3NoLightArg[2], compatMCV3HorFovFixArg[2], mcv3HeapArg[2], mcv3TimeStatsArg[2];
-	char M3GAntiAliasModeArg[2], M3GBilinearModeArg[2], M3GDitheringModeArg[2], M3GPerspCorrModeArg[2];
+	char M3GAntiAliasModeArg[2], M3GBilinearModeArg[2], M3GDitheringModeArg[2], M3GPerspCorrModeArg[2], M3GPerspCorFactArg[3], M3GMipmapModeArg[2], M3GDisableFogArg[2];
 
 	sprintf(resArg[0], "%lu", screenRes[0]);
 	sprintf(resArg[1], "%lu", screenRes[1]);
@@ -828,6 +856,9 @@ void retro_init(void)
 	sprintf(M3GBilinearModeArg, "%d", M3GBilinearMode);
 	sprintf(M3GDitheringModeArg, "%d", M3GDitheringMode);
 	sprintf(M3GPerspCorrModeArg, "%d", M3GPerspCorrMode);
+	sprintf(M3GPerspCorFactArg, "%d", M3GPerspCorrFact);
+	sprintf(M3GMipmapModeArg, "%d", M3GMipmapMode);
+	sprintf(M3GDisableFogArg, "%d", M3GDisableFog);
 
 	/* We need to clean up any argument memory from the previous launch arguments in order to load up updated ones */
 	if (restarting) { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME-Plus.\n"); }
@@ -896,7 +927,10 @@ void retro_init(void)
 	params[36] = strdup(M3GBilinearModeArg);
 	params[37] = strdup(M3GDitheringModeArg);
 	params[38] = strdup(M3GPerspCorrModeArg);
-	params[39] = NULL; // Null-terminate the array
+	params[39] = strdup(M3GPerspCorFactArg);
+	params[40] = strdup(M3GMipmapModeArg);
+	params[41] = strdup(M3GDisableFogArg);
+	params[42] = NULL; // Null-terminate the array
 
 	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app.\n");
 

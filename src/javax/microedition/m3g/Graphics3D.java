@@ -566,7 +566,7 @@ public class Graphics3D
 		final boolean localCameraLight = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isLocalCameraLightingEnabled() : false;
 
 		// Set up fog properties
-		final Fog fog = appearance.getFog();
+		final Fog fog = Mobile.m3gDisableFog ? null : appearance.getFog();
 		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
 
 		// This one can be overridden by FJ2ME+
@@ -995,7 +995,22 @@ public class Graphics3D
 					tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
 					texblendMode[i] = ((textures[i].getBlending() & 7) << 3) |
 						(textures[i].getImage().getFormat() & 7);
-					levelFilters[i] = textures[i].getLevelFilter();
+
+					switch(Mobile.m3gMipmapMode)
+					{
+						case MODE_FORCE_DISABLE:
+							levelFilters[i] = Texture2D.FILTER_BASE_LEVEL;
+							break;
+						case MODE_APP_CONTROLLED:
+							levelFilters[i] = textures[i].getLevelFilter();
+							break;
+						case MODE_FORCE_ENABLE:
+							levelFilters[i] = Texture2D.FILTER_NEAREST;
+							break;
+						case 3: // FORCE_LINEAR
+							levelFilters[i] = Texture2D.FILTER_LINEAR;
+							break;
+					}
 				}
 			}
 
@@ -1250,7 +1265,7 @@ public class Graphics3D
 		if (pixL >= pixR || pixT >= pixB) { return; }
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
-		final Fog fog = appearance.getFog();
+		final Fog fog = Mobile.m3gDisableFog ? null : appearance.getFog();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
 		final float alphaFactor = sprite.getAlphaFactor();
 		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
@@ -1337,13 +1352,8 @@ public class Graphics3D
 		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
 
-		// We subsample perspective correction here (piecewise linear
-		// interpolation), similar to Quake and other old 3D renderers.
-		// TODO: Make this configurable (Mobile.m3gPCorrSubsampleFactor)
-		byte pSubsampleFactor = 15;
-
-		// TODO: && !Mobile.m3gDisableFog flag
 		final boolean hasFog = fog != null;
+
 		final float fogFarNorm = hasFog ? fog.getFarDistance() * invFogDiv : 0.0f;
 		final float fogNearNorm = hasFog ? fog.getNearDistance() * invFogDiv : 0.0f;
 		final float fogDensity = hasFog ? fog.getDensity() : 0.0f;
@@ -1499,9 +1509,10 @@ public class Graphics3D
 				// Subsampling block. A.K.A, where we calculate anything that
 				// is too expensive to run per-pixel but cannot be done only once
 				// for the whole triangle Y scanline due to large precision loss.
-				if (doPerspective && ((x & pSubsampleFactor) == 0 || x == ixL))
+				if (doPerspective && ((x & Mobile.m3gPerspCorrSubFactor) == 0 || x == ixL))
 				{
-					int maxSpan = (pSubsampleFactor + 1) - (x & pSubsampleFactor);
+					int maxSpan = (Mobile.m3gPerspCorrSubFactor + 1) -
+						(x & Mobile.m3gPerspCorrSubFactor);
 					int spanLen = (ixR - x < maxSpan) ? ixR - x : maxSpan;
 					float invSpanLen = INV_SPAN_TABLE[spanLen];
 

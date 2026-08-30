@@ -144,6 +144,9 @@ public class Config
 				settings.put("m3gbilinearmode", "app");
 				settings.put("m3gditheringmode", "app");
 				settings.put("m3gperspcorrmode", "app");
+				settings.put("m3gmipmapmode", "app");
+				settings.put("m3gperspcorrsubfactor", "high");
+				settings.put("m3gdisablefog", "off");
 				settings.put("spdhackmcv3halfres", "off");
 				settings.put("spdhackmcv3nolighting", "off");
 				settings.put("dojaversion", "200");
@@ -340,6 +343,44 @@ public class Config
 						throw new IllegalArgumentException();
 				}
 			}
+			if(!settings.containsKey("m3gperspcorrsubfactor"))
+			{
+				switch(Mobile.m3gPerspCorrSubFactor)
+				{
+					case 3:
+						settings.put("m3gperspcorrsubfactor", "extra");
+						break;
+					case 7:
+						settings.put("m3gperspcorrsubfactor", "high");
+						break;
+					case 15:
+						settings.put("m3gperspcorrsubfactor", "medium");
+						break;
+					case 31:
+						settings.put("m3gperspcorrsubfactor", "low");
+						break;
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("m3gmipmapmode"))
+			{
+				switch(Mobile.m3gMipmapMode)
+				{
+					case 0:
+						settings.put("m3gmipmapmode", "off");
+						break;
+					case 1:
+						settings.put("m3gmipmapmode", "app");
+						break;
+					case 2:
+						settings.put("m3gmipmapmode", "on");
+						break;
+					default:
+						throw new IllegalArgumentException();
+				}
+			}
+			if(!settings.containsKey("m3gdisablefog")) { settings.put("m3gdisablefog", Mobile.m3gDisableFog ? "on" : "off"); }
 			if(!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off"); }
 			if(!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off"); }
 			if(!settings.containsKey("dojaversion")) { settings.put("dojaversion", ""+Mobile.DoJaVersion); }
@@ -556,6 +597,30 @@ public class Config
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gperspcorrmode "+value);
 		settings.put("m3gperspcorrmode", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GPerspCorrSubFactor(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gperspcorrsubfactor "+value);
+		settings.put("m3gperspcorrsubfactor", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GMipmapMode(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gmipmapmode "+value);
+		settings.put("m3gmipmapmode", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateM3GDisableFog(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gdisablefog "+value);
+		settings.put("m3gdisablefog", value);
 		saveConfig();
 		onChange.run();
 	}

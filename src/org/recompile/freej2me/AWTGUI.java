@@ -127,6 +127,8 @@ public final class AWTGUI
 	final Menu m3gBilinearMenu = new Menu("Bilinear Filtering");
 	final Menu m3gDitheringMenu = new Menu("Dithering");
 	final Menu m3gPerspCorrMenu = new Menu("Perspective Correction");
+	final Menu m3gPerspCorrFactMenu = new Menu("Perspective Correction Quality");
+	final Menu m3gMipmapMenu = new Menu("Mipmapping");
 
 	/* M3G Debug submenu */
 	final Menu M3GDebug = new Menu("M3G Debugging");
@@ -320,7 +322,8 @@ public final class AWTGUI
 	final CheckboxMenuItem MCV3NoLighting = new CheckboxMenuItem("Disable MascotCapsuleV3's lighting");
 
 	// M3G Menu
-	final CheckboxMenuItem M3GHalfRes = new CheckboxMenuItem("Render M3G at Half Resolution");
+	final CheckboxMenuItem M3GHalfRes = new CheckboxMenuItem("Halve Resolution");
+	final CheckboxMenuItem M3GDisableFog = new CheckboxMenuItem("Disable Fog");
 	final CheckboxMenuItem[] m3gAntiAliasValues =
 	{
 		new CheckboxMenuItem("Always Disabled", false),
@@ -345,7 +348,25 @@ public final class AWTGUI
 		new CheckboxMenuItem("App-Controlled (Default)", true),
 		new CheckboxMenuItem("Force-Enabled", false)
 	};
-	final String[] m3gSettingValues = {"off", "app", "on"};
+	final String[] m3gCommonSettingValues = {"off", "app", "on"};
+
+	final CheckboxMenuItem[] m3gPerspCorrFactorValues =
+	{
+		new CheckboxMenuItem("Extra", false),
+		new CheckboxMenuItem("High (Default)", true),
+		new CheckboxMenuItem("Average", false),
+		new CheckboxMenuItem("Low", false)
+	};
+	final String[] m3gPFactorSettingValues = {"extra", "high", "medium", "low"};
+
+	final CheckboxMenuItem[] m3gMipmapValues =
+	{
+		new CheckboxMenuItem("Always Disabled", false),
+		new CheckboxMenuItem("App-Controlled (Default)", true),
+		new CheckboxMenuItem("Force-Nearest", false),
+		new CheckboxMenuItem("Force-Linear", false)
+	};
+	final String[] m3gMipmapSettingValues = {"off", "app", "nearest", "linear"};
 
 	// Compatibility settings
 	final CheckboxMenuItem fantasyZoneFix = new CheckboxMenuItem("Fix for Fantasy Zone 176x208 weird mirroring");
@@ -765,6 +786,15 @@ public final class AWTGUI
 			}
 		});
 
+		M3GDisableFog.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(M3GDisableFog.getState()){ config.updateM3GDisableFog("on"); hasPendingChange = true; }
+				else{ config.updateM3GDisableFog("off"); hasPendingChange = true; }
+			}
+		});
+
 		MCV3HalfRes.addItemListener(new ItemListener()
 		{
 			public void itemStateChanged(ItemEvent e)
@@ -979,6 +1009,7 @@ public final class AWTGUI
 						{
 							if(j != index) { fontOffsets[j].setState(false); }
 						}
+						hasPendingChange = true;
 					}
 				}
 			});
@@ -994,12 +1025,13 @@ public final class AWTGUI
 					if(!m3gAntiAliasValues[index].getState()){ m3gAntiAliasValues[index].setState(true); }
 					if(m3gAntiAliasValues[index].getState())
 					{
-						config.updateM3GAntiAliasMode(m3gSettingValues[index]);
+						config.updateM3GAntiAliasMode(m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gAntiAliasValues.length; j++)
 						{
 							if(j != index) { m3gAntiAliasValues[j].setState(false); }
 						}
 					}
+					hasPendingChange = true;
 				}
 			});
 		}
@@ -1014,11 +1046,12 @@ public final class AWTGUI
 					if(!m3gBilinearValues[index].getState()){ m3gBilinearValues[index].setState(true); }
 					if(m3gBilinearValues[index].getState())
 					{
-						config.updateM3GBilinearMode(m3gSettingValues[index]);
+						config.updateM3GBilinearMode(m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gBilinearValues.length; j++)
 						{
 							if(j != index) { m3gBilinearValues[j].setState(false); }
 						}
+						hasPendingChange = true;
 					}
 				}
 			});
@@ -1034,11 +1067,12 @@ public final class AWTGUI
 					if(!m3gDitheringValues[index].getState()){ m3gDitheringValues[index].setState(true); }
 					if(m3gDitheringValues[index].getState())
 					{
-						config.updateM3GDitheringMode(m3gSettingValues[index]);
+						config.updateM3GDitheringMode(m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gDitheringValues.length; j++)
 						{
 							if(j != index) { m3gDitheringValues[j].setState(false); }
 						}
+						hasPendingChange = true;
 					}
 				}
 			});
@@ -1054,11 +1088,54 @@ public final class AWTGUI
 					if(!m3gPerspCorrValues[index].getState()){ m3gPerspCorrValues[index].setState(true); }
 					if(m3gPerspCorrValues[index].getState())
 					{
-						config.updateM3GPerspCorrectionMode(m3gSettingValues[index]);
+						config.updateM3GPerspCorrectionMode(m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gPerspCorrValues.length; j++)
 						{
 							if(j != index) { m3gPerspCorrValues[j].setState(false); }
 						}
+						hasPendingChange = true;
+					}
+				}
+			});
+		}
+
+		for(byte i = 0; i < m3gPerspCorrFactorValues.length; i++)
+		{
+			final byte index = i;
+			m3gPerspCorrFactorValues[i].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if(!m3gPerspCorrFactorValues[index].getState()){ m3gPerspCorrFactorValues[index].setState(true); }
+					if(m3gPerspCorrFactorValues[index].getState())
+					{
+						config.updateM3GPerspCorrSubFactor(m3gPFactorSettingValues[index]);
+						for(int j = 0; j < m3gPerspCorrFactorValues.length; j++)
+						{
+							if(j != index) { m3gPerspCorrFactorValues[j].setState(false); }
+						}
+						hasPendingChange = true;
+					}
+				}
+			});
+		}
+
+		for(byte i = 0; i < m3gMipmapValues.length; i++)
+		{
+			final byte index = i;
+			m3gMipmapValues[i].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if(!m3gMipmapValues[index].getState()){ m3gMipmapValues[index].setState(true); }
+					if(m3gMipmapValues[index].getState())
+					{
+						config.updateM3GMipmapMode(m3gMipmapSettingValues[index]);
+						for(int j = 0; j < m3gMipmapValues.length; j++)
+						{
+							if(j != index) { m3gMipmapValues[j].setState(false); }
+						}
+						hasPendingChange = true;
 					}
 				}
 			});
@@ -1231,16 +1308,23 @@ public final class AWTGUI
 		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gAAMenu.add(m3gAntiAliasValues[i]); }
 		M3GSettings.add(m3gAAMenu);
 
-		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gBilinearMenu.add(m3gBilinearValues[i]); }
+		for(int i = 0; i < m3gBilinearValues.length; i++) { m3gBilinearMenu.add(m3gBilinearValues[i]); }
 		M3GSettings.add(m3gBilinearMenu);
 
-		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gDitheringMenu.add(m3gDitheringValues[i]); }
+		for(int i = 0; i < m3gDitheringValues.length; i++) { m3gDitheringMenu.add(m3gDitheringValues[i]); }
 		M3GSettings.add(m3gDitheringMenu);
 
-		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gPerspCorrMenu.add(m3gPerspCorrValues[i]); }
+		for(int i = 0; i < m3gPerspCorrValues.length; i++) { m3gPerspCorrMenu.add(m3gPerspCorrValues[i]); }
 		M3GSettings.add(m3gPerspCorrMenu);
 
+		for(int i = 0; i < m3gPerspCorrFactorValues.length; i++) { m3gPerspCorrFactMenu.add(m3gPerspCorrFactorValues[i]); }
+		M3GSettings.add(m3gPerspCorrFactMenu);
+
+		for(int i = 0; i < m3gMipmapValues.length; i++) { m3gMipmapMenu.add(m3gMipmapValues[i]); }
+		M3GSettings.add(m3gMipmapMenu);
+
 		M3GSettings.add(M3GHalfRes);
+		M3GSettings.add(M3GDisableFog);
 
 		optionMenu.setEnabled(false);
 
@@ -1325,25 +1409,37 @@ public final class AWTGUI
 
 			for(int i = 0; i < m3gAntiAliasValues.length; i++)
 			{
-				m3gAntiAliasValues[i].setState(config.settings.get("m3gantialiasmode").equals(m3gSettingValues[i]));
+				m3gAntiAliasValues[i].setState(config.settings.get("m3gantialiasmode").equals(m3gCommonSettingValues[i]));
 			}
 
 			for(int i = 0; i < m3gBilinearValues.length; i++)
 			{
-				m3gBilinearValues[i].setState(config.settings.get("m3gbilinearmode").equals(m3gSettingValues[i]));
+				m3gBilinearValues[i].setState(config.settings.get("m3gbilinearmode").equals(m3gCommonSettingValues[i]));
 			}
 
 			for(int i = 0; i < m3gDitheringValues.length; i++)
 			{
-				m3gDitheringValues[i].setState(config.settings.get("m3gditheringmode").equals(m3gSettingValues[i]));
+				m3gDitheringValues[i].setState(config.settings.get("m3gditheringmode").equals(m3gCommonSettingValues[i]));
 			}
 
 			for(int i = 0; i < m3gPerspCorrValues.length; i++)
 			{
-				m3gPerspCorrValues[i].setState(config.settings.get("m3gperspcorrmode").equals(m3gSettingValues[i]));
+				m3gPerspCorrValues[i].setState(config.settings.get("m3gperspcorrmode").equals(m3gCommonSettingValues[i]));
+			}
+
+			for(int i = 0; i < m3gMipmapValues.length; i++)
+			{
+				m3gMipmapValues[i].setState(config.settings.get("m3gmipmapmode").equals(m3gMipmapSettingValues[i]));
+			}
+
+			for(int i = 0; i < m3gPerspCorrFactorValues.length; i++)
+			{
+				m3gPerspCorrFactorValues[i].setState(config.settings.get("m3gperspcorrsubfactor").equals(m3gPFactorSettingValues[i]));
 			}
 
 			M3GHalfRes.setState(config.settings.get("spdhackm3ghalfres").equals("on"));
+
+			M3GDisableFog.setState(config.settings.get("m3gdisablefog").equals("on"));
 
 			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));
 
