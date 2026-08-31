@@ -70,8 +70,7 @@ public class Loader
 		if (data == null) { throw new NullPointerException("Cannot load M3G object from null data"); }
 		if (offset >= data.length) { throw new IllegalArgumentException("Invalid offset for m3g data"); }
 
-		this.dis = new DataInputStream(new ByteArrayInputStream(data));
-		if (offset > 0) { this.dis.skipBytes(offset); }
+		this.dis = new DataInputStream(new ByteArrayInputStream(data, offset, data.length - offset));
 		this.resDir = "/";
 		this.activeRefs = activeRefs != null ? activeRefs : new Vector<String>();
 	}
@@ -933,7 +932,7 @@ public class Loader
 			// Check header
 			dis.mark(12);
 			byte[] identifier = new byte[12];
-			int read = dis.read(identifier, 0, 12);
+			dis.readFully(identifier);
 			int type = getIdentifierType(identifier, 0);
 			dis.reset();
 
