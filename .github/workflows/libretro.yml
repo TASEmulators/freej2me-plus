@@ -24,7 +24,7 @@ jobs:
           echo "Build Sha: ${{ env.sha_short }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: freej2me_libretro-${{ env.sha_short }}
+          name: freej2me_plus_libretro-${{ env.sha_short }}
           path: |
-            src/libretro/freej2me_libretro.so
-            src/libretro/freej2me_libretro.dll
+            src/libretro/freej2me_plus_libretro.so
+            src/libretro/freej2me_plus_libretro.dll

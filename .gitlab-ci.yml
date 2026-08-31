@@ -7,7 +7,7 @@
 # Core definitions
 .core-defs:
   variables:
-    CORENAME: freej2me
+    CORENAME: freej2me_plus
     MAKEFILE: Makefile
     MAKEFILE_PATH: src/libretro
 

@@ -41,7 +41,7 @@ Step 3:
 
 Copy the file:
 
-	freej2me_libretro.so
+	freej2me_plus_libretro.so
 to:
 /opt/retropie/libretrocores/lr-freej2me
 
