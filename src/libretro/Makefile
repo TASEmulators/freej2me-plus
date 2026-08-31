@@ -31,7 +31,7 @@ endif
 
 
 CORE_DIR    += .
-TARGET_NAME := freej2me
+TARGET_NAME := freej2me_plus
 LIBM		    = -lm
 
 ifeq ($(ARCHFLAGS),)
