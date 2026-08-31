@@ -43,7 +43,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	com.jblend.graphics.j3d.Graphics3D, com.motorola.graphics.j3d.Graphics3D,
 	com.nttdocomo.opt.ui.j3d.Graphics3D, com.vodafone.v10.graphics.j3d.Graphics3D
 {
-	private static final int FP_FACTOR = 15;
+	private static final int FP_FACTOR = 16;
 
 	// Gaussian blur kernel (7x7) for Motorola's FunLights
 	protected static final byte[] gaussianKernel =
@@ -563,36 +563,36 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		// into the framebuffer. Saves having to do if checks for every pixel.
 		if (!processAlpha)
 		{
-		    for (int j = jcache; j < height; j++)
-		    {
-		        rowOffset = offset + (j * scanlength);
-		        destRow = (y + j) * canvasWidth;
+			for (int j = jcache; j < height; j++)
+			{
+				rowOffset = offset + (j * scanlength);
+				destRow = (y + j) * canvasWidth;
 
-		        int srcIdx = rowOffset + icache;
-		        int destIdx = destRow + x + icache;
-		        int endIdx = rowOffset + width;
+				int srcIdx = rowOffset + icache;
+				int destIdx = destRow + x + icache;
+				int endIdx = rowOffset + width;
 
-		        for (; srcIdx < endIdx; srcIdx++, destIdx++)
-		        	{ canvasData[destIdx] = rgbData[srcIdx] | 0xFF000000; }
-		    }
+				for (; srcIdx < endIdx; srcIdx++, destIdx++)
+					{ canvasData[destIdx] = rgbData[srcIdx] | 0xFF000000; }
+			}
 		}
 		else
 		{
-		    for (int j = jcache; j < height; j++)
-		    {
-		        rowOffset = offset + (j * scanlength);
-		        destRow = (y + j) * canvasWidth;
+			for (int j = jcache; j < height; j++)
+			{
+				rowOffset = offset + (j * scanlength);
+				destRow = (y + j) * canvasWidth;
 
-		        for (int i = icache; i < width; i++)
-		        {
-		            int srcPixel = rgbData[rowOffset + i];
-		            int destIdx = destRow + x + i;
+				for (int i = icache; i < width; i++)
+				{
+					int srcPixel = rgbData[rowOffset + i];
+					int destIdx = destRow + x + i;
 
-		            if ((srcPixel >>> 24) == 255) { canvasData[destIdx] = srcPixel | 0xFF000000; }
-		            else
-		            	{ canvasData[destIdx] = blendPixels(srcPixel, canvasData[destIdx]); }
-		        }
-		    }
+					if ((srcPixel >>> 24) == 255) { canvasData[destIdx] = srcPixel | 0xFF000000; }
+					else
+						{ canvasData[destIdx] = blendPixels(srcPixel, canvasData[destIdx]); }
+				}
+			}
 		}
 	}
 
@@ -669,7 +669,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
 		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
-		int curPixel = 0; // Used only for DOTTED style lines
+		final int steps = Math.abs(arcAngle * (width + height)) / 100;
+
+		// If we don't have at least one step to be drawn, return outright.
+		if(steps <= 0) { return; }
 
 		/*
 		 * This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
@@ -681,14 +684,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		 * few pixels as possible.
 		 */
 
-		final int centerX = (x << 1) + ((width << 1) / 2);
-		final int centerY = (y << 1) + ((height << 1) / 2);
-		final int radiusX = (width << 1) / 2;
-		final int radiusY = (height << 1) / 2;
+		final int centerX = (x << 1) + width;
+		final int centerY = (y << 1) + height;
+		final int radiusX = width;
+		final int radiusY = height;
 		final int startAngleRad = fastToRadians(startAngle);
-		final int endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
-		final int steps = Math.abs(arcAngle * (width + height)) / 100;
+		final int endAngleRad = fastToRadians(startAngle + arcAngle) - startAngleRad;
 		int angle = startAngleRad;
+		int angleStep = endAngleRad / steps;
 
 		int firstFillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
 		int firstFillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
@@ -696,6 +699,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int lastFillY = -1;
 
 		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
+		int curPixel = 0; // Used only for DOTTED style lines
 
 		if((firstFillX >= clipX && firstFillX < clipWidth && firstFillY >= clipY && firstFillY < clipHeight))
 		{
@@ -710,8 +714,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		/* First pixel was already drawn, so start from step 1 */
 		for (int i = 1; i <= steps; i++)
 		{
-			angle += endAngleRad / steps;
-
+			angle += angleStep;
 			int fillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
 			int fillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
 
@@ -801,9 +804,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		drawLine(x+width, y+(arcHeight/2)+1, x+width, y+height-(arcHeight/2)-2); // Right line
 
 		// Fill rounded corners
-		drawArc(x + 1, y + 1, arcWidth - 1, arcHeight - 1, 90, 90); // Top-left corner
+		drawArc(x, y + 1, arcWidth, arcHeight - 1, 90, 90); // Top-left corner
 		drawArc(x + width - arcWidth - 1, y + 1, arcWidth, arcHeight - 1, 0, 90); // Top-right corner
-		drawArc(x + 1, y + height - arcHeight - 1, arcWidth - 1, arcHeight, 180, 90); // Bottom-left corner
+		drawArc(x, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
 		drawArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
@@ -878,67 +881,118 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle)
 	{
-		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-
-		// Java's coordinate system has positive angles moving counter-clockwise
-		arcAngle = -arcAngle;
-		startAngle = -startAngle;
+		if (contextDisposed) throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed");
+		if (width <= 0 || height <= 0 || arcAngle == 0) return;
 
 		x += translateX;
 		y += translateY;
 
+		// Arcs are filled by calculating the arc's bounding box, and painting
+		// with a standard scanline raster algorithm. We normalize the
+		// coordinates (normDx, normDy) so that ovals match Java SE's behavior
+		// of angles scaling with the bounding box.
+
+		// Figure out the start and end points of the bounding box right away,
+		// as we can use the clip rectangle as the direct limits for those.
+		final int startX = Math.max(x, Math.max(0, getClipX() + translateX));
+		final int startY = Math.max(y, Math.max(0, getClipY() + translateY));
+		final int endX = Math.min(x + width, Math.min(canvasWidth, getClipX() + translateX + getClipWidth()));
+		final int endY = Math.min(y + height, Math.min(canvasHeight, getClipY() + translateY + getClipHeight()));
+
+		// If the resulting angle span doesn't paint any pixels, we can skip
+		// this entirely.
+		if (startX >= endX || startY >= endY) { return; }
+
+		// SquirrelJME uses Q16.16 as its fixed point scale. Trying to use that
+		// here would need many variable promotions to long (invRadius, the
+		// normalized coordinates, and more). We use Q12.20 here as that is
+		// still precise enough and does not need long promotions.
+		final int AFP_SHIFT = 12;
+		final int AFP_ONE = 1 << AFP_SHIFT; // 4096
+
+		final int radiusX = width >> 1;
+		final int radiusY = height >> 1;
+		final int centerX = x + radiusX;
+		final int centerY = y + radiusY;
+
+		// And now the radius reciprocals, for angle normalization (ovals need
+		// this for proper shape)
+		final int invRadiusX = (AFP_ONE << AFP_SHIFT) / (radiusX > 0 ? radiusX : 1);
+		final int invRadiusY = (AFP_ONE << AFP_SHIFT) / (radiusY > 0 ? radiusY : 1);
+
+		// Angle vectors setup. These are what we use to actually check if a
+		// pixel is within the angle boundaries for drawing. A full circle
+		// actually gives us a fast path where we don't even need to check
+		// cross products on each scanline.
+		final boolean isFullCircle = Math.abs(arcAngle) >= 360;
+		int nStart = (-startAngle) % 360;
+		int nEnd = (-startAngle - arcAngle) % 360;
+		if (nStart < 0) { nStart += 360; }
+		if (nEnd < 0) { nEnd += 360; }
+
+		// We only need to calculate the sine/cosine of the starting and
+		// end angles, as we use vector cross-products to check whether the
+		// pixel we're going to paint is inside the arc or not (much better
+		// performance than doing these per angle step, and also removes the
+		// need for atan2() entirely!), while also being easier to read.
+		final int cosS = fpCos(fastToRadians(nStart)) >> (16 - AFP_SHIFT);
+		final int sinS = fpSin(fastToRadians(nStart)) >> (16 - AFP_SHIFT);
+		final int cosE = fpCos(fastToRadians(nEnd)) >> (16 - AFP_SHIFT);
+		final int sinE = fpSin(fastToRadians(nEnd)) >> (16 - AFP_SHIFT);
+
+		// Arcs may be either convex or concave, thus we need to adapt
+		// drawing accordingly. Convex needs pixels to be after the start &&
+		// before the end cross-products, while Concave has pixel swwps going
+		// past the arc's boundaries, thus the pixels must be after the start ||
+		// before the end cross-products.
+		final boolean isConcave = Math.abs(arcAngle) > 180;
+
 		final boolean hasAlpha = getAlphaComponent() < 255;
-		int filledZ = 0;
-		byte[] filledPixels = null;
+		final int color = getColor();
 
-		/**
-		 * Only allocate the alpha buffer if the color isn't opaque. Noticeably
-		 * improves performance for opaque arcs. 8 pixels of information are packed
-		 * in a single boolean/byte, noticeably reducing memory usage.
-		 *
-		 * width and height are inclusive, hence the + 1 on each
-		 */
-		if(hasAlpha) { filledPixels = new byte[(width + 1) * (height + 1) / 8]; }
-
-		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
-		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
-		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
-
-		final int centerX = (x << 1) + ((width << 1) / 2);
-		final int centerY = (y << 1) + ((height << 1) / 2);
-		final int radiusX = (width << 1) / 2;
-		final int radiusY = (height << 1) / 2;
-		final int maxRadius = Math.max(radiusX, radiusY);
-		final int startAngleRad = fastToRadians(startAngle);
-		final int endAngleRad = (fastToRadians(startAngle + arcAngle) - fastToRadians(startAngle));
-		final int steps = Math.abs(arcAngle * (width + height)) / 100;
-		int angle = startAngleRad;
-
-		for (int i = 0; i < steps; i++)
+		for (int py = startY; py < endY; py++)
 		{
-			angle = startAngleRad + (i * endAngleRad / steps);
+			int dy = py - centerY;
+			int normY = (dy * invRadiusY) >> AFP_SHIFT;
+			int normY2 = (normY * normY) >> AFP_SHIFT;
 
-			for (int j = 0; j < maxRadius; j++)
+			if (normY2 >= AFP_ONE) { continue; }
+
+			// Find out the arc's boundaries for the current scanline.
+			int maxDx = (radiusX * fpSqrt12(AFP_ONE - normY2)) >> AFP_SHIFT;
+			int lineStartX = Math.max(startX, centerX - maxDx);
+			int lineEndX = Math.min(endX, centerX + maxDx + 1);
+			int lineOffset = py * canvasWidth;
+
+			// Pre-scale normDy for 2D cross-product scanline checks in X loop,
+			// otherwise we'd waste cycles doing this per-pixel.
+			int crossYStart = (-normY * cosS) >> AFP_SHIFT;
+			int crossYEnd = (-normY * cosE) >> AFP_SHIFT;
+
+			for (int px = lineStartX; px < lineEndX; px++)
 			{
-				int innerX = (centerX + (radiusX * (fpCos(angle) * j / maxRadius) >> FP_FACTOR)) >> 1;
-				int innerY = (centerY + (radiusY * (fpSin(angle) * j / maxRadius) >> FP_FACTOR)) >> 1;
-				filledZ = ((innerY-y) * width + innerX-x);
-
-				if (innerX >= clipX && innerX < clipWidth && innerY >= clipY && innerY < clipHeight &&
-					innerX-x >= 0 && innerY-y >=0 && (hasAlpha ? (filledPixels[filledZ >> 3] & (1 << (7 - filledZ & 7))) == 0 : true))
+				// Not a full circle? Then we need to verify if this pixel
+				// is within the arc's boundaries for this scanline.
+				if (!isFullCircle)
 				{
-					if (!hasAlpha) { canvasData[(innerY * canvasWidth) + innerX] = getColor(); }
-					else
-					{
-						filledPixels[filledZ >> 3] |= (1 << (7 - filledZ & 7));
-						canvasData[(innerY * canvasWidth) + innerX] = blendPixels(getColor(), canvasData[(innerY * canvasWidth) + innerX]);
-					}
+					int dx = px - centerX;
+					int normDx = (dx * invRadiusX) >> AFP_SHIFT;
+
+					int crossStart = ((normDx * sinS) >> AFP_SHIFT) + crossYStart;
+					int crossEnd = ((normDx * sinE) >> AFP_SHIFT) + crossYEnd;
+
+					boolean inSector = !isConcave ? (crossStart >= -2 &&
+						crossEnd <= 2) : (crossStart >= -2 || crossEnd <= 2);
+
+					if (!inSector) { continue; }
 				}
+
+				// Then just paint the pixel.
+				int idx = lineOffset + px;
+				canvasData[idx] = hasAlpha ? blendPixels(color, canvasData[idx]) : color;
 			}
 		}
 	}
-
 
 	public void fillRect(int x, int y, int width, int height)
 	{
@@ -954,12 +1008,12 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
 		final int icache = (x > clipX) ? 0 : (clipX - x);
-	    final int jcache = (y > clipY) ? 0 : (clipY - y);
+		final int jcache = (y > clipY) ? 0 : (clipY - y);
 
-	    x += icache;
-	    y += jcache;
-	    width -= icache;
-	    height -= jcache;
+		x += icache;
+		y += jcache;
+		width -= icache;
+		height -= jcache;
 
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
@@ -1014,7 +1068,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			return;
 		}
 
-		// We'll be doing only even arc widths and heights, otherwise the borders will look off (java's Graphics allow odd width/heights though)
+		// We'll be doing only even arc widths and heights, otherwise the borders
+		// will look off (java's Graphics allow odd width/heights though)
 		if(arcWidth  %2 != 0) { arcWidth++; }
 		if(arcHeight %2 != 0) { arcHeight++; }
 
@@ -1027,9 +1082,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		fillRect(x + (width - (arcWidth/2))-1, y + (arcHeight/2)+1, (arcWidth/2)+1, height - arcHeight - 2); // Right Side part
 
 		// Fill rounded corners
-		fillArc(x + 1, y + 1, arcWidth - 1, arcHeight - 1, 90, 90); // Top-left corner
-		fillArc(x + width - arcWidth - 1, y + 1, arcWidth, arcHeight - 1, 0, 90); // Top-right corner
-		fillArc(x + 1, y + height - arcHeight - 1, arcWidth - 1, arcHeight, 180, 90); // Bottom-left corner
+		fillArc(x, y, arcWidth, arcHeight, 90, 90); // Top-left corner
+		fillArc(x + width - arcWidth - 1, y, arcWidth, arcHeight, 0, 90); // Top-right corner
+		fillArc(x, y + height - arcHeight - 1, arcWidth, arcHeight, 180, 90); // Bottom-left corner
 		fillArc(x + width - arcWidth - 1, y + height - arcHeight - 1, arcWidth, arcHeight, 270, 90); // Bottom-right corner
 	}
 
@@ -3209,10 +3264,33 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Helper methods
 	protected static final int clamp(int value) { return Math.max(0, Math.min(255, value)); }
 
-	// All math below here uses a factor of 32768, same as shifting by 15 bits
-	protected static final int fastToRadians(int angdeg) { return angdeg * 572; }
+	// Square root in fixed point Q12.20 format, specifically for fillArc()
+	protected static final int fpSqrt12(int val)
+	{
+		if (val <= 0) { return 0; }
+		int res = 0;
 
-	protected static final int fpCos(int angle) { return (int)(Math.cos(angle / 32768.0f) * 32768); }
+		// Start being bit-adjusted for 32-bit bounds
+		int bit = 1 << 14;
+		while (bit > val) { bit >>= 2; }
 
-	protected static final int fpSin(int angle) { return (int)(Math.sin(angle / 32768.0f) * 32768); }
+		while (bit != 0)
+		{
+			if (val >= res + bit)
+			{
+				val -= res + bit;
+				res = (res >> 1) + bit;
+			}
+			else { res >>= 1; }
+			bit >>= 2;
+		}
+		return res << 6; // Q12 shift adjustment
+	}
+
+	// All math below here uses a factor of 65536, same as shifting by 16 bits
+	protected static final int fastToRadians(int angdeg) { return angdeg * 1144; }
+
+	protected static final int fpCos(int angle) { return (int)(Math.cos(angle / 65536.0f) * 65536); }
+
+	protected static final int fpSin(int angle) { return (int)(Math.sin(angle / 65536.0f) * 65536); }
 }
