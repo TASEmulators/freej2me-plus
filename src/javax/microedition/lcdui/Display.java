@@ -48,10 +48,9 @@ public class Display
 
 	private final Queue<Runnable> serializedEvents = new LinkedList<Runnable>();
 
-	// Double-buffered queues for inputs, so we don't need a separate thread for
+	// Separete queue for inputs, so we don't need a separate thread for
 	// this when adding/processing.
 	private Queue<Runnable> inputEvents = new LinkedList<Runnable>();
-	private Queue<Runnable> inputProcessingQueue = new LinkedList<Runnable>();
 
 	private final Object eventLock = new Object();
 
@@ -117,7 +116,7 @@ public class Display
 			if(call != null) { call.run(); }
 
 			Runnable pendingPaint = null;
-			Runnable pendingSerial = null;
+			int inputCount = 0, serialCount = 0;
 
 			synchronized (eventLock)
 			{
@@ -131,29 +130,41 @@ public class Display
 				}
 
 				pendingPaint = paintEvent.getAndSet(null);
-				pendingSerial = serializedEvents.poll();
 
-				if (!inputEvents.isEmpty())
-				{
-					Queue<Runnable> temp = inputEvents;
-					inputEvents = inputProcessingQueue;
-					inputProcessingQueue = temp;
-				}
+				// For inputs and serial calls we process only the ones that
+				// were queued until this method was called.
+				inputCount = inputEvents.size();
+				serialCount = serializedEvents.size();
 			}
 
 			// Inputs go before anything else.
-			while(!inputProcessingQueue.isEmpty())
+			while(inputCount > 0)
 			{
-				Runnable inputTask = inputProcessingQueue.poll();
-				if (inputTask != null)
+				Runnable inputTask = null;
+				synchronized (eventLock)
 				{
-					inputTask.run();
+					inputTask = inputEvents.poll();
 				}
+				if (inputTask != null) { inputTask.run(); }
+
+				inputCount--;
 			}
 
 			// Service paints, then serial calls
 			if (pendingPaint != null) { pendingPaint.run(); }
-			if (pendingSerial != null) { pendingSerial.run(); }
+
+			while (serialCount > 0)
+			{
+				Runnable pendingSerial = null;
+				synchronized (eventLock)
+				{
+					pendingSerial = serializedEvents.poll();
+				}
+
+				if (pendingSerial != null) { pendingSerial.run(); }
+
+				serialCount--;
+			}
 		}
 	}
 

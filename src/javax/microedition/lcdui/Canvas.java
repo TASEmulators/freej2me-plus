@@ -281,7 +281,6 @@ public abstract class Canvas extends Displayable
 			renderY = paintY;
 			renderW = paintW;
 			renderH = paintH;
-			needsRepaint = false;
 		}
 
 		try
@@ -308,6 +307,7 @@ public abstract class Canvas extends Displayable
 			// Unblock any threads waiting in serviceRepaints()
 			synchronized (paintLock)
 			{
+				needsRepaint = false;
 				paintLock.notifyAll();
 			}
 		}
@@ -344,7 +344,7 @@ public abstract class Canvas extends Displayable
 			while (needsRepaint)
 			{
 				try { paintLock.wait(); }
-				catch (InterruptedException ignored)
+				catch (InterruptedException e)
 					{ Thread.currentThread().interrupt(); }
 			}
 		}
