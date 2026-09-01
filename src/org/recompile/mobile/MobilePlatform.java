@@ -73,6 +73,7 @@ public class MobilePlatform
 
 	public String dataPath = "";
 	public static String fileName = null;
+	public static String spFileName = null;
 	private static String kjxJadFileName = null; // Static so that we can delete the extracted jar and jad files if needed
 
 	public volatile static int keyState = 0;

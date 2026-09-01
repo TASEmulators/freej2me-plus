@@ -66,6 +66,7 @@ public final class AWTGUI
 
 	/* String that points to the jar file that has to be loaded */
 	String jarfile = "";
+	String spfile = "";
 
 	/* This is meant to be a local reference of FreeJ2ME's main frame */
 	private Frame main;
@@ -187,6 +188,7 @@ public final class AWTGUI
 	final MenuItem resChangeMenuItem = new MenuItem("Change Phone Resolution");
 
 	final MenuItem openMenuItem = new MenuItem("Open JAR / JAD / KJX / MSD File");
+	final MenuItem openSpMenuItem = new MenuItem("Open DoJa SP / SP0 File");
 	final MenuItem restartMenuItem = new MenuItem("Restart Running Jar");
 	final MenuItem closeMenuItem = new MenuItem("Close Running Jar");
 	final MenuItem scrShot = new MenuItem("Take Screenshot (Ctrl+Alt+C)");
@@ -609,6 +611,7 @@ public final class AWTGUI
         awtDialogs[5].add(logScrollPane, BorderLayout.CENTER);
 
 		openMenuItem.setActionCommand("Open");
+		openSpMenuItem.setActionCommand("OpenSp");
 		restartMenuItem.setActionCommand("RestartNow");
 		closeMenuItem.setActionCommand("Close");
 		scrShot.setActionCommand("Screenshot");
@@ -628,6 +631,7 @@ public final class AWTGUI
 		showPlayer.setActionCommand("ShowPlayer");
 
 		openMenuItem.addActionListener(menuItemListener);
+		openSpMenuItem.addActionListener(menuItemListener);
 		restartMenuItem.addActionListener(menuItemListener);
 		closeMenuItem.addActionListener(menuItemListener);
 		scrShot.addActionListener(menuItemListener);
@@ -1277,6 +1281,7 @@ public final class AWTGUI
 
 		//add menu items to menus
 		fileMenu.add(openMenuItem);
+		fileMenu.add(openSpMenuItem);
 		fileMenu.add(restartMenuItem);
 		fileMenu.add(closeMenuItem);
 		fileMenu.addSeparator();
@@ -1511,7 +1516,7 @@ public final class AWTGUI
 
 				filename = filePicker.getFile();
 
-				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "JAR/JAD Loading was cancelled"); }
+				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "Main File Loading was cancelled"); }
 				else
 				{
 						try
@@ -1524,6 +1529,38 @@ public final class AWTGUI
 								Mobile.getPlatform().fileName = jarfile;
 								showRestartDialog();
 							}
+						}
+						catch(Exception e) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "Load error:" + e.getMessage()); }
+				}
+			}
+
+			if(a.getActionCommand() == "OpenSp")
+			{
+				FileDialog filePicker = new FileDialog(main, "Open DoJa SP / SP0 File", FileDialog.LOAD);
+				String filename;
+				filePicker.setFilenameFilter(new FilenameFilter()
+				{
+					public boolean accept(File dir, String name)
+					{
+						return name.toLowerCase().endsWith(".sp") ||
+								name.toLowerCase().endsWith(".sp0");
+					}
+				});
+				filePicker.setVisible(true);
+
+				filename = filePicker.getFile();
+
+				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "SP/SP0 Loading was cancelled"); }
+				else
+				{
+						try
+						{
+							spfile = new File(filePicker.getDirectory()+filename).toURI().toString();
+
+							Mobile.getPlatform().spFileName = spfile;
+
+							// We already loaded an app? Then we'll need to restart.
+							if(hasLoadedFile()) { showRestartDialog(); }
 						}
 						catch(Exception e) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "Load error:" + e.getMessage()); }
 				}

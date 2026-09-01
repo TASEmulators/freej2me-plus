@@ -112,7 +112,7 @@ You can also configure many aspects of the runtime, including debug options:
 <h1> </h1>
 
 Alternatively it can be launched from the command line with the following arguments:
-
+- `DoJa Scratchpad` :arrow_right: `sp=path/to/scratchpad.[sp,sp0]` (this argument is fully optional and does not need to be passed)
 - `fullscreen` :arrow_right: `1 = yes, 0 = no`
 - `width` :arrow_right: `self explanatory, it's the virtual LCD's width`
 - `height` :arrow_right: `also self explanatory, it's the virtual LCD's height`
@@ -122,7 +122,7 @@ Alternatively it can be launched from the command line with the following argume
 - `keyLayout` :arrow_right: `specifies which device key layout should be used when booting up.` These can be:
   - `0  -> Default`
   - `1  -> LG`
-  - `2  -> Motorola/Softbank`
+  - `2  -> Motorola/Softbank/Sharp`
   - `3  -> Motorola Triplets`
   - `4  -> Motorola V8`
   - `5  -> Motorola A1000`
@@ -151,9 +151,9 @@ Alternatively it can be launched from the command line with the following argume
 
 <h1> </h1>
 
-Those are organized and read internally in this manner: `java -jar freej2me.jar 'file:///path/to/midlet.jar' fullscreen width height scale keyLayout framerate dojaversion`
+Those are organized and read internally in this manner: `java -jar freej2me.jar 'file:///path/to/midlet.jar' 'sp=path/to/scratchpad.[sp,sp0]' fullscreen width height scale keyLayout framerate dojaversion`
 
-Although all arguments aside from the path are optional to launch FreeJ2ME-Plus with any given app.
+Although all arguments aside from the path are optional to launch FreeJ2ME-Plus with any given app. But if you want, to, say, set the scale, you need to pass the fullscreen and width/height arguments beforehand. Only the scratchpad argument is fully optional here.
 
 ### _Notes:_
 

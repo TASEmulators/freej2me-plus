@@ -70,7 +70,6 @@ public class Connector
 
 	public static Connection open(String name, int mode, boolean timeouts) throws IOException
 	{
-
 		if (name.startsWith("scratchpad:"))
 		{
 			return new com.nttdocomo.util.ScratchPadConnection(name);

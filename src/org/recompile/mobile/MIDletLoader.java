@@ -76,7 +76,7 @@ public class MIDletLoader extends URLClassLoader
 	private Class<?> mainClass;
 	private MIDlet midletInst;
 	private IApplication IAppliInst;
-	
+
 	private Registry reg;
 
 	private HashMap<String, String> properties = new HashMap<String, String>(32);
@@ -133,7 +133,7 @@ public class MIDletLoader extends URLClassLoader
 	{
 		super(new URL[] {url} );
 
-		try 
+		try
 		{
 			String jarName = new File(url.getFile()).getName().replace('.', '_');
 			suitename = jarName;
@@ -141,7 +141,7 @@ public class MIDletLoader extends URLClassLoader
             jarFile = new JarFile(file);
 			loadJarEntries();
 			baseUrl = url;
-		} 
+		}
 		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse jar:" + e.getMessage());
@@ -253,61 +253,61 @@ public class MIDletLoader extends URLClassLoader
 		if (className[0] == null) { className[0] = findMainClassInJar(url); }
 	}
 
-	public static String findMainClassInJar(URL url) 
+	public static String findMainClassInJar(URL url)
 	{
-		// we search for a class file containing "startApp" 
+		// we search for a class file containing "startApp"
 		// note this is just an approximation, but it often works
 		// the class might be abstract though..
-		for (JarEntry entry : jarEntries) 
+		for (JarEntry entry : jarEntries)
 		{
-            if (entry.getName().endsWith(".class")) 
+            if (entry.getName().endsWith(".class"))
 			{
                 String className = entry.getName().replace('/', '.').replace(".class", "");
-				try 
+				try
 				{
 					if (hasStartApp(className, jarFile.getInputStream(entry))) { return className; }
 				}
                 catch (IOException e) { e.printStackTrace(); }
             }
-        }		
+        }
         return null;
     }
 
-	private void loadJarEntries() 
+	private void loadJarEntries()
 	{
 		Enumeration<JarEntry> entries = jarFile.entries();
-		while (entries.hasMoreElements()) 
+		while (entries.hasMoreElements())
 		{
 			JarEntry entry = entries.nextElement();
 			jarEntries.add(entry);
 		}
     }
 
-	private static boolean hasStartApp(String className, InputStream is) 
+	private static boolean hasStartApp(String className, InputStream is)
 	{
 		byte[] pattern = "startApp".getBytes();
-		try 
+		try
 		{
 			byte[] classBytes = readBytes(is);
-			for (int i = 0; i < classBytes.length - pattern.length; i++) 
+			for (int i = 0; i < classBytes.length - pattern.length; i++)
 			{
 				int j = 0;
-				for (j = 0; j < pattern.length; j++) 
+				for (j = 0; j < pattern.length; j++)
 				{
 					if (classBytes[i+j] != pattern[j]) { break; }
 				}
 				if (j == pattern.length) { return true; }
 			}
 		} catch (IOException e) { e.printStackTrace(); }
-  		finally 
+  		finally
 		{
-			try { is.close(); } 
+			try { is.close(); }
 			catch (IOException e) { e.printStackTrace(); }
-		} 
+		}
         return false;
     }
 
-	private static byte[] readBytes(InputStream is) throws IOException 
+	private static byte[] readBytes(InputStream is) throws IOException
 	{
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         int nRead;
@@ -333,7 +333,7 @@ public class MIDletLoader extends URLClassLoader
 
 			// If there's only one midlet, load it straight away
 			MIDletSelected = true;
-			if(className[selectedMidlet] != null) 
+			if(className[selectedMidlet] != null)
 			{
 				mainClass = loadClass(className[selectedMidlet]);
 
@@ -341,19 +341,19 @@ public class MIDletLoader extends URLClassLoader
 				constructor = mainClass.getConstructor();
 				constructor.setAccessible(true);
 
-				if(!Mobile.isDoJa) 
+				if(!Mobile.isDoJa)
 				{
 					MIDlet.initAppProperties(properties);
 					midletInst = (MIDlet)constructor.newInstance();
 				}
-				else 
+				else
 				{
 					IApplication.initAppProperties(properties);
 					IAppliInst = (IApplication) constructor.newInstance();
 				}
-				
+
 			}
-			
+
 		}
 		catch (Exception e)
 		{
@@ -398,29 +398,29 @@ public class MIDletLoader extends URLClassLoader
         try
 		{
 			BufferedReader br = new BufferedReader(new InputStreamReader(is));
-			try 
+			try
 			{
 				String line;
-				while ((line = br.readLine()) != null) 
+				while ((line = br.readLine()) != null)
 				{
 					if (line.trim().isEmpty()) { continue; }
-					if (line.startsWith(" ")) { currentValue.append(line, 1, line.length()); } 
-					else 
+					if (line.startsWith(" ")) { currentValue.append(line, 1, line.length()); }
+					else
 					{
-						if (currentKey != null) 
+						if (currentKey != null)
 						{
 							if (currentKey.contains("MIDlet-")) { hasMIDlet = true; }
 							// Only add a new key-value pair if the key doesn't already exist (set by the JAD file)
-							if (!keyValueMap.containsKey(currentKey)) 
-							{ 
+							if (!keyValueMap.containsKey(currentKey))
+							{
 								if(currentKey.contains("Nokia-Platform") && Mobile.compatOverridePlatformChecks) // This override check doesn't work yet and resolves to true, as we haven't loaded the configs yet
 								{
 									System.setProperty("microedition.platform", currentValue.toString().trim());
-									keyValueMap.put("microedition.platform", currentValue.toString().trim()); 
+									keyValueMap.put("microedition.platform", currentValue.toString().trim());
 								}
 								else { keyValueMap.put(currentKey, currentValue.toString().trim()); }
-							} 
-							else 
+							}
+							else
 							{
 								Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey));
 							}
@@ -429,25 +429,25 @@ public class MIDletLoader extends URLClassLoader
 
 						int colonIndex = line.indexOf(':');
 
-						if (colonIndex != -1) 
+						if (colonIndex != -1)
 						{
 							currentKey = line.substring(0, colonIndex).trim();
 							currentValue.append(line.substring(colonIndex + 1).trim());
 						}
 					}
 				}
-				if (currentKey != null) 
+				if (currentKey != null)
 				{
-					if (!keyValueMap.containsKey(currentKey)) 
-					{ 
-						if(currentKey.contains("Nokia-Platform") && Mobile.compatOverridePlatformChecks) 
+					if (!keyValueMap.containsKey(currentKey))
+					{
+						if(currentKey.contains("Nokia-Platform") && Mobile.compatOverridePlatformChecks)
 						{
 							System.setProperty("microedition.platform", currentValue.toString().trim());
-							keyValueMap.put("microedition.platform", currentValue.toString().trim()); 
+							keyValueMap.put("microedition.platform", currentValue.toString().trim());
 						}
 						else { keyValueMap.put(currentKey, currentValue.toString().trim()); }
-					} 
-					else 
+					}
+					else
 					{
 						Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "properties already contain " + currentKey + "! Maintaining current value: " + keyValueMap.get(currentKey));
 					}
@@ -457,52 +457,52 @@ public class MIDletLoader extends URLClassLoader
 
 				// If no MIDlet was found above, we'll try loading this jar as a DoJa file, which has an accompanying .jam descriptor (this is fine because if a jad is present, it's loaded before this method is even called)
 				Mobile.isDoJa = !hasMIDlet;
-			} 
+			}
 			finally { br.close(); }
         }
-		catch (IOException e) 
+		catch (IOException e)
 		{
             Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage());
         }
     }
 
-	public static void parseJamDescriptorInto(InputStream is, Map<String, String> keyValueMap) 
+	public static void parseJamDescriptorInto(InputStream is, Map<String, String> keyValueMap)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Parsing .JAM...");
 		String currentKey = null;
 		StringBuilder currentValue = new StringBuilder();
-	
+
 		try
 		{
 			BufferedReader br = new BufferedReader(new InputStreamReader(is, "Shift_JIS"));
 			String line;
-			while ((line = br.readLine()) != null) 
+			while ((line = br.readLine()) != null)
 			{
 				if (line.trim().isEmpty()) { continue; }
-	
-				if (line.startsWith(" ")) { currentValue.append(line.trim()); } 
-				else 
+
+				if (line.startsWith(" ")) { currentValue.append(line.trim()); }
+				else
 				{
 					// If there's a current valid key, store the value
-					if (currentKey != null) 
+					if (currentKey != null)
 					{
 						keyValueMap.put(currentKey, currentValue.toString().trim());
 						Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Adding prop:" + currentKey + " (" + currentKey + ") val:" + currentValue.toString().trim());
 						currentValue.setLength(0);
 					}
-	
+
 					// Split on '=' to get the key and value (standard MIDlet manifests use ":" as the separator)
 					int equalsIndex = line.indexOf('=');
-					if (equalsIndex != -1) 
+					if (equalsIndex != -1)
 					{
 						currentKey = line.substring(0, equalsIndex).trim();
 						currentValue.append(line.substring(equalsIndex + 1).trim());
 					}
 				}
 			}
-	
+
 			// Store the last key-value pair if it exists
-			if (currentKey != null) 
+			if (currentKey != null)
 			{
 				keyValueMap.put(currentKey, currentValue.toString().trim());
 
@@ -518,7 +518,7 @@ public class MIDletLoader extends URLClassLoader
 	{
 		String resource = "META-INF/MANIFEST.MF";
 		URL url = findResource(resource);
-		if (url == null) 
+		if (url == null)
 		{
 			resource = "META-INF/MANIFEST.FM";
 			url = findResource(resource);
@@ -527,7 +527,7 @@ public class MIDletLoader extends URLClassLoader
 		if(url != null) // Standard MIDlet manifest is present (at least i assume so)
 		{
 			try { parseDescriptorInto(url.openStream(), properties); }
-			catch (Exception e) 
+			catch (Exception e)
 			{
 				Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Can't Read Jar Manifest!");
 				e.printStackTrace();
@@ -536,22 +536,22 @@ public class MIDletLoader extends URLClassLoader
 		else { Mobile.isDoJa = properties.containsKey("MIDlet-1") ? false : true; } // Else we assume it as DoJa if a JAD file wasn't found, or if it was found but it, like the manifest, doesn't have the MIDlet token
 
 		if (Mobile.isDoJa) // No manifest found in the jar, or the manifest doesn't have a midlet specified. Maybe it's a DoJa file that has an accompanying .jam?
-		{ 
+		{
 			Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "JAR Manifest file not found or lacks MIDlet entry! Checking if it's a DoJa File");
-			
-			try 
+
+			try
 			{
 				String jarFileName = baseUrl.toString();
 				final File jarFile = new File(new URI(jarFileName));
 				final File jarDirectory = jarFile.getParentFile();
 
-				if (jarDirectory != null && jarDirectory.isDirectory()) 
+				if (jarDirectory != null && jarDirectory.isDirectory())
 				{
 					// Create a FilenameFilter to check for JAM files
-					FilenameFilter jamFilter = new FilenameFilter() 
+					FilenameFilter jamFilter = new FilenameFilter()
 					{
 						@Override
-						public boolean accept(File dir, String name) 
+						public boolean accept(File dir, String name)
 						{
 							return name.equalsIgnoreCase(jarFile.getName().toLowerCase().replace(".jar", ".jam"));
 						}
@@ -559,33 +559,33 @@ public class MIDletLoader extends URLClassLoader
 
 					File[] jamFiles = jarDirectory.listFiles(jamFilter);
 
-					if (jamFiles != null && jamFiles.length > 0) 
+					if (jamFiles != null && jamFiles.length > 0)
 					{
 						File jamFileFound = jamFiles[0];
-						if (jamFileFound.exists() && !jamFileFound.isDirectory()) 
+						if (jamFileFound.exists() && !jamFileFound.isDirectory())
 						{
-							Mobile.log(Mobile.LOG_INFO, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "JAM File Found!" + jamFileFound);
-							
+							Mobile.log(Mobile.LOG_INFO, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "JAM File Found! " + jamFileFound);
+
 							Mobile.textEncoding = "Shift_JIS";
 							MobilePlatform.checkFileEncoding();
-							
+
 							URL jamURL = jamFileFound.toURI().toURL();
 							parseJamDescriptorInto(jamURL.openStream(), properties);
 						}
 					}
 				}
-				else 
+				else
 				{
 					Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Could not access the directory containing the JAR file.");
 				}
 			}
-			catch (Exception e) 
+			catch (Exception e)
 			{
 				Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Could not parse .jam file:" + e.getMessage());
 			}
 		}
 
-		if(!Mobile.isDoJa) 
+		if(!Mobile.isDoJa)
 		{
 			for(int i = 0; i < 9; i++) // Support loading up to 9 midlets, though i doubt any jar will have more than a few.
 			{
@@ -595,19 +595,19 @@ public class MIDletLoader extends URLClassLoader
 					String[] parts = val.split(",");
 					int argLength = parts.length; // No need for an int here, at max we have 3 arguments
 
-					if (argLength == 3) 
+					if (argLength == 3)
 					{
 						name[i] = parts[0].trim();
 						if(i == 0) { icon = parts[1].trim(); }
-						
+
 						if (className[i] == null) { className[i] = parts[2].trim(); }
-						
-						if(i == 0) 
-						{ 
+
+						if(i == 0)
+						{
 							suitename = name[i];
 							suitename = suitename.replace(":","");
-						} 
-						
+						}
+
 					}
 					else if(argLength == 2) // A comma is missing, MUST be between the midlet name and icon path, otherwise there's no way to fix here (manifest has to be edited manually)
 					{
@@ -618,11 +618,11 @@ public class MIDletLoader extends URLClassLoader
 
 						if (className[i] == null) { className[i] = parts[1].trim(); }
 
-						if(i == 0) 
-						{ 
+						if(i == 0)
+						{
 							suitename = name[i];
 							suitename = suitename.replace(":","");
-						} 
+						}
 					}
 
 					vendorname = properties.get("MIDlet-Vendor");
@@ -630,8 +630,8 @@ public class MIDletLoader extends URLClassLoader
 
 					reg = new Registry(className[i]);
 				}
-				else 
-				{ 
+				else
+				{
 					name[i] = null;
 					className[i] = null;
 				}
@@ -735,17 +735,17 @@ public class MIDletLoader extends URLClassLoader
         return null;
     }
 
-    private URL findResourceInJar(URL jarUrl, String resourceName) 
+    private URL findResourceInJar(URL jarUrl, String resourceName)
 	{
 		for (JarEntry entry : jarEntries)
 		{
 			String entryName = entry.getName();
-			if (entryName.equalsIgnoreCase(resourceName)) 
-			{				
-				try 
+			if (entryName.equalsIgnoreCase(resourceName))
+			{
+				try
 				{
 					URI jarEntryURI = new URI("jar:" + jarUrl.toExternalForm() + "!/" + entryName);
-					return jarEntryURI.toURL(); 
+					return jarEntryURI.toURL();
 				}
 				catch(Exception e) { Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Couldn't load resource from jar: " + e.getMessage()); e.printStackTrace(); }
 			}
@@ -797,8 +797,8 @@ public class MIDletLoader extends URLClassLoader
 
 		boolean isSiemens = false;
 		// Remove the "resource:" token that some jars pass into this method. FreeJ2ME doesn't need it.
-		if(resource.contains("resource:")) 
-		{ 
+		if(resource.contains("resource:"))
+		{
 			resource = resource.replaceAll("resource:", "");
 			if(!Mobile.isDoJa) { isSiemens = true;  }
 		}
@@ -814,12 +814,12 @@ public class MIDletLoader extends URLClassLoader
 			Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Initial path returned null data. Treating as relative path...");
 			// Change "." occurrences to "/" to give us the path to the class, and by consequence, the resource's position relative to it
 			String resourcePath = className[selectedMidlet].replace(".", "/");
-    
+
 			// If we really are in a subdir
-			if(resourcePath.contains("/") && !resource.contains(resourcePath)) 
+			if(resourcePath.contains("/") && !resource.contains(resourcePath))
 			{
 				// Remove the class name from the resolved path
-				resourcePath = resourcePath.substring(0, resourcePath.lastIndexOf('/')) + "/"; 
+				resourcePath = resourcePath.substring(0, resourcePath.lastIndexOf('/')) + "/";
 
 				// And there we have it, just append the resource at the end of it, IF the resource doesn't already have it.
 				if(!resource.startsWith(resourcePath)) { resource = resourcePath + resource; }
@@ -834,9 +834,9 @@ public class MIDletLoader extends URLClassLoader
 		try
 		{
 			InputStream stream = url.openStream();
-			
+
 			// zb3: why not return a stream? or a bufferedinputstream for marks?
-			
+
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 			int count=0;
 			byte[] data = new byte[4096];
@@ -845,7 +845,7 @@ public class MIDletLoader extends URLClassLoader
 				count = stream.read(data);
 				if(count!=-1) { buffer.write(data, 0, count); }
 			}
-			
+
 			if(!isSiemens) { return new ByteArrayInputStream(buffer.toByteArray()); }
 			else { return new SiemensInputStream(buffer.toByteArray()); }
 		}
@@ -873,12 +873,12 @@ public class MIDletLoader extends URLClassLoader
 			Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Initial path returned null data. Treating as relative path...");
 			// Change "." occurrences to "/" to give us the path to the class, and by consequence, the resource's position relative to it
 			String resourcePath = className[selectedMidlet].replace(".", "/");
-    
+
 			// If we really are in a subdir
-			if(resourcePath.contains("/") && !resource.contains(resourcePath)) 
+			if(resourcePath.contains("/") && !resource.contains(resourcePath))
 			{
 				// Remove the class name from the resolved path
-				resourcePath = resourcePath.substring(0, resourcePath.lastIndexOf('/')) + "/"; 
+				resourcePath = resourcePath.substring(0, resourcePath.lastIndexOf('/')) + "/";
 
 				// And there we have it, just append the resource at the end of it, IF the resource doesn't already have it.
 				if(!resource.startsWith(resourcePath)) { resource = resourcePath + resource; }
@@ -927,7 +927,7 @@ public class MIDletLoader extends URLClassLoader
 			name.startsWith("com.mascotcapsule") || name.startsWith("com.samsung") || name.startsWith("sun.") ||
 			name.startsWith("com.siemens") || name.startsWith("org.recompile") || name.startsWith("jdk.") ||
 			name.startsWith("com.vodafone.") || name.startsWith("com.jblend.") || name.startsWith("com.motorola.") ||
-			name.startsWith("com.sprintpcs.") || name.startsWith("com.bmc.") || name.startsWith("com.immersion.") || 
+			name.startsWith("com.sprintpcs.") || name.startsWith("com.bmc.") || name.startsWith("com.immersion.") ||
 			name.startsWith("com.j_phone.") || name.startsWith("com.kddi.") || name.startsWith("com.pantech.") ||
 			name.startsWith("mmpp.") || name.startsWith("com.velox.") || name.startsWith("com.nttdocomo.") ||
 			name.startsWith("org.xml.") || name.startsWith("org.w3c.") || name.startsWith("javacard.") ||
@@ -970,15 +970,15 @@ public class MIDletLoader extends URLClassLoader
 	}
 
 	// TODO: This should be fleshed out to parse more classes that can affect the type of Connector returned, etc.
-	public void checkAPIUsage(String name) 
+	public void checkAPIUsage(String name)
 	{
 		// We need to discern these messaging packages in order to return valid "Connection" classes for SMS
 		if (name.contains("javax.wireless.messaging")) { Mobile.usingMessagingAPI = true; }
 	}
 
 	// Used to build the RMS json, not much else
-	public String getProperty(String key) 
-	{ 
+	public String getProperty(String key)
+	{
 		if(properties.containsKey(key)) { return properties.get(key); }
 		else { return ""; }
 	}
@@ -1012,7 +1012,7 @@ public class MIDletLoader extends URLClassLoader
 	}
 
 
-/* ************************************************************** 
+/* **************************************************************
  * Instrumentation
  * ************************************************************** */
 
@@ -1041,7 +1041,7 @@ public class MIDletLoader extends URLClassLoader
 			super.visit(version, access, name, signature, superName, interfaces);
 		}
 
-		public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) 
+		public FieldVisitor visitField(int access, String name, String desc, String signature, Object value)
 		{
 			return super.visitField(access, name, desc, signature, value);
 		}
@@ -1051,31 +1051,31 @@ public class MIDletLoader extends URLClassLoader
 
 			// Override invalid Thread methods
 			if ("java/lang/Thread".equals(superName))
-			{ 
-				if("suspend".equals(name) || "stop".equals(name) || "resume".equals(name)) 
+			{
+				if("suspend".equals(name) || "stop".equals(name) || "resume".equals(name))
 				{
 					Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "MIDlet tried to override Java's Thread method: " + name + "... patched!");
-					name = "_" + name; 
+					name = "_" + name;
 				}
 			}
 
 			MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);
 
 			// SKT security check bypass
-			if ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC && "(Ljavax/microedition/midlet/MIDlet;)Z".equals(desc) && Mobile.isSKT) 
+			if ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC && "(Ljavax/microedition/midlet/MIDlet;)Z".equals(desc) && Mobile.isSKT)
 			{
 				visitor = new ASMSecureUtilWorkaroundMethodVisitor(visitor);
-			} 
+			}
 			else { visitor = new ASMMethodVisitor(visitor); }
-			
+
 			return visitor;
 		}
 
-		private class ASMSecureUtilWorkaroundMethodVisitor extends MethodAdapter 
+		private class ASMSecureUtilWorkaroundMethodVisitor extends MethodAdapter
 		{
 			private final MethodVisitor target;
 
-			public ASMSecureUtilWorkaroundMethodVisitor(MethodVisitor target) 
+			public ASMSecureUtilWorkaroundMethodVisitor(MethodVisitor target)
 			{
                 super(target);
 
@@ -1083,7 +1083,7 @@ public class MIDletLoader extends URLClassLoader
 			}
 
 			@Override
-			public void visitCode() 
+			public void visitCode()
 			{
 				target.visitCode();
 				target.visitInsn(Opcodes.ICONST_1);
@@ -1107,7 +1107,7 @@ public class MIDletLoader extends URLClassLoader
 				if (opcode == Opcodes.INVOKEVIRTUAL && ("repaint".equals(name) || "serviceRepaints".equals(name)) || "flushGraphics".equals(name)) { methodHasScreenDraw = true; }
 
 				// This one overrides Thread.sleep calls with a call to the "MIDletEnhancements" class, which allows nullifying all sleeps (Unlock FPS hack)
-				if (opcode == Opcodes.INVOKESTATIC && "java/lang/Thread".equals(owner) && "sleep".equals(name) && "(J)V".equals(desc)) 
+				if (opcode == Opcodes.INVOKESTATIC && "java/lang/Thread".equals(owner) && "sleep".equals(name) && "(J)V".equals(desc))
 				{
 					if(methodHasScreenDraw) { visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "drawSleep", "(J)V"); } // Safer sleep override
 					else { visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "sleep", "(J)V"); } // Extended sleep override, more useful for fast-forwarding
@@ -1117,12 +1117,12 @@ public class MIDletLoader extends URLClassLoader
 					// More agressive unlock FPS hack, but mostly useful for "Fast-Forward"
 					mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "currentTimeMillis", "()J");
 				}
-				else if (opcode == Opcodes.INVOKESTATIC && "java/lang/System".equals(owner) && "nanoTime".equals(name)) 
+				else if (opcode == Opcodes.INVOKESTATIC && "java/lang/System".equals(owner) && "nanoTime".equals(name))
 				{
 					// Same as currentTimeMillis override above
 					mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "nanoTime", "()J");
 				}
-				else if(opcode == Opcodes.INVOKESTATIC && "java/lang/Thread".equals(owner) && "yield".equals(name) && "()V".equals(desc)) 
+				else if(opcode == Opcodes.INVOKESTATIC && "java/lang/Thread".equals(owner) && "yield".equals(name) && "()V".equals(desc))
 				{
 					mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "yieldOverride", "()V");
 				}
@@ -1140,12 +1140,12 @@ public class MIDletLoader extends URLClassLoader
 				}
 			}
 
-			public void visitFieldInsn(int opcode, String owner, String name, String desc) 
+			public void visitFieldInsn(int opcode, String owner, String name, String desc)
 			{
 				super.visitFieldInsn(opcode, owner, name, desc);
 			}
 
-			public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) 
+			public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index)
 			{
 				super.visitLocalVariable(name, desc, signature, start, end, index);
 			}
@@ -1180,7 +1180,7 @@ public class MIDletLoader extends URLClassLoader
 			private final HashSet<Label> catchLabels = new HashSet<Label>();
 
 			@Override
-			public void visitTryCatchBlock(Label start, Label end, Label handler, String type) 
+			public void visitTryCatchBlock(Label start, Label end, Label handler, String type)
 			{
 				super.visitTryCatchBlock(start, end, handler, type);
 
@@ -1188,13 +1188,13 @@ public class MIDletLoader extends URLClassLoader
 			}
 
 			@Override
-			public void visitLabel(Label label) 
+			public void visitLabel(Label label)
 			{
 				super.visitLabel(label);
 
-				if (ENABLE_EXCEPTION_DEBUG) 
+				if (ENABLE_EXCEPTION_DEBUG)
 				{
-					if (catchLabels.contains(label)) 
+					if (catchLabels.contains(label))
 					{
 						super.visitInsn(Opcodes.DUP);
 						super.visitMethodInsn(
@@ -1210,96 +1210,96 @@ public class MIDletLoader extends URLClassLoader
 	}
 
 
-	/* ************************************************************** 
+	/* **************************************************************
 	* Multi-Midlet selection menu
 	* ************************************************************** */
 	public static void keyPress(int key)
 	{
 
-		if (key == Canvas.UP || key == Canvas.KEY_NUM2) 
-		{ 
+		if (key == Canvas.UP || key == Canvas.KEY_NUM2)
+		{
 			selectedMidlet--;
 			if(selectedMidlet < 0) { selectedMidlet++; }
-		} 
-		else if (key == Canvas.DOWN || key == Canvas.KEY_NUM8) 
-		{ 
+		}
+		else if (key == Canvas.DOWN || key == Canvas.KEY_NUM8)
+		{
 			selectedMidlet++;
 			if(selectedMidlet > name.length || name[selectedMidlet] == null) { selectedMidlet--; }
 		}
 		else if (key == Canvas.FIRE || key == Canvas.KEY_NUM5) { MIDletSelected = true; }
 	}
 
-	protected void render() 
+	protected void render()
 	{
 		int numMidlets = 0;
-		
-		for(int i = 0; i < name.length; i++) 
+
+		for(int i = 0; i < name.length; i++)
 		{
 			if(name[i] != null) { numMidlets++; } // Check how many actual midlets we currently have
 		}
 
 		graphics.setFont(Font.getDefaultFont());
-	
+
 		// Draw Background
 		graphics.setColor(Mobile.lcduiBGColor);
 		graphics.fillRect(0, 0, Mobile.lcdWidth, Mobile.lcdHeight);
 		graphics.setColor(Mobile.lcduiTextColor);
-	
+
 		// Render top bar with the indicator text
 		String currentTitle = "Select the MIDlet to run";
 		int titlePadding = Font.fontPadding[Font.screenType];
 		int titleHeight = Font.getDefaultFont().getHeight() + titlePadding;
 		graphics.drawString(currentTitle, Mobile.lcdWidth / 2, 0, Graphics.HCENTER);
 		graphics.drawLine(0, titleHeight, Mobile.lcdWidth, titleHeight);
-	
+
 		// Render bottom bar with the function hint
 		int bottomBarHeight = titleHeight - titlePadding;
 		graphics.drawLine(0, Mobile.lcdHeight - bottomBarHeight + titlePadding, Mobile.lcdWidth, Mobile.lcdHeight - bottomBarHeight + titlePadding);
 		graphics.drawString("5/OK = Sel.|v^ = Move", Mobile.lcdWidth / 2, Mobile.lcdHeight + (2 * titlePadding) - titleHeight, Graphics.HCENTER);
-	
+
 		// Render items in the middle
 		int currentY = titleHeight + (2 * titlePadding);
 		int itemHeight = Font.getDefaultFont().getHeight() - titlePadding;
-	
+
 		// Calculate the number of visible items
 		int visibleItems = (Mobile.lcdHeight - titleHeight - (2 * titlePadding) - bottomBarHeight) / itemHeight;
 		int firstVisibleItem = Math.max(0, selectedMidlet - visibleItems / 2);
 		int lastVisibleItem = Math.min(numMidlets - 1, firstVisibleItem + visibleItems - 1);
-	
+
 		// Render MIDlet items
-		for (int i = firstVisibleItem; i <= lastVisibleItem; i++) 
+		for (int i = firstVisibleItem; i <= lastVisibleItem; i++)
 		{
-			if (name[i] != null) 
+			if (name[i] != null)
 			{
 				// Highlight the selected MIDlet
-				if (i == selectedMidlet) 
+				if (i == selectedMidlet)
 				{
 					graphics.setColor(Mobile.lcduiTextColor);
 					graphics.fillRect(0, currentY, Mobile.lcdWidth, itemHeight);
 					graphics.setColor(Mobile.lcduiBGColor);
-				} 
+				}
 				else { graphics.setColor(Mobile.lcduiTextColor); }
-	
+
 				graphics.drawString(name[i], Mobile.lcdWidth / 2, currentY, Graphics.HCENTER);
 				currentY += itemHeight;
 			}
 		}
-	
+
 		// Draw scrollbar if necessary
-		if (numMidlets > visibleItems) 
+		if (numMidlets > visibleItems)
 		{
 			int scrollbarWidth = 3+titlePadding;
 			int scrollableHeight = Mobile.lcdHeight - titleHeight - bottomBarHeight;
 			int scrollbarHeight = (int) ((double) visibleItems / numMidlets * scrollableHeight);
 			int scrollbarY = (int) (((double) firstVisibleItem / (numMidlets - visibleItems)) * (scrollableHeight - scrollbarHeight));
-	
+
 			// Ensure scrollbar is within the scrollable area's bounds
 			scrollbarY = Math.min(scrollbarY, scrollableHeight - scrollbarHeight);
-	
+
 			graphics.setColor(Mobile.lcduiStrokeColor); // Scrollbar color
 			graphics.fillRect(Mobile.lcdWidth - scrollbarWidth, titleHeight + (2 * titlePadding) + scrollbarY, scrollbarWidth, scrollbarHeight);
 		}
-	
+
 		Mobile.getPlatform().flushGraphics(platformImage, 0, 0, Mobile.lcdWidth, Mobile.lcdHeight);
 	}
 }

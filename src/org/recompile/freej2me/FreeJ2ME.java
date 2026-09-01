@@ -61,6 +61,7 @@ public class FreeJ2ME
 	private int lcdWidth;
 	private int lcdHeight;
 	private int scaleFactor = 1;
+	private boolean spOnCmd = false;
 
 	private static final String extInputFilePath = "FreeJ2MEExternalKeyEvents.txt";
 	private static final HashMap<String, Integer> extEventsMap = new HashMap<String, Integer>();
@@ -145,31 +146,31 @@ public class FreeJ2ME
 				}
 			}
 		}, "ExternalInputs-Thread").start();
-    }
+	}
 
-    private static void readFile(String filePath)
+	private static void readFile(String filePath)
 	{
-        try
+		try
 		{
-            String line;
+			String line;
 			extEventReader = new BufferedReader(new FileReader(filePath));
-            while ((line = extEventReader.readLine()) != null)
+			while ((line = extEventReader.readLine()) != null)
 			{
-                String[] parts = line.split(":");
-                if (parts.length == 2)
+				String[] parts = line.split(":");
+				if (parts.length == 2)
 				{
-                    String key = parts[0].trim();
+					String key = parts[0].trim();
 					int value = Integer.parseInt(parts[1].trim());
-                    if(value != extEventsMap.get(key))
+					if(value != extEventsMap.get(key))
 					{
 						extEventsMap.replace(key, value);
 						processExternalKey(key, value);
 					}
-                }
-            }
+				}
+			}
 			extEventReader.close();
-        } catch (IOException e) { e.printStackTrace(); }
-    }
+		} catch (IOException e) { e.printStackTrace(); }
+	}
 
 	private static void processExternalKey(String strkey, int value)
 	{
@@ -303,18 +304,18 @@ public class FreeJ2ME
 	{
 		try
 		{
-            String java = System.getProperty("java.home") + "/bin/java";
-            String classPath = System.getProperty("java.class.path");
+			String java = System.getProperty("java.home") + "/bin/java";
+			String classPath = System.getProperty("java.class.path");
 
-            String[] commands = new String[] { java, "-Dfile.encoding="+Mobile.textEncoding, "-cp", classPath, FreeJ2ME.class.getName() };
+			String[] commands = new String[] { java, "-Dfile.encoding="+Mobile.textEncoding, "-cp", classPath, FreeJ2ME.class.getName() };
 
-            // Start a new instance
-            ProcessBuilder processBuilder = new ProcessBuilder(commands);
-            processBuilder.start();
+			// Start a new instance
+			ProcessBuilder processBuilder = new ProcessBuilder(commands);
+			processBuilder.start();
 
-            // Exit the current instance
-            System.exit(0);
-        }
+			// Exit the current instance
+			System.exit(0);
+		}
 		catch (IOException e) { e.printStackTrace(); }
 	}
 
@@ -322,25 +323,40 @@ public class FreeJ2ME
 	{
 		// Setup Device //
 		boolean fullscreenAtStartup = false;
-		if(args.length>=1)
+		int argIndex = 0;
+		if(args.length > argIndex)
 		{
 			try { MobilePlatform.fileName = getFormattedLocation(URLDecoder.decode(args[0], Mobile.textEncoding)); }
 			catch(Exception e) { }
+			argIndex++;
 		}
 
-		if(args.length>=2)
+		if (args.length > argIndex && args[argIndex].toLowerCase().startsWith("sp="))
 		{
-			fullscreenAtStartup = (Integer.parseInt(args[1]) == 1);
+			String spPath = args[argIndex].substring(3);
+			try
+			{
+				spOnCmd = true;
+				MobilePlatform.spFileName = getFormattedLocation(URLDecoder.decode(spPath, Mobile.textEncoding));
+			}
+			catch (Exception e) { }
+			argIndex++;
 		}
 
-		if(args.length>=4)
+		if(args.length > argIndex)
 		{
-			Mobile.lcdWidth = Integer.parseInt(args[2]);
-			Mobile.lcdHeight = Integer.parseInt(args[3]);
+			fullscreenAtStartup = (Integer.parseInt(args[argIndex++]) == 1);
 		}
-		if(args.length>=5)
+
+		if(args.length > argIndex+1)
 		{
-			scaleFactor = Integer.parseInt(args[4]);
+			Mobile.lcdWidth = Integer.parseInt(args[argIndex++]);
+			Mobile.lcdHeight = Integer.parseInt(args[argIndex++]);
+		}
+
+		if(args.length > argIndex)
+		{
+			scaleFactor = Integer.parseInt(args[argIndex++]);
 		}
 
 		lcdWidth = Mobile.lcdWidth;
@@ -480,7 +496,7 @@ public class FreeJ2ME
 			}
 		});
 
-		if(args.length<1)
+		if(args.length == 0)
 		{
 			while(!awtGUI.hasLoadedFile())
 			{
@@ -491,37 +507,41 @@ public class FreeJ2ME
 		if(Mobile.getPlatform().load(awtGUI.getJarPath()))
 		{
 			/* Allows FreeJ2ME to set the width and height passed as cmd arguments. */
-			if(args.length>=4)
+			int argLen = spOnCmd ? 5 : 4;
+			if(args.length>=argLen)
 			{
-				lcdWidth = Integer.parseInt(args[1]);
-				lcdHeight = Integer.parseInt(args[2]);
-				Mobile.config.settings.put("width",  ""+lcdWidth);
-				Mobile.config.settings.put("height", ""+lcdHeight);
+				lcdWidth = 0;
+				lcdHeight = 0;
+				Mobile.config.settings.put("scrwidth",  ""+args[argLen-2]);
+				Mobile.config.settings.put("scrheight", ""+args[argLen-1]);
+				argLen+=2;
 			}
 
-			if(args.length>=6)
+			if(args.length>=argLen)
 			{
-				if(Integer.parseInt(args[5]) == 0)  { Mobile.config.settings.put("phone",  "Standard"); }
-				if(Integer.parseInt(args[5]) == 1)  { Mobile.config.settings.put("phone",  "LG"); }
-				if(Integer.parseInt(args[5]) == 2)  { Mobile.config.settings.put("phone",  "Motorola"); }
-				if(Integer.parseInt(args[5]) == 3)  { Mobile.config.settings.put("phone",  "MotoTriplets"); }
-				if(Integer.parseInt(args[5]) == 4)  { Mobile.config.settings.put("phone",  "MotoV8"); }
-				if(Integer.parseInt(args[5]) == 5)  { Mobile.config.settings.put("phone",  "MotoA1000"); }
-				if(Integer.parseInt(args[5]) == 6)  { Mobile.config.settings.put("phone",  "NokiaKeyboard"); }
-				if(Integer.parseInt(args[5]) == 7)  { Mobile.config.settings.put("phone",  "Sagem"); }
-				if(Integer.parseInt(args[5]) == 8)  { Mobile.config.settings.put("phone",  "Siemens"); }
-				if(Integer.parseInt(args[5]) == 9)  { Mobile.config.settings.put("phone",  "SKT"); }
-				if(Integer.parseInt(args[5]) == 10) { Mobile.config.settings.put("phone",  "KDDI"); }
+				if(Integer.parseInt(args[argLen-1]) == 0)  { Mobile.config.settings.put("phone",  "Standard"); }
+				if(Integer.parseInt(args[argLen-1]) == 1)  { Mobile.config.settings.put("phone",  "LG"); }
+				if(Integer.parseInt(args[argLen-1]) == 2)  { Mobile.config.settings.put("phone",  "Motorola"); }
+				if(Integer.parseInt(args[argLen-1]) == 3)  { Mobile.config.settings.put("phone",  "MotoTriplets"); }
+				if(Integer.parseInt(args[argLen-1]) == 4)  { Mobile.config.settings.put("phone",  "MotoV8"); }
+				if(Integer.parseInt(args[argLen-1]) == 5)  { Mobile.config.settings.put("phone",  "MotoA1000"); }
+				if(Integer.parseInt(args[argLen-1]) == 6)  { Mobile.config.settings.put("phone",  "NokiaKeyboard"); }
+				if(Integer.parseInt(args[argLen-1]) == 7)  { Mobile.config.settings.put("phone",  "Sagem"); }
+				if(Integer.parseInt(args[argLen-1]) == 8)  { Mobile.config.settings.put("phone",  "Siemens"); }
+				if(Integer.parseInt(args[argLen-1]) == 9)  { Mobile.config.settings.put("phone",  "SKT"); }
+				if(Integer.parseInt(args[argLen-1]) == 10) { Mobile.config.settings.put("phone",  "KDDI"); }
+				argLen++;
 			}
 
-			if(args.length>=7)
+			if(args.length>=argLen)
 			{
-				Mobile.config.settings.put("fps", ""+Integer.parseInt(args[6])+"");
+				Mobile.config.settings.put("fps", ""+Integer.parseInt(args[argLen-1])+"");
+				argLen++;
 			}
 
-			if(args.length>=8)
+			if(args.length>=argLen)
 			{
-				Mobile.config.settings.put("dojaversion", ""+Integer.parseInt(args[7])+"");
+				Mobile.config.settings.put("dojaversion", ""+Integer.parseInt(args[argLen-1])+"");
 			}
 
 			settingsChanged();
@@ -710,11 +730,11 @@ public class FreeJ2ME
 
 	public void toggleFullscreen()
 	{
-        isFullscreen = !isFullscreen;
+		isFullscreen = !isFullscreen;
 		main.dispose();
 		constructFreeJ2MEGUI();
 		displayGUI();
-    }
+	}
 
 	private void constructFreeJ2MEGUI()
 	{
@@ -722,15 +742,15 @@ public class FreeJ2ME
 
 		if (isFullscreen)
 		{
-            main.setUndecorated(true);
-            main.setSize(Toolkit.getDefaultToolkit().getScreenSize());
-        }
+			main.setUndecorated(true);
+			main.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+		}
 		else
 		{
-            main.setSize(350, 450);
-            main.setMinimumSize(new Dimension(192, 64));
+			main.setSize(350, 450);
+			main.setMinimumSize(new Dimension(192, 64));
 			main.setLocationRelativeTo(null); // Center window on screen
-        }
+		}
 
 		main.setBackground(Color.BLACK);
 
@@ -799,7 +819,7 @@ public class FreeJ2ME
 		}
 
 		@Override
-        public void update(Graphics g) { paint(g); }
+		public void update(Graphics g) { paint(g); }
 
 		// Used to clear the entire framebuffer when rotated in fullscreen to remove garbage pixels
 		public void clearScreen()
@@ -876,7 +896,7 @@ public class FreeJ2ME
 					else if(Mobile.rotateDisplay == 180)
 					{
 						((Graphics2D) g).rotate(Math.toRadians(180), cw/2, ch/2);
-        				g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), -cx, cy, cw, ch, null);
+						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), -cx, cy, cw, ch, null);
 					}
 					else if(Mobile.rotateDisplay == 270)
 					{
