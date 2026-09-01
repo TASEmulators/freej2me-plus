@@ -320,10 +320,16 @@ public class Display
 				// Paint displayable block
 				try
 				{
-					// Drop the prior "wait for app to repaint itself" hack, let's do this explicitly
-					if(current instanceof Canvas)
-						{ ((Canvas) current).repaint(0, 0, current.getWidth(), current.getHeight()); }
-					else { current.notifySetCurrent(); } // Displayables other than canvas have drawing dictated entirely by FreeJ2ME, so always force a draw to happen on setCurrent
+					// Displayables other than canvas have drawing dictated
+					// entirely by us, so always force a draw to happen on
+					// setCurrent through notifySetCurrent(), and explicitly
+					// after the prior Displayable was hidden.
+					if(!(current instanceof Canvas)) { current.notifySetCurrent(); }
+
+					// Flush the displayable's contents to the screen.
+					Mobile.getPlatform().flushGraphics(current.platformImage,
+						0, 0, current.getWidth(), current.getHeight()
+					);
 				}
 				catch (Exception e)
 				{
@@ -395,10 +401,7 @@ public class Display
 			}
 		};
 
-		if (Mobile.compatImmediateRepaints || isEventThread())
-		{
-			runnable.run();
-		}
+		if (Mobile.compatImmediateRepaints || isEventThread()) { runnable.run(); }
 		else
 		{
 			setCurrentRequest.set(runnable);
