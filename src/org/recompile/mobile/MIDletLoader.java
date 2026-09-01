@@ -737,6 +737,22 @@ public class MIDletLoader extends URLClassLoader
 
     private URL findResourceInJar(URL jarUrl, String resourceName)
 	{
+		if(resourceName == null) { return null; }
+
+		resourceName = resourceName.replace('\\', '/');
+
+		while (resourceName.contains("//"))
+		{
+			resourceName = resourceName.replace("//", "/");
+		}
+
+		// Strip leading slash, because starting the resource path with one
+		// makes no sense.
+		if (resourceName.startsWith("/"))
+		{
+			resourceName = resourceName.substring(1);
+		}
+
 		for (JarEntry entry : jarEntries)
 		{
 			String entryName = entry.getName();
