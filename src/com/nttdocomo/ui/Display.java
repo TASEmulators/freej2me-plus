@@ -16,10 +16,6 @@
 */
 package com.nttdocomo.ui;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.LinkedList;
-import java.util.Queue;
-
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 
@@ -97,104 +93,16 @@ public class Display
 	protected static final int MAX_VENDOR_KEY = 127;
 	protected static final int MIN_VENDOR_KEY = 64;
 
-	protected static Frame current = null;
-
-	private static final Object eventLock = new Object();
-	private static final AtomicReference<Runnable> setCurrentRequest = new AtomicReference<Runnable>();
-	private static final AtomicReference<Runnable> paintEvent = new AtomicReference<Runnable>();
-
-	private static Queue<Runnable> inputEvents = new LinkedList<Runnable>();
-
-	private static Thread eventThread;
-
-	static
-	{
-		eventThread = new Thread(new Runnable()
-		{
-			@Override
-			public void run() { processEvents(); }
-		}, "DoJaEventProcessing-Thread");
-
-		eventThread.start();
-	}
-
-	public static boolean isEventThread() { return Thread.currentThread() == eventThread; }
+	protected static volatile Frame current = null;
 
 	public void postInputEvent(final Runnable r)
 	{
-		if (r == null) { return; }
-		synchronized (eventLock)
-		{
-			inputEvents.add(r);
-			eventLock.notifyAll();
-		}
-	}
-
-	public void postPaintRequest(final Runnable r)
-	{
-		if (r == null) { return; }
-
-		synchronized (eventLock)
-		{
-			paintEvent.set(r);
-			eventLock.notifyAll();
-		}
-	}
-
-	private static void processEvents()
-	{
-		Runnable call = null;
-		while(true)
-		{
-			/*
-			 * MIDP docs don't specify anything exact on when setCurrent should be processed,
-			 * it just says it is not guaranteed to happen before the "next event delivery"
-			 * so let's do it right before any events.
-			 */
-			call = setCurrentRequest.getAndSet(null);
-			if(call != null) { call.run(); }
-
-			Runnable pendingPaint = null;
-			int inputCount = 0;
-
-			synchronized (eventLock)
-			{
-				// If we have no serial events to process, and no current displayable change, wait.
-				while(inputEvents.isEmpty() && paintEvent.get() == null  &&
-					setCurrentRequest.get() == null)
-				{
-					try { eventLock.wait(); }
-					catch (Exception e) { }
-				}
-
-				pendingPaint = paintEvent.getAndSet(null);
-
-				// For inputs we process only the ones that
-				// were queued until this method was called.
-				inputCount = inputEvents.size();
-			}
-
-			// Inputs go before anything else.
-			while(inputCount > 0)
-			{
-				Runnable inputTask = null;
-				synchronized (eventLock)
-				{
-					inputTask = inputEvents.poll();
-				}
-				if (inputTask != null) { inputTask.run(); }
-
-				inputCount--;
-			}
-
-			// Service paints
-			if (pendingPaint != null) { pendingPaint.run(); }
-		}
+		if(r != null) { r.run(); }
 	}
 
 	public static Frame getCurrent()
 	{
-		synchronized (eventLock) { return current; }
+		return current;
 	}
 
 	public static int getHeight() { return MobilePlatform.lcdHeight; }
@@ -205,47 +113,30 @@ public class Display
 
 	public static int numColors() { return Integer.MAX_VALUE; }
 
-	public static void setCurrent(final Frame frame)
+	public static synchronized void setCurrent(final Frame frame)
 	{
 		if (frame == null) { throw new NullPointerException("Frame cannot be null."); }
 		if (frame instanceof Dialog) { throw new IllegalArgumentException("Cannot set a dialog as the current frame."); }
 
-		Runnable runnable = new Runnable()
+		Frame prev = current;
+		if (frame == prev) { return; }
+
+		current = frame;
+
+		// Force repaint or notify initial frame display
+		try
 		{
-			@Override
-			public void run()
+			if (current instanceof Canvas)
 			{
-				Frame prev = current;
-				if (frame == prev) { return; }
-
-				current = frame;
-
-				// Force repaint or notify initial frame display
-				try
-				{
-					if (current instanceof Canvas)
-					{
-						((Canvas) current).repaint(0, 0, current.getWidth(), current.getHeight());
-					}
-				}
-				catch (Exception e)
-				{
-					Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "SetCurrent paint block failed: " + e.getMessage());
-					e.printStackTrace();
-				}
-
-				Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "DoJa Set Current "+current.getWidth()+", "+current.getHeight());
+				((Canvas) current).repaint(0, 0, current.getWidth(), current.getHeight());
 			}
-		};
+		}
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "SetCurrent paint block failed: " + e.getMessage());
+			e.printStackTrace();
+		}
 
-		if (Mobile.compatImmediateRepaints || isEventThread())
-		{
-			runnable.run();
-		}
-		else
-		{
-			setCurrentRequest.set(runnable);
-			synchronized (eventLock) { eventLock.notifyAll(); }
-		}
+		Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "DoJa Set Current "+current.getWidth()+", "+current.getHeight());
 	}
 }

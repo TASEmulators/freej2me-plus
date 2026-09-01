@@ -2281,17 +2281,38 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void unlock(boolean forced)
 	{
-		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-
-		if (forced) { dojaLockCount = 1; }
-
-		if (dojaLockCount == 1 && com.nttdocomo.ui.Display.getCurrent() instanceof com.nttdocomo.ui.Canvas)
+		if (contextDisposed)
 		{
-			((com.nttdocomo.ui.Canvas) com.nttdocomo.ui.Display.getCurrent()).repaint();
+			throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed");
 		}
 
-		dojaLockCount--;
-		if (dojaLockCount < 0) { dojaLockCount = 0; }
+		// Count is already 0 and we're not forced to flush? Do nothing.
+		if (dojaLockCount == 0 && !forced) { return; }
+
+		if (forced) { dojaLockCount = 0; }
+		else if (dojaLockCount > 0) { dojaLockCount--; }
+
+		if (dojaLockCount == 0)
+		{
+			final com.nttdocomo.ui.Frame currentFrame = com.nttdocomo.ui.Display.getCurrent();
+			if (currentFrame instanceof com.nttdocomo.ui.Canvas)
+			{
+				if (currentFrame.labelVisible)
+				{
+					Mobile.getPlatform().setPostFlushDraw(new Runnable()
+					{
+						@Override
+						public void run() { ((com.nttdocomo.ui.Canvas)currentFrame).paintCommandsBar(); }
+					});
+				}
+
+				// Instead of calling repaint (which was apparently wrong),
+				// just flush the Frame's image to the screen instead.
+				Mobile.getPlatform().flushGraphics(currentFrame.platformImage,
+					0, 0, currentFrame.getWidth(), currentFrame.getHeight()
+				);
+			}
+		}
 	}
 
 	public static int getColorOfRGB(int r, int g, int b)

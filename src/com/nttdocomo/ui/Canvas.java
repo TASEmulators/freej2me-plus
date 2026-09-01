@@ -22,19 +22,6 @@ import org.recompile.mobile.MobilePlatform;
 public abstract class Canvas extends Frame
 {
 
-	private final Runnable paintTask = new Runnable()
-	{
-		@Override
-		public void run()
-		{
-			repaintRequest();
-		}
-	};
-
-	private final Object paintLock = new Object();
-	private boolean needsRepaint = false;
-	private int paintX, paintY, paintW, paintH;
-
 	public Canvas()
 	{
 		super();
@@ -64,85 +51,11 @@ public abstract class Canvas extends Frame
 
 	public void repaint(final int x, final int y, final int width, final int height)
 	{
-		if (!isShown()) { return; }
-
-		if (!Mobile.compatImmediateRepaints)
-		{
-			if (!IApplication.display.isEventThread())
-			{
-				synchronized (paintLock)
-				{
-					paintX = x; paintY = y; paintW = width; paintH = height;
-					needsRepaint = true;
-				}
-				repaintRequest(); // Runs synchronously; no thread-boundary lock contention
-				return;
-			}
-
-			boolean postRequired = false;
-
-			synchronized (paintLock)
-			{
-				if (!needsRepaint)
-				{
-					paintX = x;
-					paintY = y;
-					paintW = width;
-					paintH = height;
-					needsRepaint = true;
-					postRequired = true;
-				}
-				else
-				{
-					// Unionize clipping bounds for consecutive repaints, so
-					// we don't keep stacking draw operations on top of others.
-					int x2 = Math.max(paintX + paintW, x + width);
-					int y2 = Math.max(paintY + paintH, y + height);
-					paintX = Math.min(paintX, x);
-					paintY = Math.min(paintY, y);
-					paintW = x2 - paintX;
-					paintH = y2 - paintY;
-				}
-			}
-
-			if (postRequired)
-			{
-				IApplication.display.postPaintRequest(paintTask);
-			}
-		}
-		else
-		{
-			synchronized (paintLock)
-			{
-				paintX = x;
-				paintY = y;
-				paintW = width;
-				paintH = height;
-				needsRepaint = true;
-			}
-			repaintRequest();
-		}
-	}
-
-	private void repaintRequest()
-	{
-		if (!isShown()) { return; }
-
-		int rX, rY, rW, rH;
-
-		synchronized (paintLock)
-		{
-			if (!needsRepaint) { return; }
-			rX = paintX;
-			rY = paintY;
-			rW = paintW;
-			rH = paintH;
-			needsRepaint = false;
-		}
+		if (!isShown() || width <= 0 || height <= 0 || graphics == null) { return; }
 
 		try
 		{
-			graphics.reset(rX, rY, rW, rH);
+			graphics.reset(x, y, width, height);
 			paint(graphics);
 		}
 		catch (Exception e)
@@ -150,20 +63,9 @@ public abstract class Canvas extends Frame
 			Mobile.log(Mobile.LOG_ERROR, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Serious Exception hit in repaint(): " + e.getMessage());
 			e.printStackTrace();
 		}
-
-		if (labelVisible)
-		{
-			Mobile.getPlatform().setPostFlushDraw(new Runnable()
-			{
-				@Override
-				public void run() { paintCommandsBar(); }
-			});
-		}
-
-		Mobile.getPlatform().flushGraphics(platformImage, rX, rY, rW, rH);
 	}
 
-	private void paintCommandsBar()
+	public void paintCommandsBar()
 	{
 		// The command bar shouldn't influence canvas drawing operations, so it's added directly to the frontBuffer after swapping.
 		javax.microedition.lcdui.Graphics graphics = Mobile.getPlatform().getLcdFrontbufferGraphics();
