@@ -209,7 +209,7 @@ public abstract class Canvas extends Displayable
 		// Also check if repaints are being serviced here, some jars like Garfield's House add repaint calls in a separate thread from that blocked by serviceRepaints
 		if (!isShown() || listCommands) { return; }
 
-		if(!Mobile.compatImmediateRepaints)
+		if(!Mobile.compatImmediateRepaints && !Mobile.getDisplay().isEventThread())
 		{
 			boolean postEvent = false;
 			synchronized (paintLock)
@@ -281,15 +281,13 @@ public abstract class Canvas extends Displayable
 			renderY = paintY;
 			renderW = paintW;
 			renderH = paintH;
+			needsRepaint = false;
 		}
 
 		try
 		{
-			synchronized(graphics)
-			{
-				graphics.reset(renderX, renderY, renderW, renderH);
-				paint(graphics);
-			}
+			graphics.reset(renderX, renderY, renderW, renderH);
+			paint(graphics);
 		}
 		catch(NullPointerException npe)
 		{
@@ -307,7 +305,6 @@ public abstract class Canvas extends Displayable
 			// Unblock any threads waiting in serviceRepaints()
 			synchronized (paintLock)
 			{
-				needsRepaint = false;
 				paintLock.notifyAll();
 			}
 		}
@@ -341,11 +338,10 @@ public abstract class Canvas extends Displayable
 		synchronized (paintLock)
 		{
 			// Block caller thread until the event thread clears the paint flag
-			while (needsRepaint)
+			if (needsRepaint)
 			{
-				try { paintLock.wait(); }
-				catch (InterruptedException e)
-					{ Thread.currentThread().interrupt(); }
+				repaintRequest();
+				return;
 			}
 		}
 	}

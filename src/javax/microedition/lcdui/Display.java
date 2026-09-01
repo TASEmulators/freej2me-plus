@@ -88,8 +88,12 @@ public class Display
 	public void postPaintRequest(final Runnable r)
 	{
 		if (r == null) { return; }
-		paintEvent.set(r);
-		synchronized (eventLock) { eventLock.notifyAll(); }
+
+		synchronized (eventLock)
+		{
+			paintEvent.set(r);
+			eventLock.notifyAll();
+		}
 	}
 
 	public void postInputEvent(final Runnable r)
