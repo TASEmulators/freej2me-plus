@@ -355,7 +355,7 @@ public class Display
 			}
 		};
 
-		if (Mobile.compatImmediateRepaints || isEventThread()) { runnable.run(); }
+		if (Mobile.compatImmediateRepaints) { runnable.run(); }
 		else
 		{
 			setCurrentRequest.set(runnable);
@@ -389,7 +389,7 @@ public class Display
 			}
 		};
 
-		if (Mobile.compatImmediateRepaints || isEventThread()) { runnable.run(); }
+		if (Mobile.compatImmediateRepaints) { runnable.run(); }
 		else
 		{
 			setCurrentRequest.set(runnable);
@@ -415,7 +415,7 @@ public class Display
 			}
 		};
 
-		if (Mobile.compatImmediateRepaints || isEventThread()) { runnable.run(); }
+		if (Mobile.compatImmediateRepaints) { runnable.run(); }
 		else
 		{
 			setCurrentRequest.set(runnable);

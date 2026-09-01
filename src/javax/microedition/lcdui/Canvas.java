@@ -209,7 +209,7 @@ public abstract class Canvas extends Displayable
 		// Also check if repaints are being serviced here, some jars like Garfield's House add repaint calls in a separate thread from that blocked by serviceRepaints
 		if (!isShown() || listCommands) { return; }
 
-		if(!Mobile.compatImmediateRepaints && !Mobile.getDisplay().isEventThread())
+		if(!Mobile.compatImmediateRepaints)
 		{
 			boolean postEvent = false;
 			synchronized (paintLock)
@@ -324,11 +324,12 @@ public abstract class Canvas extends Displayable
 
 	public void serviceRepaints()
 	{
-		if (!isShown()) { return; }
+		if (!needsRepaint || !isShown()) { return; }
 
 		// If it was called directly from the Paint/EDT Thread, process now
-		// to avoid possible deadlocks (java threading is finicky for J2ME,
-		// so you never know)
+		// to avoid possible deadlocks. serviceRepaints is the "special case"
+		// in regards to event queuing according to the spec, so this should
+		// be safe.
 		if (Mobile.getDisplay().isEventThread())
 		{
 			repaintRequest();
@@ -340,9 +341,27 @@ public abstract class Canvas extends Displayable
 			// Block caller thread until the event thread clears the paint flag
 			while (needsRepaint)
 			{
-				try { paintLock.wait(); }
+				try
+				{
+					// Wait for a whole second before forcefully repainting
+					// below. Should be way more than enough time for the EDT
+					// to dispatch non-deadlocked paints on any modern system.
+					paintLock.wait(1000);
+
+					// If it timed out and still needs repaint, force a repaint
+					// to occur as if it this was called from the EDT in order
+					// to rescue any stalled frames.
+					if (needsRepaint && isShown())
+					{
+						repaintRequest();
+						break;
+					}
+				}
 				catch (InterruptedException e)
-					{ Thread.currentThread().interrupt(); }
+				{
+					Thread.currentThread().interrupt();
+					break;
+				}
 			}
 		}
 	}
