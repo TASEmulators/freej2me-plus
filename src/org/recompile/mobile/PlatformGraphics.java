@@ -2283,12 +2283,15 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		dojaLockCount = forced ? 0 : dojaLockCount-1;
+		if (forced) { dojaLockCount = 1; }
 
-		if (dojaLockCount == 0 && com.nttdocomo.ui.Display.getCurrent() instanceof com.nttdocomo.ui.Canvas)
+		if (dojaLockCount == 1 && com.nttdocomo.ui.Display.getCurrent() instanceof com.nttdocomo.ui.Canvas)
 		{
 			((com.nttdocomo.ui.Canvas) com.nttdocomo.ui.Display.getCurrent()).repaint();
 		}
+
+		dojaLockCount--;
+		if (dojaLockCount < 0) { dojaLockCount = 0; }
 	}
 
 	public static int getColorOfRGB(int r, int g, int b)
