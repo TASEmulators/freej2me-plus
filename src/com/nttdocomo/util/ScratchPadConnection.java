@@ -207,7 +207,7 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 			// We don't have an explicit scratchpad path, so replace .jar with .sp
 			// in a case insensitive way for a fallback (will look for .sp on the
 			// same directory as the jar file).
-			Mobile.getPlatform().loader.baseUrl.toString();
+			scratchPadPath = Mobile.getPlatform().loader.baseUrl.toString();
 			scratchPadPath = scratchPadPath.substring(0, scratchPadPath.length() - 4);
 
 			String[] lettercases = { ".sp", ".SP", ".Sp", ".sP" };
