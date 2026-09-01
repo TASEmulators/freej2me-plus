@@ -206,6 +206,9 @@ public class Libretro
 		/* M3G Disable fog */
 		Mobile.m3gDisableFog = Integer.parseInt(args[37]) != 0;
 
+		/* Compat setting to force repaints on MIDP setCurrent() */
+		Mobile.compatRepaintOnSetCurrent = Integer.parseInt(args[38]) != 0;
+
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -403,6 +406,7 @@ public class Libretro
 										Mobile.config.settings.put("compatfantasyzonefix", Mobile.compatFantasyZoneFix ? "on" : "off");
 										Mobile.config.settings.put("compattranstooriginonreset", Mobile.compatTranslateToOriginOnReset ? "on" : "off");
 										Mobile.config.settings.put("compatimmediaterepaints", Mobile.compatImmediateRepaints ? "on" : "off");
+										Mobile.config.settings.put("compatrepaintonsetcurrent", Mobile.compatRepaintOnSetCurrent ? "on" : "off");
 										Mobile.config.settings.put("compatoverrideplatchecks", Mobile.compatOverridePlatformChecks ? "on" : "off");
 										Mobile.config.settings.put("compatsiemensfriendlydrawing", Mobile.compatSiemensFriendlyDrawing ? "on" : "off");
 										Mobile.config.settings.put("compatignorevolumechanges", Mobile.compatIgnoreVolumeChanges ? "on" : "off");
@@ -616,6 +620,8 @@ public class Libretro
 									if(Integer.parseInt(cfgtokens[37])==0) { Mobile.config.settings.put("m3gmipmapmode", "off");  }
 
 									Mobile.config.settings.put("m3gdisablefog", Integer.parseInt(cfgtokens[38]) == 1 ? "on" : "off");
+
+									Mobile.config.settings.put("compatrepaintonsetcurrent", Integer.parseInt(cfgtokens[39]) == 1 ? "on" : "off");
 
 									Mobile.config.saveConfig();
 									settingsChanged();

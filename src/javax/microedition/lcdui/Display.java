@@ -111,14 +111,6 @@ public class Display
 		Runnable call = null;
 		while(true)
 		{
-			/*
-			 * MIDP docs don't specify anything exact on when setCurrent should be processed,
-			 * it just says it is not guaranteed to happen before the "next event delivery"
-			 * so let's do it right before any events.
-			 */
-			call = setCurrentRequest.getAndSet(null);
-			if(call != null) { call.run(); }
-
 			Runnable pendingPaint = null;
 			int inputCount = 0, serialCount = 0;
 
@@ -139,6 +131,13 @@ public class Display
 				// were queued until this method was called.
 				inputCount = inputEvents.size();
 				serialCount = serializedEvents.size();
+
+				/*
+				 * MIDP docs don't specify anything exact on when setCurrent should be processed,
+				 * it just says it is not guaranteed to happen before the "next event delivery"
+				 * so let's do it right before any events.
+				 */
+				call = setCurrentRequest.getAndSet(null);
 			}
 
 			// Inputs go before anything else.
@@ -169,6 +168,8 @@ public class Display
 
 				serialCount--;
 			}
+
+			if(call != null) { call.run(); }
 		}
 	}
 
@@ -326,10 +327,23 @@ public class Display
 					// after the prior Displayable was hidden.
 					if(!(current instanceof Canvas)) { current.notifySetCurrent(); }
 
-					// Flush the displayable's contents to the screen.
-					Mobile.getPlatform().flushGraphics(current.platformImage,
-						0, 0, current.getWidth(), current.getHeight()
-					);
+					// Some apps like Need For Speed Most Wanted 2005 and
+					// Ratatouille seem to expect a repaint here? Spec does not
+					// disclose whether this should be done, and doing it breaks
+					// other apps, so this must be a compatibility setting.
+					if(Mobile.compatRepaintOnSetCurrent)
+					{
+						if(current instanceof Canvas)
+							{ ((Canvas) current).repaint(0, 0, current.getWidth(), current.getHeight()); }
+					}
+					else
+					{
+						// Flush the displayable's contents to the screen.
+						Mobile.getPlatform().flushGraphics(current.platformImage,
+							0, 0, current.getWidth(), current.getHeight()
+						);
+					}
+
 				}
 				catch (Exception e)
 				{

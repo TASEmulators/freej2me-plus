@@ -158,6 +158,7 @@ public class Mobile
 	public static boolean compatFantasyZoneFix           = false;
 	public static boolean compatTranslateToOriginOnReset = false;
 	public static boolean compatImmediateRepaints        = false;
+	public static boolean compatRepaintOnSetCurrent      = false;
 	public static boolean compatOverridePlatformChecks   = true;
 	public static boolean compatSiemensFriendlyDrawing   = false;
 	public static boolean compatIgnoreVolumeChanges      = false;
@@ -1095,6 +1096,10 @@ public class Mobile
 		String immediateRepaints = config.settings.get("compatimmediaterepaints");
 		if(immediateRepaints.equals("on"))        { compatImmediateRepaints = true; }
 		else if (immediateRepaints.equals("off")) { compatImmediateRepaints = false; }
+
+		String repaintOnSetCur = config.settings.get("compatrepaintonsetcurrent");
+		if(repaintOnSetCur.equals("on"))        { compatRepaintOnSetCurrent = true; }
+		else if (repaintOnSetCur.equals("off")) { compatRepaintOnSetCurrent = false; }
 
 		String overridePlatChecks = config.settings.get("compatoverrideplatchecks");
 		if(overridePlatChecks.equals("on"))        { compatOverridePlatformChecks = true; }

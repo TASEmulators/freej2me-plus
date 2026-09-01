@@ -134,6 +134,7 @@ public class Config
 				settings.put("compatfantasyzonefix", "off");
 				settings.put("compattranstooriginonreset", "off");
 				settings.put("compatimmediaterepaints", "off");
+				settings.put("compatrepaintonsetcurrent", "off");
 				settings.put("compatoverrideplatchecks", "on");
 				settings.put("compatsiemensfriendlydrawing", "off");
 				settings.put("compatignorevolumechanges", "off");
@@ -250,6 +251,7 @@ public class Config
 			if(!settings.containsKey("compatfantasyzonefix")) { settings.put("compatfantasyzonefix", Mobile.compatFantasyZoneFix ? "on" : "off"); }
 			if(!settings.containsKey("compattranstooriginonreset")) { settings.put("compattranstooriginonreset", Mobile.compatTranslateToOriginOnReset ? "on" : "off"); }
 			if(!settings.containsKey("compatimmediaterepaints")) { settings.put("compatimmediaterepaints", Mobile.compatImmediateRepaints ? "on" : "off"); }
+			if(!settings.containsKey("compatrepaintonsetcurrent")) { settings.put("compatrepaintonsetcurrent", Mobile.compatRepaintOnSetCurrent ? "on" : "off"); }
 			if(!settings.containsKey("compatoverrideplatchecks")) { settings.put("compatoverrideplatchecks", Mobile.compatOverridePlatformChecks ? "on" : "off"); }
 			if(!settings.containsKey("compatsiemensfriendlydrawing")) { settings.put("compatsiemensfriendlydrawing", Mobile.compatSiemensFriendlyDrawing ? "on" : "off"); }
 			if(!settings.containsKey("compatignorevolumechanges")) { settings.put("compatignorevolumechanges", Mobile.compatIgnoreVolumeChanges ? "on" : "off"); }
@@ -669,6 +671,14 @@ public class Config
 	{
 		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatimmediaterepaints "+value);
 		settings.put("compatimmediaterepaints", value);
+		saveConfig();
+		onChange.run();
+	}
+
+	public void updateCompatRepaintOnSetCurrent(String value)
+	{
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatrepaintonsetcurrent "+value);
+		settings.put("compatrepaintonsetcurrent", value);
 		saveConfig();
 		onChange.run();
 	}

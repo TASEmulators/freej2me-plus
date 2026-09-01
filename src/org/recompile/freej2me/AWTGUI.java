@@ -374,6 +374,7 @@ public final class AWTGUI
 	final CheckboxMenuItem fantasyZoneFix = new CheckboxMenuItem("Fix for Fantasy Zone 176x208 weird mirroring");
 	final CheckboxMenuItem transToOriginOnReset = new CheckboxMenuItem("Translate to origin on gfx reset");
 	final CheckboxMenuItem immediateRepaints = new CheckboxMenuItem("Process canvas repaints immediately");
+	final CheckboxMenuItem repaintOnSetCurrent = new CheckboxMenuItem("Repaint on Display setCurrent.");
 	final CheckboxMenuItem overridePlatChecks = new CheckboxMenuItem("Override Mobile Platform checks");
 	final CheckboxMenuItem siemensFriendlyDrawing = new CheckboxMenuItem("Siemens-friendly drawing methods");
 	final CheckboxMenuItem ignoreVolumeChanges = new CheckboxMenuItem("Ignore volume changes");
@@ -848,6 +849,15 @@ public final class AWTGUI
 			{
 				if(immediateRepaints.getState()){ config.updateCompatImmediateRepaints("on"); hasPendingChange = true; }
 				else{ config.updateCompatImmediateRepaints("off"); hasPendingChange = true; }
+			}
+		});
+
+		repaintOnSetCurrent.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(repaintOnSetCurrent.getState()){ config.updateCompatRepaintOnSetCurrent("on"); hasPendingChange = true; }
+				else{ config.updateCompatRepaintOnSetCurrent("off"); hasPendingChange = true; }
 			}
 		});
 
@@ -1374,6 +1384,7 @@ public final class AWTGUI
 		compatSettingsMenu.add(fantasyZoneFix);
 		compatSettingsMenu.add(transToOriginOnReset);
 		compatSettingsMenu.add(immediateRepaints);
+		compatSettingsMenu.add(repaintOnSetCurrent);
 		compatSettingsMenu.add(overridePlatChecks);
 		compatSettingsMenu.add(siemensFriendlyDrawing);
 		compatSettingsMenu.add(ignoreVolumeChanges);
@@ -1457,6 +1468,8 @@ public final class AWTGUI
 			transToOriginOnReset.setState(config.settings.get("compattranstooriginonreset").equals("on"));
 
 			immediateRepaints.setState(config.settings.get("compatimmediaterepaints").equals("on"));
+
+			repaintOnSetCurrent.setState(config.settings.get("compatrepaintonsetcurrent").equals("on"));
 
 			overridePlatChecks.setState(config.settings.get("compatoverrideplatchecks").equals("on"));
 
