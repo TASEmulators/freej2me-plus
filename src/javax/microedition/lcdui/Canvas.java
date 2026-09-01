@@ -338,10 +338,11 @@ public abstract class Canvas extends Displayable
 		synchronized (paintLock)
 		{
 			// Block caller thread until the event thread clears the paint flag
-			if (needsRepaint)
+			while (needsRepaint)
 			{
-				repaintRequest();
-				return;
+				try { paintLock.wait(); }
+				catch (InterruptedException e)
+					{ Thread.currentThread().interrupt(); }
 			}
 		}
 	}
