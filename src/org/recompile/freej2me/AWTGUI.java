@@ -717,35 +717,6 @@ public final class AWTGUI
 			}
 		});
 
-		enableAudio.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(enableAudio.getState()){ config.updateSound("on"); hasPendingChange = true; }
-				else{ config.updateSound("off"); hasPendingChange = true; }
-			}
-		});
-
-		useCustomMidi.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(useCustomMidi.getState()){ config.updateSoundfont("Custom"); hasPendingChange = true; }
-				else{ config.updateSoundfont("Default"); hasPendingChange = true; }
-			}
-		});
-
-		useCustomFont.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(useCustomFont.getState()){ config.updateTextFont("Custom"); hasPendingChange = true; }
-				else{ config.updateTextFont("Default"); hasPendingChange = true; }
-
-				showRestartDialog();
-			}
-		});
-
 		// DoJa Version
 		for(byte i = 0; i < dojaVersions.length; i++)
 		{
@@ -757,7 +728,7 @@ public final class AWTGUI
 					if(!dojaVersions[index].getState()){ dojaVersions[index].setState(true); }
 					if(dojaVersions[index].getState())
 					{
-						config.updateDoJaVersion(dojaVersionValues[index]);
+						config.updateSetting("dojaversion", dojaVersionValues[index]);
 						for(int j = 0; j < dojaVersions.length; j++)
 						{
 							if(j != index) { dojaVersions[j].setState(false); }
@@ -775,8 +746,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(noAlphaOnBlankImages.getState()){ config.updateAlphaSpeedHack("on"); hasPendingChange = true; }
-				else{ config.updateAlphaSpeedHack("off"); hasPendingChange = true; }
+				if(noAlphaOnBlankImages.getState()){ config.updateSetting("spdhacknoalpha", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("spdhacknoalpha", "off"); hasPendingChange = true; }
 
 				showRestartDialog();
 			}
@@ -786,8 +757,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(M3GHalfRes.getState()){ config.updateM3GResSpeedHack("on"); hasPendingChange = true; }
-				else{ config.updateM3GResSpeedHack("off"); hasPendingChange = true; }
+				if(M3GHalfRes.getState()){ config.updateSetting("spdhackm3ghalfres", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("spdhackm3ghalfres", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -795,8 +766,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(M3GDisableFog.getState()){ config.updateM3GDisableFog("on"); hasPendingChange = true; }
-				else{ config.updateM3GDisableFog("off"); hasPendingChange = true; }
+				if(M3GDisableFog.getState()){ config.updateSetting("m3gdisablefog", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("m3gdisablefog", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -804,8 +775,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(MCV3HalfRes.getState()){ config.updateMCV3ResSpeedHack("on"); hasPendingChange = true; }
-				else{ config.updateMCV3ResSpeedHack("off"); hasPendingChange = true; }
+				if(MCV3HalfRes.getState()){ config.updateSetting("spdhackmcv3halfres", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("spdhackmcv3halfres", "off"); hasPendingChange = true; }
 
 				showRestartDialog();
 			}
@@ -815,8 +786,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(MCV3NoLighting.getState()){ config.updateMCV3NoLightingSpeedHack("on"); hasPendingChange = true; }
-				else{ config.updateMCV3NoLightingSpeedHack("off"); hasPendingChange = true; }
+				if(MCV3NoLighting.getState()){ config.updateSetting("spdhackmcv3nolighting", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("spdhackmcv3nolighting", "off"); hasPendingChange = true; }
 
 				showRestartDialog();
 			}
@@ -827,8 +798,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(fantasyZoneFix.getState()){ config.updateCompatFantasyZoneFix("on"); hasPendingChange = true; }
-				else{ config.updateCompatFantasyZoneFix("off"); hasPendingChange = true; }
+				if(fantasyZoneFix.getState()){ config.updateSetting("compatfantasyzonefix", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatfantasyzonefix", "off"); hasPendingChange = true; }
 
 				showRestartDialog();
 			}
@@ -838,8 +809,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(transToOriginOnReset.getState()){ config.updateCompatTranslateToOriginOnReset("on"); hasPendingChange = true; }
-				else{ config.updateCompatTranslateToOriginOnReset("off"); hasPendingChange = true; }
+				if(transToOriginOnReset.getState()){ config.updateSetting("compattranstooriginonreset", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compattranstooriginonreset", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -847,8 +818,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(immediateRepaints.getState()){ config.updateCompatImmediateRepaints("on"); hasPendingChange = true; }
-				else{ config.updateCompatImmediateRepaints("off"); hasPendingChange = true; }
+				if(immediateRepaints.getState()){ config.updateSetting("compatimmediaterepaints", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatimmediaterepaints", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -856,8 +827,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(repaintOnSetCurrent.getState()){ config.updateCompatRepaintOnSetCurrent("on"); hasPendingChange = true; }
-				else{ config.updateCompatRepaintOnSetCurrent("off"); hasPendingChange = true; }
+				if(repaintOnSetCurrent.getState()){ config.updateSetting("compatrepaintonsetcurrent", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatrepaintonsetcurrent", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -865,8 +836,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(overridePlatChecks.getState()){ config.updateCompatOverridePlatformChecks("on"); hasPendingChange = true; }
-				else{ config.updateCompatOverridePlatformChecks("off"); hasPendingChange = true; }
+				if(overridePlatChecks.getState()){ config.updateSetting("compatoverrideplatchecks", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatoverrideplatchecks", "off"); hasPendingChange = true; }
 
 				showRestartDialog();
 			}
@@ -876,8 +847,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(siemensFriendlyDrawing.getState()){ config.updateCompatSiemensFriendlyDrawing("on"); hasPendingChange = true; }
-				else{ config.updateCompatSiemensFriendlyDrawing("off"); hasPendingChange = true; }
+				if(siemensFriendlyDrawing.getState()){ config.updateSetting("compatsiemensfriendlydrawing", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatsiemensfriendlydrawing", "off"); hasPendingChange = true; }
 
 				showRestartDialog();
 			}
@@ -887,8 +858,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(ignoreVolumeChanges.getState()){ config.updateCompatIgnoreVolumeChanges("on"); hasPendingChange = true; }
-				else{ config.updateCompatIgnoreVolumeChanges("off"); hasPendingChange = true; }
+				if(ignoreVolumeChanges.getState()){ config.updateSetting("compatignorevolumechanges", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatignorevolumechanges", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -896,8 +867,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(MCV3HorFovFix.getState()){ config.updateCompatMCV3HorizFovFix("on"); hasPendingChange = true; }
-				else{ config.updateCompatMCV3HorizFovFix("off"); hasPendingChange = true; }
+				if(MCV3HorFovFix.getState()){ config.updateSetting("compatmcv3horizfovfix", "on"); hasPendingChange = true; }
+				else{ config.updateSetting("compatmcv3horizfovfix", "off"); hasPendingChange = true; }
 			}
 		});
 
@@ -912,7 +883,7 @@ public final class AWTGUI
 					if(!rotations[index].getState()){ rotations[index].setState(true); }
 					if(rotations[index].getState())
 					{
-						config.updateRotate(rotationValues[index]);
+						config.updateSetting("rotate", rotationValues[index]);
 						for(int j = 0; j < rotations.length; j++)
 						{
 							if(j != index) { rotations[j].setState(false); }
@@ -934,7 +905,7 @@ public final class AWTGUI
 					if(!layoutOptions[index].getState()){ layoutOptions[index].setState(true); }
 					if(layoutOptions[index].getState())
 					{
-						config.updatePhone(layoutValues[index]);
+						config.updateSetting("phone", layoutValues[index]);
 						for(int j = 0; j < layoutOptions.length; j++)
 						{
 							if(j != index) { layoutOptions[j].setState(false); }
@@ -955,7 +926,7 @@ public final class AWTGUI
 					if(!backlightOptions[index].getState()){ backlightOptions[index].setState(true); }
 					if(backlightOptions[index].getState())
 					{
-						config.updateBacklight(backlightValues[index]);
+						config.updateSetting("backlightcolor", backlightValues[index]);
 						for(int j = 0; j < backlightOptions.length; j++)
 						{
 							if(j != index) { backlightOptions[j].setState(false); }
@@ -976,7 +947,7 @@ public final class AWTGUI
 					if(!fpsOptions[index].getState()){ fpsOptions[index].setState(true); }
 					if(fpsOptions[index].getState())
 					{
-						config.updateFPS(fpsValues[index]);
+						config.updateSetting("fps", fpsValues[index]);
 						for(int j = 0; j < fpsOptions.length; j++)
 						{
 							if(j != index) { fpsOptions[j].setState(false); }
@@ -997,7 +968,7 @@ public final class AWTGUI
 					if(!fpsHackOptions[index].getState()){ fpsHackOptions[index].setState(true); }
 					if(fpsHackOptions[index].getState())
 					{
-						config.updateFPSHack(fpsHackValues[index]);
+						config.updateSetting("fpshack", fpsHackValues[index]);
 						for(int j = 0; j < fpsHackOptions.length; j++)
 						{
 							if(j != index) { fpsHackOptions[j].setState(false); }
@@ -1018,7 +989,7 @@ public final class AWTGUI
 					if(!fontOffsets[index].getState()){ fontOffsets[index].setState(true); }
 					if(fontOffsets[index].getState())
 					{
-						config.updateFontOffset(fontOffsetValues[index]);
+						config.updateSetting("fontoffset", fontOffsetValues[index]);
 						for(int j = 0; j < fontOffsets.length; j++)
 						{
 							if(j != index) { fontOffsets[j].setState(false); }
@@ -1039,7 +1010,7 @@ public final class AWTGUI
 					if(!m3gAntiAliasValues[index].getState()){ m3gAntiAliasValues[index].setState(true); }
 					if(m3gAntiAliasValues[index].getState())
 					{
-						config.updateM3GAntiAliasMode(m3gCommonSettingValues[index]);
+						config.updateSetting("m3gantialiasmode", m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gAntiAliasValues.length; j++)
 						{
 							if(j != index) { m3gAntiAliasValues[j].setState(false); }
@@ -1060,7 +1031,7 @@ public final class AWTGUI
 					if(!m3gBilinearValues[index].getState()){ m3gBilinearValues[index].setState(true); }
 					if(m3gBilinearValues[index].getState())
 					{
-						config.updateM3GBilinearMode(m3gCommonSettingValues[index]);
+						config.updateSetting("m3gbilinearmode", m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gBilinearValues.length; j++)
 						{
 							if(j != index) { m3gBilinearValues[j].setState(false); }
@@ -1081,7 +1052,7 @@ public final class AWTGUI
 					if(!m3gDitheringValues[index].getState()){ m3gDitheringValues[index].setState(true); }
 					if(m3gDitheringValues[index].getState())
 					{
-						config.updateM3GDitheringMode(m3gCommonSettingValues[index]);
+						config.updateSetting("m3gditheringmode", m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gDitheringValues.length; j++)
 						{
 							if(j != index) { m3gDitheringValues[j].setState(false); }
@@ -1102,7 +1073,7 @@ public final class AWTGUI
 					if(!m3gPerspCorrValues[index].getState()){ m3gPerspCorrValues[index].setState(true); }
 					if(m3gPerspCorrValues[index].getState())
 					{
-						config.updateM3GPerspCorrectionMode(m3gCommonSettingValues[index]);
+						config.updateSetting("m3gperspcorrmode", m3gCommonSettingValues[index]);
 						for(int j = 0; j < m3gPerspCorrValues.length; j++)
 						{
 							if(j != index) { m3gPerspCorrValues[j].setState(false); }
@@ -1123,7 +1094,7 @@ public final class AWTGUI
 					if(!m3gPerspCorrFactorValues[index].getState()){ m3gPerspCorrFactorValues[index].setState(true); }
 					if(m3gPerspCorrFactorValues[index].getState())
 					{
-						config.updateM3GPerspCorrSubFactor(m3gPFactorSettingValues[index]);
+						config.updateSetting("m3gperspcorrsubfactor", m3gPFactorSettingValues[index]);
 						for(int j = 0; j < m3gPerspCorrFactorValues.length; j++)
 						{
 							if(j != index) { m3gPerspCorrFactorValues[j].setState(false); }
@@ -1144,7 +1115,7 @@ public final class AWTGUI
 					if(!m3gMipmapValues[index].getState()){ m3gMipmapValues[index].setState(true); }
 					if(m3gMipmapValues[index].getState())
 					{
-						config.updateM3GMipmapMode(m3gMipmapSettingValues[index]);
+						config.updateSetting("m3gmipmapmode", m3gMipmapSettingValues[index]);
 						for(int j = 0; j < m3gMipmapValues.length; j++)
 						{
 							if(j != index) { m3gMipmapValues[j].setState(false); }
@@ -1156,6 +1127,35 @@ public final class AWTGUI
 		}
 
 		// Sys settings
+		enableAudio.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(enableAudio.getState()){ config.updateSysSetting("sound", "on"); hasPendingChange = true; }
+				else{ config.updateSysSetting("sound", "off"); hasPendingChange = true; }
+			}
+		});
+
+		useCustomMidi.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(useCustomMidi.getState()){ config.updateSysSetting("soundfont", "Custom"); hasPendingChange = true; }
+				else{ config.updateSysSetting("soundfont", "Default"); hasPendingChange = true; }
+			}
+		});
+
+		useCustomFont.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				if(useCustomFont.getState()){ config.updateSysSetting("textfont", "Custom"); hasPendingChange = true; }
+				else{ config.updateSysSetting("textfont", "Default"); hasPendingChange = true; }
+
+				showRestartDialog();
+			}
+		});
+
 		for(byte i = 0; i < fpsCounterPos.length; i++)
 		{
 			final byte index = i;
@@ -1166,7 +1166,7 @@ public final class AWTGUI
 					if(!fpsCounterPos[index].getState()){ fpsCounterPos[index].setState(true); }
 					if(fpsCounterPos[index].getState())
 					{
-						config.updatefpsCounterPosition(showFPSValues[index]);
+						config.updateSysSetting("fpsCounterPosition", showFPSValues[index]);
 						Mobile.getPlatform().setShowFPS(showFPSValues[index]);
 						for(int j = 0; j < fpsCounterPos.length; j++)
 						{
@@ -1187,7 +1187,7 @@ public final class AWTGUI
 					if(!logLevels[index].getState()){ logLevels[index].setState(true); }
 					if(logLevels[index].getState())
 					{
-						config.updateLogLevel(logLevelValues[index]);
+						config.updateSysSetting("logLevel", logLevelValues[index]);
 						for(int j = 0; j < logLevels.length; j++)
 						{
 							if(j != index) { logLevels[j].setState(false); }
@@ -1201,8 +1201,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(deleteTemporaryKJXFiles.getState()) { config.updateDeleteTempKJXFiles("on"); Mobile.deleteTemporaryKJXFiles = true; }
-				else { config.updateDeleteTempKJXFiles("off"); Mobile.deleteTemporaryKJXFiles = false; }
+				if(deleteTemporaryKJXFiles.getState()) { config.updateSysSetting("deleteTempKJXFiles", "on"); Mobile.deleteTemporaryKJXFiles = true; }
+				else { config.updateSysSetting("deleteTempKJXFiles", "off"); Mobile.deleteTemporaryKJXFiles = false; }
 			}
 		});
 
@@ -1211,8 +1211,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(dumpAudioData.getState()) { config.updateDumpAudioStreams("on"); Mobile.dumpAudioStreams = true; }
-				else { config.updateDumpAudioStreams("off"); Mobile.dumpAudioStreams = false; }
+				if(dumpAudioData.getState()) { config.updateSysSetting("dumpAudioStreams", "on"); Mobile.dumpAudioStreams = true; }
+				else { config.updateSysSetting("dumpAudioStreams", "off"); Mobile.dumpAudioStreams = false; }
 			}
 		});
 
@@ -1220,8 +1220,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(dumpGraphicsData.getState()) { config.updateDumpGraphicsObjects("on"); Mobile.dumpGraphicsObjects = true; }
-				else { config.updateDumpGraphicsObjects("off"); Mobile.dumpGraphicsObjects = false; }
+				if(dumpGraphicsData.getState()) { config.updateSysSetting("dumpGraphicsObjects", "on"); Mobile.dumpGraphicsObjects = true; }
+				else { config.updateSysSetting("dumpGraphicsObjects", "off"); Mobile.dumpGraphicsObjects = false; }
 			}
 		});
 
@@ -1229,8 +1229,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(M3GUntextured.getState()) { config.updateM3GUntextured("on"); Mobile.M3GRenderUntexturedPolygons = true; }
-				else { config.updateM3GUntextured("off"); Mobile.M3GRenderUntexturedPolygons = false; }
+				if(M3GUntextured.getState()) { config.updateSysSetting("M3GUntextured", "on"); Mobile.M3GRenderUntexturedPolygons = true; }
+				else { config.updateSysSetting("M3GUntextured", "off"); Mobile.M3GRenderUntexturedPolygons = false; }
 			}
 		});
 
@@ -1238,8 +1238,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(M3GWireframe.getState()) { config.updateM3GWireframe("on"); Mobile.M3GRenderWireframe = true; }
-				else { config.updateM3GWireframe("off"); Mobile.M3GRenderWireframe = false; }
+				if(M3GWireframe.getState()) { config.updateSysSetting("M3GWireframe", "on"); Mobile.M3GRenderWireframe = true; }
+				else { config.updateSysSetting("M3GWireframe", "off"); Mobile.M3GRenderWireframe = false; }
 			}
 		});
 
@@ -1247,8 +1247,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(MCV3ShowHeapUsage.getState()) { config.MCV3ShowHeapUsage("on"); Mobile.MCV3ShowHeapUsage = true; }
-				else { config.MCV3ShowHeapUsage("off"); Mobile.MCV3ShowHeapUsage = false; }
+				if(MCV3ShowHeapUsage.getState()) { config.updateSysSetting("MCV3ShowHeapUsage", "on"); Mobile.MCV3ShowHeapUsage = true; }
+				else { config.updateSysSetting("MCV3ShowHeapUsage", "off"); Mobile.MCV3ShowHeapUsage = false; }
 			}
 		});
 
@@ -1256,8 +1256,8 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(MCV3ShowTimeMetrics.getState()) { config.MCV3ShowTimeMetrics("on"); Mobile.MCV3ShowTimeMetrics = true; }
-				else { config.MCV3ShowTimeMetrics("off"); Mobile.MCV3ShowTimeMetrics = false; }
+				if(MCV3ShowTimeMetrics.getState()) { config.updateSysSetting("MCV3ShowTimeMetrics", "on"); Mobile.MCV3ShowTimeMetrics = true; }
+				else { config.updateSysSetting("MCV3ShowTimeMetrics", "off"); Mobile.MCV3ShowTimeMetrics = false; }
 			}
 		});
 

@@ -21,11 +21,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import java.io.File;
 import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileOutputStream;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 
@@ -73,56 +74,70 @@ public class Config
 		88   // X Key (for AWT Pause/Resume)
 	};
 
+	// Array with key names that match to each array index above.
+	private static final String[] KEY_NAMES = {
+		"input_LeftSoft", "input_RightSoft", "input_ArrowUp", "input_ArrowLeft",
+		"input_Fire", "input_ArrowRight", "input_ArrowDown", "input_Num7",
+		"input_Num8", "input_Num9", "input_Num4", "input_Num5",
+		"input_Num6", "input_Num1", "input_Num2", "input_Num3",
+		"input_Star", "input_Num0", "input_Pound", "input_CLR",
+		"input_FastForward", "input_Screenshot", "input_PauseResume"
+	};
+
 	public Runnable onChange;
 
-	public HashMap<String, String> settings = new HashMap<String, String>(4);
-	public HashMap<String, String> sysSettings = new HashMap<String, String>(4);
+	public HashMap<String, String> settings = new HashMap<String, String>(48);
+	public HashMap<String, String> sysSettings = new HashMap<String, String>(16);
 
 	public Config()
 	{
-
 		width = Mobile.getPlatform().lcdWidth;
 		height = Mobile.getPlatform().lcdHeight;
 
-		onChange = new Runnable()
-		{
-			public void run()
-			{
-				// placeholder
-			}
-		};
+		onChange = new Runnable() { public void run() {} };
 	}
 
 	public void init(String appname)
 	{
-        try
-        {
-            // For ISO-8859-1 encodings, we'll use UTF-8 for save paths, helps with chinese and special characters (Mirror RecordStore.java)
-            configPath = new String((Mobile.getPlatform().dataPath + "./config/" + appname).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
+		try
+		{
+			// For ISO-8859-1 encodings, we'll use UTF-8 for save paths, helps
+			// with chinese and special characters (Mirror RecordStore.java)
+			configPath = new String((Mobile.getPlatform().dataPath +
+				"./config/" + appname)
+					.getBytes(System.getProperty("file.encoding")),
+					System.getProperty("file.encoding").equals(
+					Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" :
+					Mobile.textEncoding);
+
 			configFile = configPath + "/game.conf";
-        }
-        catch (UnsupportedEncodingException e) { }
+		}
+		catch (UnsupportedEncodingException e) { }
+
 		// Load Config //
 		try
 		{
 			File configDir = new File(configPath);
 			if (!configDir.exists()) { configDir.mkdirs(); }
 
-			configDir = new File(systemPath);
-			if (!configDir.exists()) { configDir.mkdirs(); }
+			File sysDir = new File(systemPath);
+			if (!sysDir.exists()) { sysDir.mkdirs(); }
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Creating Config Path "+configPath);
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() +
+				"." + Config.class.getSimpleName() + ": " +
+				"Problem Creating Config Path (" + configPath + ") :" + e.getMessage());
 		}
 
-		try // Check Config File
+		// Check Config Files
+		try
 		{
 			cFile = new File(configFile);
+
+			// Load default settings if they do not exist yet
 			if(!cFile.exists())
 			{
-				cFile.createNewFile();
 				settings.put("scrwidth", ""+width);
 				settings.put("scrheight", ""+height);
 				settings.put("phone", "Standard");
@@ -154,10 +169,10 @@ public class Config
 				saveConfig();
 			}
 
+			// Same for system settings
 			sFile = new File(systemFile);
 			if(!sFile.exists())
 			{
-				sFile.createNewFile();
 				sysSettings.put("fpsCounterPosition", "Off");
 				sysSettings.put("logLevel", "2");
 				sysSettings.put("M3GWireframe", "off");
@@ -172,344 +187,145 @@ public class Config
 				sysSettings.put("textfont", "Default");
 				// AWT Inputs
 				updateAWTInputs();
-				saveConfig();
+				saveSystemConfig();
 			}
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Opening Config "+configFile);
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Opening Config (" + configFile + ") :" + e.getMessage());
 		}
 
-		try // Read Records
-		{
-			BufferedReader reader = new BufferedReader(new FileReader(cFile));
-			String line;
-			String[] parts;
-			while((line = reader.readLine())!=null)
-			{
-				parts = line.split(":");
-				if(parts.length==2)
-				{
-					parts[0] = parts[0].trim();
-					parts[1] = parts[1].trim();
-					if(parts[0]!="" && parts[1]!="") { settings.put(parts[0], parts[1]); }
-				}
-			}
-			// Remove now invalid settings
-			if(settings.containsKey("compatcliprectongfxreset")) { settings.remove("compatcliprectongfxreset"); }
-			if(settings.containsKey("width")) { settings.remove("width"); }
-			if(settings.containsKey("height")) { settings.remove("height"); }
-			if(settings.containsKey("compatignoregccalls")) { settings.remove("compatignoregccalls"); } // These are now ignored by default, after some bug fixes to lcdui canvas
-			if(settings.containsKey("compatnonfatalnullimage")) { settings.remove("compatnonfatalnullimage"); } // No longer needed
-			if(settings.containsKey("compatdonottranslatedrawrgb")) { settings.remove("compatdonottranslatedrawrgb"); } // No longer needed
-			if(settings.containsKey("rotate")) // Compatibility with older, more limited rotation toggle
-			{
-				if(settings.get("rotate").equals("on")) { settings.put("rotate", "270"); }
-				else if(settings.get("rotate").equals("off")) { settings.put("rotate", "0"); }
-			}
-			if(settings.containsKey("sound")) { settings.remove("sound"); }
-			if(settings.containsKey("soundfont")) { settings.remove("soundfont"); }
-			if(settings.containsKey("textfont")) { settings.remove("textfont"); }
-			if(settings.containsKey("phone") && settings.get("phone").equals("Sharp")) { settings.put("phone", "MotoTriplets"); }
-			if(settings.containsKey("spdhackm3gdisablebilinear")) { settings.remove("spdhackm3gdisablebilinear"); };
+		readConfig(cFile, settings);
+		cleanAppSettings();
 
-			// Add any missing settings
-			if(!settings.containsKey("scrwidth")) { settings.put("scrwidth", ""+Mobile.lcdWidth); }
-			if(!settings.containsKey("scrheight")) { settings.put("scrheight", ""+Mobile.lcdHeight); }
-			if(!settings.containsKey("phone")) { settings.put("phone", "Standard"); }
-			if(!settings.containsKey("backlightcolor"))
-			{
-				switch(Mobile.maskIndex)
-				{
-					case 0:
-						settings.put("backlightcolor", "Disabled");
-						break;
-					case 1:
-						settings.put("backlightcolor", "Green");
-						break;
-					case 2:
-						settings.put("backlightcolor", "Cyan");
-						break;
-					case 3:
-						settings.put("backlightcolor", "Orange");
-						break;
-					case 4:
-						settings.put("backlightcolor", "Violet");
-						break;
-					case 5:
-						settings.put("backlightcolor", "Red");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("rotate")) { settings.put("rotate", ""+Mobile.rotateDisplay); }
-			if(!settings.containsKey("fps")) { settings.put("fps", ""+Mobile.limitFPS); }
-			if(!settings.containsKey("fontoffset")) { settings.put("fontoffset", ""+Mobile.fontSizeOffset); }
-			if(!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off"); }
-			if(!settings.containsKey("compatfantasyzonefix")) { settings.put("compatfantasyzonefix", Mobile.compatFantasyZoneFix ? "on" : "off"); }
-			if(!settings.containsKey("compattranstooriginonreset")) { settings.put("compattranstooriginonreset", Mobile.compatTranslateToOriginOnReset ? "on" : "off"); }
-			if(!settings.containsKey("compatimmediaterepaints")) { settings.put("compatimmediaterepaints", Mobile.compatImmediateRepaints ? "on" : "off"); }
-			if(!settings.containsKey("compatrepaintonsetcurrent")) { settings.put("compatrepaintonsetcurrent", Mobile.compatRepaintOnSetCurrent ? "on" : "off"); }
-			if(!settings.containsKey("compatoverrideplatchecks")) { settings.put("compatoverrideplatchecks", Mobile.compatOverridePlatformChecks ? "on" : "off"); }
-			if(!settings.containsKey("compatsiemensfriendlydrawing")) { settings.put("compatsiemensfriendlydrawing", Mobile.compatSiemensFriendlyDrawing ? "on" : "off"); }
-			if(!settings.containsKey("compatignorevolumechanges")) { settings.put("compatignorevolumechanges", Mobile.compatIgnoreVolumeChanges ? "on" : "off"); }
-			if(!settings.containsKey("compatmcv3horizfovfix")) { settings.put("compatmcv3horizfovfix", Mobile.compatMCV3HorizontalFovFix ? "on" : "off"); }
-			if(!settings.containsKey("fpshack"))
-			{
-				switch(Mobile.unlockFramerateHack)
-				{
-					case 0:
-						settings.put("fpshack", "Disabled");
-						break;
-					case 1:
-						settings.put("fpshack", "Safe");
-						break;
-					case 2:
-						settings.put("fpshack", "Extended");
-						break;
-					case 3:
-						settings.put("fpshack", "Aggressive");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off"); }
-			if(!settings.containsKey("m3gantialiasmode"))
-			{
-				switch(Mobile.m3gAntiAliasingMode)
-				{
-					case 0:
-						settings.put("m3gantialiasmode", "off");
-						break;
-					case 1:
-						settings.put("m3gantialiasmode", "app");
-						break;
-					case 2:
-						settings.put("m3gantialiasmode", "on");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("m3gbilinearmode"))
-			{
-				switch(Mobile.m3gBilinearFilterMode)
-				{
-					case 0:
-						settings.put("m3gbilinearmode", "off");
-						break;
-					case 1:
-						settings.put("m3gbilinearmode", "app");
-						break;
-					case 2:
-						settings.put("m3gbilinearmode", "on");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("m3gditheringmode"))
-			{
-				switch(Mobile.m3gDitheringMode)
-				{
-					case 0:
-						settings.put("m3gditheringmode", "off");
-						break;
-					case 1:
-						settings.put("m3gditheringmode", "app");
-						break;
-					case 2:
-						settings.put("m3gditheringmode", "on");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("m3gperspcorrmode"))
-			{
-				switch(Mobile.m3gPerspectiveCorrectionMode)
-				{
-					case 0:
-						settings.put("m3gperspcorrmode", "off");
-						break;
-					case 1:
-						settings.put("m3gperspcorrmode", "app");
-						break;
-					case 2:
-						settings.put("m3gperspcorrmode", "on");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("m3gperspcorrsubfactor"))
-			{
-				switch(Mobile.m3gPerspCorrSubFactor)
-				{
-					case 3:
-						settings.put("m3gperspcorrsubfactor", "extra");
-						break;
-					case 7:
-						settings.put("m3gperspcorrsubfactor", "high");
-						break;
-					case 15:
-						settings.put("m3gperspcorrsubfactor", "medium");
-						break;
-					case 31:
-						settings.put("m3gperspcorrsubfactor", "low");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("m3gmipmapmode"))
-			{
-				switch(Mobile.m3gMipmapMode)
-				{
-					case 0:
-						settings.put("m3gmipmapmode", "off");
-						break;
-					case 1:
-						settings.put("m3gmipmapmode", "app");
-						break;
-					case 2:
-						settings.put("m3gmipmapmode", "on");
-						break;
-					default:
-						throw new IllegalArgumentException();
-				}
-			}
-			if(!settings.containsKey("m3gdisablefog")) { settings.put("m3gdisablefog", Mobile.m3gDisableFog ? "on" : "off"); }
-			if(!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off"); }
-			if(!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off"); }
-			if(!settings.containsKey("dojaversion")) { settings.put("dojaversion", ""+Mobile.DoJaVersion); }
-
-			// System settings
-			reader = new BufferedReader(new FileReader(sFile));
-			while((line = reader.readLine())!=null)
-			{
-				parts = line.split(":");
-				if(parts.length==2)
-				{
-					parts[0] = parts[0].trim();
-					parts[1] = parts[1].trim();
-					if(parts[0]!="" && parts[1]!="") { sysSettings.put(parts[0], parts[1]); }
-				}
-			}
-
-			if(!sysSettings.containsKey("fpsCounterPosition")) { sysSettings.put("fpsCounterPosition", "Off"); }
-			if(!sysSettings.containsKey("logLevel")) { sysSettings.put("logLevel", "2"); }
-			if(!sysSettings.containsKey("M3GWireframe")) { sysSettings.put("M3GWireframe", "off"); }
-			if(!sysSettings.containsKey("M3GUntextured")) { sysSettings.put("M3GUntextured", "off"); }
-			if(!sysSettings.containsKey("MCV3ShowTimeMetrics")) { sysSettings.put("MCV3ShowTimeMetrics", "off"); }
-			if(!sysSettings.containsKey("MCV3ShowHeapUsage")) { sysSettings.put("MCV3ShowHeapUsage", "off"); }
-			if(!sysSettings.containsKey("deleteTempKJXFiles")) { sysSettings.put("deleteTempKJXFiles", "on"); }
-			if(!sysSettings.containsKey("dumpAudioStreams")) { sysSettings.put("dumpAudioStreams", "off"); }
-			if(!sysSettings.containsKey("dumpGraphicsObjects")) { sysSettings.put("dumpGraphicsObjects", "off"); }
-			if(!sysSettings.containsKey("soundfont")) { sysSettings.put("soundfont", "Default"); }
-			if(!sysSettings.containsKey("textfont")) { sysSettings.put("textfont", Mobile.useCustomTextFont ? "Custom" : "Default"); }
-			if(!sysSettings.containsKey("sound")) { sysSettings.put("sound", Mobile.sound ? "on" : "off"); }
-			// AWT Inputs
-			if(!sysSettings.containsKey("input_LeftSoft"))    { sysSettings.put("input_LeftSoft", ""     + inputKeycodes[0]); }
-			if(!sysSettings.containsKey("input_RightSoft"))   { sysSettings.put("input_RightSoft", ""    + inputKeycodes[1]); }
-			if(!sysSettings.containsKey("input_ArrowUp"))     { sysSettings.put("input_ArrowUp", ""      + inputKeycodes[2]); }
-			if(!sysSettings.containsKey("input_ArrowLeft"))   { sysSettings.put("input_ArrowLeft", ""    + inputKeycodes[3]); }
-			if(!sysSettings.containsKey("input_Fire"))        { sysSettings.put("input_Fire", ""         + inputKeycodes[4]); }
-			if(!sysSettings.containsKey("input_ArrowRight"))  { sysSettings.put("input_ArrowRight", ""   + inputKeycodes[5]); }
-			if(!sysSettings.containsKey("input_ArrowDown"))   { sysSettings.put("input_ArrowDown", ""    + inputKeycodes[6]); }
-			if(!sysSettings.containsKey("input_Num7"))        { sysSettings.put("input_Num7", ""         + inputKeycodes[7]); }
-			if(!sysSettings.containsKey("input_Num8"))        { sysSettings.put("input_Num8", ""         + inputKeycodes[8]); }
-			if(!sysSettings.containsKey("input_Num9"))        { sysSettings.put("input_Num9", ""         + inputKeycodes[9]); }
-			if(!sysSettings.containsKey("input_Num4"))        { sysSettings.put("input_Num4", ""         + inputKeycodes[10]); }
-			if(!sysSettings.containsKey("input_Num5"))        { sysSettings.put("input_Num5", ""         + inputKeycodes[11]); }
-			if(!sysSettings.containsKey("input_Num6"))        { sysSettings.put("input_Num6", ""         + inputKeycodes[12]); }
-			if(!sysSettings.containsKey("input_Num1"))        { sysSettings.put("input_Num1", ""         + inputKeycodes[13]); }
-			if(!sysSettings.containsKey("input_Num2"))        { sysSettings.put("input_Num2", ""         + inputKeycodes[14]); }
-			if(!sysSettings.containsKey("input_Num3"))        { sysSettings.put("input_Num3", ""         + inputKeycodes[15]); }
-			if(!sysSettings.containsKey("input_Star"))        { sysSettings.put("input_Star", ""         + inputKeycodes[16]); }
-			if(!sysSettings.containsKey("input_Num0"))        { sysSettings.put("input_Num0", ""         + inputKeycodes[17]); }
-			if(!sysSettings.containsKey("input_Pound"))       { sysSettings.put("input_Pound", ""        + inputKeycodes[18]); }
-			if(!sysSettings.containsKey("input_CLR"))         { sysSettings.put("input_CLR", ""          + inputKeycodes[19]); }
-			if(!sysSettings.containsKey("input_FastForward")) { sysSettings.put("input_FastForward", ""  + inputKeycodes[20]); }
-			if(!sysSettings.containsKey("input_Screenshot"))  { sysSettings.put("input_Screenshot", ""   + inputKeycodes[21]); }
-			if(!sysSettings.containsKey("input_PauseResume")) { sysSettings.put("input_PauseResume", ""  + inputKeycodes[22]); }
-
-			inputKeycodes[0] = Integer.parseInt(sysSettings.get("input_LeftSoft"));
-			inputKeycodes[1] = Integer.parseInt(sysSettings.get("input_RightSoft"));
-			inputKeycodes[2] = Integer.parseInt(sysSettings.get("input_ArrowUp"));
-			inputKeycodes[3] = Integer.parseInt(sysSettings.get("input_ArrowLeft"));
-			inputKeycodes[4] = Integer.parseInt(sysSettings.get("input_Fire"));
-			inputKeycodes[5] = Integer.parseInt(sysSettings.get("input_ArrowRight"));
-			inputKeycodes[6] = Integer.parseInt(sysSettings.get("input_ArrowDown"));
-			inputKeycodes[7] = Integer.parseInt(sysSettings.get("input_Num7"));
-			inputKeycodes[8] = Integer.parseInt(sysSettings.get("input_Num8"));
-			inputKeycodes[9] = Integer.parseInt(sysSettings.get("input_Num9"));
-			inputKeycodes[10] = Integer.parseInt(sysSettings.get("input_Num4"));
-			inputKeycodes[11] = Integer.parseInt(sysSettings.get("input_Num5"));
-			inputKeycodes[12] = Integer.parseInt(sysSettings.get("input_Num6"));
-			inputKeycodes[13] = Integer.parseInt(sysSettings.get("input_Num1"));
-			inputKeycodes[14] = Integer.parseInt(sysSettings.get("input_Num2"));
-			inputKeycodes[15] = Integer.parseInt(sysSettings.get("input_Num3"));
-			inputKeycodes[16] = Integer.parseInt(sysSettings.get("input_Star"));
-			inputKeycodes[17] = Integer.parseInt(sysSettings.get("input_Num0"));
-			inputKeycodes[18] = Integer.parseInt(sysSettings.get("input_Pound"));
-			inputKeycodes[19] = Integer.parseInt(sysSettings.get("input_CLR"));
-			inputKeycodes[20] = Integer.parseInt(sysSettings.get("input_FastForward"));
-			inputKeycodes[21] = Integer.parseInt(sysSettings.get("input_Screenshot"));
-			inputKeycodes[22] = Integer.parseInt(sysSettings.get("input_PauseResume"));
-
-			onChange.run();
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem Reading Config: "+configFile);
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
-		}
-
+		readConfig(sFile, sysSettings);
+		cleanSystemSettings();
 	}
 
-	public void saveConfig()
+	private void cleanAppSettings()
 	{
+		settings.remove("compatcliprectongfxreset");
+		settings.remove("width");
+		settings.remove("height");
+		settings.remove("compatignoregccalls");
+		settings.remove("compatnonfatalnullimage");
+		settings.remove("compatdonottranslatedrawrgb");
+		settings.remove("sound");
+		settings.remove("soundfont");
+		settings.remove("textfont");
+		settings.remove("spdhackm3gdisablebilinear");
+
+		if ("on".equals(settings.get("rotate"))) settings.put("rotate", "270");
+		else if ("off".equals(settings.get("rotate"))) settings.put("rotate", "0");
+
+		if ("Sharp".equals(settings.get("phone"))) settings.put("phone", "MotoTriplets");
+
+		if (!settings.containsKey("scrwidth")) { settings.put("scrwidth", "" + Mobile.lcdWidth); }
+		if (!settings.containsKey("scrheight")) { settings.put("scrheight", "" + Mobile.lcdHeight); }
+		if (!settings.containsKey("phone")) { settings.put("phone", "Standard"); }
+		if (!settings.containsKey("rotate")) { settings.put("rotate", "" + Mobile.rotateDisplay); }
+		if (!settings.containsKey("fps")) { settings.put("fps", "" + Mobile.limitFPS); }
+		if (!settings.containsKey("fontoffset")) { settings.put("fontoffset", "" + Mobile.fontSizeOffset); }
+		if (!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off"); }
+		if (!settings.containsKey("dojaversion")) { settings.put("dojaversion", "" + Mobile.DoJaVersion); }
+	}
+
+	private void cleanSystemSettings()
+	{
+		if (!sysSettings.containsKey("fpsCounterPosition")) { sysSettings.put("fpsCounterPosition", "Off"); }
+		if (!sysSettings.containsKey("logLevel")) { sysSettings.put("logLevel", "2"); }
+		if (!sysSettings.containsKey("soundfont")) { sysSettings.put("soundfont", "Default"); }
+		if (!sysSettings.containsKey("textfont")) { sysSettings.put("textfont", Mobile.useCustomTextFont ? "Custom" : "Default"); }
+		if (!sysSettings.containsKey("sound")) { sysSettings.put("sound", Mobile.sound ? "on" : "off"); }
+
+		for (int i = 0; i < KEY_NAMES.length; i++)
+		{
+			if (!sysSettings.containsKey(KEY_NAMES[i]))
+			{
+				sysSettings.put(KEY_NAMES[i], String.valueOf(inputKeycodes[i]));
+			}
+			else
+			{
+				try
+				{
+					inputKeycodes[i] = Integer.parseInt(sysSettings.get(KEY_NAMES[i]));
+				}
+				catch (NumberFormatException e) { }
+			}
+		}
+	}
+
+	private void readConfig(File file, HashMap<String, String> targetMap)
+	{
+		if (!file.exists()) { return; }
+
+		BufferedReader reader = null;
 		try
 		{
-			FileOutputStream fout = new FileOutputStream(cFile);
-			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fout));
-
-			// Sort the config keys alphabetically before saving
-			List<String> sortedKeys = new ArrayList<String>(settings.keySet());
-        	Collections.sort(sortedKeys);
-
-			for (String key : sortedKeys)
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO_8859_1"));
+			String line;
+			while ((line = reader.readLine()) != null)
 			{
-				writer.write(key+":"+settings.get(key)+"\n");
-			}
-			writer.close();
-			fout.close();
-
-			/* Save system file (if it has been created already), also sorted alphabetically */
-			if(sFile != null)
-			{
-				sortedKeys = new ArrayList<String>(sysSettings.keySet());
-				Collections.sort(sortedKeys);
-
-				fout = new FileOutputStream(sFile);
-				writer = new BufferedWriter(new OutputStreamWriter(fout));
-
-				for (String key : sortedKeys)
+				String[] parts = line.split(":", 2);
+				if (parts.length == 2)
 				{
-					writer.write(key+":"+sysSettings.get(key)+"\n");
+					String key = parts[0].trim();
+					String val = parts[1].trim();
+					if (!key.isEmpty() && !val.isEmpty())
+					{
+						targetMap.put(key, val);
+					}
 				}
-				writer.close();
-				fout.close();
 			}
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Problem saving configs: " + e.getMessage());
-			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() +
+				"." + Config.class.getSimpleName() + ": " +
+				"Problem Reading Config (" + configFile + ") : " + e.getMessage());
+		}
+		finally
+		{
+			if (reader != null)
+			{
+				try { reader.close(); }
+				catch (Exception e) { }
+			}
+		}
+	}
+
+	public void saveConfig() { saveFile(cFile, settings); }
+
+	public void saveSystemConfig() { saveFile(sFile, sysSettings); }
+
+	private void saveFile(File file, HashMap<String, String> map)
+	{
+		if(file == null) { return; }
+
+		List<String> sortedKeys = new ArrayList<String>(map.keySet());
+		Collections.sort(sortedKeys);
+
+		BufferedWriter writer = null;
+		try
+		{
+			writer = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(file), "ISO_8859_1"));
+			for (String key : sortedKeys)
+				{ writer.write(key + ":" + map.get(key) + "\n"); }
+		}
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_ERROR, Config.class.getPackage().getName() +
+				"." + Config.class.getSimpleName() + ": " + "Problem saving (" +
+				file.getPath() + ") config: " + e.getMessage());
+		}
+		finally
+		{
+			if (writer != null)
+			{
+				try { writer.close(); }
+				catch (Exception e) { }
+			}
 		}
 	}
 
@@ -523,341 +339,38 @@ public class Config
 		height = h;
 	}
 
-	public void updatePhone(String value)
+	// Per-app settings
+	public void updateSetting(String key, String value)
 	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: phone "+value);
-		settings.put("phone", value);
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." +
+			Config.class.getSimpleName() + ": " + "Config: "+ key + " : " + value);
+
+		settings.put(key, value);
 		saveConfig();
 		onChange.run();
 	}
-
-	public void updateRotate(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: rotate "+value);
-		settings.put("rotate", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateFPS(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: fps "+value);
-		settings.put("fps", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateFontOffset(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: fontoffset "+value);
-		settings.put("fontoffset", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateAlphaSpeedHack(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhacknoalpha "+value);
-		settings.put("spdhacknoalpha", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GResSpeedHack(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhackm3ghalfres "+value);
-		settings.put("spdhackm3ghalfres", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GAntiAliasMode(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gantialiasmode "+value);
-		settings.put("m3gantialiasmode", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GBilinearMode(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gbilinearmode "+value);
-		settings.put("m3gbilinearmode", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GDitheringMode(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gditheringmode "+value);
-		settings.put("m3gditheringmode", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GPerspCorrectionMode(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gperspcorrmode "+value);
-		settings.put("m3gperspcorrmode", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GPerspCorrSubFactor(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gperspcorrsubfactor "+value);
-		settings.put("m3gperspcorrsubfactor", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GMipmapMode(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gmipmapmode "+value);
-		settings.put("m3gmipmapmode", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GDisableFog(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: m3gdisablefog "+value);
-		settings.put("m3gdisablefog", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateMCV3ResSpeedHack(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhackmcv3halfres "+value);
-		settings.put("spdhackmcv3halfres", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateMCV3NoLightingSpeedHack(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: spdhackmcv3nolighting "+value);
-		settings.put("spdhackmcv3nolighting", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateDoJaVersion(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: dojaversion "+value);
-		settings.put("dojaversion", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatFantasyZoneFix(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatfantasyzonefix "+value);
-		settings.put("compatfantasyzonefix", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatTranslateToOriginOnReset(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compattranstooriginonreset "+value);
-		settings.put("compattranstooriginonreset", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatImmediateRepaints(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatimmediaterepaints "+value);
-		settings.put("compatimmediaterepaints", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatRepaintOnSetCurrent(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatrepaintonsetcurrent "+value);
-		settings.put("compatrepaintonsetcurrent", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatOverridePlatformChecks(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatoverrideplatchecks "+value);
-		settings.put("compatoverrideplatchecks", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatSiemensFriendlyDrawing(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatsiemensfriendlydrawing "+value);
-		settings.put("compatsiemensfriendlydrawing", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatIgnoreVolumeChanges(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatignorevolumechanges "+value);
-		settings.put("compatignorevolumechanges", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateCompatMCV3HorizFovFix(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: compatmcv3horizfovfix "+value);
-		settings.put("compatmcv3horizfovfix", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateFPSHack(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: fpshack "+value);
-		settings.put("fpshack", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateBacklight(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Config: backlightcolor "+value);
-		settings.put("backlightcolor", value);
-		saveConfig();
-		onChange.run();
-	}
-
 
 	// System settings
-
-	public void updatefpsCounterPosition(String value)
+	public void updateSysSetting(String key, String value)
 	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: fpsCounterPosition "+value);
-		sysSettings.put("fpsCounterPosition", value);
-		saveConfig();
-		onChange.run();
-	}
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." +
+			Config.class.getSimpleName() + ": " + "SysConfig: "+ key + " : " + value);
 
-	public void updateLogLevel(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: logLevel "+value);
-		sysSettings.put("logLevel", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GWireframe(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: M3GWireframe "+value);
-		sysSettings.put("M3GWireframe", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateM3GUntextured(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: M3GUntextured "+value);
-		sysSettings.put("M3GUntextured", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void MCV3ShowTimeMetrics(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: MCV3ShowTimeMetrics "+value);
-		sysSettings.put("MCV3ShowTimeMetrics", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void MCV3ShowHeapUsage(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: MCV3ShowHeapUsage "+value);
-		sysSettings.put("MCV3ShowHeapUsage", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateDeleteTempKJXFiles(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: deleteTempKJXFiles "+value);
-		sysSettings.put("deleteTempKJXFiles", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateDumpAudioStreams(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: dumpAudioStreams "+value);
-		sysSettings.put("dumpAudioStreams", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateDumpGraphicsObjects(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: dumpGraphicsObjects "+value);
-		sysSettings.put("dumpGraphicsObjects", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateSound(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: sound "+value);
-		sysSettings.put("sound", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateSoundfont(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: soundfont "+value);
-		sysSettings.put("soundfont", value);
-		saveConfig();
-		onChange.run();
-	}
-
-	public void updateTextFont(String value)
-	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "SysConfig: textfont "+value);
-		sysSettings.put("textfont", value);
-		saveConfig();
+		sysSettings.put(key, value);
+		saveSystemConfig();
 		onChange.run();
 	}
 
 	public void updateAWTInputs()
 	{
-		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." + Config.class.getSimpleName() + ": " + "Updating inputs on System file");
-		sysSettings.put("input_LeftSoft", ""     + inputKeycodes[0]);
-		sysSettings.put("input_RightSoft", ""    + inputKeycodes[1]);
-		sysSettings.put("input_ArrowUp", ""      + inputKeycodes[2]);
-		sysSettings.put("input_ArrowLeft", ""    + inputKeycodes[3]);
-		sysSettings.put("input_Fire", ""         + inputKeycodes[4]);
-		sysSettings.put("input_ArrowRight", ""   + inputKeycodes[5]);
-		sysSettings.put("input_ArrowDown", ""    + inputKeycodes[6]);
-		sysSettings.put("input_Num7", ""         + inputKeycodes[7]);
-		sysSettings.put("input_Num8", ""         + inputKeycodes[8]);
-		sysSettings.put("input_Num9", ""         + inputKeycodes[9]);
-		sysSettings.put("input_Num4", ""         + inputKeycodes[10]);
-		sysSettings.put("input_Num5", ""         + inputKeycodes[11]);
-		sysSettings.put("input_Num6", ""         + inputKeycodes[12]);
-		sysSettings.put("input_Num1", ""         + inputKeycodes[13]);
-		sysSettings.put("input_Num2", ""         + inputKeycodes[14]);
-		sysSettings.put("input_Num3", ""         + inputKeycodes[15]);
-		sysSettings.put("input_Star", ""         + inputKeycodes[16]);
-		sysSettings.put("input_Num0", ""         + inputKeycodes[17]);
-		sysSettings.put("input_Pound", ""        + inputKeycodes[18]);
-		sysSettings.put("input_CLR", ""          + inputKeycodes[19]);
-		sysSettings.put("input_FastForward", ""  + inputKeycodes[20]);
-		sysSettings.put("input_Screenshot",  ""  + inputKeycodes[21]);
-		sysSettings.put("input_PauseResume", ""  + inputKeycodes[22]);
-		saveConfig();
+		Mobile.log(Mobile.LOG_DEBUG, Config.class.getPackage().getName() + "." +
+			Config.class.getSimpleName() + ": " + "Updating inputs on System file");
+
+		for (int i = 0; i < KEY_NAMES.length; i++)
+		{
+			sysSettings.put(KEY_NAMES[i], String.valueOf(inputKeycodes[i]));
+		}
+		saveSystemConfig();
 		onChange.run();
 	}
-
 }
