@@ -30,7 +30,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
-#define NUM_ARGUMENTS 44
+#define NUM_ARGUMENTS 7
 
 const char *slash = path_default_slash();
 
@@ -372,7 +372,7 @@ void check_fast_forwarding(void)
 }
 
 /* Function to check the core's config states in the libretro frontend */
-static void check_variables(bool first_time_startup)
+static void check_variables()
 {
 	struct retro_variable var = {0};
 
@@ -794,8 +794,8 @@ static void check_variables(bool first_time_startup)
 		mcv3Heap, mcv3TimeStats, M3GAntiAliasMode, M3GBilinearMode, M3GDitheringMode, M3GPerspCorrMode, M3GPerspCorrFact, M3GMipmapMode, M3GDisableFog, compatRepaintOnSetCurrent);
 	optstrlen = strlen(options_update);
 
-	/* 0xD = 13, which is the special case where the java app will receive the updated configs */
-	unsigned char optupdateevent[5] = { 0xD, (optstrlen>>24)&0xFF, (optstrlen>>16)&0xFF, (optstrlen>>8)&0xFF, optstrlen&0xFF };
+	/* 0xC = 12, which is the special case where the java app will receive the updated configs */
+	unsigned char optupdateevent[5] = { 0xC, (optstrlen>>24)&0xFF, (optstrlen>>16)&0xFF, (optstrlen>>8)&0xFF, optstrlen&0xFF };
 
 	/* Sends the event to set Java in core options read mode, then send the string containing those options */
 	if(booted) /* Checks if the java app booted first, or else it'll fail to write to pipes as they don't exist yet. */
@@ -821,54 +821,13 @@ void retro_init(void)
 	memset(frame, 0, frameSize);
 	memset(frameBuffer, 0, frameBufferSize);
 
-	/* Check variables and set parameters */
-	check_variables(true);
-	char resArg[2][4], rotateArg[2], phoneArg[3], fpsArg[3], soundArg[2], midiArg[2], dumpAudioArg[2], logLevelArg[2], spdHackNoAlphaArg[2], backlightArg[2];
-	char compatFantasyZoneFixArg[2], compatTransToOriginOnGFXResetArg[2], fontArg[2], offsetArg[3], dumpGFXArg[2], tempKJXArg[2], m3gUntexArg[2], m3gWireArg[2];
-	char fpsunlockHack[2], compatImmediateRepaintArg[2], compatOverridePlatCheckArg[2], compatSiemensFriendlyDrawArg[2], spdHackM3GHalfResArg[2], dojaVersionArg[4];
-	char compatIgnoreVolumeChangesArg[2], spdHackMCV3HalfResArg[2], spdHackMCV3NoLightArg[2], compatMCV3HorFovFixArg[2], mcv3HeapArg[2], mcv3TimeStatsArg[2];
-	char M3GAntiAliasModeArg[2], M3GBilinearModeArg[2], M3GDitheringModeArg[2], M3GPerspCorrModeArg[2], M3GPerspCorFactArg[3], M3GMipmapModeArg[2], M3GDisableFogArg[2];
-	char compatRepaintOnSetCurrentArg[2];
+	// Resolution must be passed to the jar on boot, as this must be set
+	// before any apps start running.
+	check_variables();
+	char resArg[2][4];
 
 	sprintf(resArg[0], "%lu", screenRes[0]);
 	sprintf(resArg[1], "%lu", screenRes[1]);
-	sprintf(rotateArg, "%d", rotateScreen);
-	sprintf(phoneArg, "%d", phoneType);
-	sprintf(fpsArg, "%d", gameFPS);
-	sprintf(soundArg, "%d", soundEnabled);
-	sprintf(midiArg, "%d", customMidi);
-	sprintf(dumpAudioArg, "%d", dumpAudioStreams);
-	sprintf(logLevelArg, "%d", loggingLevel);
-	sprintf(spdHackNoAlphaArg, "%d", spdHackNoAlpha);
-	sprintf(backlightArg, "%d", backlightColor);
-	sprintf(compatFantasyZoneFixArg, "%d", compatFantasyZoneFix);
-	sprintf(compatTransToOriginOnGFXResetArg, "%d", compatTransToOriginOnGFXReset);
-	sprintf(fontArg, "%d", customFont);
-	sprintf(offsetArg, "%d", fontOffset);
-	sprintf(dumpGFXArg, "%d", dumpGraphicsData);
-	sprintf(tempKJXArg, "%d", deleteTemporaryKJXFiles);
-	sprintf(m3gUntexArg, "%d", m3gUntextured);
-	sprintf(m3gWireArg, "%d", m3gWireframe);
-	sprintf(fpsunlockHack, "%d", spdFrameRateUnlock);
-	sprintf(compatImmediateRepaintArg, "%d", compatImmediateRepaintCalls);
-	sprintf(compatOverridePlatCheckArg, "%d", compatOverridePlatCheck);
-	sprintf(compatSiemensFriendlyDrawArg, "%d", compatSiemensFriendlyDraw);
-	sprintf(spdHackM3GHalfResArg, "%d", spdHackM3GHalfRes);
-	sprintf(dojaVersionArg, "%d", dojaVersion);
-	sprintf(compatIgnoreVolumeChangesArg, "%d", compatIgnoreVolumeChanges);
-	sprintf(spdHackMCV3HalfResArg, "%d", spdHackMCV3HalfRes);
-	sprintf(spdHackMCV3NoLightArg, "%d", spdHackMCV3NoLight);
-	sprintf(compatMCV3HorFovFixArg, "%d", compatMCV3HorFovFix);
-	sprintf(mcv3HeapArg, "%d", mcv3Heap);
-	sprintf(mcv3TimeStatsArg, "%d", mcv3TimeStats);
-	sprintf(M3GAntiAliasModeArg, "%d", M3GAntiAliasMode);
-	sprintf(M3GBilinearModeArg, "%d", M3GBilinearMode);
-	sprintf(M3GDitheringModeArg, "%d", M3GDitheringMode);
-	sprintf(M3GPerspCorrModeArg, "%d", M3GPerspCorrMode);
-	sprintf(M3GPerspCorFactArg, "%d", M3GPerspCorrFact);
-	sprintf(M3GMipmapModeArg, "%d", M3GMipmapMode);
-	sprintf(M3GDisableFogArg, "%d", M3GDisableFog);
-	sprintf(compatRepaintOnSetCurrentArg, "%d", compatRepaintOnSetCurrent);
 
 	/* We need to clean up any argument memory from the previous launch arguments in order to load up updated ones */
 	if (restarting) { log_fn(RETRO_LOG_INFO, "Restarting FreeJ2ME-Plus.\n"); }
@@ -904,44 +863,7 @@ void retro_init(void)
 	params[3] = strdup(freej2meapp);
 	params[4] = strdup(resArg[0]);
 	params[5] = strdup(resArg[1]);
-	params[6] = strdup(rotateArg);
-	params[7] = strdup(phoneArg);
-	params[8] = strdup(fpsArg);
-	params[9] = strdup(soundArg);
-	params[10] = strdup(midiArg);
-	params[11] = strdup(dumpAudioArg);
-	params[12] = strdup(logLevelArg);
-	params[13] = strdup(spdHackNoAlphaArg);
-	params[14] = strdup(backlightArg);
-	params[15] = strdup(compatFantasyZoneFixArg);
-	params[16] = strdup(compatTransToOriginOnGFXResetArg);
-	params[17] = strdup(fontArg);
-	params[18] = strdup(offsetArg);
-	params[19] = strdup(dumpGFXArg);
-	params[20] = strdup(tempKJXArg);
-	params[21] = strdup(m3gUntexArg);
-	params[22] = strdup(m3gWireArg);
-	params[23] = strdup(fpsunlockHack);
-	params[24] = strdup(compatImmediateRepaintArg);
-	params[25] = strdup(compatOverridePlatCheckArg);
-	params[26] = strdup(compatSiemensFriendlyDrawArg);
-	params[27] = strdup(spdHackM3GHalfResArg);
-	params[28] = strdup(dojaVersionArg);
-	params[29] = strdup(compatIgnoreVolumeChangesArg);
-	params[30] = strdup(spdHackMCV3HalfResArg);
-	params[31] = strdup(spdHackMCV3NoLightArg);
-	params[32] = strdup(compatMCV3HorFovFixArg);
-	params[33] = strdup(mcv3HeapArg);
-	params[34] = strdup(mcv3TimeStatsArg);
-	params[35] = strdup(M3GAntiAliasModeArg);
-	params[36] = strdup(M3GBilinearModeArg);
-	params[37] = strdup(M3GDitheringModeArg);
-	params[38] = strdup(M3GPerspCorrModeArg);
-	params[39] = strdup(M3GPerspCorFactArg);
-	params[40] = strdup(M3GMipmapModeArg);
-	params[41] = strdup(M3GDisableFogArg);
-	params[42] = strdup(compatRepaintOnSetCurrentArg);
-	params[43] = NULL; // Null-terminate the array
+	params[6] = NULL; // Null-terminate the array
 
 	log_fn(RETRO_LOG_INFO, "Preparing to open FreeJ2ME-Plus' Java app.\n");
 
@@ -1014,6 +936,14 @@ bool retro_load_game(const struct retro_game_info *info)
 
 	log_fn(RETRO_LOG_INFO, "Sent app file and save paths to Java app.\n");
 
+	// Now we actually pass the core configs into the jar
+	check_variables();
+
+	// 0xD = 13, command to start running the jar file.
+	unsigned char startupevent[5] = { 0xD, 0, 0, 0, 0 };
+	write_to_pipe(pWrite[1], startupevent, 5);
+
+	log_fn(RETRO_LOG_INFO, "Booting up...\n");
 	return true;
 }
 
@@ -1035,7 +965,7 @@ void retro_run(void)
 	// These are only used if useAnalogAsEntireKeypad is enabled.
 	bool num1pressed = false, num3pressed = false, num7pressed = false, num9pressed = false;
 
-	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars) { check_variables(false); }
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated_vars) && updated_vars) { check_variables(); }
 
 	if(isRunning())
 	{

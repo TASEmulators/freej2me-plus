@@ -27,11 +27,9 @@ import java.net.URLDecoder;
 
 public class Libretro
 {
-	private int lcdWidth;
-	private int lcdHeight;
+	private int lcdWidth, lcdHeight;
 	int[] lcdData;
 
-	private boolean soundEnabled = true;
 	private static volatile boolean canPause = false;
 
 	private static final long PAUSE_DELAY_MS = 250;
@@ -44,9 +42,6 @@ public class Libretro
 		0, 0, 0, 0, // Vibration duration
 		0, 0, 0, 0, // Vibration Strength
 		0, 0};      // Restart requested, and encoding requested
-
-	private int mousex;
-	private int mousey;
 
 	/*
 	 * StringBuilder used to get the updated configs from the libretro core
@@ -64,151 +59,24 @@ public class Libretro
 
 	public Libretro(String args[])
 	{
-		lcdWidth  = Mobile.lcdWidth;
-		lcdHeight = Mobile.lcdHeight;
-
 		/*
 		 * Notify the MIDlet class that this version of FreeJ2ME is for Libretro, which disables
 		 * the ability to close the jar when a J2ME app requests an exit as this can cause segmentation
-		 * faults on libretro frontends and also close the unexpectedly.
+		 * faults on libretro frontends and also close them unexpectedly.
 		*/
 		Mobile.getPlatform().isLibretro = true;
 
 		/*
-		 * Checks if the arguments were received from the commandline -> width, height, rotate, phonetype, fps, sound, ...
+		 * Checks if the boot-time arguments were received -> width, height
 		 *
 		 * NOTE:
-		 * Due to differences in how linux and win32 pass their cmd arguments, we can't explictly check for a given size
-		 * on the argv array. Linux includes the "java", "-jar" and "path/to/freej2me" into the array while WIN32 doesn't.
+		 * Due to differences in how linux and win32 pass their cmd arguments,
+		 * we can't explicitly check for a given size
+		 * on the argv array. Linux includes the "java", "-jar" and
+		 * "path/to/freej2me" into the array while WIN32 doesn't.
 		 */
 		lcdWidth =  Integer.parseInt(args[0]);
 		lcdHeight = Integer.parseInt(args[1]);
-
-		Mobile.rotateDisplay = Integer.parseInt(args[2]) * 90;
-
-		Mobile.kddi = false;
-		Mobile.lg = false;
-		Mobile.motorola = false;
-		Mobile.motoTriplets = false;
-		Mobile.motoV8 = false;
-		Mobile.motoA1000 = false;
-		Mobile.nokiaKeyboard = false;
-		Mobile.sagem = false;
-		Mobile.siemens = false;
-		Mobile.skt = false;
-
-		if(Integer.parseInt(args[3]) == 1)       { Mobile.lg = true;    }
-		else if(Integer.parseInt(args[3]) == 2)  { Mobile.motorola = true;  }
-		else if(Integer.parseInt(args[3]) == 3)  { Mobile.motoTriplets = true; }
-		else if(Integer.parseInt(args[3]) == 4)  { Mobile.motoV8 = true; }
-		else if(Integer.parseInt(args[3]) == 5)  { Mobile.motoA1000 = true; }
-		else if(Integer.parseInt(args[3]) == 6)  { Mobile.nokiaKeyboard = true; }
-		else if(Integer.parseInt(args[3]) == 7)  { Mobile.sagem = true; }
-		else if(Integer.parseInt(args[3]) == 8)  { Mobile.siemens = true; }
-		else if(Integer.parseInt(args[3]) == 9)  { Mobile.skt = true; }
-		else if(Integer.parseInt(args[3]) == 10) { Mobile.kddi = true; }
-
-		Mobile.limitFPS = Integer.parseInt(args[4]);
-
-		soundEnabled = Integer.parseInt(args[5]) != 0;
-
-		Mobile.useCustomMidi = Integer.parseInt(args[6]) != 0;
-
-		/* Dump Audio Streams will not be a per-game FreeJ2ME config, so it will have to be set every time for now */
-		Mobile.dumpAudioStreams = Integer.parseInt(args[7]) != 0;
-
-		/* Same for Logging Level */
-		Mobile.minLogLevel = (byte) (Integer.parseInt(args[8]));
-
-		/* No Alpha on Blank Images SpeedHack is a per-game config */
-		Mobile.noAlphaOnBlankImages = Integer.parseInt(args[9]) != 0;
-
-		/* LCD Backlight Mask color index. */
-		Mobile.maskIndex = Integer.parseInt(args[10]);
-
-		/* Compat setting to fix Fantasy Zone 176x208 weird mirroring */
-		Mobile.compatFantasyZoneFix = Integer.parseInt(args[11]) != 0;
-
-		/* Compat setting to translate back to the origin whenever graphics object is reset */
-		Mobile.compatTranslateToOriginOnReset = Integer.parseInt(args[12]) != 0;
-
-		// Custom font and size
-		Mobile.useCustomTextFont = Integer.parseInt(args[13]) != 0;
-
-		Mobile.fontSizeOffset = (byte) Integer.parseInt(args[14]);
-
-		// Unused for now
-		Mobile.dumpGraphicsObjects = Integer.parseInt(args[15]) != 0;
-
-		// Dump KJX extracted JAR and JAD
-		Mobile.deleteTemporaryKJXFiles = Integer.parseInt(args[16]) != 0;
-
-		// M3G Render only untextured polygons
-		Mobile.M3GRenderUntexturedPolygons = Integer.parseInt(args[17]) != 0;
-
-		// M3G Render Wireframe
-		Mobile.M3GRenderWireframe = Integer.parseInt(args[18]) != 0;
-
-		/* Framerate Unlock. */
-		Mobile.unlockFramerateHack = (byte) Integer.parseInt(args[19]);
-
-		/* Compat setting to process repaints immediately */
-		Mobile.compatImmediateRepaints = Integer.parseInt(args[20]) != 0;
-
-		/* Compat setting to override mobile platform checks */
-		Mobile.compatOverridePlatformChecks = Integer.parseInt(args[21]) != 0;
-
-		/* Compat setting to translate drawing methods in a siemens-friendly way */
-		Mobile.compatSiemensFriendlyDrawing = Integer.parseInt(args[22]) != 0;
-
-		/* Half-Res M3G Rendering SpeedHack is a per-game config */
-		Mobile.halfResM3GRaster = Integer.parseInt(args[23]) != 0;
-
-		/* DoJa API Version */
-		Mobile.DoJaVersion = Integer.parseInt(args[24]);
-
-		/* Compat setting to ignore volume changes */
-		Mobile.compatIgnoreVolumeChanges = Integer.parseInt(args[25]) != 0;
-
-		/* MascotCapsuleV3 Half Res rendering speedhack */
-		Mobile.halfResMCV3Raster = Integer.parseInt(args[26]) != 0;
-
-		/* MascotCapsuleV3 no Lighting speedhack */
-		Mobile.MCV3NoLighting = Integer.parseInt(args[27]) != 0;
-
-		/* Compat setting to fix Horizontal FOV for MascotCapsuleV3 */
-		Mobile.compatMCV3HorizontalFovFix = Integer.parseInt(args[28]) != 0;
-
-		/* MascotCapsuleV3 Show Heap debug setting */
-		Mobile.MCV3ShowHeapUsage = Integer.parseInt(args[29]) != 0;
-
-		/* MascotCapsuleV3 Show Heap debug setting */
-		Mobile.MCV3ShowTimeMetrics = Integer.parseInt(args[30]) != 0;
-
-		/* M3G Anti Aliasing Mode */
-		Mobile.m3gAntiAliasingMode = Integer.parseInt(args[31]);
-
-		/* M3G Bilinear Filter Mode */
-		Mobile.m3gBilinearFilterMode = Integer.parseInt(args[32]);
-
-		/* M3G Dithering Mode */
-		Mobile.m3gDitheringMode = Integer.parseInt(args[33]);
-
-		/* M3G Perspective Correction Mode */
-		Mobile.m3gPerspectiveCorrectionMode = Integer.parseInt(args[34]);
-
-		/* M3G Perspective Correction Subsample Factor */
-		Mobile.m3gPerspCorrSubFactor = Integer.parseInt(args[35]);
-
-		/* M3G Mipmapping Mode */
-		Mobile.m3gMipmapMode = Integer.parseInt(args[36]);
-
-		/* M3G Disable fog */
-		Mobile.m3gDisableFog = Integer.parseInt(args[37]) != 0;
-
-		/* Compat setting to force repaints on MIDP setCurrent() */
-		Mobile.compatRepaintOnSetCurrent = Integer.parseInt(args[38]) != 0;
-
 
 		/* Once it finishes parsing all arguments, it's time to set up freej2me-lr */
 
@@ -218,10 +86,7 @@ public class Libretro
 		// The painter here is only really used to check for frontend pauses
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
-			public void run()
-			{
-				updatePauseTimer();
-			}
+			public void run() { updatePauseTimer(); }
 		});
 
 		lio = new LibretroIO();
@@ -261,7 +126,6 @@ public class Libretro
 						bin = System.in.read(); // Blocks until there's data available
 						if(bin==-1) { return; }
 
-						//System.out.print(" "+bin);
 						din[count] = (int)(bin & 0xFF);
 						count++;
 
@@ -272,12 +136,6 @@ public class Libretro
 							code = (din[1]<<24) | (din[2]<<16) | (din[3]<<8) | din[4];
 							switch(din[0])
 							{
-								//case 0: // keyboard key up (unused)
-								//break;
-
-								//case 1:	// keyboard key down (unused)
-								//break;
-
 								case 2:	// joypad key up
 									MobilePlatform.pressedKeys[code] = false;
 									MobilePlatform.keyReleased(Mobile.getMobileKey(code));
@@ -292,71 +150,30 @@ public class Libretro
 									MobilePlatform.keyPressed(Mobile.getMobileKey(code));
 								break;
 
+								// Mouse events are all handled similarly
 								case 4: // mouse up
-									mousex = (din[1]<<8) | din[2];
-									mousey = (din[3]<<8) | din[4];
-
-									if(Mobile.rotateDisplay == 0)
-									{
-										MobilePlatform.pointerReleased(mousex, mousey);
-									}
-									if(Mobile.rotateDisplay == 90)
-									{
-										MobilePlatform.pointerReleased(mousey, lcdHeight - mousex);
-									}
-									if(Mobile.rotateDisplay == 180)
-									{
-										MobilePlatform.pointerReleased(lcdWidth - mousex, lcdHeight - mousey);
-									}
-									if(Mobile.rotateDisplay == 270)
-									{
-										MobilePlatform.pointerReleased(lcdWidth-mousey, mousex);
-									}
-								break;
-
 								case 5: // mouse down
-									mousex = (din[1]<<8) | din[2];
-									mousey = (din[3]<<8) | din[4];
-
-									if(Mobile.rotateDisplay == 0)
-									{
-										MobilePlatform.pointerPressed(mousex, mousey);
-									}
-									if(Mobile.rotateDisplay == 90)
-									{
-										MobilePlatform.pointerPressed(mousey, lcdHeight - mousex);
-									}
-									if(Mobile.rotateDisplay == 180)
-									{
-										MobilePlatform.pointerPressed(lcdWidth - mousex, lcdHeight - mousey);
-									}
-									if(Mobile.rotateDisplay == 270)
-									{
-										MobilePlatform.pointerPressed(lcdWidth-mousey, mousex);
-									}
-								break;
-
 								case 6: // mouse drag
-									mousex = (din[1]<<8) | din[2];
-									mousey = (din[3]<<8) | din[4];
+								{
+									int rawX = (din[1] << 8) | din[2];
+									int rawY = (din[3] << 8) | din[4];
 
-									if(Mobile.rotateDisplay == 0)
+									int x = rawX, y = rawY;
+									switch (Mobile.rotateDisplay)
 									{
-										MobilePlatform.pointerDragged(mousex, mousey);
+									    case 90:  x = rawY;            y = lcdHeight - rawX; break;
+									    case 180: x = lcdWidth - rawX; y = lcdHeight - rawY; break;
+									    case 270: x = lcdWidth - rawY; y = rawX;             break;
 									}
-									if(Mobile.rotateDisplay == 90)
+
+									switch (din[0])
 									{
-										MobilePlatform.pointerDragged(mousey, lcdHeight - mousex);
+									    case 4: MobilePlatform.pointerReleased(x, y); break;
+									    case 5: MobilePlatform.pointerPressed(x, y);  break;
+									    case 6: MobilePlatform.pointerDragged(x, y);  break;
 									}
-									if(Mobile.rotateDisplay == 180)
-									{
-										MobilePlatform.pointerDragged(lcdWidth - mousex, lcdHeight - mousey);
-									}
-									if(Mobile.rotateDisplay == 270)
-									{
-										MobilePlatform.pointerDragged(lcdWidth-mousey, mousex);
-									}
-								break;
+									break;
+								}
 
 								case 10: // load jar
 									buffer = new byte[code];
@@ -364,111 +181,8 @@ public class Libretro
 
 									path = new String(buffer, 0, bytesRead);
 
-									if(Mobile.getPlatform().load(getFormattedLocation(URLDecoder.decode(path.toString(), Mobile.textEncoding))))
+									if(Mobile.getPlatform().load(getFormattedLocation(URLDecoder.decode(path, Mobile.textEncoding))))
 									{
-										// Check config
-
-										/* Override configs with the ones passed through commandline */
-										Mobile.config.settings.put("scrwidth",  ""+lcdWidth);
-										Mobile.config.settings.put("scrheight", ""+lcdHeight);
-
-										Mobile.config.settings.put("rotate", "" + Mobile.rotateDisplay);
-
-										if(Mobile.kddi)               { Mobile.config.settings.put("phone", "KDDI");    }
-										else if(Mobile.lg)            { Mobile.config.settings.put("phone", "LG");    }
-										else if(Mobile.motorola)      { Mobile.config.settings.put("phone", "Motorola");  }
-										else if(Mobile.motoTriplets)  { Mobile.config.settings.put("phone", "MotoTriplets"); }
-										else if(Mobile.motoV8)        { Mobile.config.settings.put("phone", "MotoV8"); }
-										else if(Mobile.motoA1000)     { Mobile.config.settings.put("phone", "MotoA1000"); }
-										else if(Mobile.nokiaKeyboard) { Mobile.config.settings.put("phone", "NokiaKeyboard"); }
-										else if(Mobile.sagem)         { Mobile.config.settings.put("phone", "Sagem"); }
-										else if(Mobile.siemens)       { Mobile.config.settings.put("phone", "Siemens"); }
-										else if(Mobile.skt)           { Mobile.config.settings.put("phone", "SKT"); }
-										else                          { Mobile.config.settings.put("phone", "Standard"); }
-
-										Mobile.config.settings.put("sound", soundEnabled ? "on" : "off");
-
-										Mobile.config.settings.put("fps", "" + Mobile.limitFPS);
-
-										Mobile.config.settings.put("soundfont", Mobile.useCustomMidi ? "Custom" : "Default");
-
-										Mobile.config.settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off");
-										Mobile.config.settings.put("spdhackmcv3halfres", Mobile.halfResMCV3Raster ? "on" : "off");
-										Mobile.config.settings.put("spdhackmcv3nolighting", Mobile.MCV3NoLighting ? "on" : "off");
-
-										if(Mobile.maskIndex == 0)      { Mobile.config.settings.put("backlightcolor", "Disabled"); }
-										else if(Mobile.maskIndex == 1) { Mobile.config.settings.put("backlightcolor", "Green"); }
-										else if(Mobile.maskIndex == 2) { Mobile.config.settings.put("backlightcolor", "Cyan"); }
-										else if(Mobile.maskIndex == 3) { Mobile.config.settings.put("backlightcolor", "Orange"); }
-										else if(Mobile.maskIndex == 4) { Mobile.config.settings.put("backlightcolor", "Violet"); }
-										else if(Mobile.maskIndex == 5) { Mobile.config.settings.put("backlightcolor", "Red"); }
-
-										Mobile.config.settings.put("compatfantasyzonefix", Mobile.compatFantasyZoneFix ? "on" : "off");
-										Mobile.config.settings.put("compattranstooriginonreset", Mobile.compatTranslateToOriginOnReset ? "on" : "off");
-										Mobile.config.settings.put("compatimmediaterepaints", Mobile.compatImmediateRepaints ? "on" : "off");
-										Mobile.config.settings.put("compatrepaintonsetcurrent", Mobile.compatRepaintOnSetCurrent ? "on" : "off");
-										Mobile.config.settings.put("compatoverrideplatchecks", Mobile.compatOverridePlatformChecks ? "on" : "off");
-										Mobile.config.settings.put("compatsiemensfriendlydrawing", Mobile.compatSiemensFriendlyDrawing ? "on" : "off");
-										Mobile.config.settings.put("compatignorevolumechanges", Mobile.compatIgnoreVolumeChanges ? "on" : "off");
-										Mobile.config.settings.put("compatmcv3horizfovfix", Mobile.compatMCV3HorizontalFovFix ? "on" : "off");
-
-										Mobile.config.settings.put("textfont", Mobile.useCustomTextFont ? "Custom" : "Default");
-										Mobile.config.settings.put("fontoffset", "" + Mobile.fontSizeOffset);
-
-										if(Mobile.unlockFramerateHack == 0)      { Mobile.config.settings.put("fpshack", "Default");  }
-										else if(Mobile.unlockFramerateHack == 1) { Mobile.config.settings.put("fpshack", "Safe");  }
-										else if(Mobile.unlockFramerateHack == 2) { Mobile.config.settings.put("fpshack", "Extended");  }
-										else if(Mobile.unlockFramerateHack == 3) { Mobile.config.settings.put("fpshack", "Aggressive");  }
-
-										Mobile.config.settings.put("dojaversion", "" + Mobile.DoJaVersion);
-
-										Mobile.config.settings.put("spdhackm3ghalfres", Mobile.halfResM3GRaster ? "on" : "off");
-										Mobile.config.settings.put("m3gdisablefog", Mobile.m3gDisableFog ? "on" : "off");
-
-										if(Mobile.m3gAntiAliasingMode == 0) { Mobile.config.settings.put("m3gantialiasmode", "off");  }
-										else if(Mobile.m3gAntiAliasingMode == 1) { Mobile.config.settings.put("m3gantialiasmode", "app");  }
-										else if(Mobile.m3gAntiAliasingMode == 2) { Mobile.config.settings.put("m3gantialiasmode", "on");  }
-
-										if(Mobile.m3gBilinearFilterMode == 0) { Mobile.config.settings.put("m3gbilinearmode", "off");  }
-										else if(Mobile.m3gBilinearFilterMode == 1) { Mobile.config.settings.put("m3gbilinearmode", "app");  }
-										else if(Mobile.m3gBilinearFilterMode == 2) { Mobile.config.settings.put("m3gbilinearmode", "on");  }
-
-										if(Mobile.m3gDitheringMode == 0) { Mobile.config.settings.put("m3gditheringmode", "off");  }
-										else if(Mobile.m3gDitheringMode == 1) { Mobile.config.settings.put("m3gditheringmode", "app");  }
-										else if(Mobile.m3gDitheringMode == 2) { Mobile.config.settings.put("m3gditheringmode", "on");  }
-
-										if(Mobile.m3gPerspectiveCorrectionMode == 0) { Mobile.config.settings.put("m3gperspcorrmode", "off");  }
-										else if(Mobile.m3gPerspectiveCorrectionMode == 1) { Mobile.config.settings.put("m3gperspcorrmode", "app");  }
-										else if(Mobile.m3gPerspectiveCorrectionMode == 2) { Mobile.config.settings.put("m3gperspcorrmode", "on");  }
-
-										if(Mobile.m3gPerspCorrSubFactor == 3) { Mobile.config.settings.put("m3gperspcorrsubfactor", "extra");  }
-										else if(Mobile.m3gPerspCorrSubFactor == 7) { Mobile.config.settings.put("m3gperspcorrsubfactor", "high");  }
-										else if(Mobile.m3gPerspCorrSubFactor == 15) { Mobile.config.settings.put("m3gperspcorrsubfactor", "medium");  }
-										else if(Mobile.m3gPerspCorrSubFactor == 31) { Mobile.config.settings.put("m3gperspcorrsubfactor", "low");  }
-
-										if(Mobile.m3gMipmapMode == 3) { Mobile.config.settings.put("m3gmipmapmode", "linear");  }
-										else if(Mobile.m3gMipmapMode == 2) { Mobile.config.settings.put("m3gmipmapmode", "nearest");  }
-										else if(Mobile.m3gMipmapMode == 1) { Mobile.config.settings.put("m3gmipmapmode", "app");  }
-										else if(Mobile.m3gMipmapMode == 0) { Mobile.config.settings.put("m3gmipmapmode", "off");  }
-
-										// Update system settings
-
-										Mobile.config.sysSettings.put("fpsCounterPosition", "Off"); // Libretro has its own frame counter
-
-										Mobile.config.sysSettings.put("logLevel", "" + Mobile.minLogLevel);
-
-										Mobile.config.sysSettings.put("M3GUntextured", Mobile.M3GRenderUntexturedPolygons ? "on" : "off");
-										Mobile.config.sysSettings.put("M3GWireframe", Mobile.M3GRenderWireframe ? "on" : "off");
-
-										Mobile.config.sysSettings.put("MCV3ShowHeapUsage", Mobile.MCV3ShowHeapUsage ? "on" : "off");
-										Mobile.config.sysSettings.put("MCV3ShowTimeMetrics", Mobile.MCV3ShowTimeMetrics ? "on" : "off");
-
-										Mobile.config.sysSettings.put("deleteTempKJXFiles", Mobile.deleteTemporaryKJXFiles ? "on" : "off");
-
-										Mobile.config.sysSettings.put("dumpAudioStreams", Mobile.dumpAudioStreams ? "on" : "off");
-										Mobile.config.sysSettings.put("dumpGraphicsObjects", Mobile.dumpGraphicsObjects ? "on" : "off");
-
-
 										if(Mobile.libretroRestartRequested == 1)
 										{
 											frameHeader[14] = Mobile.libretroRestartRequested;
@@ -480,12 +194,6 @@ public class Libretro
 											System.out.flush();
 											Thread.sleep(Integer.MAX_VALUE); // Wait for as long as possible until the libretro core kills this
 										}
-
-										Mobile.config.saveConfig();
-										settingsChanged();
-
-										// Run jar
-										Mobile.getPlatform().runJar();
 									}
 									else
 									{
@@ -494,15 +202,15 @@ public class Libretro
 									}
 								break;
 
-								case 11: // set save path //
+								case 11: // set save path
 									buffer = new byte[code];
 									bytesRead = System.in.read(buffer);
 
 									Mobile.getPlatform().dataPath = new String(buffer, 0, bytesRead);
 								break;
 
-								case 13:
-									/* Received updated settings from libretro core */
+
+								case 12: // Received settings from libretro core
 									buffer = new byte[code];
 									bytesRead = System.in.read(buffer);
 
@@ -533,9 +241,9 @@ public class Libretro
 
 									Mobile.config.settings.put("fps", ""+ Integer.parseInt(cfgtokens[5]));
 
-									Mobile.config.settings.put("sound", Integer.parseInt(cfgtokens[6]) == 1 ? "on" : "off");
+									Mobile.config.sysSettings.put("sound", Integer.parseInt(cfgtokens[6]) == 1 ? "on" : "off");
 
-									Mobile.config.settings.put("soundfont", Integer.parseInt(cfgtokens[7]) == 1 ? "Custom" : "Default");
+									Mobile.config.sysSettings.put("soundfont", Integer.parseInt(cfgtokens[7]) == 1 ? "Custom" : "Default");
 
 									Mobile.config.sysSettings.put("dumpAudioStreams", Integer.parseInt(cfgtokens[8]) == 1 ? "on" : "off");
 
@@ -554,7 +262,7 @@ public class Libretro
 
 									Mobile.config.settings.put("compattranstooriginonreset", Integer.parseInt(cfgtokens[13]) == 1 ? "on" : "off");
 
-									Mobile.config.settings.put("textfont", Integer.parseInt(cfgtokens[14]) == 1 ? "Custom" : "Default");
+									Mobile.config.sysSettings.put("textfont", Integer.parseInt(cfgtokens[14]) == 1 ? "Custom" : "Default");
 
 									Mobile.config.settings.put("fontoffset", "" + Integer.parseInt(cfgtokens[15]));
 
@@ -627,7 +335,13 @@ public class Libretro
 									settingsChanged();
 								break;
 
-								case 15:
+								case 13: // Run jar
+									buffer = new byte[code];
+									bytesRead = System.in.read(buffer);
+									Mobile.getPlatform().runJar();
+								break;
+
+								case 15: // Libretro core requested a new frame.
 									lastCoreUpdateTime = System.currentTimeMillis();
 
 									int multiplierScaled = (din[1] << 8) | din[2];
@@ -707,7 +421,6 @@ public class Libretro
 									// We are now ready to start monitoring for pauses, the first frame was requested and sent
 								break;
 							}
-							//System.out.flush();
 						}
 					}
 				}
