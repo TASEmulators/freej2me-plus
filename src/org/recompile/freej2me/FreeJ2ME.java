@@ -17,7 +17,7 @@
 package org.recompile.freej2me;
 
 /*
-	FreeJ2ME - AWT
+	FreeJ2ME - Standalone
 */
 
 import org.recompile.mobile.Mobile;
@@ -29,12 +29,18 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Frame;
+import javax.swing.JFrame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
-import java.awt.datatransfer.*;
-import java.awt.dnd.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
@@ -57,7 +63,7 @@ public class FreeJ2ME
 {
 
 	public static FreeJ2ME app;
-	protected Frame main;
+	protected JFrame main;
 	private int lcdWidth;
 	private int lcdHeight;
 	private int scaleFactor = 1;
@@ -96,7 +102,7 @@ public class FreeJ2ME
 	}
 
 	public static final Color freeJ2MEBGColor = new Color(0,0,64, 255);
-	public static final Color freeJ2MEDragColor = new Color(55, 55, 125, 255);
+	public static final Color freeJ2MEDragColor = new Color(238, 238, 238, 224);
 
 	public static boolean isFullscreen = false;
 
@@ -105,8 +111,8 @@ public class FreeJ2ME
 	private int xborder;
 	private int yborder;
 
-	// AWT GUI
-	private AWTGUI awtGUI;
+	// FreeJ2ME GUI
+	private FJGUI fjGUI;
 
 	public static void main(String args[])
 	{
@@ -367,14 +373,14 @@ public class FreeJ2ME
 		lcd = new LCD();
 		lcd.setFocusable(true);
 
-		awtGUI = new AWTGUI(Mobile.config);
+		fjGUI = new FJGUI(Mobile.config);
 
 		constructFreeJ2MEGUI();
 
 		// Only now we can load the jar passed as argument
-		if(MobilePlatform.fileName != null) { awtGUI.loadJarFile(MobilePlatform.fileName); }
+		if(MobilePlatform.fileName != null) { fjGUI.loadJarFile(MobilePlatform.fileName); }
 
-		/* Inputs should only be registered if a jar has been loaded, otherwise AWT will throw NullPointerException */
+		/* Inputs should only register if a jar has been loaded, otherwise the GUI will throw NullPointerException */
 		lcd.addKeyListener(new KeyListener()
 		{
 			public void keyPressed(KeyEvent e) { pressKey(e, false); }
@@ -390,7 +396,7 @@ public class FreeJ2ME
 
 			public void mousePressed(MouseEvent e)
 			{
-				if(awtGUI.hasLoadedFile())
+				if(fjGUI.hasLoadedFile())
 				{
 					int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
 					int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
@@ -418,7 +424,7 @@ public class FreeJ2ME
 
 			public void mouseReleased(MouseEvent e)
 			{
-				if(awtGUI.hasLoadedFile())
+				if(fjGUI.hasLoadedFile())
 				{
 					int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
 					int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
@@ -453,7 +459,7 @@ public class FreeJ2ME
 		{
 			public void mouseDragged(MouseEvent e)
 			{
-				if(awtGUI.hasLoadedFile())
+				if(fjGUI.hasLoadedFile())
 				{
 					int x = (int)((e.getX()-lcd.cx) * lcd.scalex);
 					int y = (int)((e.getY()-lcd.cy) * lcd.scaley);
@@ -487,10 +493,10 @@ public class FreeJ2ME
 			public void run()
 			{
 				/* Set menuBar option states based on loaded config */
-				if(awtGUI.hasJustLoaded()) { awtGUI.updateOptions(); }
+				if(fjGUI.hasJustLoaded()) { fjGUI.updateOptions(); fjGUI.clearChanged(); }
 
-				/* Whenever AWT GUI notifies that its menu options were changed, update settings */
-				if(awtGUI.hasChanged()) { settingsChanged(); awtGUI.clearChanged(); }
+				/* Whenever the GUI notifies that its menu options were changed, update settings */
+				if(fjGUI.hasChanged()) { settingsChanged(); fjGUI.clearChanged(); }
 
 				lcd.repaint();
 			}
@@ -498,13 +504,13 @@ public class FreeJ2ME
 
 		if(args.length == 0)
 		{
-			while(!awtGUI.hasLoadedFile())
+			while(!fjGUI.hasLoadedFile())
 			{
 				try{ Thread.sleep(1000); }
 				catch (InterruptedException e) { }
 			}
 		}
-		if(Mobile.getPlatform().load(awtGUI.getJarPath()))
+		if(Mobile.getPlatform().load(fjGUI.getJarPath()))
 		{
 			/* Allows FreeJ2ME to set the width and height passed as cmd arguments. */
 			int argLen = spOnCmd ? 5 : 4;
@@ -559,7 +565,7 @@ public class FreeJ2ME
 
 	protected void pressKey(KeyEvent e, boolean ignoreModifiers)
 	{
-		if(awtGUI.hasLoadedFile())
+		if(fjGUI.hasLoadedFile())
 		{
 			int keycode = e.getKeyCode();
 			int mobikey = getMobileKey(keycode);
@@ -571,7 +577,8 @@ public class FreeJ2ME
 					if(!isFullscreen)
 					{
 						scaleFactor++;
-						main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
+						lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
+						main.pack();
 					}
 				break;
 				case KeyEvent.VK_MINUS:
@@ -579,7 +586,8 @@ public class FreeJ2ME
 					if(scaleFactor > 1 && !isFullscreen)
 					{
 						scaleFactor--;
-						main.setSize(lcdWidth * scaleFactor + xborder, lcdHeight * scaleFactor + yborder);
+						lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
+						main.pack();
 					}
 				break;
 				case KeyEvent.VK_F:
@@ -599,7 +607,7 @@ public class FreeJ2ME
 				break;
 			}
 
-			if (mobikey == Integer.MIN_VALUE) // Ignore events from keys not mapped to a phone keypad key (AWTGUI does use 0, so this can't mirror libretro)
+			if (mobikey == Integer.MIN_VALUE) // Ignore events from keys not mapped to a phone keypad key (FJGUI does use 0, so this can't mirror libretro)
 			{
 				return;
 			}
@@ -628,11 +636,11 @@ public class FreeJ2ME
 
 	protected void releaseKey(KeyEvent e)
 	{
-		if(awtGUI.hasLoadedFile())
+		if(fjGUI.hasLoadedFile())
 		{
 			int mobikey = getMobileKey(e.getKeyCode());
 
-			if (mobikey == Integer.MIN_VALUE) // Ignore events from keys not mapped to a phone keypad key (AWTGUI does use 0, so this can't mirror libretro)
+			if (mobikey == Integer.MIN_VALUE) // Ignore events from keys not mapped to a phone keypad key (FJGUI does use 0, so this can't mirror libretro)
 			{
 				return;
 			}
@@ -693,25 +701,22 @@ public class FreeJ2ME
 			lcd.clearScreen();
 		}
 
-		awtGUI.updateOptions();
+		fjGUI.updateOptions();
 	}
 
 	private int getMobileKey(int keycode)
 	{
-		for(int i = 0; i < awtGUI.inputKeycodes.length; i++)
+		for(int i = 0; i < fjGUI.inputKeycodes.length; i++)
 		{
-			if(keycode == awtGUI.inputKeycodes[i]) { return Mobile.convertAWTKeycode(i);}
+			if(keycode == fjGUI.inputKeycodes[i]) { return Mobile.convertAWTKeycode(i);}
 		}
 		return Integer.MIN_VALUE;
 	}
 
 	private void resize()
 	{
-		xborder = main.getInsets().left+main.getInsets().right;
-		yborder = main.getInsets().top+main.getInsets().bottom;
-
-		double vw = (main.getWidth()-xborder)*1;
-		double vh = (main.getHeight()-yborder)*1;
+		double vw = lcd.getWidth();
+		double vh = lcd.getHeight();
 
 		double nw = lcdWidth;
 		double nh = lcdHeight;
@@ -738,7 +743,7 @@ public class FreeJ2ME
 
 	private void constructFreeJ2MEGUI()
 	{
-		main = new Frame("FreeJ2ME-Plus");
+		main = new JFrame("FreeJ2ME-Plus");
 
 		if (isFullscreen)
 		{
@@ -768,12 +773,10 @@ public class FreeJ2ME
 			}
 		});
 
-		/* Add LCD screen to FreeJ2ME's AWT frame */
+		/* Add LCD screen to FreeJ2ME's GUI frame */
 		main.add(lcd);
 
-		awtGUI.setMainFrame(main);
-		/* Append the awt menu bar into FreeJ2ME's frame */
-		if(!isFullscreen) { main.setMenuBar(awtGUI.getMenuBar()); }
+		fjGUI.setMainFrame(main);
 	}
 
 	private void displayGUI()
@@ -783,12 +786,22 @@ public class FreeJ2ME
 			public void componentResized(ComponentEvent e) { resize(); }
 		});
 
-		main.setVisible(true);
-		main.pack();
-		resize();
-		if(!isFullscreen) { main.setSize(lcdWidth*scaleFactor+xborder, lcdHeight*scaleFactor+yborder); }
+		if (!isFullscreen)
+	    {
+	        lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
+	        main.setJMenuBar(fjGUI.getJMenuBar());
+	        main.pack();
+	        main.setLocationRelativeTo(null);
+	    }
+	    else
+	    {
+	        main.setUndecorated(true);
+	        main.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+	    }
 
-		awtGUI.updateDialogs();
+		main.setVisible(true);
+		resize();
+		fjGUI.updateDialogs();
 	}
 
 	private class LCD extends Canvas
@@ -830,14 +843,14 @@ public class FreeJ2ME
 		public void paint(Graphics g)
 		{
 			/* Only update mem dialog's stats and console window if they are visible */
-			if(awtGUI.awtDialogs[2].isVisible()) { awtGUI.updateDialogs(); }
+			if(fjGUI.swingDialogs[2].isVisible()) { fjGUI.updateDialogs(); }
 
 			if(!showDragMessage)
 			{
-				if(!awtGUI.hasLoadedFile())
+				if(!fjGUI.hasLoadedFile())
 				{
 					// Draw FreeJ2ME-Plus' intro screen
-					g.setColor(Color.BLACK);
+					g.setColor(new Color(208, 208, 208));
 					g.fillRect(0, 0, getWidth(), getHeight());
 
 					g.drawImage(main.getIconImage(),
@@ -847,10 +860,10 @@ public class FreeJ2ME
 						Math.min(getHeight(), main.getIconImage().getHeight(null)),
 						null);
 
-					g.setColor(new Color(55, 55, 125, 238));
+					g.setColor(new Color(238, 238, 238, 176));
 					g.fillRect(0, 0, getWidth(), getHeight());
 
-					g.setColor(Color.ORANGE);
+					g.setColor(Color.BLACK);
 					g.setFont(new Font("Dialog", Font.BOLD | Font.ITALIC, 24));
 					String text = "FreeJ2ME-Plus V1.53";
 					FontMetrics metrics = g.getFontMetrics();
@@ -910,7 +923,7 @@ public class FreeJ2ME
 				g.setColor(freeJ2MEDragColor);
 				g.fillRect(cx, cy, cw, ch);
 				g.setFont(new Font("Dialog", Font.BOLD, 20));
-				g.setColor(fileSupported ? Color.ORANGE : Color.RED);
+				g.setColor(fileSupported ? Color.BLACK : Color.RED);
 				String message = fileSupported ? ">> DROP HERE <<" : "INVALID FILE TYPE!!!";
 				FontMetrics metrics = g.getFontMetrics();
 				int x = (getWidth() - metrics.stringWidth(message)) / 2;
@@ -985,11 +998,11 @@ public class FreeJ2ME
 							if (!files.isEmpty() && fileSupported)
 							{
 								// Load the dropped file
-								if(!awtGUI.hasLoadedFile()) { awtGUI.loadJarFile(files.get(0).toURI().toString()); }
+								if(!fjGUI.hasLoadedFile()) { fjGUI.loadJarFile(files.get(0).toURI().toString()); }
 								else // Ask for a restart if a jar is already running
 								{
 									MobilePlatform.fileName = files.get(0).toURI().toString();
-									awtGUI.showRestartDialog();
+									fjGUI.showRestartDialog();
 								}
 							}
 						}

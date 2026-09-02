@@ -3247,12 +3247,12 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		else if(MobilePlatform.showFPS.equals("BottomRight")) { setOrigin(MobilePlatform.lcdWidth-scaledWidth-2, MobilePlatform.lcdHeight-scaledHeight-2 - (MobilePlatform.focusCommandBar ? font.getHeight() : 0)); }
 
 		// Set the overlay background and draw
-		setARGBColor(0xAA000069); // BG is a semi-transparent dark blue
-		fillRoundRect(0, 2, scaledWidth, scaledHeight, 3, 3);
+		setARGBColor(0xCCFFFFFF); // BG is a semi-transparent white
+		fillRect(0, 0, scaledWidth, scaledHeight);
 		// Set the font color and draw it
-		setAlphaRGB(0xFFFFAF00); // Text color is orange
-		drawRoundRect(0, 2, scaledWidth, scaledHeight, 3, 3);
-		drawString(fpsText, 0, 0, TOP | LEFT);
+		setAlphaRGB(0xFF000000); // Text color is blue
+		drawRect(0, 0, scaledWidth, scaledHeight);
+		drawString(fpsText, 0, -1, TOP | LEFT);
 		setOrigin(0, 0);
 		setColor(0, 0, 0);
 	}

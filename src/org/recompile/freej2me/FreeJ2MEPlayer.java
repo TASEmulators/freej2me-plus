@@ -16,455 +16,371 @@
 */
 package org.recompile.freej2me;
 
-import java.awt.*;
-import java.awt.datatransfer.*;
-import java.awt.dnd.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.FileDialog;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Insets;
+
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+
 import javax.microedition.media.Manager;
 import javax.microedition.media.Player;
 import javax.microedition.media.decoders.NokiaOTTDecoder;
 
+
 import org.recompile.mobile.PlatformPlayer;
 
-public final class FreeJ2MEPlayer extends Dialog 
+public final class FreeJ2MEPlayer extends JDialog
 {
-    private Label dropMessageLabel = new Label(">> DROP HERE <<", Label.CENTER);
-    private Timer playbackTimer;
-    private Label descLabel1 = new Label("Click the button below, or drag a file", Label.CENTER);
-    private Label descLabel2 = new Label("onto this window to load J2ME media.", Label.CENTER);
-    private Label fileNameLabel = new Label("Loaded Media File:");
-    private Label fileTypeLabel = new Label("File Type: None");
-    private Label playbackTicker = new Label("00:00 / 00:00", Label.CENTER);
-    private ProgressBar progressBar;
-    private Button[] UIButtons = new Button[6];
-    private TextField fileNameField;
-    private Player mediaPlayer;
-    private boolean isPlaying = false;
+	private JLabel dropMessageLabel = new JLabel(">> DROP HERE <<", SwingConstants.CENTER);
+	private Timer playbackTimer;
+	private JLabel descLabel = new JLabel("<html><center>Click below, or drag a file onto this window to load J2ME media.</center></html>", SwingConstants.CENTER);
+	private JLabel fileNameLabel = new JLabel("Loaded Media File:");
+	private JLabel fileTypeLabel = new JLabel("File Type: None");
+	private JLabel playbackTicker = new JLabel("00:00 / 00:00", SwingConstants.CENTER);
 
-    public FreeJ2MEPlayer(Frame parent) 
-    {
-        super(parent, "FreeJ2ME Media Player", true);
-        if(Manager.toneSynth == null) { Manager.prepareMediaEngine(); }
-        setupPlayerDialog();
-    }
+	private JProgressBar progressBar = new JProgressBar(0, 100);
+	private JButton[] UIButtons = new JButton[6];
+	private JTextField fileNameField = new JTextField();
 
-    private void setupPlayerDialog() 
-    {
-        dropMessageLabel.setFont(new Font("Dialog", Font.BOLD, 20));
-        dropMessageLabel.setForeground(Color.WHITE);
-        dropMessageLabel.setVisible(false);
+	private Player mediaPlayer;
+	private boolean isPlaying = false;
 
-        setBackground(FreeJ2ME.freeJ2MEBGColor);
-        setForeground(Color.ORANGE);
-        setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        setSize(280, 280);
-        setResizable(false);
-        
-        fileNameField = new TextField();
-        fileNameField.setEditable(false);
-        fileNameField.setEnabled(false);
-        fileNameField.setFocusable(false);
-        fileNameField.setBackground(FreeJ2ME.freeJ2MEBGColor);
-        fileNameField.setForeground(Color.WHITE);
-        progressBar = new ProgressBar();
+	public FreeJ2MEPlayer(JFrame parent)
+	{
+		super(parent, "FreeJ2ME Media Player", true);
+		if(Manager.toneSynth == null) { Manager.prepareMediaEngine(); }
+		setupPlayerDialog();
+	}
 
-        UIButtons[0] = new Button("Play");
-        UIButtons[1] = new Button("Pause");
-        UIButtons[2] = new Button("Stop");
-        UIButtons[3] = new Button("- 5s");
-        UIButtons[4] = new Button("+ 5s");
-        UIButtons[5] = new Button("Load File...");
+	private void setupPlayerDialog()
+	{
+		Dimension fillSize = new Dimension(240, 250);
+		dropMessageLabel.setPreferredSize(fillSize);
+		dropMessageLabel.setMaximumSize(fillSize);
+		dropMessageLabel.setFont(new Font("Dialog", Font.BOLD, 24));
+		dropMessageLabel.setForeground(Color.BLACK);
+		dropMessageLabel.setVisible(false);
 
-        for(int i = 0; i < UIButtons.length; i++) { UIButtons[i].setBackground(FreeJ2ME.freeJ2MEDragColor); }
+		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+		setSize(240, 250);
+		setResizable(false);
+		setLocationRelativeTo(getOwner());
 
-        UIButtons[0].setPreferredSize(new Dimension(100, 30));
+		// Configure text field
+		fileNameField.setEditable(false);
+		fileNameField.setFocusable(false);
+		fileNameField.setForeground(Color.BLACK);
+		fileNameField.setMaximumSize(new Dimension(280, 24));
 
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 5; // Span across multiple columns
-        add(dropMessageLabel, gbc); // Add the drop message label first
-    
-        add(descLabel1, gbc);
-        gbc.gridy++;
-        add(descLabel2, gbc);
-        gbc.gridy++;
-        add(UIButtons[5], gbc);
-        gbc.gridy++;
-        add(fileNameLabel, gbc);
-        gbc.gridy++;
-        add(fileNameField, gbc);
-        gbc.gridy++;
-        add(fileTypeLabel, gbc);
+		// Configure buttons
+		UIButtons[0] = new JButton("Play");
+		UIButtons[1] = new JButton("Pause");
+		UIButtons[2] = new JButton("Stop");
+		UIButtons[3] = new JButton("-5s");
+		UIButtons[4] = new JButton("+5s");
+		UIButtons[5] = new JButton("Load File...");
 
-        gbc.gridy++;
-        add(progressBar, gbc);
-        gbc.gridy++;
-        add(playbackTicker, gbc);
-        gbc.gridy++;
+		UIButtons[0].setForeground(Color.BLUE);
+		UIButtons[1].setForeground(Color.MAGENTA);
+		UIButtons[2].setForeground(Color.RED);
 
-        gbc.gridwidth = 1;
-        add(UIButtons[3], gbc);
-        gbc.gridx++;
-        add(UIButtons[1], gbc);
-        gbc.gridx++;
-        add(UIButtons[0], gbc);
-        gbc.gridx++;
-        add(UIButtons[2], gbc);
-        gbc.gridx++;
-        add(UIButtons[4], gbc);
+		for(int i = 0; i < UIButtons.length; i++) { FJGUI.flattenButton(UIButtons[i]);}
 
-        gbc.gridx = 0;
+		Insets buttonMargin = new Insets(2, 4, 2, 4);
+		for (int i = 0; i < UIButtons.length; i++)
+		{
+			UIButtons[i].setMargin(buttonMargin);
+			UIButtons[i].setFocusPainted(false);
+		}
 
-        // Window close behavior
-        addWindowListener(new WindowAdapter() 
-        {
-            public void windowClosing(WindowEvent we) 
-            {
-                stopMedia();
-                dispose();
-            }
-        });
+		// Configure Progress Bar
+		progressBar.setMaximumSize(new Dimension(280, 16));
+		progressBar.setStringPainted(false);
 
-        UIButtons[5].addActionListener(new ActionListener() 
-        {
-            @Override
-            public void actionPerformed(ActionEvent e) { openFile(""); }
-        });
-        UIButtons[3].addActionListener(new ActionListener() 
-        {
-            @Override
-            public void actionPerformed(ActionEvent e) { seekMediaBack(); }
-        });
-        UIButtons[1].addActionListener(new ActionListener() 
-        {
-            @Override
-            public void actionPerformed(ActionEvent e) { pauseMedia(); }
-        });
-        UIButtons[0].addActionListener(new ActionListener() 
-        {
-            @Override
-            public void actionPerformed(ActionEvent e) { playMedia(); }
-        });
-        UIButtons[2].addActionListener(new ActionListener() 
-        {
-            @Override
-            public void actionPerformed(ActionEvent e) { stopMedia(); }
-        });
-        UIButtons[4].addActionListener(new ActionListener() 
-        {
-            @Override
-            public void actionPerformed(ActionEvent e) { seekMediaForward(); }
-        });
+		// Control Panel (Bottom row buttons)
+		JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
+		controlPanel.setOpaque(false);
+		controlPanel.add(UIButtons[3]); // -5s
+		controlPanel.add(UIButtons[1]); // Pause
+		controlPanel.add(UIButtons[0]); // Play
+		controlPanel.add(UIButtons[2]); // Stop
+		controlPanel.add(UIButtons[4]); // +5s
 
-        setDropTarget(new DropTarget(this, new DropTargetListener() 
-        {
-            @Override
-            public void dragEnter(DropTargetDragEvent dtde) 
-            { 
-                dtde.acceptDrag(DnDConstants.ACTION_COPY);
-                setBackground(FreeJ2ME.freeJ2MEDragColor);
-                toggleComponentsVisibility(false);
-                dropMessageLabel.setVisible(true);
-                revalidate();
-                repaint();
-            }
+		// Set Component Alignments for BoxLayout
+		descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		UIButtons[5].setAlignmentX(Component.CENTER_ALIGNMENT);
+		fileNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		fileNameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+		fileTypeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		progressBar.setAlignmentX(Component.CENTER_ALIGNMENT);
+		playbackTicker.setAlignmentX(Component.CENTER_ALIGNMENT);
+		controlPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		dropMessageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            @Override
-            public void dragOver(DropTargetDragEvent dtde) { }
+		add(Box.createVerticalStrut(8));
+		add(dropMessageLabel);
+		add(descLabel);
+		add(Box.createVerticalStrut(6));
+		add(UIButtons[5]);
+		add(Box.createVerticalStrut(6));
+		add(fileNameLabel);
+		add(fileNameField);
+		add(fileTypeLabel);
+		add(Box.createVerticalStrut(8));
+		add(progressBar);
+		add(playbackTicker);
+		add(Box.createVerticalStrut(8));
+		add(controlPanel);
 
-            @Override
-            public void dropActionChanged(DropTargetDragEvent dtde) { }
+		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		addWindowListener(new WindowAdapter()
+		{
+			@Override
+			public void windowClosing(WindowEvent we) { stopMedia(); }
+		});
 
-            @Override
-            public void dragExit(DropTargetEvent dte) 
-            { 
-                // Show other components
-                toggleComponentsVisibility(true);
-                dropMessageLabel.setVisible(false);
-                setBackground(FreeJ2ME.freeJ2MEBGColor);
-                revalidate();
-                repaint();
-            }
+		UIButtons[5].addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) { openFile(""); } });
+		UIButtons[3].addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) { seekMediaBack(); } });
+		UIButtons[1].addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) { pauseMedia(); } });
+		UIButtons[0].addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) { playMedia(); } });
+		UIButtons[2].addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) { stopMedia(); } });
+		UIButtons[4].addActionListener(new ActionListener() { @Override public void actionPerformed(ActionEvent e) { seekMediaForward(); } });
 
-            @Override
-            @SuppressWarnings("unchecked")
-            public void drop(DropTargetDropEvent dtde) 
-            {
-                try 
-                {
-                    dtde.acceptDrop(DnDConstants.ACTION_COPY);
-                    Transferable transferable = dtde.getTransferable();
-                    if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) 
-                    {
-                        java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-                        
-                        if (!files.isEmpty()) { openFile(files.get(0).getAbsolutePath()); }
-                    }
-                } 
-                catch (Exception e) { System.out.println("Exception caught in Drag and Drop:" + e.getMessage()); }
-                finally 
-                {
-                    dtde.dropComplete(true);
-                    toggleComponentsVisibility(true);
-                    dropMessageLabel.setVisible(false);
-                    setBackground(FreeJ2ME.freeJ2MEBGColor);
-                    revalidate();
-                    repaint();
-                }
-            }
-        }));
-    }
+		setDropTarget(new DropTarget(this, new DropTargetListener()
+		{
+			@Override
+			public void dragEnter(DropTargetDragEvent dtde)
+			{
+				dtde.acceptDrag(DnDConstants.ACTION_COPY);
+				toggleComponentsVisibility(false);
+				dropMessageLabel.setVisible(true);
+			}
 
-    private void toggleComponentsVisibility(boolean visible) 
-    {
-        fileNameLabel.setVisible(visible);
-        fileTypeLabel.setVisible(visible);
-        playbackTicker.setVisible(visible);
-        progressBar.setVisible(visible);
-        fileNameField.setVisible(visible);
-        descLabel1.setVisible(visible);
-        descLabel2.setVisible(visible);
+			@Override public void dragOver(DropTargetDragEvent dtde) { }
+			@Override public void dropActionChanged(DropTargetDragEvent dtde) { }
 
-        for(int i = 0; i < UIButtons.length; i++) { UIButtons[i].setVisible(visible); }
-    }
+			@Override
+			public void dragExit(DropTargetEvent dte)
+			{
+				toggleComponentsVisibility(true);
+				dropMessageLabel.setVisible(false);
+			}
 
-    private void startPlaybackTimer() 
-    {
-        playbackTimer = new Timer();
-        playbackTimer.scheduleAtFixedRate(new TimerTask() 
-        {
-            @Override
-            public void run()
-            {
-                if (isPlaying)
-                {
-                    playbackTicker.setVisible(true);
-                    progressBar.setVisible(true);
-                    final long currentTime = mediaPlayer.getMediaTime();
-                    final long duration = mediaPlayer.getDuration();
-                    if(currentTime >= duration) 
-                    {
-                        EventQueue.invokeLater(new Runnable() 
-                        {
-                            @Override
-                            public void run() { updatePlaybackTicker(0, duration); }
-                        });
-                        pauseMedia();
-                    }
-                    else 
-                    { 
-                        EventQueue.invokeLater(new Runnable() 
-                        {
-                            @Override
-                            public void run() { updatePlaybackTicker(currentTime, duration); }
-                        });
-                    }
-                } 
-                else 
-                {
-                    EventQueue.invokeLater(new Runnable() 
-                    {
-                        @Override
-                        public void run() 
-                        {
-                            boolean isVisible = playbackTicker.isVisible();
-                            playbackTicker.setVisible(!isVisible);
-                            progressBar.setVisible(!isVisible);
-                        }
-                    });
-                }
-            }
-        }, 0, 500);
-    }
+			@Override
+			@SuppressWarnings("unchecked")
+			public void drop(DropTargetDropEvent dtde)
+			{
+				try
+				{
+					dtde.acceptDrop(DnDConstants.ACTION_COPY);
+					Transferable transferable = dtde.getTransferable();
+					if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+					{
+						java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
+						if (!files.isEmpty()) { openFile(files.get(0).getAbsolutePath()); }
+					}
+				}
+				catch (Exception e) { System.out.println("Exception caught in Drag and Drop: " + e.getMessage()); }
+				finally
+				{
+					dtde.dropComplete(true);
+					toggleComponentsVisibility(true);
+					dropMessageLabel.setVisible(false);
+				}
+			}
+		}));
+	}
 
-    // Method to update the playback time
-    private void updatePlaybackTicker(long currentTime, long duration) 
-    {
-        String currentTimeStr = formatTime(currentTime);
-        String durationStr = formatTime(duration);
-        playbackTicker.setText(currentTimeStr + " / " + durationStr);
+	private void toggleComponentsVisibility(boolean visible)
+	{
+		fileNameLabel.setVisible(visible);
+		fileTypeLabel.setVisible(visible);
+		playbackTicker.setVisible(visible);
+		progressBar.setVisible(visible);
+		fileNameField.setVisible(visible);
+		descLabel.setVisible(visible);
 
-        int progress = (int) ((currentTime * 100) / (duration != 0 ? duration : 1));
-        progressBar.setProgress(progress);
-    }
+		for (int i = 0; i < UIButtons.length; i++) { UIButtons[i].setVisible(visible); }
+	}
 
-    // Helper method to format time from microseconds to mm:ss
-    private String formatTime(long microseconds) 
-    {
-        long seconds = microseconds / 1000000;
-        long minutes = seconds / 60;
-        seconds = seconds % 60;
-        return String.format("%02d:%02d", minutes, seconds);
-    }
+	private void startPlaybackTimer()
+	{
+		if (playbackTimer != null) { playbackTimer.cancel(); }
+		playbackTimer = new Timer();
+		playbackTimer.scheduleAtFixedRate(new TimerTask()
+		{
+			@Override
+			public void run()
+			{
+				if (isPlaying && mediaPlayer != null)
+				{
+					final long currentTime = mediaPlayer.getMediaTime();
+					final long duration = mediaPlayer.getDuration();
 
-    private void openFile(String filePath) 
-    {
-        if(mediaPlayer != null) 
-        { 
-            mediaPlayer.stop();
-            mediaPlayer.close();
-            mediaPlayer = null;
-        }
-        if(filePath == "") 
-        {
-            FileDialog fileDialog = new FileDialog(this, "Select a Media File", FileDialog.LOAD);
-            fileDialog.setVisible(true);
-            filePath = fileDialog.getDirectory() + fileDialog.getFile();
-            fileNameField.setText(fileDialog.getFile());
-            
-            try 
-            {   
-                if(filePath.contains(".ota") || filePath.contains(".ott")) // Nokia's OTT has no real header to parse, we can only work with ott/ota as the file extension
-                {
-                    FileInputStream fileData = new FileInputStream(filePath);
-                    byte[] toneData = new byte[fileData.available()];
+					EventQueue.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							if (currentTime >= duration && duration > 0)
+							{
+								updatePlaybackTicker(0, duration);
+								pauseMedia();
+							}
+							else { updatePlaybackTicker(currentTime, duration); }
+						}
+					});
+				}
+			}
+		}, 0, 250);
+	}
 
-                    fileData.read(toneData);
-                    
-                    mediaPlayer = Manager.createPlayer(new ByteArrayInputStream(NokiaOTTDecoder.convertToMidi(toneData) ), ""); // Let PlatformPlayer find out what type to prepare
-                    fileTypeLabel.setText("File Type: audio/ott");
-                }
-                else {  mediaPlayer = Manager.createPlayer(new FileInputStream(filePath), ""); /* Let PlatformPlayer find out what type to prepare */ }
-                
-                mediaPlayer.realize();
-                mediaPlayer.prefetch();
+	private void updatePlaybackTicker(long currentTime, long duration)
+	{
+		playbackTicker.setText(formatTime(currentTime) + " / " + formatTime(duration));
+		int progress = (duration > 0) ? (int) ((currentTime * 100) / duration) : 0;
+		progressBar.setValue(progress);
+	}
 
-                fileTypeLabel.setText("File Type: " + ((PlatformPlayer) mediaPlayer).contentType);
-                
-                updatePlaybackTicker(0, mediaPlayer.getDuration());
-                startPlaybackTimer();
-            } 
-            catch (Exception e) 
-            {
-                e.printStackTrace();
-            }
-        }
-        else // Drag and Drop
-        {
-            fileNameField.setText(new File(filePath).getName());
-        
-            try 
-            {
-                mediaPlayer = null;
-                if(filePath.endsWith(".ota") || filePath.endsWith(".ott")) {
-                    FileInputStream fileData = new FileInputStream(filePath);
-                    byte[] toneData = new byte[fileData.available()];
+	private String formatTime(long microseconds)
+	{
+		long seconds = microseconds / 1000000;
+		long minutes = seconds / 60;
+		seconds = seconds % 60;
+		return String.format("%02d:%02d", minutes, seconds);
+	}
 
-                    fileData.read(toneData);
-                    
-                    mediaPlayer = Manager.createPlayer(new ByteArrayInputStream(NokiaOTTDecoder.convertToMidi(toneData)), "");
-                    fileTypeLabel.setText("File Type: audio/ott");
-                } else {
-                    mediaPlayer = Manager.createPlayer(new FileInputStream(filePath), "");
-                }
-                
-                mediaPlayer.realize();
-                mediaPlayer.prefetch();
+	private void openFile(String filePath)
+	{
+		if (mediaPlayer != null) { stopMedia(); }
 
-                fileTypeLabel.setText("File Type: " + ((PlatformPlayer) mediaPlayer).contentType);
-                updatePlaybackTicker(0, mediaPlayer.getDuration());
-                startPlaybackTimer();
-            } 
-            catch (Exception e) 
-            {
-                e.printStackTrace();
-            }
-        }
-    }
+		if (filePath.length() == 0)
+		{
+			FileDialog fileDialog = new FileDialog(this, "Select a Media File", FileDialog.LOAD);
+			fileDialog.setVisible(true);
+			if (fileDialog.getFile() == null) { return; } // User canceled file picker
+			filePath = fileDialog.getDirectory() + fileDialog.getFile();
+		}
 
-    private void playMedia() 
-    {
-        if (mediaPlayer != null && !isPlaying) 
-        {
-            mediaPlayer.start();
-            isPlaying = true;
-            if(playbackTimer == null) { startPlaybackTimer(); }
-        }
-    }
+		fileNameField.setText(new File(filePath).getName());
 
-    private void pauseMedia() 
-    {
-        if (mediaPlayer != null && isPlaying) 
-        {
-            mediaPlayer.stop();
-            isPlaying = false;
-        }
-    }
+		try
+		{
+			if (filePath.endsWith(".ota") || filePath.endsWith(".ott")) {
+				FileInputStream fileData = new FileInputStream(filePath);
+				byte[] toneData = new byte[fileData.available()];
+				fileData.read(toneData);
+				fileData.close();
 
-    private void stopMedia() 
-    {
-        if (mediaPlayer != null) 
-        {
-            pauseMedia();
-            playbackTimer.cancel();
-            playbackTimer = null;
-            updatePlaybackTicker(0, 0);
-            mediaPlayer.close();
-            fileTypeLabel.setText("File Type: None");
-            playbackTicker.setVisible(true);
-            progressBar.setVisible(true);
-        }
-        mediaPlayer = null;
-    }
+				mediaPlayer = Manager.createPlayer(new ByteArrayInputStream(NokiaOTTDecoder.convertToMidi(toneData)), "");
+				fileTypeLabel.setText("File Type: audio/ott");
+			}
+			else
+			{
+				mediaPlayer = Manager.createPlayer(new FileInputStream(filePath), "");
+			}
 
-    private void seekMediaBack() 
-    {
-        if (mediaPlayer != null) 
-        {
-            mediaPlayer.stop();
-            mediaPlayer.setMediaTime(mediaPlayer.getMediaTime()-5000000);
-            mediaPlayer.start();
-        }
-    }
+			mediaPlayer.realize();
+			mediaPlayer.prefetch();
 
-    private void seekMediaForward() 
-    {
-        if (mediaPlayer != null) 
-        {
-            mediaPlayer.stop();
-            mediaPlayer.setMediaTime(mediaPlayer.getMediaTime()+5000000);
-            mediaPlayer.start();
-        }
-    }
-}
+			if (mediaPlayer instanceof PlatformPlayer)
+			{
+				fileTypeLabel.setText("File Type: " + ((PlatformPlayer) mediaPlayer).contentType);
+			}
 
-class ProgressBar extends Panel 
-{
-    private int progress = 0;
+			updatePlaybackTicker(0, mediaPlayer.getDuration());
+			playMedia();
+		}
+		catch (Exception e) { e.printStackTrace(); }
+	}
 
-    public ProgressBar() { }
+	private void playMedia()
+	{
+		if (mediaPlayer != null && !isPlaying)
+		{
+			mediaPlayer.start();
+			isPlaying = true;
+			startPlaybackTimer();
+		}
+	}
 
-    public void setProgress(int progress) 
-    {
-        this.progress = Math.max(0, Math.min(progress, 100));
-        repaint();
-    }
+	private void pauseMedia()
+	{
+		if (mediaPlayer != null && isPlaying)
+		{
+			mediaPlayer.stop();
+			isPlaying = false;
+		}
+	}
 
-    @Override
-    public void paint(Graphics g) 
-    {
-        synchronized (this)
-        {
-            // Background
-            g.setColor(new Color(55, 55, 150));
-            g.fillRect(0, 0, getWidth(), getHeight());
+	private void stopMedia()
+	{
+		pauseMedia();
+		if (playbackTimer != null)
+		{
+			playbackTimer.cancel();
+			playbackTimer = null;
+		}
+		if (mediaPlayer != null)
+		{
+			mediaPlayer.close();
+			mediaPlayer = null;
+		}
+		fileTypeLabel.setText("File Type: None");
+		fileNameField.setText("");
+		updatePlaybackTicker(0, 0);
+	}
 
-            // Progress Bar
-            g.setColor(new Color(120, 120, 255));
-            g.fillRect(0, 2, (int) ((getWidth() * progress) / 100.0), getHeight() - 4);
-            
-            // Border
-            g.setColor(Color.WHITE);
-            g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
-        }
-        
-    }
+	private void seekMediaBack()
+	{
+		if (mediaPlayer != null)
+		{
+			long newTime = Math.max(0, mediaPlayer.getMediaTime() - 5000000);
+			mediaPlayer.setMediaTime(newTime);
+		}
+	}
+
+	private void seekMediaForward()
+	{
+		if (mediaPlayer != null)
+		{
+			long newTime = Math.min(mediaPlayer.getDuration(), mediaPlayer.getMediaTime() + 5000000);
+			mediaPlayer.setMediaTime(newTime);
+		}
+	}
 }

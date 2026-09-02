@@ -902,9 +902,9 @@ public class MobilePlatform
 	{
 		if(!isLibretro)
 		{
-			gcFrontbuffer.setColor(0, 0, 64);
+			gcFrontbuffer.setColor(238, 238, 238);
 			gcFrontbuffer.fillRect(0, 0, lcdWidth, lcdHeight);
-			gcFrontbuffer.setColor(0xFFFFAF00);
+			gcFrontbuffer.setColor(64, 64, 64);
 			gcFrontbuffer.drawString("APP TERMINATED!", lcdWidth/2, lcdHeight/10, org.recompile.mobile.PlatformGraphics.HCENTER);
 			gcFrontbuffer.drawString("Open a new one", lcdWidth/2, lcdHeight/10 + javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
 			gcFrontbuffer.drawString("through Drag-Drop", lcdWidth/2, lcdHeight/10 + 2*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
