@@ -461,7 +461,7 @@ public final class AWTGUI
 
 		/* Input mapping dialog: It's a grid, so a few tricks had to be employed to align everything up */
 		awtDialogs[4].setBackground(FreeJ2ME.freeJ2MEBGColor);
-        awtDialogs[4].setForeground(Color.ORANGE);
+		awtDialogs[4].setForeground(Color.ORANGE);
 		awtDialogs[4].setLayout(new GridLayout(0, 3)); /* Get as many rows as needed, as long it still uses only 3 columns */
 		awtDialogs[4].setSize(240, 440);
 		awtDialogs[4].setLocationRelativeTo(main);
@@ -579,10 +579,10 @@ public final class AWTGUI
 		// Mem stats window
 		memArea.setBackground(FreeJ2ME.freeJ2MEBGColor);
 		memArea.setForeground(Color.ORANGE);
-        memArea.setEditable(false); // Make the log area read-only
+		memArea.setEditable(false); // Make the log area read-only
 
 		ScrollPane memScrollPane = new ScrollPane(ScrollPane.SCROLLBARS_NEVER);
-        memScrollPane.add(memArea);
+		memScrollPane.add(memArea);
 
 		awtDialogs[2].setBackground(FreeJ2ME.freeJ2MEBGColor);
 		awtDialogs[2].setForeground(Color.ORANGE);
@@ -596,20 +596,20 @@ public final class AWTGUI
 		// Console Log window
 		logArea.setBackground(FreeJ2ME.freeJ2MEBGColor);
 		logArea.setForeground(Color.ORANGE);
-        logArea.setEditable(false); // Make the log area read-only
+		logArea.setEditable(false); // Make the log area read-only
 
 		ScrollPane logScrollPane = new ScrollPane(ScrollPane.SCROLLBARS_AS_NEEDED);
-        logScrollPane.add(logArea);
+		logScrollPane.add(logArea);
 
 		awtDialogs[5].setBackground(FreeJ2ME.freeJ2MEBGColor);
-        awtDialogs[5].setForeground(Color.ORANGE);
+		awtDialogs[5].setForeground(Color.ORANGE);
 		awtDialogs[5].setLayout(new BorderLayout());
 		awtDialogs[5].setSize(720, 320);
 		awtDialogs[5].setFont(dialogFont);
 		awtDialogs[5].setLocationRelativeTo(main);
 		awtDialogs[5].setResizable(false);
 		awtDialogs[5].setUndecorated(true);
-        awtDialogs[5].add(logScrollPane, BorderLayout.CENTER);
+		awtDialogs[5].add(logScrollPane, BorderLayout.CENTER);
 
 		openMenuItem.setActionCommand("Open");
 		openSpMenuItem.setActionCommand("OpenSp");
@@ -671,9 +671,9 @@ public final class AWTGUI
 			final int buttonIndex = i;
 
 			/* Add a focus listener to each input mapping button */
-            inputButtons[i].addFocusListener(new FocusAdapter()
+			inputButtons[i].addFocusListener(new FocusAdapter()
 			{
-                Button focusedButton;
+				Button focusedButton;
 				String lastButtonKey = new String("");
 				boolean keySet = false;
 
@@ -702,446 +702,80 @@ public final class AWTGUI
 				/* Only used to restore the last key map if the user doesn't map a new one into the button */
 				@Override
 				public void focusLost(FocusEvent e) { if(!keySet) { focusedButton.setLabel(lastButtonKey); } }
-            });
+			});
 		}
 	}
 
 	private void setActionListeners()
 	{
+		// Fullscreen is specific to AWTGUI.
 		fullScreen.addItemListener(new ItemListener()
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(hasLoadedFile()) { FreeJ2ME.app.toggleFullscreen(); }
+				if (hasLoadedFile()) { FreeJ2ME.app.toggleFullscreen(); }
 				else { fullScreen.setState(FreeJ2ME.isFullscreen); }
 			}
 		});
 
-		// DoJa Version
-		for(byte i = 0; i < dojaVersions.length; i++)
+		// Per-App Radio Group Settings.
+		bindRadioGroup(dojaVersions, dojaVersionValues, "dojaversion", false, new Runnable()
 		{
-			final byte index = i;
-			dojaVersions[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!dojaVersions[index].getState()){ dojaVersions[index].setState(true); }
-					if(dojaVersions[index].getState())
-					{
-						config.updateSetting("dojaversion", dojaVersionValues[index]);
-						for(int j = 0; j < dojaVersions.length; j++)
-						{
-							if(j != index) { dojaVersions[j].setState(false); }
-						}
-						hasPendingChange = true;
+			public void run() { showRestartDialog(); }
+		});
+		bindRadioGroup(rotations, rotationValues, "rotate");
+		bindRadioGroup(layoutOptions, layoutValues, "phone");
+		bindRadioGroup(backlightOptions, backlightValues, "backlightcolor");
+		bindRadioGroup(fpsOptions, fpsValues, "fps");
+		bindRadioGroup(fpsHackOptions, fpsHackValues, "fpshack");
+		bindRadioGroup(fontOffsets, fontOffsetValues, "fontoffset");
+		bindRadioGroup(m3gAntiAliasValues, m3gCommonSettingValues, "m3gantialiasmode");
+		bindRadioGroup(m3gBilinearValues, m3gCommonSettingValues, "m3gbilinearmode");
+		bindRadioGroup(m3gDitheringValues, m3gCommonSettingValues, "m3gditheringmode");
+		bindRadioGroup(m3gPerspCorrValues, m3gCommonSettingValues, "m3gperspcorrmode");
+		bindRadioGroup(m3gPerspCorrFactorValues, m3gPFactorSettingValues, "m3gperspcorrsubfactor");
+		bindRadioGroup(m3gMipmapValues, m3gMipmapSettingValues, "m3gmipmapmode");
 
-						showRestartDialog();
+		// ShowFPS is a bit different in which it calls for setShowFPS().
+		bindRadioGroup(fpsCounterPos, showFPSValues, "fpsCounterPosition", true, new Runnable()
+		{
+			public void run()
+			{
+				for (int i = 0; i < fpsCounterPos.length; i++)
+				{
+					if (fpsCounterPos[i].getState())
+					{
+						Mobile.getPlatform().setShowFPS(showFPSValues[i]);
+						break;
 					}
 				}
-			});
-		}
-
-		// Speedhacks
-		noAlphaOnBlankImages.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(noAlphaOnBlankImages.getState()){ config.updateSetting("spdhacknoalpha", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("spdhacknoalpha", "off"); hasPendingChange = true; }
-
-				showRestartDialog();
 			}
 		});
+		bindRadioGroup(logLevels, logLevelValues, "logLevel", true, null);
 
-		M3GHalfRes.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(M3GHalfRes.getState()){ config.updateSetting("spdhackm3ghalfres", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("spdhackm3ghalfres", "off"); hasPendingChange = true; }
-			}
-		});
+		// Per-App Toggleable settings
+		setToggle(noAlphaOnBlankImages, "spdhacknoalpha", true);
+		setToggle(M3GHalfRes, "spdhackm3ghalfres", false);
+		setToggle(M3GDisableFog, "m3gdisablefog", false);
+		setToggle(MCV3HalfRes, "spdhackmcv3halfres", true);
+		setToggle(MCV3NoLighting, "spdhackmcv3nolighting", true);
+		setToggle(fantasyZoneFix, "compatfantasyzonefix", true);
+		setToggle(transToOriginOnReset, "compattranstooriginonreset", false);
+		setToggle(immediateRepaints, "compatimmediaterepaints", false);
+		setToggle(repaintOnSetCurrent, "compatrepaintonsetcurrent", false);
+		setToggle(overridePlatChecks, "compatoverrideplatchecks", true);
+		setToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing", true);
+		setToggle(ignoreVolumeChanges, "compatignorevolumechanges", false);
+		setToggle(MCV3HorFovFix, "compatmcv3horizfovfix", false);
 
-		M3GDisableFog.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(M3GDisableFog.getState()){ config.updateSetting("m3gdisablefog", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("m3gdisablefog", "off"); hasPendingChange = true; }
-			}
-		});
-
-		MCV3HalfRes.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(MCV3HalfRes.getState()){ config.updateSetting("spdhackmcv3halfres", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("spdhackmcv3halfres", "off"); hasPendingChange = true; }
-
-				showRestartDialog();
-			}
-		});
-
-		MCV3NoLighting.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(MCV3NoLighting.getState()){ config.updateSetting("spdhackmcv3nolighting", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("spdhackmcv3nolighting", "off"); hasPendingChange = true; }
-
-				showRestartDialog();
-			}
-		});
-
-		// Compatibility settings
-		fantasyZoneFix.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(fantasyZoneFix.getState()){ config.updateSetting("compatfantasyzonefix", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatfantasyzonefix", "off"); hasPendingChange = true; }
-
-				showRestartDialog();
-			}
-		});
-
-		transToOriginOnReset.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(transToOriginOnReset.getState()){ config.updateSetting("compattranstooriginonreset", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compattranstooriginonreset", "off"); hasPendingChange = true; }
-			}
-		});
-
-		immediateRepaints.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(immediateRepaints.getState()){ config.updateSetting("compatimmediaterepaints", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatimmediaterepaints", "off"); hasPendingChange = true; }
-			}
-		});
-
-		repaintOnSetCurrent.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(repaintOnSetCurrent.getState()){ config.updateSetting("compatrepaintonsetcurrent", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatrepaintonsetcurrent", "off"); hasPendingChange = true; }
-			}
-		});
-
-		overridePlatChecks.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(overridePlatChecks.getState()){ config.updateSetting("compatoverrideplatchecks", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatoverrideplatchecks", "off"); hasPendingChange = true; }
-
-				showRestartDialog();
-			}
-		});
-
-		siemensFriendlyDrawing.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(siemensFriendlyDrawing.getState()){ config.updateSetting("compatsiemensfriendlydrawing", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatsiemensfriendlydrawing", "off"); hasPendingChange = true; }
-
-				showRestartDialog();
-			}
-		});
-
-		ignoreVolumeChanges.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(ignoreVolumeChanges.getState()){ config.updateSetting("compatignorevolumechanges", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatignorevolumechanges", "off"); hasPendingChange = true; }
-			}
-		});
-
-		MCV3HorFovFix.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(MCV3HorFovFix.getState()){ config.updateSetting("compatmcv3horizfovfix", "on"); hasPendingChange = true; }
-				else{ config.updateSetting("compatmcv3horizfovfix", "off"); hasPendingChange = true; }
-			}
-		});
-
-		// Screen rotations
-		for(byte i = 0; i < rotations.length; i++)
-		{
-			final byte index = i;
-			rotations[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!rotations[index].getState()){ rotations[index].setState(true); }
-					if(rotations[index].getState())
-					{
-						config.updateSetting("rotate", rotationValues[index]);
-						for(int j = 0; j < rotations.length; j++)
-						{
-							if(j != index) { rotations[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		// Layout options
-		for(byte i = 0; i < layoutOptions.length; i++)
-		{
-			final byte index = i;
-			layoutOptions[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!layoutOptions[index].getState()){ layoutOptions[index].setState(true); }
-					if(layoutOptions[index].getState())
-					{
-						config.updateSetting("phone", layoutValues[index]);
-						for(int j = 0; j < layoutOptions.length; j++)
-						{
-							if(j != index) { layoutOptions[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < backlightOptions.length; i++)
-		{
-			final byte index = i;
-			backlightOptions[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!backlightOptions[index].getState()){ backlightOptions[index].setState(true); }
-					if(backlightOptions[index].getState())
-					{
-						config.updateSetting("backlightcolor", backlightValues[index]);
-						for(int j = 0; j < backlightOptions.length; j++)
-						{
-							if(j != index) { backlightOptions[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < fpsOptions.length; i++)
-		{
-			final byte index = i;
-			fpsOptions[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!fpsOptions[index].getState()){ fpsOptions[index].setState(true); }
-					if(fpsOptions[index].getState())
-					{
-						config.updateSetting("fps", fpsValues[index]);
-						for(int j = 0; j < fpsOptions.length; j++)
-						{
-							if(j != index) { fpsOptions[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < fpsHackOptions.length; i++)
-		{
-			final byte index = i;
-			fpsHackOptions[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!fpsHackOptions[index].getState()){ fpsHackOptions[index].setState(true); }
-					if(fpsHackOptions[index].getState())
-					{
-						config.updateSetting("fpshack", fpsHackValues[index]);
-						for(int j = 0; j < fpsHackOptions.length; j++)
-						{
-							if(j != index) { fpsHackOptions[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < fontOffsets.length; i++)
-		{
-			final byte index = i;
-			fontOffsets[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!fontOffsets[index].getState()){ fontOffsets[index].setState(true); }
-					if(fontOffsets[index].getState())
-					{
-						config.updateSetting("fontoffset", fontOffsetValues[index]);
-						for(int j = 0; j < fontOffsets.length; j++)
-						{
-							if(j != index) { fontOffsets[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < m3gAntiAliasValues.length; i++)
-		{
-			final byte index = i;
-			m3gAntiAliasValues[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!m3gAntiAliasValues[index].getState()){ m3gAntiAliasValues[index].setState(true); }
-					if(m3gAntiAliasValues[index].getState())
-					{
-						config.updateSetting("m3gantialiasmode", m3gCommonSettingValues[index]);
-						for(int j = 0; j < m3gAntiAliasValues.length; j++)
-						{
-							if(j != index) { m3gAntiAliasValues[j].setState(false); }
-						}
-					}
-					hasPendingChange = true;
-				}
-			});
-		}
-
-		for(byte i = 0; i < m3gBilinearValues.length; i++)
-		{
-			final byte index = i;
-			m3gBilinearValues[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!m3gBilinearValues[index].getState()){ m3gBilinearValues[index].setState(true); }
-					if(m3gBilinearValues[index].getState())
-					{
-						config.updateSetting("m3gbilinearmode", m3gCommonSettingValues[index]);
-						for(int j = 0; j < m3gBilinearValues.length; j++)
-						{
-							if(j != index) { m3gBilinearValues[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < m3gDitheringValues.length; i++)
-		{
-			final byte index = i;
-			m3gDitheringValues[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!m3gDitheringValues[index].getState()){ m3gDitheringValues[index].setState(true); }
-					if(m3gDitheringValues[index].getState())
-					{
-						config.updateSetting("m3gditheringmode", m3gCommonSettingValues[index]);
-						for(int j = 0; j < m3gDitheringValues.length; j++)
-						{
-							if(j != index) { m3gDitheringValues[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < m3gPerspCorrValues.length; i++)
-		{
-			final byte index = i;
-			m3gPerspCorrValues[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!m3gPerspCorrValues[index].getState()){ m3gPerspCorrValues[index].setState(true); }
-					if(m3gPerspCorrValues[index].getState())
-					{
-						config.updateSetting("m3gperspcorrmode", m3gCommonSettingValues[index]);
-						for(int j = 0; j < m3gPerspCorrValues.length; j++)
-						{
-							if(j != index) { m3gPerspCorrValues[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < m3gPerspCorrFactorValues.length; i++)
-		{
-			final byte index = i;
-			m3gPerspCorrFactorValues[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!m3gPerspCorrFactorValues[index].getState()){ m3gPerspCorrFactorValues[index].setState(true); }
-					if(m3gPerspCorrFactorValues[index].getState())
-					{
-						config.updateSetting("m3gperspcorrsubfactor", m3gPFactorSettingValues[index]);
-						for(int j = 0; j < m3gPerspCorrFactorValues.length; j++)
-						{
-							if(j != index) { m3gPerspCorrFactorValues[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		for(byte i = 0; i < m3gMipmapValues.length; i++)
-		{
-			final byte index = i;
-			m3gMipmapValues[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!m3gMipmapValues[index].getState()){ m3gMipmapValues[index].setState(true); }
-					if(m3gMipmapValues[index].getState())
-					{
-						config.updateSetting("m3gmipmapmode", m3gMipmapSettingValues[index]);
-						for(int j = 0; j < m3gMipmapValues.length; j++)
-						{
-							if(j != index) { m3gMipmapValues[j].setState(false); }
-						}
-						hasPendingChange = true;
-					}
-				}
-			});
-		}
-
-		// Sys settings
-		enableAudio.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(enableAudio.getState()){ config.updateSysSetting("sound", "on"); hasPendingChange = true; }
-				else{ config.updateSysSetting("sound", "off"); hasPendingChange = true; }
-			}
-		});
-
+		// Special System Toggleable Settings. No use trying to commonize those
+		// in a "setSysToggle" since they are only two.
 		useCustomMidi.addItemListener(new ItemListener()
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(useCustomMidi.getState()){ config.updateSysSetting("soundfont", "Custom"); hasPendingChange = true; }
-				else{ config.updateSysSetting("soundfont", "Default"); hasPendingChange = true; }
+				config.updateSysSetting("soundfont", useCustomMidi.getState() ? "Custom" : "Default");
+				hasPendingChange = true;
 			}
 		});
 
@@ -1149,137 +783,102 @@ public final class AWTGUI
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				if(useCustomFont.getState()){ config.updateSysSetting("textfont", "Custom"); hasPendingChange = true; }
-				else{ config.updateSysSetting("textfont", "Default"); hasPendingChange = true; }
-
+				config.updateSysSetting("textfont", useCustomFont.getState() ? "Custom" : "Default");
+				hasPendingChange = true;
 				showRestartDialog();
 			}
 		});
 
-		for(byte i = 0; i < fpsCounterPos.length; i++)
-		{
-			final byte index = i;
-			fpsCounterPos[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!fpsCounterPos[index].getState()){ fpsCounterPos[index].setState(true); }
-					if(fpsCounterPos[index].getState())
-					{
-						config.updateSysSetting("fpsCounterPosition", showFPSValues[index]);
-						Mobile.getPlatform().setShowFPS(showFPSValues[index]);
-						for(int j = 0; j < fpsCounterPos.length; j++)
-						{
-							if(j != index) { fpsCounterPos[j].setState(false); }
-						}
-					}
-				}
-			});
-		}
+		// System toggleable settings.
+		setSysToggle(enableAudio, "sound");
+		setSysToggle(deleteTemporaryKJXFiles, "deleteTempKJXFiles");
+		setSysToggle(dumpAudioData, "dumpAudioStreams");
+		setSysToggle(dumpGraphicsData, "dumpGraphicsObjects");
+		setSysToggle(M3GUntextured, "M3GUntextured");
+		setSysToggle(M3GWireframe, "M3GWireframe");
+		setSysToggle(MCV3ShowHeapUsage, "MCV3ShowHeapUsage");
+		setSysToggle(MCV3ShowTimeMetrics, "MCV3ShowTimeMetrics");
 
-		for(byte i = 0; i < logLevels.length; i++)
-		{
-			final byte index = i;
-			logLevels[i].addItemListener(new ItemListener()
-			{
-				public void itemStateChanged(ItemEvent e)
-				{
-					if(!logLevels[index].getState()){ logLevels[index].setState(true); }
-					if(logLevels[index].getState())
-					{
-						config.updateSysSetting("logLevel", logLevelValues[index]);
-						for(int j = 0; j < logLevels.length; j++)
-						{
-							if(j != index) { logLevels[j].setState(false); }
-						}
-					}
-				}
-			});
-		}
-
-		deleteTemporaryKJXFiles.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(deleteTemporaryKJXFiles.getState()) { config.updateSysSetting("deleteTempKJXFiles", "on"); Mobile.deleteTemporaryKJXFiles = true; }
-				else { config.updateSysSetting("deleteTempKJXFiles", "off"); Mobile.deleteTemporaryKJXFiles = false; }
-			}
-		});
-
-
-		dumpAudioData.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(dumpAudioData.getState()) { config.updateSysSetting("dumpAudioStreams", "on"); Mobile.dumpAudioStreams = true; }
-				else { config.updateSysSetting("dumpAudioStreams", "off"); Mobile.dumpAudioStreams = false; }
-			}
-		});
-
-		dumpGraphicsData.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(dumpGraphicsData.getState()) { config.updateSysSetting("dumpGraphicsObjects", "on"); Mobile.dumpGraphicsObjects = true; }
-				else { config.updateSysSetting("dumpGraphicsObjects", "off"); Mobile.dumpGraphicsObjects = false; }
-			}
-		});
-
-		M3GUntextured.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(M3GUntextured.getState()) { config.updateSysSetting("M3GUntextured", "on"); Mobile.M3GRenderUntexturedPolygons = true; }
-				else { config.updateSysSetting("M3GUntextured", "off"); Mobile.M3GRenderUntexturedPolygons = false; }
-			}
-		});
-
-		M3GWireframe.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(M3GWireframe.getState()) { config.updateSysSetting("M3GWireframe", "on"); Mobile.M3GRenderWireframe = true; }
-				else { config.updateSysSetting("M3GWireframe", "off"); Mobile.M3GRenderWireframe = false; }
-			}
-		});
-
-		MCV3ShowHeapUsage.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(MCV3ShowHeapUsage.getState()) { config.updateSysSetting("MCV3ShowHeapUsage", "on"); Mobile.MCV3ShowHeapUsage = true; }
-				else { config.updateSysSetting("MCV3ShowHeapUsage", "off"); Mobile.MCV3ShowHeapUsage = false; }
-			}
-		});
-
-		MCV3ShowTimeMetrics.addItemListener(new ItemListener()
-		{
-			public void itemStateChanged(ItemEvent e)
-			{
-				if(MCV3ShowTimeMetrics.getState()) { config.updateSysSetting("MCV3ShowTimeMetrics", "on"); Mobile.MCV3ShowTimeMetrics = true; }
-				else { config.updateSysSetting("MCV3ShowTimeMetrics", "off"); Mobile.MCV3ShowTimeMetrics = false; }
-			}
-		});
-
-		// These are specific to AWTGUI
+		// Debug Windows are exclusive to AWTGUI.
 		showDebugWindows.addItemListener(new ItemListener()
 		{
 			public void itemStateChanged(ItemEvent e)
 			{
-				/* Mem stats frame won't be centered on FreeJ2ME's frame, instead, it will sit right by its side, that's why "setLocationRelativeTo(main)" isn't used */
-				if(showDebugWindows.getState())
-				{
-					updateDialogLocations(main);
-					awtDialogs[2].setVisible(true);
-					awtDialogs[5].setVisible(true);
-				}
-				else
-				{
-					awtDialogs[2].setVisible(false);
-					awtDialogs[5].setVisible(false);
-				}
+				boolean show = showDebugWindows.getState();
+				if (show) { updateDialogLocations(main); }
+				awtDialogs[2].setVisible(show);
+				awtDialogs[5].setVisible(show);
 			}
 		});
+	}
+
+	private void setToggle(final CheckboxMenuItem checkbox, final String settingKey, final boolean requiresRestart)
+	{
+		checkbox.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				config.updateSetting(settingKey, checkbox.getState() ? "on" : "off");
+				hasPendingChange = true;
+				if (requiresRestart) { showRestartDialog(); }
+			}
+		});
+	}
+
+	private void setSysToggle(final CheckboxMenuItem checkbox, final String sysSettingKey)
+	{
+		checkbox.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				boolean state = checkbox.getState();
+				config.updateSysSetting(sysSettingKey, state ? "on" : "off");
+
+				if (sysSettingKey.equals("deleteTempKJXFiles"))        { Mobile.deleteTemporaryKJXFiles = state; }
+				else if (sysSettingKey.equals("dumpAudioStreams"))     { Mobile.dumpAudioStreams = state; }
+				else if (sysSettingKey.equals("dumpGraphicsObjects"))  { Mobile.dumpGraphicsObjects = state; }
+				else if (sysSettingKey.equals("M3GUntextured"))        { Mobile.M3GRenderUntexturedPolygons = state; }
+				else if (sysSettingKey.equals("M3GWireframe"))         { Mobile.M3GRenderWireframe = state; }
+				else if (sysSettingKey.equals("MCV3ShowHeapUsage"))    { Mobile.MCV3ShowHeapUsage = state; }
+				else if (sysSettingKey.equals("MCV3ShowTimeMetrics"))  { Mobile.MCV3ShowTimeMetrics = state; }
+			}
+		});
+	}
+
+	private void bindRadioGroup(final CheckboxMenuItem[] options, final String[] values, final String settingKey, final boolean isSysSetting, final Runnable onChange)
+	{
+		for (int i = 0; i < options.length; i++)
+		{
+			final int index = i;
+			options[index].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					if (!options[index].getState())
+					{
+						options[index].setState(true);
+						return;
+					}
+
+					if (isSysSetting) { config.updateSysSetting(settingKey, values[index]); }
+					else { config.updateSetting(settingKey, values[index]); }
+
+					// Deselect all other options
+					for (int j = 0; j < options.length; j++)
+					{
+						if (j != index) { options[j].setState(false); }
+					}
+
+					hasPendingChange = true;
+					if (onChange != null) { onChange.run(); }
+				}
+			});
+		}
+	}
+
+	private void bindRadioGroup(CheckboxMenuItem[] options, String[] values, String settingKey)
+	{
+		bindRadioGroup(options, values, settingKey, false, null);
 	}
 
 	private void buildMenuBar()
@@ -1398,127 +997,96 @@ public final class AWTGUI
 
 	public void updateOptions()
 	{
-			fullScreen.setState(FreeJ2ME.isFullscreen);
-			enableAudio.setState(config.sysSettings.get("sound").equals("on"));
-			useCustomMidi.setState(config.sysSettings.get("soundfont").equals("Custom"));
-			useCustomFont.setState(config.sysSettings.get("textfont").equals("Custom"));
+		// These are special checkbox cases that don't use a config on/off
+		fullScreen.setState(FreeJ2ME.isFullscreen);
+		useCustomMidi.setState("Custom".equals(config.sysSettings.get("soundfont")));
+		useCustomFont.setState("Custom".equals(config.sysSettings.get("textfont")));
 
-			for(int i = 0; i < dojaVersions.length; i++) { dojaVersions[i].setState(config.settings.get("dojaversion").equals(dojaVersionValues[i])); }
+		// Per-App RadioGroup Settings
+		updateRadioGroup(dojaVersions, dojaVersionValues, "dojaversion", false);
+		updateRadioGroup(rotations, rotationValues, "rotate", false);
+		updateRadioGroup(fpsOptions, fpsValues, "fps", false);
+		updateRadioGroup(fpsHackOptions, fpsHackValues, "fpshack", false);
+		updateRadioGroup(fontOffsets, fontOffsetValues, "fontoffset", false);
+		updateRadioGroup(layoutOptions, layoutValues, "phone", false);
+		updateRadioGroup(backlightOptions, backlightValues, "backlightcolor", false);
+		updateRadioGroup(m3gAntiAliasValues, m3gCommonSettingValues, "m3gantialiasmode", false);
+		updateRadioGroup(m3gBilinearValues, m3gCommonSettingValues, "m3gbilinearmode", false);
+		updateRadioGroup(m3gDitheringValues, m3gCommonSettingValues, "m3gditheringmode", false);
+		updateRadioGroup(m3gPerspCorrValues, m3gCommonSettingValues, "m3gperspcorrmode", false);
+		updateRadioGroup(m3gMipmapValues, m3gMipmapSettingValues, "m3gmipmapmode", false);
+		updateRadioGroup(m3gPerspCorrFactorValues, m3gPFactorSettingValues, "m3gperspcorrsubfactor", false);
 
-			for(int i = 0; i < rotations.length; i++) { rotations[i].setState(config.settings.get("rotate").equals(rotationValues[i])); }
+		// Standard Per-App Toggleable Settings
+		updateToggle(M3GHalfRes, "spdhackm3ghalfres");
+		updateToggle(M3GDisableFog, "m3gdisablefog");
+		updateToggle(noAlphaOnBlankImages, "spdhacknoalpha");
+		updateToggle(MCV3HalfRes, "spdhackmcv3halfres");
+		updateToggle(MCV3NoLighting, "spdhackmcv3nolighting");
+		updateToggle(fantasyZoneFix, "compatfantasyzonefix");
+		updateToggle(transToOriginOnReset, "compattranstooriginonreset");
+		updateToggle(immediateRepaints, "compatimmediaterepaints");
+		updateToggle(repaintOnSetCurrent, "compatrepaintonsetcurrent");
+		updateToggle(overridePlatChecks, "compatoverrideplatchecks");
+		updateToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing");
+		updateToggle(ignoreVolumeChanges, "compatignorevolumechanges");
+		updateToggle(MCV3HorFovFix, "compatmcv3horizfovfix");
+		resChoice.select(config.settings.get("scrwidth") + "x" + config.settings.get("scrheight"));
 
-			for(int i = 0; i < fpsOptions.length; i++) { fpsOptions[i].setState(config.settings.get("fps").equals(fpsValues[i])); }
+		// Sys Settings
+		updateRadioGroup(logLevels, logLevelValues, "logLevel", true);
+		updateRadioGroup(fpsCounterPos, showFPSValues, "fpsCounterPosition", true);
+		updateSysToggle(enableAudio, "sound");
+		updateSysToggle(dumpGraphicsData, "dumpGraphicsObjects");
+		updateSysToggle(dumpAudioData, "dumpAudioStreams");
+		updateSysToggle(M3GWireframe, "M3GWireframe");
+		updateSysToggle(M3GUntextured, "M3GUntextured");
+		updateSysToggle(MCV3ShowHeapUsage, "MCV3ShowHeapUsage");
+		updateSysToggle(MCV3ShowTimeMetrics, "MCV3ShowTimeMetrics");
+		updateSysToggle(deleteTemporaryKJXFiles, "deleteTempKJXFiles");
 
-			for(int i = 0; i < fpsHackOptions.length; i++) { fpsHackOptions[i].setState(config.settings.get("fpshack").equals(fpsHackValues[i])); }
+		// Sync AWT Keycodes
+		System.arraycopy(Config.inputKeycodes, 0, newInputKeycodes, 0, Config.inputKeycodes.length);
+		for (int i = 0; i < inputButtons.length; i++)
+		{
+			inputButtons[i].setLabel(KeyEvent.getKeyText(newInputKeycodes[i]));
+		}
 
-			for(int i = 0; i < fontOffsets.length; i++) { fontOffsets[i].setState(config.settings.get("fontoffset").equals(fontOffsetValues[i])); }
+		firstLoad = false;
+	}
 
-			for(int i = 0; i < layoutOptions.length; i++)
-			{
-				layoutOptions[i].setState(config.settings.get("phone").equals(layoutValues[i]));
-			}
+	private void updateRadioGroup(CheckboxMenuItem[] options, String[] values, String settingKey, boolean isSysSetting)
+	{
+		String currentValue = isSysSetting ? config.sysSettings.get(settingKey) : config.settings.get(settingKey);
+		for (int i = 0; i < options.length; i++)
+		{
+			options[i].setState(values[i].equals(currentValue));
+		}
+	}
 
-			for(int i = 0; i < backlightOptions.length; i++)
-			{
-				backlightOptions[i].setState(config.settings.get("backlightcolor").equals(backlightValues[i]));
-			}
+	private void updateToggle(CheckboxMenuItem checkbox, String settingKey)
+	{
+		checkbox.setState("on".equals(config.settings.get(settingKey)));
+	}
 
-			for(int i = 0; i < m3gAntiAliasValues.length; i++)
-			{
-				m3gAntiAliasValues[i].setState(config.settings.get("m3gantialiasmode").equals(m3gCommonSettingValues[i]));
-			}
-
-			for(int i = 0; i < m3gBilinearValues.length; i++)
-			{
-				m3gBilinearValues[i].setState(config.settings.get("m3gbilinearmode").equals(m3gCommonSettingValues[i]));
-			}
-
-			for(int i = 0; i < m3gDitheringValues.length; i++)
-			{
-				m3gDitheringValues[i].setState(config.settings.get("m3gditheringmode").equals(m3gCommonSettingValues[i]));
-			}
-
-			for(int i = 0; i < m3gPerspCorrValues.length; i++)
-			{
-				m3gPerspCorrValues[i].setState(config.settings.get("m3gperspcorrmode").equals(m3gCommonSettingValues[i]));
-			}
-
-			for(int i = 0; i < m3gMipmapValues.length; i++)
-			{
-				m3gMipmapValues[i].setState(config.settings.get("m3gmipmapmode").equals(m3gMipmapSettingValues[i]));
-			}
-
-			for(int i = 0; i < m3gPerspCorrFactorValues.length; i++)
-			{
-				m3gPerspCorrFactorValues[i].setState(config.settings.get("m3gperspcorrsubfactor").equals(m3gPFactorSettingValues[i]));
-			}
-
-			M3GHalfRes.setState(config.settings.get("spdhackm3ghalfres").equals("on"));
-
-			M3GDisableFog.setState(config.settings.get("m3gdisablefog").equals("on"));
-
-			noAlphaOnBlankImages.setState(config.settings.get("spdhacknoalpha").equals("on"));
-
-			MCV3HalfRes.setState(config.settings.get("spdhackmcv3halfres").equals("on"));
-
-			MCV3NoLighting.setState(config.settings.get("spdhackmcv3nolighting").equals("on"));
-
-			fantasyZoneFix.setState(config.settings.get("compatfantasyzonefix").equals("on"));
-
-			transToOriginOnReset.setState(config.settings.get("compattranstooriginonreset").equals("on"));
-
-			immediateRepaints.setState(config.settings.get("compatimmediaterepaints").equals("on"));
-
-			repaintOnSetCurrent.setState(config.settings.get("compatrepaintonsetcurrent").equals("on"));
-
-			overridePlatChecks.setState(config.settings.get("compatoverrideplatchecks").equals("on"));
-
-			siemensFriendlyDrawing.setState(config.settings.get("compatsiemensfriendlydrawing").equals("on"));
-
-			ignoreVolumeChanges.setState(config.settings.get("compatignorevolumechanges").equals("on"));
-
-			MCV3HorFovFix.setState(config.settings.get("compatmcv3horizfovfix").equals("on"));
-
-			resChoice.select(""+ Integer.parseInt(config.settings.get("scrwidth")) + "x" + ""+ Integer.parseInt(config.settings.get("scrheight")));
-
-			// Sys Settings
-			for(int i = 0; i < logLevels.length; i++) { logLevels[i].setState(config.sysSettings.get("logLevel").equals(logLevelValues[i])); }
-
-			for(int i = 0; i < fpsCounterPos.length; i++) { fpsCounterPos[i].setState(config.sysSettings.get("fpsCounterPosition").equals(showFPSValues[i])); }
-
-			dumpGraphicsData.setState(config.sysSettings.get("dumpGraphicsObjects").equals("on"));
-
-			dumpAudioData.setState(config.sysSettings.get("dumpAudioStreams").equals("on"));
-
-			M3GWireframe.setState(config.sysSettings.get("M3GWireframe").equals("on"));
-
-			M3GUntextured.setState(config.sysSettings.get("M3GUntextured").equals("on"));
-
-			MCV3ShowHeapUsage.setState(config.sysSettings.get("MCV3ShowHeapUsage").equals("on"));
-
-			MCV3ShowTimeMetrics.setState(config.sysSettings.get("MCV3ShowTimeMetrics").equals("on"));
-
-			deleteTemporaryKJXFiles.setState(config.sysSettings.get("deleteTempKJXFiles").equals("on"));
-
-			// Get saved inputs from system config file.
-			System.arraycopy(Config.inputKeycodes, 0, newInputKeycodes, 0, Config.inputKeycodes.length);
-			for(int i = 0; i < inputButtons.length; i++) { inputButtons[i].setLabel(KeyEvent.getKeyText(newInputKeycodes[i])); }
-
-			/* We only need to do this call once, when the jar first loads */
-			firstLoad = false;
+	private void updateSysToggle(CheckboxMenuItem checkbox, String sysSettingKey)
+	{
+		checkbox.setState("on".equals(config.sysSettings.get(sysSettingKey)));
 	}
 
 	class UIListener implements ActionListener
 	{
 		public void actionPerformed(ActionEvent a)
 		{
-
-			if(a.getActionCommand() == "Open")
+			String command = a.getActionCommand();
+			if(command.equals("Open"))
 			{
 				FileDialog filePicker = new FileDialog(main, "Open JAR / JAD / KJX / MSD File", FileDialog.LOAD);
 				String filename;
-				filePicker.setFilenameFilter(new FilenameFilter() {
-					public boolean accept(File dir, String name) {
+				filePicker.setFilenameFilter(new FilenameFilter()
+				{
+					public boolean accept(File dir, String name)
+					{
 						return name.toLowerCase().endsWith(".jar") ||
 								name.toLowerCase().endsWith(".jad") ||
 								name.toLowerCase().endsWith(".kjx") ||
@@ -1546,8 +1114,7 @@ public final class AWTGUI
 						catch(Exception e) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "Load error:" + e.getMessage()); }
 				}
 			}
-
-			if(a.getActionCommand() == "OpenSp")
+			if(command.equals("OpenSp"))
 			{
 				FileDialog filePicker = new FileDialog(main, "Open DoJa SP / SP0 File", FileDialog.LOAD);
 				String filename;
@@ -1578,22 +1145,14 @@ public final class AWTGUI
 						catch(Exception e) { Mobile.log(Mobile.LOG_DEBUG, AWTGUI.class.getPackage().getName() + "." + AWTGUI.class.getSimpleName() + ": " + "Load error:" + e.getMessage()); }
 				}
 			}
-
-			else if(a.getActionCommand() == "Close") { FreeJ2ME.closeApp(); }
-
-			else if(a.getActionCommand() == "Screenshot") { ScreenShot.takeScreenshot(false); }
-
-			else if(a.getActionCommand() == "PauseResume") { MobilePlatform.pauseResumeApp(); }
-
-			else if(a.getActionCommand() == "Exit") { System.exit(0); }
-
-			else if(a.getActionCommand() == "AboutMenu") { awtDialogs[1].setLocationRelativeTo(main); awtDialogs[1].setVisible(true); }
-
-			else if(a.getActionCommand() == "CloseAboutMenu") { awtDialogs[1].setVisible(false); }
-
-			else if(a.getActionCommand() == "ChangeResolution") { awtDialogs[0].setLocationRelativeTo(main); awtDialogs[0].setVisible(true); }
-
-			else if(a.getActionCommand() == "ApplyResChange")
+			else if(command.equals("Close")) { FreeJ2ME.closeApp(); }
+			else if(command.equals("Screenshot")) { ScreenShot.takeScreenshot(false); }
+			else if(command.equals("PauseResume")) { MobilePlatform.pauseResumeApp(); }
+			else if(command.equals("Exit")) { System.exit(0); }
+			else if(command.equals("AboutMenu")) { awtDialogs[1].setLocationRelativeTo(main); awtDialogs[1].setVisible(true); }
+			else if(command.equals("CloseAboutMenu")) { awtDialogs[1].setVisible(false); }
+			else if(command.equals("ChangeResolution")) { awtDialogs[0].setLocationRelativeTo(main); awtDialogs[0].setVisible(true); }
+			else if(command.equals("ApplyResChange"))
 			{
 				if(fileLoaded) /* Only update res if a jar was loaded, or else AWT throws NullPointerException */
 				{
@@ -1604,25 +1163,18 @@ public final class AWTGUI
 				}
 				awtDialogs[0].setVisible(false);
 			}
-
-			else if (a.getActionCommand() == "CancelResChange") { awtDialogs[0].setVisible(false); }
-
-			else if(a.getActionCommand() == "RestartNow") { Mobile.restartApp(); }
-
-			else if(a.getActionCommand() == "RestartLater") { awtDialogs[3].setVisible(false); }
-
-			else if(a.getActionCommand() == "MapInputs") { awtDialogs[4].setVisible(true); }
-
-			else if(a.getActionCommand() == "ApplyInputs")
+			else if(command.equals("CancelResChange")) { awtDialogs[0].setVisible(false); }
+			else if(command.equals("RestartNow")) { Mobile.restartApp(); }
+			else if(command.equals("RestartLater")) { awtDialogs[3].setVisible(false); }
+			else if(command.equals("MapInputs")) { awtDialogs[4].setVisible(true); }
+			else if(command.equals("ApplyInputs"))
 			{
 				System.arraycopy(newInputKeycodes, 0, Config.inputKeycodes, 0, newInputKeycodes.length);
 				config.updateAWTInputs();
 				awtDialogs[4].setVisible(false);
 			}
-
-			else if(a.getActionCommand() == "CancelInputs") { awtDialogs[4].setVisible(false); }
-
-			else if(a.getActionCommand() == "ShowPlayer")
+			else if(command.equals("CancelInputs")) { awtDialogs[4].setVisible(false); }
+			else if(command.equals("ShowPlayer"))
 			{
 				// Create FreeJ2MEPlayer Dialog instance and show it;
 				FreeJ2MEPlayer playerDialog = new FreeJ2MEPlayer(main);
@@ -1661,9 +1213,9 @@ public final class AWTGUI
 		// So that the console window and memory stats follow the main window around
 		main.addComponentListener(new ComponentAdapter()
 		{
-            public void componentMoved(ComponentEvent e) { updateDialogLocations(main); }
-            public void componentResized(ComponentEvent e) { updateDialogLocations(main); }
-        });
+			public void componentMoved(ComponentEvent e) { updateDialogLocations(main); }
+			public void componentResized(ComponentEvent e) { updateDialogLocations(main); }
+		});
 
 		main.setResizable(false);
 	}
@@ -1696,5 +1248,5 @@ public final class AWTGUI
 			"Used Mem : " + ((Runtime.getRuntime().totalMemory() / 1024) - (Runtime.getRuntime().freeMemory() / 1024)) + " KB\n" +
 			"Max Mem  : " + (Runtime.getRuntime().maxMemory() / 1024) + " KB"
 		);
-    }
+	}
 }
