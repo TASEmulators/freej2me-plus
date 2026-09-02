@@ -517,7 +517,12 @@ public class PlatformPlayer implements Player
 
 		if(getState() == Player.REALIZED || getState() == Player.UNREALIZED) { return Player.TIME_UNKNOWN; }
 
-		return player.getDuration(); // Maybe not really needed? We should find a jar that actually uses this for something
+		/*
+        * MLD conversion may unroll one extra loop iteration to stabilize the MIDI state.
+        * Using the sequencer duration here would cause the Media Player to display that extra iteration.
+		*/
+
+		return player instanceof MLDPlayer ? ((MLDPlayer) player).displayDuration() : player.getDuration(); // Maybe not really needed? We should find a jar that actually uses this for something
 	}
 
 	public long getMediaTime()
@@ -533,7 +538,8 @@ public class PlatformPlayer implements Player
 		 */
 		if(getState() == Player.UNREALIZED || getState() == Player.REALIZED) { return Player.TIME_UNKNOWN; }
 
-		return player.getMediaTime();
+		// Keep MLD progress on the same source timeline as the displayed duration above.
+		return player instanceof MLDPlayer ? ((MLDPlayer) player).displayTime() : player.getMediaTime();
 	}
 
 	/* Both midi and wav players do little more than just set their state as PREFETCHED here. */
@@ -943,7 +949,7 @@ public class PlatformPlayer implements Player
 				else
 				{
 					midi.setSequence(midiSequence);
-					configureSequencePlayback();
+					configurePlayback();
 				}
 
 				if(wavStreams != null)
@@ -1060,7 +1066,7 @@ public class PlatformPlayer implements Player
 		{
 			if (midi != null && midi.isRunning()) { midi.stop(); }
 			stopPcmScheduler();
-			stopActivePcmClips();
+			stopPcmClips();
 			isPlaying = false;
 			state = Player.PREFETCHED;
 			notifyListeners(PlayerListener.STOPPED, getMediaTime());
@@ -1125,11 +1131,11 @@ public class PlatformPlayer implements Player
 
 		public long setMediaTime(long now)
 		{
+			if(now >= getDuration()) { now = getDuration(); }
+			else if(now < 0) { now = 0; }
+
 			try
 			{
-				if(now >= getDuration()) { now = getDuration(); }
-				else if(now < 0) { now = 0; }
-
 				synchronized(pcmClipLock)
 				{
 					if(wavClips != null)
@@ -1165,6 +1171,8 @@ public class PlatformPlayer implements Player
 
 		public Sequence getSequence() { return midiSequence; }
 
+		protected long getSequenceTick() { return midi == null ? 0L : midi.getTickPosition(); }
+
 		public void setSequence(InputStream sequence)
 		{
 			try
@@ -1187,7 +1195,7 @@ public class PlatformPlayer implements Player
 				this.receiver = this.synthesizer.getReceiver();
 				transmitter.setReceiver(receiver);
 				midi.setSequence(midiSequence);
-				configureSequencePlayback();
+				configurePlayback();
 			}
 		}
 
@@ -1229,9 +1237,9 @@ public class PlatformPlayer implements Player
 			return false;
 		}
 
-		protected void handleSequenceMeta(MetaMessage meta) { }
+		protected void onMeta(MetaMessage meta) { }
 
-		protected void stopActivePcmClips()
+		protected void stopPcmClips()
 		{
 			synchronized(pcmClipLock)
 			{
@@ -1244,9 +1252,7 @@ public class PlatformPlayer implements Player
 			}
 		}
 
-		protected Sequence getMidiSequence() { return midiSequence; }
-
-		protected void configureSequenceLoop(long loopStartTick, long loopEndTick, int repeatCount)
+		protected void setLoop(long loopStartTick, long loopEndTick, int repeatCount)
 		{
 			sequencerLoopConfigured = true;
 			midi.setLoopStartPoint(loopStartTick);
@@ -1254,12 +1260,12 @@ public class PlatformPlayer implements Player
 			midi.setLoopCount(repeatCount < 0 ? Sequencer.LOOP_CONTINUOUSLY : repeatCount);
 		}
 
-		protected void configureSequencePlayback() throws InvalidMidiDataException { }
+		protected void configurePlayback() throws InvalidMidiDataException { }
 
 		@Override
 		public void meta(MetaMessage meta)
 		{
-			handleSequenceMeta(meta);
+			onMeta(meta);
 			if (meta.getType() == 0x2F) // END_OF_MEDIA
 			{
 				stopPcmScheduler();
@@ -1286,30 +1292,47 @@ public class PlatformPlayer implements Player
 		}
 	}
 
+	/*
+	 * MLD conversion may unroll a loop to stabilize its MIDI state. PlaybackTimeline maps
+	 * the longer sequencer timeline back to the original MLD progress.
+	 */
+
 	private class MLDPlayer extends SMAFPlayer
 	{
+		private final MLDDecoder.PlaybackTimeline timeline = MLDDecoder.getPlaybackTimeline();
+
 		public MLDPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
 		{
 			super(midiStream, wavStreams, pcmPositions, pcmVelocities);
 		}
 
-		protected void handleSequenceMeta(MetaMessage meta)
+		protected void onMeta(MetaMessage meta)
 		{
 			String marker = MLDDecoder.MLDSequenceMarker.decodeMarker(meta);
 			if(!MLDDecoder.MLDSequenceMarker.isStopMarker(marker)) { return; }
 
-			stopActivePcmClips();
+			stopPcmClips();
 		}
 
-		protected void configureSequencePlayback() throws InvalidMidiDataException
+		protected void configurePlayback() throws InvalidMidiDataException
 		{
-			MLDDecoder.MLDSequenceMarker.LoopMarker loopInfo = findEmbeddedLoopMarker(getMidiSequence());
+			MLDDecoder.MLDSequenceMarker.LoopMarker loopInfo = findLoopMarker(getSequence());
 			if(loopInfo == null) { return; }
 
-			configureSequenceLoop(loopInfo.loopStartTick, loopInfo.loopEndTick, loopInfo.repeatCount);
+			setLoop(loopInfo.loopStartTick, loopInfo.loopEndTick, loopInfo.repeatCount);
 		}
 
-		private MLDDecoder.MLDSequenceMarker.LoopMarker findEmbeddedLoopMarker(Sequence sequence)
+		private long displayDuration()
+		{
+			return timeline.displayDuration(getDuration());
+		}
+
+		private long displayTime()
+		{
+			return timeline.displayTime(getSequenceTick(), getSequence().getResolution(), super.getMediaTime());
+		}
+
+		private MLDDecoder.MLDSequenceMarker.LoopMarker findLoopMarker(Sequence sequence)
 		{
 			if(sequence == null) { return null; }
 

@@ -72,6 +72,90 @@ public final class MLDDecoder
     public static Map<Integer, Integer> pcmDataPositions = new HashMap<Integer, Integer>();
     public static Map<Integer, Integer> pcmDataVelocities = new HashMap<Integer, Integer>();
 
+    private static PlaybackTimeline playbackTimeline = new PlaybackTimeline();
+
+    public static PlaybackTimeline getPlaybackTimeline() { return playbackTimeline; }
+
+    /*
+     * DD loops can make the converted MIDI longer than the source. This keeps the
+     * displayed time on the original MLD timeline. A new instance is made for each file,
+     * so an existing player keeps its own timeline when another MLD is decoded.
+     */
+    public static final class PlaybackTimeline
+    {
+        private List<MLDMelodyDecoder.TempoPoint> tempoPoints = Collections.emptyList();
+        private List<Integer> rewindRawTicks = Collections.emptyList();
+        private List<Integer> rewindSourceRawTicks = Collections.emptyList();
+        private int endRawTick;
+        private int parserCycleStartRawTick = -1;
+        private int parserCycleEndRawTick = -1;
+        private int sequenceLoopStartRawTick = -1;
+        private int displayEndRawTick = -1;
+        private long displayDurationMicros = -1L;
+
+        private PlaybackTimeline() { }
+
+        public long displayDuration(long fallback)
+        {
+            return displayDurationMicros > 0 ? displayDurationMicros : fallback;
+        }
+
+        public long displayTime(long midiTick, int resolution, long fallback)
+        {
+            int sourceRawTick = sourceRawTick(midiTick, resolution);
+            if(sourceRawTick < 0) { return fallback; }
+            return (displayDurationMicros * sourceRawTick) / endRawTick;
+        }
+
+        private void setSourceProgress(
+                List<Integer> rewindRawTicks,
+                List<Integer> rewindSourceRawTicks,
+                int endRawTick,
+                int parserCycleStartRawTick,
+                int parserCycleEndRawTick,
+                int sequenceLoopStartRawTick,
+                int displayEndRawTick)
+        {
+            this.rewindRawTicks = rewindRawTicks;
+            this.rewindSourceRawTicks = rewindSourceRawTicks;
+            this.endRawTick = Math.max(0, endRawTick);
+            this.parserCycleStartRawTick = parserCycleStartRawTick;
+            this.parserCycleEndRawTick = parserCycleEndRawTick;
+            this.sequenceLoopStartRawTick = sequenceLoopStartRawTick;
+            this.displayEndRawTick = displayEndRawTick;
+        }
+
+        private int sourceRawTick(long midiTick, int resolution)
+        {
+            if(displayDurationMicros <= 0 || endRawTick <= 0 || rewindRawTicks.isEmpty() || tempoPoints.isEmpty()) { return -1; }
+
+            int rawTick = rawTickAt(midiTick, resolution);
+            int parserCycleRawTicks = parserCycleEndRawTick - parserCycleStartRawTick;
+            if(sequenceLoopStartRawTick >= 0 && parserCycleRawTicks > 0 && rawTick >= sequenceLoopStartRawTick)
+            {
+                rawTick = parserCycleStartRawTick
+                        + (rawTick - sequenceLoopStartRawTick) % parserCycleRawTicks;
+            }
+
+            int sourceRawTick = rawTick;
+            for(int i = 0; i < rewindRawTicks.size(); i++)
+            {
+                if(rewindRawTicks.get(i).intValue() > rawTick) { break; }
+                sourceRawTick = rawTick + rewindSourceRawTicks.get(i).intValue() - rewindRawTicks.get(i).intValue();
+            }
+            return Math.max(0, Math.min(endRawTick, sourceRawTick));
+        }
+
+        private int rawTickAt(long midiTick, int resolution)
+        {
+            MLDMelodyDecoder.TempoPoint point = tempoPoints.get(0);
+            for(int i = 1; i < tempoPoints.size() && tempoPoints.get(i).midiTick <= midiTick; i++) { point = tempoPoints.get(i); }
+            long deltaMidiTick = Math.max(0L, midiTick - point.midiTick);
+            long rawTick = point.rawTick + (deltaMidiTick * point.timebase) / Math.max(1, resolution);
+            return rawTick > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) rawTick;
+        }
+    }
+
     private static final class DecodeState
     {
         byte[] input;
@@ -118,6 +202,7 @@ public final class MLDDecoder
         SequenceData = null;
         pcmDataPositions.clear();
         pcmDataVelocities.clear();
+        playbackTimeline = new PlaybackTimeline();
 
         DecodeState state = new DecodeState(data);
 
@@ -196,6 +281,7 @@ public final class MLDDecoder
 
             MLDMelodyDecoder.DecodeResult decodeResult = MLDMelodyDecoder.build(state.melodyTrackData, state.numTracks, state.noteExtraBytes, Math.max(state.exst, 0));
             state.sequence = decodeResult.sequence;
+            playbackTimeline = decodeResult.playbackTimeline;
             pcmDataPositions.putAll(decodeResult.pcmPositions);
             pcmDataVelocities.putAll(decodeResult.pcmVelocities);
 
@@ -580,7 +666,7 @@ public final class MLDDecoder
                 return null;
             }
             String[] parts = marker.substring(LOOP_MARKER_PREFIX.length()).split(":");
-            if (parts.length < 3)
+            if (parts.length != 3)
             {
                 return null;
             }
@@ -627,9 +713,10 @@ public final class MLDDecoder
         private static final int MAX_LOGICAL_CHANNELS = 64;
         private static final int MIDI_PPQ = 1920;
         private static final int DEFAULT_TIMEBASE = 48;
-        private static final int DEFAULT_TEMPO = 120;
+        private static final int DEFAULT_TEMPO = 125;
         private static final int MIN_TEMPO = 20;
         private static final int MAX_TEMPO = 255;
+        private static final int DEFAULT_MASTER_VOLUME = 100;
         private static final int DEFAULT_LEVEL = 63;
         private static final int DEFAULT_PAN = 32;
         private static final int DEFAULT_PITCH_COARSE = 32;
@@ -637,10 +724,7 @@ public final class MLDDecoder
         private static final int DEFAULT_PITCH_RANGE = 2;
         private static final int DEFAULT_MODULATION = 0;
         private static final int[] OCTAVE_TABLE = new int[] { 0, 12, -24, -12 };
-        private static final boolean DEFAULT_IDENTITY_OUTPUT_MAP = false;
-        private static final boolean DEFAULT_RESERVE_DRUM_OUTPUT_CHANNEL = true;
         private static final int MIDI_DRUM_CHANNEL = 9;
-        private static final int DEFAULT_SPECIAL_OUTPUT_MASK = 1 << MIDI_DRUM_CHANNEL;
 
         private MLDMelodyDecoder()
         {
@@ -650,149 +734,101 @@ public final class MLDDecoder
                 throws IOException, InvalidMidiDataException
         {
             int effectiveTrackCount = declaredTrackCount > 0 ? declaredTrackCount : trackPayloads.size();
-            DecodePlan plan = prepareDecodePlan(trackPayloads, noteExtraBytes, exstSize, effectiveTrackCount);
-            MidiTracks midiTracks = createMidiTracks();
-            RenderState renderState = createRenderState(plan.effectiveTrackCount);
-            long maxTick = renderEvents(plan, renderState);
-            long contentEndTick = finalizeRender(plan, renderState, midiTracks, maxTick);
-
-            return new DecodeResult(
-                    midiTracks.sequence,
-                    plan.pcmPositions,
-                    plan.pcmVelocities,
-                    plan.warnings);
-        }
-
-        private static DecodePlan prepareDecodePlan(
-                List<byte[]> trackPayloads,
-                int noteExtraBytes,
-                int exstSize,
-                int effectiveTrackCount)
-                throws IOException
-        {
             List<String> warnings = new ArrayList<String>();
-            // TRAC bytes are walked once; melody rendering and PCM extraction share these events.
-            List<TrackDecodeResult> decodedTracks = decodeTracks(trackPayloads, noteExtraBytes, exstSize);
-            List<TrackEvent> orderedEvents = collectOrderedEvents(decodedTracks);
-            List<RawTempoPoint> tempoSeeds = collectTempoSeeds(orderedEvents);
-            Collections.sort(tempoSeeds, RAW_TEMPO_COMPARATOR);
-            List<TempoPoint> tempoPoints = buildTempoPoints(tempoSeeds, warnings);
-            TempoMapper tempoMapper = new TempoMapper(tempoPoints);
-            LoopInfo loopInfo = determineLoopInfo(decodedTracks, tempoMapper, warnings);
-            Map<Integer, Integer> pcmPositions = new HashMap<Integer, Integer>();
-            Map<Integer, Integer> pcmVelocities = new HashMap<Integer, Integer>();
-            extractPcmTriggers(decodedTracks, tempoPoints, pcmPositions, pcmVelocities, warnings);
-            return new DecodePlan(decodedTracks, orderedEvents, tempoPoints, tempoMapper, loopInfo, pcmPositions, pcmVelocities, warnings, effectiveTrackCount);
-        }
-
-        private static List<TrackDecodeResult> decodeTracks(List<byte[]> trackPayloads, int noteExtraBytes, int exstSize) throws IOException
-        {
-            List<TrackDecodeResult> decodedTracks = new ArrayList<TrackDecodeResult>(trackPayloads.size());
+            List<List<TrackEvent>> decodedTracks = new ArrayList<List<TrackEvent>>(trackPayloads.size());
             for (int i = 0; i < trackPayloads.size(); i++)
             {
                 decodedTracks.add(decodeTrack(i, trackPayloads.get(i), noteExtraBytes, exstSize));
             }
-            return decodedTracks;
-        }
 
-        private static MidiTracks createMidiTracks() throws InvalidMidiDataException
-        {
+            PlaybackTimeline timeline = new PlaybackTimeline();
+            ScheduledExecution execution = scheduleEvents(decodedTracks, effectiveTrackCount, warnings, timeline);
+            List<TempoPoint> tempoPoints = buildTempoPoints(execution.events, warnings);
+            timeline.tempoPoints = tempoPoints;
+            if (timeline.displayEndRawTick > 0)
+            {
+                long displayEndTick = rawToMidiTick(tempoPoints, timeline.displayEndRawTick);
+                timeline.displayDurationMicros = midiTickToMicroseconds(tempoPoints, displayEndTick);
+            }
+            Map<Integer, Integer> pcmPositions = new HashMap<Integer, Integer>();
+            Map<Integer, Integer> pcmVelocities = new HashMap<Integer, Integer>();
+            extractPcmTriggers(decodedTracks, tempoPoints, pcmPositions, pcmVelocities, warnings);
+
             Sequence sequence = new Sequence(Sequence.PPQ, MIDI_PPQ);
             Track conductorTrack = sequence.createTrack();
             addTrackName(conductorTrack, "MLD Conductor");
-
             Track[] channelTracks = new Track[MIDI_CHANNEL_COUNT];
             for (int midiChannel = 0; midiChannel < MIDI_CHANNEL_COUNT; midiChannel++)
             {
                 channelTracks[midiChannel] = sequence.createTrack();
                 addTrackName(channelTracks[midiChannel], "MLD Channel " + midiChannel);
             }
-            return new MidiTracks(sequence, conductorTrack, channelTracks);
-        }
 
-        private static RenderState createRenderState(int effectiveTrackCount)
-        {
             List<MessageEvent> messageEvents = new ArrayList<MessageEvent>();
             ControlCollector controlCollector = new ControlCollector(messageEvents);
             ChannelState[] channels = createChannelStates();
             int[] partChannelMap = createIdentityPartChannelMap(Math.max(MIDI_CHANNEL_COUNT, effectiveTrackCount * 4));
-            OutputChannelLayout outputLayout = OutputChannelLayout.createDefault();
-            Map<Integer, ActiveNote> activeNotes = new LinkedHashMap<Integer, ActiveNote>();
-            List<Long> stopTicks = new ArrayList<Long>();
+            RenderState renderState = new RenderState(
+                    messageEvents,
+                    controlCollector,
+                    channels,
+                    partChannelMap,
+                    new LinkedHashMap<Integer, ActiveNote>(),
+                    new ArrayList<Long>());
+            emitInitialMidiDefaults(controlCollector, channels, 0L);
 
-            emitInitialMidiDefaults(controlCollector, channels);
-            return new RenderState(messageEvents, controlCollector, channels, partChannelMap, outputLayout, activeNotes, stopTicks);
-        }
-
-        private static long renderEvents(DecodePlan plan, RenderState renderState)
-        {
             long maxTick = 0L;
-            for (int i = 0; i < plan.orderedEvents.size(); i++)
+            for (int i = 0; i < execution.events.size(); i++)
             {
-                TrackEvent event = plan.orderedEvents.get(i);
-                maxTick = Math.max(maxTick, flushExpiredNotes(event.rawTick, renderState.activeNotes, renderState.messageEvents));
+                TrackEvent event = execution.events.get(i);
+                maxTick = Math.max(maxTick, flushExpiredNotes(event.rawTick, renderState.activeNotes, messageEvents));
                 if (event instanceof NoteEvent)
                 {
-                    maxTick = Math.max(maxTick, handleNoteEvent((NoteEvent) event, plan, renderState));
+                    maxTick = Math.max(maxTick, handleNoteEvent((NoteEvent) event, tempoPoints, warnings, renderState));
                 }
                 else if (event instanceof SystemEvent)
                 {
-                    maxTick = Math.max(maxTick, handleSystemEvent((SystemEvent) event, plan, renderState));
+                    maxTick = Math.max(maxTick, handleSystemEvent((SystemEvent) event, tempoPoints, warnings, renderState));
                 }
             }
-            return maxTick;
-        }
+            maxTick = Math.max(maxTick, flushExpiredNotes(Integer.MAX_VALUE, renderState.activeNotes, messageEvents));
+            maxTick = Math.max(maxTick, rawToMidiTick(tempoPoints, execution.endRawTick));
 
-        private static long finalizeRender(DecodePlan plan, RenderState renderState, MidiTracks midiTracks, long maxTick)
-                throws InvalidMidiDataException
-        {
-            maxTick = Math.max(maxTick, flushExpiredNotes(Integer.MAX_VALUE, renderState.activeNotes, renderState.messageEvents));
-            for (int i = 0; i < plan.decodedTracks.size(); i++)
+            boolean hasLoop = execution.hasLoop();
+            long loopStartTick = hasLoop ? rawToMidiTick(tempoPoints, execution.loopStartRawTick) : -1L;
+            long loopEndTick = hasLoop ? rawToMidiTick(tempoPoints, execution.loopEndRawTick) : -1L;
+            long contentEndTick = hasLoop ? Math.max(1L, loopEndTick) : Math.max(1L, maxTick);
+            emitTempoTrack(tempoPoints, conductorTrack, contentEndTick);
+            if (hasLoop)
             {
-                maxTick = Math.max(maxTick, plan.tempoMapper.rawToMidiTick(plan.decodedTracks.get(i).totalRawTicks));
+                addLoopMarker(conductorTrack, loopStartTick, loopEndTick, -1);
+            }
+            addStopMarkers(conductorTrack, renderState.stopTicks);
+
+            int[] outputChannelMap = buildOutputChannelMap(renderState.activeOutputMask);
+            Collections.sort(messageEvents, MESSAGE_EVENT_COMPARATOR);
+            for (int i = 0; i < messageEvents.size(); i++)
+            {
+                MessageEvent event = messageEvents.get(i);
+                if (hasLoop && event.tick > contentEndTick) { continue; }
+                int midiChannel = outputChannelMap[event.midiChannel];
+                addShortMessage(channelTracks[midiChannel], event.status, midiChannel, event.data1, event.data2, event.tick);
             }
 
-            long contentEndTick = plan.loopInfo.hasLoop ? Math.max(1L, plan.loopInfo.loopEndTick) : Math.max(1L, maxTick);
-            emitTempoTrack(plan.tempoPoints, midiTracks.conductorTrack, contentEndTick);
-            if (plan.loopInfo.hasLoop)
+            addEndOfTrack(conductorTrack, contentEndTick + 1L);
+            for (int i = 0; i < channelTracks.length; i++)
             {
-                addLoopMarker(midiTracks.conductorTrack, plan.loopInfo.loopStartTick, plan.loopInfo.loopEndTick, plan.loopInfo.repeatCount);
+                addEndOfTrack(channelTracks[i], contentEndTick + 1L);
             }
-            addStopMarkers(midiTracks.conductorTrack, renderState.stopTicks);
-
-            writeChannelEvents(renderState, midiTracks);
-            closeTracks(midiTracks, contentEndTick);
-            return contentEndTick;
+            return new DecodeResult(sequence, timeline, pcmPositions, pcmVelocities, warnings);
         }
 
-        private static void writeChannelEvents(RenderState renderState, MidiTracks midiTracks) throws InvalidMidiDataException
-        {
-            int[] outputChannelMap = buildOutputChannelMap(renderState.outputLayout);
-            List<MessageEvent> remappedEvents = remapMessageEvents(renderState.messageEvents, outputChannelMap);
-            Collections.sort(remappedEvents, MESSAGE_EVENT_COMPARATOR);
-            for (int i = 0; i < remappedEvents.size(); i++)
-            {
-                MessageEvent event = remappedEvents.get(i);
-                addShortMessage(midiTracks.channelTracks[event.midiChannel], event.status, event.midiChannel, event.data1, event.data2, event.tick);
-            }
-        }
-
-        private static void closeTracks(MidiTracks midiTracks, long contentEndTick) throws InvalidMidiDataException
-        {
-            addEndOfTrack(midiTracks.conductorTrack, contentEndTick + 1L);
-            for (int i = 0; i < midiTracks.channelTracks.length; i++)
-            {
-                addEndOfTrack(midiTracks.channelTracks[i], contentEndTick + 1L);
-            }
-        }
-
-        private static TrackDecodeResult decodeTrack(int trackIndex, byte[] payload, int noteExtraBytes, int exstSize) throws IOException
+        private static List<TrackEvent> decodeTrack(int trackIndex, byte[] payload, int noteExtraBytes, int exstSize) throws IOException
         {
             List<TrackEvent> events = new ArrayList<TrackEvent>();
             int offset = 0;
             int rawTick = 0;
             int pendingExtendedDelta = 0;
-            int eventIndex = 0;
 
             while (offset < payload.length)
             {
@@ -808,7 +844,7 @@ public final class MLDDecoder
                 rawTick += delta;
 
                 // Resource statuses 0x3F/0x7F/0xBF share the same command/body framing.
-                if (isResourceStatus(status))
+                if (status == (MLD_EXTA_MSG & 0xFF) || status == (MLD_EXTB_MSG & 0xFF) || status == (MLD_EXTC_MSG & 0xFF))
                 {
                     if (offset >= payload.length)
                     {
@@ -830,7 +866,7 @@ public final class MLDDecoder
                             throw new IOException("Resource payload overruns track " + trackIndex);
                         }
                         offset += length;
-                        events.add(new ResourceEvent(trackIndex, eventIndex++, delta, rawTick, command, -1, -1, length, true));
+                        events.add(new ResourceEvent(trackIndex, rawTick, command, -1, -1));
                     }
                     else
                     {
@@ -842,13 +878,13 @@ public final class MLDDecoder
                         int value = bodyLength > 0 ? payload[offset] & 0xFF : -1;
                         int part = value >= 0 && command >= 0x80 && command < 0xF0 ? ((value >> 6) & 0x03) : -1;
                         offset += bodyLength;
-                        events.add(new ResourceEvent(trackIndex, eventIndex++, delta, rawTick, command, value, part, bodyLength, false));
+                        events.add(new ResourceEvent(trackIndex, rawTick, command, value, part));
                     }
                     continue;
                 }
 
                 // System status 0xFF carries tempo, loop, global stop, and timing controls.
-                if (isSystemStatus(status))
+                if (status == (MLD_SYSEX_MSG & 0xFF))
                 {
                     if (offset >= payload.length)
                     {
@@ -856,6 +892,18 @@ public final class MLDDecoder
                     }
 
                     int command = payload[offset++] & 0xFF;
+                    if (command < 0x80)
+                    {
+                        int bodyLength = 1 + Math.max(0, exstSize);
+                        if (offset + bodyLength > payload.length)
+                        {
+                            throw new IOException("Truncated short system envelope in track " + trackIndex);
+                        }
+                        offset += bodyLength;
+                        events.add(new SystemEvent(trackIndex, rawTick, command, -1, -1, -1));
+                        continue;
+                    }
+
                     if (command >= 0xF0)
                     {
                         if (offset + 2 > payload.length)
@@ -869,6 +917,7 @@ public final class MLDDecoder
                             throw new IOException("Machine-dependent payload overruns track " + trackIndex);
                         }
                         offset += length;
+                        events.add(new SystemEvent(trackIndex, rawTick, command, -1, -1, -1));
                         continue;
                     }
 
@@ -885,10 +934,16 @@ public final class MLDDecoder
                     }
                     int part = (command >= 0xE0 && command <= 0xEF) ? ((value >> 6) & 0x03) : -1;
                     int timebase = (command >= 0xC0 && command <= 0xCF) ? timebaseFor(command & 0x0F) : -1;
-                    events.add(new SystemEvent(trackIndex, eventIndex++, delta, rawTick, command, value, part, timebase));
+                    events.add(new SystemEvent(trackIndex, rawTick, command, value, part, timebase));
+                    if (command == 0xDF)
+                    {
+                        break;
+                    }
                     continue;
                 }
 
+                // Any remaining status is a note: the high two bits select the voice and
+                // the low six bits are the pitch. The first extra byte adds velocity and octave.
                 if (offset >= payload.length)
                 {
                     throw new IOException("Truncated note event in track " + trackIndex);
@@ -916,18 +971,16 @@ public final class MLDDecoder
 
                 events.add(new NoteEvent(
                         trackIndex,
-                        eventIndex++,
-                        delta,
                         rawTick,
                         (status >> 6) & 0x03,
                         status & 0x3F,
                         gate,
                         velocity,
                         octaveShift,
-                        noteExtraBytes));
+                        noteExtraBytes > 0));
             }
 
-            return new TrackDecodeResult(trackIndex, rawTick, events);
+            return events;
         }
 
         private static int bodyLengthForResourceCommand(int command, int exstSize)
@@ -949,32 +1002,382 @@ public final class MLDDecoder
             }
         }
 
-        private static boolean isResourceStatus(int status)
+        private static ScheduledExecution scheduleEvents(
+                List<List<TrackEvent>> decodedTracks,
+                int effectiveTrackCount,
+                List<String> warnings,
+                PlaybackTimeline timeline)
         {
-            return status == (MLD_EXTA_MSG & 0xFF) || status == (MLD_EXTB_MSG & 0xFF) || status == (MLD_EXTC_MSG & 0xFF);
-        }
-
-        private static boolean isSystemStatus(int status)
-        {
-            return status == (MLD_SYSEX_MSG & 0xFF);
-        }
-
-        private static List<TrackEvent> collectOrderedEvents(List<TrackDecodeResult> decodedTracks)
-        {
-            List<TrackEvent> events = new ArrayList<TrackEvent>();
+            // A DD loop saves and restores every track, not just track 0 where its command lives.
+            TrackCursor[] cursors = new TrackCursor[decodedTracks.size()];
             for (int i = 0; i < decodedTracks.size(); i++)
             {
-                events.addAll(decodedTracks.get(i).events);
+                cursors[i] = new TrackCursor(i, decodedTracks.get(i));
             }
-            Collections.sort(events, TRACK_EVENT_COMPARATOR);
-            return events;
+
+            LoopSlotState[] slots = new LoopSlotState[4];
+            for (int i = 0; i < slots.length; i++)
+            {
+                slots[i] = new LoopSlotState();
+            }
+
+            List<TrackEvent> executed = new ArrayList<TrackEvent>();
+            List<Integer> rewindRawTicks = new ArrayList<Integer>();
+            List<Integer> rewindSourceRawTicks = new ArrayList<Integer>();
+            int sourceEndRawTick = sourceEndRawTick(decodedTracks);
+            // Remember where repeated parser positions were first seen once an endless DD loop starts.
+            Map<String, long[]> seenSchedulerStates = null;
+            long currentTick = 0L;
+            int displayEndRawTick = -1;
+
+            while (true)
+            {
+                int currentRawTick = checkedRawTick(currentTick);
+                if (seenSchedulerStates != null)
+                {
+                    String key = schedulerStateKey(cursors, slots, currentTick);
+                    long[] previous = seenSchedulerStates.get(key);
+                    if (previous != null)
+                    {
+                        if (currentTick <= previous[0])
+                        {
+                            throw new IllegalStateException("Native DD scheduler repeated without advancing time.");
+                        }
+
+                        LoopSlotState infinite = null;
+                        for (int i = 0; i < slots.length; i++)
+                        {
+                            if (slots[i].active && slots[i].remaining < 0)
+                            {
+                                infinite = slots[i];
+                                break;
+                            }
+                        }
+                        if (infinite == null)
+                        {
+                            throw new IllegalStateException("Native DD scheduler repeated without an active infinite loop.");
+                        }
+
+                        warnings.add("Native DD parser cycle detected at raw tick " + previous[0] + " to " + currentTick + ".");
+                        ScheduledExecution execution = stabilizeInfiniteLoop(
+                                executed,
+                                (int) previous[1],
+                                checkedRawTick(previous[0]),
+                                currentRawTick,
+                                effectiveTrackCount,
+                                warnings);
+                        timeline.setSourceProgress(
+                                rewindRawTicks,
+                                rewindSourceRawTicks,
+                                infinite.sourceLoopEndSourceRawTick,
+                                checkedRawTick(previous[0]),
+                                currentRawTick,
+                                execution.loopStartRawTick,
+                                displayEndRawTick);
+                        return execution;
+                    }
+                    seenSchedulerStates.put(key, new long[] { currentTick, executed.size() });
+                }
+
+                int nextCursor = nextTrackCursor(cursors);
+                if (nextCursor < 0)
+                {
+                    timeline.setSourceProgress(rewindRawTicks, rewindSourceRawTicks, sourceEndRawTick, -1, -1, -1, -1);
+                    return new ScheduledExecution(executed, -1, -1, checkedRawTick(currentTick));
+                }
+
+                TrackCursor cursor = cursors[nextCursor];
+                currentTick = cursor.dueTick;
+                int eventRawTick = checkedRawTick(currentTick);
+                TrackEvent source = cursor.current();
+                TrackEvent event = copyTrackEventAt(source, eventRawTick);
+                executed.add(event);
+
+                if (event instanceof SystemEvent)
+                {
+                    SystemEvent systemEvent = (SystemEvent) event;
+                    if (systemEvent.command == 0xDD && systemEvent.trackIndex == 0)
+                    {
+                        int slot = (systemEvent.value >> 6) & 0x03;
+                        int operation = systemEvent.value & 0x03;
+                        if (operation == 0)
+                        {
+                            // Save the position after the start command so a rewind does not run it again.
+                            advanceTrackCursor(cursor, currentTick);
+                            slots[slot].capture(cursors, currentTick, source.rawTick);
+                            continue;
+                        }
+                        if (operation == 1 && slots[slot].valid)
+                        {
+                            LoopSlotState state = slots[slot];
+                            if (state.startRawTick == currentTick)
+                            {
+                                // The native player treats a zero-length DD loop as the end of all tracks.
+                                warnings.add("Zero-duration DD loop end marks every native track parser context done at raw tick " + currentTick + ".");
+                                for (int i = 0; i < cursors.length; i++)
+                                {
+                                    cursors[i].finish();
+                                }
+                                timeline.setSourceProgress(rewindRawTicks, rewindSourceRawTicks, sourceEndRawTick, -1, -1, -1, -1);
+                                return new ScheduledExecution(executed, -1, -1, checkedRawTick(currentTick));
+                            }
+
+                            if (!state.active)
+                            {
+                                // The repeat nibble counts extra passes; zero means repeat forever.
+                                int repeat = (systemEvent.value >> 2) & 0x0F;
+                                state.remaining = repeat == 0 ? -1 : repeat;
+                                state.active = true;
+                                if (repeat == 0)
+                                {
+                                    state.sourceLoopEndSourceRawTick = source.rawTick;
+                                    displayEndRawTick = eventRawTick;
+                                    if (seenSchedulerStates == null)
+                                    {
+                                        // Cycle detection is needed only after an infinite DD loop starts.
+                                        seenSchedulerStates = new LinkedHashMap<String, long[]>();
+                                    }
+                                }
+                            }
+                            else if (state.remaining > 0)
+                            {
+                                state.remaining--;
+                            }
+
+                            if (state.remaining == 0)
+                            {
+                                state.active = false;
+                                state.valid = false;
+                                advanceTrackCursor(cursor, currentTick);
+                            }
+                            else
+                            {
+                                rewindRawTicks.add(Integer.valueOf(eventRawTick));
+                                rewindSourceRawTicks.add(Integer.valueOf(state.sourceStartRawTick));
+                                state.restore(cursors, currentTick);
+                            }
+                            continue;
+                        }
+                    }
+                }
+
+                advanceTrackCursor(cursor, currentTick);
+            }
         }
 
-        private static List<RawTempoPoint> collectTempoSeeds(List<TrackEvent> orderedEvents)
+        private static int sourceEndRawTick(List<List<TrackEvent>> decodedTracks)
         {
-            List<RawTempoPoint> seeds = new ArrayList<RawTempoPoint>();
+            int endRawTick = 0;
+            for (int i = 0; i < decodedTracks.size(); i++)
+            {
+                List<TrackEvent> track = decodedTracks.get(i);
+                if (!track.isEmpty())
+                {
+                    endRawTick = Math.max(endRawTick, track.get(track.size() - 1).rawTick);
+                }
+            }
+            return endRawTick;
+        }
+
+        private static ScheduledExecution stabilizeInfiniteLoop(
+                List<TrackEvent> executed,
+                int repeatStartIndex,
+                int parserCycleStartRawTick,
+                int parserCycleEndRawTick,
+                int effectiveTrackCount,
+                List<String> warnings)
+        {
+            int cycleRawTicks = parserCycleEndRawTick - parserCycleStartRawTick;
+            if (cycleRawTicks <= 0)
+            {
+                throw new IllegalStateException("Native DD parser cycle must advance raw time.");
+            }
+
+            // The same parser position only tells us which events repeat. Replay the cycle
+            // until tempo, channels, and active notes also return to the same state.
+            LoopSimulationState state = new LoopSimulationState(effectiveTrackCount);
+            for (int i = 0; i < repeatStartIndex; i++)
+            {
+                state.process(executed.get(i));
+            }
+            state.flushExpired(parserCycleStartRawTick);
+
+            int repeatEndIndex = executed.size();
+            Map<String, Integer> seenSemanticStates = new LinkedHashMap<String, Integer>();
+            seenSemanticStates.put(state.semanticStateKey(parserCycleStartRawTick), Integer.valueOf(parserCycleStartRawTick));
+            for (int i = repeatStartIndex; i < repeatEndIndex; i++)
+            {
+                state.process(executed.get(i));
+            }
+
+            int boundary = parserCycleEndRawTick;
+            state.flushExpired(boundary);
+            // Only then can the MIDI sequencer loop without changing the next pass.
+            while (true)
+            {
+                String stateKey = state.semanticStateKey(boundary);
+                Integer previous = seenSemanticStates.get(stateKey);
+                if (previous != null)
+                {
+                    warnings.add("Native DD semantic loop stabilized at raw tick " + previous + " to " + boundary + ".");
+                    return new ScheduledExecution(executed, previous.intValue(), boundary, boundary);
+                }
+                seenSemanticStates.put(stateKey, Integer.valueOf(boundary));
+                appendParserCycle(executed, repeatStartIndex, repeatEndIndex, parserCycleStartRawTick, boundary, state);
+                boundary = checkedRawTick((long) boundary + cycleRawTicks);
+                state.flushExpired(boundary);
+            }
+        }
+
+        private static void appendParserCycle(
+                List<TrackEvent> executed,
+                int repeatStartIndex,
+                int repeatEndIndex,
+                int parserCycleStartRawTick,
+                int cycleStartRawTick,
+                LoopSimulationState state)
+        {
+            for (int i = repeatStartIndex; i < repeatEndIndex; i++)
+            {
+                TrackEvent source = executed.get(i);
+                int phase = source.rawTick - parserCycleStartRawTick;
+                TrackEvent event = copyTrackEventAt(source, checkedRawTick((long) cycleStartRawTick + phase));
+                executed.add(event);
+                state.process(event);
+            }
+        }
+
+        // Ignore absolute time here: after a rewind, the same relative positions should compare equal.
+        private static String schedulerStateKey(TrackCursor[] cursors, LoopSlotState[] slots, long currentTick)
+        {
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < cursors.length; i++)
+            {
+                TrackCursor cursor = cursors[i];
+                result.append(cursor.index).append(',').append(cursor.done ? 1 : 0).append(',')
+                        .append(cursor.done ? Long.MAX_VALUE : cursor.dueTick - currentTick).append(';');
+            }
+            result.append('|');
+            for (int i = 0; i < slots.length; i++)
+            {
+                LoopSlotState slot = slots[i];
+                result.append(slot.valid ? 1 : 0).append(',').append(slot.active ? 1 : 0).append(',')
+                        .append(slot.remaining < 0 ? -1 : slot.remaining).append(',')
+                        .append(slot.valid && slot.startRawTick == currentTick ? 1 : 0).append(':');
+                if (slot.indices != null)
+                {
+                    for (int j = 0; j < slot.indices.length; j++)
+                    {
+                        result.append(slot.indices[j]).append(',')
+                                .append(slot.done[j] ? 1 : 0).append(',')
+                                .append(slot.remainingTicks[j]).append(';');
+                    }
+                }
+                result.append('|');
+            }
+            return result.toString();
+        }
+
+        private static int nextTrackCursor(TrackCursor[] cursors)
+        {
+            // Tracks count down together; lower track numbers go first when events share a tick.
+            int selected = -1;
+            for (int i = 0; i < cursors.length; i++)
+            {
+                TrackCursor cursor = cursors[i];
+                if (cursor.done)
+                {
+                    continue;
+                }
+                if (selected < 0
+                        || cursor.dueTick < cursors[selected].dueTick
+                        || (cursor.dueTick == cursors[selected].dueTick && cursor.trackIndex < cursors[selected].trackIndex))
+                {
+                    selected = i;
+                }
+            }
+            return selected;
+        }
+
+        private static void advanceTrackCursor(TrackCursor cursor, long currentTick)
+        {
+            int previousIndex = cursor.index;
+            cursor.index++;
+            if (cursor.index >= cursor.events.size())
+            {
+                cursor.finish();
+                return;
+            }
+
+            TrackEvent previous = cursor.events.get(previousIndex);
+            TrackEvent next = cursor.events.get(cursor.index);
+            int sourceDelta = next.rawTick - previous.rawTick;
+            if (sourceDelta < 0)
+            {
+                throw new IllegalArgumentException("Decoded track raw ticks are not monotonic at track " + cursor.trackIndex + ".");
+            }
+            cursor.dueTick = checkedRawTick(currentTick + sourceDelta);
+        }
+
+        private static TrackEvent copyTrackEventAt(TrackEvent source, int rawTick)
+        {
+            if (source instanceof NoteEvent)
+            {
+                NoteEvent event = (NoteEvent) source;
+                return new NoteEvent(
+                        event.trackIndex,
+                        rawTick,
+                        event.voice,
+                        event.pitch,
+                        event.gate,
+                        event.velocity,
+                        event.octaveShift,
+                        event.hasExtraByte);
+            }
+            if (source instanceof SystemEvent)
+            {
+                SystemEvent event = (SystemEvent) source;
+                return new SystemEvent(
+                        event.trackIndex,
+                        rawTick,
+                        event.command,
+                        event.value,
+                        event.part,
+                        event.timebase);
+            }
+            if (source instanceof ResourceEvent)
+            {
+                ResourceEvent event = (ResourceEvent) source;
+                return new ResourceEvent(
+                        event.trackIndex,
+                        rawTick,
+                        event.command,
+                        event.value,
+                        event.part);
+            }
+            throw new IllegalArgumentException("Unsupported decoded event type: " + source.getClass().getName());
+        }
+
+        private static int checkedRawTick(long value)
+        {
+            if (value < 0L || value > Integer.MAX_VALUE)
+            {
+                throw new IllegalArgumentException("Native DD execution exceeds supported raw-tick range.");
+            }
+            return (int) value;
+        }
+
+        private static List<TempoPoint> buildTempoPoints(List<TrackEvent> orderedEvents, List<String> warnings)
+        {
+            // Each raw interval uses the timebase that was active when that interval began.
+            // Keep every change so notes, PCM triggers, and displayed time share one clock.
+            List<TempoPoint> points = new ArrayList<TempoPoint>();
             int currentTimebase = DEFAULT_TIMEBASE;
             int currentTempo = DEFAULT_TEMPO;
+            int lastRawTick = 0;
+            long midiTick = 0L;
+            boolean foundTempo = false;
+
             for (int i = 0; i < orderedEvents.size(); i++)
             {
                 TrackEvent event = orderedEvents.get(i);
@@ -983,41 +1386,67 @@ public final class MLDDecoder
                     continue;
                 }
                 SystemEvent systemEvent = (SystemEvent) event;
-                if (!isTempo(systemEvent) && systemEvent.command != 0xBC && systemEvent.command != 0xBF)
+                if (systemEvent.trackIndex != 0
+                        || (!isTempo(systemEvent) && systemEvent.command != 0xBC && systemEvent.command != 0xBF)
+                        || (systemEvent.command == 0xBC && (systemEvent.value < 0 || systemEvent.value >= 0x80)))
                 {
                     continue;
                 }
-                if (seeds.isEmpty() && systemEvent.rawTick > 0)
+
+                if (!foundTempo && systemEvent.rawTick > 0)
                 {
-                    seeds.add(new RawTempoPoint(0, currentTimebase, currentTempo, -1, -1, true));
+                    points.add(new TempoPoint(0, 0L, currentTimebase, currentTempo));
                 }
+                foundTempo = true;
+
+                int deltaRaw = systemEvent.rawTick - lastRawTick;
+                if (deltaRaw < 0)
+                {
+                    deltaRaw = 0;
+                }
+                midiTick += ((long) deltaRaw * MIDI_PPQ) / Math.max(1, currentTimebase);
+
                 if (isTempo(systemEvent))
                 {
-                    currentTimebase = systemEvent.timebase > 0 ? systemEvent.timebase : currentTimebase;
-                    currentTempo = systemEvent.value > 0 ? systemEvent.value : currentTempo;
+                    currentTimebase = systemEvent.timebase;
+                    currentTempo = clamp(MIN_TEMPO, MAX_TEMPO, systemEvent.value);
                 }
                 else if (systemEvent.command == 0xBC)
                 {
-                    currentTempo = clamp(MIN_TEMPO, MAX_TEMPO, currentTempo + signedByte(systemEvent.value));
+                    currentTempo = clamp(MIN_TEMPO, MAX_TEMPO, currentTempo + systemEvent.value - 0x40);
                 }
                 else if (systemEvent.command == 0xBF)
                 {
-                    currentTimebase = DEFAULT_TIMEBASE;
                     currentTempo = DEFAULT_TEMPO;
                 }
-                seeds.add(new RawTempoPoint(
+
+                TempoPoint point = new TempoPoint(
                         systemEvent.rawTick,
+                        midiTick,
                         currentTimebase,
-                        currentTempo,
-                        systemEvent.trackIndex,
-                        systemEvent.eventIndex,
-                        false));
+                        currentTempo);
+                // With no time between writes at the same tick, only the last value affects what follows.
+                if (!points.isEmpty() && points.get(points.size() - 1).rawTick == systemEvent.rawTick)
+                {
+                    points.set(points.size() - 1, point);
+                }
+                else
+                {
+                    points.add(point);
+                }
+                lastRawTick = systemEvent.rawTick;
             }
-            return seeds;
+
+            if (!foundTempo)
+            {
+                warnings.add("No tempo event observed; inserting native default 125 BPM / timebase 48 point.");
+                points.add(new TempoPoint(0, 0L, DEFAULT_TIMEBASE, DEFAULT_TEMPO));
+            }
+            return points;
         }
 
         private static void extractPcmTriggers(
-                List<TrackDecodeResult> decodedTracks,
+                List<List<TrackEvent>> decodedTracks,
                 List<TempoPoint> tempoPoints,
                 Map<Integer, Integer> pcmPositions,
                 Map<Integer, Integer> pcmVelocities,
@@ -1025,19 +1454,15 @@ public final class MLDDecoder
         {
             for (int i = 0; i < decodedTracks.size(); i++)
             {
-                TrackDecodeResult track = decodedTracks.get(i);
-                for (int j = 0; j < track.events.size(); j++)
+                List<TrackEvent> track = decodedTracks.get(i);
+                for (int j = 0; j < track.size(); j++)
                 {
-                    TrackEvent event = track.events.get(j);
+                    TrackEvent event = track.get(j);
                     if (!(event instanceof ResourceEvent))
                     {
                         continue;
                     }
                     ResourceEvent resourceEvent = (ResourceEvent) event;
-                    if (resourceEvent.longEvent)
-                    {
-                        continue;
-                    }
                     if (resourceEvent.command == 0x80)
                     {
                         // PCM playback still consumes millisecond keys, but timing comes from the unified tempo map.
@@ -1082,225 +1507,130 @@ public final class MLDDecoder
             return (int) ((micros + 500L) / 1000L);
         }
 
-        private static List<TempoPoint> buildTempoPoints(List<RawTempoPoint> seeds, List<String> warnings)
-        {
-            List<TempoPoint> points = new ArrayList<TempoPoint>();
-            if (seeds.isEmpty())
-            {
-                warnings.add("No tempo event observed; inserting synthetic 120 BPM / timebase 48 point.");
-                seeds.add(new RawTempoPoint(0, 48, 120, -1, -1, true));
-            }
-            else if (seeds.get(0).rawTick > 0)
-            {
-                RawTempoPoint first = seeds.get(0);
-                warnings.add("First tempo event does not start at tick 0; inserting synthetic point at origin.");
-                seeds.add(0, new RawTempoPoint(0, first.timebase, first.tempo, -1, -1, true));
-            }
-
-            long midiTick = 0L;
-            int lastRawTick = 0;
-            int lastTimebase = seeds.get(0).timebase;
-            for (int i = 0; i < seeds.size(); i++)
-            {
-                RawTempoPoint seed = seeds.get(i);
-                int deltaRaw = seed.rawTick - lastRawTick;
-                if (deltaRaw < 0)
-                {
-                    deltaRaw = 0;
-                }
-                midiTick += ((long) deltaRaw * MIDI_PPQ) / Math.max(1, lastTimebase);
-                points.add(new TempoPoint(
-                        seed.rawTick,
-                        midiTick,
-                        seed.timebase,
-                        seed.tempo,
-                        60000000 / Math.max(1, seed.tempo),
-                        seed.synthetic));
-                lastRawTick = seed.rawTick;
-                lastTimebase = seed.timebase;
-            }
-            return points;
-        }
-
-        private static LoopInfo determineLoopInfo(List<TrackDecodeResult> decodedTracks, TempoMapper mapper, List<String> warnings)
-        {
-            Integer[] loopStarts = new Integer[4];
-            Integer[] loopEnds = new Integer[4];
-            int[] repeatCounts = new int[] { 0, 0, 0, 0 };
-            List<String> loopWarnings = new ArrayList<String>();
-
-            for (int i = 0; i < decodedTracks.size(); i++)
-            {
-                TrackDecodeResult track = decodedTracks.get(i);
-                for (int j = 0; j < track.events.size(); j++)
-                {
-                    TrackEvent event = track.events.get(j);
-                    if (!(event instanceof SystemEvent))
-                    {
-                        continue;
-                    }
-                    SystemEvent systemEvent = (SystemEvent) event;
-                    if (systemEvent.command != 0xDD)
-                    {
-                        continue;
-                    }
-                    int slot = (systemEvent.value >> 6) & 0x03;
-                    int operation = systemEvent.value & 0x03;
-                    if (operation == 0x00)
-                    {
-                        if (loopStarts[slot] == null || systemEvent.rawTick < loopStarts[slot].intValue())
-                        {
-                            loopStarts[slot] = Integer.valueOf(systemEvent.rawTick);
-                        }
-                    }
-                    else if (operation == 0x01)
-                    {
-                        if (loopEnds[slot] == null || systemEvent.rawTick < loopEnds[slot].intValue())
-                        {
-                            loopEnds[slot] = Integer.valueOf(systemEvent.rawTick);
-                            int repeat = (systemEvent.value >> 2) & 0x0F;
-                            repeatCounts[slot] = repeat == 0 ? -1 : repeat;
-                        }
-                    }
-                }
-            }
-
-            int chosenSlot = -1;
-            for (int slot = 0; slot < 4; slot++)
-            {
-                if (loopStarts[slot] != null && loopEnds[slot] != null && loopEnds[slot].intValue() > loopStarts[slot].intValue())
-                {
-                    if (chosenSlot >= 0)
-                    {
-                        loopWarnings.add("Multiple loop slots detected; using the lowest numbered complete slot.");
-                        break;
-                    }
-                    chosenSlot = slot;
-                }
-                else if ((loopStarts[slot] == null) != (loopEnds[slot] == null))
-                {
-                    loopWarnings.add("Loop slot " + slot + " is incomplete and will be ignored.");
-                }
-            }
-
-            warnings.addAll(loopWarnings);
-            if (chosenSlot < 0)
-            {
-                return new LoopInfo(false, -1L, -1L, 0);
-            }
-
-            int loopStart = loopStarts[chosenSlot].intValue();
-            int loopEnd = loopEnds[chosenSlot].intValue();
-            if (loopEnd <= loopStart)
-            {
-                warnings.add("Loop end does not fall after loop start; looping disabled.");
-                return new LoopInfo(false, -1L, -1L, 0);
-            }
-
-            return new LoopInfo(true, mapper.rawToMidiTick(loopStart), mapper.rawToMidiTick(loopEnd), repeatCounts[chosenSlot]);
-        }
-
-        private static long handleNoteEvent(NoteEvent noteEvent, DecodePlan plan, RenderState renderState)
+        private static long handleNoteEvent(NoteEvent noteEvent, List<TempoPoint> tempoPoints, List<String> warnings, RenderState renderState)
         {
             int partLane = partLaneIndex(noteEvent.trackIndex, noteEvent.voice);
             int logicalChannel = resolvePartChannel(renderState.partChannelMap, partLane);
             if (logicalChannel < 0 || logicalChannel >= MAX_LOGICAL_CHANNELS)
             {
-                plan.warnings.add("Skipping note mapped outside logical-channel range: track=" + noteEvent.trackIndex + " voice=" + noteEvent.voice + " -> " + logicalChannel);
+                warnings.add("Skipping note mapped outside logical-channel range: track=" + noteEvent.trackIndex + " voice=" + noteEvent.voice + " -> " + logicalChannel);
                 return -1L;
             }
             if (logicalChannel >= renderState.channels.length)
             {
-                plan.warnings.add("Skipping note mapped outside channel state range: " + logicalChannel);
+                warnings.add("Skipping note mapped outside channel state range: " + logicalChannel);
                 return -1L;
             }
 
             ChannelState channel = renderState.channels[logicalChannel];
-            if (!channel.allowsOrdinaryNotes())
+            boolean sounding = channel.allowsOrdinaryNoteOn() && logicalChannel < MIDI_CHANNEL_COUNT;
+            long midiStartTick = rawToMidiTick(tempoPoints, noteEvent.rawTick);
+            if (sounding)
             {
-                return -1L;
+                renderState.activeOutputMask |= (1 << logicalChannel);
+                emitPatchIfNeeded(renderState.controlCollector, channel, logicalChannel, midiStartTick);
             }
-            observeOutputChannelActivity(renderState.outputLayout, logicalChannel);
-            if (logicalChannel >= MIDI_CHANNEL_COUNT)
+            else if (logicalChannel >= MIDI_CHANNEL_COUNT)
             {
-                plan.warnings.add("Skipping note mapped to logical channel " + logicalChannel + " because the host exposes only 16 MIDI channels.");
-                return -1L;
+                warnings.add("Skipping note mapped to logical channel " + logicalChannel + " because the host exposes only 16 MIDI channels.");
             }
 
-            long midiStartTick = plan.tempoMapper.rawToMidiTick(noteEvent.rawTick);
-            emitPatchIfNeeded(renderState.controlCollector, channel, logicalChannel, midiStartTick);
-
-            int noteBase = renderState.outputLayout != null && renderState.outputLayout.isSpecialChannel(logicalChannel) ? 35 : baseMidiNoteForMode(channel.mode);
-            int midiNote = clamp(0, 127, noteBase + noteEvent.pitch + octaveOffset(noteEvent.octaveShift));
-            int velocity = noteEvent.hasExtraByte() ? clamp(1, 127, noteEvent.velocity * 2) : 126;
+            int pitchOffset = noteEvent.pitch + octaveOffset(noteEvent.octaveShift);
+            int nativeNote = baseMidiNoteForMode(channel.mode) + pitchOffset;
+            int noteBase = sounding && logicalChannel == MIDI_DRUM_CHANNEL ? 35 : baseMidiNoteForMode(channel.mode);
+            int midiNote = clamp(0, 127, noteBase + pitchOffset);
+            int velocity = noteEvent.hasExtraByte ? clamp(1, 127, noteEvent.velocity * 2) : 126;
             int rawEndTick = noteEvent.rawTick + noteEvent.gate;
-            long midiEndTick = normalizeMidiEnd(midiStartTick, plan.tempoMapper.rawToMidiTick(rawEndTick));
-            Integer activeKey = Integer.valueOf((logicalChannel << 7) | midiNote);
+            long midiEndTick = rawToMidiTick(tempoPoints, rawEndTick);
+            // Gate identity follows the native pitch, even when the drum channel emits a
+            // different MIDI note. A matching active note is extended instead of retriggered.
+            Integer activeKey = Integer.valueOf((logicalChannel << 8) | (nativeNote & 0xFF));
             ActiveNote active = renderState.activeNotes.get(activeKey);
             if (active != null)
             {
                 active.rawEndTick = rawEndTick;
-                active.midiEndTick = normalizeMidiEnd(active.midiStartTick, midiEndTick);
-                return active.midiEndTick;
+                active.midiEndTick = midiEndTick;
+                if (active.sounding)
+                {
+                    return normalizeMidiEnd(active.midiStartTick, midiEndTick);
+                }
+                return active.midiChannel < MIDI_CHANNEL_COUNT ? midiEndTick : -1L;
             }
 
             int order = renderState.controlCollector.allocateOrder();
-            renderState.messageEvents.add(MessageEvent.noteOn(logicalChannel, midiStartTick, midiNote, velocity, order));
-            renderState.activeNotes.put(activeKey, new ActiveNote(logicalChannel, midiNote, rawEndTick, midiEndTick, order, midiStartTick));
-            return midiEndTick;
+            if (sounding)
+            {
+                renderState.messageEvents.add(MessageEvent.noteOn(logicalChannel, midiStartTick, midiNote, velocity, order));
+            }
+            renderState.activeNotes.put(activeKey, new ActiveNote(logicalChannel, midiNote, rawEndTick, midiEndTick, order, midiStartTick, sounding));
+            if (sounding)
+            {
+                return normalizeMidiEnd(midiStartTick, midiEndTick);
+            }
+            return logicalChannel < MIDI_CHANNEL_COUNT ? midiEndTick : -1L;
         }
 
-        private static long handleSystemEvent(SystemEvent systemEvent, DecodePlan plan, RenderState renderState)
+        private static long handleSystemEvent(SystemEvent systemEvent, List<TempoPoint> tempoPoints, List<String> warnings, RenderState renderState)
         {
             if (isTempo(systemEvent))
             {
                 return -1L;
             }
 
-            long midiTick = plan.tempoMapper.rawToMidiTick(systemEvent.rawTick);
-            if (systemEvent.command == 0xBE)
+            long midiTick = rawToMidiTick(tempoPoints, systemEvent.rawTick);
+            switch (systemEvent.command)
             {
-                return applyGlobalStop(systemEvent, midiTick, renderState, plan.warnings);
-            }
-            if (systemEvent.command == 0xBF)
-            {
-                return applySessionReset(midiTick, renderState);
-            }
-            if (!applyGlobalSystemEvent(systemEvent, midiTick, renderState))
-            {
-                applyChannelSystemEvent(systemEvent, midiTick, renderState, plan.warnings);
+                case 0xB0:
+                    if (acceptTrackZero7Bit(systemEvent))
+                    {
+                        renderState.masterVolume = systemEvent.value;
+                        renderState.controlCollector.emitMasterVolume(midiTick, renderState.masterVolume);
+                    }
+                    break;
+                case 0xB1:
+                    if (acceptTrackZero7Bit(systemEvent))
+                    {
+                        renderState.controlCollector.emitMasterPan(midiTick, systemEvent.value);
+                    }
+                    break;
+                case 0xBA:
+                    if (acceptTrackZero7Bit(systemEvent))
+                    {
+                        int logicalChannel = (systemEvent.value >> 3) & 0x0F;
+                        ChannelState channel = renderState.channels[logicalChannel];
+                        channel.mode = systemEvent.value & 0x07;
+                        if (channel.mode == 1)
+                        {
+                            applyNativePatchHelperState(channel);
+                            channel.patchDirty = true;
+                            emitPatchIfNeeded(renderState.controlCollector, channel, logicalChannel, midiTick);
+                        }
+                    }
+                    break;
+                case 0xBD:
+                    if (acceptTrackZero7Bit(systemEvent))
+                    {
+                        renderState.masterVolume = clamp(0, 127, renderState.masterVolume + systemEvent.value - 0x40);
+                        renderState.controlCollector.emitMasterVolume(midiTick, renderState.masterVolume);
+                    }
+                    break;
+                case 0xBE:
+                    return applyGlobalStop(systemEvent, midiTick, renderState, warnings);
+                case 0xBF:
+                    return systemEvent.trackIndex == 0 ? applySessionReset(midiTick, renderState) : midiTick;
+                default:
+                    applyChannelSystemEvent(systemEvent, midiTick, renderState, warnings);
+                    break;
             }
             return midiTick;
         }
 
-        private static boolean applyGlobalSystemEvent(SystemEvent systemEvent, long midiTick, RenderState renderState)
-        {
-            switch (systemEvent.command)
-            {
-                case 0xB0:
-                    // 0xB0 is the score-track global volume event; maps to MIDI master volume.
-                    renderState.controlCollector.emitMasterVolume(midiTick, clamp(0, 127, systemEvent.value));
-                    return true;
-                case 0xB1:
-                    renderState.controlCollector.emitMasterPan(midiTick, clamp(0, 127, systemEvent.value));
-                    return true;
-                case 0xB3:
-                    renderState.controlCollector.emitMasterTune(midiTick, systemEvent.value & 0x7F);
-                    return true;
-                case 0xBA:
-                    applyPatchModeChange(systemEvent.value, midiTick, renderState.controlCollector, renderState.channels);
-                    return true;
-                case 0xBD:
-                    // 0xBD is the system-event master volume; same MIDI mapping as 0xB0.
-                    renderState.controlCollector.emitMasterVolume(midiTick, clamp(0, 127, systemEvent.value));
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         private static long applyGlobalStop(SystemEvent systemEvent, long midiTick, RenderState renderState, List<String> warnings)
         {
+            if (systemEvent.trackIndex != 0)
+            {
+                return midiTick;
+            }
             if (systemEvent.value != 0)
             {
                 warnings.add("Ignoring 0xBE STOP with nonzero value " + systemEvent.value + " at raw tick " + systemEvent.rawTick + ".");
@@ -1311,7 +1641,10 @@ public final class MLDDecoder
             while (iterator.hasNext())
             {
                 ActiveNote active = iterator.next().getValue();
-                renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick, active.midiNote, renderState.controlCollector.allocateOrder()));
+                if (active.sounding)
+                {
+                    renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick, active.midiNote, renderState.controlCollector.allocateOrder()));
+                }
                 iterator.remove();
             }
 
@@ -1326,7 +1659,10 @@ public final class MLDDecoder
             while (iterator.hasNext())
             {
                 ActiveNote active = iterator.next().getValue();
-                renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick, active.midiNote, renderState.controlCollector.allocateOrder()));
+                if (active.sounding)
+                {
+                    renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick, active.midiNote, renderState.controlCollector.allocateOrder()));
+                }
                 iterator.remove();
             }
 
@@ -1334,6 +1670,7 @@ public final class MLDDecoder
             recordStopTick(renderState.stopTicks, midiTick);
             resetChannelStates(renderState.channels);
             resetPartChannelMap(renderState.partChannelMap);
+            renderState.masterVolume = DEFAULT_MASTER_VOLUME;
             renderState.controlCollector.resetCaches();
             emitInitialMidiDefaults(renderState.controlCollector, renderState.channels, midiTick);
             return midiTick;
@@ -1341,141 +1678,82 @@ public final class MLDDecoder
 
         private static void applyChannelSystemEvent(SystemEvent systemEvent, long midiTick, RenderState renderState, List<String> warnings)
         {
-            ChannelTarget target;
+            if (systemEvent.command == 0xE5)
+            {
+                applyVoiceAssignment(systemEvent, renderState.partChannelMap);
+                return;
+            }
+
+            if (systemEvent.part < 0)
+            {
+                return;
+            }
+            int partLane = partLaneIndex(systemEvent.trackIndex, systemEvent.part);
+            int logicalChannel = resolvePartChannel(renderState.partChannelMap, partLane);
+            if (logicalChannel < 0 || logicalChannel >= renderState.channels.length)
+            {
+                warnings.add("Skipping control mapped outside logical-channel range: track=" + systemEvent.trackIndex + " part=" + systemEvent.part + " -> " + logicalChannel);
+                return;
+            }
+
+            ChannelState channel = renderState.channels[logicalChannel];
+            ControlCollector controlCollector = renderState.controlCollector;
+            boolean hasMidiChannel = logicalChannel < MIDI_CHANNEL_COUNT;
+            applyChannelSemanticState(systemEvent, channel);
             switch (systemEvent.command)
             {
                 case 0xE0:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyProgramChange(target, systemEvent.value, midiTick, renderState.controlCollector);
+                    channel.patchDirty = true;
+                    emitPatchIfNeeded(controlCollector, channel, logicalChannel, midiTick);
                     break;
                 case 0xE1:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyBankChange(target, systemEvent.value, midiTick, renderState.controlCollector);
+                    if (channel.mode == 1)
+                    {
+                        channel.patchDirty = true;
+                        if (channel.hasProgramEvent)
+                        {
+                            emitPatchIfNeeded(controlCollector, channel, logicalChannel, midiTick);
+                        }
+                    }
                     break;
                 case 0xE2:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyAbsoluteLevel(target, systemEvent.value, midiTick, renderState.controlCollector);
+                case 0xE6:
+                    if (hasMidiChannel) { controlCollector.emitVolume(logicalChannel, midiTick, toMidiVolume(channel)); }
                     break;
                 case 0xE3:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyPan(target, systemEvent.value, midiTick, renderState.controlCollector);
+                    if (hasMidiChannel) { controlCollector.emitPan(logicalChannel, midiTick, toMidiPan(channel)); }
                     break;
                 case 0xE4:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyPitchCoarse(target, systemEvent.value, midiTick, renderState.controlCollector);
-                    break;
-                case 0xE5:
-                    applyVoiceAssignment(systemEvent, renderState.partChannelMap);
-                    break;
-                case 0xE6:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyRelativeLevel(target, systemEvent.value, midiTick, renderState.controlCollector);
+                    if (hasMidiChannel)
+                    {
+                        if (channel.pitchRangeDirty)
+                        {
+                            controlCollector.emitPitchRange(logicalChannel, midiTick, channel.pitchRange);
+                            channel.pitchRangeDirty = false;
+                        }
+                        controlCollector.emitPitchBend(logicalChannel, midiTick, computePitchBend(channel));
+                    }
                     break;
                 case 0xE7:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyPitchRange(target, systemEvent.value, midiTick, renderState.controlCollector);
+                    if ((systemEvent.value & 0x3F) <= 24) { channel.pitchRangeDirty = true; }
                     break;
                 case 0xE8:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyPitchFine(target, systemEvent.value, midiTick, renderState.controlCollector);
-                    break;
-                case 0xE9:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyFineCache(target, systemEvent.value);
+                    if (hasMidiChannel)
+                    {
+                        if (channel.pitchRangeDirty)
+                        {
+                            controlCollector.emitPitchRange(logicalChannel, midiTick, channel.pitchRange);
+                            channel.pitchRangeDirty = false;
+                        }
+                        controlCollector.emitPitchBend(logicalChannel, midiTick, computePitchBend(channel));
+                    }
                     break;
                 case 0xEA:
-                    target = resolveChannelTarget(systemEvent, renderState.channels, renderState.partChannelMap, warnings);
-                    applyModulation(target, systemEvent.value, midiTick, renderState.controlCollector);
+                    if (hasMidiChannel) { controlCollector.emitModulation(logicalChannel, midiTick, channel.modulation * 2); }
                     break;
                 default:
                     break;
             }
-        }
-
-        private static void applyAbsoluteLevel(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.level = value & 0x3F;
-            target.channel.volumeCache = clamp(0, 127, target.channel.level * 2);
-            emitVolumeIfMidiChannel(controlCollector, target, midiTick);
-        }
-
-        private static void applyRelativeLevel(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.level = clamp(0, 63, target.channel.level + ((value & 0x3F) - 32));
-            target.channel.volumeCache = clamp(0, 127, target.channel.level * 2);
-            emitVolumeIfMidiChannel(controlCollector, target, midiTick);
-        }
-
-        private static void applyPan(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.pan = value & 0x3F;
-            emitPanIfMidiChannel(controlCollector, target, midiTick);
-        }
-
-        private static void applyPitchCoarse(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.pitchCoarse = value & 0x3F;
-            emitPitchBendIfMidiChannel(controlCollector, target, midiTick);
-        }
-
-        private static void applyPitchFine(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.pitchFine = value & 0x3F;
-            emitPitchBendIfMidiChannel(controlCollector, target, midiTick);
-        }
-
-        private static void applyFineCache(ChannelTarget target, int value)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.pitchFine = value & 0x3F;
-        }
-
-        private static void applyPitchRange(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            int range = value & 0x3F;
-            if (range > 24)
-            {
-                return;
-            }
-            target.channel.pitchRange = range;
-            emitPitchRangeIfMidiChannel(controlCollector, target, midiTick);
-        }
-
-        private static void applyModulation(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.modulation = value & 0x3F;
-            emitModulationIfMidiChannel(controlCollector, target, midiTick);
         }
 
         private static void applyVoiceAssignment(SystemEvent systemEvent, int[] partChannelMap)
@@ -1487,58 +1765,55 @@ public final class MLDDecoder
             int partLane = partLaneIndex(systemEvent.trackIndex, systemEvent.part);
             if (partLane >= 0 && partLane < partChannelMap.length)
             {
+                // E5 may select any of 64 logical channels. Values above 15 keep state but
+                // cannot produce sound through a standard MIDI output.
                 partChannelMap[partLane] = systemEvent.value & 0x3F;
             }
         }
 
-        private static void applyPatchModeChange(int value, long midiTick, ControlCollector controlCollector, ChannelState[] channels)
+        private static void applyNativePatchHelperState(ChannelState channel)
         {
-            int logicalChannel = (value >> 3) & 0x0F;
-            if (!isUsableControlChannel(logicalChannel, channels))
-            {
-                return;
-            }
-            ChannelState channel = channels[logicalChannel];
-            channel.mode = value & 0x07;
-            channel.patchDirty = true;
-            if (channel.mode == 1)
-            {
-                emitPatchIfNeeded(controlCollector, channel, logicalChannel, midiTick);
-            }
+            channel.noteOnSuppressed = channel.mode != 0 && channel.mode != 1;
         }
 
-        private static boolean isUsableControlChannel(int logicalChannel, ChannelState[] channels)
+        private static void applyChannelSemanticState(SystemEvent event, ChannelState channel)
         {
-            return logicalChannel >= 0 && logicalChannel < channels.length;
-        }
-
-        private static ChannelTarget resolveChannelTarget(
-                SystemEvent systemEvent,
-                ChannelState[] channels,
-                int[] partChannelMap,
-                List<String> warnings)
-        {
-            if (systemEvent.part < 0)
+            switch (event.command)
             {
-                return null;
+                case 0xE0:
+                    channel.program = event.value & 0x3F;
+                    channel.hasProgramEvent = true;
+                    applyNativePatchHelperState(channel);
+                    break;
+                case 0xE1:
+                    channel.bank = event.value & 0x3F;
+                    if (channel.mode == 1) { applyNativePatchHelperState(channel); }
+                    break;
+                case 0xE2:
+                    channel.level = event.value & 0x3F;
+                    break;
+                case 0xE3:
+                    channel.pan = event.value & 0x3F;
+                    break;
+                case 0xE4:
+                    channel.pitchCoarse = event.value & 0x3F;
+                    break;
+                case 0xE6:
+                    channel.level = clamp(0, 63, channel.level + ((event.value & 0x3F) - 32));
+                    break;
+                case 0xE7:
+                    if ((event.value & 0x3F) <= 24) { channel.pitchRange = event.value & 0x3F; }
+                    break;
+                case 0xE8:
+                case 0xE9:
+                    channel.pitchFine = event.value & 0x3F;
+                    break;
+                case 0xEA:
+                    channel.modulation = event.value & 0x3F;
+                    break;
+                default:
+                    break;
             }
-            int partLane = partLaneIndex(systemEvent.trackIndex, systemEvent.part);
-            int logicalChannel = resolvePartChannel(partChannelMap, partLane);
-            if (logicalChannel < 0 || logicalChannel >= MAX_LOGICAL_CHANNELS)
-            {
-                warnings.add("Skipping control mapped outside logical-channel range: track=" + systemEvent.trackIndex + " part=" + systemEvent.part + " -> " + logicalChannel);
-                return null;
-            }
-            if (!isUsableControlChannel(logicalChannel, channels))
-            {
-                return null;
-            }
-            return new ChannelTarget(logicalChannel, channels[logicalChannel]);
-        }
-
-        private static void emitInitialMidiDefaults(ControlCollector controlCollector, ChannelState[] channels)
-        {
-            emitInitialMidiDefaults(controlCollector, channels, 0L);
         }
 
         private static void emitInitialMidiDefaults(ControlCollector controlCollector, ChannelState[] channels, long midiTick)
@@ -1554,89 +1829,22 @@ public final class MLDDecoder
             }
         }
 
-        private static void applyProgramChange(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.program = value & 0x3F;
-            target.channel.hasProgramEvent = true;
-            target.channel.patchDirty = true;
-            emitPatchIfNeeded(controlCollector, target.channel, target.logicalChannel, midiTick);
-        }
-
-        private static void applyBankChange(ChannelTarget target, int value, long midiTick, ControlCollector controlCollector)
-        {
-            if (target == null)
-            {
-                return;
-            }
-            target.channel.bank = value & 0x3F;
-            target.channel.patchDirty = true;
-            if (!target.channel.hasProgramEvent)
-            {
-                return;
-            }
-            emitPatchIfNeeded(controlCollector, target.channel, target.logicalChannel, midiTick);
-        }
-
-        private static void emitVolumeIfMidiChannel(ControlCollector controlCollector, ChannelTarget target, long midiTick)
-        {
-            if (target.hasMidiChannel())
-            {
-                controlCollector.emitVolume(target.logicalChannel, midiTick, toMidiVolume(target.channel));
-            }
-        }
-
-        private static void emitPanIfMidiChannel(ControlCollector controlCollector, ChannelTarget target, long midiTick)
-        {
-            if (target.hasMidiChannel())
-            {
-                controlCollector.emitPan(target.logicalChannel, midiTick, toMidiPan(target.channel));
-            }
-        }
-
-        private static void emitPitchBendIfMidiChannel(ControlCollector controlCollector, ChannelTarget target, long midiTick)
-        {
-            if (target.hasMidiChannel())
-            {
-                controlCollector.emitPitchBend(target.logicalChannel, midiTick, computePitchBend(target.channel));
-            }
-        }
-
-        private static void emitPitchRangeIfMidiChannel(ControlCollector controlCollector, ChannelTarget target, long midiTick)
-        {
-            if (target.hasMidiChannel())
-            {
-                controlCollector.emitPitchRange(target.logicalChannel, midiTick, target.channel.pitchRange);
-            }
-        }
-
-        private static void emitModulationIfMidiChannel(ControlCollector controlCollector, ChannelTarget target, long midiTick)
-        {
-            if (target.hasMidiChannel())
-            {
-                controlCollector.emitModulation(target.logicalChannel, midiTick, target.channel.modulation * 2);
-            }
-        }
-
         private static void emitPatchIfNeeded(ControlCollector controlCollector, ChannelState channel, int midiChannel, long midiTick)
         {
             if (midiChannel < 0 || midiChannel >= MIDI_CHANNEL_COUNT)
             {
                 return;
             }
-            if (!channel.allowsOrdinaryNotes())
+            if (channel.mode != 0 && channel.mode != 1)
             {
                 return;
             }
             int hostProgram = translateHostProgram(channel);
-            if (!channel.patchDirty && channel.patchEmitted && channel.lastProgram == hostProgram)
+            if (!channel.patchDirty && channel.lastProgram >= 0)
             {
                 return;
             }
-            if (channel.patchEmitted && channel.lastProgram == hostProgram)
+            if (channel.lastProgram == hostProgram)
             {
                 channel.patchDirty = false;
                 return;
@@ -1644,22 +1852,16 @@ public final class MLDDecoder
 
             controlCollector.emitProgramChange(midiChannel, midiTick, hostProgram);
             channel.patchDirty = false;
-            channel.patchEmitted = true;
             channel.lastProgram = hostProgram;
         }
 
         private static int translateHostProgram(ChannelState channel)
         {
-            return composeOrdinaryPatchWord(channel.bank, channel.program) & 0x7F;
-        }
-
-        private static int composeOrdinaryPatchWord(int bank, int program)
-        {
-            int low6 = program & 0x3F;
-            int high6 = bank & 0x3F;
-            if ((high6 & 0x3E) == 0)
+            int program = channel.program & 0x3F;
+            int bank = channel.bank & 0x3F;
+            if ((bank & 0x3E) == 0)
             {
-                switch (low6)
+                switch (program)
                 {
                     case 0: return 0;
                     case 1: return 9;
@@ -1670,14 +1872,14 @@ public final class MLDDecoder
                     default: break;
                 }
             }
-            return low6 | (high6 << 6);
+            return (program | (bank << 6)) & 0x7F;
         }
 
         private static void emitTempoTrack(List<TempoPoint> tempoPoints, Track conductorTrack, long contentEndTick)
                 throws InvalidMidiDataException
         {
             TempoPoint active = tempoPoints.get(0);
-            addTempoMeta(conductorTrack, active.mpqn, 0L);
+            addTempoMeta(conductorTrack, 60000000 / Math.max(1, active.tempo), 0L);
             for (int i = 0; i < tempoPoints.size(); i++)
             {
                 TempoPoint point = tempoPoints.get(i);
@@ -1685,12 +1887,13 @@ public final class MLDDecoder
                 {
                     continue;
                 }
-                addTempoMeta(conductorTrack, point.mpqn, point.midiTick);
+                addTempoMeta(conductorTrack, 60000000 / Math.max(1, point.tempo), point.midiTick);
             }
         }
 
         private static long flushExpiredNotes(int currentRawTick, Map<Integer, ActiveNote> activeNotes, List<MessageEvent> messageEvents)
         {
+            // Native gates expire before another event at the same raw tick is handled.
             long maxTick = -1L;
             Iterator<Map.Entry<Integer, ActiveNote>> iterator = activeNotes.entrySet().iterator();
             while (iterator.hasNext())
@@ -1700,8 +1903,16 @@ public final class MLDDecoder
                 {
                     continue;
                 }
-                messageEvents.add(MessageEvent.noteOff(active.midiChannel, active.midiEndTick, active.midiNote, active.order));
-                maxTick = Math.max(maxTick, active.midiEndTick);
+                if (active.sounding)
+                {
+                    long midiEndTick = normalizeMidiEnd(active.midiStartTick, active.midiEndTick);
+                    messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiEndTick, active.midiNote, active.order));
+                    maxTick = Math.max(maxTick, midiEndTick);
+                }
+                else if (active.midiChannel < MIDI_CHANNEL_COUNT)
+                {
+                    maxTick = Math.max(maxTick, active.midiEndTick);
+                }
                 iterator.remove();
             }
             return maxTick;
@@ -1816,86 +2027,43 @@ public final class MLDDecoder
             return systemEvent.command >= 0xC0 && systemEvent.command <= 0xCF && systemEvent.timebase > 0;
         }
 
+        private static boolean acceptTrackZero7Bit(SystemEvent systemEvent)
+        {
+            return systemEvent.trackIndex == 0 && systemEvent.value >= 0 && systemEvent.value < 0x80;
+        }
+
         private static int partLaneIndex(int trackIndex, int voice)
         {
             return (trackIndex * 4) + voice;
         }
 
-        private static int[] buildOutputChannelMap(OutputChannelLayout outputLayout)
+        private static int[] buildOutputChannelMap(int activeOutputMask)
         {
+            // Keep MIDI channel 10 for drums and pack the active melodic channels around it.
             int[] outputChannelMap = createIdentityPartChannelMap(MIDI_CHANNEL_COUNT);
-            if (outputLayout == null || !outputLayout.hasFixedLayout())
-            {
-                return outputChannelMap;
-            }
-            if (outputLayout.usesIdentityMap())
-            {
-                return outputChannelMap;
-            }
             int nextMelodicChannel = 0;
             for (int logicalChannel = 0; logicalChannel < MIDI_CHANNEL_COUNT; logicalChannel++)
             {
-                if (!outputLayout.isActive(logicalChannel))
+                if (((activeOutputMask >>> logicalChannel) & 1) == 0)
                 {
                     continue;
                 }
-                if (outputLayout.isSpecialChannel(logicalChannel))
+                if (logicalChannel == MIDI_DRUM_CHANNEL)
                 {
                     outputChannelMap[logicalChannel] = MIDI_DRUM_CHANNEL;
                     continue;
                 }
                 outputChannelMap[logicalChannel] = nextMelodicChannel;
-                nextMelodicChannel = nextSequentialOutputChannel(nextMelodicChannel, outputLayout.reservesDrumChannel());
+                if (nextMelodicChannel == MIDI_DRUM_CHANNEL - 1)
+                {
+                    nextMelodicChannel += 2;
+                }
+                else if (nextMelodicChannel < MIDI_CHANNEL_COUNT - 1)
+                {
+                    nextMelodicChannel++;
+                }
             }
             return outputChannelMap;
-        }
-
-        private static List<MessageEvent> remapMessageEvents(List<MessageEvent> messageEvents, int[] outputChannelMap)
-        {
-            List<MessageEvent> remapped = new ArrayList<MessageEvent>(messageEvents.size());
-            for (int i = 0; i < messageEvents.size(); i++)
-            {
-                MessageEvent event = messageEvents.get(i);
-                remapped.add(new MessageEvent(
-                        remapMidiChannel(event.midiChannel, outputChannelMap),
-                        event.tick,
-                        event.phase,
-                        event.status,
-                        event.data1,
-                        event.data2,
-                        event.order));
-            }
-            return remapped;
-        }
-
-        private static int remapMidiChannel(int logicalChannel, int[] outputChannelMap)
-        {
-            if (outputChannelMap == null || logicalChannel < 0 || logicalChannel >= outputChannelMap.length)
-            {
-                return logicalChannel;
-            }
-            return clamp(0, MIDI_CHANNEL_COUNT - 1, outputChannelMap[logicalChannel]);
-        }
-
-        private static void observeOutputChannelActivity(OutputChannelLayout outputLayout, int logicalChannel)
-        {
-            if (outputLayout != null)
-            {
-                outputLayout.observeActive(logicalChannel);
-            }
-        }
-
-        private static int nextSequentialOutputChannel(int current, boolean reserveDrumChannel)
-        {
-            if (current >= MIDI_CHANNEL_COUNT - 1)
-            {
-                return MIDI_CHANNEL_COUNT - 1;
-            }
-            if (reserveDrumChannel && current == (MIDI_DRUM_CHANNEL - 1))
-            {
-                return current + 2;
-            }
-            return current + 1;
         }
 
         private static int timebaseFor(int selector)
@@ -1933,7 +2101,7 @@ public final class MLDDecoder
 
         private static int toMidiVolume(ChannelState channel)
         {
-            return clamp(0, 127, channel.volumeCache);
+            return clamp(0, 127, channel.level * 2);
         }
 
         private static int toMidiPan(ChannelState channel)
@@ -1946,14 +2114,6 @@ public final class MLDDecoder
             return clamp(0, 16383, (8 * (channel.pitchFine + (32 * channel.pitchCoarse))) - 256);
         }
 
-        private static int computeMasterTunePitchBend(int value)
-        {
-            int centsAdjustment = (value - 0x40) * 100;
-            int pitchBendValue = (centsAdjustment * 8192) / 1200;
-            pitchBendValue += 8192;
-            return clamp(0, 16383, pitchBendValue);
-        }
-
         private static long normalizeMidiEnd(long midiStartTick, long midiEndTick)
         {
             return midiEndTick <= midiStartTick ? (midiStartTick + 1L) : midiEndTick;
@@ -1964,25 +2124,9 @@ public final class MLDDecoder
             return Math.max(min, Math.min(max, value));
         }
 
-        private static int signedByte(int value)
-        {
-            int unsigned = value & 0xFF;
-            return unsigned < 0x80 ? unsigned : unsigned - 0x100;
-        }
-
         private static int readBe16(byte[] data, int offset)
         {
             return ((data[offset] & 0xFF) << 8) | (data[offset + 1] & 0xFF);
-        }
-
-        private static int compareInts(int left, int right)
-        {
-            return Integer.compare(left, right);
-        }
-
-        private static int compareLongs(long left, long right)
-        {
-            return Long.compare(left, right);
         }
 
         private static void recordStopTick(List<Long> stopTicks, long tick)
@@ -1994,57 +2138,22 @@ public final class MLDDecoder
             stopTicks.add(Long.valueOf(tick));
         }
 
-        private static final class DecodePlan
-        {
-            final List<TrackDecodeResult> decodedTracks;
-            final List<TrackEvent> orderedEvents;
-            final List<TempoPoint> tempoPoints;
-            final TempoMapper tempoMapper;
-            final LoopInfo loopInfo;
-            final Map<Integer, Integer> pcmPositions;
-            final Map<Integer, Integer> pcmVelocities;
-            final List<String> warnings;
-            final int effectiveTrackCount;
-
-            DecodePlan(
-                    List<TrackDecodeResult> decodedTracks,
-                    List<TrackEvent> orderedEvents,
-                    List<TempoPoint> tempoPoints,
-                    TempoMapper tempoMapper,
-                    LoopInfo loopInfo,
-                    Map<Integer, Integer> pcmPositions,
-                    Map<Integer, Integer> pcmVelocities,
-                    List<String> warnings,
-                    int effectiveTrackCount)
-            {
-                this.decodedTracks = decodedTracks;
-                this.orderedEvents = orderedEvents;
-                this.tempoPoints = tempoPoints;
-                this.tempoMapper = tempoMapper;
-                this.loopInfo = loopInfo;
-                this.pcmPositions = pcmPositions;
-                this.pcmVelocities = pcmVelocities;
-                this.warnings = warnings;
-                this.effectiveTrackCount = effectiveTrackCount;
-            }
-        }
-
         private static final class RenderState
         {
             final List<MessageEvent> messageEvents;
             final ControlCollector controlCollector;
             final ChannelState[] channels;
             final int[] partChannelMap;
-            final OutputChannelLayout outputLayout;
+            int activeOutputMask = 0;
             final Map<Integer, ActiveNote> activeNotes;
             final List<Long> stopTicks;
+            int masterVolume = DEFAULT_MASTER_VOLUME;
 
             RenderState(
                     List<MessageEvent> messageEvents,
                     ControlCollector controlCollector,
                     ChannelState[] channels,
                     int[] partChannelMap,
-                    OutputChannelLayout outputLayout,
                     Map<Integer, ActiveNote> activeNotes,
                     List<Long> stopTicks)
             {
@@ -2052,68 +2161,314 @@ public final class MLDDecoder
                 this.controlCollector = controlCollector;
                 this.channels = channels;
                 this.partChannelMap = partChannelMap;
-                this.outputLayout = outputLayout;
                 this.activeNotes = activeNotes;
                 this.stopTicks = stopTicks;
-            }
-        }
-
-        private static final class MidiTracks
-        {
-            final Sequence sequence;
-            final Track conductorTrack;
-            final Track[] channelTracks;
-
-            MidiTracks(Sequence sequence, Track conductorTrack, Track[] channelTracks)
-            {
-                this.sequence = sequence;
-                this.conductorTrack = conductorTrack;
-                this.channelTracks = channelTracks;
             }
         }
 
         static final class DecodeResult
         {
             final Sequence sequence;
+            final PlaybackTimeline playbackTimeline;
             final Map<Integer, Integer> pcmPositions;
             final Map<Integer, Integer> pcmVelocities;
             final List<String> warnings;
 
-            DecodeResult(Sequence sequence, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities, List<String> warnings)
+            DecodeResult(Sequence sequence, PlaybackTimeline playbackTimeline, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities, List<String> warnings)
             {
                 this.sequence = sequence;
+                this.playbackTimeline = playbackTimeline;
                 this.pcmPositions = new HashMap<Integer, Integer>(pcmPositions);
                 this.pcmVelocities = new HashMap<Integer, Integer>(pcmVelocities);
                 this.warnings = new ArrayList<String>(warnings);
             }
         }
 
-        private static final class TrackDecodeResult
+        private static final class ScheduledExecution
+        {
+            final List<TrackEvent> events;
+            final int loopStartRawTick;
+            final int loopEndRawTick;
+            final int endRawTick;
+
+            ScheduledExecution(List<TrackEvent> events, int loopStartRawTick, int loopEndRawTick, int endRawTick)
+            {
+                this.events = events;
+                this.loopStartRawTick = loopStartRawTick;
+                this.loopEndRawTick = loopEndRawTick;
+                this.endRawTick = endRawTick;
+            }
+
+            boolean hasLoop()
+            {
+                return loopStartRawTick >= 0 && loopEndRawTick > loopStartRawTick;
+            }
+        }
+
+        private static final class TrackCursor
         {
             final int trackIndex;
-            final int totalRawTicks;
             final List<TrackEvent> events;
+            int index;
+            long dueTick;
+            boolean done;
 
-            TrackDecodeResult(int trackIndex, int totalRawTicks, List<TrackEvent> events)
+            TrackCursor(int trackIndex, List<TrackEvent> events)
             {
                 this.trackIndex = trackIndex;
-                this.totalRawTicks = totalRawTicks;
                 this.events = events;
+                this.index = 0;
+                this.done = events.isEmpty();
+                this.dueTick = done ? Long.MAX_VALUE : events.get(0).rawTick;
+            }
+
+            TrackEvent current()
+            {
+                return events.get(index);
+            }
+
+            void finish()
+            {
+                done = true;
+                dueTick = Long.MAX_VALUE;
+                index = events.size();
+            }
+        }
+
+        private static final class LoopSlotState
+        {
+            boolean valid;
+            boolean active;
+            int remaining;
+            long startRawTick;
+            int sourceStartRawTick;
+            int sourceLoopEndSourceRawTick;
+            int[] indices;
+            long[] remainingTicks;
+            boolean[] done;
+
+            void capture(TrackCursor[] cursors, long currentTick, int sourceRawTick)
+            {
+                valid = true;
+                startRawTick = currentTick;
+                sourceStartRawTick = sourceRawTick;
+                sourceLoopEndSourceRawTick = -1;
+                indices = new int[cursors.length];
+                remainingTicks = new long[cursors.length];
+                done = new boolean[cursors.length];
+                for (int i = 0; i < cursors.length; i++)
+                {
+                    TrackCursor cursor = cursors[i];
+                    indices[i] = cursor.index;
+                    done[i] = cursor.done;
+                    remainingTicks[i] = cursor.done ? Long.MAX_VALUE : Math.max(0L, cursor.dueTick - currentTick);
+                }
+            }
+
+            void restore(TrackCursor[] cursors, long currentTick)
+            {
+                if (!valid || indices == null)
+                {
+                    return;
+                }
+                for (int i = 0; i < cursors.length; i++)
+                {
+                    TrackCursor cursor = cursors[i];
+                    cursor.index = indices[i];
+                    cursor.done = done[i];
+                    cursor.dueTick = cursor.done ? Long.MAX_VALUE : currentTick + remainingTicks[i];
+                }
+            }
+        }
+
+        // Parser positions can repeat while tempo or channel state is still changing. Mirror
+        // the audible state here so the chosen MIDI loop comes back to the same sound.
+        private static final class LoopSimulationState
+        {
+            final ChannelState[] channels = createChannelStates();
+            final int[] partChannelMap;
+            final Map<Integer, LoopActiveNote> activeNotes = new LinkedHashMap<Integer, LoopActiveNote>();
+            int timebase = DEFAULT_TIMEBASE;
+            int tempo = DEFAULT_TEMPO;
+            int masterVolume = DEFAULT_MASTER_VOLUME;
+
+            LoopSimulationState(int effectiveTrackCount)
+            {
+                partChannelMap = createIdentityPartChannelMap(Math.max(MIDI_CHANNEL_COUNT, effectiveTrackCount * 4));
+            }
+
+            void process(TrackEvent event)
+            {
+                flushExpired(event.rawTick);
+                if (event instanceof NoteEvent)
+                {
+                    processNote((NoteEvent) event);
+                }
+                else if (event instanceof SystemEvent)
+                {
+                    processSystem((SystemEvent) event);
+                }
+            }
+
+            void flushExpired(int currentRawTick)
+            {
+                Iterator<Map.Entry<Integer, LoopActiveNote>> iterator = activeNotes.entrySet().iterator();
+                while (iterator.hasNext())
+                {
+                    if (iterator.next().getValue().rawEndTick <= currentRawTick)
+                    {
+                        iterator.remove();
+                    }
+                }
+            }
+
+            // Compare this only at the end of a complete repeated pass.
+            String semanticStateKey(int rawOrigin)
+            {
+                StringBuilder result = new StringBuilder();
+                result.append(timebase).append(',').append(tempo).append(',').append(masterVolume).append('|');
+                for (int i = 0; i < partChannelMap.length; i++)
+                {
+                    result.append(partChannelMap[i]).append(',');
+                }
+                result.append('|');
+                for (int i = 0; i < channels.length; i++)
+                {
+                    ChannelState channel = channels[i];
+                    result.append(channel.mode).append(',').append(channel.bank).append(',').append(channel.program).append(',')
+                            .append(channel.hasProgramEvent ? 1 : 0).append(',').append(channel.level).append(',')
+                            .append(channel.pan).append(',').append(channel.pitchCoarse).append(',').append(channel.pitchFine).append(',')
+                            .append(channel.pitchRange).append(',').append(channel.modulation).append(',')
+                            .append(channel.noteOnSuppressed ? 1 : 0).append(';');
+                }
+                result.append('|');
+                for (Map.Entry<Integer, LoopActiveNote> entry : activeNotes.entrySet())
+                {
+                    LoopActiveNote note = entry.getValue();
+                    result.append(entry.getKey()).append(':').append(note.rawEndTick - rawOrigin).append(',')
+                            .append(note.sounding ? 1 : 0).append(',').append(note.midiNote).append(';');
+                }
+                return result.toString();
+            }
+
+            private void processNote(NoteEvent event)
+            {
+                int partLane = partLaneIndex(event.trackIndex, event.voice);
+                int logicalChannel = resolvePartChannel(partChannelMap, partLane);
+                if (logicalChannel < 0 || logicalChannel >= channels.length)
+                {
+                    return;
+                }
+
+                ChannelState channel = channels[logicalChannel];
+                int pitchOffset = event.pitch + octaveOffset(event.octaveShift);
+                int nativeNote = baseMidiNoteForMode(channel.mode) + pitchOffset;
+                Integer key = Integer.valueOf((logicalChannel << 8) | (nativeNote & 0xFF));
+                int rawEndTick = event.rawTick + event.gate;
+                LoopActiveNote active = activeNotes.remove(key);
+                if (active != null)
+                {
+                    active.rawEndTick = rawEndTick;
+                    activeNotes.put(key, active);
+                    return;
+                }
+
+                boolean sounding = channel.allowsOrdinaryNoteOn() && logicalChannel < MIDI_CHANNEL_COUNT;
+                int noteBase = sounding && logicalChannel == MIDI_DRUM_CHANNEL ? 35 : baseMidiNoteForMode(channel.mode);
+                int midiNote = clamp(0, 127, noteBase + pitchOffset);
+                activeNotes.put(key, new LoopActiveNote(rawEndTick, sounding, midiNote));
+            }
+
+            private void processSystem(SystemEvent event)
+            {
+                if (event.trackIndex == 0)
+                {
+                    if (isTempo(event))
+                    {
+                        timebase = event.timebase;
+                        tempo = clamp(MIN_TEMPO, MAX_TEMPO, event.value);
+                    }
+                    else if (event.command == 0xBC && event.value < 0x80)
+                    {
+                        tempo = clamp(MIN_TEMPO, MAX_TEMPO, tempo + event.value - 0x40);
+                    }
+                    else if (event.command == 0xBF)
+                    {
+                        tempo = DEFAULT_TEMPO;
+                    }
+                }
+
+                switch (event.command)
+                {
+                    case 0xB0:
+                        if (acceptTrackZero7Bit(event)) { masterVolume = event.value; }
+                        return;
+                    case 0xBD:
+                        if (acceptTrackZero7Bit(event)) { masterVolume = clamp(0, 127, masterVolume + event.value - 0x40); }
+                        return;
+                    case 0xBA:
+                        if (acceptTrackZero7Bit(event))
+                        {
+                            ChannelState channel = channels[(event.value >> 3) & 0x0F];
+                            channel.mode = event.value & 0x07;
+                            if (channel.mode == 1) { applyNativePatchHelperState(channel); }
+                        }
+                        return;
+                    case 0xBE:
+                        if (event.trackIndex == 0 && event.value == 0) { activeNotes.clear(); }
+                        return;
+                    case 0xBF:
+                        if (event.trackIndex == 0)
+                        {
+                            activeNotes.clear();
+                            resetChannelStates(channels);
+                            resetPartChannelMap(partChannelMap);
+                            masterVolume = DEFAULT_MASTER_VOLUME;
+                        }
+                        return;
+                    case 0xE5:
+                        applyVoiceAssignment(event, partChannelMap);
+                        return;
+                    default:
+                        break;
+                }
+
+                if (event.part < 0)
+                {
+                    return;
+                }
+                int partLane = partLaneIndex(event.trackIndex, event.part);
+                int logicalChannel = resolvePartChannel(partChannelMap, partLane);
+                if (logicalChannel < 0 || logicalChannel >= channels.length)
+                {
+                    return;
+                }
+                applyChannelSemanticState(event, channels[logicalChannel]);
+            }
+        }
+
+        private static final class LoopActiveNote
+        {
+            int rawEndTick;
+            final boolean sounding;
+            final int midiNote;
+
+            LoopActiveNote(int rawEndTick, boolean sounding, int midiNote)
+            {
+                this.rawEndTick = rawEndTick;
+                this.sounding = sounding;
+                this.midiNote = midiNote;
             }
         }
 
         private static abstract class TrackEvent
         {
             final int trackIndex;
-            final int eventIndex;
-            final int delta;
             final int rawTick;
 
-            TrackEvent(int trackIndex, int eventIndex, int delta, int rawTick)
+            TrackEvent(int trackIndex, int rawTick)
             {
                 this.trackIndex = trackIndex;
-                this.eventIndex = eventIndex;
-                this.delta = delta;
                 this.rawTick = rawTick;
             }
         }
@@ -2125,22 +2480,17 @@ public final class MLDDecoder
             final int gate;
             final int velocity;
             final int octaveShift;
-            final int noteExtraBytes;
+            final boolean hasExtraByte;
 
-            NoteEvent(int trackIndex, int eventIndex, int delta, int rawTick, int voice, int pitch, int gate, int velocity, int octaveShift, int noteExtraBytes)
+            NoteEvent(int trackIndex, int rawTick, int voice, int pitch, int gate, int velocity, int octaveShift, boolean hasExtraByte)
             {
-                super(trackIndex, eventIndex, delta, rawTick);
+                super(trackIndex, rawTick);
                 this.voice = voice;
                 this.pitch = pitch;
                 this.gate = gate;
                 this.velocity = velocity;
                 this.octaveShift = octaveShift;
-                this.noteExtraBytes = noteExtraBytes;
-            }
-
-            boolean hasExtraByte()
-            {
-                return noteExtraBytes > 0;
+                this.hasExtraByte = hasExtraByte;
             }
         }
 
@@ -2151,9 +2501,9 @@ public final class MLDDecoder
             final int part;
             final int timebase;
 
-            SystemEvent(int trackIndex, int eventIndex, int delta, int rawTick, int command, int value, int part, int timebase)
+            SystemEvent(int trackIndex, int rawTick, int command, int value, int part, int timebase)
             {
-                super(trackIndex, eventIndex, delta, rawTick);
+                super(trackIndex, rawTick);
                 this.command = command;
                 this.value = value;
                 this.part = part;
@@ -2166,37 +2516,13 @@ public final class MLDDecoder
             final int command;
             final int value;
             final int part;
-            final int bodyLength;
-            final boolean longEvent;
 
-            ResourceEvent(int trackIndex, int eventIndex, int delta, int rawTick, int command, int value, int part, int bodyLength, boolean longEvent)
+            ResourceEvent(int trackIndex, int rawTick, int command, int value, int part)
             {
-                super(trackIndex, eventIndex, delta, rawTick);
+                super(trackIndex, rawTick);
                 this.command = command;
                 this.value = value;
                 this.part = part;
-                this.bodyLength = bodyLength;
-                this.longEvent = longEvent;
-            }
-        }
-
-        private static final class RawTempoPoint
-        {
-            final int rawTick;
-            final int timebase;
-            final int tempo;
-            final int trackIndex;
-            final int eventIndex;
-            final boolean synthetic;
-
-            RawTempoPoint(int rawTick, int timebase, int tempo, int trackIndex, int eventIndex, boolean synthetic)
-            {
-                this.rawTick = rawTick;
-                this.timebase = timebase;
-                this.tempo = tempo;
-                this.trackIndex = trackIndex;
-                this.eventIndex = eventIndex;
-                this.synthetic = synthetic;
             }
         }
 
@@ -2206,33 +2532,13 @@ public final class MLDDecoder
             final long midiTick;
             final int timebase;
             final int tempo;
-            final int mpqn;
-            final boolean synthetic;
 
-            TempoPoint(int rawTick, long midiTick, int timebase, int tempo, int mpqn, boolean synthetic)
+            TempoPoint(int rawTick, long midiTick, int timebase, int tempo)
             {
                 this.rawTick = rawTick;
                 this.midiTick = midiTick;
                 this.timebase = timebase;
                 this.tempo = tempo;
-                this.mpqn = mpqn;
-                this.synthetic = synthetic;
-            }
-        }
-
-        private static final class LoopInfo
-        {
-            final boolean hasLoop;
-            final long loopStartTick;
-            final long loopEndTick;
-            final int repeatCount;
-
-            LoopInfo(boolean hasLoop, long loopStartTick, long loopEndTick, int repeatCount)
-            {
-                this.hasLoop = hasLoop;
-                this.loopStartTick = loopStartTick;
-                this.loopEndTick = loopEndTick;
-                this.repeatCount = repeatCount;
             }
         }
 
@@ -2243,19 +2549,19 @@ public final class MLDDecoder
             int program = 0;
             boolean hasProgramEvent = false;
             int level = DEFAULT_LEVEL;
-            int volumeCache = DEFAULT_LEVEL * 2;
             int pan = DEFAULT_PAN;
             int pitchCoarse = DEFAULT_PITCH_COARSE;
             int pitchFine = DEFAULT_PITCH_FINE;
             int pitchRange = DEFAULT_PITCH_RANGE;
             int modulation = DEFAULT_MODULATION;
             boolean patchDirty = true;
-            boolean patchEmitted = false;
+            boolean pitchRangeDirty = false;
+            boolean noteOnSuppressed = false;
             int lastProgram = -1;
 
-            boolean allowsOrdinaryNotes()
+            boolean allowsOrdinaryNoteOn()
             {
-                return mode == 0 || mode == 1;
+                return !noteOnSuppressed;
             }
 
             void reset()
@@ -2265,14 +2571,14 @@ public final class MLDDecoder
                 program = 0;
                 hasProgramEvent = false;
                 level = DEFAULT_LEVEL;
-                volumeCache = DEFAULT_LEVEL * 2;
                 pan = DEFAULT_PAN;
                 pitchCoarse = DEFAULT_PITCH_COARSE;
                 pitchFine = DEFAULT_PITCH_FINE;
                 pitchRange = DEFAULT_PITCH_RANGE;
                 modulation = DEFAULT_MODULATION;
                 patchDirty = true;
-                patchEmitted = false;
+                pitchRangeDirty = false;
+                noteOnSuppressed = false;
                 lastProgram = -1;
             }
         }
@@ -2283,10 +2589,11 @@ public final class MLDDecoder
             final int midiNote;
             final int order;
             final long midiStartTick;
+            final boolean sounding;
             int rawEndTick;
             long midiEndTick;
 
-            ActiveNote(int midiChannel, int midiNote, int rawEndTick, long midiEndTick, int order, long midiStartTick)
+            ActiveNote(int midiChannel, int midiNote, int rawEndTick, long midiEndTick, int order, long midiStartTick, boolean sounding)
             {
                 this.midiChannel = midiChannel;
                 this.midiNote = midiNote;
@@ -2294,23 +2601,7 @@ public final class MLDDecoder
                 this.midiEndTick = midiEndTick;
                 this.order = order;
                 this.midiStartTick = midiStartTick;
-            }
-        }
-
-        private static final class ChannelTarget
-        {
-            final int logicalChannel;
-            final ChannelState channel;
-
-            ChannelTarget(int logicalChannel, ChannelState channel)
-            {
-                this.logicalChannel = logicalChannel;
-                this.channel = channel;
-            }
-
-            boolean hasMidiChannel()
-            {
-                return logicalChannel >= 0 && logicalChannel < MIDI_CHANNEL_COUNT;
+                this.sounding = sounding;
             }
         }
 
@@ -2340,11 +2631,6 @@ public final class MLDDecoder
             void emitProgramChange(int midiChannel, long tick, int program)
             {
                 emit(midiChannel, tick, ShortMessage.PROGRAM_CHANGE, clamp(0, 127, program), 0);
-            }
-
-            void emitControlChange(int midiChannel, long tick, int controller, int value)
-            {
-                emitDedupedControl(midiChannel, tick, controller, clamp(0, 127, value));
             }
 
             void emitVolume(int midiChannel, long tick, int value)
@@ -2399,30 +2685,12 @@ public final class MLDDecoder
                 }
             }
 
-            void emitMasterTune(long tick, int value)
-            {
-                if (value < 0x34 || value > 0x4C)
-                {
-                    return;
-                }
-                int pitchBendValue = computeMasterTunePitchBend(value);
-                for (int midiChannel = 0; midiChannel < MIDI_CHANNEL_COUNT; midiChannel++)
-                {
-                    emitPitchBend(midiChannel, tick, pitchBendValue);
-                }
-            }
-
             void emitAllSoundOff(long tick)
             {
                 for (int midiChannel = 0; midiChannel < MIDI_CHANNEL_COUNT; midiChannel++)
                 {
-                    emitImmediateControl(midiChannel, tick, 120, 0);
+                    emit(midiChannel, tick, ShortMessage.CONTROL_CHANGE, 120, 0);
                 }
-            }
-
-            void emitImmediateControl(int midiChannel, long tick, int controller, int value)
-            {
-                emit(midiChannel, tick, ShortMessage.CONTROL_CHANGE, controller, clamp(0, 127, value));
             }
 
             private void emitDedupedControl(int midiChannel, long tick, int controller, int value)
@@ -2484,144 +2752,49 @@ public final class MLDDecoder
             }
         }
 
-        private static final class OutputChannelLayout
+        private static long rawToMidiTick(List<TempoPoint> tempoPoints, int rawTick)
         {
-            private final boolean fixedLayout;
-            private final boolean identityMap;
-            private final boolean reserveDrumChannel;
-            private int activeMask = 0;
-            private int specialChannelMask = 0;
-
-            private OutputChannelLayout(boolean fixedLayout, boolean identityMap, boolean reserveDrumChannel, int specialChannelMask)
+            TempoPoint current = tempoPoints.get(0);
+            for (int i = 1; i < tempoPoints.size(); i++)
             {
-                this.fixedLayout = fixedLayout;
-                this.identityMap = identityMap;
-                this.reserveDrumChannel = reserveDrumChannel;
-                this.specialChannelMask = specialChannelMask;
-            }
-
-            static OutputChannelLayout createDefault()
-            {
-                return new OutputChannelLayout(true, DEFAULT_IDENTITY_OUTPUT_MAP, DEFAULT_RESERVE_DRUM_OUTPUT_CHANNEL, DEFAULT_SPECIAL_OUTPUT_MASK);
-            }
-
-            void observeActive(int logicalChannel)
-            {
-                if (logicalChannel < 0 || logicalChannel >= MIDI_CHANNEL_COUNT)
+                TempoPoint next = tempoPoints.get(i);
+                if (next.rawTick > rawTick)
                 {
-                    return;
+                    break;
                 }
-                activeMask |= (1 << logicalChannel);
+                current = next;
             }
-
-            boolean isActive(int logicalChannel)
-            {
-                return logicalChannel >= 0
-                        && logicalChannel < MIDI_CHANNEL_COUNT
-                        && ((activeMask >>> logicalChannel) & 1) != 0;
-            }
-
-            boolean hasFixedLayout()
-            {
-                return fixedLayout;
-            }
-
-            boolean isSpecialChannel(int logicalChannel)
-            {
-                return logicalChannel >= 0
-                        && logicalChannel < MIDI_CHANNEL_COUNT
-                        && ((specialChannelMask >>> logicalChannel) & 1) != 0;
-            }
-
-            boolean usesIdentityMap()
-            {
-                return identityMap;
-            }
-
-            boolean reservesDrumChannel()
-            {
-                return reserveDrumChannel;
-            }
+            return current.midiTick + (((long) rawTick - current.rawTick) * MIDI_PPQ) / Math.max(1, current.timebase);
         }
 
-        private static final class TempoMapper
+        private static long midiTickToMicroseconds(List<TempoPoint> tempoPoints, long midiTick)
         {
-            private final List<TempoPoint> tempoPoints;
-
-            TempoMapper(List<TempoPoint> tempoPoints)
+            TempoPoint current = tempoPoints.get(0);
+            long currentTick = 0L;
+            long micros = 0L;
+            for (int i = 1; i < tempoPoints.size(); i++)
             {
-                this.tempoPoints = tempoPoints;
-            }
-
-            long rawToMidiTick(int rawTick)
-            {
-                TempoPoint current = tempoPoints.get(0);
-                for (int i = 1; i < tempoPoints.size(); i++)
+                TempoPoint next = tempoPoints.get(i);
+                if (next.midiTick > midiTick)
                 {
-                    TempoPoint next = tempoPoints.get(i);
-                    if (next.rawTick > rawTick)
-                    {
-                        break;
-                    }
-                    current = next;
+                    break;
                 }
-                return current.midiTick + (((long) rawTick - current.rawTick) * MIDI_PPQ) / Math.max(1, current.timebase);
+                long deltaTick = next.midiTick - currentTick;
+                micros += (deltaTick * (60000000L / Math.max(1, current.tempo))) / MIDI_PPQ;
+                currentTick = next.midiTick;
+                current = next;
             }
+            long deltaTick = midiTick - currentTick;
+            return micros + (deltaTick * (60000000L / Math.max(1, current.tempo))) / MIDI_PPQ;
         }
-
-        private static final Comparator<TrackEvent> TRACK_EVENT_COMPARATOR = new Comparator<TrackEvent>()
-        {
-            public int compare(TrackEvent left, TrackEvent right)
-            {
-                int byTick = compareInts(left.rawTick, right.rawTick);
-                if (byTick != 0) { return byTick; }
-
-                int byTrack = compareInts(left.trackIndex, right.trackIndex);
-                if (byTrack != 0) { return byTrack; }
-
-                return compareInts(left.eventIndex, right.eventIndex);
-            }
-        };
-
-        private static final Comparator<RawTempoPoint> RAW_TEMPO_COMPARATOR = new Comparator<RawTempoPoint>()
-        {
-            public int compare(RawTempoPoint left, RawTempoPoint right)
-            {
-                int byTick = compareInts(left.rawTick, right.rawTick);
-                if (byTick != 0) { return byTick; }
-
-                int byTrack = compareInts(left.trackIndex, right.trackIndex);
-                if (byTrack != 0) { return byTrack; }
-
-                int byEvent = compareInts(left.eventIndex, right.eventIndex);
-                if (byEvent != 0) { return byEvent; }
-
-                if (left.synthetic == right.synthetic)
-                {
-                    return 0;
-                }
-                return left.synthetic ? -1 : 1;
-            }
-        };
 
         private static final Comparator<MessageEvent> MESSAGE_EVENT_COMPARATOR = new Comparator<MessageEvent>()
         {
             public int compare(MessageEvent left, MessageEvent right)
             {
-                int byTick = compareLongs(left.tick, right.tick);
-                if (byTick != 0) { return byTick; }
-
-                int byOrder = compareInts(left.order, right.order);
-                if (byOrder != 0) { return byOrder; }
-
-                int byPhase = compareInts(left.phase, right.phase);
-                if (byPhase != 0) { return byPhase; }
-                int byChannel = compareInts(left.midiChannel, right.midiChannel);
-                if (byChannel != 0) { return byChannel; }
-                int byData1 = compareInts(left.data1, right.data1);
-                if (byData1 != 0) { return byData1; }
-
-                return compareInts(left.data2, right.data2);
+                if (left.tick != right.tick) { return left.tick < right.tick ? -1 : 1; }
+                if (left.order != right.order) { return left.order < right.order ? -1 : 1; }
+                return left.phase < right.phase ? -1 : (left.phase == right.phase ? 0 : 1);
             }
         };
     }
