@@ -17,6 +17,7 @@
 package org.recompile.freej2me;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -66,10 +67,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
+import org.recompile.freej2me.gamepad.GamepadReader;
+import org.recompile.freej2me.gamepad.LinuxGamepadReader;
 
 public final class FJGUI
 {
@@ -134,7 +138,9 @@ public final class FJGUI
 		new JButton("Restart later"),
 		new JButton("Apply"),
 		new JButton("Cancel"),
-		new JButton("Close Dialog")
+		new JButton("Close Dialog"),
+		new JButton("Keyboard"), // Toggles input layouts on the mapping screen
+		new JButton("Refresh") // Gamepad refresh button
 	};
 
 	/* Log Level submenu */
@@ -184,6 +190,33 @@ public final class FJGUI
 		new JButton("X")
 	};
 
+	final JButton gamepadButtons[] = new JButton[]
+	{
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton(""),
+		new JButton("")
+	};
+
 	/* Array of inputs in order to support input remapping */
 	public static int inputKeycodes[] = new int[]
 	{
@@ -196,12 +229,30 @@ public final class FJGUI
 		KeyEvent.VK_SPACE, KeyEvent.VK_C, KeyEvent.VK_X
 	};
 
-	private final int newInputKeycodes[] = Arrays.copyOf(inputKeycodes, inputKeycodes.length);
+	/* Gamepad inputs. Zeroed by default as these vary per joystick. */
+	public static int gamepadKeycodes[] = new int[]
+	{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0
+	};
+
+	public static String gamepadKeyNames[] = new String[]
+	{
+		"", "", "", "", "", "", "", "", "", "", "", "", "", "",
+		"", "", "", "", "", "", "", "", ""
+	};
+
+	// Container for input mappings that allows swapping between keyboard and gamepad
+	final CardLayout inputLayout = new CardLayout();
+	final JPanel inputPanel = new JPanel(inputLayout);
+	final JTextArea gamepadName = new JTextArea("Pad: None");
+	private static GamepadReader gamepadReader = null;
+	private static Thread gamepadThread = null;
 
 	final JComboBox resChoice = new JComboBox();
 
 	/* Items for each of the bar's JMenus */
-	final UIListener menuItemListener = new UIListener();
+	final UIListener menuItemListener = new UIListener(this);
 
 	final JMenuItem aboutMenuItem = new JMenuItem("About FreeJ2ME");
 	final JMenuItem resChangeMenuItem = new JMenuItem("Change Phone Resolution");
@@ -433,13 +484,29 @@ public final class FJGUI
 
 		// Flatten those buttons, their default look is pretty ugly.
 		for(int i = 0; i < swingButtons.length; i++) { flattenButton(swingButtons[i]); }
+
+		// Input buttons get a smaller font and tighter insets as well.
 		for(int i = 0; i < inputButtons.length; i++)
 		{
-			// inputButtons get a smaller font and tighter padding too.
-			inputButtons[i].setMargin(new Insets(1, 1, 1, 1));
-			//inputButtons[i].setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+			inputButtons[i].setMargin(new Insets(0, 0, 0, 0));
+			inputButtons[i].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
 			flattenButton(inputButtons[i]);
+
+			gamepadButtons[i].setMargin(new Insets(0, 0, 0, 0));
+			gamepadButtons[i].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+			flattenButton(gamepadButtons[i]);
 		}
+		// Same for the gamepad refresh button
+		swingButtons[9].setMargin(new Insets(0, 0, 0, 0));
+		swingButtons[9].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+		flattenButton(swingButtons[9]);
+
+		// The gamepad name area on the input map menu must only span 1 row.
+		gamepadName.setRows(1);
+		gamepadName.setEditable(false);
+		gamepadName.setForeground(Color.BLACK);
+		gamepadName.setBackground(new Color(238, 238, 238));
+		gamepadName.setFont(new Font(Font.DIALOG, Font.BOLD, 10));
 
 		swingDialogs[1].setLayout( new FlowLayout(FlowLayout.CENTER, 200, 0));
 		swingDialogs[1].setUndecorated(true); /* Whenever a JDialog is undecorated, it's because it's meant to look like an internal menu on FreeJ2ME's main JFrame */
@@ -493,88 +560,10 @@ public final class FJGUI
 		swingDialogs[0].add(Box.createVerticalStrut(10));
 		swingDialogs[0].add(buttonPanel);
 
-		/* Input mapping dialog: It's a grid, so a few tricks had to be employed to align everything up */
-		swingDialogs[4].getContentPane().removeAll();
-		swingDialogs[4].setLayout(new BoxLayout(swingDialogs[4].getContentPane(), BoxLayout.Y_AXIS));
-		swingDialogs[4].setSize(280, 480);
-		swingDialogs[4].setResizable(false);
-
-		// Header (apply and cancel buttons)
-		JLabel headerLabel = new JLabel("Click any button below to map keys", SwingConstants.CENTER);
-		headerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		headerLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-
-		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-		swingButtons[5].setForeground(Color.BLUE); // Apply
-		swingButtons[6].setForeground(Color.RED);  // Cancel
-		actionPanel.add(swingButtons[5]);
-		actionPanel.add(swingButtons[6]);
-
-		JPanel phonePanel = new JPanel(new GridLayout(0, 3, 3, 3));
-		phonePanel.setMaximumSize(new Dimension(260, 240));
-
-		phonePanel.add(inputButtons[0]); // Soft Left (Q)
-		phonePanel.add(new JLabel(""));
-		phonePanel.add(inputButtons[1]); // Soft Right (W)
-
-		phonePanel.add(new JLabel(""));
-		phonePanel.add(inputButtons[2]); // Up
-		phonePanel.add(new JLabel(""));
-
-		phonePanel.add(inputButtons[3]); // Left
-		phonePanel.add(inputButtons[4]); // Enter/OK
-		phonePanel.add(inputButtons[5]); // Right
-
-		phonePanel.add(new JLabel(""));
-		phonePanel.add(inputButtons[6]); // Down
-		phonePanel.add(new JLabel(""));
-
-		phonePanel.add(new JLabel("CLR KEY:", SwingConstants.RIGHT));
-		phonePanel.add(inputButtons[19]); // Clear (A)
-		phonePanel.add(new JLabel(""));
-
-		phonePanel.add(new JLabel(""));
-		phonePanel.add(new JLabel(""));
-		phonePanel.add(new JLabel(""));
-
-		// Numpad keys
-		phonePanel.add(inputButtons[7]);  phonePanel.add(inputButtons[8]);  phonePanel.add(inputButtons[9]);
-		phonePanel.add(inputButtons[10]); phonePanel.add(inputButtons[11]); phonePanel.add(inputButtons[12]);
-		phonePanel.add(inputButtons[13]); phonePanel.add(inputButtons[14]); phonePanel.add(inputButtons[15]);
-		phonePanel.add(inputButtons[16]); phonePanel.add(inputButtons[17]); phonePanel.add(inputButtons[18]);
-
-		JPanel hotkeyHeader = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		hotkeyHeader.add(new JLabel("Hotkeys"));
-		hotkeyHeader.add(new JLabel("(Ctrl+Alt+*)"));
-
-		JPanel hotkeyGrid = new JPanel(new GridLayout(2, 2, 2, 2));
-		hotkeyGrid.setMaximumSize(new Dimension(300, 80));
-
-		hotkeyGrid.add(new JLabel("Fast-Forward", SwingConstants.CENTER));
-		hotkeyGrid.add(new JLabel("Screenshot", SwingConstants.CENTER));
-		hotkeyGrid.add(new JLabel("(Un)Pause", SwingConstants.CENTER));
-
-		hotkeyGrid.add(inputButtons[20]);
-		hotkeyGrid.add(inputButtons[21]);
-		hotkeyGrid.add(inputButtons[22]);
-
-		// Build the input menu itself now.
-		swingDialogs[4].add(headerLabel);
-		swingDialogs[4].add(actionPanel);
-		swingDialogs[4].add(Box.createVerticalStrut(8));
-		swingDialogs[4].add(new JSeparator(JSeparator.HORIZONTAL));
-		swingDialogs[4].add(Box.createVerticalStrut(8));
-
-		swingDialogs[4].add(phonePanel);
-
-		swingDialogs[4].add(Box.createVerticalStrut(8));
-		swingDialogs[4].add(new JSeparator(JSeparator.HORIZONTAL));
-		swingDialogs[4].add(Box.createVerticalStrut(5));
-
-		swingDialogs[4].add(hotkeyHeader);
-		swingDialogs[4].add(hotkeyGrid);
-		swingDialogs[4].add(Box.createVerticalStrut(10));
-
+		// Setup the key mapping dialog, a separate method for this is much
+		// cleaner since it's quite a big menu and now there are two layouts
+		// (keyboard and gamepad)
+		setupKeyMappingDialog();
 
 		// Restart Required Dialog
 		swingDialogs[3].setLayout(new FlowLayout(FlowLayout.CENTER, 5, 10));
@@ -724,7 +713,8 @@ public final class FJGUI
 		swingButtons[7].addActionListener(menuItemListener);
 		showPlayer.addActionListener(menuItemListener);
 
-		addInputButtonListeners();
+		addInputButtonListeners(false);
+		addInputButtonListeners(true);
 
 		buildMenuBar();
 
@@ -738,20 +728,160 @@ public final class FJGUI
 		button.setBackground(new Color(220, 220, 220)); // Sets a solid flat background
 	}
 
+	public void setupKeyMappingDialog()
+	{
+		JDialog dialog = swingDialogs[4];
+		dialog.getContentPane().removeAll();
+		dialog.setLayout(new BoxLayout(dialog.getContentPane(), BoxLayout.Y_AXIS));
+		dialog.setSize(280, 410);
+		dialog.setResizable(false);
+
+		// Header Label
+		JLabel headerLabel = new JLabel("Click any button below to map keys", SwingConstants.CENTER);
+		headerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		headerLabel.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
+
+		// Action Panel (Apply, Cancel + Mode Toggle)
+		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+		swingButtons[5].setForeground(Color.BLUE); // Apply
+		swingButtons[6].setForeground(Color.RED);  // Cancel
+
+		// Input Layout Toggle action
+		swingButtons[8].setActionCommand("ToggleInputLayout");
+		swingButtons[8].addActionListener(menuItemListener);
+
+		actionPanel.add(swingButtons[5]);
+		actionPanel.add(swingButtons[6]);
+		actionPanel.add(swingButtons[8]);
+
+		// Add both input layouts into the card layout
+		inputPanel.add(createInputPanel(inputButtons, false), "KEYBOARD");
+		inputPanel.add(createInputPanel(gamepadButtons, true), "GAMEPAD");
+
+		// Assemble the input dialog itself
+		dialog.add(headerLabel);
+		dialog.add(actionPanel);
+		dialog.add(Box.createVerticalStrut(8));
+		dialog.add(new JSeparator(JSeparator.HORIZONTAL));
+		dialog.add(Box.createVerticalStrut(8));
+
+		dialog.add(inputPanel);
+
+		dialog.revalidate();
+		dialog.repaint();
+	}
+
+	// Rather than duplicating code, the input map panel goes through this
+	// method to build both the Keyboard and Gamepad layouts.
+	private JPanel createInputPanel(JButton[] buttons, boolean isGamepad)
+	{
+		JPanel container = new JPanel();
+		container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+
+		// Gamepad Mode has an extra row with device name and a "Refresh" button
+		if (isGamepad)
+		{
+			// Create a horizontal row panel
+			JPanel devicePanel = new JPanel(new BorderLayout(4, 0));
+
+			// Align the extra row's width with the main panel, otherwise it'll
+			// clip into the window's edges.
+			devicePanel.setMaximumSize(new Dimension(260, 24));
+
+			// Gamepad device refresh action.
+			swingButtons[9].setActionCommand("RefreshGamepads");
+			swingButtons[9].addActionListener(menuItemListener);
+
+			// Click it so that FreeJ2ME+ loads with a gamepad already present
+			// if available (makes debugging this easier, and also improves UX)
+			swingButtons[9].doClick();
+
+			devicePanel.add(gamepadName, BorderLayout.CENTER);
+			devicePanel.add(swingButtons[9], BorderLayout.EAST);
+
+			container.add(devicePanel);
+			container.add(Box.createVerticalStrut(4)); // Gap before phone grid
+		}
+
+		// Phone Grid
+		JPanel phonePanel = new JPanel(new GridLayout(0, 3, 3, 3));
+		phonePanel.setMaximumSize(new Dimension(260, 240));
+
+		phonePanel.add(buttons[0]); // Soft Left (Q)
+		phonePanel.add(new JLabel(""));
+		phonePanel.add(buttons[1]); // Soft Right (W)
+
+		phonePanel.add(new JLabel(""));
+		phonePanel.add(buttons[2]); // Up
+		phonePanel.add(new JLabel(""));
+
+		phonePanel.add(buttons[3]); // Left
+		phonePanel.add(buttons[4]); // Enter/OK
+		phonePanel.add(buttons[5]); // Right
+
+		phonePanel.add(new JLabel(""));
+		phonePanel.add(buttons[6]); // Down
+		phonePanel.add(new JLabel(""));
+
+		phonePanel.add(new JLabel("CLR KEY:", SwingConstants.RIGHT));
+		phonePanel.add(buttons[19]); // Clear (A)
+		phonePanel.add(new JLabel(""));
+
+		if(!isGamepad)
+		{
+			phonePanel.add(new JLabel(""));
+			phonePanel.add(new JLabel(""));
+			phonePanel.add(new JLabel(""));
+		}
+
+		// Numpad keys
+		phonePanel.add(buttons[7]);  phonePanel.add(buttons[8]);  phonePanel.add(buttons[9]);
+		phonePanel.add(buttons[10]); phonePanel.add(buttons[11]); phonePanel.add(buttons[12]);
+		phonePanel.add(buttons[13]); phonePanel.add(buttons[14]); phonePanel.add(buttons[15]);
+		phonePanel.add(buttons[16]); phonePanel.add(buttons[17]); phonePanel.add(buttons[18]);
+
+		// Hotkey section
+		JPanel hotkeyHeader = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		hotkeyHeader.add(new JLabel("Hotkeys"));
+		hotkeyHeader.add(new JLabel("(Ctrl+Alt+*)"));
+
+		JPanel hotkeyGrid = new JPanel(new GridLayout(2, 3, 2, 2));
+		hotkeyGrid.setMaximumSize(new Dimension(260, 50));
+
+		hotkeyGrid.add(new JLabel("Fast-Fwd", SwingConstants.CENTER));
+		hotkeyGrid.add(new JLabel("Screenshot", SwingConstants.CENTER));
+		hotkeyGrid.add(new JLabel("(Un)Pause", SwingConstants.CENTER));
+
+		hotkeyGrid.add(buttons[20]);
+		hotkeyGrid.add(buttons[21]);
+		hotkeyGrid.add(buttons[22]);
+
+		// Stack sub-panels
+		container.add(phonePanel);
+		container.add(Box.createVerticalStrut(8));
+		container.add(new JSeparator(JSeparator.HORIZONTAL));
+		container.add(Box.createVerticalStrut(5));
+		container.add(hotkeyHeader);
+		container.add(hotkeyGrid);
+
+		return container;
+	}
+
 	public void updateDialogLocations(JFrame mainFrame)
 	{
 		swingDialogs[2].setLocation(mainFrame.getLocation().x+mainFrame.getSize().width, mainFrame.getLocation().y);
 		swingDialogs[5].setLocation(mainFrame.getLocation().x+mainFrame.getSize().width, mainFrame.getLocation().y+swingDialogs[2].getHeight());
 	}
 
-	private void addInputButtonListeners()
+	private void addInputButtonListeners(final boolean isGamepad)
 	{
-		for(int i = 0; i < inputButtons.length; i++)
+		JButton[] buttons = isGamepad ? this.gamepadButtons : this.inputButtons;
+		for(int i = 0; i < buttons.length; i++)
 		{
 			final int buttonIndex = i;
 
 			/* Add a focus listener to each input mapping button */
-			inputButtons[i].addFocusListener(new FocusAdapter()
+			buttons[i].addFocusListener(new FocusAdapter()
 			{
 				JButton focusedButton;
 				String lastButtonKey = new String("");
@@ -760,20 +890,54 @@ public final class FJGUI
 				@Override
 				public void focusGained(FocusEvent e)
 				{
-					{
-						keySet = false;
-						focusedButton = (JButton) e.getComponent();
-						lastButtonKey = focusedButton.getText();
-						focusedButton.setText("Waiting...");
+					keySet = false;
+					focusedButton = (JButton) e.getComponent();
+					lastButtonKey = focusedButton.getText();
+					focusedButton.setText("Waiting...");
 
+					if(isGamepad)
+					{
+						// Gamepads work a bit differently from standard Swing
+						// inputs in which they're not immediately available
+						// or set right at boot, so if the reader is null, just
+						// revert back to the prior key state.
+						if (FJGUI.gamepadReader != null)
+						{
+							// Register listener on the gamepad event thread.
+							// These must run on the EDT, so we dispatch there.
+							FJGUI.gamepadReader.setInputListener(new GamepadReader.GamepadInputListener()
+							{
+								@Override
+								public void onInputDetected(final String inputName, final int inputCode)
+								{
+									SwingUtilities.invokeLater(new Runnable()
+									{
+										@Override
+										public void run()
+										{
+											focusedButton.setText(inputName);
+											keySet = true;
+											gamepadKeycodes[buttonIndex] = inputCode;
+											gamepadKeyNames[buttonIndex] = inputName;
+
+											// Processed the key, so remove listener.
+											FJGUI.gamepadReader.setInputListener(null);
+										}
+									});
+								}
+							});
+						}
+					}
+					else // Keyboard inputs
+					{
 						focusedButton.addKeyListener(new KeyAdapter()
 						{
 							public void keyPressed(KeyEvent e)
 							{
 								focusedButton.setText(KeyEvent.getKeyText(e.getKeyCode()));
 								keySet = true;
-								/* Save the new key's code into the expected index of newInputKeycodes */
-								newInputKeycodes[buttonIndex] = e.getKeyCode();
+								/* Save the new key's code into the expected index of InputKeycodes */
+								inputKeycodes[buttonIndex] = e.getKeyCode();
 							}
 						});
 					}
@@ -781,7 +945,19 @@ public final class FJGUI
 
 				/* Only used to restore the last key map if the user doesn't map a new one into the button */
 				@Override
-				public void focusLost(FocusEvent e) { if(!keySet) { focusedButton.setText(lastButtonKey); } }
+				public void focusLost(FocusEvent e)
+				{
+					if (isGamepad && FJGUI.gamepadReader != null)
+					{
+						// Just remove the gamepad input listener.
+						FJGUI.gamepadReader.setInputListener(null);
+					}
+
+					if(!keySet)
+					{
+						focusedButton.setText(lastButtonKey);
+					}
+				}
 			});
 		}
 	}
@@ -1200,10 +1376,13 @@ public final class FJGUI
 		updateSysToggle(deleteTemporaryKJXFiles, "deleteTempKJXFiles");
 
 		// Sync AWT Keycodes
-		System.arraycopy(Config.inputKeycodes, 0, newInputKeycodes, 0, Config.inputKeycodes.length);
+		System.arraycopy(Config.inputKeycodes, 0, inputKeycodes, 0, Config.inputKeycodes.length);
+		System.arraycopy(Config.gamepadKeycodes, 0, gamepadKeycodes, 0, Config.gamepadKeycodes.length);
+		System.arraycopy(Config.gamepadKeyNames, 0, gamepadKeyNames, 0, Config.gamepadKeyNames.length);
 		for (int i = 0; i < inputButtons.length; i++)
 		{
-			inputButtons[i].setText(KeyEvent.getKeyText(newInputKeycodes[i]));
+			inputButtons[i].setText(KeyEvent.getKeyText(inputKeycodes[i]));
+			gamepadButtons[i].setText(gamepadKeyNames[i]);
 		}
 
 		firstLoad = false;
@@ -1230,6 +1409,10 @@ public final class FJGUI
 
 	class UIListener implements ActionListener
 	{
+		FJGUI gui = null;
+
+		public UIListener(FJGUI gui) { this.gui = gui; }
+
 		public void actionPerformed(ActionEvent a)
 		{
 			String command = a.getActionCommand();
@@ -1325,11 +1508,72 @@ public final class FJGUI
 			else if(command.equals("CompatSettings")) { swingDialogs[6].setLocationRelativeTo(main); swingDialogs[6].setVisible(true); }
 			else if(command.equals("ApplyInputs"))
 			{
-				System.arraycopy(newInputKeycodes, 0, Config.inputKeycodes, 0, newInputKeycodes.length);
+				System.arraycopy(inputKeycodes, 0, Config.inputKeycodes, 0, inputKeycodes.length);
+				System.arraycopy(gamepadKeycodes, 0, Config.gamepadKeycodes, 0, gamepadKeycodes.length);
+				System.arraycopy(gamepadKeyNames, 0, Config.gamepadKeyNames, 0, gamepadKeyNames.length);
 				config.updateAWTInputs();
 				swingDialogs[4].setVisible(false);
 			}
 			else if(command.equals("CancelInputs")) { swingDialogs[4].setVisible(false); }
+			else if(command.equals("ToggleInputLayout"))
+			{
+				if ("Keyboard".equals(swingButtons[8].getText()))
+				{
+					inputLayout.show(inputPanel, "GAMEPAD");
+					swingButtons[8].setText("Gamepad");
+				}
+				else
+				{
+					inputLayout.show(inputPanel, "KEYBOARD");
+					swingButtons[8].setText("Keyboard");
+				}
+			}
+			else if(command.equals("RefreshGamepads"))
+			{
+				ArrayList<String> availableDevices = GamepadReader.getAvailableDevices();
+
+				// If this passes, we have a reader for this platform.
+				if (availableDevices != null)
+				{
+					String firstDevice = availableDevices.get(0);
+
+					// Instant OS-agnostic reader instantiation to resolve the human-readable name
+					String os = System.getProperty("os.name").toLowerCase();
+
+					// We already have a reader running? Stop it before creating another
+					if (FJGUI.gamepadThread != null && FJGUI.gamepadThread.isAlive())
+			        {
+			            if (FJGUI.gamepadReader != null) { FJGUI.gamepadReader.stop(); }
+
+			            FJGUI.gamepadThread.interrupt();
+
+						// Wait for the thread a bit, so it can end normally.
+			            try { FJGUI.gamepadThread.join(500); }
+			            catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
+			        }
+
+					if (os.contains("linux")) { FJGUI.gamepadReader = new LinuxGamepadReader(firstDevice, gui); }
+					// else if (os.contains("win")) { FJGUI.gamepadReader = new WindowsGamepadReader(firstDevice, gui); }
+					// else if (os.contains("mac")) { FJGUI.gamepadReader = new MacGamepadReader(firstDevice, gui); }
+
+					gamepadName.setText("Pad: " + FJGUI.gamepadReader.getDeviceName());
+
+					// Process gamepad inputs on a separate thread.
+					FJGUI.gamepadThread = new Thread(FJGUI.gamepadReader, "GamepadThread");
+					FJGUI.gamepadThread.setDaemon(true);
+					FJGUI.gamepadThread.start();
+				}
+				else
+				{
+					// Close any active readers, we have no devices now.
+					if (FJGUI.gamepadReader != null)
+					{
+					    FJGUI.gamepadReader.stop();
+					    FJGUI.gamepadReader = null;
+					}
+					gamepadName.setText("Pad: None");
+				}
+			}
 			else if(command.equals("ShowPlayer"))
 			{
 				// Create FreeJ2MEPlayer JDialog instance and show it;

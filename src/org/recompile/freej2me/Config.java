@@ -74,6 +74,19 @@ public class Config
 		88   // X Key (for AWT Pause/Resume)
 	};
 
+	public static int gamepadKeycodes[] = new int[]
+	{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0
+	};
+
+	// Gamepad key names are given by the custom gamepad API itself.
+	public static String gamepadKeyNames[] = new String[]
+	{
+		"", "", "", "", "", "", "", "", "", "", "", "", "", "",
+		"", "", "", "", "", "", "", "", ""
+	};
+
 	// Array with key names that match to each array index above.
 	private static final String[] KEY_NAMES = {
 		"input_LeftSoft", "input_RightSoft", "input_ArrowUp", "input_ArrowLeft",
@@ -243,12 +256,16 @@ public class Config
 			if (!sysSettings.containsKey(KEY_NAMES[i]))
 			{
 				sysSettings.put(KEY_NAMES[i], String.valueOf(inputKeycodes[i]));
+				sysSettings.put("Gamepad" + KEY_NAMES[i], String.valueOf(gamepadKeycodes[i] + "_"));
 			}
 			else
 			{
 				try
 				{
 					inputKeycodes[i] = Integer.parseInt(sysSettings.get(KEY_NAMES[i]));
+					String[] parts = sysSettings.get("Gamepad"+KEY_NAMES[i]).split("_", 2);
+					gamepadKeycodes[i] = Integer.parseInt(parts[0]);
+					gamepadKeyNames[i] = parts[1];
 				}
 				catch (NumberFormatException e) { }
 			}
@@ -369,6 +386,7 @@ public class Config
 		for (int i = 0; i < KEY_NAMES.length; i++)
 		{
 			sysSettings.put(KEY_NAMES[i], String.valueOf(inputKeycodes[i]));
+			sysSettings.put("Gamepad" + KEY_NAMES[i], String.valueOf(gamepadKeycodes[i]) + "_" + gamepadKeyNames[i]);
 		}
 		saveSystemConfig();
 		onChange.run();
