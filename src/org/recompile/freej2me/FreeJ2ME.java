@@ -24,12 +24,10 @@ import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.mobile.PlatformGraphics;
 
-import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import javax.swing.JFrame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
@@ -58,6 +56,8 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 public class FreeJ2ME
 {
@@ -804,7 +804,7 @@ public class FreeJ2ME
 		fjGUI.updateDialogs();
 	}
 
-	private class LCD extends Canvas
+	private class LCD extends JPanel
 	{
 		private boolean showDragMessage = false, fileSupported = false;
 		public int cx=0;
@@ -819,6 +819,7 @@ public class FreeJ2ME
 		{
 			setDropTarget();
 			setBackground(Color.WHITE);
+			setOpaque(true);
 		}
 
 		public void updateScale(int vw, int vh)
@@ -831,17 +832,12 @@ public class FreeJ2ME
 			scaley = (double)lcdHeight/(double)vh;
 		}
 
-		@Override
-		public void update(Graphics g) { paint(g); }
+		public void clearScreen() { repaint(); }
 
-		// Used to clear the entire framebuffer when rotated in fullscreen to remove garbage pixels
-		public void clearScreen()
+		public void paintComponent(Graphics g)
 		{
-			((Graphics2D) this.getGraphics()).clearRect(0, 0, getWidth(), getHeight());
-		}
+			super.paintComponent(g);
 
-		public void paint(Graphics g)
-		{
 			/* Only update mem dialog's stats and console window if they are visible */
 			if(fjGUI.swingDialogs[2].isVisible()) { fjGUI.updateDialogs(); }
 
