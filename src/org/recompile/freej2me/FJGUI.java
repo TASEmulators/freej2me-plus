@@ -1394,12 +1394,36 @@ public final class FJGUI
 
 	public void updateDialogs()
 	{
-		String line;
 		try
 		{
-			while ((line = logReader.readLine()) != null) { debugContent.append(line).append("\n"); }
-			logArea.setText(new String(debugContent.toString()));
-			logArea.setCaretPosition(logArea.getText().length());
+			// Read only new incoming lines from the stream, that way, we can
+			// just append new text rather than calling upon setText() to nuke
+			// any currently selected text.
+			StringBuilder newLines = new StringBuilder();
+			String line;
+			while ((line = logReader.readLine()) != null)
+			{
+				newLines.append(line).append("\n");
+			}
+
+			// Only update the UI if there are actual new log messages, improves
+			// performance a bit.
+			if (newLines.length() > 0)
+			{
+				// Make sure the selection and caret are kept track of
+				int selStart = logArea.getSelectionStart();
+				int selEnd = logArea.getSelectionEnd();
+				boolean hasSelection = (selStart != selEnd);
+
+				logArea.append(newLines.toString());
+
+				if (hasSelection)
+				{
+					logArea.setSelectionStart(selStart);
+					logArea.setSelectionEnd(selEnd);
+				}
+				else { logArea.setCaretPosition(logArea.getDocument().getLength()); }
+			}
 		}
 		catch (Exception e) { logArea.append("Error reading log file: " + e.getMessage() + "\n"); }
 
