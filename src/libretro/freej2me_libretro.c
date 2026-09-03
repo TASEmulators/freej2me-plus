@@ -36,9 +36,9 @@ const char *slash = path_default_slash();
 
 // These may change to .so and .dll at some point
 #ifdef __linux__
-const char *freej2meapp = "freej2me-lr.jar";
+const char *freej2meapp = "freej2me_plus-lr.jar";
 #elif _WIN32
-const char *freej2meapp = "freej2me-lr.jar";
+const char *freej2meapp = "freej2me_plus-lr.jar";
 #endif
 
 retro_environment_t Environ;

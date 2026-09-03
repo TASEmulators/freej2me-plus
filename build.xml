@@ -25,7 +25,7 @@
 	<compilerarg value="-nowarn"/>
 	</javac>
 
-    <echo message="Building FreeJ2ME - AWT + Libretro" />
+    <echo message="Building FreeJ2ME-Plus | AWT + Libretro" />
 	<javac
 		srcdir="src"
 		destdir="build/classes"
@@ -50,7 +50,7 @@
 
 	<echo message="Building JAR - AWT" />
 	<jar
-		destfile="build/freej2me.jar">
+		destfile="build/freej2me_plus.jar">
 		<fileset dir="build/classes" excludes="**/Libretro*.class"/> <!-- Exclude Libretro classes -->
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
@@ -63,7 +63,7 @@
 
 	<echo message="Building JAR - Libretro" />
 	<jar
-		destfile="build/freej2me-lr.jar">
+		destfile="build/freej2me_plus-lr.jar">
 		<fileset dir="build/classes" excludes="**/AWTGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/ProgressBar.class, **/ScreenShot*.class"/> <!-- Exclude AWT classes (FreeJ2ME.class is only needed for AWT) -->
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
