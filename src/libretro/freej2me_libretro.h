@@ -752,8 +752,8 @@ struct retro_core_option_v2_definition core_options[] =
 		"freej2me_compattranstooriginongfxreset",
 		"Compatibility Settings > Translate to origin on gfx reset",
 		"Translate to origin on gfx reset",
-		"Some apps like Fantasy Zone's 128x128 version rely on the graphics object being translated to the origin before every draw, this compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for no reason.",
-		"Some apps like Fantasy Zone's 128x128 version rely on the graphics object being translated to the origin before every draw, this compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for no reason.",
+		"Some apps rely on the graphics object being translated to the origin before every draw as opposed to managing that state themselves. This compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for unknown reasons.",
+		"Some apps rely on the graphics object being translated to the origin before every draw as opposed to managing that state themselves. This compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for unknown reasons.",
 		"compat_settings",
 		{
 			{ "on",  "Enabled"            },
@@ -808,8 +808,8 @@ struct retro_core_option_v2_definition core_options[] =
 		"freej2me_compatsiemensfriendlydraw",
 		"Compatibility Settings > Siemens-friendly drawing methods",
 		"Siemens-friendly drawing methods",
-		"MIDP-Compliant J2ME drawing operations do no need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option tries to correct translations in a way that is closer to what Siemens' VM probably does drawing. Note that enabling this will break jars that use negative translations but are tailored for the J2ME specification.",
-		"MIDP-Compliant J2ME drawing operations do no need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option tries to correct translations in a way that is closer to what Siemens' VM probably does drawing. Note that enabling this will break jars that use negative translations but are tailored for the J2ME specification.",
+		"MIDP-Compliant J2ME drawing operations do not need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option tries to correct translations in a way that is closer to what Siemens' VM probably does drawing. Note that enabling this will break jars that use negative translations but are tailored for the J2ME specification.",
+		"MIDP-Compliant J2ME drawing operations do not need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option tries to correct translations in a way that is closer to what Siemens' VM probably does drawing. Note that enabling this will break jars that use negative translations but are tailored for the J2ME specification.",
 		"compat_settings",
 		{
 			{ "on",  "Enabled"            },
@@ -1411,7 +1411,7 @@ struct retro_core_option_definition core_options_v1 [] =
 	{
 		"freej2me_compattranstooriginongfxreset",
 		"Translate to origin on gfx reset",
-		"Some apps like Fantasy Zone's 128x128 version rely on the graphics object being translated to the origin before every draw, this compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for no reason.",
+		"Some apps rely on the graphics object being translated to the origin before every draw as opposed to managing that state themselves. This compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for unknown reasons.",
 		{
 			{ "on",  "Enabled"            },
 			{ "off", "Disabled (Default)" },
@@ -1455,7 +1455,7 @@ struct retro_core_option_definition core_options_v1 [] =
 	{
 		"freej2me_compatsiemensfriendlydraw",
 		"Siemens-friendly drawing methods",
-		"MIDP-Compliant J2ME drawing operations do no need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option tries to correct translations in a way that is closer to what Siemens' VM probably does drawing. Note that enabling this will break jars that use negative translations but are tailored for the J2ME specification.",
+		"MIDP-Compliant J2ME drawing operations do not need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option tries to correct translations in a way that is closer to what Siemens' VM probably does drawing. Note that enabling this will break jars that use negative translations but are tailored for the J2ME specification.",
 		{
 			{ "on",  "Enabled"            },
 			{ "off", "Disabled (Default)" },

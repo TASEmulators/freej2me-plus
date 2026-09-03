@@ -19,6 +19,7 @@ package org.recompile.freej2me;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FileDialog;
 import java.awt.FlowLayout;
@@ -26,10 +27,12 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -43,6 +46,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.JMenuBar;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import java.awt.event.ActionEvent;
@@ -55,6 +59,8 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -93,7 +99,6 @@ public final class FJGUI
 	final JMenu fileMenu = new JMenu("File");
 	final JMenu optionMenu = new JMenu("Settings");
 	final JMenu speedHackMenu = new JMenu("SpeedHacks");
-	final JMenu compatSettingsMenu = new JMenu("Compatibility Settings");
 	final JMenu debugMenu = new JMenu("Debug");
 
 	/* Sub JMenus (for now, all of them are located in "Settings") */
@@ -117,6 +122,7 @@ public final class FJGUI
 		new JDialog(main, "Restart Required", true),
 		new JDialog(main, "Key Mapping", true),
 		new JDialog(main, "Console Log", false),
+		new JDialog(main, "Compatibility Settings", false),
 	};
 
 	final JButton[] swingButtons =
@@ -127,7 +133,8 @@ public final class FJGUI
 		new JButton("Restart Now"),
 		new JButton("Restart later"),
 		new JButton("Apply"),
-		new JButton("Cancel")
+		new JButton("Cancel"),
+		new JButton("Close Dialog")
 	};
 
 	/* Log Level submenu */
@@ -207,6 +214,7 @@ public final class FJGUI
 	final JMenuItem pauseRes = new JMenuItem("Pause / Resume (Ctrl+Alt+X)");
 	final JMenuItem exitMenuItem = new JMenuItem("Exit FreeJ2ME");
 	final JMenuItem mapInputs = new JMenuItem("Manage Inputs");
+	final JMenuItem compatSettingsMenu = new JMenuItem("Compatibility Settings");
 
 	final JMenuItem showPlayer = new JMenuItem("J2ME Media Player");
 
@@ -383,14 +391,14 @@ public final class FJGUI
 	final String[] m3gMipmapSettingValues = {"off", "app", "nearest", "linear"};
 
 	// Compatibility settings
-	final JCheckBoxMenuItem fantasyZoneFix = new JCheckBoxMenuItem("Fix for Fantasy Zone 176x208 weird mirroring", false);
-	final JCheckBoxMenuItem transToOriginOnReset = new JCheckBoxMenuItem("Translate to origin on gfx reset", false);
-	final JCheckBoxMenuItem immediateRepaints = new JCheckBoxMenuItem("Process canvas repaints immediately", false);
-	final JCheckBoxMenuItem repaintOnSetCurrent = new JCheckBoxMenuItem("Repaint on Display setCurrent.", false);
-	final JCheckBoxMenuItem overridePlatChecks = new JCheckBoxMenuItem("Override Mobile Platform checks", true);
-	final JCheckBoxMenuItem siemensFriendlyDrawing = new JCheckBoxMenuItem("Siemens-friendly drawing methods", false);
-	final JCheckBoxMenuItem ignoreVolumeChanges = new JCheckBoxMenuItem("Ignore volume changes", false);
-	final JCheckBoxMenuItem MCV3HorFovFix = new JCheckBoxMenuItem("MascotCapsuleV3 Horizontal FOV Fix", false);
+	final JCheckBox fantasyZoneFix = new JCheckBox("Fix for Fantasy Zone 176x208 weird mirroring", false);
+	final JCheckBox transToOriginOnReset = new JCheckBox("Translate to origin on gfx reset", false);
+	final JCheckBox immediateRepaints = new JCheckBox("Process canvas repaints immediately", false);
+	final JCheckBox repaintOnSetCurrent = new JCheckBox("Repaint on Display setCurrent.", false);
+	final JCheckBox overridePlatChecks = new JCheckBox("Override Mobile Platform checks", true);
+	final JCheckBox siemensFriendlyDrawing = new JCheckBox("Siemens-friendly drawing methods", false);
+	final JCheckBox ignoreVolumeChanges = new JCheckBox("Ignore volume changes", false);
+	final JCheckBox MCV3HorFovFix = new JCheckBox("MascotCapsuleV3 Horizontal FOV Fix", false);
 
 	final JCheckBoxMenuItem deleteTemporaryKJXFiles = new JCheckBoxMenuItem("Delete KJX files' temporary JAR/JAD", true);
 	final JCheckBoxMenuItem dumpAudioData = new JCheckBoxMenuItem("Dump Audio Streams", false);
@@ -437,7 +445,6 @@ public final class FJGUI
 		swingDialogs[1].setUndecorated(true); /* Whenever a JDialog is undecorated, it's because it's meant to look like an internal menu on FreeJ2ME's main JFrame */
 		swingDialogs[1].setSize(230, 235);
 		swingDialogs[1].setResizable(false);
-		swingDialogs[1].setLocationRelativeTo(main);
 		swingDialogs[1].add(new JLabel("FreeJ2ME-Plus - A free J2ME emulator"));
 		swingDialogs[1].add(new JLabel("Version " + VERSION));
 		swingDialogs[1].add(new JLabel("--------------------------------"));
@@ -461,7 +468,6 @@ public final class FJGUI
 		swingDialogs[0].setBackground(new Color(238, 238, 238, 160));
 		swingDialogs[0].setSize(250, 125);
 		swingDialogs[0].setResizable(false);
-		swingDialogs[0].setLocationRelativeTo(main);
 
 		JLabel label1 = new JLabel("Select a Resolution from the Dropdown");
 		JLabel label2 = new JLabel("and then press the 'Apply' button!");
@@ -492,7 +498,6 @@ public final class FJGUI
 		swingDialogs[4].setLayout(new BoxLayout(swingDialogs[4].getContentPane(), BoxLayout.Y_AXIS));
 		swingDialogs[4].setSize(280, 480);
 		swingDialogs[4].setResizable(false);
-		swingDialogs[4].setLocationRelativeTo(main);
 
 		// Header (apply and cancel buttons)
 		JLabel headerLabel = new JLabel("Click any button below to map keys", SwingConstants.CENTER);
@@ -503,7 +508,7 @@ public final class FJGUI
 		swingButtons[5].setForeground(Color.BLUE); // Apply
 		swingButtons[6].setForeground(Color.RED);  // Cancel
 		actionPanel.add(swingButtons[5]);
-		actionPanel.add(swingButtons[6]); // Assuming Cancel or swingButtons[6]
+		actionPanel.add(swingButtons[6]);
 
 		JPanel phonePanel = new JPanel(new GridLayout(0, 3, 3, 3));
 		phonePanel.setMaximumSize(new Dimension(260, 240));
@@ -576,7 +581,6 @@ public final class FJGUI
 		swingDialogs[3].setUndecorated(true);
 		swingDialogs[3].setBackground(new Color(238, 238, 238, 160));
 		swingDialogs[3].setSize(240, 80);
-		swingDialogs[3].setLocationRelativeTo(main);
 		swingDialogs[3].add(new JLabel("This change requires a restart to apply!"));
 
 		swingButtons[3].setForeground(Color.BLUE);
@@ -610,9 +614,71 @@ public final class FJGUI
 		swingDialogs[5].setUndecorated(true);
 		swingDialogs[5].setSize(600, 320);
 		swingDialogs[5].setFont(dialogFont);
-		swingDialogs[5].setLocationRelativeTo(main);
 		swingDialogs[5].setResizable(false);
 		swingDialogs[5].add(logScrollPane, BorderLayout.CENTER);
+
+		// Compatibility settings are a dialog now, for much better readability
+		swingDialogs[6].getContentPane().removeAll();
+		swingDialogs[6].setLayout(new BorderLayout());
+		swingDialogs[6].setSize(640, 480);
+		swingDialogs[6].setResizable(false);
+		swingDialogs[6].setUndecorated(true);
+
+		JPanel headerPanel = new JPanel();
+		headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
+		headerPanel.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+
+		JLabel titleLabel = new JLabel("Compatibility Settings");
+		titleLabel.setFont(new Font("Dialog", Font.BOLD, 16));
+		titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		JLabel descLabel = new JLabel("FreeJ2ME-Plus settings that help some apps work better at the expense of breaking others.");
+		descLabel.setFont(new Font("Dialog", Font.PLAIN, 14));
+		descLabel.setForeground(Color.DARK_GRAY);
+		descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		headerPanel.add(titleLabel);
+		headerPanel.add(Box.createVerticalStrut(4));
+		headerPanel.add(descLabel);
+
+		// 2-Column Grid Panel, packs enough horizontal information without
+		// cluttering too much (and 1 column would make this a long list)
+		JPanel gridPanel = new JPanel(new GridLayout(0, 2, 4, 4));
+		gridPanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+		// Add setting entries into the settings' grid
+		gridPanel.add(createSettingCard(fantasyZoneFix, "Fix for Fantasy Zone 176x208 mirroring",
+			"Fantasy Zone 176x208's MIDP version goes entirely out of spec with its mirroring operation, and is broken even on real devices. This setting fixes it at the expense of breaking other applications that use the same draw path for S40 and match the expected behavior."));
+		gridPanel.add(createSettingCard(transToOriginOnReset, "Translate to origin on Graphics reset",
+			"Some apps rely on the graphics object being translated to the origin before every draw as opposed to managing that state themselves. This compatibility setting helps with that, and any case where the drawn area keeps moving in any given direction for unknown reasons."));
+		gridPanel.add(createSettingCard(immediateRepaints, "Process Canvas repaints immediately",
+			"By default, J2ME expects canvas repaints to be queued up, and applications can either request serviceRepaints() or use serial calls to synchronize rendering. However, this setting may help cases where an app is freezing by deadlocking on event sync."));
+		gridPanel.add(createSettingCard(repaintOnSetCurrent, "Repaint on MIDP Display setCurrent",
+			"By default, J2ME never explicitly makes a Canvas repaint itself when it is brought to the screen (set as current), the apps should do so when appropriate. This setting forces repaints to happen in that case, fixing apps that would get stuck in a blank or black screen at boot."));
+		gridPanel.add(createSettingCard(overridePlatChecks, "Override Mobile Platform checks",
+			"Some applications check against specific platform strings (such as 'Nokia', 'Siemens S60'). This setting overrides any platform strings by FreeJ2ME's own to allow apps that check against specific devices to boot. This option helps far more than breaks, so it's on by default."));
+		gridPanel.add(createSettingCard(siemensFriendlyDrawing, "Siemens-friendly drawing methods",
+			"MIDP-Compliant J2ME drawing operations do not need to check for negative translation values in order to draw images properly. However, some Siemens apps like STCC (Swedish Touring Car Championship) won't work properly with the default behavior. This option works around it, but will break other apps."));
+		gridPanel.add(createSettingCard(ignoreVolumeChanges, "Ignore volume change requests",
+			"Media playback is probably the J2ME subsystem whose implementation and utilization varies the most by vendor. Some applications go as far as setting volume changes to streams they already stopped beforehand, which can cause playback issues. Enabling this option helps work around this."));
+		gridPanel.add(createSettingCard(MCV3HorFovFix, "MascotCapsuleV3 Horizontal FOV Fix",
+			"Might help games meant for portrait resolutions work better in landscape resolutions. Usually not needed unless you're running a game that uses this 3D engine, and is forcing a different resolution than the app's expected one."));
+
+		// Wrap grid in container so it doesn't stretch items infinitely
+		JPanel containerPanel = new JPanel(new BorderLayout());
+		containerPanel.add(gridPanel, BorderLayout.NORTH);
+
+		JScrollPane scrollPane = new JScrollPane(containerPanel);
+		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane.getVerticalScrollBar().setUnitIncrement(12);
+		scrollPane.setBorder(null);
+
+		JPanel closePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+		closePanel.add(swingButtons[7]);
+
+		swingDialogs[6].add(headerPanel, BorderLayout.NORTH);
+		swingDialogs[6].add(scrollPane, BorderLayout.CENTER);
+		swingDialogs[6].add(closePanel, BorderLayout.SOUTH);
 
 		// Setup actions
 		openMenuItem.setActionCommand("Open");
@@ -630,8 +696,10 @@ public final class FJGUI
 		swingButtons[3].setActionCommand("RestartNow");
 		swingButtons[4].setActionCommand("RestartLater");
 		mapInputs.setActionCommand("MapInputs");
+		compatSettingsMenu.setActionCommand("CompatSettings");
 		swingButtons[5].setActionCommand("ApplyInputs");
 		swingButtons[6].setActionCommand("CancelInputs");
+		swingButtons[7].setActionCommand("CloseCompat");
 
 		showPlayer.setActionCommand("ShowPlayer");
 
@@ -650,9 +718,10 @@ public final class FJGUI
 		swingButtons[3].addActionListener(menuItemListener);
 		swingButtons[4].addActionListener(menuItemListener);
 		mapInputs.addActionListener(menuItemListener);
+		compatSettingsMenu.addActionListener(menuItemListener);
 		swingButtons[5].addActionListener(menuItemListener);
 		swingButtons[6].addActionListener(menuItemListener);
-
+		swingButtons[7].addActionListener(menuItemListener);
 		showPlayer.addActionListener(menuItemListener);
 
 		addInputButtonListeners();
@@ -664,9 +733,9 @@ public final class FJGUI
 
 	public static void flattenButton(JButton button)
 	{
-	    button.setContentAreaFilled(false);        // Removes the default gradient fill
-	    button.setOpaque(true);                    // Allows background color to fill cleanly
-	    button.setBackground(new Color(220, 220, 220)); // Sets a solid flat background
+		button.setContentAreaFilled(false);        // Removes the default gradient fill
+		button.setOpaque(true);                    // Allows background color to fill cleanly
+		button.setBackground(new Color(220, 220, 220)); // Sets a solid flat background
 	}
 
 	public void updateDialogLocations(JFrame mainFrame)
@@ -772,8 +841,8 @@ public final class FJGUI
 		setToggle(MCV3NoLighting, "spdhackmcv3nolighting", true);
 		setToggle(fantasyZoneFix, "compatfantasyzonefix", true);
 		setToggle(transToOriginOnReset, "compattranstooriginonreset", false);
-		setToggle(immediateRepaints, "compatimmediaterepaints", false);
-		setToggle(repaintOnSetCurrent, "compatrepaintonsetcurrent", false);
+		setToggle(immediateRepaints, "compatimmediaterepaints", true);
+		setToggle(repaintOnSetCurrent, "compatrepaintonsetcurrent", true);
 		setToggle(overridePlatChecks, "compatoverrideplatchecks", true);
 		setToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing", true);
 		setToggle(ignoreVolumeChanges, "compatignorevolumechanges", false);
@@ -823,68 +892,68 @@ public final class FJGUI
 		});
 	}
 
-	private void setToggle(final JCheckBoxMenuItem checkbox, final String settingKey, final boolean requiresRestart)
+	private void setToggle(final AbstractButton checkbox, final String settingKey, final boolean requiresRestart)
 	{
-	    checkbox.addItemListener(new ItemListener()
-	    {
-	        public void itemStateChanged(ItemEvent e)
-	        {
-	            // Only act when selected or deselected (prevents double executions)
-	            boolean selected = checkbox.isSelected(); // Swing method
-	            config.updateSetting(settingKey, selected ? "on" : "off");
-	            hasPendingChange = true;
-	            if (requiresRestart) { showRestartDialog(); }
-	        }
-	    });
+		checkbox.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				// Only act when selected or deselected (prevents double executions)
+				boolean selected = checkbox.isSelected();
+				config.updateSetting(settingKey, selected ? "on" : "off");
+				hasPendingChange = true;
+				if (requiresRestart) { showRestartDialog(); }
+			}
+		});
 	}
 
 	private void setSysToggle(final JCheckBoxMenuItem checkbox, final String sysSettingKey)
 	{
-	    checkbox.addItemListener(new ItemListener()
-	    {
-	        public void itemStateChanged(ItemEvent e)
-	        {
-	            boolean state = checkbox.isSelected(); // Swing method
-	            config.updateSysSetting(sysSettingKey, state ? "on" : "off");
+		checkbox.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				boolean state = checkbox.isSelected();
+				config.updateSysSetting(sysSettingKey, state ? "on" : "off");
 
-	            if (sysSettingKey.equals("deleteTempKJXFiles"))        { Mobile.deleteTemporaryKJXFiles = state; }
-	            else if (sysSettingKey.equals("dumpAudioStreams"))     { Mobile.dumpAudioStreams = state; }
-	            else if (sysSettingKey.equals("dumpGraphicsObjects"))  { Mobile.dumpGraphicsObjects = state; }
-	            else if (sysSettingKey.equals("M3GUntextured"))        { Mobile.M3GRenderUntexturedPolygons = state; }
-	            else if (sysSettingKey.equals("M3GWireframe"))         { Mobile.M3GRenderWireframe = state; }
-	            else if (sysSettingKey.equals("MCV3ShowHeapUsage"))    { Mobile.MCV3ShowHeapUsage = state; }
-	            else if (sysSettingKey.equals("MCV3ShowTimeMetrics"))  { Mobile.MCV3ShowTimeMetrics = state; }
-	        }
-	    });
+				if (sysSettingKey.equals("deleteTempKJXFiles"))        { Mobile.deleteTemporaryKJXFiles = state; }
+				else if (sysSettingKey.equals("dumpAudioStreams"))     { Mobile.dumpAudioStreams = state; }
+				else if (sysSettingKey.equals("dumpGraphicsObjects"))  { Mobile.dumpGraphicsObjects = state; }
+				else if (sysSettingKey.equals("M3GUntextured"))        { Mobile.M3GRenderUntexturedPolygons = state; }
+				else if (sysSettingKey.equals("M3GWireframe"))         { Mobile.M3GRenderWireframe = state; }
+				else if (sysSettingKey.equals("MCV3ShowHeapUsage"))    { Mobile.MCV3ShowHeapUsage = state; }
+				else if (sysSettingKey.equals("MCV3ShowTimeMetrics"))  { Mobile.MCV3ShowTimeMetrics = state; }
+			}
+		});
 	}
 
 	private void bindRadioGroup(final JCheckBoxMenuItem[] options, final String[] values, final String settingKey, final boolean isSysSetting, final Runnable onChange)
 	{
-	    for (int i = 0; i < options.length; i++)
-	    {
-	        final int index = i;
-	        options[index].addItemListener(new ItemListener()
-	        {
-	            public void itemStateChanged(ItemEvent e)
-	            {
-	                // Swing fires events for DESELECTED and SELECTED.
-	                // Process ONLY when an option becomes SELECTED.
-	                if (e.getStateChange() == ItemEvent.SELECTED)
-	                {
-	                    if (isSysSetting) { config.updateSysSetting(settingKey, values[index]); }
-	                    else { config.updateSetting(settingKey, values[index]); }
+		for (int i = 0; i < options.length; i++)
+		{
+			final int index = i;
+			options[index].addItemListener(new ItemListener()
+			{
+				public void itemStateChanged(ItemEvent e)
+				{
+					// Swing fires events for DESELECTED and SELECTED.
+					// Process ONLY when an option becomes SELECTED.
+					if (e.getStateChange() == ItemEvent.SELECTED)
+					{
+						if (isSysSetting) { config.updateSysSetting(settingKey, values[index]); }
+						else { config.updateSetting(settingKey, values[index]); }
 
-	                    hasPendingChange = true;
-	                    if (onChange != null) { onChange.run(); }
-	                }
-	            }
-	        });
-	    }
+						hasPendingChange = true;
+						if (onChange != null) { onChange.run(); }
+					}
+				}
+			});
+		}
 	}
 
 	private void bindRadioGroup(JCheckBoxMenuItem[] options, String[] values, String settingKey)
 	{
-    	bindRadioGroup(options, values, settingKey, false, null);
+		bindRadioGroup(options, values, settingKey, false, null);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -915,6 +984,7 @@ public final class FJGUI
 		optionMenu.add(useCustomFont);
 		optionMenu.add(resChangeMenuItem);
 		optionMenu.add(mapInputs);
+		optionMenu.add(compatSettingsMenu);
 		optionMenu.add(phoneType);
 		optionMenu.add(DoJaVersion);
 		optionMenu.add(screenRotation);
@@ -924,7 +994,6 @@ public final class FJGUI
 		optionMenu.add(fontOffset);
 		optionMenu.add(M3GSettings);
 		optionMenu.add(speedHackMenu);
-		optionMenu.add(compatSettingsMenu);
 
 		for(int i = 0; i < m3gAntiAliasValues.length; i++) { m3gAAMenu.add(m3gAntiAliasValues[i]); }
 		M3GSettings.add(m3gAAMenu);
@@ -988,19 +1057,96 @@ public final class FJGUI
 		speedHackMenu.add(MCV3HalfRes);
 		speedHackMenu.add(MCV3NoLighting);
 
-		compatSettingsMenu.add(fantasyZoneFix);
-		compatSettingsMenu.add(transToOriginOnReset);
-		compatSettingsMenu.add(immediateRepaints);
-		compatSettingsMenu.add(repaintOnSetCurrent);
-		compatSettingsMenu.add(overridePlatChecks);
-		compatSettingsMenu.add(siemensFriendlyDrawing);
-		compatSettingsMenu.add(ignoreVolumeChanges);
-		compatSettingsMenu.add(MCV3HorFovFix);
-
-		// add menus to menubar
+		// add all menus to menubar
 		menuBar.add(fileMenu);
 		menuBar.add(optionMenu);
 		menuBar.add(debugMenu);
+	}
+
+	// Each compatibility setting is a card containing name and description
+	// for better readability.
+	private JPanel createSettingCard(final AbstractButton checkBox, String title, String description)
+	{
+		final JPanel card = new JPanel(new BorderLayout(3, 0));
+
+		// Checkboxes themselves are not interactible, we have the whole card
+		// act as the checkbox for better UX.
+		checkBox.setText("");
+		checkBox.setOpaque(false);
+		checkBox.setEnabled(false);
+
+		// Forward mouse events from the checkbox directly to the card ifself
+		checkBox.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent e)
+			{
+				card.dispatchEvent(SwingUtilities.convertMouseEvent(checkBox, e, card));
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				card.dispatchEvent(SwingUtilities.convertMouseEvent(checkBox, e, card));
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				card.dispatchEvent(SwingUtilities.convertMouseEvent(checkBox, e, card));
+			}
+		});
+
+		card.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createEtchedBorder(),
+			BorderFactory.createEmptyBorder(3, 3, 3, 3)
+		));
+
+		// Allow clicking the entire card panel to toggle the checkbox, so that
+		// users don't need to aim for the potentially minuscule checkbox.
+		card.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent e)
+			{
+				checkBox.setSelected(!checkBox.isSelected());
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				card.setBackground(new Color(225, 230, 240));
+				card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				// Reset to default card color, and mouse cursor
+				card.setBackground(UIManager.getColor("Panel.background"));
+				card.setCursor(Cursor.getDefaultCursor());
+			}
+		});
+
+		JPanel textPanel = new JPanel();
+		textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+		textPanel.setOpaque(false);
+
+		JLabel titleLabel = new JLabel(title);
+		titleLabel.setFont(new Font("Dialog", Font.BOLD, 12));
+
+		JLabel descLabel = new JLabel("<html><body style='width: 210px;'>" + description + "</body></html>");
+		descLabel.setFont(new Font("Dialog", Font.BOLD, 10));
+		descLabel.setForeground(Color.GRAY);
+
+		textPanel.add(titleLabel);
+		textPanel.add(Box.createVerticalStrut(5));
+		textPanel.add(descLabel);
+
+		card.add(checkBox, BorderLayout.WEST);
+		card.add(textPanel, BorderLayout.CENTER);
+
+		return card;
 	}
 
 	public void updateOptions()
@@ -1072,7 +1218,7 @@ public final class FJGUI
 		}
 	}
 
-	private void updateToggle(JCheckBoxMenuItem checkbox, String settingKey)
+	private void updateToggle(AbstractButton checkbox, String settingKey)
 	{
 		checkbox.setSelected("on".equals(config.settings.get(settingKey)));
 	}
@@ -1159,6 +1305,7 @@ public final class FJGUI
 			else if(command.equals("Exit")) { System.exit(0); }
 			else if(command.equals("AboutMenu")) { swingDialogs[1].setLocationRelativeTo(main); swingDialogs[1].setVisible(true); }
 			else if(command.equals("CloseAboutMenu")) { swingDialogs[1].setVisible(false); }
+			else if(command.equals("CloseCompat")) { swingDialogs[6].setVisible(false); }
 			else if(command.equals("ChangeResolution")) { swingDialogs[0].setLocationRelativeTo(main); swingDialogs[0].setVisible(true); }
 			else if(command.equals("ApplyResChange"))
 			{
@@ -1175,6 +1322,7 @@ public final class FJGUI
 			else if(command.equals("RestartNow")) { Mobile.restartApp(); }
 			else if(command.equals("RestartLater")) { swingDialogs[3].setVisible(false); }
 			else if(command.equals("MapInputs")) { swingDialogs[4].setVisible(true); }
+			else if(command.equals("CompatSettings")) { swingDialogs[6].setLocationRelativeTo(main); swingDialogs[6].setVisible(true); }
 			else if(command.equals("ApplyInputs"))
 			{
 				System.arraycopy(newInputKeycodes, 0, Config.inputKeycodes, 0, newInputKeycodes.length);
