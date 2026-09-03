@@ -253,7 +253,7 @@ public class Config
 
 		for (int i = 0; i < KEY_NAMES.length; i++)
 		{
-			if (!sysSettings.containsKey(KEY_NAMES[i]))
+			if (!sysSettings.containsKey(KEY_NAMES[i]) || !sysSettings.containsKey("Gamepad"+KEY_NAMES[i]))
 			{
 				sysSettings.put(KEY_NAMES[i], String.valueOf(inputKeycodes[i]));
 				sysSettings.put("Gamepad" + KEY_NAMES[i], String.valueOf(gamepadKeycodes[i] + "_"));
