@@ -12,10 +12,15 @@ jobs:
     - name: Set up OpenJDK 1.8
       uses: actions/setup-java@v5
       with:
-        distribution: 'adopt'
+        distribution: 'temurin'
         java-version: '8'
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml
+    - name: Build the Win32Pad exe (Windows Gamepad Support)
+      run: |
+        sudo apt-get update && sudo apt-get install -y mingw-w64
+        mkdir -p build
+        i686-w64-mingw32-gcc -Os src/win32pad/Win32Pad.c -o build/Win32Pad.exe -s -nostdlib -ffreestanding -e main -lkernel32 -lwinmm -Wl,--gc-sections
     - name: Compute commit short SHA
       id: shortsha
       run: |
@@ -24,4 +29,6 @@ jobs:
     - uses: actions/upload-artifact@v7
       with:
         name: freej2me-${{ env.sha_short }}
-        path: build/*.jar
+        path: |
+          build/*.jar
+          build/Win32Pad.exe

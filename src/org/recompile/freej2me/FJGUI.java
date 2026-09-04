@@ -74,6 +74,7 @@ import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.freej2me.gamepad.GamepadReader;
 import org.recompile.freej2me.gamepad.LinuxGamepadReader;
+import org.recompile.freej2me.gamepad.WindowsGamepadReader;
 
 public final class FJGUI
 {
@@ -1550,8 +1551,10 @@ public final class FJGUI
 			            catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
 			        }
 
+					System.out.println("OS:" + os);
+
 					if (os.contains("linux")) { FJGUI.gamepadReader = new LinuxGamepadReader(firstDevice, gui); }
-					// else if (os.contains("win")) { FJGUI.gamepadReader = new WindowsGamepadReader(firstDevice, gui); }
+					else if (os.contains("win")) { FJGUI.gamepadReader = new WindowsGamepadReader(firstDevice, gui); }
 					// else if (os.contains("mac")) { FJGUI.gamepadReader = new MacGamepadReader(firstDevice, gui); }
 
 					gamepadName.setText("Pad: " + FJGUI.gamepadReader.getDeviceName());

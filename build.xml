@@ -36,6 +36,7 @@
 	>
     <exclude name="org/objectweb/**"/>
 	<exclude name="libretro/**"/>
+	<exclude name="win32pad/**"/>
 	<compilerarg value="-Xlint:unchecked"/>
 	<compilerarg value="-Xlint:deprecation"/>
 	<compilerarg line="-encoding utf-8"/>
