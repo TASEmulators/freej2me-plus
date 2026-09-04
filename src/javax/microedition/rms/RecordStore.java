@@ -22,7 +22,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -320,31 +323,56 @@ public class RecordStore
 		try
 		{
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Deleting RecordStore "+recordStoreName);
-			File folder = new File(Mobile.getPlatform().dataPath + "./rms/" + Mobile.getPlatform().loader.suitename);
-			File[] files = folder.listFiles();
-			boolean exists = false; // For checking whether the recordStore exists or not.
 
-			// Delete all files that match the received name (because binary data is saved separately from the RMS)
-			if (files != null)
+			// Just like for saving, we use UTF-8 ONLY IF Mobile encoding is ISO_8859_1, handling Shift_JIS and EUC_KR as normal.
+			String encoding = System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding;
+
+			String folderPath = Mobile.getPlatform().dataPath + "./rms/" + Mobile.getPlatform().loader.suitename;
+			folderPath = new String(folderPath.getBytes(System.getProperty("file.encoding")), encoding);
+
+			Path folder = Paths.get(folderPath);
+
+			// If the directory doesn't exist, don't even bother looking.
+			if (!Files.exists(folder)) { throw new RecordStoreNotFoundException("RecordStore directory does not exist: " + recordStoreName); }
+
+			boolean exists = false;
+
+			String rawPrefix = generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName);
+			String targetPrefix = new String(rawPrefix.getBytes(System.getProperty("file.encoding")), encoding);
+
+			DirectoryStream<Path> directoryStream = Files.newDirectoryStream(folder);
+
+			try
 			{
-				for (File file : files)
+				for (Path filePath : directoryStream)
 				{
-					if (file.isFile() && file.getName().startsWith(generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName)))
+					if (Files.isRegularFile(filePath) && filePath.getFileName().toString().startsWith(targetPrefix))
 					{
 						exists = true;
-						boolean deleted = file.delete();
-						if (deleted) { Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Deleted " + file.getName()); }
-						else { Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Failed to delete " + file.getName()); }
+						try
+						{
+							Files.delete(filePath);
+							Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." +
+								RecordStore.class.getSimpleName() + ": Deleted " + filePath.getFileName());
+						}
+						catch (IOException e)
+						{
+							Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." +
+								RecordStore.class.getSimpleName() + ": Failed to delete " + filePath.getFileName() + ": "
+								+ e.getMessage());
+						}
 					}
 				}
 			}
+			finally { directoryStream.close(); }
 
-			// Doesn't exist, throw the exception.
+			// Doesn't exist, throw the exception (gets caught below and re-thrown).
 			if (!exists) { throw new RecordStoreNotFoundException("RecordStore not found: " + recordStoreName); }
 		}
+		catch (RecordStoreNotFoundException e) { throw e; } // Throw it to the app
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "Problem deleting RecordStore "+recordStoreName);
+			Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": Problem deleting RecordStore " + recordStoreName);
 			e.printStackTrace();
 			throw new RecordStoreNotFoundException("Could not delete the requested RecordStore");
 		}
