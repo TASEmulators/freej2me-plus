@@ -767,7 +767,8 @@ public final class FJGUI
 
 		dialog.add(inputPanel);
 
-		dialog.revalidate();
+		dialog.invalidate();
+		dialog.pack();
 		dialog.repaint();
 	}
 
