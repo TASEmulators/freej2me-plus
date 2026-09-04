@@ -473,9 +473,6 @@ public final class FJGUI
 
 	public FJGUI(Config config)
 	{
-
-		try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
-		catch (Exception e) { System.out.println("Failed to set Look & Feel: " + e.getMessage()); }
 		this.config = config;
 
 		debugContent = new StringBuilder();
