@@ -25,7 +25,7 @@
 	<compilerarg value="-nowarn"/>
 	</javac>
 
-    <echo message="Building FreeJ2ME-Plus | AWT + Libretro" />
+    <echo message="Building FreeJ2ME-Plus | Standalone + Libretro" />
 	<javac
 		srcdir="src"
 		destdir="build/classes"
@@ -48,14 +48,14 @@
 ****************************************************
 -->
 
-	<echo message="Building JAR - AWT" />
+	<echo message="Building JAR - Standalone" />
 	<jar
 		destfile="build/freej2me_plus.jar">
 		<fileset dir="build/classes" excludes="**/Libretro*.class"/> <!-- Exclude Libretro classes -->
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
 		<manifest>
-			<!-- AWT Version -->
+			<!-- Standalone Version -->
 			<attribute name="Main-Class" value="org.recompile.freej2me.FreeJ2ME"/>
 			<attribute name="Implementation-Title" value="FreeJ2ME"/>
 		</manifest>
@@ -64,7 +64,7 @@
 	<echo message="Building JAR - Libretro" />
 	<jar
 		destfile="build/freej2me_plus-lr.jar">
-		<fileset dir="build/classes" excludes="**/AWTGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/ProgressBar.class, **/ScreenShot*.class"/> <!-- Exclude AWT classes (FreeJ2ME.class is only needed for AWT) -->
+		<fileset dir="build/classes" excludes="**/FJGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/gamepad/**, **/ScreenShot*.class"/> <!-- Exclude GUI classes (FreeJ2ME.class is only needed for GUI) -->
 		<fileset dir="resources" />
 		<metainf dir="META-INF" />
 		<manifest>
