@@ -202,6 +202,8 @@ struct retro_core_option_v2_definition core_options[] =
 			{ "800x345",   NULL },
 			{ "480x800",   NULL },
 			{ "800x480",   NULL },
+			{ "480x854",   NULL },
+			{ "854x480",   NULL },
 			{ NULL, NULL },
 		},
 		"240x320"
@@ -961,6 +963,8 @@ struct retro_core_option_definition core_options_v1 [] =
 			{ "800x345",   NULL },
 			{ "480x800",   NULL },
 			{ "800x480",   NULL },
+			{ "480x854",   NULL },
+			{ "854x480",   NULL },
 			{ NULL, NULL },
 		},
 		"240x320"
@@ -1540,7 +1544,7 @@ static const struct retro_variable vars[] =
 {
 	{ /* Screen Resolution */
 		"freej2me_resolution",
-		"Phone Resolution (Core Restart may be required); 240x320|96x65|101x64|101x80|128x128|130x130|120x160|128x160|160x128|132x176|208x173|176x208|176x220|220x176|208x208|220x220|180x320|320x180|240x240|240x260|208x320|320x240|240x400|400x240|320x320|240x432|240x480|360x360|352x416|360x480|360x640|640x360|480x640|640x480|345x800|800x345|480x800|800x480"
+		"Phone Resolution (Core Restart may be required); 240x320|96x65|101x64|101x80|128x128|130x130|120x160|128x160|160x128|132x176|208x173|176x208|176x220|220x176|208x208|220x220|180x320|320x180|240x240|240x260|208x320|320x240|240x400|400x240|320x320|240x432|240x480|360x360|352x416|360x480|360x640|640x360|480x640|640x480|345x800|800x345|480x800|800x480|480x854|854x480"
 	},
 	{ /* DoJa API Version */
 		"freej2me_dojaversion",
