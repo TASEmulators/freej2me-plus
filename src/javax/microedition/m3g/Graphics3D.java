@@ -817,10 +817,7 @@ public class Graphics3D
 		// for shorts (which is -32768, 32767), this is to make sure the
 		// multiplied Z values will always be in range and never overflow,
 		// saving us the need to clamp it for every pixel draw.
-		//
-		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
-		// just a hack to improve depth buffer range usage.
-		tr.postScale(vieww / 2f, -viewh / 2f, (this.far - this.near) * 32767.0f);
+		tr.postScale(vieww / 2f, -viewh / 2f, (this.far - this.near) * 32200.0f);
 		tr.postTranslate(1f, -1f, 0f);
 
 		// -> Screen space
@@ -1272,11 +1269,9 @@ public class Graphics3D
 
 
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
-		// multiplied by the same factor used by the buffer.
-		// NOTE: that last mult by 2.0f and negative translation by 0.5 is
-		// just a hack to improve depth buffer range usage, mirroring the triangle
-		// path. Clamp to short range so near depths don't wrap around when cast.
-		short ndcZ = (short) (clip[2]/clip[3] * 32767.0f);
+		// multiplied by the same factor used by the buffer, with a small margin
+		// for safety, just like when rendering meshes.
+		short ndcZ = (short) (clip[2]/clip[3] * 32200.0f);
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
