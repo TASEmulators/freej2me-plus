@@ -20,6 +20,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FileDialog;
@@ -71,6 +72,8 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+import javax.swing.border.TitledBorder;
+
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.freej2me.gamepad.GamepadReader;
@@ -79,6 +82,10 @@ import org.recompile.freej2me.gamepad.WindowsGamepadReader;
 
 public final class FJGUI
 {
+	private static final int SQUARE = 0;
+	private static final int PORTRAIT = 1;
+	private static final int LANDSCAPE = 2;
+
 	final String VERSION = "1.52";
 	/* This is used to indicate to FreeJ2ME that it has to call "settingsChanged()" to apply changes made here */
 	private boolean hasPendingChange;
@@ -134,8 +141,6 @@ public final class FJGUI
 	final JButton[] swingButtons =
 	{
 		new JButton("Close"),
-		new JButton("Apply"),
-		new JButton("Cancel"),
 		new JButton("Restart Now"),
 		new JButton("Restart later"),
 		new JButton("Apply"),
@@ -250,8 +255,6 @@ public final class FJGUI
 	final JTextArea gamepadName = new JTextArea("Pad: None");
 	private static GamepadReader gamepadReader = null;
 	private static Thread gamepadThread = null;
-
-	final JComboBox resChoice = new JComboBox();
 
 	/* Items for each of the bar's JMenus */
 	final UIListener menuItemListener = new UIListener(this);
@@ -496,9 +499,9 @@ public final class FJGUI
 			flattenButton(gamepadButtons[i]);
 		}
 		// Same for the gamepad refresh button
-		swingButtons[9].setMargin(new Insets(0, 0, 0, 0));
-		swingButtons[9].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
-		flattenButton(swingButtons[9]);
+		swingButtons[7].setMargin(new Insets(0, 0, 0, 0));
+		swingButtons[7].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+		flattenButton(swingButtons[7]);
 
 		// The gamepad name area on the input map menu must only span 1 row.
 		gamepadName.setRows(1);
@@ -522,42 +525,48 @@ public final class FJGUI
 		swingDialogs[1].add(new JLabel("Paulo Sousa (AShiningRay)"));
 		swingDialogs[1].add(swingButtons[0]);
 
-		swingButtons[1].setForeground(Color.BLUE);
-		swingButtons[2].setForeground(Color.RED);
+		// Resolution change menu, now also a grid with buttons in it, just like
+		// compat settings.
+		JPanel resHeader = new JPanel();
+		resHeader.setLayout(new BoxLayout(resHeader, BoxLayout.Y_AXIS));
+		resHeader.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 
-		resChoice.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-		resChoice.setPreferredSize(new java.awt.Dimension(105, 30));
+		JLabel resTitle = new JLabel("Mobile Resolution Selector");
+		resTitle.setFont(new Font("Dialog", Font.BOLD, 16));
+		resTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		JLabel resLabel = new JLabel("Click a button below to set the phone's resolution");
+		resLabel.setFont(new Font("Dialog", Font.PLAIN, 14));
+		resLabel.setForeground(Color.DARK_GRAY);
+		resLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+		resHeader.add(resTitle);
+		resHeader.add(resLabel);
+
+		JPanel squareCard = createResolutionCard("Square", filterResolutions(SQUARE));
+		JPanel portraitCard = createResolutionCard("Portrait", filterResolutions(PORTRAIT));
+		JPanel landscapeCard = createResolutionCard("Landscape", filterResolutions(LANDSCAPE));
+
+		JPanel resGrid = new JPanel(new GridLayout(1, 3, 2, 2));
+		resGrid.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+		resGrid.add(portraitCard);
+		resGrid.add(landscapeCard);
+		resGrid.add(squareCard);
+
+		JPanel resContainer = new JPanel(new BorderLayout());
+		resContainer.add(resGrid, BorderLayout.NORTH);
+
+		JScrollPane resScroll = new JScrollPane(resContainer);
+		resScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		resScroll.getVerticalScrollBar().setUnitIncrement(12);
+		resScroll.setBorder(null);
 
 		swingDialogs[0].getContentPane().removeAll();
-		swingDialogs[0].setLayout(new BoxLayout(swingDialogs[0].getContentPane(), BoxLayout.Y_AXIS));
 		swingDialogs[0].setUndecorated(true);
-		swingDialogs[0].setBackground(new Color(238, 238, 238, 160));
-		swingDialogs[0].setSize(250, 125);
-		swingDialogs[0].setResizable(false);
-
-		JLabel label1 = new JLabel("Select a Resolution from the Dropdown");
-		JLabel label2 = new JLabel("and then press the 'Apply' button!");
-		label1.setAlignmentX(Component.CENTER_ALIGNMENT);
-		label2.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-		resChoice.setAlignmentX(Component.CENTER_ALIGNMENT);
-		Dimension resChoiceSize = new Dimension(100, 30);
-		resChoice.setPreferredSize(resChoiceSize);
-		resChoice.setMaximumSize(resChoiceSize);
-
-		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-		buttonPanel.setOpaque(false);
-		buttonPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		buttonPanel.add(swingButtons[1]);
-		buttonPanel.add(swingButtons[2]);
-
-		swingDialogs[0].add(Box.createVerticalStrut(8));
-		swingDialogs[0].add(label1);
-		swingDialogs[0].add(label2);
-		swingDialogs[0].add(Box.createVerticalStrut(8));
-		swingDialogs[0].add(resChoice);
-		swingDialogs[0].add(Box.createVerticalStrut(10));
-		swingDialogs[0].add(buttonPanel);
+		swingDialogs[0].setSize(400, 400);
+		swingDialogs[0].setLayout(new BorderLayout());
+		swingDialogs[0].add(resHeader, BorderLayout.NORTH);
+		swingDialogs[0].add(resScroll, BorderLayout.CENTER);
 
 		// Setup the key mapping dialog, a separate method for this is much
 		// cleaner since it's quite a big menu and now there are two layouts
@@ -571,11 +580,11 @@ public final class FJGUI
 		swingDialogs[3].setSize(240, 80);
 		swingDialogs[3].add(new JLabel("This change requires a restart to apply!"));
 
-		swingButtons[3].setForeground(Color.BLUE);
-		swingButtons[4].setForeground(Color.RED);
+		swingButtons[1].setForeground(Color.BLUE);
+		swingButtons[2].setForeground(Color.RED);
 
-		swingDialogs[3].add(swingButtons[3]);
-		swingDialogs[3].add(swingButtons[4]);
+		swingDialogs[3].add(swingButtons[1]);
+		swingDialogs[3].add(swingButtons[2]);
 
 
 		// Mem stats window
@@ -662,7 +671,7 @@ public final class FJGUI
 		scrollPane.setBorder(null);
 
 		JPanel closePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-		closePanel.add(swingButtons[7]);
+		closePanel.add(swingButtons[5]);
 
 		swingDialogs[6].add(headerPanel, BorderLayout.NORTH);
 		swingDialogs[6].add(scrollPane, BorderLayout.CENTER);
@@ -678,16 +687,14 @@ public final class FJGUI
 		exitMenuItem.setActionCommand("Exit");
 		aboutMenuItem.setActionCommand("AboutMenu");
 		resChangeMenuItem.setActionCommand("ChangeResolution");
-		swingButtons[1].setActionCommand("ApplyResChange");
-		swingButtons[2].setActionCommand("CancelResChange");
 		swingButtons[0].setActionCommand("CloseAboutMenu");
-		swingButtons[3].setActionCommand("RestartNow");
-		swingButtons[4].setActionCommand("RestartLater");
+		swingButtons[1].setActionCommand("RestartNow");
+		swingButtons[2].setActionCommand("RestartLater");
 		mapInputs.setActionCommand("MapInputs");
 		compatSettingsMenu.setActionCommand("CompatSettings");
-		swingButtons[5].setActionCommand("ApplyInputs");
-		swingButtons[6].setActionCommand("CancelInputs");
-		swingButtons[7].setActionCommand("CloseCompat");
+		swingButtons[3].setActionCommand("ApplyInputs");
+		swingButtons[4].setActionCommand("CancelInputs");
+		swingButtons[5].setActionCommand("CloseCompat");
 
 		showPlayer.setActionCommand("ShowPlayer");
 
@@ -700,16 +707,14 @@ public final class FJGUI
 		exitMenuItem.addActionListener(menuItemListener);
 		aboutMenuItem.addActionListener(menuItemListener);
 		resChangeMenuItem.addActionListener(menuItemListener);
+		swingButtons[0].addActionListener(menuItemListener);
 		swingButtons[1].addActionListener(menuItemListener);
 		swingButtons[2].addActionListener(menuItemListener);
-		swingButtons[0].addActionListener(menuItemListener);
-		swingButtons[3].addActionListener(menuItemListener);
-		swingButtons[4].addActionListener(menuItemListener);
 		mapInputs.addActionListener(menuItemListener);
 		compatSettingsMenu.addActionListener(menuItemListener);
+		swingButtons[3].addActionListener(menuItemListener);
+		swingButtons[4].addActionListener(menuItemListener);
 		swingButtons[5].addActionListener(menuItemListener);
-		swingButtons[6].addActionListener(menuItemListener);
-		swingButtons[7].addActionListener(menuItemListener);
 		showPlayer.addActionListener(menuItemListener);
 
 		addInputButtonListeners(false);
@@ -742,16 +747,16 @@ public final class FJGUI
 
 		// Action Panel (Apply, Cancel + Mode Toggle)
 		JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-		swingButtons[5].setForeground(Color.BLUE); // Apply
-		swingButtons[6].setForeground(Color.RED);  // Cancel
+		swingButtons[3].setForeground(Color.BLUE); // Apply
+		swingButtons[4].setForeground(Color.RED);  // Cancel
 
 		// Input Layout Toggle action
-		swingButtons[8].setActionCommand("ToggleInputLayout");
-		swingButtons[8].addActionListener(menuItemListener);
+		swingButtons[6].setActionCommand("ToggleInputLayout");
+		swingButtons[6].addActionListener(menuItemListener);
 
-		actionPanel.add(swingButtons[5]);
+		actionPanel.add(swingButtons[3]);
+		actionPanel.add(swingButtons[4]);
 		actionPanel.add(swingButtons[6]);
-		actionPanel.add(swingButtons[8]);
 
 		// Add both input layouts into the card layout
 		inputPanel.add(createInputPanel(inputButtons, false), "KEYBOARD");
@@ -789,15 +794,15 @@ public final class FJGUI
 			devicePanel.setMaximumSize(new Dimension(260, 24));
 
 			// Gamepad device refresh action.
-			swingButtons[9].setActionCommand("RefreshGamepads");
-			swingButtons[9].addActionListener(menuItemListener);
+			swingButtons[7].setActionCommand("RefreshGamepads");
+			swingButtons[7].addActionListener(menuItemListener);
 
 			// Click it so that FreeJ2ME+ loads with a gamepad already present
 			// if available (makes debugging this easier, and also improves UX)
-			swingButtons[9].doClick();
+			swingButtons[7].doClick();
 
 			devicePanel.add(gamepadName, BorderLayout.CENTER);
-			devicePanel.add(swingButtons[9], BorderLayout.EAST);
+			devicePanel.add(swingButtons[7], BorderLayout.EAST);
 
 			container.add(devicePanel);
 			container.add(Box.createVerticalStrut(4)); // Gap before phone grid
@@ -941,33 +946,33 @@ public final class FJGUI
 			};
 
 			inputButton.addActionListener(new ActionListener()
-	        {
-	            @Override
-	            public void actionPerformed(ActionEvent e)
-	            {
-	                mapInput.run();
-	            }
-	        });
+			{
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					mapInput.run();
+				}
+			});
 
 			/* Only used to restore the last key map if the user doesn't map a new one into the button */
 			inputButton.addFocusListener(new FocusAdapter()
-	        {
-	            @Override
-	            public void focusLost(FocusEvent e)
-	            {
-	                if (isGamepad && FJGUI.gamepadReader != null)
-	                {
-	                    FJGUI.gamepadReader.setInputListener(null);
-	                }
+			{
+				@Override
+				public void focusLost(FocusEvent e)
+				{
+					if (isGamepad && FJGUI.gamepadReader != null)
+					{
+						FJGUI.gamepadReader.setInputListener(null);
+					}
 
-	                // If we lost focus while waiting fpr input, revert label
-	                if ("Waiting...".equals(inputButton.getText()))
-	                {
-	                    String savedName = isGamepad ? gamepadKeyNames[buttonIndex] : KeyEvent.getKeyText(inputKeycodes[buttonIndex]);
-	                    inputButton.setText((savedName != null && !savedName.isEmpty()) ? savedName : "");
-	                }
-	            }
-	        });
+					// If we lost focus while waiting fpr input, revert label
+					if ("Waiting...".equals(inputButton.getText()))
+					{
+						String savedName = isGamepad ? gamepadKeyNames[buttonIndex] : KeyEvent.getKeyText(inputKeycodes[buttonIndex]);
+						inputButton.setText((savedName != null && !savedName.isEmpty()) ? savedName : "");
+					}
+				}
+			});
 		}
 	}
 
@@ -1168,8 +1173,8 @@ public final class FJGUI
 		optionMenu.add(useCustomMidi);
 		optionMenu.add(useCustomFont);
 		optionMenu.add(resChangeMenuItem);
-		optionMenu.add(mapInputs);
 		optionMenu.add(compatSettingsMenu);
+		optionMenu.add(mapInputs);
 		optionMenu.add(phoneType);
 		optionMenu.add(DoJaVersion);
 		optionMenu.add(screenRotation);
@@ -1228,7 +1233,6 @@ public final class FJGUI
 		MCV3Debug.add(MCV3ShowTimeMetrics);
 
 
-		for(int i = 0; i < supportedResolutions.length; i++) { resChoice.addItem(supportedResolutions[i]); }
 		for(int i = 0; i < dojaVersions.length; i++) { DoJaVersion.add(dojaVersions[i]); }
 		for(int i = 0; i < rotations.length; i++) { screenRotation.add(rotations[i]); }
 		for(int i = 0; i < layoutOptions.length; i++) { phoneType.add(layoutOptions[i]); }
@@ -1334,6 +1338,82 @@ public final class FJGUI
 		return card;
 	}
 
+	// Resolutions are also now cards. We even separate them by aspect ratio!
+	private JPanel createResolutionCard(String title, ArrayList<String> resolutions)
+	{
+		JPanel card = new JPanel(new BorderLayout(0, 6));
+		card.setBorder(BorderFactory.createTitledBorder(
+			BorderFactory.createEtchedBorder(),
+			title,
+			TitledBorder.CENTER, // Text is centered
+			TitledBorder.TOP
+		));
+
+		// We have too many resolutions, so we further split each category like
+		// "portrait" into  a 2-column grid.
+		JPanel buttonGrid = new JPanel(new GridLayout(0, 2, 4, 4));
+
+		for (int i = 0; i < resolutions.size(); i++)
+		{
+			final String res = resolutions.get(i);
+			final JButton btn = new JButton(res);
+			flattenButton(btn);
+			btn.setFocusable(false);
+			btn.setMargin(new Insets(3, 1, 3, 1));
+			btn.setFont(new Font("Dialog", Font.BOLD, 11));
+
+			btn.addActionListener(new ActionListener()
+			{
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					// Set resolution and close dialog instantly
+					swingDialogs[0].dispose();
+					String[] res = btn.getText().split("x");
+
+					// Only set resolution if it actually changed.
+					if(Integer.parseInt(res[0]) != Mobile.lcdWidth ||
+						Integer.parseInt(res[1]) != Mobile.lcdHeight)
+					{
+						config.updateDisplaySize(Integer.parseInt(res[0]),
+							Integer.parseInt(res[1]));
+						hasPendingChange = true;
+
+						showRestartDialog();
+					}
+				}
+			});
+			buttonGrid.add(btn);
+		}
+
+		// Align to top of card to prevent vertical stretching
+		JPanel topAlign = new JPanel(new BorderLayout());
+		topAlign.add(buttonGrid, BorderLayout.NORTH);
+
+		card.add(topAlign, BorderLayout.CENTER);
+		return card;
+	}
+
+	// We use a grid of 3 horizontal slots for resolutions, based on aspect...
+	// so this helps us sort those out without needing to manually separate
+	// them up top.
+	private ArrayList<String> filterResolutions(int mode)
+	{
+		ArrayList<String> list = new ArrayList<String>();
+		for (int i = 0; i < supportedResolutions.length; i++)
+		{
+			String res = supportedResolutions[i];
+			String[] parts = res.split("x");
+			int w = Integer.parseInt(parts[0]);
+			int h = Integer.parseInt(parts[1]);
+
+			if (mode == SQUARE && w == h) { list.add(res); }
+			else if (mode == PORTRAIT && w < h) { list.add(res); }
+			else if (mode == LANDSCAPE && w > h) { list.add(res); }
+		}
+		return list;
+	}
+
 	public void updateOptions()
 	{
 		// These are special checkbox cases that don't use a config on/off
@@ -1370,7 +1450,6 @@ public final class FJGUI
 		updateToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing");
 		updateToggle(ignoreVolumeChanges, "compatignorevolumechanges");
 		updateToggle(MCV3HorFovFix, "compatmcv3horizfovfix");
-		resChoice.setSelectedItem(config.settings.get("scrwidth") + "x" + config.settings.get("scrheight"));
 
 		// Sys Settings
 		updateRadioGroup(logLevels, logLevelValues, "logLevel", true);
@@ -1498,19 +1577,44 @@ public final class FJGUI
 			else if(command.equals("AboutMenu")) { swingDialogs[1].setLocationRelativeTo(main); swingDialogs[1].setVisible(true); }
 			else if(command.equals("CloseAboutMenu")) { swingDialogs[1].setVisible(false); }
 			else if(command.equals("CloseCompat")) { swingDialogs[6].setVisible(false); }
-			else if(command.equals("ChangeResolution")) { swingDialogs[0].setLocationRelativeTo(main); swingDialogs[0].setVisible(true); }
-			else if(command.equals("ApplyResChange"))
+			else if(command.equals("ChangeResolution"))
 			{
-				if(fileLoaded) /* Only update res if a jar was loaded, or else AWT throws NullPointerException */
-				{
-					String[] res = ((String)resChoice.getSelectedItem()).split("x");
+				// Highlight the resolution currently in use.
+				String currentRes = Mobile.lcdWidth + "x" + Mobile.lcdHeight;
+				JButton dummy = new JButton();
+				Color defaultBg = dummy.getBackground();
+				Color defaultFg = dummy.getForeground();
 
-					config.updateDisplaySize(Integer.parseInt(res[0]), Integer.parseInt(res[1]));
-					hasPendingChange = true;
+				ArrayList<Component> components = new ArrayList<Component>();
+				components.add(swingDialogs[0]);
+
+				for (int i = 0; i < components.size(); i++)
+				{
+					Component comp = components.get(i);
+					if (comp instanceof JButton)
+					{
+						JButton btn = (JButton) comp;
+						String text = btn.getText();
+						if (text != null && text.contains("x"))
+						{
+							boolean isActive = text.equalsIgnoreCase(currentRes);
+							btn.setBackground(isActive ? new Color(50, 130, 220) : defaultBg);
+							btn.setForeground(isActive ? Color.WHITE : defaultFg);
+						}
+					}
+					else if (comp instanceof Container)
+					{
+						for (Component child : ((Container) comp).getComponents())
+						{
+							components.add(child);
+						}
+					}
 				}
-				swingDialogs[0].setVisible(false);
+
+				// Then show the dialog.
+				swingDialogs[0].setLocationRelativeTo(main);
+				swingDialogs[0].setVisible(true);
 			}
-			else if(command.equals("CancelResChange")) { swingDialogs[0].setVisible(false); }
 			else if(command.equals("RestartNow")) { Mobile.restartApp(); }
 			else if(command.equals("RestartLater")) { swingDialogs[3].setVisible(false); }
 			else if(command.equals("MapInputs")) { swingDialogs[4].setVisible(true); }
@@ -1526,15 +1630,15 @@ public final class FJGUI
 			else if(command.equals("CancelInputs")) { swingDialogs[4].setVisible(false); }
 			else if(command.equals("ToggleInputLayout"))
 			{
-				if ("Keyboard".equals(swingButtons[8].getText()))
+				if ("Keyboard".equals(swingButtons[6].getText()))
 				{
 					inputLayout.show(inputPanel, "GAMEPAD");
-					swingButtons[8].setText("Gamepad");
+					swingButtons[6].setText("Gamepad");
 				}
 				else
 				{
 					inputLayout.show(inputPanel, "KEYBOARD");
-					swingButtons[8].setText("Keyboard");
+					swingButtons[6].setText("Keyboard");
 				}
 			}
 			else if(command.equals("RefreshGamepads"))
@@ -1551,17 +1655,15 @@ public final class FJGUI
 
 					// We already have a reader running? Stop it before creating another
 					if (FJGUI.gamepadThread != null && FJGUI.gamepadThread.isAlive())
-			        {
-			            if (FJGUI.gamepadReader != null) { FJGUI.gamepadReader.stop(); }
+					{
+						if (FJGUI.gamepadReader != null) { FJGUI.gamepadReader.stop(); }
 
-			            FJGUI.gamepadThread.interrupt();
+						FJGUI.gamepadThread.interrupt();
 
 						// Wait for the thread a bit, so it can end normally.
-			            try { FJGUI.gamepadThread.join(500); }
-			            catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
-			        }
-
-					System.out.println("OS:" + os);
+						try { FJGUI.gamepadThread.join(500); }
+						catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
+					}
 
 					if (os.contains("linux")) { FJGUI.gamepadReader = new LinuxGamepadReader(firstDevice, gui); }
 					else if (os.contains("win")) { FJGUI.gamepadReader = new WindowsGamepadReader(firstDevice, gui); }
@@ -1579,8 +1681,8 @@ public final class FJGUI
 					// Close any active readers, we have no devices now.
 					if (FJGUI.gamepadReader != null)
 					{
-					    FJGUI.gamepadReader.stop();
-					    FJGUI.gamepadReader = null;
+						FJGUI.gamepadReader.stop();
+						FJGUI.gamepadReader = null;
 					}
 					gamepadName.setText("Pad: None");
 				}
