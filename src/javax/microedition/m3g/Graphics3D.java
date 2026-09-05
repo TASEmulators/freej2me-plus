@@ -51,11 +51,11 @@ public class Graphics3D
 
 	static
 	{
-	    INV_SPAN_TABLE[0] = 0.0f;
-	    for (int i = 1; i <= 32; i++)
+		INV_SPAN_TABLE[0] = 0.0f;
+		for (int i = 1; i <= 32; i++)
 		{
-	        INV_SPAN_TABLE[i] = M3GMath.fastReciprocal((float) i);
-	    }
+			INV_SPAN_TABLE[i] = M3GMath.fastReciprocal((float) i);
+		}
 	}
 
 	// Special blend modes for fog and AA coverage
@@ -195,6 +195,16 @@ public class Graphics3D
 	final Transform projectionMatrix = new Transform();
 	final int[] renderableTriangles = {0}; // Counter for visible triangles
 
+	// Retained mode temp variables, for layer (and blend) sorted renderOps. We
+	// start off with support for up to 64 objects, but grow as needed.
+
+	// [layer, blended?, scope] per op
+	private int[] renderIntData = new int[64 * 3];
+	// [geom/sprite, triangles, appearance, transform] per op
+	private Object[] renderObjData = new Object[64 * 4];
+	// Indirect sort index pointer array
+	private int[] renderIndices = new int[64];
+	private int renderOpCount = 0;
 
 	public Graphics3D()
 	{
@@ -542,54 +552,9 @@ public class Graphics3D
 		/* Also per JSR-184, throw IllegalStateException if if node is not a Sprite3D, Mesh, or Group Object. */
 		if (!(node instanceof Mesh || node instanceof Sprite3D || node instanceof Group)) { throw new IllegalArgumentException("Node is not an instance of any of the following: Sprite3D, Mesh, Group"); }
 
-		// Node not renderable? Skip it and its children.
-		if(!node.isRenderingEnabled()) { return; }
-
-		if (node instanceof Mesh)
-		{
-			Mesh mesh = (Mesh) node;
-			int subMeshes = mesh.getSubmeshCount();
-			VertexBuffer vertices = mesh.getVertexBuffer();
-			for (int i = 0; i < subMeshes; i++)
-			{
-				if (mesh.getAppearance(i) != null) { render(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope()); }
-			}
-
-			/*
-			 * Per JSR-184, the skeleton group of a SkinnedMesh is a regular
-			 * scene graph branch: it is traversed just like any other branch
-			 * during rendering. This is what allows, for example, a character
-			 * to render a separate weapon mesh attached to its hand bone.
-			 */
-			if (node instanceof SkinnedMesh)
-			{
-				Group skeleton = ((SkinnedMesh) node).getSkeleton();
-				Transform sktr = new Transform();
-				skeleton.getCompositeTransform(sktr);
-				if (transform != null) { sktr.preMultiply(transform); }
-				render(skeleton, sktr);
-			}
-		}
-		else if (node instanceof Sprite3D) { renderSprite((Sprite3D) node, transform); }
-		else if (node instanceof Group)
-		{
-			Node child = ((Group) node).firstChild;
-			if (child != null)
-			{
-				do
-				{
-					if(child instanceof Sprite3D || child instanceof Mesh || child instanceof Group)
-					{
-						Transform nodetr = new Transform();
-						child.getCompositeTransform(nodetr);
-						if(transform != null) { nodetr.preMultiply(transform); }
-
-						render(child, nodetr);
-					}
-					child = child.right;
-				} while (child != ((Group) node).firstChild);
-			}
-		}
+		renderOpCount = 0;
+		queueNode(node, transform);
+		flushRenderQueue();
 	}
 
 	public void render(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform)
@@ -2274,5 +2239,180 @@ public class Graphics3D
 		}
 
 		return (texY << 16) | (texX & 0xFFFF);
+	}
+
+	// Retained mode render order helpers.
+
+	private void checkRenderOpQueueSize(int minCapacity)
+	{
+		if (minCapacity > renderIndices.length)
+		{
+			int newCapacity = renderIndices.length * 2;
+			if (newCapacity < minCapacity) { newCapacity = minCapacity; }
+			renderIndices = new int[newCapacity];
+			renderIntData = new int[newCapacity * 3];
+			renderObjData = new Object[newCapacity * 4];
+		}
+	}
+
+	// What we do when queuing things up for rendering is that we just
+	// store their references in global arrays, and sort their drawing order,
+	// that way, no extra memory is used for this functionality.
+	private void queueNode(Node node, Transform transform)
+	{
+		// Node not renderable? Skip it and its children.
+		if (!node.isRenderingEnabled()) { return; }
+
+		if (node instanceof Mesh)
+		{
+			Mesh mesh = (Mesh) node;
+			int subMeshes = mesh.getSubmeshCount();
+			VertexBuffer vertices = mesh.getVertexBuffer();
+			for (int i = 0; i < subMeshes; i++)
+			{
+				if (mesh.getAppearance(i) != null)
+				{
+					// Queue the submesh for rendering
+					queueRenderOp(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope());
+				}
+			}
+
+			/*
+			 * Per JSR-184, the skeleton group of a SkinnedMesh is a regular
+			 * scene graph branch: it is traversed just like any other branch
+			 * during rendering. This is what allows, for example, a character
+			 * to render a separate weapon mesh attached to its hand bone.
+			 */
+			if (node instanceof SkinnedMesh)
+			{
+				Group skeleton = ((SkinnedMesh) node).getSkeleton();
+				if (skeleton != null)
+				{
+					Transform sktr = new Transform();
+					skeleton.getCompositeTransform(sktr);
+					if (transform != null) { sktr.preMultiply(transform); }
+					queueNode(skeleton, sktr);
+				}
+			}
+		}
+		else if (node instanceof Sprite3D)
+		{
+			Sprite3D sprite = (Sprite3D) node;
+			// Sprites with no appearance are ignored per specification
+			if (sprite.getAppearance() != null)
+			{
+				// Queue the Sprite3D for rendering
+				queueRenderOp(sprite, null, sprite.getAppearance(), transform, sprite.getScope());
+			}
+		}
+		else if (node instanceof Group)
+		{
+			Node child = ((Group) node).firstChild;
+			if (child != null)
+			{
+				do
+				{
+					if (child instanceof Sprite3D || child instanceof Mesh || child instanceof Group)
+					{
+						Transform nodetr = new Transform();
+						child.getCompositeTransform(nodetr);
+						if (transform != null) { nodetr.preMultiply(transform); }
+
+						queueNode(child, nodetr);
+					}
+					child = child.right;
+				}
+				while (child != ((Group) node).firstChild);
+			}
+		}
+	}
+
+	private void queueRenderOp(Object geomOrSprite, IndexBuffer triangles, Appearance appearance, Transform transform, int scope)
+	{
+		checkRenderOpQueueSize(renderOpCount + 1);
+
+		final CompositingMode cm = appearance.getCompositingMode();
+		final boolean blended = (cm != null) && (cm.getBlending() != CompositingMode.REPLACE);
+
+		// Store primitive int data: layer, blended flag, scope
+		final int intIdx = renderOpCount * 3;
+		renderIntData[intIdx + 0] = appearance.getLayer();
+		renderIntData[intIdx + 1] = blended ? 1 : 0;
+		renderIntData[intIdx + 2] = scope;
+
+		// Then its object data that's used for rendering:
+		// Order: [VertexBuffer / Sprite3D], [IndexBuffer / null], Appearance, Transform
+		final int objIdx = renderOpCount * 4;
+		renderObjData[objIdx + 0] = geomOrSprite;
+		renderObjData[objIdx + 1] = triangles;
+		renderObjData[objIdx + 2] = appearance;
+
+		// And copy the transform data to prevent corruptions caused by data
+		// reuse (Node getting a transform from another for example)
+		Transform tr = (Transform) renderObjData[objIdx + 3];
+		if (tr == null)
+		{
+			tr = new Transform();
+			renderObjData[objIdx + 3] = tr;
+		}
+
+		if (transform != null) { tr.set(transform); }
+		else { tr.setIdentity(); }
+
+		renderIndices[renderOpCount] = renderOpCount;
+		renderOpCount++;
+	}
+
+	// Insertion sort here just like in Triangle.java: Minimal space complexity,
+	// and i doubt this will ever amount to a measurable runtime impact.
+	// Triangle sorting takes <0.1% already and we'll often have far less
+	// objects in a scene than triangles for a single mesh.
+	private void flushRenderQueue()
+	{
+		if (renderOpCount <= 0) { return; }
+
+		for (int i = 1; i < renderOpCount; i++)
+		{
+			int keyIndex = renderIndices[i];
+			int keyIntIdx = keyIndex * 3;
+
+			// The sorting key is (layerIdx << 1) | blended
+			int keySortValue = ((renderIntData[keyIntIdx + 0] + 63) << 1) | renderIntData[keyIntIdx + 1];
+
+			int j = i - 1;
+			while (j >= 0)
+			{
+				int curIndex = renderIndices[j];
+				int curIntIdx = curIndex * 3;
+				int curSortValue = ((renderIntData[curIntIdx + 0] + 63) << 1) | renderIntData[curIntIdx + 1];
+
+				// We use ">" instead of ">=" to ensure the sort remains stable,
+				// otherwise flickering could occur by having identical object
+				// layer/blending values have them swap orders between renders.
+				if (curSortValue > keySortValue)
+				{
+					renderIndices[j + 1] = renderIndices[j];
+					j--;
+				}
+				else { break; }
+			}
+			renderIndices[j + 1] = keyIndex;
+		}
+
+		// Objects are sorted, so just draw them out.
+		for (int i = 0; i < renderOpCount; i++)
+		{
+			int op = renderIndices[i];
+			int objIdx = op * 4;
+
+			Object obj0 = renderObjData[objIdx + 0];
+			Appearance appearance = (Appearance) renderObjData[objIdx + 2];
+			Transform transform = (Transform) renderObjData[objIdx + 3];
+			int scope = renderIntData[op * 3 + 2];
+
+			if (obj0 instanceof Sprite3D) { renderSprite((Sprite3D) obj0, transform); }
+			else { render((VertexBuffer) obj0, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope); }
+		}
+		renderOpCount = 0;
 	}
 }
