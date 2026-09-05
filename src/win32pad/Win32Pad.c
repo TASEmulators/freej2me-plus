@@ -101,8 +101,7 @@ int main(int argc, char* argv[])
 
 	int deviceId = get_device_id();
 
-	JOYINFOEX info;
-	ZeroMemory(&info, sizeof(JOYINFOEX));
+	JOYINFOEX info = {0};
 	info.dwSize = sizeof(JOYINFOEX);
 	info.dwFlags = JOY_RETURNALL;
 
