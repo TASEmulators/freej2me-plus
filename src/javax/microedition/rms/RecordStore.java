@@ -22,10 +22,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -330,41 +326,38 @@ public class RecordStore
 			String folderPath = Mobile.getPlatform().dataPath + "./rms/" + Mobile.getPlatform().loader.suitename;
 			folderPath = new String(folderPath.getBytes(System.getProperty("file.encoding")), encoding);
 
-			Path folder = Paths.get(folderPath);
+			File folder = new File(folderPath);
 
 			// If the directory doesn't exist, don't even bother looking.
-			if (!Files.exists(folder)) { throw new RecordStoreNotFoundException("RecordStore directory does not exist: " + recordStoreName); }
+			if (!folder.exists() || !folder.isDirectory()) { throw new RecordStoreNotFoundException("RecordStore directory does not exist: " + recordStoreName); }
 
+			String[] fileNames = folder.list();
+
+			if (fileNames == null || fileNames.length == 0) { throw new RecordStoreNotFoundException("RecordStore not found: " + recordStoreName); }
+
+			String base64prefix = generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName);
+			String prefix = new String(base64prefix.getBytes(System.getProperty("file.encoding")), encoding);
 			boolean exists = false;
 
-			String rawPrefix = generateBaseName(Mobile.getPlatform().loader.vendorname, recordStoreName);
-			String targetPrefix = new String(rawPrefix.getBytes(System.getProperty("file.encoding")), encoding);
-
-			DirectoryStream<Path> directoryStream = Files.newDirectoryStream(folder);
-
-			try
+			for (int i = 0; i < fileNames.length; i++)
 			{
-				for (Path filePath : directoryStream)
+				File currentFile = new File(folder, fileNames[i]);
+
+				if (currentFile.isFile() && fileNames[i].startsWith(prefix))
 				{
-					if (Files.isRegularFile(filePath) && filePath.getFileName().toString().startsWith(targetPrefix))
+					exists = true;
+					if (currentFile.delete())
 					{
-						exists = true;
-						try
-						{
-							Files.delete(filePath);
-							Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." +
-								RecordStore.class.getSimpleName() + ": Deleted " + filePath.getFileName());
-						}
-						catch (IOException e)
-						{
-							Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." +
-								RecordStore.class.getSimpleName() + ": Failed to delete " + filePath.getFileName() + ": "
-								+ e.getMessage());
-						}
+						Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." +
+							RecordStore.class.getSimpleName() + ": Deleted " + fileNames[i]);
+					}
+					else
+					{
+						Mobile.log(Mobile.LOG_ERROR, RecordStore.class.getPackage().getName() + "." +
+							RecordStore.class.getSimpleName() + ": Failed to delete " + fileNames[i]);
 					}
 				}
 			}
-			finally { directoryStream.close(); }
 
 			// Doesn't exist, throw the exception (gets caught below and re-thrown).
 			if (!exists) { throw new RecordStoreNotFoundException("RecordStore not found: " + recordStoreName); }
