@@ -141,13 +141,13 @@ class Triangle
 				{
 					vertices.getColors().get(tris[3 * tri_id + i], 1, Triangle.COLOR_VERTEX);
 					inC[i] = (vertices.getColors().getComponentCount() == 3) ?
-						(0xFF << 24) | (Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
-						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
-						Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]) :
-						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[3]) << 24) |
-						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[0]) << 16) |
-						(Byte.toUnsignedInt(Triangle.COLOR_VERTEX[1]) << 8) |
-						Byte.toUnsignedInt(Triangle.COLOR_VERTEX[2]);
+						(0xFF << 24) | ((Triangle.COLOR_VERTEX[0] & 0xFF) << 16) |
+						((Triangle.COLOR_VERTEX[1] & 0xFF) << 8) |
+						(Triangle.COLOR_VERTEX[2] & 0xFF) :
+						((Triangle.COLOR_VERTEX[3] & 0xFF) << 24) |
+						((Triangle.COLOR_VERTEX[0] & 0xFF) << 16) |
+						((Triangle.COLOR_VERTEX[1] & 0xFF) << 8) |
+						(Triangle.COLOR_VERTEX[2] & 0xFF);
 				}
 			}
 			else

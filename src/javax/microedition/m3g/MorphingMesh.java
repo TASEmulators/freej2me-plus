@@ -313,11 +313,11 @@ public class MorphingMesh extends Mesh
 
 			for (int i = 0; i < totalElements; i++)
 			{
-				final int baseValue = unsigned ? Byte.toUnsignedInt(baseRaw[i]) : baseRaw[i];
+				final int baseValue = unsigned ? (baseRaw[i] & 0xFF) : baseRaw[i];
 				float acc = baseValue;
 				for (int t = 0; t < targets.length; t++)
 				{
-					final int targetValue = unsigned ? Byte.toUnsignedInt(targetRaw[t][i]) : targetRaw[t][i];
+					final int targetValue = unsigned ? (targetRaw[t][i] & 0xFF) : targetRaw[t][i];
 					acc += weights[t] * (targetValue - baseValue);
 				}
 				final int val = M3GMath.round(acc);

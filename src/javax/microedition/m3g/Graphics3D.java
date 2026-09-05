@@ -2400,13 +2400,17 @@ public class Graphics3D
 			int op = renderIndices[i];
 			int objIdx = op * 4;
 
-			Object obj0 = renderObjData[objIdx + 0];
+			Object obj = renderObjData[objIdx + 0];
 			Appearance appearance = (Appearance) renderObjData[objIdx + 2];
 			Transform transform = (Transform) renderObjData[objIdx + 3];
 			int scope = renderIntData[op * 3 + 2];
 
-			if (obj0 instanceof Sprite3D) { renderSprite((Sprite3D) obj0, transform); }
-			else { render((VertexBuffer) obj0, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope); }
+			// We do not draw objects with null data. This may happen during
+			// reordering.
+			if (obj == null || renderObjData[objIdx + 1] == null || appearance == null) { continue; }
+
+			if (obj instanceof Sprite3D) { renderSprite((Sprite3D) obj, transform); }
+			else { render((VertexBuffer) obj, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope); }
 		}
 		renderOpCount = 0;
 	}
