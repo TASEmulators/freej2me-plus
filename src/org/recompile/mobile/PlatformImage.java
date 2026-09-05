@@ -132,10 +132,17 @@ public class PlatformImage
 		if(stream == null) { throw new IOException("Can't load image from resource, as the returned image is null."); }
 		else
 		{
-			try { image = ImageIO.read(stream); } 
+			final byte[] rawData;
+			try { rawData = PNGUtility.readFully(stream); }
+			catch (IOException e) { throw new IOException("Failed to read image from resource:" + e.getMessage()); }
+
+			try { image = ImageIO.read(new ByteArrayInputStream(rawData)); } 
 			catch (IOException e) { throw new IOException("Failed to read image from resource:" + e.getMessage()); }
 			
 			if(image == null) { throw new IOException("Can't load image from resource, as the returned image is null."); }
+
+			// Older JREs ignore a PNG's tRNS chunk on gray/rgb images, so apply the color key ourselves if needed.
+			image = PNGUtility.applyTransparentColorKey(image, rawData);
 
 			if(image.getType() == BufferedImage.TYPE_INT_ARGB || image.getType() == BufferedImage.TYPE_INT_RGB) { canvas = image; }
 			else 
@@ -153,10 +160,18 @@ public class PlatformImage
 		// Create Image from InputStream
 		Mobile.log(Mobile.LOG_DEBUG, PlatformImage.class.getPackage().getName() + "." + PlatformImage.class.getSimpleName() + ": " + "Image From Stream");
 		BufferedImage image;
-		try { image = ImageIO.read(stream); } 
+
+		final byte[] rawData;
+		try { rawData = PNGUtility.readFully(stream); }
+		catch (IOException e) { throw new IOException("Failed to read image from InputStream:" + e.getMessage()); }
+
+		try { image = ImageIO.read(new ByteArrayInputStream(rawData)); } 
 		catch (IOException e) { throw new IOException("Failed to read image from InputStream:" + e.getMessage()); }
 		
 		if(image == null) { throw new IOException("Can't load image from stream."); }
+
+		// Older JREs ignore a PNG's tRNS chunk on gray/rgb images, so apply the color key ourselves if needed.
+		image = PNGUtility.applyTransparentColorKey(image, rawData);
 
 		if(image.getType() == BufferedImage.TYPE_INT_ARGB || image.getType() == BufferedImage.TYPE_INT_RGB) { canvas = image; }
 		else 
@@ -192,6 +207,9 @@ public class PlatformImage
 		catch (IOException e) { throw new IllegalArgumentException("Failed to read image from Byte Array." + e.getMessage()); }
 		
 		if(image == null) { throw new IllegalArgumentException("Can't load image from byte array, as the returned image is null."); }
+
+		// Older JREs ignore a PNG's tRNS chunk on gray/rgb images, so apply the color key ourselves if needed.
+		image = PNGUtility.applyTransparentColorKey(image, imageData, imageOffset, imageLength);
 
 		if(image.getType() == BufferedImage.TYPE_INT_ARGB || image.getType() == BufferedImage.TYPE_INT_RGB) { canvas = image; }
 		else 
