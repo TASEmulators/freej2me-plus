@@ -83,7 +83,7 @@ public class LinuxGamepadReader extends GamepadReader
 		File joystickFile = new File(devicePath);
 		if (!joystickFile.exists())
 		{
-			System.err.println("[Gamepad] Device not found: " + devicePath);
+			Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Device not found: " + devicePath);
 			return;
 		}
 
@@ -92,7 +92,7 @@ public class LinuxGamepadReader extends GamepadReader
 		{
 			in = new FileInputStream(joystickFile);
 			byte[] buffer = new byte[8];
-			System.out.println("[Gamepad] Connected: " + deviceName + " (" + devicePath + ")");
+			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Connected: " + deviceName + " (" + devicePath + ")");
 
 			while (running)
 			{
@@ -125,23 +125,32 @@ public class LinuxGamepadReader extends GamepadReader
 					if (listen != null) { listen.onInputDetected(buttonName, number); }
 					else
 					{
-						if (value == 1) { MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number))); }
-						else { MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number))); }
+						if (value == 1)
+						{
+							if(!MobilePlatform.pressedKeys[this.getKey(number)])
+							{
+								MobilePlatform.pressedKeys[this.getKey(number)] = true;
+								MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number)));
+							}
+							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(this.getKey(number))); }
+						}
+						else
+						{
+							MobilePlatform.pressedKeys[this.getKey(number)] = false;
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number)));
+						}
 					}
 
 				}
 				else if (type == TYPE_AXIS && !isInit)
 				{
-					// TODO: Make deadzone adjustable? This should be fine
-					// since we only need digital presses, not analog intensity.
-					int deadzone = 12000;
 					String axisName = (value > 0 ? "+Axis-" : "-Axis-") + number;
 					int posCode = 100 + (number * 2) + 1;
 					int negCode = 100 + (number * 2);
 					int axisVal = value > 0 ? posCode : negCode;
 
 					// For remapping
-					if (listen != null && Math.abs(value) > deadzone)
+					if (listen != null && Math.abs(value) > AXIS_PRESS_THRESHOLD)
 					{
 						listen.onInputDetected(axisName, axisVal);
 					}
@@ -149,16 +158,26 @@ public class LinuxGamepadReader extends GamepadReader
 					{
 						//System.out.println(deviceName + " -> " + axisName + ": " + value);
 
-						if (Math.abs(value) > deadzone)
+						if (Math.abs(value) > AXIS_PRESS_THRESHOLD)
 						{
 							// Release the opposite direction here. I had some
 							// issues where quick flicks failed to result in a release.
 							int oppositeCode = value > 0 ? negCode : posCode;
+							MobilePlatform.pressedKeys[this.getKey(oppositeCode)] = false;
 							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
-							MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+
+							// Press or repeat the axis event
+							if(!MobilePlatform.pressedKeys[this.getKey(axisVal)])
+							{
+								MobilePlatform.pressedKeys[this.getKey(axisVal)] = true;
+								MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+							}
+							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(this.getKey(axisVal))); }
 						}
 						else
 						{
+							MobilePlatform.pressedKeys[this.getKey(posCode)] = false;
+							MobilePlatform.pressedKeys[this.getKey(negCode)] = false;
 							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
 							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
 						}
@@ -166,7 +185,7 @@ public class LinuxGamepadReader extends GamepadReader
 				}
 			}
 		}
-		catch (Exception e) { System.err.println("[Gamepad] Input stream disconnected: " + e.getMessage()); }
-		finally { System.out.println("[Gamepad] Input reader stopped for " + devicePath); }
+		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input stream disconnected: " + e.getMessage()); }
+		finally { Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input reader stopped for " + devicePath); }
 	}
 }

@@ -27,9 +27,13 @@ public abstract class GamepadReader implements Runnable
 	protected static final byte TYPE_BUTTON = 1;
 	protected static final byte TYPE_AXIS = 2;
 
+	// We don't need analog input. We just treat them as digital inputs.
+	protected static final int AXIS_PRESS_THRESHOLD   = 16000;
+
 	protected final String devicePath;
 	protected final String deviceName;
 	protected final FJGUI gui;
+	protected int activeAxis = -1; // -1 means no axis is active right now
 	protected volatile boolean running = true;
 
 	// listener for input remapping support

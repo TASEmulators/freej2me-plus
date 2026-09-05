@@ -70,8 +70,8 @@ public class WindowsGamepadReader extends GamepadReader
 
 			if (!win32Pad.exists() || win32Pad.length() == 0)
 			{
-				System.err.println("[Gamepad] ERROR: Required helper is missing: " + win32Pad.getAbsolutePath());
-				System.err.println("[Gamepad] Please check if '" + WIN_32_PAD + "' is in the same directory as this jar.");
+				Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] ERROR: Required helper is missing: " + win32Pad.getAbsolutePath());
+				Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Please check if '" + WIN_32_PAD + "' is in the same directory as this jar.");
 				return;
 			}
 
@@ -94,7 +94,7 @@ public class WindowsGamepadReader extends GamepadReader
 			in = win32PadProcess.getInputStream();
 			byte[] buffer = new byte[8];
 
-			System.out.println("[Gamepad] Connected: " + deviceName + " (" + devicePath + ")");
+			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Connected: " + deviceName + " (" + devicePath + ")");
 
 			while (running)
 			{
@@ -124,34 +124,53 @@ public class WindowsGamepadReader extends GamepadReader
 					if (listen != null) { listen.onInputDetected(buttonName, number); }
 					else
 					{
-						if (value == 1) { MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number))); }
-						else { MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number))); }
+						if (value == 1)
+						{
+							if(!MobilePlatform.pressedKeys[this.getKey(number)])
+							{
+								MobilePlatform.pressedKeys[this.getKey(number)] = true;
+								MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number)));
+							}
+							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(this.getKey(number))); }
+						}
+						else
+						{
+							MobilePlatform.pressedKeys[this.getKey(number)] = false;
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number)));
+						}
 					}
 				}
 				else if (type == TYPE_AXIS && !isInit)
 				{
-					// Axis 16 and 17 are the D-Pad in DInput, we cannot have
-					// deadzones on those.
-					int deadzone = (number == 16 || number == 17) ? 0 : 12000;
 					String axisName = (value > 0 ? "+Axis-" : "-Axis-") + number;
 					int posCode = 100 + (number * 2) + 1;
 					int negCode = 100 + (number * 2);
 					int axisVal = value > 0 ? posCode : negCode;
 
-					if (listen != null && Math.abs(value) > deadzone)
+					if (listen != null && Math.abs(value) > ((number == 16 || number == 17) ? 0 : AXIS_PRESS_THRESHOLD))
 					{
 						listen.onInputDetected(axisName, axisVal);
 					}
 					else
 					{
-						if (Math.abs(value) > deadzone)
+						if (Math.abs(value) > ((number == 16 || number == 17) ? 0 : AXIS_PRESS_THRESHOLD))
 						{
 							int oppositeCode = value > 0 ? negCode : posCode;
+
+							MobilePlatform.pressedKeys[this.getKey(oppositeCode)] = false;
 							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
-							MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+
+							if(!MobilePlatform.pressedKeys[this.getKey(axisVal)])
+							{
+								MobilePlatform.pressedKeys[this.getKey(axisVal)] = true;
+								MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+							}
+							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(this.getKey(axisVal))); }
 						}
 						else
 						{
+							MobilePlatform.pressedKeys[this.getKey(posCode)] = false;
+							MobilePlatform.pressedKeys[this.getKey(negCode)] = false;
 							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
 							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
 						}
@@ -166,13 +185,13 @@ public class WindowsGamepadReader extends GamepadReader
 			// closing it.
 			if (running)
 			{
-				System.err.println("[Gamepad] Windows Input stream error: " + e.getMessage());
+				Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Windows Input stream error: " + e.getMessage());
 			}
 		}
 		finally
 		{
 			stop();
-			System.out.println("[Gamepad] Input reader stopped for device " + devicePath);
+			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input reader stopped for device " + devicePath);
 		}
 	}
 

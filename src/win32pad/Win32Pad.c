@@ -20,6 +20,56 @@
 #include <windows.h>
 #include <mmsystem.h>
 
+#define abs(x) ((x) < 0 ? -(x) : (x))
+
+// Manual XInput gamepad event definitions so we can avoid explicitly including
+// xinput.h for better compatibility.
+typedef struct
+{
+	WORD wButtons;
+	BYTE bLeftTrigger;
+	BYTE bRightTrigger;
+	SHORT sThumbLX;
+	SHORT sThumbLY;
+	SHORT sThumbRX;
+	SHORT sThumbRY;
+	DWORD dwReserved;
+} XINPUT_GAMEPAD_EX;
+
+typedef struct
+{
+	DWORD dwPacketNumber;
+	XINPUT_GAMEPAD_EX Gamepad;
+} XINPUT_STATE_EX;
+
+typedef DWORD (WINAPI *XInputGetState_t)(DWORD dwUserIndex, XINPUT_STATE_EX* pState);
+
+// XInput static variables for tracking. It works differently from DirectInput,
+// so if we don't track these statically, the result will be XInput mashing
+// inputs instead of just holding.
+static XInputGetState_t pfnXInputGetState = NULL;
+static _Bool g_hasXInput = FALSE;
+static SHORT lastLX = 0, lastLY = 0, lastRX = 0, lastRY = 0;
+static BYTE lastLT = 0, lastRT = 0;
+static DWORD lastXInputButtons = 0;
+
+// Attempt to dynamically load XInput on Windows versions that support it. Tries
+// from newest to oldest dlls.
+static void try_init_xinput(void)
+{
+	HMODULE hXInput = LoadLibraryA("xinput1_4.dll");
+	if (!hXInput) hXInput = LoadLibraryA("xinput1_3.dll");
+	if (!hXInput) hXInput = LoadLibraryA("xinput9_1_0.dll");
+
+	if (hXInput)
+	{
+		pfnXInputGetState = (XInputGetState_t)GetProcAddress(hXInput, "XInputGetState");
+		if (pfnXInputGetState) { g_hasXInput = TRUE; }
+	}
+}
+
+
+
 static void write_data(HANDLE hStdout, short val, unsigned char type, unsigned char num)
 {
 	// DirectInput uses 8-byte data packets for communication (so it's not
@@ -101,9 +151,12 @@ int main(int argc, char* argv[])
 
 	int deviceId = get_device_id();
 
+	try_init_xinput();
+
 	JOYINFOEX info = {0};
 	info.dwSize = sizeof(JOYINFOEX);
 	info.dwFlags = JOY_RETURNALL;
+	XINPUT_STATE_EX xState = {0};
 
 	DWORD lastButtons = 0;
 	DWORD lastX = 32768;
@@ -123,7 +176,107 @@ int main(int argc, char* argv[])
 			ExitProcess(0);
 		}
 
-		if (joyGetPosEx(deviceId, &info) == JOYERR_NOERROR)
+		_Bool handledByXInput = FALSE;
+
+		// Try using XInput First Device IDs only go from 0 to 3
+		if (g_hasXInput && deviceId < 4)
+		{
+			if (pfnXInputGetState(deviceId, &xState) == 0)
+			{
+				handledByXInput = TRUE;
+
+				// Buttons (except D-Pad, those are special cases since they
+				// must match DirectInput's values on output)
+				DWORD buttons = xState.Gamepad.wButtons;
+                DWORD changed = buttons ^ lastXInputButtons;
+				if (changed != 0)
+				{
+					for (int i = 4; i < 16; i++)
+					{
+						if (changed & (1 << i))
+						{
+							short state = (buttons & (1 << i)) ? 1 : 0;
+							write_data(hStdout, state, 0x01, (unsigned char)i);
+						}
+					}
+				}
+				lastXInputButtons = buttons;
+
+				// Left Analog Stick
+				SHORT currentLX = xState.Gamepad.sThumbLX;
+				if (abs(currentLX - lastLX) > 800)
+				{
+					write_data(hStdout, currentLX, 0x02, 0);
+					lastLX = currentLX;
+				}
+
+				// Y is inverted compared to DInput
+				SHORT currentLY = (SHORT)-xState.Gamepad.sThumbLY;
+				if (abs(currentLY - lastLY) > 800)
+				{
+					write_data(hStdout, currentLY, 0x02, 1);
+					lastLY = currentLY;
+				}
+
+				// Right Analog Stick
+				SHORT currentRX = xState.Gamepad.sThumbRX;
+				if (abs(currentRX - lastRX) > 800)
+				{
+					write_data(hStdout, currentRX, 0x02, 2);
+					lastRX = currentRX;
+				}
+
+				SHORT currentRY = (SHORT)-xState.Gamepad.sThumbRY;
+				if (abs(currentRY - lastRY) > 800)
+				{
+					write_data(hStdout, currentRY, 0x02, 3);
+					lastRY = currentRY;
+				}
+
+				// Left Trigger. bLeftTrigger goes from 0 to 255, so we map it
+				// to a short range to match DirectInput
+				BYTE currentLT = xState.Gamepad.bLeftTrigger;
+				if (abs((int)currentLT - (int)lastLT) > 10)
+				{
+				    short normLT = (short)(((int)currentLT * 32767) / 255);
+				    write_data(hStdout, normLT, 0x02, 4);
+				    lastLT = currentLT;
+				}
+
+				// Right Trigger, same idea as above.
+				BYTE currentRT = xState.Gamepad.bRightTrigger;
+				if (abs((int)currentRT - (int)lastRT) > 10)
+				{
+				    short normRT = (short)(((int)currentRT * 32767) / 255);
+				    write_data(hStdout, normRT, 0x02, 5);
+				    lastRT = currentRT;
+				}
+
+				// XInput has D-Pad as actual buttons, but since the first
+				// implementation was based around DInput, we make this match
+				// how DInput works.
+				short hatX = 0, hatY = 0;
+				if (buttons & 0x0001) { hatY = -32767; } // UP
+				if (buttons & 0x0002) { hatY = 32767;  } // DOWN
+				if (buttons & 0x0004) { hatX = -32767; } // LEFT
+				if (buttons & 0x0008) { hatX = 32767;  }  // RIGHT
+
+				static short lastHatX = 0, lastHatY = 0;
+				if (hatX != lastHatX)
+				{
+					write_data(hStdout, hatX, 0x02, 16);
+					lastHatX = hatX;
+				}
+				if (hatY != lastHatY)
+				{
+					write_data(hStdout, hatY, 0x02, 17);
+					lastHatY = hatY;
+				}
+			}
+		}
+
+		// Fallback to DirectInput if XInput is not available.
+		if (!handledByXInput && joyGetPosEx(deviceId, &info) == JOYERR_NOERROR)
 		{
 			// Check the pad's button states.
 			DWORD changed = info.dwButtons ^ lastButtons;
@@ -141,35 +294,31 @@ int main(int argc, char* argv[])
 			}
 
 			// Check for the left stick's X/Y axis
-			long diffX = (long)info.dwXpos - (long)lastX;
-			if (diffX > 800 || diffX < -800)
+			if (abs((int)info.dwXpos - (int)lastX) > 800)
 			{
-				short normX = (short)((long)info.dwXpos - 32768);
+				short normX = (short)(info.dwXpos - 32768);
 				write_data(hStdout, normX, 0x02, 0); // Type 0x02 = Axis 0
 				lastX = info.dwXpos;
 			}
 
-			long diffY = (long)info.dwYpos - (long)lastY;
-			if (diffY > 800 || diffY < -800)
+			if (abs((int)info.dwYpos - (int)lastY) > 800)
 			{
-				short normY = (short)((long)info.dwYpos - 32768);
+				short normY = (short)(info.dwYpos - 32768);
 				write_data(hStdout, normY, 0x02, 1); // Type 0x02 = Axis 1
 				lastY = info.dwYpos;
 			}
 
 			// Now the right stick's
-			long diffZ = (long)info.dwZpos - (long)lastZ;
-			if (diffZ > 800 || diffZ < -800)
+			if (abs((int)info.dwZpos - (int)lastZ) > 800)
 			{
-				short normZ = (short)((long)info.dwZpos - 32768);
+				short normZ = (short)(info.dwZpos - 32768);
 				write_data(hStdout, normZ, 0x02, 2); // Axis 2 (X)
 				lastZ = info.dwZpos;
 			}
 
-			long diffR = (long)info.dwRpos - (long)lastR;
-			if (diffR > 800 || diffR < -800)
+			if (abs((int)info.dwRpos - (int)lastR) > 800)
 			{
-				short normR = (short)((long)info.dwRpos - 32768);
+				short normR = (short)(info.dwRpos - 32768);
 				write_data(hStdout, normR, 0x02, 3); // Axis 3 (Y)
 				lastR = info.dwRpos;
 			}
