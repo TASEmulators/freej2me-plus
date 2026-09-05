@@ -123,9 +123,12 @@ public class LinuxGamepadReader extends GamepadReader
 
 					// For remapping
 					if (listen != null) { listen.onInputDetected(buttonName, number); }
+					else
+					{
+						if (value == 1) { MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number))); }
+						else { MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number))); }
+					}
 
-					if (value == 1) { MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number))); }
-					else { MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number))); }
 				}
 				else if (type == TYPE_AXIS && !isInit)
 				{
@@ -142,21 +145,23 @@ public class LinuxGamepadReader extends GamepadReader
 					{
 						listen.onInputDetected(axisName, axisVal);
 					}
-
-					//System.out.println(deviceName + " -> " + axisName + ": " + value);
-
-					if (Math.abs(value) > deadzone)
-					{
-						// Release the opposite direction here. I had some
-						// issues where quick flicks failed to result in a release.
-						int oppositeCode = value > 0 ? negCode : posCode;
-						MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
-						MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
-					}
 					else
 					{
-						MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
-						MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
+						//System.out.println(deviceName + " -> " + axisName + ": " + value);
+
+						if (Math.abs(value) > deadzone)
+						{
+							// Release the opposite direction here. I had some
+							// issues where quick flicks failed to result in a release.
+							int oppositeCode = value > 0 ? negCode : posCode;
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
+							MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+						}
+						else
+						{
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
+						}
 					}
 				}
 			}

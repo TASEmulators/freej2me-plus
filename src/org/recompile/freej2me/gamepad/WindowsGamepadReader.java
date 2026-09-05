@@ -122,13 +122,17 @@ public class WindowsGamepadReader extends GamepadReader
 					String buttonName = "Button-" + number;
 
 					if (listen != null) { listen.onInputDetected(buttonName, number); }
-
-					if (value == 1) { MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number))); }
-					else { MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number))); }
+					else
+					{
+						if (value == 1) { MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number))); }
+						else { MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number))); }
+					}
 				}
 				else if (type == TYPE_AXIS && !isInit)
 				{
-					int deadzone = 12000;
+					// Axis 16 and 17 are the D-Pad in DInput, we cannot have
+					// deadzones on those.
+					int deadzone = (number == 16 || number == 17) ? 0 : 12000;
 					String axisName = (value > 0 ? "+Axis-" : "-Axis-") + number;
 					int posCode = 100 + (number * 2) + 1;
 					int negCode = 100 + (number * 2);
@@ -138,17 +142,19 @@ public class WindowsGamepadReader extends GamepadReader
 					{
 						listen.onInputDetected(axisName, axisVal);
 					}
-
-					if (Math.abs(value) > deadzone)
-					{
-						int oppositeCode = value > 0 ? negCode : posCode;
-						MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
-						MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
-					}
 					else
 					{
-						MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
-						MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
+						if (Math.abs(value) > deadzone)
+						{
+							int oppositeCode = value > 0 ? negCode : posCode;
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
+							MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+						}
+						else
+						{
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
+							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
+						}
 					}
 				}
 			}
