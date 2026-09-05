@@ -20,7 +20,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y mingw-w64
         mkdir -p build
-        i686-w64-mingw32-gcc -Os src/win32pad/Win32Pad.c -o build/Win32Pad.exe -s -nostdlib -ffreestanding -e main -lkernel32 -lwinmm -Wl,--gc-sections
+        i686-w64-mingw32-gcc -Os src/win32pad/Win32Pad.c -o build/Win32Pad.exe -s -nostdlib -ffreestanding -e _main -lkernel32 -lwinmm -Wl,--gc-sections
     - name: Compute commit short SHA
       id: shortsha
       run: |
