@@ -28,6 +28,27 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FilenameFilter;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -49,26 +70,6 @@ import javax.swing.JMenuBar;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FilenameFilter;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
@@ -878,21 +879,13 @@ public final class FJGUI
 		for(int i = 0; i < buttons.length; i++)
 		{
 			final int buttonIndex = i;
+			final JButton inputButton = buttons[i];
 
-			/* Add a focus listener to each input mapping button */
-			buttons[i].addFocusListener(new FocusAdapter()
+			final Runnable mapInput = new Runnable()
 			{
-				JButton focusedButton;
-				String lastButtonKey = new String("");
-				boolean keySet = false;
-
-				@Override
-				public void focusGained(FocusEvent e)
+				public void run()
 				{
-					keySet = false;
-					focusedButton = (JButton) e.getComponent();
-					lastButtonKey = focusedButton.getText();
-					focusedButton.setText("Waiting...");
+					inputButton.setText("Waiting...");
 
 					if(isGamepad)
 					{
@@ -914,8 +907,7 @@ public final class FJGUI
 										@Override
 										public void run()
 										{
-											focusedButton.setText(inputName);
-											keySet = true;
+											inputButton.setText(inputName);
 											gamepadKeycodes[buttonIndex] = inputCode;
 											gamepadKeyNames[buttonIndex] = inputName;
 
@@ -929,35 +921,53 @@ public final class FJGUI
 					}
 					else // Keyboard inputs
 					{
-						focusedButton.addKeyListener(new KeyAdapter()
+						KeyListener[] listeners = inputButton.getKeyListeners();
+						for (KeyListener l : listeners)
+						{
+							inputButton.removeKeyListener(l);
+						}
+
+						inputButton.addKeyListener(new KeyAdapter()
 						{
 							public void keyPressed(KeyEvent e)
 							{
-								focusedButton.setText(KeyEvent.getKeyText(e.getKeyCode()));
-								keySet = true;
+								inputButton.setText(KeyEvent.getKeyText(e.getKeyCode()));
 								/* Save the new key's code into the expected index of InputKeycodes */
 								inputKeycodes[buttonIndex] = e.getKeyCode();
 							}
 						});
 					}
 				}
+			};
 
-				/* Only used to restore the last key map if the user doesn't map a new one into the button */
-				@Override
-				public void focusLost(FocusEvent e)
-				{
-					if (isGamepad && FJGUI.gamepadReader != null)
-					{
-						// Just remove the gamepad input listener.
-						FJGUI.gamepadReader.setInputListener(null);
-					}
+			inputButton.addActionListener(new ActionListener()
+	        {
+	            @Override
+	            public void actionPerformed(ActionEvent e)
+	            {
+	                mapInput.run();
+	            }
+	        });
 
-					if(!keySet)
-					{
-						focusedButton.setText(lastButtonKey);
-					}
-				}
-			});
+			/* Only used to restore the last key map if the user doesn't map a new one into the button */
+			inputButton.addFocusListener(new FocusAdapter()
+	        {
+	            @Override
+	            public void focusLost(FocusEvent e)
+	            {
+	                if (isGamepad && FJGUI.gamepadReader != null)
+	                {
+	                    FJGUI.gamepadReader.setInputListener(null);
+	                }
+
+	                // If we lost focus while waiting fpr input, revert label
+	                if ("Waiting...".equals(inputButton.getText()))
+	                {
+	                    String savedName = isGamepad ? gamepadKeyNames[buttonIndex] : KeyEvent.getKeyText(inputKeycodes[buttonIndex]);
+	                    inputButton.setText((savedName != null && !savedName.isEmpty()) ? savedName : "");
+	                }
+	            }
+	        });
 		}
 	}
 
