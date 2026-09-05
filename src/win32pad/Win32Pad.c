@@ -47,15 +47,31 @@ static void write_data(HANDLE hStdout, short val, unsigned char type, unsigned c
 	FlushFileBuffers(hStdout);
 }
 
-// I don't want to bring in a whole new header just for atoi... and not
-// depending on it drops the need to build against UCRT/MSVCRT completely.
-static int depless_atoi(const char* str)
+// argc/argv won't work as normal due to the CRT entry point being dropped...
+// we need to read those from GetCommandLineA instead.
+static int get_device_id(void)
 {
-    int res = 0;
-    while (*str >= '0' && *str <= '9')
+    const char* cmd = GetCommandLineA();
+    if (!cmd) { return 0; } // No argument? Use Device ID 0.
+
+    // Fast-forward past the executable path
+    _Bool in_quotes = FALSE;
+    while (*cmd)
     {
-        res = res * 10 + (*str - '0');
-        str++;
+        if (*cmd == '"') { in_quotes = !in_quotes; }
+        else if (*cmd == ' ' && !in_quotes)
+        {
+            while (*cmd == ' ') cmd++;
+            break;
+        }
+        cmd++;
+    }
+
+    int res = 0;
+    while (*cmd >= '0' && *cmd <= '9')
+    {
+        res = res * 10 + (*cmd - '0');
+        cmd++;
     }
     return res;
 }
@@ -63,6 +79,7 @@ static int depless_atoi(const char* str)
 // Screw MinGW CRT init, we're not adding useless dependencies.
 void __main(void) { }
 
+__attribute__((force_align_arg_pointer))
 int main(int argc, char* argv[])
 {
 	// We'll need the stdin handle to monitor its state in order to exit
@@ -82,11 +99,10 @@ int main(int argc, char* argv[])
         ExitProcess(1);
     }
 
-	int deviceId = 0;
-
-	if (argc > 1) { deviceId = depless_atoi(argv[1]); }
+	int deviceId = get_device_id();
 
 	JOYINFOEX info;
+	ZeroMemory(&info, sizeof(JOYINFOEX));
 	info.dwSize = sizeof(JOYINFOEX);
 	info.dwFlags = JOY_RETURNALL;
 

@@ -75,8 +75,8 @@ public class WindowsGamepadReader extends GamepadReader
 				return;
 			}
 
-			// Launch helper process with device target ID as argument
-			ProcessBuilder pb = new ProcessBuilder(win32Pad.getAbsolutePath(), devicePath);
+			// Launch helper process with device target ID as argument (we only use ID 0)
+			ProcessBuilder pb = new ProcessBuilder(win32Pad.getAbsolutePath(), "0");
 
 			pb.redirectErrorStream(true);
 			win32PadProcess = pb.start();
