@@ -46,7 +46,7 @@ public class WindowsGamepadReader extends GamepadReader
 		// Not sure DirectInput has a way to read the device
 		// name like linux does on /dev/input and SysFS, so we
 		// just append the path (which is just "0") to a fixed string.
-		return "DInput Gamepad " + path;
+		return "Gamepad " + path;
 	}
 
 	public static ArrayList<String> getAvailableDevices()
