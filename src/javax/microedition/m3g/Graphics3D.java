@@ -1216,18 +1216,16 @@ public class Graphics3D
 		boolean renderToImage = false;
 		Image2D imageData = null;
 
-		if((this.target instanceof Image2D))
-		{
-			renderToImage = true;
-			imageData = (Image2D) this.target;
-		}
-
 		final Image2D spr = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
 
 		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
 		if (spr == null || appearance == null) { return; }
-		if (!(this.target instanceof Graphics)) { return; }
+		if((this.target instanceof Image2D))
+		{
+			renderToImage = true;
+			imageData = (Image2D) this.target;
+		}
 
 		// JSR-184 scope culling, same rule as for meshes.
 		if ((sprite.getScope() & this.currCam.getScope()) == 0) { return; }
@@ -1266,7 +1264,6 @@ public class Graphics3D
 		if (clip[3] <= 0f || clip[7] <= 0f || clip[11] <= 0f) { return; }
 
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
-
 
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
 		// multiplied by the same factor used by the buffer, with a small margin
@@ -1332,6 +1329,10 @@ public class Graphics3D
 			fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
 		}
 
+		// Take divisions out of the inner loops. Multiply by reciprocal instead
+		final float invSpanX = M3GMath.fastReciprocal(spanX);
+		final float invSpanY = M3GMath.fastReciprocal(spanY);
+
 		for (int y = pixT; y < pixB; y++)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
@@ -1345,7 +1346,7 @@ public class Graphics3D
 				continue;
 			}
 
-			final float v = (y + 0.5f - sy0) / spanY;
+			final float v = (y + 0.5f - sy0) * invSpanY;
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
 			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
 
@@ -1355,7 +1356,7 @@ public class Graphics3D
 				// Depth test against the same buffer, index and convention used by triangles.
 				if (depthTest && this.depthBuffer[rasterIdxY + x] < ndcZ) { continue; }
 
-				final float u = (x + 0.5f - sx0) / spanX;
+				final float u = (x + 0.5f - sx0) * invSpanX;
 				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
@@ -2407,7 +2408,7 @@ public class Graphics3D
 
 			// We do not draw objects with null data. This may happen during
 			// reordering.
-			if (obj == null || renderObjData[objIdx + 1] == null || appearance == null) { continue; }
+			if (obj == null || appearance == null) { continue; }
 
 			if (obj instanceof Sprite3D) { renderSprite((Sprite3D) obj, transform); }
 			else { render((VertexBuffer) obj, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope); }
