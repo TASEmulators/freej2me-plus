@@ -186,9 +186,13 @@ public final class FreeJ2MEPlayer extends JDialog
 			@Override
 			public void dragEnter(DropTargetDragEvent dtde)
 			{
-				dtde.acceptDrag(DnDConstants.ACTION_COPY);
-				toggleComponentsVisibility(false);
-				dropMessageLabel.setVisible(true);
+				if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+				{
+					dtde.acceptDrag(DnDConstants.ACTION_COPY);
+					toggleComponentsVisibility(false);
+					dropMessageLabel.setVisible(true);
+				}
+				else { dtde.rejectDrag(); }
 			}
 
 			@Override public void dragOver(DropTargetDragEvent dtde) { }
@@ -205,20 +209,30 @@ public final class FreeJ2MEPlayer extends JDialog
 			@SuppressWarnings("unchecked")
 			public void drop(DropTargetDropEvent dtde)
 			{
+				boolean success = false;
 				try
 				{
-					dtde.acceptDrop(DnDConstants.ACTION_COPY);
-					Transferable transferable = dtde.getTransferable();
-					if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+					if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
 					{
+						dtde.acceptDrop(DnDConstants.ACTION_COPY);
+						Transferable transferable = dtde.getTransferable();
 						java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-						if (!files.isEmpty()) { openFile(files.get(0).getAbsolutePath()); }
+
+						if (!files.isEmpty())
+						{
+							openFile(files.get(0).getAbsolutePath());
+							success = true;
+						}
+					}
+					else
+					{
+						dtde.rejectDrop();
 					}
 				}
 				catch (Exception e) { System.out.println("Exception caught in Drag and Drop: " + e.getMessage()); }
 				finally
 				{
-					dtde.dropComplete(true);
+					dtde.dropComplete(success);
 					toggleComponentsVisibility(true);
 					dropMessageLabel.setVisible(false);
 				}

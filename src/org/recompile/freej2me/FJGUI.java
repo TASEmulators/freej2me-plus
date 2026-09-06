@@ -1504,70 +1504,30 @@ public final class FJGUI
 		public void actionPerformed(ActionEvent a)
 		{
 			String command = a.getActionCommand();
-			if(command.equals("Open"))
+			if (command.equals("Open"))
 			{
-				FileDialog filePicker = new FileDialog(main, "Open JAR / JAD / KJX / MSD File", FileDialog.LOAD);
-				String filename;
-				filePicker.setFilenameFilter(new FilenameFilter()
+				File file = selectFile("Open JAR / JAD / KJX / MSD File", new String[]{".jar", ".jad", ".kjx", ".msd"}, "Main File Loading was cancelled");
+				if (file != null)
 				{
-					public boolean accept(File dir, String name)
-					{
-						return name.toLowerCase().endsWith(".jar") ||
-								name.toLowerCase().endsWith(".jad") ||
-								name.toLowerCase().endsWith(".kjx") ||
-								name.toLowerCase().endsWith(".msd");
+					jarfile = file.toURI().toString();
+					if (!hasLoadedFile()) {
+						loadJarFile(jarfile);
+					} else {
+						Mobile.getPlatform().fileName = jarfile;
+						showRestartDialog();
 					}
-				});
-				filePicker.setVisible(true);
-
-				filename = filePicker.getFile();
-
-				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": " + "Main File Loading was cancelled"); }
-				else
-				{
-						try
-						{
-							jarfile = new File(filePicker.getDirectory()+filename).toURI().toString();
-
-							if(!hasLoadedFile()) { loadJarFile(jarfile); } // First jar being loaded, load straight away
-							else // Otherwise, this requires a restart.
-							{
-								Mobile.getPlatform().fileName = jarfile;
-								showRestartDialog();
-							}
-						}
-						catch(Exception e) { Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": " + "Load error:" + e.getMessage()); }
 				}
 			}
-			if(command.equals("OpenSp"))
+			else if (command.equals("OpenSp"))
 			{
-				FileDialog filePicker = new FileDialog(main, "Open DoJa SP / SP0 File", FileDialog.LOAD);
-				String filename;
-				filePicker.setFilenameFilter(new FilenameFilter()
+				File file = selectFile("Open DoJa SP / SP0 File", new String[]{".sp", ".sp0"}, "SP/SP0 Loading was cancelled");
+				if (file != null)
 				{
-					public boolean accept(File dir, String name)
-					{
-						return name.toLowerCase().endsWith(".sp") ||
-								name.toLowerCase().endsWith(".sp0");
+					spfile = file.toURI().toString();
+					Mobile.getPlatform().spFileName = spfile;
+					if (hasLoadedFile()) {
+						showRestartDialog();
 					}
-				});
-				filePicker.setVisible(true);
-
-				filename = filePicker.getFile();
-
-				if(filename == null) { Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": " + "SP/SP0 Loading was cancelled"); }
-				else
-				{
-						try
-						{
-							spfile = new File(filePicker.getDirectory()+filename).toURI().toString();
-
-							Mobile.getPlatform().spFileName = spfile;
-
-							// We already loaded an app? Then we'll need to restart.
-							if(hasLoadedFile()) { showRestartDialog(); }
-						}
-						catch(Exception e) { Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": " + "Load error:" + e.getMessage()); }
 				}
 			}
 			else if(command.equals("Close")) { FreeJ2ME.closeApp(); }
@@ -1695,6 +1655,55 @@ public final class FJGUI
 				playerDialog.setVisible(true);
 			}
 		}
+	}
+
+	private File selectFile(String title, final String[] allowedExtensions,
+		String cancelLogMessage)
+	{
+		FileDialog filePicker = new FileDialog(main, title, FileDialog.LOAD);
+
+		// Set the extension filter on the filePicker dialog.
+		filePicker.setFilenameFilter(new FilenameFilter()
+		{
+			@Override
+			public boolean accept(File dir, String name)
+			{
+				String lowerName = name.toLowerCase();
+				for (String ext : allowedExtensions)
+				{
+					if (lowerName.endsWith(ext)) { return true; }
+				}
+				return false;
+			}
+		});
+
+		filePicker.setVisible(true);
+
+		String filename = filePicker.getFile();
+		if (filename == null)
+		{
+			Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": Loading canceled: " + cancelLogMessage);
+			return null;
+		}
+
+		try
+		{
+			File selectedFile = new File(filePicker.getDirectory(), filename);
+
+			String lowerName = selectedFile.getName().toLowerCase();
+			boolean isValid = false;
+			for (String ext : allowedExtensions)
+			{
+				if (lowerName.endsWith(ext)) { return selectedFile; }
+			}
+			Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": Invalid file type selected: " + filename);
+		}
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_DEBUG, FJGUI.class.getPackage().getName() + "." + FJGUI.class.getSimpleName() + ": Load error: " + e.getMessage());
+		}
+
+		return null;
 	}
 
 	public void loadJarFile(String jarpath)

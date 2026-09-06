@@ -787,17 +787,17 @@ public class FreeJ2ME
 		});
 
 		if (!isFullscreen)
-	    {
-	        lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
-	        main.setJMenuBar(fjGUI.getJMenuBar());
-	        main.pack();
-	        main.setLocationRelativeTo(null);
-	    }
-	    else
-	    {
-	        main.setUndecorated(true);
-	        main.setSize(Toolkit.getDefaultToolkit().getScreenSize());
-	    }
+		{
+			lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
+			main.setJMenuBar(fjGUI.getJMenuBar());
+			main.pack();
+			main.setLocationRelativeTo(null);
+		}
+		else
+		{
+			main.setUndecorated(true);
+			main.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+		}
 
 		main.setVisible(true);
 		resize();
@@ -936,32 +936,16 @@ public class FreeJ2ME
 				@SuppressWarnings("unchecked")
 				public void dragEnter(DropTargetDragEvent dtde)
 				{
-					try
+					if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
 					{
-						if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
-						{
-							// Get the files being dragged
-							Transferable transferable = dtde.getTransferable();
-							java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-
-							// Check if the file is supported
-							for (File file : files)
-							{
-								if (isSupportedFile(file.getName()))
-								{
-									dtde.acceptDrag(DnDConstants.ACTION_COPY);
-									fileSupported = true;
-									break;
-								}
-								else
-								{
-									dtde.rejectDrag();
-									fileSupported = false;
-								}
-							}
-						}
-						else { dtde.rejectDrag(); }
-					} catch (Exception e) { e.printStackTrace(); }
+						dtde.acceptDrag(DnDConstants.ACTION_COPY);
+						fileSupported = true;
+					}
+					else
+					{
+						dtde.rejectDrag();
+						fileSupported = false;
+					}
 
 					showDragMessage = true;
 					repaint();
@@ -984,29 +968,40 @@ public class FreeJ2ME
 				@SuppressWarnings("unchecked")
 				public void drop(DropTargetDropEvent dtde)
 				{
+					boolean success = false;
 					try
 					{
-						dtde.acceptDrop(DnDConstants.ACTION_COPY);
-						Transferable transferable = dtde.getTransferable();
-						if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+						if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
 						{
+
+							// Get the files being dragged
+							dtde.acceptDrop(DnDConstants.ACTION_COPY);
+							Transferable transferable = dtde.getTransferable();
 							java.util.List<File> files = (java.util.List<File>) transferable.getTransferData(DataFlavor.javaFileListFlavor);
-							if (!files.isEmpty() && fileSupported)
+
+							// Check if the file is supported
+							if (!files.isEmpty())
 							{
-								// Load the dropped file
-								if(!fjGUI.hasLoadedFile()) { fjGUI.loadJarFile(files.get(0).toURI().toString()); }
-								else // Ask for a restart if a jar is already running
+								File droppedFile = files.get(0);
+
+								if (isSupportedFile(droppedFile.getName()))
 								{
-									MobilePlatform.fileName = files.get(0).toURI().toString();
-									fjGUI.showRestartDialog();
+									if (!fjGUI.hasLoadedFile()) { fjGUI.loadJarFile(droppedFile.toURI().toString()); }
+									else
+									{
+										MobilePlatform.fileName = droppedFile.toURI().toString();
+										fjGUI.showRestartDialog();
+									}
+									success = true;
 								}
 							}
 						}
+						else { dtde.rejectDrop(); }
 					}
 					catch (Exception e) { System.out.println("Exception caught in Drag and Drop:" + e.getMessage()); }
 					finally
 					{
-						dtde.dropComplete(true);
+						dtde.dropComplete(success);
 						showDragMessage = false;
 						repaint();
 					}
