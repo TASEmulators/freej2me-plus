@@ -57,7 +57,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -77,6 +76,7 @@ import javax.swing.border.TitledBorder;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.freej2me.gamepad.GamepadReader;
+import org.recompile.freej2me.gamepad.MacGamepadReader;
 import org.recompile.freej2me.gamepad.LinuxGamepadReader;
 import org.recompile.freej2me.gamepad.WindowsGamepadReader;
 
@@ -1667,7 +1667,7 @@ public final class FJGUI
 
 					if (os.contains("linux")) { FJGUI.gamepadReader = new LinuxGamepadReader(firstDevice, gui); }
 					else if (os.contains("win")) { FJGUI.gamepadReader = new WindowsGamepadReader(firstDevice, gui); }
-					// else if (os.contains("mac")) { FJGUI.gamepadReader = new MacGamepadReader(firstDevice, gui); }
+					else if (os.contains("mac")) { FJGUI.gamepadReader = new MacGamepadReader(firstDevice, gui); }
 
 					gamepadName.setText("Pad: " + FJGUI.gamepadReader.getDeviceName());
 

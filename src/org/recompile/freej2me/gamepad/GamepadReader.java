@@ -59,11 +59,7 @@ public abstract class GamepadReader implements Runnable
 		// We only support gamepads on Linux (Unix) right now.
 		if (os.contains("linux")) { return LinuxGamepadReader.getAvailableDevices(); }
 		else if (os.contains("win")) { return WindowsGamepadReader.getAvailableDevices(); }
-		else if (os.contains("mac"))
-		{
-			// TODO: MacGamepadReader.getAvailableDevices();
-			return null;
-		}
+		else if (os.contains("mac")) { return MacGamepadReader.getAvailableDevices(); }
 
 		return null;
 	}
