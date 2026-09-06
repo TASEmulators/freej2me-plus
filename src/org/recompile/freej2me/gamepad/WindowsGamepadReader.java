@@ -124,19 +124,24 @@ public class WindowsGamepadReader extends GamepadReader
 					if (listen != null) { listen.onInputDetected(buttonName, number); }
 					else
 					{
+						int keyIndex = this.getKey(number);
+
+						// Min value means this button is not mapped. Return.
+						if(keyIndex == Integer.MIN_VALUE) { continue; }
+
 						if (value == 1)
 						{
-							if(!MobilePlatform.pressedKeys[this.getKey(number)])
+							if(!MobilePlatform.pressedKeys[keyIndex])
 							{
-								MobilePlatform.pressedKeys[this.getKey(number)] = true;
-								MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(number)));
+								MobilePlatform.pressedKeys[keyIndex] = true;
+								MobilePlatform.keyPressed(Mobile.getMobileKey(keyIndex));
 							}
-							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(this.getKey(number))); }
+							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(keyIndex)); }
 						}
 						else
 						{
-							MobilePlatform.pressedKeys[this.getKey(number)] = false;
-							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(number)));
+							MobilePlatform.pressedKeys[keyIndex] = false;
+							MobilePlatform.keyReleased(Mobile.getMobileKey(keyIndex));
 						}
 					}
 				}
@@ -153,26 +158,38 @@ public class WindowsGamepadReader extends GamepadReader
 					}
 					else
 					{
+						int axisKeyIndex = this.getKey(axisVal);
+						int opsKeyIndex = this.getKey(value > 0 ? negCode : posCode);
+
+						if(axisKeyIndex == Integer.MIN_VALUE && opsKeyIndex == Integer.MIN_VALUE) { continue; }
+
 						if (Math.abs(value) > ((number == 16 || number == 17) ? 0 : AXIS_PRESS_THRESHOLD))
 						{
-							int oppositeCode = value > 0 ? negCode : posCode;
-
-							MobilePlatform.pressedKeys[this.getKey(oppositeCode)] = false;
-							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(oppositeCode)));
-
-							if(!MobilePlatform.pressedKeys[this.getKey(axisVal)])
+							if (opsKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[opsKeyIndex])
 							{
-								MobilePlatform.pressedKeys[this.getKey(axisVal)] = true;
-								MobilePlatform.keyPressed(Mobile.getMobileKey(this.getKey(axisVal)));
+								MobilePlatform.pressedKeys[opsKeyIndex] = false;
+								MobilePlatform.keyReleased(Mobile.getMobileKey(opsKeyIndex));
 							}
-							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(this.getKey(axisVal))); }
+
+							if(axisKeyIndex != Integer.MIN_VALUE && !MobilePlatform.pressedKeys[axisKeyIndex])
+							{
+								MobilePlatform.pressedKeys[axisKeyIndex] = true;
+								MobilePlatform.keyPressed(Mobile.getMobileKey(axisKeyIndex));
+							}
+							else if (axisKeyIndex != Integer.MIN_VALUE) { MobilePlatform.keyRepeated(Mobile.getMobileKey(axisKeyIndex)); }
 						}
 						else
 						{
-							MobilePlatform.pressedKeys[this.getKey(posCode)] = false;
-							MobilePlatform.pressedKeys[this.getKey(negCode)] = false;
-							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(posCode)));
-							MobilePlatform.keyReleased(Mobile.getMobileKey(this.getKey(negCode)));
+							if (axisKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[axisKeyIndex])
+							{
+								MobilePlatform.pressedKeys[axisKeyIndex] = false;
+								MobilePlatform.keyReleased(Mobile.getMobileKey(axisKeyIndex));
+							}
+							if (opsKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[opsKeyIndex])
+							{
+								MobilePlatform.pressedKeys[opsKeyIndex] = false;
+								MobilePlatform.keyReleased(Mobile.getMobileKey(opsKeyIndex));
+							}
 						}
 					}
 				}

@@ -164,6 +164,8 @@ int main(int argc, char* argv[])
 	DWORD lastZ = 32768;
 	DWORD lastR = 32768;
 	DWORD lastPOV = 65535;
+	DWORD lastHatX = 32768;
+	DWORD lastHatY = 32768;
 
 	while (1)
 	{
@@ -188,7 +190,7 @@ int main(int argc, char* argv[])
 				// Buttons (except D-Pad, those are special cases since they
 				// must match DirectInput's values on output)
 				DWORD buttons = xState.Gamepad.wButtons;
-                DWORD changed = buttons ^ lastXInputButtons;
+				DWORD changed = buttons ^ lastXInputButtons;
 				if (changed != 0)
 				{
 					for (int i = 4; i < 16; i++)
@@ -211,7 +213,7 @@ int main(int argc, char* argv[])
 				}
 
 				// Y is inverted compared to DInput
-				SHORT currentLY = (SHORT)-xState.Gamepad.sThumbLY;
+				SHORT currentLY = xState.Gamepad.sThumbLY;
 				if (abs(currentLY - lastLY) > 800)
 				{
 					write_data(hStdout, currentLY, 0x02, 1);
@@ -226,7 +228,7 @@ int main(int argc, char* argv[])
 					lastRX = currentRX;
 				}
 
-				SHORT currentRY = (SHORT)-xState.Gamepad.sThumbRY;
+				SHORT currentRY = xState.Gamepad.sThumbRY;
 				if (abs(currentRY - lastRY) > 800)
 				{
 					write_data(hStdout, currentRY, 0x02, 3);
@@ -238,18 +240,18 @@ int main(int argc, char* argv[])
 				BYTE currentLT = xState.Gamepad.bLeftTrigger;
 				if (abs((int)currentLT - (int)lastLT) > 10)
 				{
-				    short normLT = (short)(((int)currentLT * 32767) / 255);
-				    write_data(hStdout, normLT, 0x02, 4);
-				    lastLT = currentLT;
+					short normLT = (short)(((int)currentLT * 32767) / 255);
+					write_data(hStdout, normLT, 0x02, 4);
+					lastLT = currentLT;
 				}
 
 				// Right Trigger, same idea as above.
 				BYTE currentRT = xState.Gamepad.bRightTrigger;
 				if (abs((int)currentRT - (int)lastRT) > 10)
 				{
-				    short normRT = (short)(((int)currentRT * 32767) / 255);
-				    write_data(hStdout, normRT, 0x02, 5);
-				    lastRT = currentRT;
+					short normRT = (short)(((int)currentRT * 32767) / 255);
+					write_data(hStdout, normRT, 0x02, 5);
+					lastRT = currentRT;
 				}
 
 				// XInput has D-Pad as actual buttons, but since the first
@@ -342,8 +344,17 @@ int main(int argc, char* argv[])
 					else if (info.dwPOV >= 22500 && info.dwPOV <= 31500) { hatX = -32767; } // Left
 				}
 
-				write_data(hStdout, hatX, 0x02, 16); // Axis 16 (Hat X)
-				write_data(hStdout, hatY, 0x02, 17); // Axis 17 (Hat Y)
+				if (hatX != lastHatX)
+				{
+					write_data(hStdout, hatX, 0x02, 16); // Axis 16 (Hat X)
+					lastHatX = hatX;
+				}
+				if (hatY != lastHatY)
+				{
+					write_data(hStdout, hatY, 0x02, 17); // Axis 17 (Hat Y)
+					lastHatY = hatY;
+				}
+
 				lastPOV = info.dwPOV;
 			}
 		}
