@@ -63,14 +63,12 @@ public class LinuxGamepadReader extends GamepadReader
 
 		if (inputDir.exists() && inputDir.isDirectory())
 		{
-			File[] files = inputDir.listFiles();
-			if (files != null)
+			for (int i = 0; i < 32; i++)
 			{
-				for (File file : files)
+				File jsDevice = new File(inputDir, "js" + i);
+				if (jsDevice.exists())
 				{
-					if (file.getName().matches("js\\d+")) {
-						devices.add(file.getAbsolutePath());
-					}
+					devices.add(jsDevice.getAbsolutePath());
 				}
 			}
 		}
