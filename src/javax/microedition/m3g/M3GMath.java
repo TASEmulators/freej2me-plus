@@ -54,7 +54,7 @@ public class M3GMath
 		float a2 = a * a;
 		float a3 = a2 * a;
 		float a4 = a2 * a2;
-		return (float) (Math.PI / 2.0) +
+		return (float) (Math.PI * 0.5) +
 			((-0.939115566f * a) + (0.921784152f * a3)) /
 			(1.0f + (-1.284590624f * a2) + (0.295624144f * a4));
 	}
@@ -64,11 +64,23 @@ public class M3GMath
 
 	public static float toDegrees(float angrad) { return angrad * 57.29577951f; } // angdeg * (180.0f / Math.PI)
 
+	// This is Quake's fast inverse sqrt, useful for situations where
+	// performance matters most and lower precision doesn't make much of a
+	// difference, like on lighting.
+	public static float fastInvSqrt(float x)
+	{
+		float xhalf = 0.5f * x;
+		int i = Float.floatToRawIntBits(x);
+		i = 0x5f375a86 - (i >> 1); // Lomont's magic constant, lower error on 1-pass NR.
+		x = Float.intBitsToFloat(i);
+		return x * (1.5f - (xhalf * x * x));
+	}
+
 	public static float invSqrt(float x)
 	{
 		float xhalf = 0.5f * x;
 		int i = Float.floatToRawIntBits(x);
-		i = 0x5f3759df - (i >> 1);
+		i = 0x5f375996 - (i >> 1); // Robertson's magic constant, lower error on 2-pass NR.
 		x = Float.intBitsToFloat(i);
         x = x * (1.5f - (xhalf * x * x));
         x = x * (1.5f - (xhalf * x * x));
@@ -162,7 +174,7 @@ public class M3GMath
 			return;
 		}
 
-		float invLength = fastReciprocal(sqrt(lengthSq));
+		float invLength = invSqrt(lengthSq);
 		vector[0] *= invLength;
 		vector[1] *= invLength;
 		vector[2] *= invLength;

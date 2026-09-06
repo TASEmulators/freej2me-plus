@@ -1308,10 +1308,18 @@ public class Graphics3D
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : new CompositingMode();
 		final Fog fog = Mobile.m3gDisableFog ? null : appearance.getFog();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
-		final float alphaFactor = sprite.getAlphaFactor();
 		final boolean depthTest = compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
 		float fogFactor = 255.0f;
+		int intFogFactor = 255;
+		int fogColor = fog != null ? fog.getColor() : 0;
+		int compBlending = compositingMode.getBlending();
+		boolean isReplace = compBlending == CompositingMode.REPLACE;
+
+		// fixed point alpha factor, so we don't need a float mult and int cast
+		// in the innermost loop.
+		final int alphaFactor = (int) (sprite.getAlphaFactor() * 256.0f);
+
 		// The Sprite3D has the same depth for its entire area, so we only need
 		// to calculate fog once.
 		if (fog != null)
@@ -1326,12 +1334,22 @@ public class Graphics3D
 			}
 			else { fogFactor = M3GMath.exp(-fog.getDensity() * zEye); }
 
-			fogFactor = M3GMath.min(255.0f, fogFactor * 256.0f);
+			intFogFactor = (int) M3GMath.min(255.0f, fogFactor * 256.0f);
 		}
 
 		// Take divisions out of the inner loops. Multiply by reciprocal instead
 		final float invSpanX = M3GMath.fastReciprocal(spanX);
 		final float invSpanY = M3GMath.fastReciprocal(spanY);
+
+		// Use DDA on the inner loop to reduce heavy float math per-pixel.
+		float uStep = isectW * invSpanX;
+	    float uStart = (pixL + 0.5f - sx0) * invSpanX * isectW;
+
+		if (flipX)
+		{
+		    uStart = isectW - uStart;
+		    uStep = -uStep;
+		}
 
 		for (int y = pixT; y < pixB; y++)
 		{
@@ -1350,40 +1368,40 @@ public class Graphics3D
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
 			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
 
-			int rasterIdxY = targetIndex(0, y);
-			for (int x = pixL; x < pixR; x++)
+			final int rasterIdxY = targetIndex(0, y);
+			int rasterIdx = rasterIdxY + pixL;
+			float u = uStart;
+
+			for (int x = pixL; x < pixR; x++, rasterIdx++, u += uStep)
 			{
 				// Depth test against the same buffer, index and convention used by triangles.
-				if (depthTest && this.depthBuffer[rasterIdxY + x] < ndcZ) { continue; }
+				if (depthTest && this.depthBuffer[rasterIdx] < ndcZ) { continue; }
 
-				final float u = (x + 0.5f - sx0) * invSpanX;
-				int texX = isectX + (int) ((flipX ? 1f - u : u) * isectW);
+				int texX = isectX + (int) u;
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
 				paintPixel = spr.getPixel(texX, texY);
-				int alpha = (int) (((paintPixel >> 24) & 0xFF) * alphaFactor);
+				int alpha = (((paintPixel >>> 24) * alphaFactor) >> 8);
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
 
-				if (fog != null && fogFactor < 255.0f)
-					{ paintPixel = blendFog(paintPixel, fog.getColor(), (int) fogFactor); }
+				if (fog != null && intFogFactor < 255)
+					{ paintPixel = blendFog(paintPixel, fogColor, intFogFactor); }
 
 				if(!renderToImage)
 				{
-					rasterData[rasterIdxY + x] =
-						compositingMode.getBlending() == CompositingMode.REPLACE ? paintPixel :
-						blendCompositing(rasterData[rasterIdxY + x], paintPixel, alpha,
-							compositingMode.getBlending());
+					rasterData[rasterIdx] = isReplace ? paintPixel :
+						blendCompositing(rasterData[rasterIdx], paintPixel, alpha,
+							compBlending);
 				}
 				else
 				{
-					imageData.setPixel((x+viewx), (y + viewy),
-						compositingMode.getBlending() == CompositingMode.REPLACE ? paintPixel :
+					imageData.setPixel((x+viewx), (y + viewy), isReplace ? paintPixel :
 						blendCompositing(imageData.getPixel((x+viewx), (y + viewy)), paintPixel, alpha,
-							compositingMode.getBlending()));
+							compBlending));
 				}
 
-				if (depthWrite && (paintPixel >>> 24) >= 255) { this.depthBuffer[rasterIdxY + x] = ndcZ; }
+				if (depthWrite) { this.depthBuffer[rasterIdx] = ndcZ; }
 			}
 		}
 	}
@@ -1852,28 +1870,32 @@ public class Graphics3D
 
 			case CompositingMode.ALPHA_ADD:
 			{
-				if (alpha == 0) { return bg; }
+			    if (alpha == 0) { return bg; }
 
-				int bgA = bg >>> 24,          bgR = (bg >> 16) & 0xFF;
-				int bgG = (bg >> 8) & 0xFF,   bgB = bg & 0xFF;
-				int fgR = (fg >> 16) & 0xFF,  fgG = (fg >> 8) & 0xFF,  fgB = fg & 0xFF;
+			    int fgRB = fg & 0x00FF00FF;
+			    int addRB = ((fgRB * alpha) >> 8) & 0x00FF00FF;
 
-				int addR = (fgR * alpha) >> 8;
-				int addG = (fgG * alpha) >> 8;
-				int addB = (fgB * alpha) >> 8;
-				int addA = (alpha * (255 - bgA)) >> 8;
+			    int fgG = fg & 0x0000FF00;
+			    int addG = ((fgG * alpha) >> 8) & 0x0000FF00;
 
-				int sumR = bgR + addR;
-				int sumG = bgG + addG;
-				int sumB = bgB + addB;
-				int sumA = bgA + addA;
+			    int bgA = bg >>> 24;
+			    int addA = (alpha * (255 - bgA)) >> 8;
 
-				int outR = sumR | -(sumR >> 8);
-				int outG = sumG | -(sumG >> 8);
-				int outB = sumB | -(sumB >> 8);
-				int outA = sumA | -(sumA >> 8);
+			    int sumRB = (bg & 0x00FF00FF) + addRB;
+			    int sumG  = (bg & 0x0000FF00) + addG;
+			    int sumA  = bgA + addA;
 
-				return ((outA & 0xFF) << 24) | ((outR & 0xFF) << 16) | ((outG & 0xFF) << 8) | (outB & 0xFF);
+			    int overflowRB = sumRB & 0x01000100;
+			    int maskRB = (overflowRB - (overflowRB >> 8));
+			    int outRB = (sumRB | maskRB) & 0x00FF00FF;
+
+			    int overflowG = sumG & 0x00010000;
+			    int maskG = overflowG - (overflowG >> 8);
+			    int outG = (sumG | maskG) & 0x0000FF00;
+
+			    int outA = sumA | -(sumA >> 8);
+
+			    return ((outA & 0xFF) << 24) | outRB | outG;
 			}
 
 			case CompositingMode.MODULATE:

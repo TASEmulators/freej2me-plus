@@ -242,16 +242,16 @@ class Triangle
 			if (vertNorms.getComponentType() == 1)
 			{
 				vertNorms.get(vertIndex, 1, B_NORM);
-				N_EYE[0] = B_NORM[0] / 127.0f;
-				N_EYE[1] = B_NORM[1] / 127.0f;
-				N_EYE[2] = B_NORM[2] / 127.0f;
+				N_EYE[0] = B_NORM[0] * 0.007874016f; // * (1 / 127)
+				N_EYE[1] = B_NORM[1] * 0.007874016f;
+				N_EYE[2] = B_NORM[2] * 0.007874016f;
 			}
 			else
 			{
 				vertNorms.get(vertIndex, 1, S_NORM);
-				N_EYE[0] = S_NORM[0] / 32767.0f;
-				N_EYE[1] = S_NORM[1] / 32767.0f;
-				N_EYE[2] = S_NORM[2] / 32767.0f;
+				N_EYE[0] = S_NORM[0] * 3.051851E-5f; // * (1 / 32767)
+				N_EYE[1] = S_NORM[1] * 3.051851E-5f;
+				N_EYE[2] = S_NORM[2] * 3.051851E-5f;
 			}
 
 			// Vertex normals must now be multiplied by the normal matrix to
@@ -261,7 +261,20 @@ class Triangle
 			N_EYE[1] = L_MAT[4] * nx + L_MAT[5] * ny + L_MAT[6] * nz;
 			N_EYE[2] = L_MAT[8] * nx + L_MAT[9] * ny + L_MAT[10] * nz;
 
-			M3GMath.normalize(N_EYE);
+			// Inline M3GMath.normalize() here so we can cut on method call
+			// overhead.
+			float lenSq = N_EYE[0] * N_EYE[0] + N_EYE[1] * N_EYE[1] + N_EYE[2] * N_EYE[2];
+			if (lenSq > 1.0e-30f)
+			{
+			    float invLen = M3GMath.fastInvSqrt(lenSq);
+			    N_EYE[0] *= invLen;
+			    N_EYE[1] *= invLen;
+			    N_EYE[2] *= invLen;
+			}
+			else
+			{
+			    N_EYE[0] = 0.0f; N_EYE[1] = 0.0f; N_EYE[2] = 1.0f;
+			}
 
 			V_EYE[0] = eyePos[vertIndex * 4];
 			V_EYE[1] = eyePos[vertIndex * 4 + 1];
@@ -277,8 +290,8 @@ class Triangle
 				viewX = -V_EYE[0];
 				viewY = -V_EYE[1];
 				viewZ = -V_EYE[2];
-				float viewLen = M3GMath.sqrt(viewX * viewX + viewY * viewY + viewZ * viewZ);
-				if (viewLen > M3GMath.EPSILON) { viewX /= viewLen; viewY /= viewLen; viewZ /= viewLen; }
+				float viewLen = M3GMath.fastInvSqrt(viewX * viewX + viewY * viewY + viewZ * viewZ);
+				if (viewLen > M3GMath.EPSILON) { viewX *= viewLen; viewY *= viewLen; viewZ *= viewLen; }
 			}
 			else
 			{
@@ -325,8 +338,8 @@ class Triangle
 					lightDirY = -lightEyeDir[l * 4 + 1];
 					lightDirZ = -lightEyeDir[l * 4 + 2];
 
-					float lLen = M3GMath.sqrt(lightDirX * lightDirX + lightDirY * lightDirY + lightDirZ * lightDirZ);
-					if (lLen > M3GMath.EPSILON) { lightDirX /= lLen; lightDirY /= lLen; lightDirZ /= lLen; }
+					float lLen = M3GMath.fastInvSqrt(lightDirX * lightDirX + lightDirY * lightDirY + lightDirZ * lightDirZ);
+					if (lLen > M3GMath.EPSILON) { lightDirX *= lLen; lightDirY *= lLen; lightDirZ *= lLen; }
 				}
 				else
 				{
@@ -334,14 +347,28 @@ class Triangle
 					float lx = lightEyePos[l * 4] - V_EYE[0];
 					float ly = lightEyePos[l * 4 + 1] - V_EYE[1];
 					float lz = lightEyePos[l * 4 + 2] - V_EYE[2];
-					float dist = M3GMath.sqrt(lx * lx + ly * ly + lz * lz);
+					float d2 = lx * lx + ly * ly + lz * lz;
+					float invDist = M3GMath.fastInvSqrt(d2);
 
-					if (dist > M3GMath.EPSILON) { lightDirX = lx / dist; lightDirY = ly / dist; lightDirZ = lz / dist; }
-					else { lightDirX = 0; lightDirY = 0; lightDirZ = 1; }
+					if (invDist > M3GMath.EPSILON)
+					{
+					    lightDirX = lx * invDist;
+					    lightDirY = ly * invDist;
+					    lightDirZ = lz * invDist;
 
-					attenuation = M3GMath.fastReciprocal(light.getConstantAttenuation() +
-						light.getLinearAttenuation() * dist +
-						light.getQuadraticAttenuation() * dist * dist);
+					    float dist = d2 * invDist;
+
+					    attenuation = M3GMath.fastReciprocal(
+					        light.getConstantAttenuation() +
+					        light.getLinearAttenuation() * dist +
+					        light.getQuadraticAttenuation() * d2
+					    );
+					}
+					else
+					{
+					    lightDirX = 0; lightDirY = 0; lightDirZ = 1;
+					    attenuation = M3GMath.fastReciprocal(light.getConstantAttenuation());
+					}
 
 					// Additional directional cone attenuation for SPOT lights
 					if (lMode == Light.SPOT)
@@ -395,11 +422,11 @@ class Triangle
 
 					// Specular lighting (Gouraud, since we do it per-vertex)
 					float hX = lightDirX + viewX, hY = lightDirY + viewY, hZ = lightDirZ + viewZ;
-					float hLen = M3GMath.sqrt(hX * hX + hY * hY + hZ * hZ);
+					float hLen = M3GMath.fastInvSqrt(hX * hX + hY * hY + hZ * hZ);
 
 					if (hLen > M3GMath.EPSILON)
 					{
-						hX /= hLen; hY /= hLen; hZ /= hLen;
+						hX *= hLen; hY *= hLen; hZ *= hLen;
 						float nDotH = nx * hX + ny * hY + nz * hZ;
 
 						if (nDotH > 0.0f)
@@ -414,9 +441,9 @@ class Triangle
 			}
 
 			// We now have the final color for the vertex
-			int ir = (int) (M3GMath.min(1.0f, r) * 255.0f);
-			int ig = (int) (M3GMath.min(1.0f, g) * 255.0f);
-			int ib = (int) (M3GMath.min(1.0f, b) * 255.0f);
+			int ir = (r >= 1.0f) ? 255 : (r <= 0.0f) ? 0 : (int)(r * 255.0f);
+			int ig = (g >= 1.0f) ? 255 : (g <= 0.0f) ? 0 : (int)(g * 255.0f);
+			int ib = (b >= 1.0f) ? 255 : (b <= 0.0f) ? 0 : (int)(b * 255.0f);
 			int color = ((alpha & 0xFF) << 24) | (ir << 16) | (ig << 8) | ib;
 
 			outColors[v] = color;
