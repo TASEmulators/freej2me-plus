@@ -159,7 +159,7 @@ class Triangle
 
 			if (hasLighting)
 			{
-				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide,
+				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide && !isFrontFace,
 					localCameraLight, lights, lightEyePos, lightEyeDir, curScope, tris, tri_id, Triangle.inC);
 			}
 
@@ -195,7 +195,7 @@ class Triangle
 
 	private static final void calculateLighting(
 		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
-		Material material, int shadingMode, boolean twoSided, boolean localCameraLight,
+		Material material, int shadingMode, boolean flipNormals, boolean localCameraLight,
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
 		int curScope, int[] tris, int tri_id, int[] outColors)
 	{
@@ -274,6 +274,22 @@ class Triangle
 			else
 			{
 			    N_EYE[0] = 0.0f; N_EYE[1] = 0.0f; N_EYE[2] = 1.0f;
+			}
+
+			/*
+			 * Two-sided lighting, per JSR-184 (PolygonMode): the back face of a
+			 * polygon is lit with reversed normals (n' = -n). Front/back is the
+			 * same screen-space winding test used for culling, so the caller
+			 * passes flipNormals = twoSided && !isFrontFace and the whole
+			 * triangle is flipped coherently. The previous per-vertex heuristic
+			 * (flip when dot(n, view) < 0) left silhouette vertices unflipped,
+			 * shading inward-normal geometry (e.g. tubes) almost black.
+			 */
+			if (flipNormals)
+			{
+				N_EYE[0] = -N_EYE[0];
+				N_EYE[1] = -N_EYE[1];
+				N_EYE[2] = -N_EYE[2];
 			}
 
 			V_EYE[0] = eyePos[vertIndex * 4];
@@ -395,19 +411,6 @@ class Triangle
 				if (attenuation <= 0.0f) { continue; }
 
 				nx = N_EYE[0]; ny = N_EYE[1]; nz = N_EYE[2];
-				// Handle Two-Sided Materials by flipping normals. TODO: UNTESTED!
-				if (twoSided)
-				{
-					// Dot product between transformed normal and eye-to-vertex direction.
-					// Are they negative? Flip the eye normals so we can light the other side.
-					float nDotV = N_EYE[0] * viewX + N_EYE[1] * viewY + N_EYE[2] * viewZ;
-					if (nDotV < 0.0f)
-					{
-						nx = -nx;
-						ny = -ny;
-						nz = -nz;
-					}
-				}
 
 				// Calculate Dot Product between the normal and light (N . L)
 				float nDotL = nx * lightDirX + ny * lightDirY + nz * lightDirZ;

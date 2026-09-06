@@ -166,7 +166,15 @@ public class M3GMath
 	{
 		float lengthSq = vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2];
 
-		if (lengthSq < EPSILON)
+		/*
+		 * Only substitute a fallback vector when the input is degenerate for
+		 * real. Vertex normals are not required to be unit length in M3G (the
+		 * implementation normalizes them), and quantized short/byte normals
+		 * of small magnitude (e.g. +-100 in a short array, ~0.003 after
+		 * dequantization) are perfectly valid: squashing them to (0, 0, 1)
+		 * with a coarse epsilon breaks lighting for such meshes.
+		 */
+		if (lengthSq < 1.0e-30f)
 		{
 			vector[0] = 0.0f;
 			vector[1] = 0.0f;
