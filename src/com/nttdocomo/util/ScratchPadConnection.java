@@ -48,17 +48,17 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 	private boolean timeouts;
 	private int spIndex;
 
-    private int pos = 0; // Read Offset
-    private int length = 0; // Length to read
+	private int pos = 0; // Read Offset
+	private int length = 0; // Length to read
 
-    private static RecordStore[] openedScratchPads = new RecordStore[16]; // With DoJa, there are only up to 16 scratchpads
+	private static RecordStore[] openedScratchPads = new RecordStore[16]; // With DoJa, there are only up to 16 scratchpads
 
 	static
 	{
 		for(int i = 0; i < openedScratchPads.length; i++) { openedScratchPads[i] = null; }
 	}
 
-    private byte[] scratchPadData;
+	private byte[] scratchPadData;
 
 	public ScratchPadConnection(String name)
 	{
@@ -126,8 +126,6 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 		if(parsedName.length < 2 || parsedName[1].split(",").length < 1) { pos = 0; }
 		else { pos = (Integer.parseInt(parsedName[1].split(",")[0].replace("pos=", ""))); }
 
-		if(spIndex == 0) { pos+=64; } // First scratchpad has a header of 64 bytes
-
 		if(openedScratchPads[spIndex].getNumRecords() == 0) // If there's no scratchpad data copy in the rms file, create it
 		{
 			try
@@ -142,11 +140,22 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 		{
 			scratchPadData = openedScratchPads[spIndex].getRecord(1); // Different scratchpads are different RecordStores, not recordIDs (data is always at recordID 1)
 
+			if (pos >= scratchPadData.length)
+			{
+				int prevRegionsSize = 0;
+				for (int i = 0; i < spIndex; i++)
+				{
+					prevRegionsSize += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+				}
+
+				// If pos is still out of bounds, map it into the local region space
+				if (pos >= prevRegionsSize) { pos -= prevRegionsSize; }
+			}
+
 			if(parsedName.length < 2 || parsedName[1].split(",").length < 2) { length = scratchPadData.length-pos-1; }
 			else { length = Integer.parseInt(parsedName[1].split(",")[1].replace("length=", "")); }
 
-
-			if(pos >= scratchPadData.length) { throw new EOFException("Cannot read out of bounds"); }
+			if(pos >= scratchPadData.length) { throw new EOFException("Cannot read out of bounds. Pos:" + pos + " len:" + scratchPadData.length); }
 
 			if(pos + length > scratchPadData.length) { length = scratchPadData.length-pos; }
 
@@ -163,16 +172,14 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 		return null;
 	}
 
-    public DataOutputStream openDataOutputStream() { return new DataOutputStream(openOutputStream()); }
+	public DataOutputStream openDataOutputStream() { return new DataOutputStream(openOutputStream()); }
 
 	public OutputStream openOutputStream()
 	{
-        String[] parsedName = name.split(";");
+		String[] parsedName = name.split(";");
 
-        if(parsedName.length < 2 || parsedName[1].split(",").length < 1) { pos = 0; }
+		if(parsedName.length < 2 || parsedName[1].split(",").length < 1) { pos = 0; }
 		else { pos = (Integer.parseInt(parsedName[1].split(",")[0].replace("pos=", ""))); }
-
-		if(spIndex == 0) { pos+=64; } // First scratchpad has a header of 64 bytes
 
 		if(openedScratchPads[spIndex].getNumRecords() == 0) // If there's no data copy of this scratchpad in the rms file, create it
 		{
@@ -187,6 +194,18 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 		try
 		{
 			scratchPadData = openedScratchPads[spIndex].getRecord(1); // Different scratchpads are different RecordStores, not recordIDs (data is always at recordID 1)
+
+			if (pos >= scratchPadData.length)
+			{
+				int prevRegionsSize = 0;
+				for (int i = 0; i < spIndex; i++)
+				{
+					prevRegionsSize += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+				}
+
+				// If pos is still out of bounds, map it into the local region space
+				if (pos >= prevRegionsSize) { pos -= prevRegionsSize; }
+			}
 
 			if(parsedName.length < 2 || parsedName[1].split(",").length < 2) { length = scratchPadData.length-pos-1; }
 			else { length = Integer.parseInt(parsedName[1].split(",")[1].replace("length=", "")); }
@@ -255,8 +274,15 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 			stream.read(data);
 			stream.close();
 
-			int spDataStart = (spIndex > 0 ? Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex-1])+64 : 0);
-			int spDataEnd = (spIndex > 0 ? Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex])+Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex-1])+64 : Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex])+64);
+			// Scratchpad region start is cumulative from each prior one.
+			int prevSizes = 0;
+			for (int i = 0; i < spIndex; i++)
+			{
+				prevSizes += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+			}
+
+			int spDataStart = prevSizes + 64;
+			int spDataEnd = spDataStart + Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex]);
 			buffer.write(data, spDataStart, spDataEnd-spDataStart);
 			return buffer.toByteArray();
 		}
@@ -274,8 +300,15 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 				stream.read(data);
 				stream.close();
 
-				int spDataStart = (spIndex > 0 ? Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex-1]) : 0);
-				int spDataEnd = (spIndex > 0 ? Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex])+Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex-1]) : Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex]));
+				// Scratchpad region start is cumulative from each prior one.
+				int prevSizes = 0;
+				for (int i = 0; i < spIndex; i++)
+				{
+					prevSizes += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+				}
+
+				int spDataStart = prevSizes;
+				int spDataEnd = spDataStart + Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex]);
 				buffer.write(data, spDataStart, spDataEnd-spDataStart);
 				Mobile.log(Mobile.LOG_WARNING, ScratchPadConnection.class.getPackage().getName() + "." + ScratchPadConnection.class.getSimpleName() + ": " + "Copying without the 64 byte header offset succeeded!");
 				return buffer.toByteArray();
