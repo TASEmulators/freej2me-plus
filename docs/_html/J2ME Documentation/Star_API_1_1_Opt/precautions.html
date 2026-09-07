@@ -1,40 +1,41 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>
-Star-1.1 ���ӎ���
+Star-1.1 注意事項
 </title>
 <LINK REL =stylesheet TYPE=text/css HREF=stylesheet.css TITLE=Style>
 </head>
 
 <body>
-<h1>���ӎ���</h1>
+<h1>注意事項</h1>
 
-<H2><a name="mini-precaution">�~�j�A�v�����s���Ɋւ��钍�ӎ���</a></H2>
+<H2><a name="mini-precaution">ミニアプリ実行環境に関する注意事項</a></H2>
 
-�~�j�A�v�����s���Ɋւ��钍�ӎ������ȉ��Ɏ����܂��B
+ミニアプリ実行環境に関する注意事項を以下に示します。
 
 <ul>
-<li> �~�j�A�v�����s���ł͈ȉ��̕\�Ɏ����N���X�̃N���X��`�͑��݂��܂���B
-�]���āA�~�j�A�v�����s���ł́A�����̃N���X��`�����[�h���悤�Ƃ����ꍇ
-java.lang.NoClassDefFoundError �� java.lang.ClassNotFoundException
-���������܂��B
+<li> ミニアプリ実行環境では以下の表に示すクラスのクラス定義は存在しません。
+従って、ミニアプリ実行環境では、これらのクラス定義をロードしようとした場合
+java.lang.NoClassDefFoundError や java.lang.ClassNotFoundException
+が発生します。
 </li>
-<li> �~�j�A�v�����s���ɂĎ擾�ł���
-com.docomostar.ui.Graphics �N���X�̃C���X�^���X�́A
-com.docomostar.opt.ui.j3d.Graphics3D �C���^�t�F�[�X
-����� com.docomostar.opt.ui.ogl.GraphicsOGL2 �C���^�t�F�[�X���������Ă��܂���B
-����ɁA���s���̌^�� com.docomostar.opt.ui.Graphics2 �N���X�ł��邱�Ƃ�����܂���B
+<li> ミニアプリ実行環境にて取得できる
+com.docomostar.ui.Graphics クラスのインスタンスは、
+com.docomostar.opt.ui.j3d.Graphics3D インタフェース
+および com.docomostar.opt.ui.ogl.GraphicsOGL2 インタフェースを実装していません。
+さらに、実行時の型が com.docomostar.opt.ui.Graphics2 クラスであることもありません。
 </li>
 </ul>
 
 <TABLE BORDER="1" WIDTH="100%" CELLPADDING="3" CELLSPACING="0" SUMMARY="">
 <TR BGCOLOR="#CCCCFF" CLASS="TableHeadingColor"><TD>
-<FONT SIZE="+2"><B>�~�j�A�v�����s���ł͑��݂��Ȃ��N���X</B></FONT>
+<FONT SIZE="+2"><B>ミニアプリ実行環境では存在しないクラス</B></FONT>
 </TD></TR>
 
 <TR><TD>
-<FONT SIZE="+1"><B>com.docomostar.opt.device �p�b�P�[�W</B></FONT>
+<FONT SIZE="+1"><B>com.docomostar.opt.device パッケージ</B></FONT>
 <UL>
 <LI>com.docomostar.opt.device.CodeReader2 </LI>
 <LI>com.docomostar.opt.device.FingerprintAuthenticator </LI>
@@ -43,30 +44,30 @@ com.docomostar.opt.ui.j3d.Graphics3D �C���^�t�F�[�X
 </TD></TR>
 
 <TR><TD>
-<FONT SIZE="+1"><B>com.docomostar.opt.system �p�b�P�[�W</B></FONT>
+<FONT SIZE="+1"><B>com.docomostar.opt.system パッケージ</B></FONT>
 <UL>
-<LI>�S�ẴN���X�E�C���^�t�F�[�X</LI>
+<LI>全てのクラス・インタフェース</LI>
 </UL>
 </TD></TR>
 
 <TR><TD>
-<FONT SIZE="+1"><B>com.docomostar.opt.ui �p�b�P�[�W</B></FONT>
+<FONT SIZE="+1"><B>com.docomostar.opt.ui パッケージ</B></FONT>
 <UL>
-<LI>�S�ẴN���X�E�C���^�t�F�[�X</LI>
+<LI>全てのクラス・インタフェース</LI>
 </UL>
 </TD></TR>
 
 <TR><TD>
-<FONT SIZE="+1"><B>com.docomostar.opt.ui.j3d �p�b�P�[�W</B></FONT>
+<FONT SIZE="+1"><B>com.docomostar.opt.ui.j3d パッケージ</B></FONT>
 <UL>
-<LI>�S�ẴN���X�E�C���^�t�F�[�X</LI>
+<LI>全てのクラス・インタフェース</LI>
 </UL>
 </TD></TR>
 
 <TR><TD>
-<FONT SIZE="+1"><B>com.docomostar.opt.ui.ogl �p�b�P�[�W</B></FONT>
+<FONT SIZE="+1"><B>com.docomostar.opt.ui.ogl パッケージ</B></FONT>
 <UL>
-<LI>�S�ẴN���X�E�C���^�t�F�[�X</LI>
+<LI>全てのクラス・インタフェース</LI>
 </UL>
 </TD></TR>
 
@@ -75,10 +76,10 @@ com.docomostar.opt.ui.j3d.Graphics3D �C���^�t�F�[�X
 <p>
 <hr><br>
 <P><B>NTT DOCOMO,INC.</B></P>
-<FONT size="-2"><P>�{���i�܂��͕����͒��쌠�@�ɂ��ی삳��Ă���A���̎g�p�A�����A�ĔЕz����ыt�R���p�C���𐧌����郉�C�Z���X�̂��Ƃɂ����ĔЕz����܂��BNTT�h�R���i���̑��ɋ����҂�����ꍇ�͓��Y�����҂��܂߂āj�̏��ʂɂ�鎖�O�̋��Ȃ��A�{���i����ъ֘A���镶���̂����Ȃ镔�����A�����Ȃ���@�ɂ���Ă��������邱�Ƃ��ւ����܂��B�t�H���g���܂ޑ�O�҂̃\�t�g�E�F�A�́A���쌠�@�ɂ��ی삳��Ă���A���̒񋟎҂��烉�C�Z���X���󂯂Ă�����̂ł��B</P>
-<P>Sun�ASun Microsystems�AJava�AJ2ME�����J2SE�́A�č�����т��̑��̍��ɂ�����č� Sun Microsystems,Inc.�̏��W�܂��͓o�^���W�ł��B�T���̃��S�}�[�N�́A�č� Sun Microsystems, Inc.�̓o�^���W�ł��B</P>
-<P>FeliCa�́A�\�j�[������Ђ��J��������ڐGIC�J�[�h�̋Z�p�����ł��BFeliCa�́A�\�j�[������Ђ̓o�^���W�ł��B</P>
-<P>�u�����[�h�v�A�u���A�v���^�A�C�A�v���v�A�u��-��ppli�v���S�A�uDoJa�v��NTT�h�R���̏��W�܂��͓o�^���W�ł��B</P>
-<P>���̑��L�ڂ��ꂽ��Ж��A���i���Ȃǂ͊Y������e�Ђ̏��W�܂��͓o�^���W�ł��B</P></FONT>
+<FONT size="-2"><P>本製品または文書は著作権法により保護されており、その使用、複製、再頒布および逆コンパイルを制限するライセンスのもとにおいて頒布されます。NTTドコモ（その他に許諾者がある場合は当該許諾者も含めて）の書面による事前の許可なく、本製品および関連する文書のいかなる部分も、いかなる方法によっても複製することが禁じられます。フォントを含む第三者のソフトウェアは、著作権法により保護されており、その提供者からライセンスを受けているものです。</P>
+<P>Sun、Sun Microsystems、Java、J2MEおよびJ2SEは、米国およびその他の国における米国 Sun Microsystems,Inc.の商標または登録商標です。サンのロゴマークは、米国 Sun Microsystems, Inc.の登録商標です。</P>
+<P>FeliCaは、ソニー株式会社が開発した非接触ICカードの技術方式です。FeliCaは、ソニー株式会社の登録商標です。</P>
+<P>「ｉモード」、「ｉアプリ／アイアプリ」、「ｉ-αppli」ロゴ、「DoJa」はNTTドコモの商標または登録商標です。</P>
+<P>その他記載された会社名、製品名などは該当する各社の商標または登録商標です。</P></FONT>
 </body>
 </html>
