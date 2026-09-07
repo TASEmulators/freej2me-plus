@@ -2206,36 +2206,113 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	public void drawImage(com.nttdocomo.ui.Image image, int[] matrix)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-		try
-		{
-			float[] fmatrix = new float[matrix.length];
-			for (int i = 0; i < matrix.length; i++) { fmatrix[i] = (float) matrix[i]; }
-			AffineTransform transform = new AffineTransform(fmatrix);
 
-			gc.setTransform(transform);
-			drawScaledImage(image, 0, 0, image.getWidth(), image.getHeight(), 0, 0, image.getWidth(), image.getHeight());
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage with matrix: " + e.getMessage());
-		}
+		drawImage(image, matrix, 0, 0, image.getWidth(), image.getHeight());
 	}
 
 	public void drawImage(com.nttdocomo.ui.Image image, int[] matrix, int sx, int sy, int width, int height)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
+		if (image == null || matrix == null) { throw new NullPointerException("Image or matrix cannot be null"); }
+		if (width < 0 || height < 0) { throw new IllegalArgumentException("Width and height must be non-negative"); }
+		if (matrix.length < 6) { throw new ArrayIndexOutOfBoundsException("Invalid matrix length"); }
+
+		// Because of course DoJa has a drawing method with AffineTransforms.
+
 		try
 		{
-			float[] fmatrix = new float[matrix.length];
-			for (int i = 0; i < matrix.length; i++) { fmatrix[i] = (float) matrix[i]; }
-			AffineTransform transform = new AffineTransform(fmatrix);
+			// DoJa is Fixed-point here (everything pre-multiplied by 4096)
 
-			gc.setTransform(transform);
-			drawScaledImage(image, sx, sy, width, height, sx, sy, width, height);
+			// I'm being conservative here with liberal long usage, maybe we
+			// don't need it at all.
+			long m00 = matrix[0], m01 = matrix[1];
+			long m02 = (matrix[2]) + (translateX << 12); // translateX * 4096.
+
+			long m10 = matrix[3], m11 = matrix[4];
+			long m12 = (matrix[5]) + (translateY << 12);
+
+			// Inverse matrix to map the canvas destination pixels (x', y') into
+			// the sub-image's local space (x, y). Using the inverse of the
+			// determinant here lets us drop divisions entirely, swapping to
+			// only mults and a shift back to Q12, both faster than dividing.
+			long invDet = (1L << 24) / ((m00 * m11 - m01 * m10) >> 12);
+			int inv00 = (int) (( m11 * invDet) >> 12);
+			int inv01 = (int) ((-m01 * invDet) >> 12);
+			int inv02 = (int) ((((m01 * m12 - m11 * m02) >> 12) * invDet) >> 12);
+
+			int inv10 = (int) ((-m10 * invDet) >> 12);
+			int inv11 = (int) (( m00 * invDet) >> 12);
+			int inv12 = (int) ((((m10 * m02 - m00 * m12) >> 12) * invDet) >> 12);
+
+			int x0 = (int) (m02 >> 12);
+			int y0 = (int) (m12 >> 12);
+			int x1 = (int) ((m00 * width + m02) >> 12);
+			int y1 = (int) ((m10 * width + m12) >> 12);
+			int x2 = (int) ((m01 * height + m02) >> 12);
+			int y2 = (int) ((m11 * height + m12) >> 12);
+			int x3 = (int) ((m00 * width + m01 * height + m02) >> 12);
+			int y3 = (int) ((m10 * width + m11 * height + m12) >> 12);
+
+			int minX = Math.min(Math.min(x0, x1), Math.min(x2, x3));
+			int maxX = Math.max(Math.max(x0, x1), Math.max(x2, x3));
+			int minY = Math.min(Math.min(y0, y1), Math.min(y2, y3));
+			int maxY = Math.max(Math.max(y0, y1), Math.max(y2, y3));
+
+			final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+			final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+			final int clipW = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+			final int clipH = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
+
+			minX = Math.max(minX, clipX);
+			maxX = Math.min(maxX, clipW);
+			minY = Math.max(minY, clipY);
+			maxY = Math.min(maxY, clipH);
+
+			if (minX >= maxX || minY >= maxY) { return; }
+
+			int imgWidth = image.getWidth();
+			int imgHeight = image.getHeight();
+			int[] imgData = image.getDataBuffer();
+
+			// Compute incremental step vectors across the screen to remove
+			// multiplications inside the loop (DDA work from M3G paying off!)
+			int stepXx = inv00;
+			int stepXy = inv10;
+
+			for (int y = minY; y < maxY; y++)
+			{
+				int destRow = y * canvasWidth;
+				int srcX = inv00 * minX + inv01 * y + inv02;
+				int srcY = inv10 * minX + inv11 * y + inv12;
+
+				for (int x = minX; x < maxX; x++)
+				{
+					// Map screen pixel (x, y) back to sub-image coordinates (fixed-point of course)
+					int localX = (srcX >> 12);
+					int localY = (srcY >> 12);
+
+					// Don't like those if checks in here, but can't think of a
+					// better way to do this right now...
+					if (localX >= 0 && localX < width && localY >= 0 && localY < height)
+					{
+						int imgX = sx + localX;
+						int imgY = sy + localY;
+
+						if (imgX >= 0 && imgX < imgWidth && imgY >= 0 && imgY < imgHeight)
+						{
+							int srcPixel = imgData[imgY * imgWidth + imgX];
+							canvasData[destRow + x] = blendPixels(srcPixel, canvasData[destRow + x]);
+						}
+					}
+
+					srcX += stepXx;
+					srcY += stepXy;
+				}
+			}
 		}
 		catch (Exception e)
 		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage with matrix and part: " + e.getMessage());
+			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa drawImage Matrix: " + e.getMessage());
 		}
 	}
 
