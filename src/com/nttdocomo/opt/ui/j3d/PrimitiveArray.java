@@ -16,67 +16,75 @@
 */
 package com.nttdocomo.opt.ui.j3d;
 
-public class PrimitiveArray 
+public class PrimitiveArray
 {
 
 	private final int primitiveType;
 	private final int param;
-	private final int num;
-    private int[] VertexArray, texCoordArray, colorArray, normalArray, spriteArray;
+	private final int size;
+	private int[] vertexArray, texCoordArray, colorArray, normalArray, spriteArray;
 
 	public PrimitiveArray(int primitiveType, int param, int size) throws IllegalArgumentException
-    {
-		if(size < 0 || size > 255)
-			throw new IllegalArgumentException();
-
-		if(primitiveType < Graphics3D.PRIMITIVE_POINTS || primitiveType > Graphics3D.PRIMITIVE_POINT_SPRITES)
-			throw new IllegalArgumentException();
+	{
+		if(size <= 0 || size > 255) throw new IllegalArgumentException("Invalid primitive count.");
 
 		this.primitiveType = primitiveType;
 		this.param = param;
-		this.num = size;
+		this.size = size;
 
-		if(primitiveType == Graphics3D.PRIMITIVE_POINT_SPRITES)
-			this.VertexArray = new int[3*size];
+		int verticesPerPrimitive;
+		switch (primitiveType)
+		{
+			case Graphics3D.PRIMITIVE_POINTS:
+			case Graphics3D.PRIMITIVE_POINT_SPRITES:
+				verticesPerPrimitive = 1;
+				break;
+			case Graphics3D.PRIMITIVE_LINES:
+				verticesPerPrimitive = 2;
+				break;
+			case Graphics3D.PRIMITIVE_TRIANGLES:
+				verticesPerPrimitive = 3;
+				break;
+			case Graphics3D.PRIMITIVE_QUADS:
+				verticesPerPrimitive = 4;
+				break;
+			default:
+				throw new IllegalArgumentException("Invalid primitive type: " + primitiveType);
+		}
+
+		this.vertexArray = new int[size * verticesPerPrimitive * 3];
+
+		boolean hasColor = (param & (Graphics3D.COLOR_PER_COMMAND | Graphics3D.COLOR_PER_FACE)) != 0;
+		boolean hasTexCoord = (param & Graphics3D.TEXTURE_COORD_PER_VERTEX) != 0;
+		if (hasColor && hasTexCoord)
+			{ throw new IllegalArgumentException("Cannot combine Color and Texture Coordinates."); }
+
+		 if (primitiveType != Graphics3D.PRIMITIVE_POINT_SPRITES)
+		 {
+			if ((param & Graphics3D.NORMAL_PER_FACE) != 0) { this.normalArray = new int[size * 3]; }
+			else if ((param & Graphics3D.NORMAL_PER_VERTEX) != 0)
+				{ this.normalArray = new int[size * verticesPerPrimitive * 3]; }
+
+			if ((param & Graphics3D.COLOR_PER_COMMAND) != 0) { this.colorArray = new int[1]; }
+			else if ((param & Graphics3D.COLOR_PER_FACE) != 0) { this.colorArray = new int[size]; }
+
+			if (hasTexCoord)
+				{ this.texCoordArray = new int[size * verticesPerPrimitive * 2]; }
+		}
 		else
-        	this.VertexArray = new int[3*primitiveType*size];
-
-		if ((param & Graphics3D.PDATA_NORMAL_NONE) == Graphics3D.PDATA_NORMAL_NONE)
-			this.normalArray = new int[1];
-
-		else if ((param & Graphics3D.PDATA_NORMAL_PER_FACE) == Graphics3D.PDATA_NORMAL_PER_FACE)
-			this.normalArray = new int[3 * size];
-
-		else if ((param & Graphics3D.PDATA_NORMAL_PER_VERTEX) == Graphics3D.PDATA_NORMAL_PER_VERTEX)
-			this.normalArray = new int[3 * primitiveType * size];
-		
-
-		if ((param & Graphics3D.PDATA_COLOR_NONE) == Graphics3D.PDATA_COLOR_NONE)
-			this.colorArray = new int[1];
-		
-		else if ((param & Graphics3D.PDATA_COLOR_PER_FACE) == Graphics3D.PDATA_COLOR_PER_FACE)
-			this.colorArray = new int[3 * size];
-		
-
-		if ((param & Graphics3D.PDATA_TEXURE_COORD_NONE) == Graphics3D.PDATA_TEXURE_COORD_NONE)
-			this.texCoordArray = new int[1];
-		
-		else if ((param & Graphics3D.PDATA_TEXURE_COORD) == Graphics3D.PDATA_TEXURE_COORD)
-			this.texCoordArray = new int[3 * primitiveType * size];
-		
-
-		// This is just a sprite pointer array
-		if(primitiveType == Graphics3D.PRIMITIVE_POINT_SPRITES)
-			this.spriteArray = new int[size];
+		{
+			if ((param & Graphics3D.POINT_SPRITE_PER_COMMAND) != 0) { this.spriteArray = new int[8]; }
+			else if ((param & Graphics3D.POINT_SPRITE_PER_VERTEX) != 0) { this.spriteArray = new int[size * 8]; }
+		}
 	}
 
 	public int getType() { return primitiveType; }
 
 	public int getParam() { return param; }
 
-	public int size() { return num; }
+	public int size() { return size; }
 
-	public int[] getVertexArray() { return VertexArray; }
+	public int[] getVertexArray() { return vertexArray; }
 
 	public int[] getColorArray() { return colorArray; }
 

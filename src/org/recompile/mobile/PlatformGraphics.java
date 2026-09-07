@@ -29,7 +29,6 @@ import com.nttdocomo.ui.UIException;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.ArrayList;
@@ -168,6 +167,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	protected Graphics3D mcv3gc = null; // Since this is managed by this PlatformGraphics, we bind and never release.
 	protected AffineTrans[] viewTrans = null;
 	protected Texture[] mcv3textures = null;
+	protected int mcv3ActiveTextureIdx = 0;
 	protected Texture mcv3envMap = null;
 	protected FigureLayout mcv3layout = new FigureLayout();
 	protected Effect3D mcv3effect = new Effect3D();
@@ -2827,6 +2827,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	}
 
 	// TODO: DoJa's com.nttdocomo.opt.ui.j3d.Graphics3D classes, as they DO NOT behave like the others
+
 	public void drawFigure(com.nttdocomo.opt.ui.j3d.Figure figure)
 	{
 		if(mcv3gc == null)
@@ -2835,8 +2836,24 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
+		int prevShading = mcv3effect.getShading();
+
+		Effect3D shading = figure.getTexture() == null ? null : figure.getTexture().getShading();
+
+		// DoJa auto-applies toon shading from the Figure's texture.
+		if (shading != null && shading.getShadingType() == Effect3D.TOON_SHADING)
+		{
+			mcv3effect.setShading(Effect3D.TOON_SHADING);
+			mcv3effect.setToonParams(shading.getToonThreshold(), shading.getToonHigh(), shading.getToonLow());
+		}
+
 		// TODO: Super 3D Wallpaper Box uses this, but the output seems incorrect
-		mcv3gc.drawFigure(figure.getFigure(), mcv3layout.getCenterX(), mcv3layout.getCenterY(), mcv3layout, mcv3effect);
+		mcv3gc.drawFigure(figure.getFigure(), 0, 0, mcv3layout, mcv3effect);
+
+		if (shading != null && shading.getShadingType() == Effect3D.TOON_SHADING)
+		{
+			mcv3effect.setShading(prevShading);
+		}
 	}
 
 	public void enableLight(boolean b)
@@ -2927,13 +2944,18 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
+		if (commandlist == null || commandlist.length == 0) { return; }
+
+		for(int i = 0; i < commandlist.length; i++)
+			{ mcv3commands.add(commandlist[i]); }
+
 		mcv3commands.add(Graphics3D.COMMAND_FLUSH);
 		mcv3commands.add(Graphics3D.COMMAND_END);
 
 		int[] commands = new int[mcv3commands.size()];
 
 		for(int i = 0; i < commands.length; i++)
-			commands[i] = mcv3commands.get(i);
+			{ commands[i] = mcv3commands.get(i); }
 
 		// TODO: Find something that uses this.
 		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa executeCommandList");
@@ -2951,23 +2973,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		// TODO: Find something that uses this.
-		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa renderFigure");
 		mcv3gc.renderFigure(figure.getFigure(), 0, 0, mcv3layout, mcv3effect);
 	}
 
 	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray primitives, int command)
 	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
+		if (primitives == null) { throw new NullPointerException("Primitive array cannot be null"); }
 
-		// TODO: Only found Espgaruda 2 Trial calling this, and i can't see the difference on screen
-		mcv3gc.renderPrimitives(mcv3textures == null ? null : mcv3textures[0], 0, 0, mcv3layout, mcv3effect,
-			(command | (primitives.getType() << 24)), primitives.size(), primitives.getVertexArray(),
-			primitives.getNormalArray(), primitives.getTextureCoordArray(), primitives.getColorArray());
+		renderPrimitives(primitives, 0, primitives.size(), command);
 	}
 
 	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray primitives, int offset, int length,
@@ -2979,18 +2992,36 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		// TODO: Find something that uses this
+		int pCommand = command | (primitives.getType() << 24);
+
+		// TODO: Only found Espgaruda II Trial calling this, and i can't see the difference on screen
 		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa renderPrimitives B");
-		mcv3gc.renderPrimitives(mcv3textures[0], 0, 0, mcv3layout, mcv3effect, (command | (primitives.getType() << 24)),
-		length, primitives.getVertexArray(), primitives.getNormalArray(), primitives.getTextureCoordArray(),
-		primitives.getColorArray());
+
+		Texture activeTexture = null;
+		if (mcv3textures != null && mcv3ActiveTextureIdx >= 0 &&
+			mcv3ActiveTextureIdx < mcv3textures.length)
+		{
+			activeTexture = mcv3textures[mcv3ActiveTextureIdx];
+		}
+
+		int[] vertices = primitives.getVertexArray();
+		int[] normals = primitives.getNormalArray();
+		int[] texCoords = primitives.getTextureCoordArray();
+		int[] colors = primitives.getColorArray();
+
+		// TODO: MascotCapsule v3 requires non-null arrays for all these
+		// arguments, so as a hack for Espgaruda II, we make these empty arrays.
+		if (vertices == null)  { vertices = new int[0]; }
+		if (normals == null)   { normals = new int[0]; }
+		if (texCoords == null) { texCoords = new int[0]; }
+		if (colors == null)    { colors = new int[0]; }
+
+		mcv3gc.renderPrimitives(activeTexture, 0, 0, mcv3layout, mcv3effect, pCommand,
+			length, vertices, normals, texCoords, colors);
 	}
 
 	public void setAmbientLight(int intensity)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_AMBIENT_LIGHT);
-		mcv3commands.add(intensity);
-
 		mcv3light.setAmbientIntensity(intensity);
 	}
 
@@ -3001,12 +3032,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc = new Graphics3D();
 			mcv3gc.bind(this);
 		}
-
-		mcv3commands.add(Graphics3D.COMMAND_CLIP);
-		mcv3commands.add(x);
-		mcv3commands.add(y);
-		mcv3commands.add(width);
-		mcv3commands.add(height);
 
 		mcv3gc.release();
 
@@ -3024,32 +3049,17 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void setDirectionLight(com.nttdocomo.opt.ui.j3d.Vector3D direction, int intensity)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_DIRECTION_LIGHT);
-		mcv3commands.add(direction.getX());
-		mcv3commands.add(direction.getY());
-		mcv3commands.add(direction.getZ());
-		mcv3commands.add(intensity);
-
-		mcv3light.setParallelLightDirection((Vector3D) direction);
+		mcv3light.setParallelLightDirection(new Vector3D(direction.x, direction.y, direction.z));
 		mcv3light.setParallelLightIntensity(intensity);
 	}
 
 	public void setPerspective(int zNear, int zFar, int angle)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_PERSPECTIVE_FOV);
-		mcv3commands.add(zNear);
-		mcv3commands.add(zFar);
-		mcv3commands.add(angle);
 		mcv3layout.setPerspective(zNear, zFar, angle);
 	}
 
 	public void setPerspective(int zNear, int zFar, int width, int height)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_PERSPECTIVE_WH);
-		mcv3commands.add(zNear);
-		mcv3commands.add(zFar);
-		mcv3commands.add(width);
-		mcv3commands.add(height);
 		mcv3layout.setPerspective(zNear, zFar, width, height);
 	}
 
@@ -3057,7 +3067,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		mcv3commands.add(Graphics3D.COMMAND_TEXTURE_INDEX | index);
 
-		// TODO: Maybe not needed, but we don't have a Figure here to change its state outside of the command list
+		mcv3ActiveTextureIdx = index;
 	}
 
 	public void setPrimitiveTextureArray(com.nttdocomo.opt.ui.j3d.Texture texture)
@@ -3073,30 +3083,13 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3textures[i] = (Texture) textures[i];
 	}
 
-	public void setScreenCenter(int cx, int cy)
-	{
-		mcv3commands.add(Graphics3D.COMMAND_CENTER);
-		mcv3commands.add(cx);
-		mcv3commands.add(cy);
-		mcv3layout.setCenter(cx, cy);
-	}
+	public void setScreenCenter(int cx, int cy) { mcv3layout.setCenter(cx, cy); }
 
-	public void setScreenScale(int sx, int sy)
-	{
-		mcv3commands.add(Graphics3D.COMMAND_PARALLEL_SCALE);
-		mcv3commands.add(sx);
-		mcv3commands.add(sy);
-
-		// TODO: Seems to cause bugs
-		//mcv3layout.setParallelSize(sx, sy);
-	}
+	public void setScreenScale(int sx, int sy) { mcv3layout.setScale(sx, sy); }
 
 	public void setScreenView(int width, int height)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_PARALLEL_SIZE);
-		mcv3commands.add(width);
-		mcv3commands.add(height);
-		mcv3layout.setScale(width, height);
+		mcv3layout.setParallelSize(width, height);
 	}
 
 	public void setSphereTexture(com.nttdocomo.opt.ui.j3d.Texture texture)
@@ -3107,32 +3100,59 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void setToonParam(int threshold, int high, int low)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_THRESHOLD);
-		mcv3commands.add(threshold);
-		mcv3commands.add(high);
-		mcv3commands.add(low);
-
 		mcv3effect.setToonParams(threshold, high, low);
 	}
 
 	public void setViewTrans(com.nttdocomo.opt.ui.j3d.AffineTrans at)
 	{
-		mcv3layout.setAffineTrans(at.getTrans());
+		// It seems that on DoJa, the Y and Z axis may be flipped compared to
+		// MascotCapsuleV3. At least it's the case in Sonic 2.
+
+		// If the matrix is already pre-flipped, just use it as is.
+		if (at.m11 < 0)
+		{
+			mcv3layout.setAffineTrans(new AffineTrans(
+				at.m00, at.m01, at.m02, at.m03,
+				at.m10, at.m11, at.m12, at.m13,
+				at.m20, at.m21, at.m22, at.m23
+			));
+		}
+		else
+		{
+			// Standard 3D world camera requiring, thus it requires DoJa to
+			// MascotCapsuleV3 coordinate inversion
+			mcv3layout.setAffineTrans(new AffineTrans(
+				 at.m00,  at.m01,  at.m02,  at.m03,
+				-at.m10, -at.m11, -at.m12, -at.m13,
+				-at.m20, -at.m21, -at.m22, -at.m23
+			));
+		}
 	}
 
-	public void setViewTrans(int index)
-	{
-		mcv3commands.add(Graphics3D.COMMAND_AFFINE_INDEX | index);
-
-		mcv3layout.selectAffineTrans(index);
-	}
+	public void setViewTrans(int index) { mcv3layout.selectAffineTrans(index); }
 
 	public void setViewTransArray(com.nttdocomo.opt.ui.j3d.AffineTrans[] ats)
 	{
 		AffineTrans[] viewTrans = new AffineTrans[ats.length];
 
+		// Same idea as above. Pre-flipped? Use as is.
 		for(int i = 0; i < ats.length; i++)
-			viewTrans[i] = ats[i].getTrans();
+		{
+			if (ats[i].m11 < 0)
+			{
+				viewTrans[i] = new AffineTrans(
+					ats[i].m00, ats[i].m01, ats[i].m02, ats[i].m03,
+					ats[i].m10, ats[i].m11, ats[i].m12, ats[i].m13,
+					ats[i].m20, ats[i].m21, ats[i].m22, ats[i].m23);
+			}
+			else
+			{
+				viewTrans[i] = new AffineTrans(
+					ats[i].m00, ats[i].m01, ats[i].m02, ats[i].m03,
+					-ats[i].m10, -ats[i].m11, -ats[i].m12, -ats[i].m13,
+					-ats[i].m20, -ats[i].m21, -ats[i].m22, -ats[i].m23);
+			}
+		}
 
 		mcv3layout.setAffineTrans(viewTrans);
 	}

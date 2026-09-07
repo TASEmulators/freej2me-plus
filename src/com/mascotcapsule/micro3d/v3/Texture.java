@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.recompile.mobile.Mobile;
 //import javax.microedition.lcdui.Image;
+import com.nttdocomo.ui.UIException;
 
 public class Texture {
 	//8-bit indexed color texture data
@@ -21,14 +22,14 @@ public class Texture {
 	int width, height;
 	int widthBit, heightBit;
 	int paddedWidth, paddedHeight;
-	
+
 	//ARGB palette (256 colors or 256*32 when shade lookup table is used)
 	int[] origPalette, palette;
 	boolean firstColorIsBlack;
-	
+
 	//True if this is a model texture, false if for environment mapping
 	boolean isForModel;
-	
+
 	//Used in Graphics3D polygons list
 	int g3dBindIdx = -1;
 
@@ -58,12 +59,12 @@ public class Texture {
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		byte[] buffer = new byte[Math.max(1024, is.available())];
-		
+
 		int len;
 		while ((len = is.read(buffer)) > 0) {
 			baos.write(buffer, 0, len);
 		}
-		
+
 		is.close();
 
 		loadBMP(baos.toByteArray());
@@ -73,17 +74,17 @@ public class Texture {
 	{
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		byte[] buffer = new byte[Math.max(1024, is.available())];
-		
+
 		int len;
 		while ((len = is.read(buffer)) > 0) {
 			baos.write(buffer, 0, len);
 		}
-		
+
 		is.close();
 
 		loadBMP(baos.toByteArray());
 	}
-	
+
 	private static final int BMP_FILE_HEADER_SIZE = 14;
 	private static final int BMP_VERSION_3 = 40;
 	private static final int BMP_VERSION_CORE = 12;
@@ -93,7 +94,7 @@ public class Texture {
 		if (loader.readUByte() != 'B' || loader.readUByte() != 'M') {
 			throw new RuntimeException("Not a BMP!");
 		}
-		
+
 		loader.skip(BMP_FILE_HEADER_SIZE - 6);
 
 		int rasterOffset = loader.readInt();
@@ -101,17 +102,17 @@ public class Texture {
 
 		int numColors;
 		boolean reversed;
-		
+
 		if (dibHeaderSize == BMP_VERSION_CORE) {
 			width = loader.readUShort();
 			height = loader.readUShort();
 			loader.skip(2);
-			
+
 			int bpp = loader.readUShort();
 			if (bpp != 8) {
 				throw new RuntimeException("Unsupported BMP format: bpp = " + bpp);
 			}
-			
+
 			numColors = 256;
 			reversed = true;
 		} else if (dibHeaderSize == BMP_VERSION_3) {
@@ -119,19 +120,19 @@ public class Texture {
 			int h = loader.readInt();
 			height = Math.abs(h);
 			reversed = h >= 0;
-			
+
 			loader.skip(2);
-			
+
 			int bpp = loader.readUShort();
 			if (bpp != 8) {
 				throw new RuntimeException("Unsupported BMP format: bpp = " + bpp);
 			}
-			
+
 			int compression = loader.readInt();
 			if (compression != 0) {
 				throw new RuntimeException("Unsupported BMP format: compression = " + compression);
 			}
-			
+
 			loader.skip(12);
 			numColors = loader.readInt();
 			if (numColors == 0) numColors = 256;
@@ -143,24 +144,24 @@ public class Texture {
 		int paletteOffset = BMP_FILE_HEADER_SIZE + dibHeaderSize;
 		//Fix for broken bmp files
 		if (rasterOffset < paletteOffset + numColors * 4) rasterOffset = paletteOffset + numColors * 4;
-		
+
 		palette = new int[256];
 		for (int i = 0; i < numColors; i++) {
 			int idx = i * 4 + paletteOffset;
-			
-			palette[i] = 
-					0xff000000 | 
-					((data[idx + 2] & 0xff) << 16) | 
-					((data[idx + 1] & 0xff) << 8) | 
+
+			palette[i] =
+					0xff000000 |
+					((data[idx + 2] & 0xff) << 16) |
+					((data[idx + 1] & 0xff) << 8) |
 					(data[idx] & 0xff);
 		}
 
 		bitmapData = new byte[width * height];
-		
+
 		int remainder = width & 3;
 		int stride = remainder == 0 ? width : width + 4 - remainder;
 		int bitmapIdx = 0;
-		
+
 		if (reversed) {
 			for (int i = height - 1; i >= 0; i--) {
 				for (int j = rasterOffset + i * stride, s = j + width; j < s; j++, bitmapIdx++) {
@@ -174,67 +175,67 @@ public class Texture {
 				}
 			}
 		}
-		
+
 		//Implementation specific details
 		origPalette = palette;
 		firstColorIsBlack = palette[0] == 0xff000000;
-		
+
 		widthBit = countBits(width);
 		heightBit = countBits(height);
 		//Only 64x64 sphere textures are supported in MascotCapsule v3
 		if (!isForModel) widthBit = heightBit = 6;
-		
+
 		//Padding for NPOT textures
 		paddedWidth = (1 << widthBit);
 		paddedHeight = (1 << heightBit);
-		
+
 		if (paddedWidth != width || paddedHeight != height) {
 			byte[] paddedBitmap = new byte[paddedWidth * paddedHeight];
-			
+
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					paddedBitmap[y * paddedWidth + x] = bitmapData[y * width + x];
 				}
 			}
-			
+
 			bitmapData = paddedBitmap;
 		}
-		
+
 		/*int[] rgbData = new int[bitmapData.length];
 		for (int i = 0; i < rgbData.length; i++) {
 			rgbData[i] = palette[bitmapData[i] & 0xff];
 		}
-		
+
 		debugImage = Image.createRGBImage(rgbData, paddedWidth, paddedHeight, false);*/
-		
+
 		if (!isForModel) {
 			envmapData = new int[bitmapData.length];
-			
+
 			for (int i = 0; i < envmapData.length; i++) {
 				int palId = bitmapData[i] & 0xff;
 				//First envmap color is ignored in mcv3
 				int color = palId > 0 ? color = palette[palId] : 0;
-				
+
 				envmapData[i] = color & 0xffffff;
 			}
-			
+
 			bitmapData = null;
 			origPalette = null;
 			palette = null;
 		}
 	}
-	
+
 	private final int countBits(int x) {
 		for (int i = 0; i < 32; i++) {
 			if(1 << i >= x) return i;
 		}
-		
+
 		return 0;
 	}
 
 	final void generateShadedPalette() {
 		int[] newPalette = new int[256 * 32];
-		
+
 		for (int shade = 0; shade < 32; shade++) {
 			for (int i = 0; i < 256; i++) {
 				int color = palette[i];
@@ -250,7 +251,7 @@ public class Texture {
 				newPalette[shade * 256 + i] = 0xff000000 | (r << 16) | (g << 8) | b;
 			}
 		}
-		
+
 		palette = newPalette;
 	}
 
@@ -262,12 +263,14 @@ public class Texture {
 
 	// DoJa methods
 	public void setNormalShader()
-	{ 
+	{
+		if (!isForModel) { throw new UIException(UIException.ILLEGAL_STATE); }
 		shading = new Effect3D();
 	}
 
 	public void setToonShader(int threshold, int high, int low)
 	{
+		if (!isForModel) { throw new UIException(UIException.ILLEGAL_STATE); }
 		shading.setShadingType(Effect3D.TOON_SHADING);
 		shading.setToonParams(threshold, high, low);
 	}

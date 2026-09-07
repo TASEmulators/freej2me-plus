@@ -25,59 +25,73 @@ public class Figure
 
 	public Figure(byte[] b)
 	{
-		figure = new com.mascotcapsule.micro3d.v3.Figure(b);
-	}
-
-	public Figure(String name) throws IOException
-	{
-		figure = new com.mascotcapsule.micro3d.v3.Figure(name);
+		try { figure = new com.mascotcapsule.micro3d.v3.Figure(b); }
+		catch (Exception e) { throw new RuntimeException("Invalid MBAC data", e); }
 	}
 
 	// DoJa constructor
 	public Figure(InputStream is) throws IOException
-	{ 
+	{
 		byte[] tmpStream = new byte[is.available()];
 		is.read(tmpStream, 0, is.available());
 
-		figure = new com.mascotcapsule.micro3d.v3.Figure(tmpStream);
+		try { this.figure = new com.mascotcapsule.micro3d.v3.Figure(tmpStream); }
+		catch (Exception e) { throw new RuntimeException("Invalid MBAC data", e); }
 	}
 
-	public final void dispose()
-	{
-		figure.dispose();
-		figure = null;
-	}
+	public final int getNumPattern() { return figure.getNumPattern(); }
 
-	public final void setPosture(ActionTable act, int action, int frame)
-	{
-		figure.setPosture((com.mascotcapsule.micro3d.v3.ActionTable) act, action, frame);
-	}
-
+	public final int getNumTextures() { return figure.getNumTextures(); }
 
 	public final Texture getTexture()
 	{
 		return (Texture) figure.getTexture();
 	}
 
-	public final void setTexture(Texture t) { figure.setTexture((com.mascotcapsule.micro3d.v3.Texture) t); }
-
-	public final void setTexture(Texture[] t)
-	{
-		com.mascotcapsule.micro3d.v3.Texture[] texs = new com.mascotcapsule.micro3d.v3.Texture[t.length];
-
-		for(int i = 0; i < t.length; i++)
-			texs[i] = (com.mascotcapsule.micro3d.v3.Texture) t[i];
-
-		figure.setTexture(texs);
+	public void setTexture(Texture texture) {
+		if (texture == null) { throw new NullPointerException("Texture cannot be null"); }
+		setTexture(new Texture[]{ texture });
 	}
 
-	public final int getNumTextures() { return figure.getNumTextures(); }
+	public void setTexture(Texture[] textures)
+	{
+		if (textures == null) { throw new NullPointerException("Textures cannot be null"); }
+		if (textures.length < figure.getNumTextures()) { throw new IllegalArgumentException("Incorrect texture length:" + textures.length + " exp:" + figure.getNumTextures()); }
+
+		com.mascotcapsule.micro3d.v3.Texture[] mcTexs =
+			new com.mascotcapsule.micro3d.v3.Texture[textures.length];
+
+		for (int i = 0; i < textures.length; i++)
+		{
+			if (textures[i] == null) { throw new NullPointerException("Null texture in array."); }
+			if (textures[i].isForEnv) { throw new IllegalArgumentException("Texture is for environment."); }
+			mcTexs[i] = textures[i];
+		}
+
+		figure.setTexture(mcTexs);
+	}
+
+	public void setPosture(ActionTable action, int index, int frame)
+	{
+		if (action == null) { throw new NullPointerException(); }
+		if (index < 0 || index >= action.getNumAction()) { throw new IllegalArgumentException(); }
+
+		int max = action.getMaxFrame(index);
+		int clampedFrame = java.lang.Math.max(0, java.lang.Math.min(frame, max));
+
+		figure.setPosture(action, index, clampedFrame);
+	}
+
+	public void setPattern(int pattern)
+	{
+		int count = getNumPattern();
+		if (count < 32 && (pattern & ~((1 << count) - 1)) != 0)
+			{ throw new IllegalArgumentException("Invalid pattern."); }
+
+		figure.setPattern(pattern);
+	}
 
 	public final void selectTexture(int idx) { figure.selectTexture(idx); }
-
-	public final int getNumPattern() { return figure.getNumPattern(); }
-
-	public final void setPattern(int idx) { figure.setPattern(idx); }
 
 	public final com.mascotcapsule.micro3d.v3.Figure getFigure() { return figure; }
 }

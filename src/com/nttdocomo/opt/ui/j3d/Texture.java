@@ -21,6 +21,8 @@ import java.io.InputStream;
 
 public class Texture extends com.mascotcapsule.micro3d.v3.Texture
 {
+	boolean isForEnv;
+
 	public Texture()
 	{
 		super();
@@ -29,15 +31,18 @@ public class Texture extends com.mascotcapsule.micro3d.v3.Texture
 	public Texture(byte[] b, boolean forEnv)
 	{
 		super(b, !forEnv);
+		isForEnv = forEnv;
 	}
 
 	public Texture(String name, boolean forEnv) throws IOException
 	{
 		super(name, !forEnv);
+		isForEnv = forEnv;
 	}
 
 	public Texture(InputStream is, boolean forEnv) throws IOException
 	{
 		super(is, !forEnv);
+		isForEnv = forEnv;
 	}
 }
