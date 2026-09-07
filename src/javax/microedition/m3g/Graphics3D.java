@@ -745,13 +745,13 @@ public class Graphics3D
 			tr.transform(lightVec);
 
 			// We also need to normalize the light direction vector.
-			float dirLen = M3GMath.sqrt(lightVec[0]*lightVec[0] + lightVec[1]*lightVec[1] +
+			float dirLen = M3GMath.fastInvSqrt(lightVec[0]*lightVec[0] + lightVec[1]*lightVec[1] +
 				lightVec[2]*lightVec[2]);
 			if (dirLen > 0.0f)
 			{
-				lightVec[0] /= dirLen;
-				lightVec[1] /= dirLen;
-				lightVec[2] /= dirLen;
+				lightVec[0] *= dirLen;
+				lightVec[1] *= dirLen;
+				lightVec[2] *= dirLen;
 			}
 			lightVec[3] = 0.0f;
 			System.arraycopy(lightVec, 0, lightEyeDir, i * 4, 4);
@@ -817,7 +817,7 @@ public class Graphics3D
 		// for shorts (which is -32768, 32767), this is to make sure the
 		// multiplied Z values will always be in range and never overflow,
 		// saving us the need to clamp it for every pixel draw.
-		tr.postScale(vieww / 2f, -viewh / 2f, (this.far - this.near) * 32200.0f);
+		tr.postScale(vieww * 0.5f, -viewh * 0.5f, (this.far - this.near) * 32200.0f);
 		tr.postTranslate(1f, -1f, 0f);
 
 		// -> Screen space
@@ -1292,10 +1292,10 @@ public class Graphics3D
 		}
 
 		// NDC -> viewport-relative pixels (same mapping as the triangle rasterizer).
-		final float sx0 = (ndcX - halfW + 1f) * vieww / 2f;
-		final float sx1 = (ndcX + halfW + 1f) * vieww / 2f;
-		final float sy0 = (1f - (ndcY + halfH)) * viewh / 2f;
-		final float sy1 = (1f - (ndcY - halfH)) * viewh / 2f;
+		final float sx0 = (ndcX - halfW + 1f) * vieww * 0.5f;
+		final float sx1 = (ndcX + halfW + 1f) * vieww * 0.5f;
+		final float sy0 = (1f - (ndcY + halfH)) * viewh * 0.5f;
+		final float sy1 = (1f - (ndcY - halfH)) * viewh * 0.5f;
 		final float spanX = sx1 - sx0, spanY = sy1 - sy0;
 		if (spanX <= 0f || spanY <= 0f) { return; }
 

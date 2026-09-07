@@ -69,11 +69,9 @@ public class M3GMath
 	// difference, like on lighting.
 	public static float fastInvSqrt(float x)
 	{
-		float xhalf = 0.5f * x;
-		int i = Float.floatToRawIntBits(x);
-		i = 0x5f375a86 - (i >> 1); // Lomont's magic constant, lower error on 1-pass NR.
-		x = Float.intBitsToFloat(i);
-		return x * (1.5f - (xhalf * x * x));
+		// 0x5f375a86 = Lomont's magic constant, lower error on 1-pass NR.
+		float y = Float.intBitsToFloat(0x5f375a86 - (Float.floatToRawIntBits(x) >> 1));
+		return y * (1.5f - (0.5f * x * y * y));
 	}
 
 	public static float invSqrt(float x)
@@ -141,7 +139,7 @@ public class M3GMath
 	{
 		final float abs_y = abs(y) + 1e-10f;
 		final float r = (x - Math.copySign(abs_y, x)) / (abs_y + abs(x));
-		float angle = (float) (Math.PI / 2) - Math.copySign((float) (Math.PI / 4), x);
+		float angle = (float) (Math.PI * 0.5) - Math.copySign((float) (Math.PI * 0.25), x);
 
 		angle += (0.1963f * r * r - 0.9817f) * r;
 		return Math.copySign(angle, y); // Negate if y is negative
@@ -245,7 +243,7 @@ public class M3GMath
 
 		if (norm > EPSILON)
 		{
-			norm = (1.0f / sqrt(norm));
+			norm = (1.0f * invSqrt(norm));
 			scaleVec(vec4, norm);
 		}
 		else
@@ -276,9 +274,9 @@ public class M3GMath
 		if (cosTheta < (1.0f - EPSILON))
 		{
 			float theta = acos(cosTheta);
-			float sinTheta = sin(theta);
-			s0 = sin(oneMinusS * theta) / sinTheta;
-			s1 = sin(s * theta) / sinTheta;
+			float invSinTheta = fastReciprocal(sin(theta));
+			s0 = sin(oneMinusS * theta) * invSinTheta;
+			s1 = sin(s * theta) * invSinTheta;
 		}
 		else
 		{

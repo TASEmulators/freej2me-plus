@@ -41,6 +41,10 @@ class Triangle
 	private static final float[] outV = new float[16];
 	private static final float[][] outT = new float[Graphics3D.NUM_TEXTURE_UNITS][16];
 
+	// Temporary variables for lighting calculations.
+	private static int matAmbient, matDiffuse, matSpecular, matEmissive, lightAlpha;
+	private static float shininess, maR, mdR, msR, meR, maG, mdG, msG, meG, maB, mdB, msB, meB;
+
 	// Output array of triangles. Allows us to reuse the memory block allocated for triangle
 	// data without needing to GC it every render pass (it'll still reallocate if the triangle count increases)
 	private static Triangle[] result;
@@ -107,6 +111,25 @@ class Triangle
 
 			for (int i = oldLen; i < totalTris * 2; i++) {newRef[i] = new Triangle(); }
 			Triangle.result = newRef;
+		}
+
+		// These can be set only once for the entire mesh, as the material
+		// applies to all of it. If Vertex Color Tracking is enabled, each
+		// vertex's color will override these anyway.
+		if(hasLighting)
+		{
+			// Material Colors
+			matAmbient  = material.getColor(Material.AMBIENT);
+			matDiffuse  = material.getColor(Material.DIFFUSE);
+			matSpecular = material.getColor(Material.SPECULAR);
+			matEmissive = material.getColor(Material.EMISSIVE);
+			shininess = material.getShininess();
+
+			maR = ((matAmbient >> 16) & 0xFF) * INVDIV; maG = ((matAmbient >> 8) & 0xFF) * INVDIV; maB = (matAmbient & 0xFF) * INVDIV;
+			mdR = ((matDiffuse >> 16) & 0xFF) * INVDIV; mdG = ((matDiffuse >> 8) & 0xFF) * INVDIV; mdB = (matDiffuse & 0xFF) * INVDIV;
+			msR = ((matSpecular >> 16) & 0xFF) * INVDIV; msG = ((matSpecular >> 8) & 0xFF) * INVDIV; msB = (matSpecular & 0xFF) * INVDIV;
+			meR = ((matEmissive >> 16) & 0xFF) * INVDIV; meG = ((matEmissive >> 8) & 0xFF) * INVDIV; meB = (matEmissive & 0xFF) * INVDIV;
+			lightAlpha = (matDiffuse >>> 24);
 		}
 
 		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
@@ -199,19 +222,6 @@ class Triangle
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
 		int curScope, int[] tris, int tri_id, int[] outColors)
 	{
-		// Material Colors
-		int matAmbient  = material.getColor(Material.AMBIENT);
-		int matDiffuse  = material.getColor(Material.DIFFUSE);
-		int matSpecular = material.getColor(Material.SPECULAR);
-		int matEmissive = material.getColor(Material.EMISSIVE);
-		float shininess = material.getShininess();
-
-		float maR = ((matAmbient >> 16) & 0xFF) * INVDIV, maG = ((matAmbient >> 8) & 0xFF) * INVDIV, maB = (matAmbient & 0xFF) * INVDIV;
-		float mdR = ((matDiffuse >> 16) & 0xFF) * INVDIV, mdG = ((matDiffuse >> 8) & 0xFF) * INVDIV, mdB = (matDiffuse & 0xFF) * INVDIV;
-		float msR = ((matSpecular >> 16) & 0xFF) * INVDIV, msG = ((matSpecular >> 8) & 0xFF) * INVDIV, msB = (matSpecular & 0xFF) * INVDIV;
-		float meR = ((matEmissive >> 16) & 0xFF) * INVDIV, meG = ((matEmissive >> 8) & 0xFF) * INVDIV, meB = (matEmissive & 0xFF) * INVDIV;
-		int alpha = (matDiffuse >>> 24);
-
 		boolean vertColorTrackingEnabled = material.isVertexColorTrackingEnabled();
 
 		// Cache the normal matrix into a local reference.
@@ -228,7 +238,7 @@ class Triangle
 			if (vertColorTrackingEnabled)
 			{
 				int vertColor = outColors[v];
-				alpha = (vertColor >>> 24);
+				lightAlpha = (vertColor >>> 24);
 
 				final float vR = ((vertColor >> 16) & 0xFF) * INVDIV;
 				final float vG = ((vertColor >> 8)  & 0xFF) * INVDIV;
@@ -271,10 +281,7 @@ class Triangle
 			    N_EYE[1] *= invLen;
 			    N_EYE[2] *= invLen;
 			}
-			else
-			{
-			    N_EYE[0] = 0.0f; N_EYE[1] = 0.0f; N_EYE[2] = 1.0f;
-			}
+			else { N_EYE[0] = 0.0f; N_EYE[1] = 0.0f; N_EYE[2] = 1.0f; }
 
 			/*
 			 * Two-sided lighting, per JSR-184 (PolygonMode): the back face of a
@@ -319,6 +326,7 @@ class Triangle
 			for (int l = 0; l < lights.size(); l++)
 			{
 				Light light = lights.get(l);
+				final int lightStride = l << 2; // l * 4
 
 				// Skip lights that aren't set to render or are at a different scope.
 				if (!light.isRenderingEnabled() || (light.getScope() & curScope) == 0)
@@ -350,19 +358,16 @@ class Triangle
 
 				if (lMode == Light.DIRECTIONAL)
 				{
-					lightDirX = -lightEyeDir[l * 4];
-					lightDirY = -lightEyeDir[l * 4 + 1];
-					lightDirZ = -lightEyeDir[l * 4 + 2];
-
-					float lLen = M3GMath.fastInvSqrt(lightDirX * lightDirX + lightDirY * lightDirY + lightDirZ * lightDirZ);
-					if (lLen > M3GMath.EPSILON) { lightDirX *= lLen; lightDirY *= lLen; lightDirZ *= lLen; }
+					lightDirX = -lightEyeDir[lightStride];
+					lightDirY = -lightEyeDir[lightStride + 1];
+					lightDirZ = -lightEyeDir[lightStride + 2];
 				}
 				else
 				{
 					// Positional lights use distance attenuation
-					float lx = lightEyePos[l * 4] - V_EYE[0];
-					float ly = lightEyePos[l * 4 + 1] - V_EYE[1];
-					float lz = lightEyePos[l * 4 + 2] - V_EYE[2];
+					float lx = lightEyePos[lightStride] - V_EYE[0];
+					float ly = lightEyePos[lightStride + 1] - V_EYE[1];
+					float lz = lightEyePos[lightStride + 2] - V_EYE[2];
 					float d2 = lx * lx + ly * ly + lz * lz;
 					float invDist = M3GMath.fastInvSqrt(d2);
 
@@ -389,18 +394,17 @@ class Triangle
 					// Additional directional cone attenuation for SPOT lights
 					if (lMode == Light.SPOT)
 					{
-						float sdX = lightEyeDir[l * 4];
-						float sdY = lightEyeDir[l * 4 + 1];
-						float sdZ = lightEyeDir[l * 4 + 2];
+						float sdX = lightEyeDir[lightStride];
+						float sdY = lightEyeDir[lightStride + 1];
+						float sdZ = lightEyeDir[lightStride + 2];
 
 						// Negate these light directions, as lightDir points from vertex to
 						// light and the spotlights's sd* variables point from
 						// light to scene. Evaluating them without any negation resulted
 						// in a negative dot product that just got it culled right below.
 						float spotDot = (-lightDirX * sdX + -lightDirY * sdY + -lightDirZ * sdZ);
-						float cutoffCos = M3GMath.cos(M3GMath.toRadians(light.getSpotAngle()));
 
-						if (spotDot >= cutoffCos)
+						if (spotDot >= light.cutoffCos)
 						{
 							attenuation *= (float) Math.pow(spotDot, light.getSpotExponent());
 						}
@@ -447,7 +451,7 @@ class Triangle
 			int ir = (r >= 1.0f) ? 255 : (r <= 0.0f) ? 0 : (int)(r * 255.0f);
 			int ig = (g >= 1.0f) ? 255 : (g <= 0.0f) ? 0 : (int)(g * 255.0f);
 			int ib = (b >= 1.0f) ? 255 : (b <= 0.0f) ? 0 : (int)(b * 255.0f);
-			int color = ((alpha & 0xFF) << 24) | (ir << 16) | (ig << 8) | ib;
+			int color = ((lightAlpha & 0xFF) << 24) | (ir << 16) | (ig << 8) | ib;
 
 			outColors[v] = color;
 

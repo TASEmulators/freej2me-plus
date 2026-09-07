@@ -35,6 +35,9 @@ public class Light extends Node
 	private float angle = 45.0f;
 	private float exponent = 0.0f;
 
+	// So we don't need to calculate this over and over again when rendering.
+	float cutoffCos = 0.0f;
+
 	public Light() { }
 
 	protected Object3D duplicateImpl()
@@ -95,6 +98,7 @@ public class Light extends Node
 			{ throw new IllegalArgumentException("Spot angle must be either in range of [0, 90], or equal to 180."); }
 
 		this.angle = theta;
+		this.cutoffCos = M3GMath.cos(M3GMath.toRadians(theta));
 	}
 
 	public void setSpotExponent(float exp)
