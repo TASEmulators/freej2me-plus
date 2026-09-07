@@ -2191,7 +2191,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		if(data == null) { throw new NullPointerException("Null char array received"); }
-		if(offset < 0 || length < 0 || offset+length >= data.length) { throw new StringIndexOutOfBoundsException("invalid length and/or position received"); }
+		if(offset < 0 || length < 0 || offset > data.length || length > data.length - offset) { throw new StringIndexOutOfBoundsException("invalid length and/or position received"); }
 		drawChars(data, offset, length, x, y, BASELINE);
 	}
 
