@@ -28,6 +28,7 @@ import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -84,8 +85,10 @@ import javazoom.jl.player.MPEGPlayer;
 
 public class PlatformPlayer implements Player
 {
-
-	private static final audioplayer[] sequencePlayers = new audioplayer[64];
+	// DoJa REALLY stresses this out. Akumajou Densetsu keeps more than 64 MLD
+	// files in memory.
+	private static final audioplayer[] sequencePlayers = new audioplayer[128];
+	private static ScheduledExecutorService smafExecutor = null;
 
 	private final byte NUM_CONTROLS = 4;
 
@@ -898,11 +901,20 @@ public class PlatformPlayer implements Player
 		private final Object pcmClipLock = new Object();
 		private Map<Integer, Integer> pcmPositions, pcmVelocities;
 
-		private ScheduledExecutorService smafExecutor;
 		private ScheduledFuture<?> playbackTask;
 
 		public SMAFPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
 		{
+			// Instead of making a new executor for each SMAF player, let's pool them
+			// on two threads.
+			if(smafExecutor == null)
+			{
+				synchronized (PlatformPlayer.class)
+				{
+					smafExecutor = Executors.newScheduledThreadPool(2);
+				}
+			}
+
 			try
 			{
 				midiSequence = MidiSystem.getSequence(midiStream);
@@ -1003,11 +1015,6 @@ public class PlatformPlayer implements Player
 
 			stopPcmScheduler(); // Cancel any lingering tasks
 
-			if (smafExecutor == null || smafExecutor.isShutdown())
-			{
-				smafExecutor = Executors.newSingleThreadScheduledExecutor();
-			}
-
 			final Set<Integer> playedPositions = new HashSet<Integer>();
 
 			playbackTask = smafExecutor.scheduleAtFixedRate(new Runnable()
@@ -1075,7 +1082,6 @@ public class PlatformPlayer implements Player
 		public void deallocate()
 		{
 			stopPcmScheduler();
-			if (smafExecutor != null) { smafExecutor.shutdownNow(); }
 
 			transmitter = null;
 			receiver = null;
