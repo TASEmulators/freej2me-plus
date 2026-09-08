@@ -45,8 +45,8 @@ public class Sound
 
 	/*
 	 * There's a freq table in: https://github.com/SymbianSource/oss.FCL.sf.app.JRT/blob/0822c2dcfb807a245ec84ab06006b59df7aedab6/javauis/nokiasound/javasrc/com/nokia/mid/sound/Sound.java
-	 * 
-	 * But using this single tone frequency multiplier has the same end result when converting, 
+	 *
+	 * But using this single tone frequency multiplier has the same end result when converting,
 	 * and is far easier to understand throughout the code.
 	 * It's also provided by the J2ME Docs: https://docs.oracle.com/javame/config/cldc/ref-impl/midp2.0/jsr118/javax/microedition/media/control/ToneControl.html
 	 */
@@ -63,15 +63,15 @@ public class Sound
 	private SoundListener listener;
 
 	public Sound(byte[] data, int type) { init(data, type); }
-	
+
 	public Sound(int freq, long duration) { init(freq, duration); }
 
 	public static int getConcurrentSoundCount(int type) { return 1; }
 
-	public int getState() 
+	public int getState()
 	{
 		if(player == null) { return SOUND_UNINITIALIZED; }
-		
+
 		int state = player.getState();
 
 		switch (state)
@@ -90,16 +90,16 @@ public class Sound
 
 	public static int[] getSupportedFormats() { return new int[]{FORMAT_TONE, FORMAT_WAV}; }
 
-	public void init(byte[] data, int type) 
+	public void init(byte[] data, int type)
 	{
 		if(type != FORMAT_TONE && type != FORMAT_WAV) { throw new IllegalArgumentException("Cannot init player with unsupported format"); }
 		if(data == null) { throw new NullPointerException("Cannot init player with null data"); }
 
-		try 
+		try
 		{
-			if (type == FORMAT_TONE) 
+			if (type == FORMAT_TONE)
 			{
-				try 
+				try
 				{
 					if(Mobile.dumpAudioStreams) { Manager.dumpAudioStream(new ByteArrayInputStream(data), "audio/x-tone-seq"); } // Dump original OTA as well
 					if(player == null || !isPrevPlayerTone)  // check for null because release() can be called after all.
@@ -120,16 +120,16 @@ public class Sound
 				}
 				catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't create Tone player:" + e.getMessage()); }
 			}
-			else if (type == FORMAT_WAV) 
+			else if (type == FORMAT_WAV)
 			{
 				if (player != null) { release(); }
 				String format;
 				if(data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') { format = "audio/mid"; }
 				else if(data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') { format = "audio/wav"; }
 				else // One of the versions of PAC-MAN for Nokia S40v1 actually does this, seems like it's always OTT in those cases
-				{ 
-					Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't find what format this is. Passing as FORMAT_TONE."); 
-					try 
+				{
+					Mobile.log(Mobile.LOG_WARNING, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + " couldn't find what format this is. Passing as FORMAT_TONE.");
+					try
 					{
 						data = NokiaOTTDecoder.convertToMidi(data);
 					}
@@ -147,21 +147,21 @@ public class Sound
 		catch (MediaException exception) { } catch (IOException exception) { }
 	}
 
-	public void init(int freq, long duration) 
+	public void init(int freq, long duration)
 	{
 		if(duration <= 0 || convertFreqToNote(freq) > 127 || convertFreqToNote(freq) < 0) { throw new IllegalArgumentException("Cannot init tone with invalid parameters"); }
-		
+
 		Mobile.log(Mobile.LOG_DEBUG, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Nokia Sound: Single Note:" + freq + " for:" + duration);
 
-		try 
-		{ 
+		try
+		{
 			release();
-			Manager.playTone(convertFreqToNote(freq), (int) duration, TONE_MAX_VOLUME); 
+			Manager.playTone(convertFreqToNote(freq), (int) duration, TONE_MAX_VOLUME);
 		}
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Sound.class.getPackage().getName() + "." + Sound.class.getSimpleName() + ": " + "Nokia Sound: Could not play tone:" + e.getMessage()); }
 	}
 
-	public void play(int loop) 
+	public void play(int loop)
 	{
 		if(player == null || getState() == SOUND_UNINITIALIZED) { return; }
 		if(getState() == SOUND_PLAYING) { player.stop(); }
@@ -169,22 +169,22 @@ public class Sound
 		else if(loop == 0) { loop = -1; }
 
 		// We only support one player running at a time here, so stop any currently running ones before starting
-		for(int i = 0; i < players.size(); i++) 
+		for(int i = 0; i < players.size(); i++)
 		{
 			if(players.get(i).getState() == SOUND_PLAYING) { players.get(i).stop(); }
 		}
-		
+
 		if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
-		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f));
 		player.setLoopCount(loop);
 		player.setMediaTime(0); // A play call always makes the media play from the beginning.
 		player.start();
+		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f));
 	}
 
 	// Nokia UI API 1.1 states that this should be a deallocate() call, but since we always recreate the player on init, we can use close()
-	public void release() 
-	{ 
-		if(player != null) 
+	public void release()
+	{
+		if(player != null)
 		{
 			player.close();
 			player = null;
@@ -192,34 +192,35 @@ public class Sound
 		}
 	}
 
-	public void resume() 
+	public void resume()
 	{
 		if(player == null || getState() == SOUND_UNINITIALIZED || getState() == SOUND_PLAYING) { return; }
 
 		if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
+		player.start();
 		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f));
-		player.start(); 
 	}
 
-	public void setGain(int gain) 
-	{ 
+	public void setGain(int gain)
+	{
 		// Gain goes from 0 to 255, while setLevel works from 0 to 100
 		this.gain = gain;
+		if(player != null) { ((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel((int) (gain / 255f * 100f)); }
 	}
 
-	public int getGain() 
-	{ 
+	public int getGain()
+	{
 		return this.gain;
 	}
 
 	public void setSoundListener(SoundListener soundListener) { this.listener = soundListener; }
 
-	public void stop() 
-	{ 
+	public void stop()
+	{
 		if(player == null || getState() == Sound.SOUND_STOPPED || getState() == Sound.SOUND_UNINITIALIZED) { return; }
 
 		if(((PlatformPlayer)player).nokiaListener != listener) { ((PlatformPlayer) player).setSoundListener(this, listener); }
-		player.stop(); 
+		player.stop();
 	}
 
 	// This is the same conversion used in Sprintpcs' DualTone implementation., as it also uses this constant.

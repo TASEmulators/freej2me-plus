@@ -21,25 +21,18 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import javax.sound.midi.Instrument;
 import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MetaEventListener;
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Patch;
 import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
@@ -49,13 +42,7 @@ import javax.sound.midi.Soundbank;
 import javax.sound.midi.Synthesizer;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
-import javax.sound.midi.Transmitter;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineEvent;
-import javax.sound.sampled.LineListener;
 
 import com.nokia.mid.sound.Sound;
 import com.nokia.mid.sound.SoundListener;
@@ -67,36 +54,34 @@ import javax.microedition.media.PlayerListener;
 import javax.microedition.media.TimeBase;
 import javax.microedition.media.control.ToneControl;
 
-
-/* Patcher for MIDI files with running status bytes */
-import javax.microedition.media.decoders.MIDIPatcher;
 /* SMAF decoding support */
 import javax.microedition.media.decoders.SMAFDecoder;
 /* MLD decoding support */
 import javax.microedition.media.decoders.MLDDecoder;
-/* IMA ADPCM WAV support */
-import javax.microedition.media.decoders.WAVTools;
-import javax.microedition.media.decoders.WAVImaADPCMDecoder;
-import javax.microedition.media.decoders.WAVLawDecoder;
 /* Ericsson Melody support */
 import javax.microedition.media.decoders.EMSMelodyDecoder;
-/* audio/mpeg support */
-import javazoom.jl.player.MPEGPlayer;
+
+/* Import all supported player implementations. */
+import org.recompile.mobile.players.*;
 
 public class PlatformPlayer implements Player
 {
 	// DoJa REALLY stresses this out. Akumajou Densetsu keeps more than 64 MLD
 	// files in memory.
-	private static final audioplayer[] sequencePlayers = new audioplayer[128];
-	private static ScheduledExecutorService smafExecutor = null;
+	private static final BasicPlayer[] sequencePlayers = new BasicPlayer[128];
+	public static ScheduledExecutorService smafExecutor = null;
+
+	// For player disposal handling, so we don't clog the Sound EDT.
+	public static final ExecutorService ASYNC_DISPATCHER =
+		Executors.newSingleThreadExecutor();
 
 	private final byte NUM_CONTROLS = 4;
 
 	public String contentType = "";
 
-	private audioplayer player;
+	private BasicPlayer player;
 
-	private int state = Player.UNREALIZED;
+	public int state = Player.UNREALIZED;
 
 	protected Vector<PlayerListener> listeners;
 	protected Vector<com.siemens.mp.media.PlayerListener> siemensListeners;
@@ -115,6 +100,8 @@ public class PlatformPlayer implements Player
 	protected boolean disableControls = false; // For when a given audio format is not supported
 	protected Control[] controls;
 
+	protected PlatformPlayer() { }
+
 	public PlatformPlayer(InputStream stream, String type)
 	{
 		listeners = new Vector<PlayerListener>();
@@ -124,12 +111,12 @@ public class PlatformPlayer implements Player
 
 		contentType = type;
 
-		if(Mobile.sound == false) { player = new audioplayer(); }
+		if(Mobile.sound == false) { player = new BasicPlayer(); }
 		else
 		{
 			// Midi player will also play tones, as these are converted to midi in pretty much all cases at the moment
-			if(contentType.toLowerCase().contains("mid") || contentType.toLowerCase().contains("tone")) { player = new midiPlayer(stream); }
-			else if(contentType.toLowerCase().contains("wav")) { player = new wavPlayer(stream); }
+			if(contentType.toLowerCase().contains("mid") || contentType.toLowerCase().contains("tone")) { player = new MIDIPlayer(stream); }
+			else if(contentType.toLowerCase().contains("wav")) { player = new WAVPlayer(stream); }
 			else if(contentType.toLowerCase().contains("mp"))  { player = new MP3Player(stream); } // MP1, MP2, MP3, MPEG, etc. No other J2ME format has those two letters in sequence.
 			else /* If the stream doesn't have an accompanying type or its a type we don't have an explicit player for, do everything we can to try and load it */
 			{
@@ -142,21 +129,21 @@ public class PlatformPlayer implements Player
 					{
 						Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is MIDI!");
 						contentType = "audio/midi";
-						player = new midiPlayer(new ByteArrayInputStream(data));
+						player = new MIDIPlayer(new ByteArrayInputStream(data));
 					}
 					else if (data.length >= 15 && data[8] == 'Q' && data[9] == 'L' && data[10] == 'C' && data[11] == 'M' && data[12] == 'f' && data[13] == 'm' && data[14] == 't')
 					{
 						// This is for Qualcomm's QCP format, it has to be checked before wav, because Qualcomm's PureVoice also has RIFF as its first bytes
 						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is Qualcomm PureVoice! (not supported yet)");
 						contentType = "audio/qcp (stub)";
-						player = new audioplayer();
+						player = new BasicPlayer();
 						disableControls = true;
 					}
 					else if(data.length >= 4 && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F')
 					{
 						Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is WAV!");
 						contentType = "audio/wav";
-						player = new wavPlayer(new ByteArrayInputStream(data));
+						player = new WAVPlayer(new ByteArrayInputStream(data));
 					}
 					else if(data.length >= 3 && data[0] == 'I' && data[1] == 'D' && data[2] == '3' || ((data[0] == (byte) 0xFF) && (data[1] & 0xE0) == 0xE0)) // Check for MPEG files WITH and WITHOUT the ID3 tag
 					{
@@ -187,7 +174,7 @@ public class PlatformPlayer implements Player
 							}
 							player = new SMAFPlayer(SMAFDecoder.SequenceData, SMAFDecoder.pcmData.toArray(new InputStream[0]), new HashMap<Integer, Integer>(SMAFDecoder.pcmDataPositions), new HashMap<Integer, Integer>(SMAFDecoder.pcmDataVelocities));
 						}
-						else { player = new audioplayer(); disableControls = true; } // Somehow the SMAF decoder failed, retrieve a stub player
+						else { player = new BasicPlayer(); disableControls = true; } // Somehow the SMAF decoder failed, retrieve a stub player
 
 					}
 					else if((data.length >= 4 && data[0] == 'm' && data[1] == 'e' && data[2] == 'l' && data[3] == 'o')
@@ -219,38 +206,38 @@ public class PlatformPlayer implements Player
 							}
 							player = new MLDPlayer(MLDDecoder.SequenceData, MLDDecoder.pcmData.toArray(new InputStream[0]), new HashMap<Integer, Integer>(MLDDecoder.pcmDataPositions), new HashMap<Integer, Integer>(MLDDecoder.pcmDataVelocities));
 						}
-						else { player = new audioplayer(); disableControls = true; } // Somehow the MLD decoder failed, retrieve a stub player
+						else { player = new BasicPlayer(); disableControls = true; } // Somehow the MLD decoder failed, retrieve a stub player
 					}
 					else if(data.length >= 4 && data[0] == 'B' && data[1] == 'E' && data[2] == 'G' && data[3] == 'I' && data[4] == 'N' && data[5] == ':' && data[6] == 'I' && data[7] == 'M')
 					{
 						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is EMS iMelody! (not fully supported yet)");
 						contentType = "audio/x-imy";
-						player = new midiPlayer(EMSMelodyDecoder.decodeMelody(data));
+						player = new MIDIPlayer(EMSMelodyDecoder.decodeMelody(data));
 					}
 					else if(data.length >= 4 && data[0] == 'B' && data[1] == 'E' && data[2] == 'G' && data[3] == 'I' && data[4] == 'N' && data[5] == ':' && data[6] == 'E' && data[7] == 'M')
 					{
 						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is EMS eMelody! (not fully supported yet)");
 						contentType = "audio/x-emy";
-						player = new midiPlayer(EMSMelodyDecoder.decodeMelody(data));
+						player = new MIDIPlayer(EMSMelodyDecoder.decodeMelody(data));
 					}
 					else if(data.length >= 6 && data[0] == '#' && data[1] == '!' && data[2] == 'A' && data[3] == 'M' && data[4] == 'R' && data[5] == '\n')
 					{
 						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is AMR-NB! (not supported yet)");
 						contentType = "audio/amr (stub)";
-						player = new audioplayer();
+						player = new BasicPlayer();
 						disableControls = true;
 					}
 					else if(data.length >= 9 && data[0] == '#' && data[1] == '!' && data[2] == 'A' && data[3] == 'M' && data[4] == 'R' && data[5] == '-' && data[6] == 'W' && data[7] == 'B' && data[8] == '\n')
 					{
 						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is AMR-WB! (not supported yet)");
 						contentType = "audio/amr-wb (stub)";
-						player = new audioplayer();
+						player = new BasicPlayer();
 						disableControls = true;
 					}
 					else /* If none of the formats match, we don't know what this is */
 					{
 						Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "None of the known formats match the received stream, it won't play!");
-						player = new audioplayer();
+						player = new BasicPlayer();
 						contentType = "unknown";
 						disableControls = true;
 					}
@@ -265,12 +252,14 @@ public class PlatformPlayer implements Player
 		// Set up control interfaces based on player type.
 		controls[0] = new volumeControl(this.player);
 
+		player.setPlatform(this);
+
 		/* MIDI Player has a few additional controls */
-		if(player instanceof midiPlayer || player instanceof SMAFPlayer)
+		if(player instanceof MIDIPlayer || player instanceof SMAFPlayer)
 		{
-			/* If we're using midiPlayer to play tones, only set it up with ToneControl. */
-			if(contentType.equalsIgnoreCase("audio/x-tone-seq")) { controls[3] = new toneControl((midiPlayer) this.player); }
-			else if(player instanceof midiPlayer) { controls[2] = new midiControl((midiPlayer) this.player); }
+			/* If we're using MIDIPlayer to play tones, only set it up with ToneControl. */
+			if(contentType.equalsIgnoreCase("audio/x-tone-seq")) { controls[3] = new toneControl((MIDIPlayer) this.player); }
+			else if(player instanceof MIDIPlayer) { controls[2] = new midiControl((MIDIPlayer) this.player); }
 
 			// Tempo control is available for both midi and smaf players
 			controls[1] = new tempoControl(this.player);
@@ -284,18 +273,18 @@ public class PlatformPlayer implements Player
 		if(locator.equals(Manager.TONE_DEVICE_LOCATOR) || locator.equals(Manager.MIDI_DEVICE_LOCATOR))
 		{
 			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + " Creating MIDI Player for locator: "+locator);
-			player = new midiPlayer();
+			player = new MIDIPlayer();
 			listeners = new Vector<PlayerListener>();
 			siemensListeners = new Vector<com.siemens.mp.media.PlayerListener>();
 			kddiListeners = new Vector<com.kddi.media.MediaEventListener>();
 			controls = new Control[NUM_CONTROLS];
 			controls[0] = new volumeControl(this.player); // Midi Player with Tones might not use this
-			controls[3] = new toneControl((midiPlayer) this.player);
+			controls[3] = new toneControl((MIDIPlayer) this.player);
 		}
 		else
 		{
 			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "No player for locator: "+locator);
-			player = new audioplayer();
+			player = new BasicPlayer();
 			listeners = new Vector<PlayerListener>();
 			siemensListeners = new Vector<com.siemens.mp.media.PlayerListener>();
 			kddiListeners = new Vector<com.kddi.media.MediaEventListener>();
@@ -521,8 +510,8 @@ public class PlatformPlayer implements Player
 		if(getState() == Player.REALIZED || getState() == Player.UNREALIZED) { return Player.TIME_UNKNOWN; }
 
 		/*
-        * MLD conversion may unroll one extra loop iteration to stabilize the MIDI state.
-        * Using the sequencer duration here would cause the Media Player to display that extra iteration.
+		* MLD conversion may unroll one extra loop iteration to stabilize the MIDI state.
+		* Using the sequencer duration here would cause the Media Player to display that extra iteration.
 		*/
 
 		return player instanceof MLDPlayer ? ((MLDPlayer) player).displayDuration() : player.getDuration(); // Maybe not really needed? We should find a jar that actually uses this for something
@@ -603,7 +592,7 @@ public class PlatformPlayer implements Player
 		return controls;
 	}
 
-	public static void addPlayerToStack(midiPlayer midplayer, wavPlayer wavplayer, MP3Player mpegPlayer, SMAFPlayer smafPlayer)
+	public static void addPlayerToStack(MIDIPlayer midplayer, WAVPlayer wavplayer, MP3Player mpegPlayer, SMAFPlayer smafPlayer)
 	{
 		if(midplayer != null)
 		{
@@ -668,1018 +657,12 @@ public class PlatformPlayer implements Player
 		Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setTimeBase(TimeBase) not implemented.");
 	}
 
-	// Players //
-
-	private class audioplayer
-	{
-		public void start() {  }
-		public void stop() {  }
-		public void setLoopCount(int count) {  }
-		public long setMediaTime(long now) { return now; }
-		public long getMediaTime() { return 0; }
-		public boolean isRunning() { return false; }
-		public void deallocate() {  }
-		public void close() { }
-		public void realize() { }
-		public void prefetch() { }
-		public long getDuration() { return Player.TIME_UNKNOWN; }
-
-		// For sequence players
-		public Sequence getSequence() { return null; }
-	}
-
-	private class midiPlayer extends audioplayer implements MetaEventListener
-	{
-		private Sequencer midi;
-		private Sequence midiSequence;
-		public Synthesizer synthesizer;
-		private int synthIdx = 0;
-		private boolean synthReserved = false;
-		public Receiver receiver;
-		private Transmitter transmitter;
-		private int numLoops = 0;
-		private long curTime = 0;
-
-		public midiPlayer() // For when a Locator call (usually for tones) is issued
-		{
-			Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Midi Player [locator] untested");
-
-			// Create an empty sequence, which should be overriden with whatever setSequence() receives.
-			try
-			{
-				midiSequence = new Sequence(Sequence.PPQ, 24);
-				PlatformPlayer.addPlayerToStack(this, null, null, null);
-			}
-			catch (Exception e) {  Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load midi file:" + e.getMessage()); }
-
-
-		}
-
-		public midiPlayer(InputStream stream)
-		{
-			byte[] midiData = null;
-
-			try
-			{
-				midiData = new byte[stream.available()];
-				stream.read(midiData, 0, stream.available());
-
-				midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(midiData));
-				PlatformPlayer.addPlayerToStack(this, null, null, null);
-			}
-			catch (Exception e)
-			{
-				Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load MIDI file: " + e.getMessage() + ". Trying to patch running status bytes...");
-				try
-				{
-					midiSequence = MidiSystem.getSequence(MIDIPatcher.patchMIDIFile(midiData));
-					Mobile.log(Mobile.LOG_INFO, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "MIDI patching succeeded!");
-				}
-				catch(Exception ie) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't patch MIDI file: " + ie.getMessage() + ". Defaulting midi data to null"); e.printStackTrace(); }
-			}
-		}
-
-		public void realize() { state = Player.REALIZED; }
-
-		public void prefetch()
-		{
-			try
-			{
-				midi = MidiSystem.getSequencer(false);
-				transmitter = midi.getTransmitter();
-				midi.open();
-				midi.addMetaEventListener(this);
-				prepareMidiSubsystem();
-				state = Player.PREFETCHED;
-			}
-			catch(Exception e)
-			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prefetch midi stream:" + e.getMessage());
-				state = Player.REALIZED;
-			}
-		}
-
-		public void start()
-		{
-			try
-			{
-				if(!synthReserved || midi.getSequence() == null) { prepareMidiSubsystem(); }
-
-				if(curTime >= getDuration()) { setMediaTime(0); } // If mediaTime >= getDuration, we should start playing from the beginning
-				else { setMediaTime(curTime); } // Else, resume from where it stopped
-
-				state = Player.STARTED;
-				notifyListeners(PlayerListener.STARTED, getMediaTime());
-
-				midi.start();
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to clean MIDI sequencer and start playback:" + e.getMessage()); }
-		}
-
-		public void stop()
-		{
-			midi.stop();
-			getMediaTime();
-			state = Player.PREFETCHED;
-			notifyListeners(PlayerListener.STOPPED, getMediaTime());
-		}
-
-		public void deallocate()
-		{
-			transmitter = null;
-			receiver = null;
-			if(synthReserved) { Manager.synthIdxInUse[synthIdx] = false; synthReserved = false; }
-			if(midi != null)
-			{
-				midi.removeMetaEventListener(this);
-				midi.close();
-				midi = null;
-			}
-		}
-
-		public void close() { midiSequence = null; }
-
-		public void setLoopCount(int count)
-		{
-			/*
-			 * Treat cases where an app wants this stream to loop continuously.
-			 * Here, count = 1 means it should loop one time, whereas in j2me
-			 * it appears that count = 1 means no loop at all, at least based
-			 * on Gameloft games that set effects and some music with count = 1
-			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
-			else { numLoops = count-1; }
-		}
-
-		public long setMediaTime(long now)
-		{
-			try
-			{
-				if(now >= getDuration()) { midi.setMicrosecondPosition(getDuration()); }
-				else if(now < 0) { midi.setMicrosecondPosition(0); }
-				else { midi.setMicrosecondPosition(now);  }
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI position:" + e.getMessage()); }
-
-			/*
-			 * MicrosecondPosition doesn't guarantee perfect precision, so return the new
-			 * effective position according to the stream.
-			 */
-			return getMediaTime();
-		}
-
-		public long getMediaTime()
-		{
-			curTime = midi.getMicrosecondPosition();
-			return midi.getMicrosecondPosition();
-		}
-
-		public long getDuration() { return midi.getMicrosecondLength(); }
-
-		public boolean isRunning() { return midi.isRunning(); }
-
-		public Sequence getSequence() { return midiSequence; }
-
-		public void setSequence(InputStream sequence)
-		{
-			try { midiSequence = MidiSystem.getSequence(sequence); }
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI sequence:" + e.getMessage());  }
-		}
-
-		private void prepareMidiSubsystem() throws MidiUnavailableException, InvalidMidiDataException
-		{
-			if(midi.getSequence() == null || !synthReserved)
-			{
-				this.synthIdx = Manager.retrieveAvailableSynthIndex();
-				Manager.synthIdxInUse[synthIdx] = true;
-				synthReserved = true;
-				this.synthesizer = Manager.exclusiveSynths[synthIdx];
-				this.receiver = this.synthesizer.getReceiver();
-				transmitter.setReceiver(receiver);
-				midi.setSequence(midiSequence);
-			}
-		}
-
-		@Override
-		public void meta(MetaMessage meta)
-		{
-			if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
-			{
-				state = Player.PREFETCHED;
-				curTime = getMediaTime();
-				if(numLoops != 0)
-				{
-					notifyListeners(PlayerListener.LOOPED, getMediaTime());
-					if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-					setMediaTime(0);
-					start();
-				}
-				else { notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime()); }
-			}
-		}
-	}
-
-	private class SMAFPlayer extends audioplayer implements MetaEventListener
-	{
-		// For SMAF, the Sequenced data will dictate player events
-		private Sequencer midi;
-		private Sequence midiSequence;
-		public Synthesizer synthesizer;
-		private int synthIdx = 0;
-		private boolean synthReserved = false;
-		public Receiver receiver;
-		private Transmitter transmitter;
-		private int numLoops = 0;
-		private long curTime = 0;
-		private boolean sequencerLoopConfigured = false;
-		private boolean hasMidiPlaybackEvents = false;
-
-		// Meanwhile, sampled data will be treated like "additional" instruments
-		private boolean isPlaying = false;
-		private AudioInputStream[] wavStreams = null;
-		public Clip[] wavClips = null;
-		private final Object pcmClipLock = new Object();
-		private Map<Integer, Integer> pcmPositions, pcmVelocities;
-
-		private ScheduledFuture<?> playbackTask;
-
-		public SMAFPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
-		{
-			// Instead of making a new executor for each SMAF player, let's pool them
-			// on two threads.
-			if(smafExecutor == null)
-			{
-				synchronized (PlatformPlayer.class)
-				{
-					smafExecutor = Executors.newScheduledThreadPool(2);
-				}
-			}
-
-			try
-			{
-				midiSequence = MidiSystem.getSequence(midiStream);
-				hasMidiPlaybackEvents = hasMidiPlaybackEvents(midiSequence);
-				if(wavStreams.length > 0)
-				{
-					this.wavStreams = new AudioInputStream[wavStreams.length];
-					this.pcmPositions = pcmPositions;
-					this.pcmVelocities = pcmVelocities;
-					wavClips = new Clip[wavStreams.length];
-					for(int i = 0; i < wavStreams.length; i++)
-					{
-						if(wavStreams[i] == null) { continue; }
-
-						this.wavStreams[i] = AudioSystem.getAudioInputStream(wavStreams[i]);
-					}
-				}
-				PlatformPlayer.addPlayerToStack(null, null, null, this);
-			}
-			catch (Exception e)
-			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't load SMAF data: " + e.getMessage());
-			}
-		}
-
-		public void realize() { state = Player.REALIZED; }
-
-		public void prefetch()
-		{
-			try
-			{
-				if(!hasMidiPlaybackEvents && !hasPcmStreams())
-				{
-					state = Player.PREFETCHED;
-					return;
-				}
-
-				midi = MidiSystem.getSequencer(false);
-				if(hasMidiPlaybackEvents) { transmitter = midi.getTransmitter(); }
-				midi.open();
-				midi.addMetaEventListener(this);
-
-				if(hasMidiPlaybackEvents) { prepareMidiSubsystem(); }
-				else
-				{
-					midi.setSequence(midiSequence);
-					configurePlayback();
-				}
-
-				if(wavStreams != null)
-				{
-					for(int i = 0; i < wavStreams.length; i++)
-					{
-						if(wavStreams[i] == null) { continue; }
-
-						wavClips[i] = AudioSystem.getClip();
-						wavClips[i].open(wavStreams[i]);
-					}
-				}
-				state = Player.PREFETCHED;
-			}
-			catch (Exception e)
-			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prefetch SMAF stream:" + e.getMessage());
-				state = Player.UNREALIZED;
-				e.printStackTrace();
-			}
-		}
-
-		public void start()
-		{
-			try
-			{
-				if(!hasMidiPlaybackEvents && !hasPcmClips())
-				{
-					state = Player.PREFETCHED;
-					notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-					return;
-				}
-				if(hasMidiPlaybackEvents && (!synthReserved || midi.getSequence() == null)) { prepareMidiSubsystem(); }
-
-				if(curTime >= getDuration()) { setMediaTime(0); }
-				else { setMediaTime(curTime); }
-
-				isPlaying = true;
-				state = Player.STARTED;
-				notifyListeners(PlayerListener.STARTED, getMediaTime());
-
-				midi.start();
-				startPcmScheduler();
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to start SMAF:" + e.getMessage()); }
-		}
-
-		private void startPcmScheduler()
-		{
-			if (wavClips == null || pcmPositions == null || pcmPositions.isEmpty()) { return; }
-
-			stopPcmScheduler(); // Cancel any lingering tasks
-
-			final Set<Integer> playedPositions = new HashSet<Integer>();
-
-			playbackTask = smafExecutor.scheduleAtFixedRate(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					if (!isPlaying) { return; }
-
-					int mediaTime = (int) (getMediaTime() / 1000);
-
-					for (Map.Entry<Integer, Integer> entry : pcmPositions.entrySet())
-					{
-						Integer position = entry.getKey();
-						if (position < mediaTime && !playedPositions.contains(position))
-						{
-							playPcmStream(entry.getValue(), pcmVelocities.get(position));
-							playedPositions.add(position);
-						}
-					}
-				}
-			}, 0, 5, TimeUnit.MILLISECONDS);
-		}
-
-		private void stopPcmScheduler()
-		{
-			if (playbackTask != null)
-			{
-				playbackTask.cancel(false);
-				playbackTask = null;
-			}
-		}
-
-		private void playPcmStream(int pcmIndex, int velocity)
-		{
-			synchronized(pcmClipLock)
-			{
-				if (wavClips == null || pcmIndex < 0 || pcmIndex >= wavClips.length || wavClips[pcmIndex] == null) { return; }
-
-				Clip target = wavClips[pcmIndex];
-
-				// Target ONLY the requested clip rather than iterating and flushing all active clips
-				if (target.isRunning()) { target.stop(); }
-
-				FloatControl volumeControl = (FloatControl) target.getControl(FloatControl.Type.MASTER_GAIN);
-				float dB = -30.0f + ((velocity / 127.0f) * (30.0f));
-				if(dB > 6.0f) { dB = 6.0f; }
-				volumeControl.setValue(dB);
-
-				target.setFramePosition(0);
-				target.start();
-			}
-		}
-
-		public void stop()
-		{
-			if (midi != null && midi.isRunning()) { midi.stop(); }
-			stopPcmScheduler();
-			stopPcmClips();
-			isPlaying = false;
-			state = Player.PREFETCHED;
-			notifyListeners(PlayerListener.STOPPED, getMediaTime());
-		}
-
-		public void deallocate()
-		{
-			stopPcmScheduler();
-
-			transmitter = null;
-			receiver = null;
-			if(synthReserved) { Manager.synthIdxInUse[synthIdx] = false; synthReserved = false; }
-			if(midi != null)
-			{
-				midi.removeMetaEventListener(this);
-				midi.close();
-				midi = null;
-			}
-
-			synchronized(pcmClipLock)
-			{
-				if(wavClips != null)
-				{
-					for(int i = 0; i < wavClips.length; i++)
-					{
-						if(wavClips[i] == null) { continue; }
-						wavClips[i].stop();
-						wavClips[i].close();
-					}
-				}
-			}
-			isPlaying = false;
-		}
-
-		public void close()
-		{
-			midiSequence = null;
-
-			if(wavStreams != null)
-			{
-				for(int i = 0; i < wavStreams.length; i++)
-				{
-					wavStreams[i] = null;
-				}
-			}
-
-			isPlaying = false;
-		}
-
-		public void setLoopCount(int count)
-		{
-			/*
-			 * Treat cases where an app wants this stream to loop continuously.
-			 * Here, count = 1 means it should loop one time, whereas in j2me
-			 * it appears that count = 1 means no loop at all, at least based
-			 * on Gameloft games that set effects and some music with count = 1
-			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
-			else { numLoops = count-1; }
-		}
-
-		public long setMediaTime(long now)
-		{
-			if(now >= getDuration()) { now = getDuration(); }
-			else if(now < 0) { now = 0; }
-
-			try
-			{
-				synchronized(pcmClipLock)
-				{
-					if(wavClips != null)
-					{
-						for(int i = 0; i < wavClips.length; i++)
-						{
-							if(wavClips[i] != null) { wavClips[i].setMicrosecondPosition(0); }
-						}
-					}
-				}
-
-				if (midi != null) { midi.setMicrosecondPosition(now); }
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set SMAF/MLD position:" + e.getMessage()); }
-
-			/*
-			 * MicrosecondPosition doesn't guarantee perfect precision, so return the new
-			 * effective position according to the stream.
-			 */
-			return getMediaTime();
-		}
-
-		public long getMediaTime()
-		{
-			if(midi == null) { return curTime; }
-			curTime = midi.getMicrosecondPosition();
-			return midi.getMicrosecondPosition();
-		}
-
-		public long getDuration() { return midi == null ? 0 : midi.getMicrosecondLength(); }
-
-		public boolean isRunning() { return isPlaying; }
-
-		public Sequence getSequence() { return midiSequence; }
-
-		protected long getSequenceTick() { return midi == null ? 0L : midi.getTickPosition(); }
-
-		public void setSequence(InputStream sequence)
-		{
-			try
-			{
-				midiSequence = MidiSystem.getSequence(sequence);
-				hasMidiPlaybackEvents = hasMidiPlaybackEvents(midiSequence);
-				sequencerLoopConfigured = false;
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Failed to set MIDI sequence:" + e.getMessage());  }
-		}
-
-		private void prepareMidiSubsystem() throws MidiUnavailableException, InvalidMidiDataException
-		{
-			if(midi.getSequence() == null || !synthReserved)
-			{
-				this.synthIdx = Manager.retrieveAvailableSynthIndex();
-				Manager.synthIdxInUse[synthIdx] = true;
-				synthReserved = true;
-				this.synthesizer = Manager.exclusiveSynths[synthIdx];
-				this.receiver = this.synthesizer.getReceiver();
-				transmitter.setReceiver(receiver);
-				midi.setSequence(midiSequence);
-				configurePlayback();
-			}
-		}
-
-		private boolean hasPcmStreams()
-		{
-			if(wavStreams == null) { return false; }
-			for(int i = 0; i < wavStreams.length; i++)
-			{
-				if(wavStreams[i] != null) { return true; }
-			}
-			return false;
-		}
-
-		private boolean hasPcmClips()
-		{
-			if(wavClips == null) { return false; }
-			for(int i = 0; i < wavClips.length; i++)
-			{
-				if(wavClips[i] != null) { return true; }
-			}
-			return false;
-		}
-
-		private boolean hasMidiPlaybackEvents(Sequence sequence)
-		{
-			if(sequence == null) { return false; }
-			Track[] tracks = sequence.getTracks();
-			for(int t = 0; t < tracks.length; t++)
-			{
-				Track track = tracks[t];
-				for(int i = 0; i < track.size(); i++)
-				{
-					MidiEvent event = track.get(i);
-					if(!(event.getMessage() instanceof ShortMessage)) { continue; }
-					ShortMessage message = (ShortMessage) event.getMessage();
-					if(message.getCommand() == ShortMessage.NOTE_ON && message.getData2() > 0) { return true; }
-				}
-			}
-			return false;
-		}
-
-		protected void onMeta(MetaMessage meta) { }
-
-		protected void stopPcmClips()
-		{
-			synchronized(pcmClipLock)
-			{
-				if(wavClips == null) { return; }
-				for(int i = 0; i < wavClips.length; i++)
-				{
-					if(wavClips[i] == null) { continue; }
-					wavClips[i].stop();
-				}
-			}
-		}
-
-		protected void setLoop(long loopStartTick, long loopEndTick, int repeatCount)
-		{
-			sequencerLoopConfigured = true;
-			midi.setLoopStartPoint(loopStartTick);
-			midi.setLoopEndPoint(loopEndTick);
-			midi.setLoopCount(repeatCount < 0 ? Sequencer.LOOP_CONTINUOUSLY : repeatCount);
-		}
-
-		protected void configurePlayback() throws InvalidMidiDataException { }
-
-		@Override
-		public void meta(MetaMessage meta)
-		{
-			onMeta(meta);
-			if (meta.getType() == 0x2F) // END_OF_MEDIA
-			{
-				stopPcmScheduler();
-				state = Player.PREFETCHED;
-				curTime = getMediaTime();
-				if(sequencerLoopConfigured)
-				{
-					notifyListeners(PlayerListener.END_OF_MEDIA, curTime);
-					isPlaying = false;
-				}
-				else if(numLoops != 0)
-				{
-					notifyListeners(PlayerListener.LOOPED, curTime);
-					if(numLoops > 0) { numLoops--; }
-					setMediaTime(0);
-					start();
-				}
-				else
-				{
-					notifyListeners(PlayerListener.END_OF_MEDIA, curTime);
-					isPlaying = false;
-				}
-			}
-		}
-	}
-
-	/*
-	 * MLD conversion may unroll a loop to stabilize its MIDI state. PlaybackTimeline maps
-	 * the longer sequencer timeline back to the original MLD progress.
-	 */
-
-	private class MLDPlayer extends SMAFPlayer
-	{
-		private final MLDDecoder.PlaybackTimeline timeline = MLDDecoder.getPlaybackTimeline();
-
-		public MLDPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
-		{
-			super(midiStream, wavStreams, pcmPositions, pcmVelocities);
-		}
-
-		protected void onMeta(MetaMessage meta)
-		{
-			String marker = MLDDecoder.MLDSequenceMarker.decodeMarker(meta);
-			if(!MLDDecoder.MLDSequenceMarker.isStopMarker(marker)) { return; }
-
-			stopPcmClips();
-		}
-
-		protected void configurePlayback() throws InvalidMidiDataException
-		{
-			MLDDecoder.MLDSequenceMarker.LoopMarker loopInfo = findLoopMarker(getSequence());
-			if(loopInfo == null) { return; }
-
-			setLoop(loopInfo.loopStartTick, loopInfo.loopEndTick, loopInfo.repeatCount);
-		}
-
-		private long displayDuration()
-		{
-			return timeline.displayDuration(getDuration());
-		}
-
-		private long displayTime()
-		{
-			return timeline.displayTime(getSequenceTick(), getSequence().getResolution(), super.getMediaTime());
-		}
-
-		private MLDDecoder.MLDSequenceMarker.LoopMarker findLoopMarker(Sequence sequence)
-		{
-			if(sequence == null) { return null; }
-
-			Track[] tracks = sequence.getTracks();
-			for(int t = 0; t < tracks.length; t++)
-			{
-				Track track = tracks[t];
-				for(int i = 0; i < track.size(); i++)
-				{
-					MidiEvent event = track.get(i);
-					if(!(event.getMessage() instanceof MetaMessage)) { continue; }
-
-					String marker = MLDDecoder.MLDSequenceMarker.decodeMarker((MetaMessage) event.getMessage());
-					if(!MLDDecoder.MLDSequenceMarker.isLoopMarker(marker)) { continue; }
-
-					MLDDecoder.MLDSequenceMarker.LoopMarker loopMarker = MLDDecoder.MLDSequenceMarker.parseLoopMarker(marker);
-					if(loopMarker == null)
-					{
-						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid embedded MLD loop marker: " + marker);
-						continue;
-					}
-					return loopMarker;
-				}
-			}
-
-			return null;
-		}
-	}
-
-	private class wavPlayer extends audioplayer implements LineListener
-	{
-		/* PCM WAV variables */
-		private byte[] tmpStream;
-		private Clip wavClip;
-		private int[] wavHeaderData = new int[7];
-		private int numLoops = 0;
-
-		public wavPlayer(InputStream stream)
-		{
-			/*
-			 * A wav header is generally 44-bytes long (up to 60 for IMA ADPCM), and it is what we need to read in order
-			 * to get the stream's format, frame size, bit rate, number of channels, etc. which gives us information
-			 * on the kind of codec needed to play or decode the incoming stream. The stream needs to be reset
-			 * or else PCM files will be loaded without a header and it might cause issues with playback.
-			 */
-			try
-			{
-				stream.mark(stream.available());
-				wavHeaderData = WAVTools.readHeader(stream);
-				stream.reset();
-				stream.skip(wavHeaderData[6]);
-
-				tmpStream = new byte[stream.available()];
-				stream.read(tmpStream, 0, stream.available());
-			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare wav stream:" + e.getMessage()); }
-		}
-
-		public void realize() { state = Player.REALIZED; }
-
-		public void prefetch()
-		{
-			try
-			{
-				if(wavClip == null)
-				{
-					wavClip = AudioSystem.getClip();
-					/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
-					wavClip.addLineListener(this);
-				}
-
-				/* Process the wave data */
-				if(wavHeaderData[0] == 1) // standard PCM WAV, just upsample it
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.upsample(tmpStream, wavHeaderData[1], WAVTools.hostSampleRate, (short) wavHeaderData[2], (short) wavHeaderData[4], wavHeaderData[5]))));
-				}
-				else if(wavHeaderData[0] == 6) // A-Law GSM WAV
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeALaw(tmpStream, wavHeaderData))));
-				}
-				else if(wavHeaderData[0] == 7) // u-Law GSM WAV
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeULaw(tmpStream, wavHeaderData))));
-				}
-				else if(wavHeaderData[0] == 17) // IMA ADPCM
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVImaADPCMDecoder.decodeImaAdpcm(new ByteArrayInputStream(tmpStream), wavHeaderData))));
-				}
-				else /* Unknown format. */
-				{
-					Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "WAV Format is " + wavHeaderData[0] + " (Unsupported).");
-				}
-
-				state = Player.PREFETCHED;
-			}
-			catch (Exception e)
-			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't prefetch wav stream: " + e.getMessage());
-				e.printStackTrace();
-			}
-		}
-
-		public void start()
-		{
-			if(getMediaTime() >= getDuration()) { setMediaTime(0); }
-
-			state = Player.STARTED;
-			notifyListeners(PlayerListener.STARTED, getMediaTime());
-
-			wavClip.start();
-		}
-
-		public void stop()
-		{
-			wavClip.stop();
-			state = Player.PREFETCHED;
-			notifyListeners(PlayerListener.STOPPED, getMediaTime());
-		}
-
-		public void deallocate()
-		{
-			new Thread(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					if(wavClip != null && wavClip.isOpen())
-					{
-						wavClip.removeLineListener(wavPlayer.this);
-						wavClip.close();
-					}
-				}
-			}).start();
-		}
-
-		public void close()
-		{
-			tmpStream = null;
-			wavHeaderData = null;
-		}
-
-		public void setLoopCount(int count)
-		{
-			/*
-			 * Treat cases where an app wants this stream to loop continuously.
-			 * Here, count = 1 means it should loop one time, whereas in j2me
-			 * it appears that count = 1 means no loop at all, at least based
-			 * on Gameloft games that set effects and some music with count = 1
-			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
-			else { numLoops = count-1; }
-		}
-
-		public long setMediaTime(long now)
-		{
-			if(now >= getDuration()) { wavClip.setMicrosecondPosition(getDuration()); }
-			else if(now < 0) { wavClip.setMicrosecondPosition(0); }
-			else { wavClip.setMicrosecondPosition(now);  }
-
-			/*
-			 * MicrosecondPosition doesn't guarantee perfect precision, so return the new
-			 * effective position according to the stream.
-			 */
-			return getMediaTime();
-		}
-
-		public long getMediaTime() { return wavClip.getMicrosecondPosition(); }
-
-		public long getDuration() { return  wavClip.getMicrosecondLength(); }
-
-		public boolean isRunning() { return wavClip.isRunning(); }
-
-		@Override
-		public void update(LineEvent event)
-		{
-			if (event.getType() == LineEvent.Type.STOP)
-			{
-				state = Player.PREFETCHED;
-				if (numLoops != 0)
-				{
-					notifyListeners(PlayerListener.LOOPED, getMediaTime());
-					if (numLoops > 0) { numLoops--; }
-					setMediaTime(0);
-					start();
-				}
-				else
-				{
-					notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-				}
-			}
-		}
-	}
-
-	private class MP3Player extends audioplayer
-	{
-		private byte[] tmpStream;
-		private MPEGPlayer mp3Player;
-		private Thread playerThread = null;
-		private volatile boolean mp3PlayerRunning = false;
-		private int numLoops = 0;
-
-		public MP3Player(InputStream stream)
-		{
-			try
-			{
-				tmpStream = new byte[stream.available()];
-				stream.read(tmpStream, 0, stream.available());
-			}
-			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not prepare mpeg stream:" + e.getMessage());}
-		}
-
-		public void realize() { state = Player.REALIZED; }
-
-		public void prefetch()
-		{
-			try
-			{
-				mp3Player = new MPEGPlayer(new ByteArrayInputStream(tmpStream), false);
-				state = Player.PREFETCHED;
-			}
-			catch (Exception e)
-			{
-				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't prefetch mpeg stream: " + e.getMessage());
-				mp3Player.close();
-			}
-		}
-
-		public void start()
-		{
-			try
-			{
-				playerThread = new Thread(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						try
-						{
-							mp3PlayerRunning = true;
-							while(mp3PlayerRunning)
-							{
-								if(getMediaTime() >= getDuration()) { setMediaTime(0); }
-								else { setMediaTime(getMediaTime()); } // Resume from when last stopped
-								mp3Player.play(); // This is thread-blocking, so the code below only executes after this has finished.
-
-								/*
-								* Check if mp3Player is still valid and exit early, since this thread can be
-								* interrupted and the player can also be closed abruptly.
-								*/
-								if (mp3Player == null || !mp3PlayerRunning)  { return; }
-
-								if (!Thread.currentThread().isInterrupted())
-								{
-									state = Player.PREFETCHED;
-									notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-									if(numLoops != 0)
-									{
-										if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-										mp3Player.reset();
-										mp3Player.play();
-									}
-									mp3Player.reset();
-									mp3PlayerRunning = false;
-								}
-							}
-						}
-						catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Mpeg player runtime error:" + e.getMessage()); }
-					}
-				});
-
-				state = Player.STARTED;
-				notifyListeners(PlayerListener.STARTED, getMediaTime());
-
-				playerThread.start();
-			} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
-		}
-
-		public void stop()
-		{
-			mp3Player.stop();
-			mp3PlayerRunning = false;
-			state = Player.PREFETCHED;
-			notifyListeners(PlayerListener.STOPPED, getMediaTime());
-		}
-
-		public void deallocate()
-		{
-			new Thread(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					if(mp3Player != null) { mp3Player.close(); }
-					mp3Player = null;
-				}
-			}).start();
-		}
-
-		public void close()
-		{
-			tmpStream = null;
-			playerThread = null;
-		}
-
-		public void setLoopCount(int count)
-		{
-			/*
-			 * Treat cases where an app wants this stream to loop continuously.
-			 * Here, count = 1 means it should loop one time, whereas in j2me
-			 * it appears that count = 1 means no loop at all, at least based
-			 * on Gameloft games that set effects and some music with count = 1
-			 */
-			if(count == Clip.LOOP_CONTINUOUSLY) { numLoops = count; }
-			else { numLoops = count-1; }
-		}
-
-		public long setMediaTime(long now)
-		{
-			if(now >= getDuration()) { mp3Player.setMicrosecondPosition(getDuration()); }
-			else if(now < 0) { mp3Player.setMicrosecondPosition(0); }
-			else { mp3Player.setMicrosecondPosition(now); }
-
-			/*
-			 * In MP3Player's case, we don't deal with microsecond resolution, so return the new
-			 * effective position converted to microseconds.
-			 */
-			return getMediaTime();
-		}
-
-		public long getMediaTime() { return mp3Player.getMicrosecondPosition(); }
-
-		public long getDuration() { return mp3Player.getDuration(); }
-
-		public boolean isRunning() { return mp3Player.isRunning(); }
-	}
-
 	// Controls //
 
 	/* midiControl is untested */
 	public class midiControl implements javax.microedition.media.control.MIDIControl
 	{
-		private midiPlayer player;
+		private MIDIPlayer player;
 
 		/*
 		 * Java, by default, does not directly support any of the query methods
@@ -1688,7 +671,7 @@ public class PlatformPlayer implements Player
 		 */
 		private int[] channelVolume = new int[16]; // For getChannelVolume
 
-		public midiControl(midiPlayer player)
+		public midiControl(MIDIPlayer player)
 		{
 			this.player = player;
 			for(int channel = 0; channel < channelVolume.length; channel++) { channelVolume[channel] = 127; }
@@ -1924,7 +907,7 @@ public class PlatformPlayer implements Player
 	public class volumeControl implements com.siemens.mp.media.control.VolumeControl // Siemens already extends javax here
 	{
 		private boolean muted = false;
-		private audioplayer player; // Reference to the player this is linked to, or else we won't be able to apply changes
+		private BasicPlayer player; // Reference to the player this is linked to, or else we won't be able to apply changes
 		private byte volume = 100;
 		private int panValue = 64; // Center panning
 
@@ -1940,7 +923,7 @@ public class PlatformPlayer implements Player
 		};
 		SysexMessage sysexMessage = new SysexMessage();
 
-		public volumeControl(audioplayer player) { this.player = player; }
+		public volumeControl(BasicPlayer player) { this.player = player; }
 
 		public int getLevel()
 		{
@@ -1955,22 +938,22 @@ public class PlatformPlayer implements Player
 			if(level > 100) { level = 100; }
 			else if(level < 0) { level = 0; }
 
-			if(level == getLevel() || Mobile.compatIgnoreVolumeChanges) { return level; }
+			if(level == getLevel() || Mobile.compatIgnoreVolumeChanges || player == null) { return getLevel(); }
 
 			try
 			{
-				if (player instanceof midiPlayer)
+				if (player instanceof MIDIPlayer)
 				{
-					if(((midiPlayer)player).synthesizer == null) { return getLevel(); } // Only make changes if the midi subsystem for this player is available
+					if(((MIDIPlayer)player).synthesizer == null) { return getLevel(); } // Only make changes if the midi subsystem for this player is available
 
 					volumeSysEx[6] = isMuted() ? 0 : (byte) (level * 127 / 100); // Convert to MIDI volume range
 					sysexMessage.setMessage(volumeSysEx, volumeSysEx.length);
-					((midiPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
+					((MIDIPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
 				}
-				else if(player instanceof wavPlayer)
+				else if(player instanceof WAVPlayer)
 				{
-					if(((wavPlayer)player).wavClip == null) { return getLevel(); } // Only make changes if the wav clip for this player is available
-					wavPlayer wav = (wavPlayer) player;
+					if(((WAVPlayer)player).wavClip == null) { return getLevel(); } // Only make changes if the wav clip for this player is available
+					WAVPlayer wav = (WAVPlayer) player;
 
 					/* We have to map 0 <= value <= 100 to a clip's range of -30dB to 0dB  */
 					float dB = isMuted() ? -80.0f : -30.0f + ((level / 100.0f) * (30.0f));
@@ -1978,7 +961,7 @@ public class PlatformPlayer implements Player
 					FloatControl volumeControl = (FloatControl) wav.wavClip.getControl(FloatControl.Type.MASTER_GAIN);
 					volumeControl.setValue(dB);
 				}
-				else if(player instanceof SMAFPlayer) // SMAF is a mix of midi and wavPlayer, so it pretty much borrows from both here
+				else if(player instanceof SMAFPlayer) // SMAF is a mix of midi and WAVPlayer, so it pretty much borrows from both here
 				{
 					if(((SMAFPlayer)player).synthesizer != null) // MIDI portion of SMAF
 					{
@@ -2062,9 +1045,9 @@ public class PlatformPlayer implements Player
 		private int tempo = 120000; // Default tempo of 120 BPM in millitempo
 		private int rate = 100000; // Default Rate in RateControl
 
-		private audioplayer player;
+		private BasicPlayer player;
 
-		public tempoControl(audioplayer player) { this.player = player; }
+		public tempoControl(BasicPlayer player) { this.player = player; }
 
 		/*
 		 * According to the docs, getTempo():
@@ -2093,7 +1076,7 @@ public class PlatformPlayer implements Player
 			 * tracks in order to change their tempo at tick 0, but first we need
 			 * to find a jar that uses this, otherwise it's a shot in the dark.
 			 */
-			if(player instanceof midiPlayer) { ((midiPlayer)player).midi.setTempoInBPM(getEffectiveBPM()); }
+			if(player instanceof MIDIPlayer) { ((MIDIPlayer)player).midi.setTempoInBPM(getEffectiveBPM()); }
 			else if(player instanceof SMAFPlayer) { ((SMAFPlayer)player).midi.setTempoInBPM(getEffectiveBPM()); }
 
 			return tempo;
@@ -2108,11 +1091,11 @@ public class PlatformPlayer implements Player
 
 		public int setRate(int millirate)
 		{
-			Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setRate()");
+			if(player == null) { return millirate; }
 			rate = millirate;
 
 			/*
-			 * In order to use setTempoFactor to adjust midiplayer's rate,
+			 * In order to use setTempoFactor to adjust MIDIPlayer's rate,
 			 * we need to convert the rate value we currently have (expressed as
 			 * integer) to the float range that setTempoFactor accepts.
 			 *
@@ -2121,7 +1104,7 @@ public class PlatformPlayer implements Player
 			 */
 			float factor = rate / 100000.0f;
 
-			if(player instanceof midiPlayer) { ((midiPlayer)player).midi.setTempoFactor(factor); }
+			if(player instanceof MIDIPlayer) { ((MIDIPlayer)player).midi.setTempoFactor(factor); }
 			else if(player instanceof SMAFPlayer) { ((SMAFPlayer)player).midi.setTempoFactor(factor); }
 
 			return rate;
@@ -2134,9 +1117,9 @@ public class PlatformPlayer implements Player
 	/* ToneControl is also almost entirely untested right now, couldn't find a jar that uses setSequence() */
 	public class toneControl implements com.siemens.mp.media.control.ToneControl // Siemens already extends javax here too
 	{
-		private midiPlayer player;
+		private MIDIPlayer player;
 
-		public toneControl(midiPlayer player) { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Tone Control"); this.player = player; }
+		public toneControl(MIDIPlayer player) { Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Tone Control"); this.player = player; }
 
 		/*
 		 * As far as i can tell, Nokia's OTT/OTA Tones don't use this, which would leave only jars that directly use J2ME's Augmented BNF format, if there are any.

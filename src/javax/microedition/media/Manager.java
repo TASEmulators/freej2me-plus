@@ -36,6 +36,7 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Soundbank;
 import javax.sound.midi.Synthesizer;
+import javax.sound.midi.Transmitter;
 import javax.microedition.media.protocol.DataSource;
 
 import org.recompile.mobile.Mobile;
@@ -52,10 +53,14 @@ public class Manager
 	private static File soundfontDir = new File("freej2me_system" + File.separatorChar + "customMIDI" + File.separatorChar);
 	private static Soundbank customSoundfont;
 	private static Soundbank defaultSoundbank = null;
-	
+
 	public static final int NUM_EXCLUSIVE_SYNTHS = 4;
 	public static final Synthesizer[] exclusiveSynths = new Synthesizer[NUM_EXCLUSIVE_SYNTHS];
+	public static final Sequencer[] exclusiveSequencers = new Sequencer[NUM_EXCLUSIVE_SYNTHS];
+	public static final Transmitter[] exclusiveTransmitters = new Transmitter[NUM_EXCLUSIVE_SYNTHS];
+	public static final Receiver[] exclusiveReceivers = new Receiver[NUM_EXCLUSIVE_SYNTHS];
 	public static final boolean[] synthIdxInUse = new boolean[] { false, false, false, false };
+
 	public static Synthesizer toneSynth = null;
 	public static Receiver toneReceiver = null;
 	public static Sequencer toneSequencer = null;
@@ -65,7 +70,7 @@ public class Manager
 	public static synchronized Player createPlayer(InputStream stream, String type) throws IOException, MediaException
 	{
 		if (stream == null) { throw new IllegalArgumentException("Cannot create a player since the received stream is null"); }
-		/* 
+		/*
 		 * NOTE: If type is null, we can either try to determine the type, or throw a MediaException. Some jars do use exceptions
 		 * here as part of the game logic (Sonic Spinball K800i uses the exception above in order to load its streams properly), so
 		 * only a lot of testing will be able to determine which is preferable, or if we'd need a config toggle to alternate both.
@@ -82,7 +87,7 @@ public class Manager
 
 		InputStream stream = Mobile.getMIDletResourceAsStream(locator);
 
-		if(Mobile.dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
+		if(Mobile.dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR))
 		{
 			stream = dumpAudioStream(stream, locator); // Using the locator, we can try find out what this is by parsing the file extension
 		}
@@ -113,7 +118,7 @@ public class Manager
 	public static synchronized Player createSiemensPlayer(InputStream stream, String type) throws IOException, MediaException
 	{
 		if (stream == null) { throw new IllegalArgumentException("Cannot create a player since the received stream is null"); }
-		/* 
+		/*
 		 * NOTE: If type is null, we can either try to determine the type, or throw a MediaException. Some jars do use exceptions
 		 * here as part of the game logic (Sonic Spinball K800i uses the exception above in order to load its streams properly), so
 		 * only a lot of testing will be able to determine which is preferable, or if we'd need a config toggle to alternate both.
@@ -130,7 +135,7 @@ public class Manager
 
 		InputStream stream = Mobile.getPlatform().loader.getResourceAsStream(locator);
 
-		if(Mobile.dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR)) 
+		if(Mobile.dumpAudioStreams && !locator.equals(Manager.TONE_DEVICE_LOCATOR) && !locator.equals(Manager.MIDI_DEVICE_LOCATOR))
 		{
 			dumpAudioStream(stream, locator); // Using the locator, we can try find out what this is by parsing the file extension
 		}
@@ -149,22 +154,22 @@ public class Manager
 			"audio/amr", "audio/mpeg", "audio/x-tone-seq", "audio/mmf",
 			"audio/x-imy", "audio/basic" };
 	}
-	
+
 	public static String[] getSupportedProtocols(String content_type)
 	{
 		Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Get Supported Media Protocols");
 		return new String[]{ TONE_DEVICE_LOCATOR, MIDI_DEVICE_LOCATOR };
 	}
-	
+
 	public static void playTone(final int note, int duration, int volume) throws MediaException
 	{
 		if(Mobile.sound == false) { return; }
-		
+
 		Mobile.log(Mobile.LOG_DEBUG, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Play Tone");
 
 		if (note < 0 || note > 127) { throw new IllegalArgumentException("playTone: Note value must be between 0 and 127."); }
 		if (duration <= 0) { throw new IllegalArgumentException("playTone: Note duration must be positive and non-zero."); }
-		if (volume < 0) { volume = 0; } 
+		if (volume < 0) { volume = 0; }
 		else if (volume > 100) { volume = 100; }
 
 		final int restoreBankMSB = toneChannel.getController(0);    // Bank MSB
@@ -183,46 +188,46 @@ public class Manager
 
 		final byte restoreVolume = (byte) toneChannel.getController(7); // Save previous volume to restore later, as this synth is shared by everything that uses MIDI
 
-		/* 
+		/*
 		 * There's no need to calculate the note frequency as per the MIDP Manager docs,
-		 * they are pretty much the note numbers used by Java's Built-in MIDI library. 
+		 * they are pretty much the note numbers used by Java's Built-in MIDI library.
 		 * Just play the note straight away, mapping the volume from 0-100 to 0-127.
-		 */ 
+		 */
 		toneChannel.controlChange(7, volume * 127 / 100);
 		toneChannel.noteOn(note, effectiveDuration); // Make the decay just long enough for the note not to fade shorter than expected
 
 		/* Since it has to be non-blocking, wait for the specified duration in a separate Thread before stopping the note. */
-		toneThread = new Thread(new Runnable() 
+		toneThread = new Thread(new Runnable()
 		{
 			@Override
-			public void run() 
+			public void run()
 			{
-				try 
-				{ 
+				try
+				{
 					Thread.sleep(effectiveDuration);
 					toneChannel.noteOff(note);
 					toneChannel.controlChange(0,  restoreBankMSB);
 					toneChannel.controlChange(32, restoreBankLSB);
 					toneChannel.programChange(restoreInstrument);
 					toneChannel.controlChange(7, restoreVolume);
-				} 
-				catch (InterruptedException e) 
+				}
+				catch (InterruptedException e)
 				{
 					toneChannel.noteOff(note);
 					toneChannel.controlChange(0,  restoreBankMSB);
 					toneChannel.controlChange(32, restoreBankLSB);
 					toneChannel.programChange(restoreInstrument);
 					toneChannel.controlChange(7, restoreVolume);
-					return; 
+					return;
 				} // The only reason for this to be interrupted is if a new tone is requested
 			}
 		});
 		toneThread.start();
 	}
 
-	public static final InputStream dumpAudioStream(InputStream stream, String type) 
+	public static final InputStream dumpAudioStream(InputStream stream, String type)
 	{
-		try 
+		try
 		{
 			stream.mark(1024);
 			String streamMD5 = generateMD5Hash(stream, 1024);
@@ -250,10 +255,10 @@ public class Manager
 			else if(type.toLowerCase().contains("wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav"); }
 			else if(type.toLowerCase().contains("mp"))  { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3"); }
 			else if(type.toLowerCase().contains("mld")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mld"); }
-			else if(type.toLowerCase().contains("mmf")) 
+			else if(type.toLowerCase().contains("mmf"))
 			{
 				stream.mark(4);
-				byte[] data = new byte[4]; 
+				byte[] data = new byte[4];
 				stream.read(data);
 				stream.reset();
 				if((data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') ) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + "_Decoded.mid"); } // It's a sequence SMAF, converted to MIDI
@@ -263,7 +268,7 @@ public class Manager
 			else
 			{
 				stream.mark(4);
-				byte[] data = new byte[4]; 
+				byte[] data = new byte[4];
 				stream.read(data);
 				stream.reset();
 				if((data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') ) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + "_Decoded.mid"); } // Tones are converted to midi, save them as "decoded"
@@ -280,7 +285,7 @@ public class Manager
 		return stream;
 	}
 
-	private static String generateMD5Hash(InputStream stream, int byteCount) 
+	private static String generateMD5Hash(InputStream stream, int byteCount)
 	{
         try
 		{
@@ -300,15 +305,15 @@ public class Manager
 		return null;
     }
 
-	private static final void checkCustomMidi() 
+	private static final void checkCustomMidi()
 	{
-		/* 
+		/*
 		 * If the directory for custom soundfonts doesn't exist, create it, no matter if the user
 		 * is going to use it or not.
 		 */
-		if(!soundfontDir.isDirectory()) 
+		if(!soundfontDir.isDirectory())
 		{
-			try 
+			try
 			{
 				soundfontDir.mkdirs();
 				File dummyFile = new File(soundfontDir.getPath() + File.separatorChar + "place sf2 file or gm for early java 6 here");
@@ -316,60 +321,60 @@ public class Manager
 			}
 			catch(IOException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to create custom midi dir:" + e.getMessage()); }
 		}
-		
+
 		/* Get the first sf2 or gm soundfont in the directory */
-		String[] fontfile = soundfontDir.list(new FilenameFilter() 
+		String[] fontfile = soundfontDir.list(new FilenameFilter()
 		{
 			@Override
-			public boolean accept(File f, String soundfont) 
+			public boolean accept(File f, String soundfont)
 			{
 				String lowerCaseFont = soundfont.toLowerCase();
 				return lowerCaseFont.endsWith(".sf2") || lowerCaseFont.endsWith(".gm");
 			}
 		});
 
-		/* 
+		/*
 			* Only really set the player to use a custom midi soundfont if there is
 			* at least one inside the directory.
 			*/
-		if(Mobile.useCustomMidi && fontfile != null && fontfile.length > 0) 
+		if(Mobile.useCustomMidi && fontfile != null && fontfile.length > 0)
 		{
-			try 
+			try
 			{
 				// Load the first .sf2 font available, if there's none that's valid, don't set any and use JVM's default
 				customSoundfont = MidiSystem.getSoundbank(new File(soundfontDir, fontfile[0]));
-			} 
+			}
 			catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Could not load soundfont into synth: " + e.getMessage());}
 		}
 		else if (!Mobile.useCustomMidi) { customSoundfont = defaultSoundbank; }
-		else 
-		{ 
-			Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Custom MIDI enabled but there's no soundfont in: " + (soundfontDir.getPath() + File.separatorChar)); 
+		else
+		{
+			Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Custom MIDI enabled but there's no soundfont in: " + (soundfontDir.getPath() + File.separatorChar));
 			customSoundfont = defaultSoundbank;
 		}
 	}
 
-	public static void changeCustomMidi() 
+	public static void changeCustomMidi()
 	{
-		try 
+		try
 		{
 			boolean wasPlaying = false;
 			checkCustomMidi();
 
 			// Maybe we went through here before, make sure to stop the sequencers before changing soundfont
-			if (toneSequencer != null && toneSequencer.isRunning()) 
+			if (toneSequencer != null && toneSequencer.isRunning())
 			{
 				toneSequencer.stop();
 				wasPlaying = true;
 			}
 
-			for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++) 
+			for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++)
 			{
 				if(exclusiveSynths[i] != null) { exclusiveSynths[i].loadAllInstruments(Manager.getCustomSoundfont()); }
 			}
-			
+
 			// Restart the sequencer if needed
-			if (toneSequencer != null && wasPlaying) 
+			if (toneSequencer != null && wasPlaying)
 			{
 				toneSequencer.start();
 				wasPlaying = false;
@@ -380,7 +385,7 @@ public class Manager
 
 	public static Synthesizer prepareSynthesizer() throws MidiUnavailableException
 	{
-		Synthesizer synth = MidiSystem.getSynthesizer(); 
+		Synthesizer synth = MidiSystem.getSynthesizer();
 		synth.open();
 
 		defaultSoundbank = synth.getDefaultSoundbank();
@@ -392,36 +397,53 @@ public class Manager
 		return synth;
 	}
 
-	public static int retrieveAvailableSynthIndex() 
+	public static int retrieveAvailableSynthIndex()
 	{
-		for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++) 
+		for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++)
 		{
-			if(synthIdxInUse[i] == false) { return i; }
+			if(!exclusiveSequencers[i].isRunning() && synthIdxInUse[i] == false) { return i; }
 		}
 
 		return NUM_EXCLUSIVE_SYNTHS-1; // We have no option but to reuse a synth here, as the four exclusive ones are all in use
 	}
 
+	public static synchronized void releaseSynthIndex(int index)
+    {
+        if (index >= 0 && index < NUM_EXCLUSIVE_SYNTHS)
+        {
+            synthIdxInUse[index] = false;
+            exclusiveSequencers[index].setMicrosecondPosition(0);
+        }
+    }
+
 	public static Soundbank getCustomSoundfont() { return customSoundfont; }
 
-	public static void prepareMediaEngine() 
+	public static void prepareMediaEngine()
 	{
-		try  
+		try
 		{
-			for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++) 
+			for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++)
 			{
 				exclusiveSynths[i] = prepareSynthesizer();
+				exclusiveSequencers[i] = MidiSystem.getSequencer(false);
+
+				exclusiveSequencers[i].open();
+				exclusiveSequencers[i].getTransmitter().setReceiver(exclusiveSynths[i].getReceiver());
+
+				exclusiveReceivers[i] = exclusiveSynths[i].getReceiver();
+				exclusiveTransmitters[i] = exclusiveSequencers[i].getTransmitter();
+				exclusiveTransmitters[i].setReceiver(exclusiveReceivers[i]);
 			}
 			toneSynth = exclusiveSynths[NUM_EXCLUSIVE_SYNTHS-1]; // Get the last synth of PlatformPlayer
-			toneReceiver = toneSynth.getReceiver();	
+			toneReceiver = toneSynth.getReceiver();
 			toneChannel = toneSynth.getChannels()[15]; // Also get the last channel of the last synth, to minimize chances of this causing issues with other MIDI streams
 
-			toneSequencer = MidiSystem.getSequencer(false);
+			toneSequencer = exclusiveSequencers[NUM_EXCLUSIVE_SYNTHS-1];
 			toneSequencer.getTransmitter().setReceiver(toneReceiver);
 			toneSequencer.open();
 
 			Mobile.log(Mobile.LOG_DEBUG, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Synthesizer for sequenced and tone data is ready.");
-		} 
+		}
 		catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Couldn't open Tone Player: " + e.getMessage()); }
 	}
 }

@@ -27,7 +27,7 @@ import javax.microedition.media.Player;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
 
-public abstract class PhraseTrackBase 
+public abstract class PhraseTrackBase
 {
 	public static final int NO_DATA = 1;
 	public static final int READY = 2;
@@ -56,38 +56,38 @@ public abstract class PhraseTrackBase
 
 	public PhraseTrackBase(int id) { ID = id; }
 
-	public void play() 
-	{ 
+	public void play()
+	{
 		play(1);
-		paused = false; 
+		paused = false;
 	}
 
-	public void play(int loop) 
-	{ 
+	public void play(int loop)
+	{
 		if(player == null) { throw new RuntimeException("Cannot play: null player"); }
 		if(loop == 0) { loop = -1; } // Loop as 0 means infinite looping here
-		
+
 		player.setLoopCount(loop);
 		player.setMediaTime(0); // Play starts from the beginning of the track
 		((PlatformPlayer)player).setPhraseListener(listener);
+		player.start();
 		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setPanpot(panpot);
 		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel(volume);
-		player.start();
 
 		// Play any currently set slave phrases
 		for(int i = 0; i < slavePhrases.size(); i++)         { slavePhrases.get(i).play(loop); }
 		for(int i = 0; i < slaveJPhonePhrases.size(); i++)   { slaveJPhonePhrases.get(i).play(loop); }
 		for(int i = 0; i < slaveVodafonePhrases.size(); i++) { slaveVodafonePhrases.get(i).play(loop); }
-		paused = false; 
+		paused = false;
 	}
 
-	public void stop() 
-	{ 
+	public void stop()
+	{
 		if(player == null) { throw new RuntimeException("Cannot stop: null player"); }
-		
+
 		player.stop();
 		player.setMediaTime(0);
-		paused = false; 
+		paused = false;
 
 		// Stop any currently set slave phrases
 		for(int i = 0; i < slavePhrases.size(); i++)         { slavePhrases.get(i).stop(); }
@@ -95,12 +95,12 @@ public abstract class PhraseTrackBase
 		for(int i = 0; i < slaveVodafonePhrases.size(); i++) { slaveVodafonePhrases.get(i).stop(); }
 	}
 
-	public void pause() 
+	public void pause()
 	{
 		if(player == null) { throw new RuntimeException("Cannot pause: null player"); }
-		
+
 		player.stop();
-		paused = true; 
+		paused = true;
 
 		// Pause any currently set slave phrases
 		for(int i = 0; i < slavePhrases.size(); i++)         { slavePhrases.get(i).pause(); }
@@ -108,14 +108,14 @@ public abstract class PhraseTrackBase
 		for(int i = 0; i < slaveVodafonePhrases.size(); i++) { slaveVodafonePhrases.get(i).pause(); }
 	}
 
-	public void resume() 
-	{ 
+	public void resume()
+	{
 		if(player == null) { throw new RuntimeException("Cannot resume: null player"); }
-		
+
 		((PlatformPlayer)player).setPhraseListener(listener);
+		player.start();
 		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setPanpot(panpot);
 		((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel(volume);
-		player.start();
 		paused = false;
 
 		// Resume any currently set slave phrases
@@ -124,39 +124,41 @@ public abstract class PhraseTrackBase
 		for(int i = 0; i < slaveVodafonePhrases.size(); i++) { slaveVodafonePhrases.get(i).resume(); }
 	}
 
-	public int getState() 
-	{ 
+	public int getState()
+	{
 		if(paused) { return PAUSED; }
 		else if(player == null || player.getState() == Player.CLOSED) { return NO_DATA; }
 		else if(player.getState() <= Player.PREFETCHED) { return READY; }
 		else { return PLAYING; }
 	}
 
-	public void setVolume(int value) 
-	{ 
+	public void setVolume(int value)
+	{
 		if(value < 0 || value > MAX_VOLUME) { throw new IllegalArgumentException("Value is out of range"); }
-		
+
 		volume = value;
+		if(player != null) { ((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setLevel(volume); }
 	}
 
 	public int getVolume() { return volume; }
 
-	public void setPanpot(int value) 
-	{ 
+	public void setPanpot(int value)
+	{
 		if(value < 0 || value > 127) { throw new IllegalArgumentException("Value is out of range"); }
 
 		panpot = value;
+		if(player != null) { ((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setPanpot(panpot); }
 	}
 
 	public int getPanpot() { return panpot; }
 
-	public void mute(boolean mute) 
-	{ 
+	public void mute(boolean mute)
+	{
 		if(player != null) { ((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).setMute(mute); }
 	}
 
-	public boolean isMute() 
-	{ 
+	public boolean isMute()
+	{
 		return player == null ? false : ((PlatformPlayer.volumeControl)player.getControl("VolumeControl")).isMuted();
 	}
 
@@ -165,73 +167,73 @@ public abstract class PhraseTrackBase
 	public void setEventListener(PhraseTrackListener l) { listener = l; }
 
 	public void setPhrase(Phrase p)
-	{ 
+	{
 		if(getState() == PLAYING) { throw new RuntimeException("Cannot set Phrase when the player is running"); }
 		if(p == null) { throw new NullPointerException("Cannot set a null phrase"); }
-		
-		try 
+
+		try
 		{
 			phrase = p;
 			player = Manager.createPlayer(new ByteArrayInputStream(phrase.getData()), "");
 			player.prefetch();
 		}
-		catch (Exception e) 
-		{ 
-			Mobile.log(Mobile.LOG_WARNING, PhraseTrackBase.class.getPackage().getName() + "." + PhraseTrackBase.class.getSimpleName() + ": " + "Failed to create Player from phrase data :" + e.getMessage()); 
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_WARNING, PhraseTrackBase.class.getPackage().getName() + "." + PhraseTrackBase.class.getSimpleName() + ": " + "Failed to create Player from phrase data :" + e.getMessage());
 			throw new RuntimeException("Failed to create Player from phrase data");
 		}
 	}
 
 	public void setAudioPhrase(AudioPhrase p)
-	{ 
+	{
 		if(getState() == PLAYING) { throw new RuntimeException("Cannot set AudioPhrase when the player is running"); }
 		if(p == null) { throw new NullPointerException("Cannot set a null AudioPhrase"); }
-		
-		try 
+
+		try
 		{
 			audioPhrase = p;
 			player = Manager.createPlayer(new ByteArrayInputStream(audioPhrase.getData()), "");
 			player.prefetch();
 		}
-		catch (Exception e) 
-		{ 
-			Mobile.log(Mobile.LOG_WARNING, PhraseTrackBase.class.getPackage().getName() + "." + PhraseTrackBase.class.getSimpleName() + ": " + "Failed to create Player from phrase data :" + e.getMessage()); 
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_WARNING, PhraseTrackBase.class.getPackage().getName() + "." + PhraseTrackBase.class.getSimpleName() + ": " + "Failed to create Player from phrase data :" + e.getMessage());
 			throw new RuntimeException("Failed to create Player from phrase data");
 		}
 	}
 
 	// The player can only contain a Phrase or an AudioPhrase at any given time
-	public void removePhrase() 
-	{ 
+	public void removePhrase()
+	{
 		if(getState() == PLAYING) { throw new RuntimeException("Cannot remove Phrase when the player is running"); }
 		if(player != null) { player.close(); }
-		this.phrase = null; 
+		this.phrase = null;
 	}
 
-	public void removeAudioPhrase() 
-	{ 
+	public void removeAudioPhrase()
+	{
 		if(getState() == PLAYING) { throw new RuntimeException("Cannot remove AudioPhrase when the player is running"); }
 		if(player != null) { player.close(); }
 		this.audioPhrase = null;
 	}
 
 
-	public void setPhraseSyncMaster(PhraseTrack master) 
-	{ 
+	public void setPhraseSyncMaster(PhraseTrack master)
+	{
 		if(getState() == PLAYING || phraseSyncMaster != null || !slavePhrases.isEmpty()) { return; }
-		phraseSyncMaster = master; 
+		phraseSyncMaster = master;
 	}
 
-	public void setJPhoneSyncMaster(com.j_phone.amuse.PhraseTrack master) 
-	{ 
+	public void setJPhoneSyncMaster(com.j_phone.amuse.PhraseTrack master)
+	{
 		if(getState() == PLAYING || jPhoneSyncMaster != null || !slaveJPhonePhrases.isEmpty()) { return; }
-		jPhoneSyncMaster = master; 
+		jPhoneSyncMaster = master;
 	}
 
-	public void setVodafoneSyncMaster(com.vodafone.v10.sound.SoundTrack master) 
-	{ 
+	public void setVodafoneSyncMaster(com.vodafone.v10.sound.SoundTrack master)
+	{
 		if(getState() == PLAYING || vodafoneSyncMaster != null || !slaveVodafonePhrases.isEmpty()) { return; }
-		vodafoneSyncMaster = master; 
+		vodafoneSyncMaster = master;
 	}
 
 	public PhraseTrack getPhraseSyncMaster() { return phraseSyncMaster; }

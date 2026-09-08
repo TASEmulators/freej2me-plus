@@ -47,8 +47,8 @@ public class AudioClip
 		// TODO: Check is ignored but is part of the AudioClip spec. Some versions of Snowball Fight send whatever for clipType here, this check breaks them completely.
 		//if(clipType < 1 || clipType > 3) { throw new IllegalArgumentException("AudioClip: Clip type not recognized");}
 		if(clipType < 1 || clipType > 3) { clipType = TYPE_MMF; } // Whenever something is going wildly off-spec here, it's MMF.
-		
-		if (audioOffset < 0 || audioLength < 0 || audioOffset + audioLength > audioData.length) 
+
+		if (audioOffset < 0 || audioLength < 0 || audioOffset + audioLength > audioData.length)
 		{
 			throw new ArrayIndexOutOfBoundsException("AudioClip: Cannot create player, tried to access audioData at an invalid position");
 		}
@@ -58,8 +58,8 @@ public class AudioClip
 		else if(audioData[audioOffset+0] == 'M' && audioData[audioOffset+1] == 'T' && audioData[audioOffset+2] == 'h' && audioData[audioOffset+3] == 'd') { clipType = TYPE_MIDI; }
 		else if(audioData[audioOffset+0] == 'I' && audioData[audioOffset+1] == 'D' && audioData[audioOffset+2] == '3' || ((audioData[audioOffset+0] == (byte) 0xFF) && (audioData[audioOffset+1] & 0xE0) == 0xE0)) { clipType = TYPE_MP3; }
 
-		try 
-		{ 
+		try
+		{
 			player = Manager.createPlayer(new ByteArrayInputStream(audioData, audioOffset, audioLength), formatMIMEType[clipType-1]);
 			playerFormat = clipType;
 			player.prefetch();
@@ -75,12 +75,12 @@ public class AudioClip
 	public AudioClip(int clipType, String filename)
 	{
 		if(filename == null) { throw new NullPointerException("AudioClip: Cannot open a player with a null file path"); }
-		
+
 		// TODO: Check is ignored but is part of the AudioClip spec. Some versions of Snowball Fight send whatever for clipType here, this check breaks them completely.
 		//if(clipType < 1 || clipType > 3) { throw new IllegalArgumentException("AudioClip: Clip type not recognized");}
 		if(clipType < 1 || clipType > 3) { clipType = TYPE_MMF; } // Whenever something is going wildly off-spec here, it's MMF.
 
-		try 
+		try
 		{
 			InputStream stream = Mobile.getPlatform().loader.getResourceAsStream(filename);
 			player = Manager.createPlayer(stream, formatMIMEType[clipType-1]);
@@ -99,7 +99,7 @@ public class AudioClip
 
 	public void pause() { player.stop(); }
 
-	public void play(int loop, int volume) 
+	public void play(int loop, int volume)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "loop:" + loop + " vol:" + volume);
 		// MMF apparently accepts looping to -1 in AudioClip. Not stated on the documentation, but some jars like ClickMan use it specifically for MMF
@@ -110,32 +110,32 @@ public class AudioClip
 			if (player.getState() == Player.STARTED) { player.stop(); }
 			player.setMediaTime(0); // play() should always play media from the beginning, like Nokia Sound
 			player.setLoopCount((loop == 255 || loop == 0) ? -1 : loop); // Treat 0 and 255 loops as infinite looping
-			((VolumeControl) player.getControl("VolumeControl")).setLevel((playerFormat == TYPE_MMF) ? (volume <= 5 ? volume * 20 : volume) : volume * 20); // Received volume varies from 1 to 5, so adapt
 			player.start();
+			((VolumeControl) player.getControl("VolumeControl")).setLevel((playerFormat == TYPE_MMF) ? (volume <= 5 ? volume * 20 : volume) : volume * 20); // Received volume varies from 1 to 5, so adapt
 		}
 		catch (Exception e) {Mobile.log(Mobile.LOG_ERROR, AudioClip.class.getPackage().getName() + "." + AudioClip.class.getSimpleName() + ": " + "AudioClip: Failed to play():" + e.getMessage()); }
 	}
 
-	public void resume() 
+	public void resume()
 	{
 		/* Resume only restarts the player if it is paused, AND its current saved position is not at the end of the media. Otherwise, this results in infinite playback loops */
 		if(player.getState() == Player.PREFETCHED && (player.getMediaTime() < player.getDuration())) { player.start(); }
 	}
 
-	public void stop() 
-	{ 
+	public void stop()
+	{
 		if(player.getState() != Player.STARTED) { return; }
 		player.stop();
-		player.setMediaTime(0); 
+		player.setMediaTime(0);
 	}
 
 
 	// Used by skt.m.AudioClip, it's play method has to be blocking
 	public boolean isRunning() { return ((PlatformPlayer)player).isRunning(); }
 
-	public void close() 
-	{ 
-		if(player != null) { player.close(); player = null; } 
+	public void close()
+	{
+		if(player != null) { player.close(); player = null; }
 	}
 
 }
