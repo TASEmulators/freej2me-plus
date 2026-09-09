@@ -800,9 +800,9 @@ public class FreeJ2ME
 			main.setSize(Toolkit.getDefaultToolkit().getScreenSize());
 		}
 
-		main.setVisible(true);
 		resize();
 		fjGUI.updateDialogs();
+		main.setVisible(true);
 	}
 
 	private class LCD extends JPanel
