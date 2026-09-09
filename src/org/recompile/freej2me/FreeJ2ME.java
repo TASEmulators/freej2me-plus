@@ -697,7 +697,11 @@ public class FreeJ2ME
 				lcdHeight = Mobile.lcdWidth;
 			}
 			resize();
-			if(!isFullscreen) { main.setSize(lcdWidth*scaleFactor+xborder , lcdHeight*scaleFactor+yborder); }
+			if(!isFullscreen)
+			{
+				lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
+				main.pack();
+			}
 			lcd.clearScreen();
 		}
 
