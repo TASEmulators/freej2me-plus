@@ -1448,15 +1448,6 @@ public class Graphics3D
 		float zStep  = (zMidR - zMidL) * invMidSpan;
 		float pwStep = (pwMidR - pwMidL) * invMidSpan;
 
-		if (hasTexture)
-		{
-			for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-			{
-				stepS[i] = (sMidR[i] - sMidL[i]) * invMidSpan;
-				stepT[i] = (tMidR[i] - tMidL[i]) * invMidSpan;
-			}
-		}
-
 		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
 
 		float subY = yStart - (half == 0 ? yTop : yMid);
@@ -1470,6 +1461,9 @@ public class Graphics3D
 		{
 			for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 			{
+				stepS[i] = (sMidR[i] - sMidL[i]) * invMidSpan;
+				stepT[i] = (tMidR[i] - tMidL[i]) * invMidSpan;
+
 				dsL_dy[i] = (half == 0 ? sMidL[i] - sTop[i] : sBot[i] - sMidL[i]) * yDiv;
 				dtL_dy[i] = (half == 0 ? tMidL[i] - tTop[i] : tBot[i] - tMidL[i]) * yDiv;
 
@@ -1541,7 +1535,6 @@ public class Graphics3D
 
 			// Color and depth share the same physical render-target index.
 			int rasterIdx = (originY + viewy + y) * canvasWidth + originX + viewx + ixL;
-			int depthIdx = rasterIdx;
 
 			float pw = pwL + (ixL - xL) * pwStep;
 			float invPw = doPerspective ? M3GMath.fastReciprocal(pw) : 1.0f;
@@ -1565,12 +1558,12 @@ public class Graphics3D
 			}
 
 			// Draw the pixels for the current y-coordinate
-			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, invPw += stepInvPw, fogFactor += stepFogFactor, depthIdx++, rasterIdx++)
+			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, invPw += stepInvPw, fogFactor += stepFogFactor, rasterIdx++)
 			{
 				// Subsampling block. A.K.A, where we calculate anything that
 				// is too expensive to run per-pixel but cannot be done only once
 				// for the whole triangle Y scanline due to large precision loss.
-				if (doPerspective && ((x & Mobile.m3gPerspCorrSubFactor) == 0 || x == ixL))
+				if (doPerspective && ((x & Mobile.m3gPerspCorrSubFactor) == 0 | x == ixL))
 				{
 					int maxSpan = (Mobile.m3gPerspCorrSubFactor + 1) -
 						(x & Mobile.m3gPerspCorrSubFactor);
@@ -1616,7 +1609,7 @@ public class Graphics3D
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(usesDepth && this.depthBuffer[depthIdx] < (short) z)
+				if(usesDepth && this.depthBuffer[rasterIdx] < (short) z)
 				{
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
@@ -1624,11 +1617,7 @@ public class Graphics3D
 					if (hasColors) { deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB; }
 					if(hasTexture)
 					{
-						for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-						{
-							curS[i] += stepS[i];
-							curT[i] += stepT[i];
-						}
+						for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++) { curS[i] += stepS[i]; curT[i] += stepT[i]; }
 					}
 					continue;
 				}
@@ -1643,21 +1632,17 @@ public class Graphics3D
 					// clamp these to [0,255] range is faster and should not
 					// cause overflow
 					paintPixel = ((deltaA >> 16 & 0xFF) << 24) |
-					 ((deltaR >> 16 & 0xFF) << 16) |
-					 ((deltaG >> 16 & 0xFF) << 8)  |
-					  (deltaB >> 16 & 0xFF);
+						((deltaR >> 16 & 0xFF) << 16) |
+						((deltaG >> 16 & 0xFF) << 8)  |
+						(deltaB >> 16 & 0xFF);
 
-					deltaA += stepA;
-					deltaR += stepR;
-					deltaG += stepG;
-					deltaB += stepB;
+					deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB;
 				}
 				// Otherwise, we just use the default vertex color for this triangle
 				else { paintPixel = opaqueAlpha | defVertColor; }
 
 				if(hasTexture)
 				{
-					int bayerThreshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
 					for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						Image2D targetImage = textures[i].getImage();
@@ -1668,13 +1653,12 @@ public class Graphics3D
 						// Mipmapping support requested.
 						if (levelFilters[i] != Texture2D.FILTER_BASE_LEVEL)
 						{
-							float dsdx, dtdx, dsdy, dtdy;
 							int targetLevel = 0;
 
-							dsdx = (sStepX[i] - s * dwdx) * invPw;
-							dtdx = (tStepX[i] - t * dwdx) * invPw;
-							dsdy = (sStepY[i] - s * dwdy) * invPw;
-							dtdy = (tStepY[i] - t * dwdy) * invPw;
+							float dsdx = (sStepX[i] - s * dwdx) * invPw;
+							float dtdx = (tStepX[i] - t * dwdx) * invPw;
+							float dsdy = (sStepY[i] - s * dwdy) * invPw;
+							float dtdy = (tStepY[i] - t * dwdy) * invPw;
 
 							if (levelFilters[i] == Texture2D.FILTER_NEAREST)
 							{
@@ -1683,8 +1667,7 @@ public class Graphics3D
 								float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
 
 								int rawBits = Float.floatToRawIntBits(maxSq) - 0x3F800000;
-								rawBits = rawBits & ~(rawBits >> 31);
-								targetLevel = rawBits>> 24;
+								targetLevel = (rawBits & ~(rawBits >> 31)) >> 24;
 							}
 							else // Trilinear
 							{
@@ -1696,10 +1679,9 @@ public class Graphics3D
 								// retaining most of the looks.
 								int lodFract = ((rawBits >> 19) & 0x1F) & ~(rawBits >> 31);
 
-								rawBits = rawBits & ~(rawBits >> 31);
-								targetLevel = rawBits >> 24;
-
-								targetLevel -= (bayerThreshold - lodFract) >> 31;
+								int bayerThreshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
+								targetLevel = ((rawBits & ~(rawBits >> 31)) >> 24) -
+									((bayerThreshold - lodFract) >> 31);
 							}
 
 							targetImage = textures[i].getImageForLOD(targetLevel);
@@ -1721,7 +1703,9 @@ public class Graphics3D
 						}
 						else
 						{
-							int texCoord = wrapCoords(M3GMath.floor(s), M3GMath.floor(t), targetImage.getWidth(),
+							int texS = (int) (s + 32768.0f) - 32768;
+							int texT = (int) (t + 32768.0f) - 32768;
+							int texCoord = wrapCoords(texS, texT, targetImage.getWidth(),
 								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
 
 							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texCoord & 0xFFFF, texCoord >>> 16),
@@ -1741,10 +1725,10 @@ public class Graphics3D
 				 */
 				final int alpha = paintPixel >>> 24;
 
-				if (alpha == 0 || alpha < alphaThreshold) { continue; }
+				if (alpha < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
-				if (usesDepthWrite) { this.depthBuffer[depthIdx] = (short) z; }
+				if (usesDepthWrite) { this.depthBuffer[rasterIdx] = (short) z; }
 
 				// Only write to the screen if color write is enabled.
 				if(!colorEnabled) { continue; }
