@@ -140,7 +140,7 @@ class Triangle
 
 		int triOffset = 0;
 
-		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++, triOffset += 3)
+		for (int tri_id = 0; tri_id < totalTris; tri_id++, triOffset += 3)
 		{
 			final int i0 = tris[triOffset];
 			final int i1 = tris[triOffset + 1];
@@ -151,7 +151,13 @@ class Triangle
 			final int idx2 = i2 << 2;
 
 			// Cull as early as possible, so we save the need to even do copies.
-			final boolean ccw = isCounterClockwise(vert, idx0, idx1, idx2);
+			// in those cases.
+			final float ax = vert[idx0], ay = vert[idx0 + 1], aw = vert[idx0 + 3];
+			final float bx = vert[idx1], by = vert[idx1 + 1], bw = vert[idx1 + 3];
+			final float cx = vert[idx2], cy = vert[idx2 + 1], cw = vert[idx2 + 3];
+
+			final boolean ccw = ((ax * by - ay * bx) * cw +
+				(bx * cy - by * cx) * aw + (cx * ay - cy * ax) * bw) > 0.0f;
 
 			// XOR: When even a ternary is considered "too much overhead".
 			final boolean isFrontFace = polygonClockwise ^ ccw;
@@ -227,24 +233,80 @@ class Triangle
 			/*
 			 * Clip against the homogeneous near plane (z >= -w), interpolating
 			 * positions, texture coordinates and vertex colors before perspective division.
+			 *
+			 * First though, check if we even need to clip it at all, and save
+			 * a method call and a few copy operations if we don't.
 			 */
-			final int outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
-					hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
+			final int outCount;
+			final float[] srcV;
+			final float[][] srcT;
+			final int[] srcC;
 
-			if (outCount < 3) { continue; }
+			final boolean needsNearClip = (Triangle.inV[2] < -Triangle.inV[3]) ||
+				(Triangle.inV[6] < -Triangle.inV[7])  ||
+				(Triangle.inV[10] < -Triangle.inV[11]);
+			if (!needsNearClip)
+			{
+				outCount = 3;
+				srcV = Triangle.inV;
+				srcT = Triangle.inT;
+				srcC = Triangle.inC;
+			}
+			else
+			{
+				outCount = clipNearPlane(Triangle.inV, Triangle.inT, Triangle.inC,
+						hasTex, texc, Triangle.outV, Triangle.outT, Triangle.outC);
+
+				if (outCount < 3) { continue; }
+
+				srcV = Triangle.outV;
+				srcT = Triangle.outT;
+				srcC = Triangle.outC;
+			}
 
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
 			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
-				tri.setVertexCoords(Triangle.outV, fan);
-				tri.setTexCoords(Triangle.outT, fan);
-				tri.setVertexColors(hasColors ? Triangle.outC : null, fan);
+				tri.setVertexCoords(srcV, fan);
+				tri.setTexCoords(srcT, fan);
+				tri.setVertexColors(hasColors ? srcC : null, fan);
 
 				// Calculate the average Z for front-to-back sorting.
 				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
 
-				tri.project(perspectiveCorrect);
+				// Apply perspective division to the triangle, it's going to NDC
+
+				// It is faster to calculate the reciprocal of w (1/w) and just
+				// multiply vertices and texture coordinates by it, than it is to
+				// constantly divide them by W here.
+				final float invW0 = M3GMath.fastReciprocal(tri.v[3]);
+				final float invW1 = M3GMath.fastReciprocal(tri.v[7]);
+				final float invW2 = M3GMath.fastReciprocal(tri.v[11]);
+
+				tri.v[0] *= invW0; tri.v[1] *= invW0; tri.v[2] *= invW0; tri.v[3] = 1.0f;
+				tri.v[4] *= invW1; tri.v[5] *= invW1; tri.v[6] *= invW1; tri.v[7] = 1.0f;
+				tri.v[8] *= invW2; tri.v[9] *= invW2; tri.v[10] *= invW2; tri.v[11] = 1.0f;
+
+				tri.invW[0] = invW0;
+				tri.invW[1] = invW1;
+				tri.invW[2] = invW2;
+
+				// Texture coordinates are stored as s/w and t/w if
+				// perspective correction is enabled (undone per-pixel in rasterizer)
+				if (perspectiveCorrect)
+				{
+					for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
+					{
+						final float[] tu = tri.t[u];
+						if (tu != null)
+						{
+							tu[0] *= invW0; tu[1] *= invW0;
+							tu[2] *= invW1; tu[3] *= invW1;
+							tu[4] *= invW2; tu[5] *= invW2;
+						}
+					}
+				}
 
 				renderableTriangles[0]++;
 			}
@@ -493,17 +555,25 @@ class Triangle
 			}
 
 			// We now have the final color for the vertex
-			int ir = (r >= 1.0f) ? 255 : (r <= 0.0f) ? 0 : (int)(r * 255.0f);
-			int ig = (g >= 1.0f) ? 255 : (g <= 0.0f) ? 0 : (int)(g * 255.0f);
-			int ib = (b >= 1.0f) ? 255 : (b <= 0.0f) ? 0 : (int)(b * 255.0f);
-			int color = ((lightAlpha & 0xFF) << 24) | (ir << 16) | (ig << 8) | ib;
+			int ir = (int)(r * 255.0f);
+			int ig = (int)(g * 255.0f);
+			int ib = (int)(b * 255.0f);
 
-			outColors[v] = color;
+			// Clamp it to the 0-255 range
+			ir &= ~(ir >> 31);
+			ig &= ~(ig >> 31);
+			ib &= ~(ib >> 31);
+
+			ir = (ir | -((255 - ir) >>> 31)) & 0xFF;
+			ig = (ig | -((255 - ig) >>> 31)) & 0xFF;
+			ib = (ib | -((255 - ib) >>> 31)) & 0xFF;
+
+			outColors[v] = ((lightAlpha & 0xFF) << 24) | (ir << 16) | (ig << 8) | ib;
 
 			// On flat shading we just apply vertex 2's color to the others.
 			if (shadingMode == PolygonMode.SHADE_FLAT)
 			{
-				outColors[1] = outColors[2] = color;
+				outColors[1] = outColors[2] = outColors[v];
 				break;
 			}
 		}
@@ -635,36 +705,6 @@ class Triangle
 		}
 	}
 
-	public final void project(boolean perspectiveCorrect)
-	{
-		// Apply perspective division to the triangle, it's going to NDC
-		for (int i = 0; i < 3; i++)
-		{
-			int baseIdx = 4 * i;
-			// It is faster to calculate the reciprocal of w (1/w) and just
-			// multiply vertices and texture coordinates by it, than it is to
-			// constantly divide them by W here.
-			invW[i] = M3GMath.fastReciprocal(v[baseIdx + 3]);
-
-			// Project vertex
-			v[baseIdx + 0] *= invW[i]; // x / w
-			v[baseIdx + 1] *= invW[i]; // y / w
-			v[baseIdx + 2] *= invW[i]; // z / w
-			v[baseIdx + 3] = 1.0f;  // Set w to 1
-
-			// Texture coordinates are stored as s/w and t/w if
-			// perspective correction is enabled (undone per-pixel in rasterizer)
-			if (perspectiveCorrect)
-			{
-				for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
-				{
-					t[u][2 * i + 0] *= invW[i]; // s / w
-					t[u][2 * i + 1] *= invW[i]; // t / w
-				}
-			}
-		}
-	}
-
 	private static final boolean isCounterClockwise(float[] vert, int idx0, int idx1, int idx2)
 	{
 		final float ax = vert[idx0], ay = vert[idx0 + 1], aw = vert[idx0 + 3];
@@ -708,8 +748,8 @@ class Triangle
 	// This one is for memory reuse, so `this.t` is expected to be allocated by now.
 	public final void setTexCoords(float[][] tCoords, int fan)
 	{
-		final int f1 = 4 * (fan + 1);
-		final int f2 = 4 * (fan + 2);
+		final int f1 = (fan + 1) << 2;
+		final int f2 = (fan + 2) << 2;
 
 		// The number of active texture units MAY have increased since this
 		// triangle was created, check here and resize properly..
@@ -728,12 +768,12 @@ class Triangle
 	// This one is also for memory reuse, so `this.v` is expected to be allocated by now.
 	public final void setVertexCoords(float[] vCoords, int fan)
 	{
-		final int f1 = 4 * (fan + 1);
-		final int f2 = 4 * (fan + 2);
+		final int f1 = (fan + 1) << 2;
+		final int f2 = (fan + 2) << 2;
 
-		System.arraycopy(vCoords, 0,  v, 0, 4);
-		System.arraycopy(vCoords, f1, v, 4, 4);
-		System.arraycopy(vCoords, f2, v, 8, 4);
+		v[0] = vCoords[0];  v[1] = vCoords[1];  v[2] = vCoords[2];  v[3] = vCoords[3];
+		v[4] = vCoords[f1]; v[5] = vCoords[f1+1]; v[6] = vCoords[f1+2]; v[7] = vCoords[f1+3];
+		v[8] = vCoords[f2]; v[9] = vCoords[f2+1]; v[10] = vCoords[f2+2]; v[11] = vCoords[f2+3];
 	}
 
 	// This one is also for memory reuse, so `this.colors` is expected to be allocated by now.

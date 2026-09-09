@@ -168,6 +168,7 @@ public class Graphics3D
 	static byte ACTIVE_TEXTURE_UNITS;
 	final Transform normalMatrix;
 	final Transform tr;
+	final Transform modelViewTr;
 	int yStart, yEnd;
 	float[] vertClip = null;
 	float[] eyePos = null;
@@ -222,6 +223,7 @@ public class Graphics3D
 		this.currLightTrans = new ArrayList<Transform>();
 		camTr = new Transform();
 		tr = new Transform();
+		modelViewTr = new Transform();
 		normalMatrix = new Transform();
 		texcomptr = new Transform();
 		for(int i = 0; i < NUM_TEXTURE_UNITS; i++) { textr[i] = new Transform(); }
@@ -587,19 +589,20 @@ public class Graphics3D
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : this.defaultCompositing;
 
-		final int shadingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getShading() : PolygonMode.SHADE_SMOOTH;
 		final Material material = appearance.getMaterial();
-		final int cullingMode = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getCulling() : PolygonMode.CULL_BACK;
-		final int windingOrder = appearance.getPolygonMode() != null ? appearance.getPolygonMode().getWinding() : PolygonMode.WINDING_CCW;
-		final boolean twoSidedLighting = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isTwoSidedLightingEnabled() : false;
-		final boolean localCameraLight = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isLocalCameraLightingEnabled() : false;
+		final PolygonMode pmode = appearance.getPolygonMode();
+		final int shadingMode = (pmode != null) ? pmode.getShading() : PolygonMode.SHADE_SMOOTH;
+		final int cullingMode = (pmode != null) ? pmode.getCulling() : PolygonMode.CULL_BACK;
+		final int windingOrder = (pmode != null) ? pmode.getWinding() : PolygonMode.WINDING_CCW;
+		final boolean twoSidedLighting = (pmode != null) && pmode.isTwoSidedLightingEnabled();
+		final boolean localCameraLight = (pmode != null) && pmode.isLocalCameraLightingEnabled();
+		// This one can be overridden by FJ2ME+
+		boolean perspectiveCorrection = (pmode != null) && pmode.isPerspectiveCorrectionEnabled();
 
 		// Set up fog properties
 		final Fog fog = Mobile.m3gDisableFog ? null : appearance.getFog();
 		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
 
-		// This one can be overridden by FJ2ME+
-		boolean perspectiveCorrection = appearance.getPolygonMode() != null ? appearance.getPolygonMode().isPerspectiveCorrectionEnabled() : false;
 		perspectiveCorrection = fog != null || (perspectiveCorrection && (projType == Camera.PERSPECTIVE)); // fog usage enables it
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
@@ -610,6 +613,7 @@ public class Graphics3D
 
 		// This one is also used by all position calculations
 		final VertexArray vertPos = vertices.getPositions(scaleBias);
+		final int vertLen = vertPos.getVertexCount() << 2; // 4 * vertexCount.
 
 		// Setup texture units first, if we have to use any. Texturing is done
 		// by layer, with each texture unit blending on top of another.
@@ -646,11 +650,15 @@ public class Graphics3D
 					textr[i].postTranslate(texScaleBias[1], texScaleBias[2], texScaleBias[3]);
 					textr[i].postScale(texScaleBias[0], texScaleBias[0], texScaleBias[0]);
 
-					if (texVerts[i] == null || 4 * vertPos.getVertexCount() > texVerts[i].length)
-						{ texVerts[i] = new float[4 * vertPos.getVertexCount()]; }
+					if (texVerts[i] == null || vertLen > texVerts[i].length)
+						{ texVerts[i] = new float[vertLen]; }
 
 					// Transform texture coordinates into NDC
 					textr[i].transform(texCoords, texVerts[i], true);
+
+					// Cache the texture blend mode here as well.
+					texblendMode[i] = ((textures[i].getBlending() & 7) << 3) |
+						(textures[i].getImage().getFormat() & 7);
 				}
 				else
 				{
@@ -666,19 +674,19 @@ public class Graphics3D
 
 		final VertexArray vertNorms = vertices.getNormals();
 
-		tr.setIdentity();
+		modelViewTr.setIdentity();
+
+		// Apply the inverse of the camera's transform to the mesh (Eye/View Space)
+		if (this.currCamTransInv != null) { modelViewTr.postMultiply(this.currCamTransInv); }
 
 		// Transform mesh from local space to world space
 		// Receiving a null "transform" indicates that the identity matrix must
 		// be used, which just means we don't need to postMultiply.
-		if (transform != null) { tr.postMultiply(transform); }
-
-		// Apply the inverse of the camera's transform to the mesh (Eye/View Space)
-		if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
+		if (transform != null) { modelViewTr.postMultiply(transform); }
 
 		if (vertNorms != null && material != null)
 		{
-			normalMatrix.set(tr);
+			normalMatrix.set(modelViewTr);
 
 			/*
 			 * JSR-184 states that lighting is undefined for a non-invertible
@@ -697,14 +705,12 @@ public class Graphics3D
 				normalMatrix.setIdentity();
 			}
 
-			tr.setIdentity();
-			if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
-			if (transform != null) { tr.postMultiply(transform); }
-			tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
-			tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
+			tr.set(modelViewTr);
+            tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
+            tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
 
-			if (eyePos == null || 4 * vertPos.getVertexCount() > eyePos.length)
-				{ eyePos = new float[4 * vertPos.getVertexCount()]; }
+			if (eyePos == null || vertLen > eyePos.length)
+				{ eyePos = new float[vertLen]; }
 
 			tr.transform(vertPos, eyePos, true);
 		}
@@ -712,10 +718,10 @@ public class Graphics3D
 		// Normals done, so set up the lights.
 		final int numLights = (this.currLights != null) ? this.currLights.size() : 0;
 
-		if (lightEyePos == null || lightEyePos.length < numLights * 4)
+		if (lightEyePos == null || lightEyePos.length < (numLights << 2))
 		{
-			lightEyePos = new float[numLights * 4];
-			lightEyeDir = new float[numLights * 4];
+			lightEyePos = new float[numLights << 2];
+			lightEyeDir = new float[numLights << 2];
 		}
 
 		for (int i = 0; i < numLights; i++)
@@ -734,7 +740,7 @@ public class Graphics3D
 			lightVec[2] = 0.0f;
 			lightVec[3] = 1.0f;
 			tr.transform(lightVec);
-			System.arraycopy(lightVec, 0, lightEyePos, i * 4, 4);
+			System.arraycopy(lightVec, 0, lightEyePos, i << 2, 4);
 
 			// Light Direction in Eye Space (M3G's default direction is
 			// [0, 0, -1, 0] due to negative Z)
@@ -754,7 +760,7 @@ public class Graphics3D
 				lightVec[2] *= dirLen;
 			}
 			lightVec[3] = 0.0f;
-			System.arraycopy(lightVec, 0, lightEyeDir, i * 4, 4);
+			System.arraycopy(lightVec, 0, lightEyeDir, i << 2, 4);
 		}
 
 
@@ -768,21 +774,18 @@ public class Graphics3D
 		// Apply projection matrix (Clip space)
 		tr.postMultiply(projectionMatrix);
 
-		// Apply the inverse of the camera's transform to the mesh (Eye/View Space)
-		if (this.currCamTransInv != null) { tr.postMultiply(this.currCamTransInv); }
-
 		// Transform mesh from local space to world space
 		// Receiving a null "transform" indicates that the identity matrix must
 		// be used, which just means we don't need to postMultiply.
-		if (transform != null) { tr.postMultiply(transform); }
+		tr.postMultiply(modelViewTr);
 
 		// Scale and translate mesh (P = (S * V) + B) in local space
 		tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
 		tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
 
 		// Transform vertex positions
-		if(vertClip == null || 4 * vertPos.getVertexCount() > vertClip.length)
-			{ vertClip = new float[4 * vertPos.getVertexCount()]; }
+		if(vertClip == null || vertLen > vertClip.length)
+			{ vertClip = new float[vertLen]; }
 		tr.transform(vertPos, vertClip, true);
 
 		// Now with texture and vertex coordinates transformed, we generate the
@@ -1019,8 +1022,6 @@ public class Graphics3D
 				{
 					sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
 					tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
-					texblendMode[i] = ((textures[i].getBlending() & 7) << 3) |
-						(textures[i].getImage().getFormat() & 7);
 
 					switch(Mobile.m3gMipmapMode)
 					{
@@ -1092,11 +1093,11 @@ public class Graphics3D
 	{
 		for (int i = 0; i < group.getChildCount(); ++i)
 		{
-			Transform t = new Transform();
+			tr.setIdentity();
 			Node node = group.getChild(i);
 
-			if (node instanceof Light && node.getTransformTo(world, t))
-				{ addLight((Light) node, t); }
+			if (node instanceof Light && node.getTransformTo(world, tr))
+				{ addLight((Light) node, tr); }
 			else if (node instanceof Group)
 				{ positionLights(world, (Group) node);}
 			else if (node instanceof SkinnedMesh)

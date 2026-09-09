@@ -44,6 +44,11 @@ public abstract class Node extends Transformable
 	boolean hasBones = false;
 	boolean[] dirtyBits = new boolean[2]; // {renderablesBit, bonesBit}
 
+	// Cached transforms for getTransformTo()
+	Transform thisToRoot = new Transform();
+	Transform targetToRoot = new Transform();
+	Transform temp = new Transform();
+
 	protected Object3D duplicateImpl()
 	{
 		Node copy = (Node) super.duplicateImpl();
@@ -330,8 +335,8 @@ public abstract class Node extends Transformable
 
 		// We accumulate transforms from this node all the way to the
 		// lowest ancestor common to both nodes
-		Transform thisToRoot = new Transform();
-		Transform temp = new Transform();
+		thisToRoot.setIdentity();
+		temp.setIdentity();
 		for (int k = lcaIndexThis - 1; k >= 0; k--)
 		{
 			Node n = (Node) pathThis.elementAt(k);
@@ -340,7 +345,7 @@ public abstract class Node extends Transformable
 		}
 
 		// Same for the target
-		Transform targetToRoot = new Transform();
+		targetToRoot.setIdentity();
 		for (int k = lcaIndexTarget - 1; k >= 0; k--)
 		{
 			Node n = (Node) pathTarget.elementAt(k);
