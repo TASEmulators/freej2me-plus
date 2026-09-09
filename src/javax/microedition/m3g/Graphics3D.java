@@ -706,8 +706,8 @@ public class Graphics3D
 			}
 
 			tr.set(modelViewTr);
-            tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
-            tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
+			tr.postTranslate(scaleBias[1], scaleBias[2], scaleBias[3]);
+			tr.postScale(scaleBias[0], scaleBias[0], scaleBias[0]);
 
 			if (eyePos == null || vertLen > eyePos.length)
 				{ eyePos = new float[vertLen]; }
@@ -1334,12 +1334,12 @@ public class Graphics3D
 
 		// Use DDA on the inner loop to reduce heavy float math per-pixel.
 		float uStep = isectW * invSpanX;
-	    float uStart = (pixL + 0.5f - sx0) * invSpanX * isectW;
+		float uStart = (pixL + 0.5f - sx0) * invSpanX * isectW;
 
 		if (flipX)
 		{
-		    uStart = isectW - uStart;
-		    uStep = -uStep;
+			uStart = isectW - uStart;
+			uStep = -uStep;
 		}
 
 		for (int y = pixT; y < pixB; y++)
@@ -1861,32 +1861,32 @@ public class Graphics3D
 
 			case CompositingMode.ALPHA_ADD:
 			{
-			    if (alpha == 0) { return bg; }
+				if (alpha == 0) { return bg; }
 
-			    int fgRB = fg & 0x00FF00FF;
-			    int addRB = ((fgRB * alpha) >> 8) & 0x00FF00FF;
+				int fgRB = fg & 0x00FF00FF;
+				int addRB = ((fgRB * alpha) >> 8) & 0x00FF00FF;
 
-			    int fgG = fg & 0x0000FF00;
-			    int addG = ((fgG * alpha) >> 8) & 0x0000FF00;
+				int fgG = fg & 0x0000FF00;
+				int addG = ((fgG * alpha) >> 8) & 0x0000FF00;
 
-			    int bgA = bg >>> 24;
-			    int addA = (alpha * (255 - bgA)) >> 8;
+				int bgA = bg >>> 24;
+				int addA = (alpha * (255 - bgA)) >> 8;
 
-			    int sumRB = (bg & 0x00FF00FF) + addRB;
-			    int sumG  = (bg & 0x0000FF00) + addG;
-			    int sumA  = bgA + addA;
+				int sumRB = (bg & 0x00FF00FF) + addRB;
+				int sumG  = (bg & 0x0000FF00) + addG;
+				int sumA  = bgA + addA;
 
-			    int overflowRB = sumRB & 0x01000100;
-			    int maskRB = (overflowRB - (overflowRB >> 8));
-			    int outRB = (sumRB | maskRB) & 0x00FF00FF;
+				int overflowRB = sumRB & 0x01000100;
+				int maskRB = (overflowRB - (overflowRB >> 8));
+				int outRB = (sumRB | maskRB) & 0x00FF00FF;
 
-			    int overflowG = sumG & 0x00010000;
-			    int maskG = overflowG - (overflowG >> 8);
-			    int outG = (sumG | maskG) & 0x0000FF00;
+				int overflowG = sumG & 0x00010000;
+				int maskG = overflowG - (overflowG >> 8);
+				int outG = (sumG | maskG) & 0x0000FF00;
 
-			    int outA = sumA | -(sumA >> 8);
+				int outA = sumA | -(sumA >> 8);
 
-			    return ((outA & 0xFF) << 24) | outRB | outG;
+				return ((outA & 0xFF) << 24) | outRB | outG;
 			}
 
 			case CompositingMode.MODULATE:
@@ -2119,7 +2119,22 @@ public class Graphics3D
 
 			for (int px = viewClipL; px < viewClipR; px++)
 			{
-				final int texCoord = wrapCoords(currX >> 16, currY >> 16, bgW, bgH,
+				final int texX = currX >> 16;
+				final int texY = currY >> 16;
+
+				// In BORDER mode, out-of-bounds pixels stay as the clear color.
+				// And since we already filled rasterData with paintColor in
+				// clear(Background), we simply skip overwriting it here.
+				boolean outOfBounds = (!repeatX && (texX < 0 || texX >= bgW)) ||
+					(!repeatY && (texY < 0 || texY >= bgH));
+
+				if (outOfBounds)
+				{
+					currX += stepX;
+					continue;
+				}
+
+				final int texCoord = wrapCoords(texX, texY, bgW, bgH,
 					repeatX, repeatY, isNPOT);
 				int paintPixel = bgImg.getPixel(texCoord & 0xFFFF, texCoord >>> 16);
 
