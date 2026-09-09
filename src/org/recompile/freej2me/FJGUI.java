@@ -480,6 +480,9 @@ public final class FJGUI
 	{
 		this.config = config;
 
+		try { UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()); }
+		catch (Exception e) { System.out.println("Failed to set cross-platform look and feel:" + e.getMessage()); }
+
 		debugContent = new StringBuilder();
 		try { logReader = new BufferedReader(new FileReader(Mobile.logFile)); }
 		catch(Exception e) { System.out.println("Failed to create log window writer:" + e.getMessage()); }
