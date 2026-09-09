@@ -503,13 +503,14 @@ public class FreeJ2ME
 
 		if(args.length == 0)
 		{
-			displayGUI();
+			displayGUI(); // We need the GUI visible to select JAR and SP files
 			while(!fjGUI.hasLoadedFile())
 			{
 				try{ Thread.sleep(1000); }
 				catch (InterruptedException e) { }
 			}
 		}
+
 		if(Mobile.getPlatform().load(fjGUI.getJarPath()))
 		{
 			/* Allows FreeJ2ME to set the width and height passed as cmd arguments. */
@@ -552,7 +553,9 @@ public class FreeJ2ME
 
 			settingsChanged();
 
-			displayGUI();
+			// If this launched with arguments, then the call to display the
+			// greeter GUI above didn't run, thus we must run it here.
+			if (args.length != 0) { displayGUI(); }
 
 			Mobile.getPlatform().runJar();
 		}
