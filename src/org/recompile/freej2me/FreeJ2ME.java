@@ -59,6 +59,7 @@ import java.util.HashMap;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.UIManager;
 
 public class FreeJ2ME
 {
@@ -328,6 +329,9 @@ public class FreeJ2ME
 
 	public FreeJ2ME(String args[])
 	{
+		try { UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()); }
+		catch (Exception e) { System.out.println("Failed to set cross-platform look and feel:" + e.getMessage()); }
+
 		// Setup Device //
 		boolean fullscreenAtStartup = false;
 		int argIndex = 0;
