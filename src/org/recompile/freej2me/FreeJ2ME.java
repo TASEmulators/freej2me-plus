@@ -555,11 +555,16 @@ public class FreeJ2ME
 				Mobile.config.settings.put("dojaversion", ""+Integer.parseInt(args[argLen-1])+"");
 			}
 
-			settingsChanged();
+			boolean needsResChange = settingsChanged();
 
 			// If this launched with arguments, then the call to display the
 			// greeter GUI above didn't run, thus we must run it here.
 			if (args.length != 0) { displayGUI(); }
+			else if (needsResChange)
+			{
+				lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
+				main.pack();
+			}
 
 			Mobile.getPlatform().runJar();
 		}
@@ -685,12 +690,13 @@ public class FreeJ2ME
 		return file.toURI().toString();
 	}
 
-	private void settingsChanged()
+	private boolean settingsChanged()
 	{
 		boolean hasRotated = Mobile.updateSettings();
 
+		boolean needsResChange = Mobile.lcdWidth != lcdWidth || Mobile.lcdHeight != lcdHeight || hasRotated;
 		// Create a standard size LCD if not rotated, else invert window's width and height.
-		if(Mobile.lcdWidth != lcdWidth || Mobile.lcdHeight != lcdHeight || hasRotated)
+		if(needsResChange)
 		{
 			Mobile.getPlatform().resizeLCD(Mobile.lcdWidth, Mobile.lcdHeight);
 
@@ -710,6 +716,8 @@ public class FreeJ2ME
 		}
 
 		fjGUI.updateOptions();
+
+		return needsResChange;
 	}
 
 	private int getMobileKey(int keycode)
