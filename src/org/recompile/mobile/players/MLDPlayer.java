@@ -40,13 +40,16 @@ public class MLDPlayer extends SMAFPlayer
 {
 	private final MLDDecoder.PlaybackTimeline timeline = MLDDecoder.getPlaybackTimeline();
 
-	public MLDPlayer(InputStream midiStream, InputStream[] wavStreams, Map<Integer, Integer> pcmPositions, Map<Integer, Integer> pcmVelocities)
+	public MLDPlayer(InputStream midiStream, InputStream[] wavStreams)
 	{
-		super(midiStream, wavStreams, pcmPositions, pcmVelocities);
+		super(midiStream, wavStreams);
 	}
 
+	@Override
 	protected void onMeta(MetaMessage meta)
 	{
+		super.onMeta(meta); // Handle shared events between SMAF/MLD first.
+
 		String marker = MLDDecoder.MLDSequenceMarker.decodeMarker(meta);
 		if(!MLDDecoder.MLDSequenceMarker.isStopMarker(marker)) { return; }
 

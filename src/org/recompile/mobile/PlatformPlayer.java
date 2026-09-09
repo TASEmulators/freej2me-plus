@@ -20,13 +20,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.LockSupport;
 
 import javax.sound.midi.Instrument;
 import javax.sound.midi.InvalidMidiDataException;
@@ -69,7 +65,6 @@ public class PlatformPlayer implements Player
 	// DoJa REALLY stresses this out. Akumajou Densetsu keeps more than 64 MLD
 	// files in memory.
 	private static final BasicPlayer[] sequencePlayers = new BasicPlayer[128];
-	public static ScheduledExecutorService smafExecutor = null;
 
 	// For player disposal handling, so we don't clog the Sound EDT.
 	public static final ExecutorService ASYNC_DISPATCHER =
@@ -172,7 +167,7 @@ public class PlatformPlayer implements Player
 									}
 								}
 							}
-							player = new SMAFPlayer(SMAFDecoder.SequenceData, SMAFDecoder.pcmData.toArray(new InputStream[0]), new HashMap<Integer, Integer>(SMAFDecoder.pcmDataPositions), new HashMap<Integer, Integer>(SMAFDecoder.pcmDataVelocities));
+							player = new SMAFPlayer(SMAFDecoder.SequenceData, SMAFDecoder.pcmData.toArray(new InputStream[0]));
 						}
 						else { player = new BasicPlayer(); disableControls = true; } // Somehow the SMAF decoder failed, retrieve a stub player
 
@@ -204,7 +199,7 @@ public class PlatformPlayer implements Player
 									}
 								}
 							}
-							player = new MLDPlayer(MLDDecoder.SequenceData, MLDDecoder.pcmData.toArray(new InputStream[0]), new HashMap<Integer, Integer>(MLDDecoder.pcmDataPositions), new HashMap<Integer, Integer>(MLDDecoder.pcmDataVelocities));
+							player = new MLDPlayer(MLDDecoder.SequenceData, MLDDecoder.pcmData.toArray(new InputStream[0]));
 						}
 						else { player = new BasicPlayer(); disableControls = true; } // Somehow the MLD decoder failed, retrieve a stub player
 					}
@@ -1024,8 +1019,7 @@ public class PlatformPlayer implements Player
 				{
 					for (int channel = 0; channel < midiChannels.length; channel++)
 					{
-						midiChannels[channel].controlChange(7, panning);
-						LockSupport.parkNanos(10000);
+						midiChannels[channel].controlChange(10, panning);
 					}
 				}
 				panValue = panning;
