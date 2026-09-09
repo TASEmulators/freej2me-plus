@@ -485,8 +485,6 @@ public class FreeJ2ME
 			}
 		});
 
-		displayGUI();
-
 		// Set painter right before the jar is loaded
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
@@ -504,6 +502,7 @@ public class FreeJ2ME
 
 		if(args.length == 0)
 		{
+			displayGUI();
 			while(!fjGUI.hasLoadedFile())
 			{
 				try{ Thread.sleep(1000); }
@@ -552,13 +551,14 @@ public class FreeJ2ME
 
 			settingsChanged();
 
+			displayGUI();
+
 			Mobile.getPlatform().runJar();
 		}
 		else
 		{
 			Mobile.log(Mobile.LOG_ERROR, FreeJ2ME.class.getPackage().getName() + "." + FreeJ2ME.class.getSimpleName() + ": " + "Couldn't load jar...");
 		}
-
 		// Go fullscreen as soon as the jar is loaded from the commandline path above
 		if(fullscreenAtStartup) { toggleFullscreen(); }
 	}
