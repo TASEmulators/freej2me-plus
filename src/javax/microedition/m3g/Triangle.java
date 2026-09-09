@@ -524,7 +524,7 @@ class Triangle
 
 		for (int i = 0; i < 3; i++)
 		{
-			final int j = (i + 1) & ~(i >> 1); // j = (i + 1) % 3
+			final int j = (i + 1) & ((i - 2) >> 31); // j = (i + 1) % 3
 			final float wi = inV[4*i+3], wj = inV[4*j+3];
 			final float distanceI = inV[4*i+2] + wi;
 			final float distanceJ = inV[4*j+2] + wj;

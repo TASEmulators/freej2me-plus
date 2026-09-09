@@ -382,7 +382,7 @@ public class Graphics3D
 				final int paintColor = 0xFF000000 | color;
 				for (int py = viewClipT; py < viewClipB; py++)
 				{
-					final int rowStart = targetIndex(viewClipL, py);
+					final int rowStart = (originY + viewy + py) * canvasWidth + originX + viewx + viewClipL;
 					Arrays.fill(rasterData, rowStart, rowStart + (viewClipR - viewClipL), paintColor);
 				}
 
@@ -415,7 +415,7 @@ public class Graphics3D
 			final short farDepth = (short) M3GMath.round(this.far * 32767.0f);
 			for (int py = viewClipT; py < viewClipB; py++)
 			{
-				final int rowStart = targetIndex(viewClipL, py);
+				final int rowStart = (originY + viewy + py) * canvasWidth + originX + viewx + viewClipL;
 				Arrays.fill(this.depthBuffer, rowStart, rowStart + (viewClipR - viewClipL), farDepth);
 			}
 		}
@@ -1195,16 +1195,6 @@ public class Graphics3D
 	}
 
 	/*
-	 * Returns the physical render-target index of a viewport-local pixel. Color and
-	 * depth buffers share this indexing, so a pixel keeps its depth value when the
-	 * viewport is repositioned between bind and release.
-	 */
-	private int targetIndex(int x, int y)
-	{
-		return (originY + viewy + y) * canvasWidth + originX + viewx + x;
-	}
-
-	/*
 	 * Renders a Sprite3D as a screen-aligned textured rectangle, following the same
 	 * math as the JSR-184 Reference Implementation (m3g_sprite.c, m3gGetSpriteCoordinates):
 	 * the node origin and half-unit axis vectors are measured in eye space, re-aligned
@@ -1358,8 +1348,8 @@ public class Graphics3D
 			{
 				if (y > viewClipT && viewClipR > viewClipL)
 				{
-					System.arraycopy(rasterData, targetIndex(viewClipL, y - 1),
-						rasterData, targetIndex(viewClipL, y), viewClipR - viewClipL);
+					System.arraycopy(rasterData, (originY + viewy + (y - 1)) * canvasWidth + originX + viewx + viewClipL,
+						rasterData, (originY + viewy + y) * canvasWidth + originX + viewx + viewClipL, viewClipR - viewClipL);
 				}
 				continue;
 			}
@@ -1368,7 +1358,7 @@ public class Graphics3D
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
 			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
 
-			final int rasterIdxY = targetIndex(0, y);
+			final int rasterIdxY = (originY + viewy + y) * canvasWidth + originX + viewx;
 			int rasterIdx = rasterIdxY + pixL;
 			float u = uStart;
 
@@ -1499,8 +1489,8 @@ public class Graphics3D
 			{
 				if (y > viewClipT && viewClipR > viewClipL)
 				{
-					System.arraycopy(rasterData, targetIndex(viewClipL, y - 1),
-						rasterData, targetIndex(viewClipL, y), viewClipR - viewClipL);
+					System.arraycopy(rasterData, (originY + viewy + (y - 1)) * canvasWidth + originX + viewx + viewClipL,
+						rasterData, (originY + viewy + y) * canvasWidth + originX + viewx + viewClipL, viewClipR - viewClipL);
 				}
 
 				if (hasTexture)
@@ -1549,7 +1539,7 @@ public class Graphics3D
 			}
 
 			// Color and depth share the same physical render-target index.
-			int rasterIdx = targetIndex(ixL, y);
+			int rasterIdx = (originY + viewy + y) * canvasWidth + originX + viewx + ixL;
 			int depthIdx = rasterIdx;
 
 			float pw = pwL + (ixL - xL) * pwStep;
@@ -2124,7 +2114,7 @@ public class Graphics3D
 			int currY = (cropY << 16) + py * stepY;
 			int currX = (cropX << 16) + viewClipL * stepX;
 			int screenY = py + viewy;
-			int rowOffset = targetIndex(0, py);
+			int rowOffset = (originY + viewy + py) * canvasWidth + originX + viewx;
 
 			for (int px = viewClipL; px < viewClipR; px++)
 			{
