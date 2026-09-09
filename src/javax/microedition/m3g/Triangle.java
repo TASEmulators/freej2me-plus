@@ -132,37 +132,70 @@ class Triangle
 			lightAlpha = (matDiffuse >>> 24);
 		}
 
-		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++)
-		{
-			for (int i = 0; i < 3; i++)
-			{
-				final int idx = 4 * tris[3 * tri_id + i];
-				Triangle.inV[4*i]   = vert[idx];     Triangle.inV[4*i+1] = vert[idx + 1];
-				Triangle.inV[4*i+2] = vert[idx + 2]; Triangle.inV[4*i+3] = vert[idx + 3];
+		// Track the vertex indices and calculated colors of the prior non-culled
+		// triangle so we can speed up lighting calculations by reusing vertex
+		// data the same way a TriangleStripArray reuses them.
+		int lastIdx0 = -1, lastIdx1 = -1, lastIdx2 = -1;
+		int lastColor0 = 0, lastColor1 = 0, lastColor2 = 0;
 
+		int triOffset = 0;
+
+		for (int tri_id = 0; tri_id < tris.length / 3; tri_id++, triOffset += 3)
+		{
+			final int i0 = tris[triOffset];
+			final int i1 = tris[triOffset + 1];
+			final int i2 = tris[triOffset + 2];
+
+			final int idx0 = i0 << 2;
+			final int idx1 = i1 << 2;
+			final int idx2 = i2 << 2;
+
+			// Cull as early as possible, so we save the need to even do copies.
+			final boolean ccw = isCounterClockwise(vert, idx0, idx1, idx2);
+
+			// XOR: When even a ternary is considered "too much overhead".
+			final boolean isFrontFace = polygonClockwise ^ ccw;
+
+			final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && !isFrontFace) ||
+				(cullingMode == PolygonMode.CULL_FRONT && isFrontFace);
+
+			if (cullTriangle || outsideFrustum(vert, idx0, idx1, idx2)) { continue; }
+
+			Triangle.inV[0] = vert[idx0];     Triangle.inV[1] = vert[idx0 + 1];
+			Triangle.inV[2] = vert[idx0 + 2]; Triangle.inV[3] = vert[idx0 + 3];
+
+			Triangle.inV[4] = vert[idx1];     Triangle.inV[5] = vert[idx1 + 1];
+			Triangle.inV[6] = vert[idx1 + 2]; Triangle.inV[7] = vert[idx1 + 3];
+
+			Triangle.inV[8] = vert[idx2];     Triangle.inV[9] = vert[idx2 + 1];
+			Triangle.inV[10] = vert[idx2 + 2]; Triangle.inV[11] = vert[idx2 + 3];
+
+			if (hasTex)
+			{
 				for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 				{
-					if (texc[u] != null)
+					final float[] tex = texc[u];
+					if (tex != null)
 					{
-						Triangle.inT[u][4*i]   = texc[u][idx];     Triangle.inT[u][4*i+1] = texc[u][idx + 1];
-						Triangle.inT[u][4*i+2] = texc[u][idx + 2]; Triangle.inT[u][4*i+3] = texc[u][idx + 3];
+						final float[] inTU = Triangle.inT[u];
+						inTU[0] = tex[idx0];     inTU[1] = tex[idx0 + 1];
+						inTU[2] = tex[idx0 + 2]; inTU[3] = tex[idx0 + 3];
+
+						inTU[4] = tex[idx1];     inTU[5] = tex[idx1 + 1];
+						inTU[6] = tex[idx1 + 2]; inTU[7] = tex[idx1 + 3];
+
+						inTU[8] = tex[idx2];     inTU[9] = tex[idx2 + 1];
+						inTU[10] = tex[idx2 + 2]; inTU[11] = tex[idx2 + 3];
 					}
 				}
 			}
-
-			final boolean isFrontFace = polygonClockwise ? !isCounterClockwise() : isCounterClockwise();
-
-			final boolean cullTriangle = (cullingMode == PolygonMode.CULL_BACK && !isFrontFace) ||
-						 (cullingMode == PolygonMode.CULL_FRONT && isFrontFace);
-
-			if (cullTriangle || outsideFrustum()) { continue; }
 
 			// Do we have vertex colors? If so, prep them here
 			if (vertices.getColors() != null)
 			{
 				for (int i = 0; i < 3; i++)
 				{
-					vertices.getColors().get(tris[3 * tri_id + i], 1, Triangle.COLOR_VERTEX);
+					vertices.getColors().get(tris[triOffset + i], 1, Triangle.COLOR_VERTEX);
 					inC[i] = (vertices.getColors().getComponentCount() == 3) ?
 						(0xFF << 24) | ((Triangle.COLOR_VERTEX[0] & 0xFF) << 16) |
 						((Triangle.COLOR_VERTEX[1] & 0xFF) << 8) |
@@ -173,17 +206,22 @@ class Triangle
 						(Triangle.COLOR_VERTEX[2] & 0xFF);
 				}
 			}
-			else
-			{
-				inC[0] = vertices.getDefaultColor();
-				inC[1] = vertices.getDefaultColor();
-				inC[2] = vertices.getDefaultColor();
-			}
+			else { inC[0] = inC[1] = inC[2] = vertices.getDefaultColor(); }
 
 			if (hasLighting)
 			{
 				calculateLighting(eyePos, vertNorms, normalMatrix, material, shadingMode, twoSide && !isFrontFace,
-					localCameraLight, lights, lightEyePos, lightEyeDir, curScope, tris, tri_id, Triangle.inC);
+					localCameraLight, lights, lightEyePos, lightEyeDir, curScope, tris, triOffset,
+					lastIdx0, lastIdx1, lastIdx2, lastColor0, lastColor1, lastColor2, Triangle.inC);
+
+				// Update light tracker with current triangle's indices and colors
+				// as we might very well reuse those for the next one's if this
+				// came from a TriangleStripArray (speeding up lighting
+				// calculations by a lot).
+				lastIdx0 = i0; lastIdx1 = i1; lastIdx2 = i2;
+				lastColor0 = Triangle.inC[0];
+				lastColor1 = Triangle.inC[1];
+				lastColor2 = Triangle.inC[2];
 			}
 
 			/*
@@ -208,7 +246,6 @@ class Triangle
 
 				tri.project(perspectiveCorrect);
 
-				Triangle.result[renderableTriangles[0]] = tri;
 				renderableTriangles[0]++;
 			}
 		}
@@ -216,11 +253,11 @@ class Triangle
 		return sortFrontToBack(Triangle.result, renderableTriangles[0]);
 	}
 
-	private static final void calculateLighting(
-		float[] eyePos, VertexArray vertNorms, Transform normalMatrix,
-		Material material, int shadingMode, boolean flipNormals, boolean localCameraLight,
-		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir,
-		int curScope, int[] tris, int tri_id, int[] outColors)
+	private static final void calculateLighting(float[] eyePos, VertexArray vertNorms,
+		Transform normalMatrix, Material material, int shadingMode, boolean flipNormals,
+		boolean localCameraLight, ArrayList<Light> lights, float[] lightEyePos,
+		float[] lightEyeDir, int curScope, int[] tris, int triOffset, int prev0,
+		int prev1, int prev2, int color0, int color1, int color2, int[] outColors)
 	{
 		boolean vertColorTrackingEnabled = material.isVertexColorTrackingEnabled();
 
@@ -231,7 +268,17 @@ class Triangle
 		int lastVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 0 : 2;
 		for (int v = 0; v <= lastVertex; v++)
 		{
-			int vertIndex = tris[3 * tri_id + v];
+			int vertIndex = tris[triOffset + v];
+
+			// Check if this vertex is one of the "reused" ones of a StripArray.
+			// If it is, we can just reuse its color from the previous triangle
+			// right away, skipping the need to calculate lighting at all.
+			if (vertIndex == prev0) { outColors[v] = color0; continue; }
+			if (vertIndex == prev1) { outColors[v] = color1; continue; }
+			if (vertIndex == prev2) { outColors[v] = color2; continue; }
+
+			// Didn't hit any of those above? That means we must calculate the
+			// lighting on this vertex.
 
 			// Vertex color tracking is enabled? Then the vertex colors replace
 			// the material's diffuse and ambient ones.
@@ -276,10 +323,10 @@ class Triangle
 			float lenSq = N_EYE[0] * N_EYE[0] + N_EYE[1] * N_EYE[1] + N_EYE[2] * N_EYE[2];
 			if (lenSq > 1.0e-30f)
 			{
-			    float invLen = M3GMath.fastInvSqrt(lenSq);
-			    N_EYE[0] *= invLen;
-			    N_EYE[1] *= invLen;
-			    N_EYE[2] *= invLen;
+				float invLen = M3GMath.fastInvSqrt(lenSq);
+				N_EYE[0] *= invLen;
+				N_EYE[1] *= invLen;
+				N_EYE[2] *= invLen;
 			}
 			else { N_EYE[0] = 0.0f; N_EYE[1] = 0.0f; N_EYE[2] = 1.0f; }
 
@@ -345,9 +392,7 @@ class Triangle
 				// Ambient Lights only affect the material's ambient according to M3G.
 				if (lMode == Light.AMBIENT)
 				{
-					r += maR * lR;
-					g += maG * lG;
-					b += maB * lB;
+					r += maR * lR; g += maG * lG; b += maB * lB;
 					continue; // Skip diffuse and specular entirely on this light.
 				}
 
@@ -373,22 +418,22 @@ class Triangle
 
 					if (invDist > M3GMath.EPSILON)
 					{
-					    lightDirX = lx * invDist;
-					    lightDirY = ly * invDist;
-					    lightDirZ = lz * invDist;
+						lightDirX = lx * invDist;
+						lightDirY = ly * invDist;
+						lightDirZ = lz * invDist;
 
-					    float dist = d2 * invDist;
+						float dist = d2 * invDist;
 
-					    attenuation = M3GMath.fastReciprocal(
-					        light.getConstantAttenuation() +
-					        light.getLinearAttenuation() * dist +
-					        light.getQuadraticAttenuation() * d2
-					    );
+						attenuation = M3GMath.fastReciprocal(
+							light.getConstantAttenuation() +
+							light.getLinearAttenuation() * dist +
+							light.getQuadraticAttenuation() * d2
+						);
 					}
 					else
 					{
-					    lightDirX = 0; lightDirY = 0; lightDirZ = 1;
-					    attenuation = M3GMath.fastReciprocal(light.getConstantAttenuation());
+						lightDirX = 0; lightDirY = 0; lightDirZ = 1;
+						attenuation = M3GMath.fastReciprocal(light.getConstantAttenuation());
 					}
 
 					// Additional directional cone attenuation for SPOT lights
@@ -458,8 +503,7 @@ class Triangle
 			// On flat shading we just apply vertex 2's color to the others.
 			if (shadingMode == PolygonMode.SHADE_FLAT)
 			{
-				outColors[1] = color;
-				outColors[2] = color;
+				outColors[1] = outColors[2] = color;
 				break;
 			}
 		}
@@ -474,13 +518,13 @@ class Triangle
 	 * interpolate linearly in clip space, which is exact for all.
 	 */
 	private static final int clipNearPlane(float[] inV, float[][] inT, int[] inC,
-										   boolean hasTex, float[][] texc, float[] outV, float[][] outT, int[] outC)
+		boolean hasTex, float[][] texc, float[] outV, float[][] outT, int[] outC)
 	{
 		int outCount = 0;
 
 		for (int i = 0; i < 3; i++)
 		{
-			final int j = (i + 1) % 3;
+			final int j = (i + 1) & ~(i >> 1); // j = (i + 1) % 3
 			final float wi = inV[4*i+3], wj = inV[4*j+3];
 			final float distanceI = inV[4*i+2] + wi;
 			final float distanceJ = inV[4*j+2] + wj;
@@ -557,18 +601,18 @@ class Triangle
 		return array;
 	}
 
-	private static final boolean outsideFrustum()
+	private static final boolean outsideFrustum(float[] vert, int idx0, int idx1, int idx2)
 	{
-		final float w0 = inV[3],  w1 = inV[7],  w2 = inV[11];
+		final float w0 = vert[idx0 + 3], w1 = vert[idx1 + 3], w2 = vert[idx2 + 3];
 
-		if (inV[0] < -w0 && inV[4] < -w1 && inV[8] < -w2)  { return true; }
-		if (inV[0] >  w0 && inV[4] >  w1 && inV[8] >  w2)  { return true; }
+		if (vert[idx0]     < -w0 && vert[idx1]     < -w1 && vert[idx2]     < -w2) { return true; }
+		if (vert[idx0]     >  w0 && vert[idx1]     >  w1 && vert[idx2]     >  w2) { return true; }
 
-		if (inV[1] < -w0 && inV[5] < -w1 && inV[9] < -w2)  { return true; }
-		if (inV[1] >  w0 && inV[5] >  w1 && inV[9] >  w2)  { return true; }
+		if (vert[idx0 + 1] < -w0 && vert[idx1 + 1] < -w1 && vert[idx2 + 1] < -w2) { return true; }
+		if (vert[idx0 + 1] >  w0 && vert[idx1 + 1] >  w1 && vert[idx2 + 1] >  w2) { return true; }
 
-		if (inV[2] < -w0 && inV[6] < -w1 && inV[10] < -w2) { return true; }
-		if (inV[2] >  w0 && inV[6] >  w1 && inV[10] > w2)  { return true; }
+		if (vert[idx0 + 2] < -w0 && vert[idx1 + 2] < -w1 && vert[idx2 + 2] < -w2) { return true; }
+		if (vert[idx0 + 2] >  w0 && vert[idx1 + 2] >  w1 && vert[idx2 + 2] >  w2) { return true; }
 
 		return false;
 	}
@@ -621,11 +665,11 @@ class Triangle
 		}
 	}
 
-	private static final boolean isCounterClockwise()
+	private static final boolean isCounterClockwise(float[] vert, int idx0, int idx1, int idx2)
 	{
-		float ax = inV[0], ay = inV[1], aw = inV[3];
-		float bx = inV[4], by = inV[5], bw = inV[7];
-		float cx = inV[8], cy = inV[9], cw = inV[11];
+		final float ax = vert[idx0], ay = vert[idx0 + 1], aw = vert[idx0 + 3];
+		final float bx = vert[idx1], by = vert[idx1 + 1], bw = vert[idx1 + 3];
+		final float cx = vert[idx2], cy = vert[idx2 + 1], cw = vert[idx2 + 3];
 
 		// Usually counterClockWise would be <= 0.0, but we're in Clip space
 		// here where Y is the inverse of NDC, so invert to > 0.0;
