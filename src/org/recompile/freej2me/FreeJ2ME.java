@@ -30,6 +30,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -697,11 +698,7 @@ public class FreeJ2ME
 				lcdHeight = Mobile.lcdWidth;
 			}
 			resize();
-			if(!isFullscreen)
-			{
-				lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor));
-				main.pack();
-			}
+			if(!isFullscreen) { lcd.setPreferredSize(new Dimension(lcdWidth * scaleFactor, lcdHeight * scaleFactor)); }
 			lcd.clearScreen();
 		}
 
@@ -860,17 +857,20 @@ public class FreeJ2ME
 						Math.min(getHeight(), main.getIconImage().getHeight(null)),
 						null);
 
+					((Graphics2D)g).setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+						RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
 					g.setColor(new Color(238, 238, 238, 176));
 					g.fillRect(0, 0, getWidth(), getHeight());
 
 					g.setColor(Color.BLACK);
-					g.setFont(new Font("Dialog", Font.BOLD | Font.ITALIC, 24));
+					g.setFont(new Font("Dialog", Font.BOLD | Font.ITALIC, 21));
 					String text = "FreeJ2ME-Plus V1.53";
 					FontMetrics metrics = g.getFontMetrics();
 					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
 						(getHeight() / 2) - metrics.getHeight());
 
-					g.setFont(new Font("Dialog", Font.BOLD, 16));
+					g.setFont(new Font("Dialog", Font.BOLD, 15));
 					text = "Please use the 'File' menu";
 					metrics = g.getFontMetrics();
 					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
