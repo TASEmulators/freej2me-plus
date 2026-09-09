@@ -476,7 +476,6 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 
 				int pcmIndex = data[0] & 0xFF;
 				int velocity = data[1] & 0xFF;
-				System.out.println("play! " + pcmIndex);
 
 				playPcmStream(pcmIndex, velocity);
 			}
