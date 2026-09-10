@@ -27,15 +27,13 @@ public class Image2D extends Object3D
 	public static final int RGB = 99;
 	public static final int RGBA = 100;
 
-
-	private byte[] image;
-	private int width;
-	private int height;
+	int[] image;
+	int width;
+	int height;
+	int widthShift = 0;
 	private int format;
-	private int bpp;
 	private boolean mutable;
-	private boolean isPOT = false;
-	private int widthShift = 0;
+	boolean isPOT = false;
 
 	public static final String[] formatNames = {"ALPHA", "LUMINANCE", "LUMINANCE_ALPHA", "RGB", "RGBA"};
 
@@ -50,9 +48,8 @@ public class Image2D extends Object3D
 		this.height = h;
 		this.format = format;
 		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
-		setBpp();
 		this.widthShift = Integer.numberOfTrailingZeros(w);
-		this.image = new byte[w * h * this.bpp];
+		this.image = new int[w * h];
 
 	}
 
@@ -66,11 +63,8 @@ public class Image2D extends Object3D
 		validateDimensions(w, h);
 
 		this.format = format;
-		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
-		setBpp();
-		this.widthShift = Integer.numberOfTrailingZeros(w);
-
-		int len = w * h * this.bpp;
+		int bpp = getBpp();
+		int len = w * h * bpp;
 		if (image.length < len)
 		{
 			throw new IllegalArgumentException("Image byte array too small. Expected size: " + len + ", actual size: " + image.length);
@@ -78,11 +72,14 @@ public class Image2D extends Object3D
 
 		Mobile.log(Mobile.LOG_DEBUG, Image2D.class.getPackage().getName() + "." + Image2D.class.getSimpleName() + ": " +  "M3G Byte Image Format: " + formatNames[format-96]);
 
+		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
+		this.widthShift = Integer.numberOfTrailingZeros(w);
 		this.mutable = false;
 		this.width = w;
 		this.height = h;
 
-		this.image = image;
+		this.image = new int[w * h];
+		toARGB(image, format, bpp, this.image);
 	}
 
 	public Image2D(int format, int w, int h, byte[] image, byte[] palette)
@@ -101,10 +98,10 @@ public class Image2D extends Object3D
 		 */
 		this.format = format;
 		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
-		setBpp();
 		this.widthShift = Integer.numberOfTrailingZeros(w);
 
-		if (palette.length < 256 * this.bpp && (palette.length % this.bpp) != 0)
+		int bpp = getBpp();
+		if (palette.length < 256 * bpp && (palette.length % bpp) != 0)
 			{ throw new IllegalArgumentException("Illegal palette length: " + palette.length); }
 
 		Mobile.log(Mobile.LOG_DEBUG, Image2D.class.getPackage().getName() + "." + Image2D.class.getSimpleName() + ": " +  "M3G Paletted Image Format: " + formatNames[format-96] + " indices len: " + image.length + " palette len:" + palette.length);
@@ -134,21 +131,9 @@ public class Image2D extends Object3D
 		}
 
 		// We now start to copy the received "image" comprised of palette indices, as well as the palette colors themselves.
-		this.image = new byte[image.length * this.bpp];
+		this.image = new int[w * h];
 
-		for(int i = 0; i < image.length; i++)
-		{
-			/*
-			 * Due to that, we get its data by reading the received image[] multiplied by bpp. Also, those values
-			 * are unsigned (as there will be 256 entries in the palette), while java treats its native types
-			 * as signed. So we are required to do that bitwise AND operation to make them unsigned when reading
-			*/
-			int pIdx = (image[i] & 0xFF) * this.bpp;
-			int offset = i * this.bpp;
-			// The pallete will be 256 entries multiplied by the format's amount of bytes per pixel
-			for (int k = 0; k < bpp; k++) { this.image[offset + k] = palette[pIdx + k]; }
-			if (forceOpaque) { this.image[offset + 3] = (byte) 0xFF; }
-		}
+		palettedToARGB(image, palette, format, bpp, forceOpaque, this.image);
 	}
 
 	public Image2D(int format, Object image)
@@ -172,16 +157,15 @@ public class Image2D extends Object3D
 		this.format = format;
 		this.isPOT = isPowerOfTwo(this.width) && isPowerOfTwo(this.height);
 		this.widthShift = Integer.numberOfTrailingZeros(this.width);
-		setBpp();
 
-		this.image = new byte[this.width * this.height * this.bpp];
+		this.image = new int[this.width * this.height];
 
-		int[] argb = new int[this.width * this.height];
-		img.getRGB(argb, 0, this.width, 0, 0, this.width, this.height);
+		img.getRGB(this.image, 0, this.width, 0, 0, this.width, this.height);
 
 		int idx = 0;
-		for (int pixel : argb)
+		for (int i = 0; i < this.width * this.height; i++)
 		{
+			int pixel = this.image[i];
 			int a = (pixel >> 24) & 0xFF;
 			int r = (pixel >> 16) & 0xFF;
 			int g = (pixel >> 8) & 0xFF;
@@ -190,25 +174,21 @@ public class Image2D extends Object3D
 			switch (this.format)
 			{
 				case ALPHA:
-					this.image[idx++] = (byte) a;
+					this.image[i] = (a << 24);
 					break;
 				case LUMINANCE:
-					this.image[idx++] = (byte) ((r + g + b) / 3);
+					int lum = (r + g + b) / 3;
+					this.image[i] = 0xFF000000 | (lum << 16) | (lum << 8) | lum;
 					break;
 				case LUMINANCE_ALPHA:
-					this.image[idx++] = (byte) ((r + g + b) / 3);
-					this.image[idx++] = (byte) a;
+					int laLum = (r + g + b) / 3;
+					this.image[i] = (a << 24) | (laLum << 16) | (laLum << 8) | laLum;
 					break;
 				case RGB:
-					this.image[idx++] = (byte) r;
-					this.image[idx++] = (byte) g;
-					this.image[idx++] = (byte) b;
+					this.image[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
 					break;
 				case RGBA:
-					this.image[idx++] = (byte) r;
-					this.image[idx++] = (byte) g;
-					this.image[idx++] = (byte) b;
-					this.image[idx++] = (byte) a;
+					this.image[i] = (a << 24) | (r << 16) | (g << 8) | b;
 					break;
 			}
 		}
@@ -217,11 +197,10 @@ public class Image2D extends Object3D
 	protected Object3D duplicateImpl()
 	{
 		Image2D copy = (Image2D) super.duplicateImpl();
-		copy.image = this.image == null ? null : (byte[]) this.image.clone();
+		copy.image = this.image == null ? null : (int[]) this.image.clone();
 		copy.width = this.width;
 		copy.height = this.height;
 		copy.format = this.format;
-		copy.bpp = this.bpp;
 		copy.mutable = this.mutable;
 		copy.isPOT = this.isPOT;
 		copy.widthShift = this.widthShift;
@@ -250,48 +229,28 @@ public class Image2D extends Object3D
 		if (x < 0 || y < 0 || w <= 0 || h <= 0 || (x + w) > this.width || (y + h) > this.height)
 			{ throw new java.lang.IllegalArgumentException("Tried to set image with invalid parameters."); }
 
-		if (image.length < w * h * this.bpp)
+		int bpp = getBpp();
+		if (image.length < w * h * bpp)
 		{
 			throw new IllegalArgumentException("Source image cannot smaller than specified region");
 		}
 
+		int srcOffset = 0;
 		for (int row = 0; row < h; row++)
 		{
-			int src = row * w * this.bpp;
-			int dest = ((y + row) * this.width + x) * this.bpp;
-			System.arraycopy(image, src, this.image, dest, w * this.bpp);
+			int destRowOffset = (y + row) * this.width + x;
+			for (int col = 0; col < w; col++)
+			{
+				this.image[destRowOffset + col] = pixelToARGB(image, srcOffset, this.format);
+				srcOffset += bpp;
+			}
 		}
 	}
 
 	// We do not handle OOB x and y positions here, Graphics3D does that in the clear/render loops
 	final int getPixel(int x, int y)
 	{
-		int offset = (this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x) * this.bpp;
-
-		switch (this.format)
-		{
-			case ALPHA:
-				return ((this.image[offset] & 0xFF) << 24);
-			case LUMINANCE:
-				int lum = this.image[offset] & 0xFF;
-				return 0xFF000000 | (lum << 16) | (lum << 8) | lum;
-			case LUMINANCE_ALPHA:
-				int laLum = this.image[offset] & 0xFF;
-				int laAlpha = this.image[offset + 1] & 0xFF;
-				return (laAlpha << 24) | (laLum << 16) | (laLum << 8) | laLum;
-			case RGB:
-				return 0xFF000000
-					| ((this.image[offset] & 0xFF) << 16)
-					| ((this.image[offset + 1] & 0xFF) << 8)
-					| (this.image[offset + 2] & 0xFF);
-			case RGBA:
-				return ((this.image[offset + 3] & 0xFF) << 24)
-					| ((this.image[offset] & 0xFF) << 16)
-					| ((this.image[offset + 1] & 0xFF) << 8)
-					| (this.image[offset + 2] & 0xFF);
-			default:
-				return 0;
-		}
+		return this.image[this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x];
 	}
 
 	private static final void validateFormat(int format)
@@ -310,65 +269,76 @@ public class Image2D extends Object3D
 		}
 	}
 
-	private final void setBpp()
+	static final boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
+
+	// Used for mipmap generation and render to image.
+	void setPixel(int x, int y, int argb)
+	{
+		this.image[this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x] = argb;
+	}
+
+	private final byte getBpp()
 	{
 		switch (this.format)
 		{
 			case ALPHA:
-				this.bpp = 1;
-				break;
 			case LUMINANCE:
-				this.bpp = 1;
-				break;
+				return 1;
 			case LUMINANCE_ALPHA:
-				this.bpp = 2;
-				break;
+				return 2;
 			case RGB:
-				this.bpp = 3;
-				break;
+				return 3;
 			case RGBA:
-				this.bpp = 4;
-				break;
+				return 4;
 			default:
-				this.bpp = 0;
+				return 0;
 		}
 	}
 
-	static final boolean isPowerOfTwo(int value) { return value > 0 && ((value & (value-1)) == 0); }
-
-	// Used for mipmap generation
-	void setPixel(int x, int y, int argb)
+	private static void toARGB(byte[] src, int format, int bpp, int[] dest)
 	{
-		int offset = this.bpp * (this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x);
+		int totalPixels = dest.length;
+		int srcOffset = 0;
 
-		int a = (argb >> 24) & 0xFF;
-		int r = (argb >> 16) & 0xFF;
-		int g = (argb >> 8) & 0xFF;
-		int b = argb & 0xFF;
+		for (int i = 0; i < totalPixels; i++)
+		{
+			dest[i] = pixelToARGB(src, srcOffset, format);
+			srcOffset += bpp;
+		}
+	}
 
-		switch (this.format)
+	private static void palettedToARGB(byte[] srcIndices, byte[] palette, int format, int bpp, boolean forceOpaque, int[] dest)
+	{
+		int totalPixels = dest.length;
+
+		for (int i = 0; i < totalPixels; i++)
+		{
+			int pIdx = (srcIndices[i] & 0xFF) * bpp;
+			int argb = pixelToARGB(palette, pIdx, format);
+			if (forceOpaque) { argb |= 0xFF000000; }
+			dest[i] = argb;
+		}
+	}
+
+	private static int pixelToARGB(byte[] data, int offset, int format)
+	{
+		switch (format)
 		{
 			case ALPHA:
-				this.image[offset] = (byte) a;
-				break;
+				return ((data[offset] & 0xFF) << 24);
 			case LUMINANCE:
-				this.image[offset] = (byte) ((r + g + b) / 3);
-				break;
+				int lum = data[offset] & 0xFF;
+				return 0xFF000000 | (lum << 16) | (lum << 8) | lum;
 			case LUMINANCE_ALPHA:
-				this.image[offset]     = (byte) ((r + g + b) / 3);
-				this.image[offset + 1] = (byte) a;
-				break;
+				int laLum = data[offset] & 0xFF;
+				int laAlpha = data[offset + 1] & 0xFF;
+				return (laAlpha << 24) | (laLum << 16) | (laLum << 8) | laLum;
 			case RGB:
-				this.image[offset]     = (byte) r;
-				this.image[offset + 1] = (byte) g;
-				this.image[offset + 2] = (byte) b;
-				break;
+				return 0xFF000000 | ((data[offset] & 0xFF) << 16) | ((data[offset + 1] & 0xFF) << 8) | (data[offset + 2] & 0xFF);
 			case RGBA:
-				this.image[offset]     = (byte) r;
-				this.image[offset + 1] = (byte) g;
-				this.image[offset + 2] = (byte) b;
-				this.image[offset + 3] = (byte) a;
-				break;
+				return ((data[offset + 3] & 0xFF) << 24) | ((data[offset] & 0xFF) << 16) | ((data[offset + 1] & 0xFF) << 8) | (data[offset + 2] & 0xFF);
+			default:
+				return 0;
 		}
 	}
 }

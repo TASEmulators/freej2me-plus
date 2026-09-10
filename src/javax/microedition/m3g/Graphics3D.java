@@ -1371,13 +1371,27 @@ public class Graphics3D
 				int texX = isectX + (int) u;
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
-				paintPixel = spr.getPixel(texX, texY);
+				final int sprIdx = spr.isPOT ? (texY << spr.widthShift) + texX :
+					(texY * spr.width) + texX;
+
+				paintPixel = spr.image[sprIdx];
 				int alpha = (((paintPixel >>> 24) * alphaFactor) >> 8);
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
 
 				if (fog != null && intFogFactor < 255)
-					{ paintPixel = blendFog(paintPixel, fogColor, intFogFactor); }
+				{
+					int pixRB = paintPixel & 0x00FF00FF;
+					int pixG  = (paintPixel >> 8) & 0xFF;
+
+					int fogRB = fogColor & 0x00FF00FF;
+					int fogG  = (fogColor >> 8) & 0xFF;
+
+					int outRB = (fogRB + (((pixRB - fogRB) * intFogFactor) >> 8)) & 0x00FF00FF;
+					int outG  = fogG + (((pixG - fogG) * intFogFactor) >> 8);
+
+					paintPixel = (paintPixel & 0xFF000000) | outRB | (outG << 8);
+				}
 
 				if(!renderToImage)
 				{
@@ -1387,9 +1401,12 @@ public class Graphics3D
 				}
 				else
 				{
-					imageData.setPixel((x+viewx), (y + viewy), isReplace ? paintPixel :
-						blendCompositing(imageData.getPixel((x+viewx), (y + viewy)), paintPixel, alpha,
-							compBlending));
+					final int imgIdx = imageData.isPOT ?
+						((y+viewy) << imageData.widthShift) + (x+viewx) :
+						((y+viewy) * imageData.width) + (x+viewx);
+
+					imageData.image[imgIdx] = (isReplace ? paintPixel :
+						blendCompositing(imageData.image[imgIdx], paintPixel, alpha, compBlending));
 				}
 
 				if (depthWrite) { this.depthBuffer[rasterIdx] = ndcZ; }
@@ -1415,6 +1432,7 @@ public class Graphics3D
 		final float fogNearNorm = hasFog ? fog.getNearDistance() * invFogDiv : 0.0f;
 		final float fogDensity = hasFog ? fog.getDensity() : 0.0f;
 		final int fogMode = hasFog ? fog.getMode() : 0;
+		final int fogColor = hasFog ? fog.getColor() : 0;
 
 		float fogFactor = 255.0f;
 		float stepFogFactor = 0.0f;
@@ -1703,12 +1721,17 @@ public class Graphics3D
 						}
 						else
 						{
-							int texS = (int) (s + 32768.0f) - 32768;
-							int texT = (int) (t + 32768.0f) - 32768;
-							int texCoord = wrapCoords(texS, texT, targetImage.getWidth(),
+							final int texS = (int) (s + 32768.0f) - 32768;
+							final int texT = (int) (t + 32768.0f) - 32768;
+
+							final int texCoord = wrapCoords(texS, texT, targetImage.getWidth(),
 								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
 
-							paintPixel = blendTexture(paintPixel, targetImage.getPixel(texCoord & 0xFFFF, texCoord >>> 16),
+							final int pixel = targetImage.image[targetImage.isPOT ?
+								((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
+								((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
+
+							paintPixel = blendTexture(paintPixel, pixel,
 								texblendMode[i], textures[i].getBlendColor());
 						}
 
@@ -1736,7 +1759,24 @@ public class Graphics3D
 				// Blend the fog, all important calculations were done prior.
 				if (hasFog && fogFactor < 255.0f)
 				{
-					paintPixel = blendFog(paintPixel, fog.getColor(), (int) fogFactor);
+					/*
+					 * M3G specifies that, the smaller the fogFactor value, the more we
+					 * should blend the fog color into the received color... which means
+					 * that the fog's contribution to the resulting color should be
+					 * 1 - fogFactor;
+					 */
+					final int fAmount = (int) fogFactor;
+
+					int pixRB = paintPixel & 0x00FF00FF;
+					int pixG  = (paintPixel >> 8) & 0xFF;
+
+					int fogRB = fogColor & 0x00FF00FF;
+					int fogG  = (fogColor >> 8) & 0xFF;
+
+					int outRB = (fogRB + (((pixRB - fogRB) * fAmount) >> 8)) & 0x00FF00FF;
+					int outG  = fogG + (((pixG - fogG) * fAmount) >> 8);
+
+					paintPixel = (paintPixel & 0xFF000000) | outRB | (outG << 8);
 				}
 
 				if (doDither)
@@ -1789,9 +1829,12 @@ public class Graphics3D
 				}
 				else
 				{
-					imageData.setPixel((x+viewx), (y+viewy), compBlending == CompositingMode.REPLACE ? paintPixel :
-						blendCompositing(imageData.getPixel((x+viewx), (y+viewy)), paintPixel,
-							alpha, compBlending));
+					final int imgIdx = imageData.isPOT ?
+						((y+viewy) << imageData.widthShift) + (x+viewx) :
+						((y+viewy) * imageData.width) + (x+viewx);
+
+					imageData.image[imgIdx] = (compBlending == CompositingMode.REPLACE ? paintPixel :
+						blendCompositing(imageData.image[imgIdx], paintPixel, alpha, compBlending));
 				}
 			}
 		}
@@ -1910,26 +1953,6 @@ public class Graphics3D
 			default:
 				return bg;
 		}
-	}
-
-	private static int blendFog(int color, int fogColor, int fogAmount)
-	{
-		/*
-		 * M3G specifies that, the smaller the fogFactor value, the more we
-		 * should blend the fog color into the received color... which means
-		 * that the fog's contribution to the resulting color should be
-		 * 1 - fogFactor;
-		 */
-		final int pixRB = color & 0x00FF00FF;
-		final int pixG  = (color >> 8) & 0xFF;
-
-		final int fogRB = fogColor & 0x00FF00FF;
-		final int fogG  = (fogColor >> 8) & 0xFF;
-
-		final int outRB = (fogRB + ((((pixRB - fogRB) * fogAmount) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-		final int outG = fogG + (((pixG - fogG) * fogAmount) >> 8);
-
-		return (color & 0xFF000000) | outRB | (outG << 8);
 	}
 
 	private static final int blendTexture(int bg, int fg, int funcMode, int texBlendColor)
@@ -2120,7 +2143,10 @@ public class Graphics3D
 
 				final int texCoord = wrapCoords(texX, texY, bgW, bgH,
 					repeatX, repeatY, isNPOT);
-				int paintPixel = bgImg.getPixel(texCoord & 0xFFFF, texCoord >>> 16);
+
+				int paintPixel = bgImg.image[bgImg.isPOT ?
+					((texCoord >>> 16) << bgImg.widthShift) + (texCoord & 0xFFFF) :
+					((texCoord >>> 16) * bgImg.width) + (texCoord & 0xFFFF)];
 
 				if (doDither)
 				{
@@ -2139,7 +2165,11 @@ public class Graphics3D
 				int screenX = px + viewx;
 
 				// Both are actually rather similar due to how FreeJ2ME+ implements these
-				if (isImageTarget) { destImg.setPixel(screenX, screenY, paintPixel); }
+				if (isImageTarget)
+				{
+					destImg.image[destImg.isPOT ? (screenY << destImg.widthShift) + screenX :
+						(screenY * destImg.width) + screenX] = paintPixel;
+				}
 				else { rasterData[rowOffset + px] = paintPixel; }
 				currX += stepX;
 			}
@@ -2163,10 +2193,18 @@ public class Graphics3D
 		int x1 = ((xy0 & 0xFFFF) + 1 < texW) ? (xy0 & 0xFFFF) + 1 : (texRepeatS ? 0 : (xy0 & 0xFFFF));
 		int y1 = ((xy0 >>> 16) + 1 < texH) ? (xy0 >>> 16) + 1 : (texRepeatT ? 0 : (xy0 >>> 16));
 
-		int c00 = teximg.getPixel(xy0 & 0xFFFF, xy0 >>> 16);
-		int c10 = teximg.getPixel(x1, xy0 >>> 16);
-		int c01 = teximg.getPixel(xy0 & 0xFFFF, y1);
-		int c11 = teximg.getPixel(x1, y1);
+		int c00 = teximg.image[teximg.isPOT ? ((xy0 >>> 16) << teximg.widthShift) + (xy0 & 0xFFFF) :
+			((xy0 >>> 16) * teximg.width) + (xy0 & 0xFFFF)];
+
+		int c10 = teximg.image[teximg.isPOT ? ((xy0 >>> 16) << teximg.widthShift) + x1 :
+			((xy0 >>> 16) * teximg.width) + x1];
+
+		int c01 = teximg.image[teximg.isPOT ? (y1 << teximg.widthShift) + (xy0 & 0xFFFF) :
+			(y1 * teximg.width) + (xy0 & 0xFFFF)];
+
+		int c11 = teximg.image[teximg.isPOT ? (y1 << teximg.widthShift) + x1 :
+			(y1 * teximg.width) + x1];
+
 
 		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
 		int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
