@@ -177,7 +177,6 @@ public class Graphics3D
 	float[] lightEyeDir = null;
 	final float[] lightVec = new float[4];
 	final float[] coX = new float[3];
-	final float[] coY = new float[3];
 	final float[] coZ = new float[3];
 	final float[] coW = new float[3];
 	float xTop, yTop, zTop;
@@ -657,6 +656,22 @@ public class Graphics3D
 					// Transform texture coordinates into NDC
 					textr[i].transform(texCoords, texVerts[i], true);
 
+					switch(Mobile.m3gMipmapMode)
+					{
+						case MODE_FORCE_DISABLE:
+							levelFilters[i] = Texture2D.FILTER_BASE_LEVEL;
+							break;
+						case MODE_APP_CONTROLLED:
+							levelFilters[i] = textures[i].getLevelFilter();
+							break;
+						case MODE_FORCE_ENABLE: // FORCE_NEAREST
+							levelFilters[i] = Texture2D.FILTER_NEAREST;
+							break;
+						case 3: // FORCE_LINEAR
+							levelFilters[i] = Texture2D.FILTER_LINEAR;
+							break;
+					}
+
 					// Cache the texture blend mode here as well.
 					texBlenders[i] = getTextureBlender(((textures[i].getBlending() & 7) << 3) |
 						(textures[i].getImage().getFormat() & 7));
@@ -860,7 +875,7 @@ public class Graphics3D
 			final float denominator = dxB * dyC - dxC * dyB;
 
 			// Degenerate triangle? Skip it.
-			if (M3GMath.abs(denominator) <= M3GMath.EPSILON) { continue; }
+			if (denominator > -1e-6f && denominator < 1e-6f) { continue; }
 
 			// We don't draw wireframes to Image2Ds
 			if (Mobile.M3GRenderWireframe && !(this.target instanceof Image2D))
@@ -873,8 +888,19 @@ public class Graphics3D
 				continue;
 			}
 
+			// Check for zero height triangles or out of bounds ones before
+			// doing any of the more expensive math below.
+			int top = 0, mid = 1, bot = 2;
+			yTop = yA; yMid = yB; yBot = yC;
+
+			if (yMid < yTop) { int t = top; top = mid; mid = t; float yt = yTop; yTop = yMid; yMid = yt; }
+			if (yBot < yTop) { int t = top; top = bot; bot = t; float yt = yTop; yTop = yBot; yBot = yt; }
+			if (yBot < yMid) { int t = mid; mid = bot; bot = t; float yt = yMid; yMid = yBot; yBot = yt; }
+
+			if ((yBot - yTop) < 1e-6f || yBot < viewClipT || yTop > viewClipB) { continue; }
+
+			// Survived the check above? Proceed to depth and DDA setups.
 			coX[0] = xA; coX[1] = xB; coX[2] = xC;
-			coY[0] = yA; coY[1] = yB; coY[2] = yC;
 			coZ[0] = tri.zA();  coZ[1] = tri.zB();  coZ[2] = tri.zC();
 			coW[0] = tri.iwA(); coW[1] = tri.iwB(); coW[2] = tri.iwC();
 
@@ -986,19 +1012,8 @@ public class Graphics3D
 				stepB = (int) (bStepX * 65536.0f);
 			}
 
-			// x and y coordinates are special cases where the resulting top, mid and bot values should be in decreasing order (top > mid > bot)
-			coY[0] = yA; coY[1] = yB; coY[2] = yC;
-			int top = 0, mid = 1, bot = 2;
-			if (coY[mid] < coY[top]) { int t = top; top = mid; mid = t; }
-			if (coY[bot] < coY[top]) { int t = top; top = bot; bot = t; }
-			if (coY[bot] < coY[mid]) { int t = mid; mid = bot; bot = t; }
-
-			// Degenerate triangle? Skip it.
-			if (M3GMath.abs(coY[bot] - coY[top]) < M3GMath.EPSILON) { continue; }
-
 			// Assign ordered vertex attributes based on their determined order
 			xTop = coX[top]; xMidL = coX[mid]; xBot = coX[bot];
-			yTop = coY[top]; yMid = coY[mid]; yBot = coY[bot];
 			zTop = coZ[top]; zMidL = coZ[mid]; zBot = coZ[bot];
 			pwTop = coW[top]; pwMidL = coW[mid]; pwBot = coW[bot];
 
@@ -1023,22 +1038,6 @@ public class Graphics3D
 				{
 					sMidR[i] = sTop[i] + rHorizon * (sBot[i] - sTop[i]);
 					tMidR[i] = tTop[i] + rHorizon * (tBot[i] - tTop[i]);
-
-					switch(Mobile.m3gMipmapMode)
-					{
-						case MODE_FORCE_DISABLE:
-							levelFilters[i] = Texture2D.FILTER_BASE_LEVEL;
-							break;
-						case MODE_APP_CONTROLLED:
-							levelFilters[i] = textures[i].getLevelFilter();
-							break;
-						case MODE_FORCE_ENABLE:
-							levelFilters[i] = Texture2D.FILTER_NEAREST;
-							break;
-						case 3: // FORCE_LINEAR
-							levelFilters[i] = Texture2D.FILTER_LINEAR;
-							break;
-					}
 				}
 			}
 
@@ -1068,8 +1067,8 @@ public class Graphics3D
 			// Draw both halves of the triangle, starting with the top one. The scanline
 			// range is clamped to the visible viewport, which discards clipped pixels
 			// without changing the viewport mapping.
-			yStart = M3GMath.max(M3GMath.ceil(yTop), viewClipT);
-			yEnd = M3GMath.min(M3GMath.ceil(yMid), viewClipB);
+			yStart = M3GMath.max((int) (yTop + 0.999999f), viewClipT);
+			yEnd = M3GMath.min((int) (yMid + 0.999999f), viewClipB);
 
 			if (yStart < yEnd)
 			{
@@ -1078,8 +1077,8 @@ public class Graphics3D
 					invMidSpan);
 			}
 
-			yStart = M3GMath.max(M3GMath.ceil(yMid), viewClipT);
-			yEnd = M3GMath.min(M3GMath.ceil(yBot), viewClipB);
+			yStart = M3GMath.max((int) (yMid + 0.999999f), viewClipT);
+			yEnd = M3GMath.min((int) (yBot + 0.999999f), viewClipB);
 
 			if (yStart < yEnd)
 			{
