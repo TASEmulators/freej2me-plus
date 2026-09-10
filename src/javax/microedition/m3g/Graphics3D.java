@@ -33,15 +33,6 @@ public class Graphics3D
 	public static final int MODE_APP_CONTROLLED = 1;
 	public static final int MODE_FORCE_ENABLE  = 2;
 
-	// Dither pattern matrix (fast ordered dithering)
-	private static final byte[] BAYER_PATTERN =
-	{
-		0, 8, 2, 10,
-		12, 4, 14, 6,
-		3, 11, 1, 9,
-		15, 7, 13, 5
-	};
-
 	// Pre-computed 1/N lookup table for span sizes 1 to 32. FreeJ2ME+ will
 	// allow configurable span sizes for piecewise linear perspective correction
 	// from 8 to 32 pixels in the future, so by precalculating these here at
@@ -129,7 +120,7 @@ public class Graphics3D
 	int canvasWidth, canvasHeight, paintPixel;
 	int[] rasterData;
 	final CompositingMode defaultCompositing;
-	Graphics3DBlenders.CompositingBlender compBlender;
+	Graphics3DPipelines.CompositingBlender compBlender;
 
 	// Texturing
 	final Transform texcomptr;
@@ -159,8 +150,9 @@ public class Graphics3D
 	final float[] sStepY = new float[NUM_TEXTURE_UNITS];
 	final float[] tStepX = new float[NUM_TEXTURE_UNITS];
 	final float[] tStepY = new float[NUM_TEXTURE_UNITS];
-	final Graphics3DBlenders.TextureBlender[] texBlenders = new Graphics3DBlenders.TextureBlender[NUM_TEXTURE_UNITS];
-	final int[] levelFilters = new int[NUM_TEXTURE_UNITS];
+	final Graphics3DPipelines.TextureBlender[] texBlenders = new Graphics3DPipelines.TextureBlender[NUM_TEXTURE_UNITS];
+	final Graphics3DPipelines.TextureWrapper[] texWrappers = new Graphics3DPipelines.TextureWrapper[NUM_TEXTURE_UNITS];
+	final Graphics3DPipelines.MipmapMode[] mipModes = new Graphics3DPipelines.MipmapMode[NUM_TEXTURE_UNITS];
 	final float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
 	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
@@ -659,22 +651,25 @@ public class Graphics3D
 					switch(Mobile.m3gMipmapMode)
 					{
 						case MODE_FORCE_DISABLE:
-							levelFilters[i] = Texture2D.FILTER_BASE_LEVEL;
+							mipModes[i] = getMipmapMode(Texture2D.FILTER_BASE_LEVEL);
 							break;
 						case MODE_APP_CONTROLLED:
-							levelFilters[i] = textures[i].getLevelFilter();
+							mipModes[i] = getMipmapMode(textures[i].getLevelFilter());
 							break;
 						case MODE_FORCE_ENABLE: // FORCE_NEAREST
-							levelFilters[i] = Texture2D.FILTER_NEAREST;
+							mipModes[i] = getMipmapMode(Texture2D.FILTER_NEAREST);
 							break;
 						case 3: // FORCE_LINEAR
-							levelFilters[i] = Texture2D.FILTER_LINEAR;
+							mipModes[i] = getMipmapMode(Texture2D.FILTER_LINEAR);
 							break;
 					}
 
-					// Cache the texture blend mode here as well.
+					// Cache the texture blend and wrapping mode here as well.
 					texBlenders[i] = getTextureBlender(((textures[i].getBlending() & 7) << 3) |
 						(textures[i].getImage().getFormat() & 7));
+
+					texWrappers[i] = getCoordWrapper(t.getImage().getWidth(), t.getImage().getHeight(),
+						texRepeatS[i], texRepeatT[i], t.isNPOT());
 				}
 				else
 				{
@@ -1654,75 +1649,46 @@ public class Graphics3D
 				{
 					for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						Image2D targetImage = textures[i].getImage();
-
 						float s = curS[i] * invPw;
 						float t = curT[i] * invPw;
 
-						// Mipmapping support requested.
-						if (levelFilters[i] != Texture2D.FILTER_BASE_LEVEL)
+						Image2D targetImage = textures[i].getImage();
+
+						// Mipmapping support was requested.
+						if(mipModes[i] != null)
 						{
-							int targetLevel = 0;
-
-							float dsdx = (sStepX[i] - s * dwdx) * invPw;
-							float dtdx = (tStepX[i] - t * dwdx) * invPw;
-							float dsdy = (sStepY[i] - s * dwdy) * invPw;
-							float dtdy = (tStepY[i] - t * dwdy) * invPw;
-
-							if (levelFilters[i] == Texture2D.FILTER_NEAREST)
-							{
-								float lengthXSq = dsdx * dsdx + dtdx * dtdx;
-								float lengthYSq = dsdy * dsdy + dtdy * dtdy;
-								float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
-
-								int rawBits = Float.floatToRawIntBits(maxSq) - 0x3F800000;
-								targetLevel = (rawBits & ~(rawBits >> 31)) >> 24;
-							}
-							else // Trilinear
-							{
-								float area = dsdx * dtdy - dtdx * dsdy;
-								int rawBits = (Float.floatToRawIntBits(area) & 0x7FFFFFFF) - 0x3F000000;
-
-								// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
-								// This saves us the need to do much slower trilinear filtering, while
-								// retaining most of the looks.
-								int lodFract = ((rawBits >> 19) & 0x1F) & ~(rawBits >> 31);
-
-								int bayerThreshold = BAYER_PATTERN[((y & 3) << 2) | (x & 3)] + 3;
-								targetLevel = ((rawBits & ~(rawBits >> 31)) >> 24) -
-									((bayerThreshold - lodFract) >> 31);
-							}
-
-							targetImage = textures[i].getImageForLOD(targetLevel);
+							targetImage = mipModes[i].selectLevel(textures[i], s, t,
+								sStepX[i], tStepX[i], sStepY[i], tStepY[i],
+								dwdx, dwdy, invPw, x, y);
 
 							// POT textures coming in with another fast path: Just shift
-							// right by the targetLevel! TODO: NPOT textures SHOULD be able
-							// to benefit from this as well although it's untested and
-							// none of the NPOT test cases so far use mipmaps.
+							// right by the difference in width between base level and
+							// target one!
+							int targetLevel = textures[i].getImage().widthShift - targetImage.widthShift;
+
 							s = (float) ((int) s >> targetLevel);
 							t = (float) ((int) t >> targetLevel);
 						}
 
-						if (useBilinear[i])
+						if (!useBilinear[i])
 						{
-							paintPixel = texBlenders[i] == null ? sampleBilinear(targetImage, s, t,
-								targetImage.getWidth(), targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
-								textures[i].isNPOT())
-								: texBlenders[i].blend(paintPixel, sampleBilinear(targetImage, s, t,
-									targetImage.getWidth(), targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
-									textures[i].isNPOT()), textures[i].getBlendColor());
-						}
-						else
-						{
-							final int texCoord = wrapCoords((int) (s + 32768.0f) - 32768, (int) (t + 32768.0f) - 32768,
-								targetImage.getWidth(), targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
-								textures[i].isNPOT());
+							final int texCoord = texWrappers[i].wrap((int) (s + 32768.0f) - 32768,
+								(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
 
 							final int pixel = targetImage.image[targetImage.isPOT ?
 								((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
 								((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
 
 							paintPixel = texBlenders[i] == null ? pixel : texBlenders[i].blend(paintPixel, pixel, textures[i].getBlendColor());
+						}
+						else
+						{
+							int filtered = sampleBilinear(targetImage, s, t,
+								targetImage.getWidth(), targetImage.getHeight(), i,
+								texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
+
+							paintPixel = texBlenders[i] == null ? filtered
+								: texBlenders[i].blend(paintPixel, filtered, textures[i].getBlendColor());
 						}
 
 						curS[i] += stepS[i];
@@ -1771,22 +1737,21 @@ public class Graphics3D
 
 				if (doDither)
 				{
-					int ditherOffset = BAYER_PATTERN[((y & 3) << 2) | (x & 3)];
+					int dither = (((x ^ y) & 1) << 3) | ((y & 1) << 2) | (((x ^ y) & 2) << 1) | ((y & 2) >> 1);
 
-					int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
-					int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
-					int b =  (paintPixel        & 0xFF) + ditherOffset;
+					int r = ((paintPixel >> 16) & 0xFF) + dither;
+					int g = ((paintPixel >>  8) & 0xFF) + dither;
+					int b =  (paintPixel        & 0xFF) + dither;
 
-					r |= ((255 - r) >> 31); r &= 0xFF;
-					g |= ((255 - g) >> 31); g &= 0xFF;
-					b |= ((255 - b) >> 31); b &= 0xFF;
+					r = (r | ((255 - r) >> 31)) & 0xFF;
+					g = (g | ((255 - g) >> 31)) & 0xFF;
+					b = (b | ((255 - b) >> 31)) & 0xFF;
 
-					// Repack keeping Alpha intact
 					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 				}
 
 				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) &&
+				if (doAntiAlias && !renderToImage && (x == ixL || x == ixR - 1) &&
 					compBlender == null && alpha >= 255)
 				{
 					// The way this works is that we "extend" the geometry size a bit
@@ -1864,6 +1829,7 @@ public class Graphics3D
 		final int bgW = bgImg.getWidth();
 		final int bgH = bgImg.getHeight();
 		final boolean isNPOT = !(bgImg.isPowerOfTwo(bgW) && bgImg.isPowerOfTwo(bgH));
+		texWrappers[0] = getCoordWrapper(bgW, bgH, repeatX, repeatY, isNPOT);
 
 		int stepX = (cropW << 16) / vieww;
 		int stepY = (cropH << 16) / viewh;
@@ -1898,8 +1864,7 @@ public class Graphics3D
 					continue;
 				}
 
-				final int texCoord = wrapCoords(texX, texY, bgW, bgH,
-					repeatX, repeatY, isNPOT);
+				final int texCoord = texWrappers[0].wrap(texX, texY, bgW, bgH);
 
 				int paintPixel = bgImg.image[bgImg.isPOT ?
 					((texCoord >>> 16) << bgImg.widthShift) + (texCoord & 0xFFFF) :
@@ -1907,14 +1872,15 @@ public class Graphics3D
 
 				if (doDither)
 				{
-					int ditherOffset = BAYER_PATTERN[((py & 3) << 2) | (px & 3)];
-					int r = ((paintPixel >> 16) & 0xFF) + ditherOffset;
-					int g = ((paintPixel >>  8) & 0xFF) + ditherOffset;
-					int b =  (paintPixel        & 0xFF) + ditherOffset;
+					int dither = (((px ^ py) & 1) << 3) | ((py & 1) << 2) | (((px ^ py) & 2) << 1) | ((py & 2) >> 1);
 
-					r |= ((255 - r) >> 31); r &= 0xFF;
-					g |= ((255 - g) >> 31); g &= 0xFF;
-					b |= ((255 - b) >> 31); b &= 0xFF;
+					int r = ((paintPixel >> 16) & 0xFF) + dither;
+					int g = ((paintPixel >>  8) & 0xFF) + dither;
+					int b =  (paintPixel        & 0xFF) + dither;
+
+					r = (r | ((255 - r) >> 31)) & 0xFF;
+					g = (g | ((255 - g) >> 31)) & 0xFF;
+					b = (b | ((255 - b) >> 31)) & 0xFF;
 
 					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 				}
@@ -1934,7 +1900,8 @@ public class Graphics3D
 	}
 
 	// For bilinear filtering support
-	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
+	private final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, int texUnit,
+		boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
 		// Shift s and t by 0.5 on the texel center for OpenGL-like filtering,
 		int sFixed = (int) ((s - 0.5f) * 256.0f);
@@ -1944,8 +1911,7 @@ public class Graphics3D
 		int fx = sFixed & 0xFF;
 		int fy = tFixed & 0xFF;
 
-		int xy0 = wrapCoords(sFixed >> 8, tFixed >> 8, texW, texH,
-			texRepeatS, texRepeatT, isNPOT);
+		int xy0 = texWrappers[texUnit].wrap(sFixed >> 8, tFixed >> 8, texW, texH);
 
 		int x1 = ((xy0 & 0xFFFF) + 1 < texW) ? (xy0 & 0xFFFF) + 1 : (texRepeatS ? 0 : (xy0 & 0xFFFF));
 		int y1 = ((xy0 >>> 16) + 1 < texH) ? (xy0 >>> 16) + 1 : (texRepeatT ? 0 : (xy0 >>> 16));
@@ -1973,75 +1939,6 @@ public class Graphics3D
 		int ag = ag0 + ((((ag1 - ag0) * fy) >> 8) & 0x00FF00FF);
 
 		return (ag << 8) | rb;
-	}
-
-	// Helper for texture wrapping/clamping
-	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
-	// Out-of-range coordinates must never index outside the image.
-	//
-	// This method assumes that no texture larger than 32Kx32K will be used,
-	// and this, it processes both X and Y coordinates in one go and returns
-	// them packed in an integer as follows: XY = (texY << 16) | (texX & 0xFFFF).
-	private static final int wrapCoords(int s, int t, int boundW, int boundH,
-		boolean repeatS, boolean repeatT, boolean isNPOT)
-	{
-		int texX, texY;
-
-		if (repeatS)
-		{
-			// If the texture is Power-Of-Two, repeat wrapping can be done
-			// quickly as just an AND of the coordinate with the the edge
-			// mask (which is width - 1). Why is that? A POT texture has
-			// the following property: (2 - 1 = 1 = `0b1`, 4 - 1 = 3 = `0b11`,
-			// 8 - 1 = 7 = `0b111`, and so on), so we always wrap around to the
-			// correct coordinate with an AND of size - 1, as overflowing data
-			// will naturally wrap back to the start.
-			if (!isNPOT) { texX = s & (boundW - 1); }
-
-			// Go to the slower NPOT path... try to make it a bit faster by
-			// returning outright if the texture is within bounds.
-			else if (s >= 0 && s < boundW) { texX = s; }
-
-			// Not within bounds? Escape the usage of modulo by using Lemire's
-			// fast reduction. We are hardly ever going to get coordinates over
-			// the short range (-32768,32767), so we also do not cast to long,
-			// remaining entirely within 32-bit range.
-			else
-			{
-				int mask = s >> 31;
-				int absT = (s ^ mask) - mask;
-
-				// 32-bit int multiplication to replace need for 64-bit math
-				texX = (absT * boundW) >> 16;
-
-				// Wrap any negative coordinates back into [0, bound - 1] range
-				texX = (mask != 0 && texX != 0) ? (boundW - texX) : texX;
-			}
-		}
-		else // CLAMP mode
-		{
-			texX = s < 0 ? 0 : (s >= boundW ? boundW - 1 : s);
-		}
-
-		// This one just repeats the above, but for T/Y
-		if (repeatT)
-		{
-			if (!isNPOT) { texY = t & (boundH - 1); }
-			else if (t >= 0 && t < boundH) { texY = t; }
-			else
-			{
-				int mask = t >> 31;
-				int absT = (t ^ mask) - mask;
-				texY = (absT * boundH) >> 16;
-				texY = (mask != 0 && texY != 0) ? (boundH - texY) : texY;
-			}
-		}
-		else
-		{
-			texY = t < 0 ? 0 : (t >= boundH ? boundH - 1 : t);
-		}
-
-		return (texY << 16) | (texX & 0xFFFF);
 	}
 
 	// Retained mode render order helpers.
@@ -2227,23 +2124,23 @@ public class Graphics3D
 	// Doing it this way instead of the prior "blendCompositing" method with a
 	// switch-case provides a noticeable performance boost, as now we only
 	// need to call this ONCE for each triangle, rather than per-pixel.
-	private final Graphics3DBlenders.CompositingBlender getCompositingBlender(int blendMode)
+	private final Graphics3DPipelines.CompositingBlender getCompositingBlender(int blendMode)
 	{
 		switch (blendMode)
 		{
 			case CompositingMode.REPLACE:
 				return null; // Fast path, set pixel directly in render methods.
-				//return Graphics3DBlenders.CompositingBlenders.REPLACE;
+				//return Graphics3DPipelines.CompositingBlenders.REPLACE;
 			case CompositingMode.ALPHA:
-				return Graphics3DBlenders.CompositingBlenders.ALPHA;
+				return Graphics3DPipelines.CompositingBlenders.ALPHA;
 			case CompositingMode.ALPHA_ADD:
-				return Graphics3DBlenders.CompositingBlenders.ALPHA_ADD;
+				return Graphics3DPipelines.CompositingBlenders.ALPHA_ADD;
 			case CompositingMode.MODULATE:
-				return Graphics3DBlenders.CompositingBlenders.MODULATE;
+				return Graphics3DPipelines.CompositingBlenders.MODULATE;
 			case CompositingMode.MODULATE_X2:
-				return Graphics3DBlenders.CompositingBlenders.MODULATE_X2;
+				return Graphics3DPipelines.CompositingBlenders.MODULATE_X2;
 			default:
-				return Graphics3DBlenders.CompositingBlenders.PASSTHROUGH;
+				return Graphics3DPipelines.CompositingBlenders.PASSTHROUGH;
 		}
 	}
 
@@ -2251,7 +2148,7 @@ public class Graphics3D
 	// Doing it this way instead of the prior "blendTexture" method with a
 	// massive switch-case provides a major performance boost, as now we only
 	// need to call this ONCE for each triangle, rather than per-pixel.
-	private final Graphics3DBlenders.TextureBlender getTextureBlender(int funcMode)
+	private final Graphics3DPipelines.TextureBlender getTextureBlender(int funcMode)
 	{
 		switch (funcMode)
 		{
@@ -2266,42 +2163,58 @@ public class Graphics3D
 				//return TextureBlenders.REPLACE_FG;
 
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
-				return Graphics3DBlenders.TextureBlenders.REPLACE_ALPHA;
+				return Graphics3DPipelines.TextureBlenders.REPLACE_ALPHA;
 
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGB & 7):
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE & 7):
-				return Graphics3DBlenders.TextureBlenders.ADD_RGB;
+				return Graphics3DPipelines.TextureBlenders.ADD_RGB;
 
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-				return Graphics3DBlenders.TextureBlenders.ADD_RGBA;
+				return Graphics3DPipelines.TextureBlenders.ADD_RGBA;
 
 			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.ALPHA & 7):
 			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.ALPHA & 7):
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.ALPHA & 7):
-				return Graphics3DBlenders.TextureBlenders.ALPHA_MUL;
+				return Graphics3DPipelines.TextureBlenders.ALPHA_MUL;
 
 			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-				return Graphics3DBlenders.TextureBlenders.BLEND_RGBA;
+				return Graphics3DPipelines.TextureBlenders.BLEND_RGBA;
 
 			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGB & 7):
 			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE & 7):
-				return Graphics3DBlenders.TextureBlenders.BLEND_RGB;
+				return Graphics3DPipelines.TextureBlenders.BLEND_RGB;
 
 			case ((Texture2D.FUNC_DECAL & 7) << 3) | (Image2D.RGBA & 7):
-				return Graphics3DBlenders.TextureBlenders.DECAL_RGBA;
+				return Graphics3DPipelines.TextureBlenders.DECAL_RGBA;
 
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-				return Graphics3DBlenders.TextureBlenders.MODULATE_RGBA;
+				return Graphics3DPipelines.TextureBlenders.MODULATE_RGBA;
 
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGB & 7):
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE & 7):
-				return Graphics3DBlenders.TextureBlenders.MODULATE_RGB;
+				return Graphics3DPipelines.TextureBlenders.MODULATE_RGB;
 
 			default:
-				return Graphics3DBlenders.TextureBlenders.PASSTHROUGH;
+				return Graphics3DPipelines.TextureBlenders.PASSTHROUGH;
 		}
+	}
+
+	// Same reasoning as the ones above
+	public Graphics3DPipelines.TextureWrapper getCoordWrapper(int w, int h,
+		boolean repeatS, boolean repeatT, boolean isNPOT)
+	{
+		if (!repeatS && !repeatT) { return Graphics3DPipelines.TextureWrappers.CLAMP; }
+		if (!isNPOT) { return Graphics3DPipelines.TextureWrappers.POT_REPEAT; }
+		return Graphics3DPipelines.TextureWrappers.NPOT_REPEAT;
+	}
+
+	public Graphics3DPipelines.MipmapMode getMipmapMode(int levelFilter)
+	{
+		if (levelFilter == Texture2D.FILTER_BASE_LEVEL) { return null; }
+		if (levelFilter == Texture2D.FILTER_NEAREST) { return Graphics3DPipelines.MipmapModes.NEAREST; }
+		return Graphics3DPipelines.MipmapModes.LINEAR;
 	}
 }

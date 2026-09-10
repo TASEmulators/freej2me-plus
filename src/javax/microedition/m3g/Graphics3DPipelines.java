@@ -16,10 +16,11 @@
 */
 package javax.microedition.m3g;
 
-// Class containing specialized blenders for Graphics3D blending modes. With this,
-// we can set the blend logic to use only once per render call, and execute them
-// without any sort of branching on when drawing each pixel.
-class Graphics3DBlenders
+// Class containing specialized pipelines for Graphics3D blending modes and
+// texture coordinate wrapping. With this, we can set the blend logic and wrap
+// modes to use only once per render call, and execute them without any sort of
+// branching when drawing each pixel.
+class Graphics3DPipelines
 {
 	interface CompositingBlender { int blend(int bg, int fg, int alpha); }
 
@@ -277,6 +278,148 @@ class Graphics3DBlenders
 					 | ((outR & 0xFF00) << 8)
 					 |  (outG & 0xFF00)
 					 |  (outB >> 8);
+			}
+		};
+	}
+
+	// Texture Wrapping modes
+
+	interface TextureWrapper { int wrap(int s, int t, int w, int h); }
+
+	// Helper for texture wrapping/clamping
+	// JSR-184 texture wrapping: REPEAT tiles the image, CLAMP samples the edge.
+	// Out-of-range coordinates must never index outside the image.
+	//
+	// This method assumes that no texture larger than 32Kx32K will be used,
+	// and with this, it processes both S and T coordinates in one go and returns
+	// them packed in an integer as follows: ST = (T << 16) | (S & 0xFFFF).
+	static class TextureWrappers
+	{
+		// If the texture is Power-Of-Two, repeat wrapping can be done
+		// quickly as just an AND of the coordinate with the the edge
+		// mask (which is width - 1). Why is that? A POT texture has
+		// the following property: (2 - 1 = 1 = `0b1`, 4 - 1 = 3 = `0b11`,
+		// 8 - 1 = 7 = `0b111`, and so on), so we always wrap around to the
+		// correct coordinate with an AND of size - 1, as overflowing data
+		// will naturally wrap back to the start.
+		static final TextureWrapper POT_REPEAT = new TextureWrapper()
+		{
+			@Override
+			public int wrap(int s, int t, int w, int h) { return ((t & (h - 1)) << 16) | (s & (w - 1)); }
+		};
+
+		// Clamp mode is the same for POT and NPOT.
+		static final TextureWrapper CLAMP = new TextureWrapper()
+		{
+
+			@Override
+			public int wrap(int s, int t, int w, int h)
+			{
+				int x = s < 0 ? 0 : (s > (w - 1) ? (w - 1) : s);
+				int y = t < 0 ? 0 : (t > (h - 1) ? (h - 1) : t);
+				return (y << 16) | x;
+			}
+		};
+
+		// For NPOT, escape the usage of modulo by using Barrett's fast reduction.
+		// We are hardly ever going to get coordinates over the short range
+		// (-32768,32767), so we also do not cast to long, remaining entirely
+		// within the 32-bit range with faster multiply-shifts instead of modulos.
+		static final TextureWrapper NPOT_REPEAT = new TextureWrapper()
+		{
+			@Override
+			public int wrap(int s, int t, int w, int h)
+			{
+				long invW = ((1L << 32) + w - 1) / w;
+				long invH = ((1L << 32) + h - 1) / h;
+
+				int qX = (int) ((s * invW) >>> 32);
+				int x = s - (qX * w);
+				if (x < 0) { x += w; }
+
+				int qY = (int) ((t * invH) >>> 32);
+				int y = t - (qY * h);
+				if (y < 0) { y += h; }
+
+				return (y << 16) | x;
+			}
+		};
+	}
+
+
+	// Mipmapping modes
+
+	interface MipmapMode
+	{
+		Image2D selectLevel(Texture2D texture, float s, float t,
+			float sStepX, float tStepX, float sStepY, float tStepY,
+			float dwdx, float dwdy, float invPw, int x, int y);
+	}
+
+	static class MipmapModes
+	{
+		// Turned into a fast path where this isn't even allocated and the
+		// texturing code assigns the base level right away.
+		//public static final MipmapMode BASE_LEVEL = new MipmapMode()
+		//{
+		//	@Override
+		//	public Image2D selectLevel(Texture2D texture, float s, float t,
+		//		float sStepX, float tStepX, float sStepY, float tStepY,
+		//		float dwdx, float dwdy, float invPw, int x, int y)
+		//	{
+		//		return texture.getImage();
+		//	}
+		//};
+
+		static final MipmapMode NEAREST = new MipmapMode()
+		{
+			@Override
+			public Image2D selectLevel(Texture2D texture, float s, float t,
+				float sStepX, float tStepX, float sStepY, float tStepY,
+				float dwdx, float dwdy, float invPw, int x, int y)
+			{
+				float dsdx = (sStepX - s * dwdx) * invPw;
+				float dtdx = (tStepX - t * dwdx) * invPw;
+				float dsdy = (sStepY - s * dwdy) * invPw;
+				float dtdy = (tStepY - t * dwdy) * invPw;
+
+				float lengthXSq = dsdx * dsdx + dtdx * dtdx;
+				float lengthYSq = dsdy * dsdy + dtdy * dtdy;
+				float maxSq = (lengthXSq > lengthYSq) ? lengthXSq : lengthYSq;
+
+				int rawBits = Float.floatToRawIntBits(maxSq) - 0x3F800000;
+				int targetLevel = (rawBits & ~(rawBits >> 31)) >> 24;
+
+				return texture.getImageForLOD(targetLevel);
+			}
+		};
+
+		static final MipmapMode LINEAR = new MipmapMode()
+		{
+			@Override
+			public Image2D selectLevel(Texture2D texture, float s, float t,
+				float sStepX, float tStepX, float sStepY, float tStepY,
+				float dwdx, float dwdy, float invPw, int x, int y)
+			{
+				float dsdx = (sStepX - s * dwdx) * invPw;
+				float dtdx = (tStepX - t * dwdx) * invPw;
+				float dsdy = (sStepY - s * dwdy) * invPw;
+				float dtdy = (tStepY - t * dwdy) * invPw;
+
+				float area = dsdx * dtdy - dtdx * dsdy;
+				int rawBits = (Float.floatToRawIntBits(area) & 0x7FFFFFFF) - 0x3F800000;
+
+				// Apply LOD Dithering ONLY when FILTER_LINEAR (Trilinear) is requested
+				// This saves us the need to do much slower trilinear filtering, while
+				// retaining most of the looks.
+				int lodFract = ((rawBits >> 16) & 0xFF) & ~(rawBits >> 31);
+
+				int ditherThreshold = ((x * 131 + y * 197) & 0xFF);
+
+				int targetLevel = ((rawBits & ~(rawBits >> 31)) >> 24) -
+					((ditherThreshold - lodFract) >> 31);
+
+				return texture.getImageForLOD(targetLevel);
 			}
 		};
 	}
