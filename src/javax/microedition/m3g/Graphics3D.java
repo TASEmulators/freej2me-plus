@@ -844,6 +844,7 @@ public class Graphics3D
 		final float depthFactor = compositingMode.getDepthOffsetFactor();
 		final boolean hasDepthOffset = usesDepth && (depthFactor != 0.0f || depthUnits != 0.0f);
 		float depthOffset = 0.0f;
+		final int defVertColor = vertices.getDefaultColor();
 
 		final boolean colorEnabled = compositingMode.isColorWriteEnabled();
 		final int alphaThreshold = (int) (compositingMode.getAlphaThreshold() * 255);
@@ -979,17 +980,17 @@ public class Graphics3D
 				final int colorB = tri.colorB();
 				final int colorC = tri.colorC();
 
-				final float aA = (colorA >> 24) & 0xFF, rA = (colorA >> 16) & 0xFF, gA = (colorA >> 8) & 0xFF, bA = colorA & 0xFF;
-				final float aB = (colorB >> 24) & 0xFF, rB = (colorB >> 16) & 0xFF, gB = (colorB >> 8) & 0xFF, bB = colorB & 0xFF;
-				final float aC = (colorC >> 24) & 0xFF, rC = (colorC >> 16) & 0xFF, gC = (colorC >> 8) & 0xFF, bC = colorC & 0xFF;
-
 				// To properly use additions in the triangle render loops
 				// below, we need to calculate the derivatives for each
 				// color channel, on each axis.
-				final float dR_B = rB - rA, dR_C = rC - rA;
-				final float dG_B = gB - gA, dG_C = gC - gA;
-				final float dB_B = bB - bA, dB_C = bC - bA;
-				final float dA_B = aB - aA, dA_C = aC - aA;
+				final float dR_B = ((colorB >> 16) & 0xFF) - ((colorA >> 16) & 0xFF);
+				final float dR_C = ((colorC >> 16) & 0xFF) - ((colorA >> 16) & 0xFF);
+				final float dG_B = ((colorB >> 8) & 0xFF)  - ((colorA >> 8) & 0xFF);
+				final float dG_C = ((colorC >> 8) & 0xFF)  - ((colorA >> 8) & 0xFF);
+				final float dB_B = (colorB & 0xFF)         - (colorA & 0xFF);
+				final float dB_C = (colorC & 0xFF)         - (colorA & 0xFF);
+				final float dA_B = ((colorB >>> 24) & 0xFF) - ((colorA >>> 24) & 0xFF);
+				final float dA_C = ((colorC >>> 24) & 0xFF) - ((colorA >>> 24) & 0xFF);
 
 				rStepX = (dR_B * dyC - dR_C * dyB) * invDet;
 				gStepX = (dG_B * dyC - dG_C * dyB) * invDet;
@@ -1067,7 +1068,7 @@ public class Graphics3D
 
 			if (yStart < yEnd)
 			{
-				renderTriangleHalf(vertices.getDefaultColor(), 0, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
+				renderTriangleHalf(defVertColor, 0, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
 					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
 					invMidSpan);
 			}
@@ -1077,7 +1078,7 @@ public class Graphics3D
 
 			if (yStart < yEnd)
 			{
-				renderTriangleHalf(vertices.getDefaultColor(), 1, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
+				renderTriangleHalf(defVertColor, 1, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
 					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
 					invMidSpan);
 			}

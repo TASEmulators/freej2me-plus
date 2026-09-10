@@ -20,8 +20,8 @@ import java.util.Arrays;
 
 public class Transform
 {
-	private final byte[] bVertices = new byte[3];
-	private final short[] sVertices = new short[3];
+	private static byte[] bVertices = new byte[384];
+	private static short[] sVertices = new short[384];
 	// This is a 4x4 matrix represented as a 16 item long array.
 	// The items are in row major order:
 	//   [  0,  1,  2,  3 ]
@@ -205,7 +205,7 @@ public class Transform
 		if(vectors == null) { throw new NullPointerException("Cannot transform a null vector."); }
 
 		/* Also per JSR-184, throw IllegalArgumentException if the given vector is not a flat array of quadruplets. */
-		if(vectors.length % 4 != 0) { throw new IllegalArgumentException("Cannot transform a vector array that's not multiple of 4."); }
+		if((vectors.length & 3) != 0) { throw new IllegalArgumentException("Cannot transform a vector array that's not multiple of 4."); }
 
 		/* Multiply each 4D vector with this transform's matrix by quadruplets, hence the vector offset of 4. */
 		float x, y, z, w;
@@ -240,34 +240,66 @@ public class Transform
 
 		// Fill the `out` array with raw data
 		float wVal = W ? 1.0f : 0.0f;
+		int size = vertexCount * vertexDims;
 
 		if (in.getComponentType() == 1)
 		{
-			if (vertexDims < 3) { bVertices[2] = 0; }
+			if (bVertices.length < size) { bVertices = new byte[size]; }
 
-			for (int i = 0; i < vertexCount; i++)
+			in.get(0, vertexCount, bVertices);
+
+			int outIdx = 0;
+			int inIdx = 0;
+
+			if (vertexDims == 3)
 			{
-				in.get(i, 1, bVertices);
-				int outIdx = i * 4;
-
-				out[outIdx]     = bVertices[0];
-				out[outIdx + 1] = bVertices[1];
-				out[outIdx + 2] = bVertices[2];
-				out[outIdx + 3] = wVal;
+				for (; inIdx < size; inIdx += 3, outIdx += 4)
+				{
+					out[outIdx]     = bVertices[inIdx];
+					out[outIdx + 1] = bVertices[inIdx + 1];
+					out[outIdx + 2] = bVertices[inIdx + 2];
+					out[outIdx + 3] = wVal;
+				}
+			}
+			else
+			{
+				for (; inIdx < size; inIdx += 2, outIdx += 4)
+				{
+					out[outIdx]     = bVertices[inIdx];
+					out[outIdx + 1] = bVertices[inIdx + 1];
+					out[outIdx + 2] = 0.0f;
+					out[outIdx + 3] = wVal;
+				}
 			}
 		}
 		else
 		{
-			if (vertexDims < 3) { sVertices[2] = 0; }
-			for (int i = 0; i < vertexCount; i++)
-			{
-				in.get(i, 1, sVertices);
-				int outIdx = i * 4;
+			if (sVertices.length < size) { sVertices = new short[size]; }
 
-				out[outIdx]     = sVertices[0];
-				out[outIdx + 1] = sVertices[1];
-				out[outIdx + 2] = sVertices[2];
-				out[outIdx + 3] = wVal;
+			in.get(0, vertexCount, sVertices);
+
+			int outIdx = 0;
+			int inIdx = 0;
+
+			if (vertexDims == 3)
+			{
+				for (; inIdx < size; inIdx += 3, outIdx += 4)
+				{
+					out[outIdx]     = sVertices[inIdx];
+					out[outIdx + 1] = sVertices[inIdx + 1];
+					out[outIdx + 2] = sVertices[inIdx + 2];
+					out[outIdx + 3] = wVal;
+				}
+			}
+			else
+			{
+				for (; inIdx < size; inIdx += 2, outIdx += 4)
+				{
+					out[outIdx]     = sVertices[inIdx];
+					out[outIdx + 1] = sVertices[inIdx + 1];
+					out[outIdx + 2] = 0.0f;
+					out[outIdx + 3] = wVal;
+				}
 			}
 		}
 
@@ -317,21 +349,21 @@ public class Transform
 	// vertex ('s', 't', 'r', 'q'), only 2 ('s' and 't').
 	void transformTexCoords(float[] vectors)
 	{
-	    float s, t;
-	    float[] m = this.matrix;
+		float s, t;
+		float[] m = this.matrix;
 
-	    for (int offset = 0; offset < vectors.length; offset += 2)
-	    {
-	        s = vectors[offset];
-	        t = vectors[offset + 1];
+		for (int offset = 0; offset < vectors.length; offset += 2)
+		{
+			s = vectors[offset];
+			t = vectors[offset + 1];
 
-	        // Transforms (s, t, 0, 1) using matrix indices 0, 1, 3 for S and
+			// Transforms (s, t, 0, 1) using matrix indices 0, 1, 3 for S and
 			// 4, 5, 7 for T.
 			//
-	        // Ignores translation/scale on Z (m[2], m[6]) since z = 0.
-	        vectors[offset]     = m[0] * s + m[1] * t + m[3];
-	        vectors[offset + 1] = m[4] * s + m[5] * t + m[7];
-	    }
+			// Ignores translation/scale on Z (m[2], m[6]) since z = 0.
+			vectors[offset]     = m[0] * s + m[1] * t + m[3];
+			vectors[offset + 1] = m[4] * s + m[5] * t + m[7];
+		}
 	}
 
 	/* ------------------------- private methods ------------------------- */
@@ -350,14 +382,14 @@ public class Transform
 		float c = M3GMath.cos(rad);
 		float d = 1.0f - c;
 
-        float x = ax, y = ay, z = az;
-        if (M3GMath.abs(axisLen - 1.0f) > 1.0e-6f)
-        {
-            final float invL = M3GMath.fastReciprocal(M3GMath.sqrt(axisLen));
-            x *= invL;
-            y *= invL;
-            z *= invL;
-        }
+		float x = ax, y = ay, z = az;
+		if (M3GMath.abs(axisLen - 1.0f) > 1.0e-6f)
+		{
+			final float invL = M3GMath.fastReciprocal(M3GMath.sqrt(axisLen));
+			x *= invL;
+			y *= invL;
+			z *= invL;
+		}
 
 		manipulationMatrix[0] = x*x*d + c;   manipulationMatrix[1] = y*x*d - z*s; manipulationMatrix[2] = z*x*d + y*s;
 		manipulationMatrix[4] = x*y*d + z*s; manipulationMatrix[5] = y*y*d + c;   manipulationMatrix[6] = z*y*d - x*s;
@@ -372,11 +404,11 @@ public class Transform
 			throw new IllegalArgumentException("Cannot rotate when all quaternion components are zero.");
 		}
 
-        final float invL = M3GMath.fastReciprocal(M3GMath.sqrt((qx * qx) + (qy * qy) + (qz * qz) + (qw * qw)));
-        float x = qx * invL;
-        float y = qy * invL;
-        float z = qz * invL;
-        float w = qw * invL;
+		final float invL = M3GMath.fastReciprocal(M3GMath.sqrt((qx * qx) + (qy * qy) + (qz * qz) + (qw * qw)));
+		float x = qx * invL;
+		float y = qy * invL;
+		float z = qz * invL;
+		float w = qw * invL;
 
 		manipulationMatrix[0] = 1 - 2*y*y - 2*z*z;
 		manipulationMatrix[1] = 2*x*y - 2*z*w;

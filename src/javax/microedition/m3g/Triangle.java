@@ -268,25 +268,23 @@ class Triangle
 			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
-				tri.setVertexCoords(srcV, fan);
-				tri.setTexCoords(srcT, fan);
-				tri.setVertexColors(hasColors ? srcC : null, fan);
-
-				// Calculate the average Z for front-to-back sorting.
-				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
 
 				// Apply perspective division to the triangle, it's going to NDC
+
+				int off0 = 0;             // Fan origin (vertex 0)
+				int off1 = (fan + 1) << 2; // Vertex 1
+				int off2 = (fan + 2) << 2; // Vertex 2
 
 				// It is faster to calculate the reciprocal of w (1/w) and just
 				// multiply vertices and texture coordinates by it, than it is to
 				// constantly divide them by W here.
-				final float invW0 = M3GMath.fastReciprocal(tri.v[3]);
-				final float invW1 = M3GMath.fastReciprocal(tri.v[7]);
-				final float invW2 = M3GMath.fastReciprocal(tri.v[11]);
+				final float invW0 = 1.0f / srcV[off0 + 3];
+				final float invW1 = 1.0f / srcV[off1 + 3];
+				final float invW2 = 1.0f / srcV[off2 + 3];
 
-				tri.v[0] *= invW0; tri.v[1] *= invW0; tri.v[2] *= invW0; tri.v[3] = 1.0f;
-				tri.v[4] *= invW1; tri.v[5] *= invW1; tri.v[6] *= invW1; tri.v[7] = 1.0f;
-				tri.v[8] *= invW2; tri.v[9] *= invW2; tri.v[10] *= invW2; tri.v[11] = 1.0f;
+				tri.v[0] = srcV[off0] * invW0; tri.v[1] = srcV[off0 + 1] * invW0; tri.v[2] = srcV[off0 + 2] * invW0; tri.v[3] = 1.0f;
+				tri.v[4] = srcV[off1] * invW1; tri.v[5] = srcV[off1 + 1] * invW1; tri.v[6] = srcV[off1 + 2] * invW1; tri.v[7] = 1.0f;
+				tri.v[8] = srcV[off2] * invW2; tri.v[9] = srcV[off2 + 1] * invW2; tri.v[10] = srcV[off2 + 2] * invW2; tri.v[11] = 1.0f;
 
 				tri.invW[0] = invW0;
 				tri.invW[1] = invW1;
@@ -294,18 +292,42 @@ class Triangle
 
 				// Texture coordinates are stored as s/w and t/w if
 				// perspective correction is enabled (undone per-pixel in rasterizer)
-				if (perspectiveCorrect)
+				if (hasTex)
 				{
+					if (Graphics3D.ACTIVE_TEXTURE_UNITS > tri.t.length) { tri.t = new float[Graphics3D.ACTIVE_TEXTURE_UNITS][6]; }
+
 					for (int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 					{
+						final float[] srcTU = srcT[u];
+						if (srcTU == null) { continue; }
+
 						final float[] tu = tri.t[u];
-						if (tu != null)
+
+						if (perspectiveCorrect)
 						{
-							tu[0] *= invW0; tu[1] *= invW0;
-							tu[2] *= invW1; tu[3] *= invW1;
-							tu[4] *= invW2; tu[5] *= invW2;
+							tu[0] = srcTU[off0]     * invW0; tu[1] = srcTU[off0 + 1] * invW0;
+							tu[2] = srcTU[off1]     * invW1; tu[3] = srcTU[off1 + 1] * invW1;
+							tu[4] = srcTU[off2]     * invW2; tu[5] = srcTU[off2 + 1] * invW2;
+						}
+						else
+						{
+							tu[0] = srcTU[off0];     tu[1] = srcTU[off0 + 1];
+							tu[2] = srcTU[off1];     tu[3] = srcTU[off1 + 1];
+							tu[4] = srcTU[off2];     tu[5] = srcTU[off2 + 1];
 						}
 					}
+				}
+
+				// Calculate the average Z for front-to-back sorting.
+				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
+
+				tri.hasVertexColors = false;
+				if (hasColors)
+				{
+					tri.hasVertexColors = true;
+					tri.colors[0] = srcC[0];
+					tri.colors[1] = srcC[fan + 1];
+					tri.colors[2] = srcC[fan + 2];
 				}
 
 				renderableTriangles[0]++;
@@ -744,47 +766,6 @@ class Triangle
 	public final int colorA() { return colors[0]; }
 	public final int colorB() { return colors[1]; }
 	public final int colorC() { return colors[2]; }
-
-	// This one is for memory reuse, so `this.t` is expected to be allocated by now.
-	public final void setTexCoords(float[][] tCoords, int fan)
-	{
-		final int f1 = (fan + 1) << 2;
-		final int f2 = (fan + 2) << 2;
-
-		// The number of active texture units MAY have increased since this
-		// triangle was created, check here and resize properly..
-		if(Graphics3D.ACTIVE_TEXTURE_UNITS > this.t.length / 6)
-			{ this.t = new float[Graphics3D.ACTIVE_TEXTURE_UNITS][6]; }
-
-		for (int i = 0; i < Graphics3D.ACTIVE_TEXTURE_UNITS; i++)
-		{
-			if (tCoords[i] == null) { continue; }
-			t[i][0] = tCoords[i][0];  t[i][1] = tCoords[i][1];
-			t[i][2] = tCoords[i][f1]; t[i][3] = tCoords[i][f1 + 1];
-			t[i][4] = tCoords[i][f2]; t[i][5] = tCoords[i][f2 + 1];
-		}
-	}
-
-	// This one is also for memory reuse, so `this.v` is expected to be allocated by now.
-	public final void setVertexCoords(float[] vCoords, int fan)
-	{
-		final int f1 = (fan + 1) << 2;
-		final int f2 = (fan + 2) << 2;
-
-		v[0] = vCoords[0];  v[1] = vCoords[1];  v[2] = vCoords[2];  v[3] = vCoords[3];
-		v[4] = vCoords[f1]; v[5] = vCoords[f1+1]; v[6] = vCoords[f1+2]; v[7] = vCoords[f1+3];
-		v[8] = vCoords[f2]; v[9] = vCoords[f2+1]; v[10] = vCoords[f2+2]; v[11] = vCoords[f2+3];
-	}
-
-	// This one is also for memory reuse, so `this.colors` is expected to be allocated by now.
-	public final void setVertexColors(int[] vColors, int fan)
-	{
-		this.hasVertexColors = (vColors != null);
-		if (vColors == null) { return; }
-		this.colors[0] = vColors[0];
-		this.colors[1] = vColors[fan + 1];
-		this.colors[2] = vColors[fan + 2];
-	}
 
 	public final boolean hasVertexColors() { return this.hasVertexColors; }
 }
