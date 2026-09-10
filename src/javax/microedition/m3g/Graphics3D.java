@@ -129,6 +129,7 @@ public class Graphics3D
 	int canvasWidth, canvasHeight, paintPixel;
 	int[] rasterData;
 	final CompositingMode defaultCompositing;
+	Graphics3DBlenders.CompositingBlender compBlender;
 
 	// Texturing
 	final Transform texcomptr;
@@ -158,7 +159,7 @@ public class Graphics3D
 	final float[] sStepY = new float[NUM_TEXTURE_UNITS];
 	final float[] tStepX = new float[NUM_TEXTURE_UNITS];
 	final float[] tStepY = new float[NUM_TEXTURE_UNITS];
-	final int[] texblendMode = new int[NUM_TEXTURE_UNITS];
+	final Graphics3DBlenders.TextureBlender[] texBlenders = new Graphics3DBlenders.TextureBlender[NUM_TEXTURE_UNITS];
 	final int[] levelFilters = new int[NUM_TEXTURE_UNITS];
 	final float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
@@ -588,7 +589,7 @@ public class Graphics3D
 		final int projType = this.currCam.getProjection((float []) null);
 
 		final CompositingMode compositingMode = appearance.getCompositingMode() != null ? appearance.getCompositingMode() : this.defaultCompositing;
-
+		compBlender = getCompositingBlender(compositingMode.getBlending());
 		final Material material = appearance.getMaterial();
 		final PolygonMode pmode = appearance.getPolygonMode();
 		final int shadingMode = (pmode != null) ? pmode.getShading() : PolygonMode.SHADE_SMOOTH;
@@ -657,8 +658,8 @@ public class Graphics3D
 					textr[i].transform(texCoords, texVerts[i], true);
 
 					// Cache the texture blend mode here as well.
-					texblendMode[i] = ((textures[i].getBlending() & 7) << 3) |
-						(textures[i].getImage().getFormat() & 7);
+					texBlenders[i] = getTextureBlender(((textures[i].getBlending() & 7) << 3) |
+						(textures[i].getImage().getFormat() & 7));
 				}
 				else
 				{
@@ -1305,7 +1306,7 @@ public class Graphics3D
 		int intFogFactor = 255;
 		int fogColor = fog != null ? fog.getColor() : 0;
 		int compBlending = compositingMode.getBlending();
-		boolean isReplace = compBlending == CompositingMode.REPLACE;
+		compBlender = getCompositingBlender(compBlending);
 
 		// fixed point alpha factor, so we don't need a float mult and int cast
 		// in the innermost loop.
@@ -1395,9 +1396,7 @@ public class Graphics3D
 
 				if(!renderToImage)
 				{
-					rasterData[rasterIdx] = isReplace ? paintPixel :
-						blendCompositing(rasterData[rasterIdx], paintPixel, alpha,
-							compBlending);
+					rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx], paintPixel, alpha);
 				}
 				else
 				{
@@ -1405,8 +1404,7 @@ public class Graphics3D
 						((y+viewy) << imageData.widthShift) + (x+viewx) :
 						((y+viewy) * imageData.width) + (x+viewx);
 
-					imageData.image[imgIdx] = (isReplace ? paintPixel :
-						blendCompositing(imageData.image[imgIdx], paintPixel, alpha, compBlending));
+					imageData.image[imgIdx] = compBlender == null ? paintPixel : compBlender.blend(imageData.image[imgIdx], paintPixel, alpha);
 				}
 
 				if (depthWrite) { this.depthBuffer[rasterIdx] = ndcZ; }
@@ -1446,11 +1444,9 @@ public class Graphics3D
 			imageData = (Image2D) this.target;
 		}
 
-		int compBlending = compositingMode.getBlending();
-		final boolean usesReplace = (compBlending == CompositingMode.REPLACE);
+		final int compBlending = compositingMode.getBlending();
 		final boolean usesDepthWrite = usesDepth &&
 			compositingMode.isDepthWriteEnabled();
-		final int opaqueAlpha = usesReplace ? 0xFF000000 : 0x00000000;
 
 		float xA = triScreen.xA();
 		float yA = triScreen.yA();
@@ -1588,15 +1584,12 @@ public class Graphics3D
 					int spanLen = (ixR - x < maxSpan) ? ixR - x : maxSpan;
 					float invSpanLen = INV_SPAN_TABLE[spanLen];
 
-					float nextPw = pw + pwStep * spanLen;
-
 					// Calling M3GMath.fastReciprocal() in here was deemed
 					// too expensive by the profiler, so we'll be inlining an
 					// even simpler alternative in here instead
 					// (single Newton-Raphson step)).
-					float denom = pw * nextPw;
-					int bits = Float.floatToRawIntBits(denom);
-					float invDenom = Float.intBitsToFloat(0x7EF127EA - bits);
+					float denom = pw * (pw + pwStep * spanLen);
+					float invDenom = Float.intBitsToFloat(0x7EF127EA - Float.floatToRawIntBits(denom));
 					invDenom = invDenom * (2.0f - denom * invDenom);
 
 					stepInvPw = -pwStep * invDenom;
@@ -1619,9 +1612,8 @@ public class Graphics3D
 							fEnd   = M3GMath.exp(-fogDensity * zEyeEnd)   * 256.0f;
 						}
 
-						fogFactor = M3GMath.min(255.0f, M3GMath.max(0.0f, fStart));
-						float targetFogEnd = M3GMath.min(255.0f, M3GMath.max(0.0f, fEnd));
-						stepFogFactor = (targetFogEnd - fogFactor) * invSpanLen;
+						fogFactor = fStart < 0.0f ? 0.0f : (fStart > 255.0f ? 255.0f : fStart);
+						stepFogFactor = (fEnd < 0.0f ? 0.0f : (fEnd > 255.0f ? 255.0f : fEnd) - fogFactor) * invSpanLen;
 					}
 				}
 
@@ -1657,7 +1649,7 @@ public class Graphics3D
 					deltaA += stepA; deltaR += stepR; deltaG += stepG; deltaB += stepB;
 				}
 				// Otherwise, we just use the default vertex color for this triangle
-				else { paintPixel = opaqueAlpha | defVertColor; }
+				else { paintPixel = defVertColor; }
 
 				if(hasTexture)
 				{
@@ -1714,25 +1706,24 @@ public class Graphics3D
 
 						if (useBilinear[i])
 						{
-							paintPixel = blendTexture(paintPixel,
-								sampleBilinear(targetImage, s, t, targetImage.getWidth(),
-									targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
-									textures[i].isNPOT()), texblendMode[i], textures[i].getBlendColor());
+							paintPixel = texBlenders[i] == null ? sampleBilinear(targetImage, s, t,
+								targetImage.getWidth(), targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
+								textures[i].isNPOT())
+								: texBlenders[i].blend(paintPixel, sampleBilinear(targetImage, s, t,
+									targetImage.getWidth(), targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
+									textures[i].isNPOT()), textures[i].getBlendColor());
 						}
 						else
 						{
-							final int texS = (int) (s + 32768.0f) - 32768;
-							final int texT = (int) (t + 32768.0f) - 32768;
-
-							final int texCoord = wrapCoords(texS, texT, targetImage.getWidth(),
-								targetImage.getHeight(), texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
+							final int texCoord = wrapCoords((int) (s + 32768.0f) - 32768, (int) (t + 32768.0f) - 32768,
+								targetImage.getWidth(), targetImage.getHeight(), texRepeatS[i], texRepeatT[i],
+								textures[i].isNPOT());
 
 							final int pixel = targetImage.image[targetImage.isPOT ?
 								((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
 								((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
 
-							paintPixel = blendTexture(paintPixel, pixel,
-								texblendMode[i], textures[i].getBlendColor());
+							paintPixel = texBlenders[i] == null ? pixel : texBlenders[i].blend(paintPixel, pixel, textures[i].getBlendColor());
 						}
 
 						curS[i] += stepS[i];
@@ -1797,7 +1788,7 @@ public class Graphics3D
 
 				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
 				if (!renderToImage && doAntiAlias && (x == ixL || x == ixR - 1) &&
-					compBlending == CompositingMode.REPLACE && alpha >= 255)
+					compBlender == null && alpha >= 255)
 				{
 					// The way this works is that we "extend" the geometry size a bit
 					// for the antialiased output, that way triangles don't get smoothed
@@ -1824,8 +1815,8 @@ public class Graphics3D
 
 				if(!renderToImage)
 				{
-					rasterData[rasterIdx] = compBlending == CompositingMode.REPLACE ? paintPixel : blendCompositing(rasterData[rasterIdx],
-						paintPixel, alpha, compBlending);
+					rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx],
+						paintPixel, alpha);
 				}
 				else
 				{
@@ -1833,8 +1824,7 @@ public class Graphics3D
 						((y+viewy) << imageData.widthShift) + (x+viewx) :
 						((y+viewy) * imageData.width) + (x+viewx);
 
-					imageData.image[imgIdx] = (compBlending == CompositingMode.REPLACE ? paintPixel :
-						blendCompositing(imageData.image[imgIdx], paintPixel, alpha, compBlending));
+					imageData.image[imgIdx] = compBlender == null ? paintPixel : compBlender.blend(imageData.image[imgIdx], paintPixel, alpha);
 				}
 			}
 		}
@@ -1857,238 +1847,6 @@ public class Graphics3D
 			int aaPixel = outRB | (outAG << 8);
 
 			rasterData[targetIdx] = aaPixel;
-		}
-	}
-
-	// This is basically the pixel blending to use when rendering to the screen
-	private static final int blendCompositing(int bg, int fg, int alpha, int blendMode)
-	{
-		switch (blendMode)
-		{
-			case CompositingMode.REPLACE:
-				return fg;
-
-			case CompositingMode.ALPHA:
-			{
-				if (alpha <= 0)   { return bg; }
-				if (alpha >= 255) { return fg; }
-
-				int invA = 255 - alpha;
-
-				int bgRB = bg & 0x00FF00FF;
-				int fgRB = fg & 0x00FF00FF;
-				int outRB = ((fgRB * alpha + bgRB * invA) >> 8) & 0x00FF00FF;
-
-				int bgAG = (bg >>> 8) & 0x00FF00FF;
-				int fgAG = (fg >>> 8) & 0x00FF00FF;
-				int outAG = ((fgAG * alpha + bgAG * invA) >> 8) & 0x00FF00FF;
-
-				return outRB | (outAG << 8);
-			}
-
-			case CompositingMode.ALPHA_ADD:
-			{
-				if (alpha == 0) { return bg; }
-
-				int fgRB = fg & 0x00FF00FF;
-				int addRB = ((fgRB * alpha) >> 8) & 0x00FF00FF;
-
-				int fgG = fg & 0x0000FF00;
-				int addG = ((fgG * alpha) >> 8) & 0x0000FF00;
-
-				int bgA = bg >>> 24;
-				int addA = (alpha * (255 - bgA)) >> 8;
-
-				int sumRB = (bg & 0x00FF00FF) + addRB;
-				int sumG  = (bg & 0x0000FF00) + addG;
-				int sumA  = bgA + addA;
-
-				int overflowRB = sumRB & 0x01000100;
-				int maskRB = (overflowRB - (overflowRB >> 8));
-				int outRB = (sumRB | maskRB) & 0x00FF00FF;
-
-				int overflowG = sumG & 0x00010000;
-				int maskG = overflowG - (overflowG >> 8);
-				int outG = (sumG | maskG) & 0x0000FF00;
-
-				int outA = sumA | -(sumA >> 8);
-
-				return ((outA & 0xFF) << 24) | outRB | outG;
-			}
-
-			case CompositingMode.MODULATE:
-			{
-				int bgRB = bg & 0x00FF00FF;
-				int fgRB = fg & 0x00FF00FF;
-
-				int r = (((bgRB >> 16) * (fgRB >> 16)) >> 8) & 0xFF;
-				int b = (((bgRB & 0xFF) * (fgRB & 0xFF)) >> 8) & 0xFF;
-
-				int bgAG = (bg >>> 8) & 0x00FF00FF;
-				int fgAG = (fg >>> 8) & 0x00FF00FF;
-				int a = (((bgAG >> 16) * (fgAG >> 16)) >> 8) & 0xFF;
-				int g = (((bgAG & 0xFF) * (fgAG & 0xFF)) >> 8) & 0xFF;
-
-				return (a << 24) | (r << 16) | (g << 8) | b;
-			}
-
-			case CompositingMode.MODULATE_X2:
-			{
-				int bgA = bg >>> 24, bgR = (bg >> 16) & 0xFF, bgG = (bg >> 8) & 0xFF, bgB = bg & 0xFF;
-				int fgA = fg >>> 24, fgR = (fg >> 16) & 0xFF, fgG = (fg >> 8) & 0xFF, fgB = fg & 0xFF;
-
-				int outR = (fgR * bgR) >> 7;
-				int outG = (fgG * bgG) >> 7;
-				int outB = (fgB * bgB) >> 7;
-				int outA = (fgA * bgA) >> 7;
-
-				outR = (outR | -(outR >> 8)) & 0xFF;
-				outG = (outG | -(outG >> 8)) & 0xFF;
-				outB = (outB | -(outB >> 8)) & 0xFF;
-				outA = (outA | -(outA >> 8)) & 0xFF;
-
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-			}
-
-			default:
-				return bg;
-		}
-	}
-
-	private static final int blendTexture(int bg, int fg, int funcMode, int texBlendColor)
-	{
-		switch (funcMode)
-		{
-			// RGB and LUMINANCE are opaque by default, so REPLACE and
-			// DECAL may also return them outright.
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGB & 7):
-			case ((Texture2D.FUNC_DECAL & 7) << 3)   | (Image2D.RGB & 7):
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE & 7):
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGBA & 7):
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-				return fg;
-
-			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
-				return (fg & 0xFF000000) | (bg & 0x00FFFFFF);
-
-			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGB & 7):
-			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE & 7):
-			{
-				int sumRB = (bg & 0x00FF00FF) + (fg & 0x00FF00FF);
-				int overRB = (sumRB & 0x01000100) - ((sumRB & 0x01000100) >>> 8);
-				int outRB = (sumRB | overRB) & 0x00FF00FF;
-
-				int sumG = (bg & 0x0000FF00) + (fg & 0x0000FF00);
-				int overG = (sumG & 0x00010000) - ((sumG & 0x00010000) >>> 8);
-				int outG = (sumG | overG) & 0x0000FF00;
-
-				return (bg & 0xFF000000) | outG | outRB;
-			}
-
-			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGBA & 7):
-			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-			{
-				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
-
-				int sumRB = (bg & 0x00FF00FF) + (fg & 0x00FF00FF);
-				int overRB = (sumRB & 0x01000100) - ((sumRB & 0x01000100) >>> 8);
-				int outRB = (sumRB | overRB) & 0x00FF00FF;
-
-				int sumG = (bg & 0x0000FF00) + (fg & 0x0000FF00);
-				int overG = (sumG & 0x00010000) - ((sumG & 0x00010000) >>> 8);
-				int outG = (sumG | overG) & 0x0000FF00;
-
-				return (outA << 24) | outG | outRB;
-			}
-
-			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.ALPHA & 7):
-			{
-				// Cv = Cf, Av = Af * At
-				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
-				return (outA << 24) | (bg & 0x00FFFFFF);
-			}
-
-			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGBA & 7):
-			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-			{
-				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
-
-				int fR = (bg >> 16) & 0xFF, cR = (texBlendColor >> 16) & 0xFF, tR = (fg >> 16) & 0xFF;
-				int fG = (bg >>  8) & 0xFF, cG = (texBlendColor >>  8) & 0xFF, tG = (fg >>  8) & 0xFF;
-				int fB =  bg        & 0xFF, cB =  texBlendColor        & 0xFF, tB =  fg        & 0xFF;
-
-				int outR = (fR + (((cR - fR) * tR + 128) >> 8)) & 0xFF;
-				int outG = (fG + (((cG - fG) * tG + 128) >> 8)) & 0xFF;
-				int outB = (fB + (((cB - fB) * tB + 128) >> 8)) & 0xFF;
-
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-			}
-
-			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGB & 7):
-			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE & 7):
-			{
-				int fR = (bg >> 16) & 0xFF, cR = (texBlendColor >> 16) & 0xFF, tR = (fg >> 16) & 0xFF;
-				int fG = (bg >>  8) & 0xFF, cG = (texBlendColor >>  8) & 0xFF, tG = (fg >>  8) & 0xFF;
-				int fB =  bg        & 0xFF, cB =  texBlendColor        & 0xFF, tB =  fg        & 0xFF;
-
-				int outR = fR + (((cR - fR) * tR + 128) >> 8);
-				int outG = fG + (((cG - fG) * tG + 128) >> 8);
-				int outB = fB + (((cB - fB) * tB + 128) >> 8);
-
-				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
-			}
-
-			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.ALPHA & 7):
-			{
-				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
-				return (outA << 24) | (bg & 0x00FFFFFF);
-			}
-
-			case ((Texture2D.FUNC_DECAL & 7) << 3) | (Image2D.RGBA & 7):
-			{
-				int tA = fg >>> 24;
-
-				int fRB = bg & 0x00FF00FF, tRB = fg & 0x00FF00FF;
-				int outRB = (fRB + ((((tRB - fRB) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-				int fAG = (bg >>> 8) & 0x00FF00FF, tAG = (fg >>> 8) & 0x00FF00FF;
-				int outAG = (fAG + ((((tAG - fAG) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-				return (bg & 0xFF000000) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
-			}
-
-			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGBA & 7):
-			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-			{
-				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
-				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
-				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
-				int outA = ((bg >>> 24) * (fg >>> 24) + (bg >>> 24)) >> 8;
-
-				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-			}
-
-			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGB & 7):
-			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE & 7):
-			{
-				int outR = ((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF);
-				int outG = ((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF);
-				int outB = ( bg        & 0xFF) * ( fg        & 0xFF);
-
-				return (bg & 0xFF000000)
-					 | ((outR & 0xFF00) << 8)
-					 |  (outG & 0xFF00)
-					 |  (outB >> 8);
-			}
-
-			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.ALPHA & 7):
-			{
-				int outA = (((bg >>> 24) * (fg >>> 24)) + 128) >> 8;
-				return (outA << 24) | (bg & 0x00FFFFFF);
-			}
-
-			default:
-				return bg;
 		}
 	}
 
@@ -2464,5 +2222,87 @@ public class Graphics3D
 			else { render((VertexBuffer) obj, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope); }
 		}
 		renderOpCount = 0;
+	}
+
+	// Gets a specific compositing mode blender for use in rendering operations.
+	// Doing it this way instead of the prior "blendCompositing" method with a
+	// switch-case provides a noticeable performance boost, as now we only
+	// need to call this ONCE for each triangle, rather than per-pixel.
+	private final Graphics3DBlenders.CompositingBlender getCompositingBlender(int blendMode)
+	{
+		switch (blendMode)
+		{
+			case CompositingMode.REPLACE:
+				return null; // Fast path, set pixel directly in render methods.
+				//return Graphics3DBlenders.CompositingBlenders.REPLACE;
+			case CompositingMode.ALPHA:
+				return Graphics3DBlenders.CompositingBlenders.ALPHA;
+			case CompositingMode.ALPHA_ADD:
+				return Graphics3DBlenders.CompositingBlenders.ALPHA_ADD;
+			case CompositingMode.MODULATE:
+				return Graphics3DBlenders.CompositingBlenders.MODULATE;
+			case CompositingMode.MODULATE_X2:
+				return Graphics3DBlenders.CompositingBlenders.MODULATE_X2;
+			default:
+				return Graphics3DBlenders.CompositingBlenders.PASSTHROUGH;
+		}
+	}
+
+	// Gets a specific texture blender for use in rendering operations.
+	// Doing it this way instead of the prior "blendTexture" method with a
+	// massive switch-case provides a major performance boost, as now we only
+	// need to call this ONCE for each triangle, rather than per-pixel.
+	private final Graphics3DBlenders.TextureBlender getTextureBlender(int funcMode)
+	{
+		switch (funcMode)
+		{
+			// RGB and LUMINANCE are opaque by default, so REPLACE and
+			// DECAL may also return them outright.
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_DECAL & 7) << 3)   | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE & 7):
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
+				return null; // Fast path, set pixel directly in render methods.
+				//return TextureBlenders.REPLACE_FG;
+
+			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
+				return Graphics3DBlenders.TextureBlenders.REPLACE_ALPHA;
+
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE & 7):
+				return Graphics3DBlenders.TextureBlenders.ADD_RGB;
+
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
+				return Graphics3DBlenders.TextureBlenders.ADD_RGBA;
+
+			case ((Texture2D.FUNC_ADD & 7) << 3) | (Image2D.ALPHA & 7):
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.ALPHA & 7):
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.ALPHA & 7):
+				return Graphics3DBlenders.TextureBlenders.ALPHA_MUL;
+
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
+				return Graphics3DBlenders.TextureBlenders.BLEND_RGBA;
+
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_BLEND & 7) << 3) | (Image2D.LUMINANCE & 7):
+				return Graphics3DBlenders.TextureBlenders.BLEND_RGB;
+
+			case ((Texture2D.FUNC_DECAL & 7) << 3) | (Image2D.RGBA & 7):
+				return Graphics3DBlenders.TextureBlenders.DECAL_RGBA;
+
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGBA & 7):
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
+				return Graphics3DBlenders.TextureBlenders.MODULATE_RGBA;
+
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.RGB & 7):
+			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE & 7):
+				return Graphics3DBlenders.TextureBlenders.MODULATE_RGB;
+
+			default:
+				return Graphics3DBlenders.TextureBlenders.PASSTHROUGH;
+		}
 	}
 }
