@@ -19,8 +19,8 @@ package javax.microedition.m3g;
 public class VertexArray extends Object3D
 {
 
-	private byte[] vertArrayByteSize;
-	private short[] vertArrayShortSize;
+	byte[] vertArrayByteSize;
+	short[] vertArrayShortSize;
 	private int numVertices;
 	private int numComponents;
 	private int componentType;

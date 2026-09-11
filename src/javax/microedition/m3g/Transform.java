@@ -20,8 +20,6 @@ import java.util.Arrays;
 
 public class Transform
 {
-	private static byte[] bVertices = new byte[384];
-	private static short[] sVertices = new short[384];
 	// This is a 4x4 matrix represented as a 16 item long array.
 	// The items are in row major order:
 	//   [  0,  1,  2,  3 ]
@@ -244,10 +242,6 @@ public class Transform
 
 		if (in.getComponentType() == 1)
 		{
-			if (bVertices.length < size) { bVertices = new byte[size]; }
-
-			in.get(0, vertexCount, bVertices);
-
 			int outIdx = 0;
 			int inIdx = 0;
 
@@ -255,9 +249,9 @@ public class Transform
 			{
 				for (; inIdx < size; inIdx += 3, outIdx += 4)
 				{
-					out[outIdx]     = bVertices[inIdx];
-					out[outIdx + 1] = bVertices[inIdx + 1];
-					out[outIdx + 2] = bVertices[inIdx + 2];
+					out[outIdx]     = in.vertArrayByteSize[inIdx];
+					out[outIdx + 1] = in.vertArrayByteSize[inIdx + 1];
+					out[outIdx + 2] = in.vertArrayByteSize[inIdx + 2];
 					out[outIdx + 3] = wVal;
 				}
 			}
@@ -265,8 +259,8 @@ public class Transform
 			{
 				for (; inIdx < size; inIdx += 2, outIdx += 4)
 				{
-					out[outIdx]     = bVertices[inIdx];
-					out[outIdx + 1] = bVertices[inIdx + 1];
+					out[outIdx]     = in.vertArrayByteSize[inIdx];
+					out[outIdx + 1] = in.vertArrayByteSize[inIdx + 1];
 					out[outIdx + 2] = 0.0f;
 					out[outIdx + 3] = wVal;
 				}
@@ -274,10 +268,6 @@ public class Transform
 		}
 		else
 		{
-			if (sVertices.length < size) { sVertices = new short[size]; }
-
-			in.get(0, vertexCount, sVertices);
-
 			int outIdx = 0;
 			int inIdx = 0;
 
@@ -285,9 +275,9 @@ public class Transform
 			{
 				for (; inIdx < size; inIdx += 3, outIdx += 4)
 				{
-					out[outIdx]     = sVertices[inIdx];
-					out[outIdx + 1] = sVertices[inIdx + 1];
-					out[outIdx + 2] = sVertices[inIdx + 2];
+					out[outIdx]     = in.vertArrayShortSize[inIdx];
+					out[outIdx + 1] = in.vertArrayShortSize[inIdx + 1];
+					out[outIdx + 2] = in.vertArrayShortSize[inIdx + 2];
 					out[outIdx + 3] = wVal;
 				}
 			}
@@ -295,8 +285,8 @@ public class Transform
 			{
 				for (; inIdx < size; inIdx += 2, outIdx += 4)
 				{
-					out[outIdx]     = sVertices[inIdx];
-					out[outIdx + 1] = sVertices[inIdx + 1];
+					out[outIdx]     = in.vertArrayShortSize[inIdx];
+					out[outIdx + 1] = in.vertArrayShortSize[inIdx + 1];
 					out[outIdx + 2] = 0.0f;
 					out[outIdx + 3] = wVal;
 				}

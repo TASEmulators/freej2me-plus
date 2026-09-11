@@ -588,6 +588,7 @@ public class Graphics3D
 		final int windingOrder = (pmode != null) ? pmode.getWinding() : PolygonMode.WINDING_CCW;
 		final boolean twoSidedLighting = (pmode != null) && pmode.isTwoSidedLightingEnabled();
 		final boolean localCameraLight = (pmode != null) && pmode.isLocalCameraLightingEnabled();
+		final boolean hasColors = vertices.getColors() != null;
 		// This one can be overridden by FJ2ME+
 		boolean perspectiveCorrection = (pmode != null) && pmode.isPerspectiveCorrectionEnabled();
 
@@ -806,7 +807,7 @@ public class Graphics3D
 		// Create Triangle objects (fromVertAndTris already does culling and clipping)
 		final Triangle[] trisScreen = Triangle.fromVertAndTris(
 			// Position and texture vertex data
-			vertClip, texVerts,
+			vertClip, texVerts, hasColors,
 			// Material and shading
 			material, shadingMode, twoSidedLighting, localCameraLight,
 			// Normal data
@@ -837,7 +838,7 @@ public class Graphics3D
 		// -> Screen space
 
 		// Perform viewport transform only on renderable triangles (saves an Arrays.copyOf call)
-		Triangle.transform(trisScreen, renderableTriangles[0], tr, textr);
+		Triangle.transform(trisScreen, renderableTriangles[0], tr, textr, hasTexture);
 
 		final boolean usesDepth = this.depthEnabled && compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final float depthUnits = compositingMode.getDepthOffsetUnits();
@@ -934,15 +935,13 @@ public class Graphics3D
 
 					dwdx = (dwB * dyC - dwC * dyB) * invDet;
 					dwdy = (dwC * dxB - dwB * dxC) * invDet;
-				}
 
-				// For perspective correction, we need the actual W of
-				// each vertex as well.
-				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-				{
-					if (perspectiveCorrection)
+					// For perspective correction, we need the actual W of
+					// each vertex as well.
+					final float wA = tri.wA(), wB = tri.wB(), wC = tri.wC();
+
+					for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
-						final float wA = tri.wA(), wB = tri.wB(), wC = tri.wC();
 						final float swA = coS[i][0] * wA, swB = coS[i][1] * wB, swC = coS[i][2] * wC;
 						final float twA = coT[i][0] * wA, twB = coT[i][1] * wB, twC = coT[i][2] * wC;
 
@@ -955,7 +954,10 @@ public class Graphics3D
 						sStepY[i] = (dswC * dxB - dswB * dxC) * invDet; // d(s/w)/dy
 						tStepY[i] = (dtwC * dxB - dtwB * dxC) * invDet; // d(t/w)/dy
 					}
-					else
+				}
+				else
+				{
+					for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 					{
 						final float dsB = coS[i][1] - coS[i][0], dsC = coS[i][2] - coS[i][0];
 						final float dtB = coT[i][1] - coT[i][0], dtC = coT[i][2] - coT[i][0];
@@ -973,7 +975,6 @@ public class Graphics3D
 			// triangle. Then at each scanline we only need to determine the
 			// left and right color spans with quick add and mult operations, and
 			// at the inner pixel loop, all we need is a simple addition.
-			final boolean hasColors = tri.hasVertexColors();
 			if (hasColors)
 			{
 				final int colorA = tri.colorA();
@@ -1446,10 +1447,6 @@ public class Graphics3D
 		float yA = triScreen.yA();
 		int colorA = 0;
 		if (hasColors) { colorA = triScreen.colorA(); }
-		final float cA = (colorA >> 24) & 0xFF;
-		final float cR = (colorA >> 16) & 0xFF;
-		final float cG = (colorA >> 8) & 0xFF;
-		final float cB = colorA & 0xFF;
 
 		// Get into the render loop proper.
 
@@ -1485,7 +1482,9 @@ public class Graphics3D
 		float zL  = (half == 0 ? zTop  : zMidL)  + subY * dzL_dy;
 		float pwL = (half == 0 ? pwTop : pwMidL) + subY * dpwL_dy;
 
-		for (int y = yStart; y < yEnd; y++, xL += dxL_dy, xR += dxR_dy, zL += dzL_dy, pwL += dpwL_dy)
+		int rowIdx = (originY + viewy + yStart) * canvasWidth + originX + viewx;
+
+		for (int y = yStart; y < yEnd; y++, xL += dxL_dy, xR += dxR_dy, zL += dzL_dy, pwL += dpwL_dy, rowIdx += canvasWidth)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
 			if(!renderToImage && Mobile.halfResM3GRaster && (y & 1) != 0)
@@ -1542,23 +1541,22 @@ public class Graphics3D
 			}
 
 			// Color and depth share the same physical render-target index.
-			int rasterIdx = (originY + viewy + y) * canvasWidth + originX + viewx + ixL;
+			int rasterIdx = rowIdx + ixL;
 
-			float pw = pwL + (ixL - xL) * pwStep;
+			final float diffX = ixL - xL;
+			float pw = pwL + (diffX) * pwStep;
 			float invPw = doPerspective ? M3GMath.fastReciprocal(pw) : 1.0f;
 			float stepInvPw = 0.0f;
-			float z  = zL  + (ixL - xL) * zStep + depthOffset;
+			float z  = zL  + (diffX) * zStep + depthOffset;
 
 			if (hasTexture)
 			{
 				// We'll use DDA for texturing as well, saves many multiply and
 				// add operations for each textured pixel.
-				final float subpixelOffset = ixL - xL;
-
 				for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 				{
-					curS[i] = (sL[i]) + (subpixelOffset * stepS[i]);
-					curT[i] = (tL[i]) + (subpixelOffset * stepT[i]);
+					curS[i] = (sL[i]) + (diffX * stepS[i]);
+					curT[i] = (tL[i]) + (diffX * stepT[i]);
 
 					sL[i] += dsL_dy[i];
 					tL[i] += dtL_dy[i];

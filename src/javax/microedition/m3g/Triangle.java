@@ -49,8 +49,6 @@ class Triangle
 	// data without needing to GC it every render pass (it'll still reallocate if the triangle count increases)
 	private static Triangle[] result;
 
-	private boolean hasVertexColors = false;
-
 	// Used for sorting triangles front-to-back
 	private float sortZ;
 
@@ -77,7 +75,7 @@ class Triangle
 
 	public static final Triangle[] fromVertAndTris(
 		// Position and texture vertex data
-		float[] vert, float[][] texc,
+		float[] vert, float[][] texc, boolean hasColors,
 		// Material and shading
 		Material material, int shadingMode, boolean twoSide, boolean localCameraLight,
 		// Normal data
@@ -94,7 +92,7 @@ class Triangle
 		// Is the app using lights? Set up to calculate per-vertex lighting.
 		boolean hasLighting = (vertNorms != null && material != null &&
 			lights != null && !lights.isEmpty());
-		boolean hasColors = hasLighting || (vertices.getColors() != null);
+		hasColors = hasLighting || hasColors;
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`, as
@@ -321,10 +319,8 @@ class Triangle
 				// Calculate the average Z for front-to-back sorting.
 				tri.sortZ = (tri.v[2] + tri.v[6] + tri.v[10]) * 0.33333334f;
 
-				tri.hasVertexColors = false;
 				if (hasColors)
 				{
-					tri.hasVertexColors = true;
 					tri.colors[0] = srcC[0];
 					tri.colors[1] = srcC[fan + 1];
 					tri.colors[2] = srcC[fan + 2];
@@ -709,15 +705,15 @@ class Triangle
 		return false;
 	}
 
-	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform[] trTex)
+	public static final void transform(Triangle[] triangles, int visibleTris, Transform trVert, Transform[] trTex, boolean hasTexture)
 	{
-		for (int i = 0; i < visibleTris; i++)
-		{
-			trVert.transform(triangles[i].v);
+		for (int i = 0; i < visibleTris; i++) { trVert.transform(triangles[i].v); }
 
-			for(int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
+		if(hasTexture)
+		{
+			for (int i = 0; i < visibleTris; i++)
 			{
-				if (trTex != null)
+				for(int u = 0; u < Graphics3D.ACTIVE_TEXTURE_UNITS; u++)
 				{
 					// Each trTex transform is bound to a texture unit, so it is
 					// safe to use it as a check to see if we have these coords.
@@ -766,6 +762,4 @@ class Triangle
 	public final int colorA() { return colors[0]; }
 	public final int colorB() { return colors[1]; }
 	public final int colorC() { return colors[2]; }
-
-	public final boolean hasVertexColors() { return this.hasVertexColors; }
 }
