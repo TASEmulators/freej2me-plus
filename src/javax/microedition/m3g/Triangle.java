@@ -52,6 +52,8 @@ class Triangle
 	// Used for sorting triangles front-to-back
 	private float sortZ;
 
+	private boolean hasVertexColors = false;
+
 	private final int[] colors = new int[3];
 
 	// 1/w of each vertex after projection, for perspective-correct texturing.
@@ -75,7 +77,7 @@ class Triangle
 
 	public static final Triangle[] fromVertAndTris(
 		// Position and texture vertex data
-		float[] vert, float[][] texc, boolean hasColors,
+		float[] vert, float[][] texc,
 		// Material and shading
 		Material material, int shadingMode, boolean twoSide, boolean localCameraLight,
 		// Normal data
@@ -92,7 +94,7 @@ class Triangle
 		// Is the app using lights? Set up to calculate per-vertex lighting.
 		boolean hasLighting = (vertNorms != null && material != null &&
 			lights != null && !lights.isEmpty());
-		hasColors = hasLighting || hasColors;
+		boolean hasColors = hasLighting || (vertices.getColors() != null);
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`, as
@@ -321,10 +323,12 @@ class Triangle
 
 				if (hasColors)
 				{
+					tri.hasVertexColors = true;
 					tri.colors[0] = srcC[0];
 					tri.colors[1] = srcC[fan + 1];
 					tri.colors[2] = srcC[fan + 2];
 				}
+				else { tri.hasVertexColors = false; }
 
 				renderableTriangles[0]++;
 			}
@@ -762,4 +766,6 @@ class Triangle
 	public final int colorA() { return colors[0]; }
 	public final int colorB() { return colors[1]; }
 	public final int colorC() { return colors[2]; }
+
+	public final boolean hasVertexColors() { return this.hasVertexColors; }
 }

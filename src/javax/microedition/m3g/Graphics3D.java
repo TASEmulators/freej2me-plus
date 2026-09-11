@@ -601,7 +601,6 @@ public class Graphics3D
 		final int windingOrder = (pmode != null) ? pmode.getWinding() : PolygonMode.WINDING_CCW;
 		final boolean twoSidedLighting = (pmode != null) && pmode.isTwoSidedLightingEnabled();
 		final boolean localCameraLight = (pmode != null) && pmode.isLocalCameraLightingEnabled();
-		final boolean hasColors = vertices.getColors() != null;
 		// This one can be overridden by FJ2ME+
 		boolean perspectiveCorrection = (pmode != null) && pmode.isPerspectiveCorrectionEnabled();
 
@@ -823,7 +822,7 @@ public class Graphics3D
 		// Create Triangle objects (fromVertAndTris already does culling and clipping)
 		final Triangle[] trisScreen = Triangle.fromVertAndTris(
 			// Position and texture vertex data
-			vertClip, texVerts, hasColors,
+			vertClip, texVerts,
 			// Material and shading
 			material, shadingMode, twoSidedLighting, localCameraLight,
 			// Normal data
@@ -871,6 +870,8 @@ public class Graphics3D
 
 		// Perform viewport transform only on renderable triangles (saves an Arrays.copyOf call)
 		Triangle.transform(trisScreen, renderableTriangles[0], tr, textr, hasTexture);
+
+		boolean hasColors = trisScreen[0].hasVertexColors(); // If one triangle has colors, all will have.
 
 		final boolean usesDepth = this.depthEnabled && compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
 		final float depthUnits = compositingMode.getDepthOffsetUnits();
