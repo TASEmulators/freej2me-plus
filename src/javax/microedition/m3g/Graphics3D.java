@@ -1134,7 +1134,6 @@ public class Graphics3D
 		{
 			this.near=near;
 			this.far=far;
-			if (this.depthBuffer != null) { Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f)); }
 		}
 	}
 
