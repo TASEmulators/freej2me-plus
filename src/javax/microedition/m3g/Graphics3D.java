@@ -609,7 +609,7 @@ public class Graphics3D
 		final Fog fog = Mobile.m3gDisableFog ? null : appearance.getFog();
 		final float invFogDiv = fog != null ? M3GMath.fastReciprocal(fog.getFarDistance() - fog.getNearDistance()) : 0.0f;
 
-		perspectiveCorrection = fog != null || (perspectiveCorrection && (projType == Camera.PERSPECTIVE)); // fog usage enables it
+		perspectiveCorrection = fog != null || (perspectiveCorrection && (projType == Camera.PARALLEL)); // fog usage enables it
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
