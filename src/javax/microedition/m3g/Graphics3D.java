@@ -117,20 +117,20 @@ public class Graphics3D
 	private Transform camTr;
 
 	// Reusable rendering variables
-	int canvasWidth, canvasHeight, paintPixel;
+	static int canvasWidth, canvasHeight, paintPixel;
 	int[] rasterData;
 	final CompositingMode defaultCompositing;
 	Graphics3DPipelines.CompositingBlender compBlender;
 
 	// Texturing
 	final Transform texcomptr;
-	final boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
-	final boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
-	final boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
-	final float[] curS = new float[NUM_TEXTURE_UNITS];
-	final float[] curT = new float[NUM_TEXTURE_UNITS];
-	final float[] stepS = new float[NUM_TEXTURE_UNITS];
-	final float[] stepT = new float[NUM_TEXTURE_UNITS];
+	final static boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
+	final static boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
+	final static boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
+	final static float[] curS = new float[NUM_TEXTURE_UNITS];
+	final static float[] curT = new float[NUM_TEXTURE_UNITS];
+	final static float[] stepS = new float[NUM_TEXTURE_UNITS];
+	final static float[] stepT = new float[NUM_TEXTURE_UNITS];
 	final float[] texScaleBias = new float[4];
 	final float[] dsL_dy = new float[NUM_TEXTURE_UNITS];
 	final float[] dtL_dy = new float[NUM_TEXTURE_UNITS];
@@ -146,16 +146,17 @@ public class Graphics3D
 	final float[] tTop = new float[NUM_TEXTURE_UNITS];
 	final float[][] coS = new float[NUM_TEXTURE_UNITS][3];
 	final float[][] coT = new float[NUM_TEXTURE_UNITS][3];
-	final float[] sStepX = new float[NUM_TEXTURE_UNITS];
-	final float[] sStepY = new float[NUM_TEXTURE_UNITS];
-	final float[] tStepX = new float[NUM_TEXTURE_UNITS];
-	final float[] tStepY = new float[NUM_TEXTURE_UNITS];
-	final Graphics3DPipelines.TextureBlender[] texBlenders = new Graphics3DPipelines.TextureBlender[NUM_TEXTURE_UNITS];
-	final Graphics3DPipelines.TextureWrapper[] texWrappers = new Graphics3DPipelines.TextureWrapper[NUM_TEXTURE_UNITS];
-	final Graphics3DPipelines.MipmapMode[] mipModes = new Graphics3DPipelines.MipmapMode[NUM_TEXTURE_UNITS];
+	final static float[] sStepX = new float[NUM_TEXTURE_UNITS];
+	final static float[] sStepY = new float[NUM_TEXTURE_UNITS];
+	final static float[] tStepX = new float[NUM_TEXTURE_UNITS];
+	final static float[] tStepY = new float[NUM_TEXTURE_UNITS];
+	final static Graphics3DPipelines.TextureBlender[] texBlenders = new Graphics3DPipelines.TextureBlender[NUM_TEXTURE_UNITS];
+	final static Graphics3DPipelines.TextureWrapper[] texWrappers = new Graphics3DPipelines.TextureWrapper[NUM_TEXTURE_UNITS];
+	final static Graphics3DPipelines.MipmapMode[] mipModes = new Graphics3DPipelines.MipmapMode[NUM_TEXTURE_UNITS];
+	TexturingMode texMode;
 	final float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
-	final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
+	static final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
 
 	// 3D rendering variables
 	static byte ACTIVE_TEXTURE_UNITS;
@@ -176,7 +177,7 @@ public class Graphics3D
 	float xBot, yBot, zBot;
 	float rHorizon, xMidR, zMidR;
 	float pwTop, pwMidL, pwBot, pwMidR;
-	float dwdx, dwdy;
+	static float dwdx, dwdy;
 
 	float rStepX = 0, gStepX = 0, bStepX = 0, aStepX = 0;
 	float rStepY = 0, gStepY = 0, bStepY = 0, aStepY = 0;
@@ -680,6 +681,9 @@ public class Graphics3D
 				}
 			}
 		}
+		// Texturing mode we'll use per-pixel, saves some really complex
+		// branching in there, depending on the case.
+		texMode = getTexturingMode();
 
 		// Done with texture transforms, next up is preparing normals for
 		// lighting calculations
@@ -1643,56 +1647,7 @@ public class Graphics3D
 				// Otherwise, we just use the default vertex color for this triangle
 				else { paintPixel = defVertColor; }
 
-				if(hasTexture)
-				{
-					for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
-					{
-						float s = curS[i] * invPw;
-						float t = curT[i] * invPw;
-
-						Image2D targetImage = textures[i].getImage();
-
-						// Mipmapping support was requested.
-						if(mipModes[i] != null)
-						{
-							targetImage = mipModes[i].selectLevel(textures[i], s, t,
-								sStepX[i], tStepX[i], sStepY[i], tStepY[i],
-								dwdx, dwdy, invPw, x, y);
-
-							// POT textures coming in with another fast path: Just shift
-							// right by the difference in width between base level and
-							// target one!
-							int targetLevel = textures[i].getImage().widthShift - targetImage.widthShift;
-
-							s = (float) ((int) s >> targetLevel);
-							t = (float) ((int) t >> targetLevel);
-						}
-
-						if (!useBilinear[i])
-						{
-							final int texCoord = texWrappers[i].wrap((int) (s + 32768.0f) - 32768,
-								(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
-
-							final int pixel = targetImage.image[targetImage.isPOT ?
-								((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
-								((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
-
-							paintPixel = texBlenders[i] == null ? pixel : texBlenders[i].blend(paintPixel, pixel, textures[i].getBlendColor());
-						}
-						else
-						{
-							int filtered = sampleBilinear(targetImage, s, t,
-								targetImage.getWidth(), targetImage.getHeight(), i,
-								texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
-
-							paintPixel = texBlenders[i] == null ? filtered
-								: texBlenders[i].blend(paintPixel, filtered, textures[i].getBlendColor());
-						}
-
-						curS[i] += stepS[i];
-						curT[i] += stepT[i];
-					}
-				}
+				texMode.applyTexture(invPw, x, y);
 
 				/*
 				 * Alpha test BEFORE any depth write: transparent fragments must not
@@ -1898,7 +1853,7 @@ public class Graphics3D
 	}
 
 	// For bilinear filtering support
-	private final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, int texUnit,
+	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, int texUnit,
 		boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
 	{
 		// Shift s and t by 0.5 on the texel center for OpenGL-like filtering,
@@ -2214,5 +2169,135 @@ public class Graphics3D
 		if (levelFilter == Texture2D.FILTER_BASE_LEVEL) { return null; }
 		if (levelFilter == Texture2D.FILTER_NEAREST) { return Graphics3DPipelines.MipmapModes.NEAREST; }
 		return Graphics3DPipelines.MipmapModes.LINEAR;
+	}
+
+	public TexturingMode getTexturingMode()
+	{
+		if (ACTIVE_TEXTURE_UNITS == 0) { return TexturingModes.NO_UNIT; }
+		if (ACTIVE_TEXTURE_UNITS == 1) { return TexturingModes.SINGLE_UNIT; }
+		return TexturingModes.MULTI_UNIT;
+	}
+
+
+	// This part of the pipeline is much faster by staying here, otherwise the
+	// amount of variables we'd need to pass into these calls on
+	// Graphics3DPipelins would destroy any performance gain of separating
+	// these texturing modes.
+	interface TexturingMode { void applyTexture(float invPw, int x, int y); }
+
+	static class TexturingModes
+	{
+		static final TexturingMode NO_UNIT = new TexturingMode()
+		{
+			@Override
+			public void applyTexture(float invPw, int x, int y) { /* NO-OP */ }
+		};
+
+		static final TexturingMode SINGLE_UNIT = new TexturingMode()
+		{
+			@Override
+			public void applyTexture(float invPw, int x, int y)
+			{
+				float s = curS[0] * invPw;
+				float t = curT[0] * invPw;
+
+				Image2D targetImage = textures[0].getImage();
+
+				// Mipmapping support was requested.
+				if(mipModes[0] != null)
+				{
+					targetImage = mipModes[0].selectLevel(textures[0], s, t,
+						sStepX[0], tStepX[0], sStepY[0], tStepY[0],
+						dwdx, dwdy, invPw, x, y);
+
+					// POT textures coming in with another fast path: Just shift
+					// right by the difference in width between base level and
+					// target one!
+					int targetLevel = textures[0].getImage().widthShift - targetImage.widthShift;
+
+					s = (float) ((int) s >> targetLevel);
+					t = (float) ((int) t >> targetLevel);
+				}
+
+				if (!useBilinear[0])
+				{
+					final int texCoord = texWrappers[0].wrap((int) (s + 32768.0f) - 32768,
+						(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
+
+					final int pixel = targetImage.image[targetImage.isPOT ?
+						((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
+						((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
+
+					paintPixel = texBlenders[0] == null ? pixel : texBlenders[0].blend(paintPixel, pixel, textures[0].getBlendColor());
+				}
+				else
+				{
+					int filtered = sampleBilinear(targetImage, s, t,
+						targetImage.getWidth(), targetImage.getHeight(), 0,
+						texRepeatS[0], texRepeatT[0], textures[0].isNPOT());
+
+					paintPixel = texBlenders[0] == null ? filtered
+						: texBlenders[0].blend(paintPixel, filtered, textures[0].getBlendColor());
+				}
+
+				curS[0] += stepS[0];
+				curT[0] += stepT[0];
+			}
+		};
+
+		static final TexturingMode MULTI_UNIT = new TexturingMode()
+		{
+			@Override
+			public void applyTexture(float invPw, int x, int y)
+			{
+				for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				{
+					float s = curS[i] * invPw;
+					float t = curT[i] * invPw;
+
+					Image2D targetImage = textures[i].getImage();
+
+					// Mipmapping support was requested.
+					if(mipModes[i] != null)
+					{
+						targetImage = mipModes[i].selectLevel(textures[i], s, t,
+							sStepX[i], tStepX[i], sStepY[i], tStepY[i],
+							dwdx, dwdy, invPw, x, y);
+
+						// POT textures coming in with another fast path: Just shift
+						// right by the difference in width between base level and
+						// target one!
+						int targetLevel = textures[i].getImage().widthShift - targetImage.widthShift;
+
+						s = (float) ((int) s >> targetLevel);
+						t = (float) ((int) t >> targetLevel);
+					}
+
+					if (!useBilinear[i])
+					{
+						final int texCoord = texWrappers[i].wrap((int) (s + 32768.0f) - 32768,
+							(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
+
+						final int pixel = targetImage.image[targetImage.isPOT ?
+							((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
+							((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
+
+						paintPixel = texBlenders[i] == null ? pixel : texBlenders[i].blend(paintPixel, pixel, textures[i].getBlendColor());
+					}
+					else
+					{
+						int filtered = sampleBilinear(targetImage, s, t,
+							targetImage.getWidth(), targetImage.getHeight(), i,
+							texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
+
+						paintPixel = texBlenders[i] == null ? filtered
+							: texBlenders[i].blend(paintPixel, filtered, textures[i].getBlendColor());
+					}
+
+					curS[i] += stepS[i];
+					curT[i] += stepT[i];
+				}
+			}
+		};
 	}
 }
