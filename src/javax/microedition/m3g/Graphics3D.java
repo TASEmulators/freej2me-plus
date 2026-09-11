@@ -131,7 +131,6 @@ public class Graphics3D
 
 	// Texturing
 	final Transform texcomptr;
-	final static boolean[] useBilinear = new boolean[NUM_TEXTURE_UNITS];
 	final static boolean[] texRepeatS = new boolean[NUM_TEXTURE_UNITS];
 	final static boolean[] texRepeatT = new boolean[NUM_TEXTURE_UNITS];
 	final static float[] curS = new float[NUM_TEXTURE_UNITS];
@@ -160,7 +159,9 @@ public class Graphics3D
 	final static Graphics3DPipelines.TextureBlender[] texBlenders = new Graphics3DPipelines.TextureBlender[NUM_TEXTURE_UNITS];
 	final static Graphics3DPipelines.TextureWrapper[] texWrappers = new Graphics3DPipelines.TextureWrapper[NUM_TEXTURE_UNITS];
 	final static Graphics3DPipelines.MipmapMode[] mipModes = new Graphics3DPipelines.MipmapMode[NUM_TEXTURE_UNITS];
+	final static TextureFilter[] texFilter = new TextureFilter[NUM_TEXTURE_UNITS];
 	TexturingMode texMode;
+
 	final float[][] texVerts = new float[NUM_TEXTURE_UNITS][];
 	final Transform[] textr = new Transform[NUM_TEXTURE_UNITS];
 	static final Texture2D[] textures = new Texture2D[NUM_TEXTURE_UNITS];
@@ -885,9 +886,9 @@ public class Graphics3D
 		{
 			for (byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
 			{
-				useBilinear[i] = (Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
+				texFilter[i] = getTextureFilter((Mobile.m3gBilinearFilterMode == MODE_FORCE_ENABLE)
 					|| (Mobile.m3gBilinearFilterMode == MODE_APP_CONTROLLED &&
-					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR)));
+					((textures[i].getImageFilter() == Texture2D.FILTER_LINEAR))));
 			}
 		}
 
@@ -1882,42 +1883,40 @@ public class Graphics3D
 
 	// For bilinear filtering support
 	private static final int sampleBilinear(Image2D teximg, float s, float t, int texW, int texH, int texUnit,
-		boolean texRepeatS, boolean texRepeatT, boolean isNPOT)
+		boolean texRepeatS, boolean texRepeatT)
 	{
 		// Shift s and t by 0.5 on the texel center for OpenGL-like filtering,
-		int sFixed = (int) ((s - 0.5f) * 256.0f);
-		int tFixed = (int) ((t - 0.5f) * 256.0f);
+		final int sFixed = (int) (s * 256.0f) - 128;
+		final int tFixed = (int) (t * 256.0f) - 128;
 
 		// Fractional components
-		int fx = sFixed & 0xFF;
-		int fy = tFixed & 0xFF;
+		final int fx = sFixed & 0xFF;
+		final int fy = tFixed & 0xFF;
 
-		int xy0 = texWrappers[texUnit].wrap(sFixed >> 8, tFixed >> 8, texW, texH);
+		final int xy0 = texWrappers[texUnit].wrap(sFixed >> 8, tFixed >> 8, texW, texH);
+		final int x0 = xy0 & 0xFFFF;
+		final int y0 = xy0 >>> 16;
 
-		int x1 = ((xy0 & 0xFFFF) + 1 < texW) ? (xy0 & 0xFFFF) + 1 : (texRepeatS ? 0 : (xy0 & 0xFFFF));
-		int y1 = ((xy0 >>> 16) + 1 < texH) ? (xy0 >>> 16) + 1 : (texRepeatT ? 0 : (xy0 >>> 16));
+		final int x1 = (x0 + 1 < texW) ? x0 + 1 : (texRepeatS ? 0 : x0);
+		final int y1 = (y0 + 1 < texH) ? y0 + 1 : (texRepeatT ? 0 : y0);
 
-		int c00 = teximg.image[teximg.isPOT ? ((xy0 >>> 16) << teximg.widthShift) + (xy0 & 0xFFFF) :
-			((xy0 >>> 16) * teximg.width) + (xy0 & 0xFFFF)];
+		final boolean isPOT = teximg.isPOT;
+		final int c00 = teximg.image[(isPOT ? y0 << teximg.widthShift : y0 * texW) + x0];
+		final int c10 = teximg.image[(isPOT ? y0 << teximg.widthShift : y0 * texW) + x1];
+		final int c01 = teximg.image[(isPOT ? y1 << teximg.widthShift : y1 * texW) + x0];
+		final int c11 = teximg.image[(isPOT ? y1 << teximg.widthShift : y1 * texW) + x1];
 
-		int c10 = teximg.image[teximg.isPOT ? ((xy0 >>> 16) << teximg.widthShift) + x1 :
-			((xy0 >>> 16) * teximg.width) + x1];
+		final int invFx = 256 - fx;
+		final int invFy = 256 - fy;
 
-		int c01 = teximg.image[teximg.isPOT ? (y1 << teximg.widthShift) + (xy0 & 0xFFFF) :
-			(y1 * teximg.width) + (xy0 & 0xFFFF)];
+		final int rbTop = (((c00 & 0x00FF00FF) * invFx + (c10 & 0x00FF00FF) * fx) >>> 8) & 0x00FF00FF;
+		final int agTop = ((((c00 >>> 8) & 0x00FF00FF) * invFx + ((c10 >>> 8) & 0x00FF00FF) * fx) >>> 8) & 0x00FF00FF;
 
-		int c11 = teximg.image[teximg.isPOT ? (y1 << teximg.widthShift) + x1 :
-			(y1 * teximg.width) + x1];
+		final int rbBot = (((c01 & 0x00FF00FF) * invFx + (c11 & 0x00FF00FF) * fx) >>> 8) & 0x00FF00FF;
+		final int agBot = ((((c01 >>> 8) & 0x00FF00FF) * invFx + ((c11 >>> 8) & 0x00FF00FF) * fx) >>> 8) & 0x00FF00FF;
 
-
-		int rb0 = (c00 & 0x00FF00FF) + ((((c10 & 0x00FF00FF) - (c00 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
-		int ag0 = ((c00 >>> 8) & 0x00FF00FF) + (((((c10 >>> 8) & 0x00FF00FF) - ((c00 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
-
-		int rb1 = (c01 & 0x00FF00FF) + ((((c11 & 0x00FF00FF) - (c01 & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
-		int ag1 = ((c01 >>> 8) & 0x00FF00FF) + (((((c11 >>> 8) & 0x00FF00FF) - ((c01 >>> 8) & 0x00FF00FF)) * fx) >> 8) & 0x00FF00FF;
-
-		int rb = rb0 + ((((rb1 - rb0) * fy) >> 8) & 0x00FF00FF);
-		int ag = ag0 + ((((ag1 - ag0) * fy) >> 8) & 0x00FF00FF);
+		final int rb = ((rbTop * invFy + rbBot * fy) >>> 8) & 0x00FF00FF;
+		final int ag = ((agTop * invFy + agBot * fy) >>> 8) & 0x00FF00FF;
 
 		return (ag << 8) | rb;
 	}
@@ -2206,6 +2205,12 @@ public class Graphics3D
 		return TexturingModes.MULTI_UNIT;
 	}
 
+	public TextureFilter getTextureFilter(boolean bilinear)
+	{
+		if (!bilinear) { return TextureFilters.NEAREST; }
+		return TextureFilters.BILINEAR;
+	}
+
 
 	// This part of the pipeline is much faster by staying here, otherwise the
 	// amount of variables we'd need to pass into these calls on
@@ -2247,26 +2252,7 @@ public class Graphics3D
 					t = (float) ((int) t >> targetLevel);
 				}
 
-				if (!useBilinear[0])
-				{
-					final int texCoord = texWrappers[0].wrap((int) (s + 32768.0f) - 32768,
-						(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
-
-					final int pixel = targetImage.image[targetImage.isPOT ?
-						((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
-						((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
-
-					paintPixel = texBlenders[0] == null ? pixel : texBlenders[0].blend(paintPixel, pixel, textures[0].getBlendColor());
-				}
-				else
-				{
-					int filtered = sampleBilinear(targetImage, s, t,
-						targetImage.getWidth(), targetImage.getHeight(), 0,
-						texRepeatS[0], texRepeatT[0], textures[0].isNPOT());
-
-					paintPixel = texBlenders[0] == null ? filtered
-						: texBlenders[0].blend(paintPixel, filtered, textures[0].getBlendColor());
-				}
+				texFilter[0].filterTexture(s, t, 0, targetImage);
 
 				curS[0] += stepS[0];
 				curT[0] += stepT[0];
@@ -2301,30 +2287,49 @@ public class Graphics3D
 						t = (float) ((int) t >> targetLevel);
 					}
 
-					if (!useBilinear[i])
-					{
-						final int texCoord = texWrappers[i].wrap((int) (s + 32768.0f) - 32768,
-							(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
-
-						final int pixel = targetImage.image[targetImage.isPOT ?
-							((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
-							((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
-
-						paintPixel = texBlenders[i] == null ? pixel : texBlenders[i].blend(paintPixel, pixel, textures[i].getBlendColor());
-					}
-					else
-					{
-						int filtered = sampleBilinear(targetImage, s, t,
-							targetImage.getWidth(), targetImage.getHeight(), i,
-							texRepeatS[i], texRepeatT[i], textures[i].isNPOT());
-
-						paintPixel = texBlenders[i] == null ? filtered
-							: texBlenders[i].blend(paintPixel, filtered, textures[i].getBlendColor());
-					}
+					texFilter[i].filterTexture(s, t, i, targetImage);
 
 					curS[i] += stepS[i];
 					curT[i] += stepT[i];
 				}
+			}
+		};
+	}
+
+
+	// This one is also faster staying here.
+	interface TextureFilter { void filterTexture(float s, float t, int unitIdx, Image2D targetImage); }
+
+	static class TextureFilters
+	{
+		static final TextureFilter NEAREST = new TextureFilter()
+		{
+			@Override
+			public void filterTexture(float s, float t, int unitIdx, Image2D targetImage)
+			{
+				final int texCoord = texWrappers[unitIdx].wrap((int) (s + 32768.0f) - 32768,
+					(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
+
+				final int pixel = targetImage.image[targetImage.isPOT ?
+					((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
+					((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
+
+				paintPixel = texBlenders[unitIdx] == null ? pixel :
+					texBlenders[unitIdx].blend(paintPixel, pixel, textures[unitIdx].getBlendColor());
+			}
+		};
+
+		static final TextureFilter BILINEAR = new TextureFilter()
+		{
+			@Override
+			public void filterTexture(float s, float t, int unitIdx, Image2D targetImage)
+			{
+				int filtered = sampleBilinear(targetImage, s, t,
+					targetImage.getWidth(), targetImage.getHeight(), unitIdx,
+					texRepeatS[unitIdx], texRepeatT[unitIdx]);
+
+				paintPixel = texBlenders[unitIdx] == null ? filtered
+					: texBlenders[unitIdx].blend(paintPixel, filtered, textures[unitIdx].getBlendColor());
 			}
 		};
 	}
