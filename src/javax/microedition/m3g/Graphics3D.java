@@ -107,6 +107,13 @@ public class Graphics3D
 	private float near;
 	private float far;
 
+	/*
+	 * Depth buffer clear value: the maximum depth (1.0 in window coordinates)
+	 * mapped to the short-based buffer. Depth writes use the same 32200 scale
+	 * (slightly under the short limit to leave headroom against overflow).
+	 */
+	private static final short DEPTH_CLEAR_VALUE = (short) 32200;
+
 	private int hints;
 
 	private Camera currCam;
@@ -332,7 +339,9 @@ public class Graphics3D
 		 */
 		if (this.depthBuffer == null || this.depthBuffer.length < canvasWidth * canvasHeight)
 			{ this.depthBuffer = new short[canvasWidth * canvasHeight]; }
-		Arrays.fill(this.depthBuffer, (short) M3GMath.round(this.far * 32767.0f));
+		// Per JSR-184 (clear), the depth buffer clears to the maximum depth value
+		// (1.0) in window coordinates; the current depth range does not affect it.
+		Arrays.fill(this.depthBuffer, DEPTH_CLEAR_VALUE);
 		this.depthEnabled = depthBuffer;
 		this.hints = hints;
 	}
@@ -407,7 +416,9 @@ public class Graphics3D
 		/* The depth buffer is likewise cleared only inside the visible viewport. */
 		if (clearDepth)
 		{
-			final short farDepth = (short) M3GMath.round(this.far * 32767.0f);
+			// Per JSR-184, the depth buffer always clears to the maximum depth
+			// value (1.0); the current depth range does not affect the clear.
+			final short farDepth = DEPTH_CLEAR_VALUE;
 			for (int py = viewClipT; py < viewClipB; py++)
 			{
 				final int rowStart = (originY + viewy + py) * canvasWidth + originX + viewx + viewClipL;
@@ -836,8 +847,24 @@ public class Graphics3D
 		// for shorts (which is -32768, 32767), this is to make sure the
 		// multiplied Z values will always be in range and never overflow,
 		// saving us the need to clamp it for every pixel draw.
-		tr.postScale(vieww * 0.5f, -viewh * 0.5f, (this.far - this.near) * 32200.0f);
-		tr.postTranslate(1f, -1f, 0f);
+		//
+		// Depth follows JSR-184 setDepthRange: zw = 0.5*(far-near)*(zndc+1) + near,
+		// scaled by 32200 into the short depth buffer. Getting this mapping right
+		// matters: games split the depth buffer into disjoint bands (e.g. portal
+		// renderers giving the world and each portal view their own range), and
+		// that only works if both the scale AND the near offset are applied.
+		final float zScale = 0.5f * (this.far - this.near) * 32200.0f;
+		if (zScale != 0.0f)
+		{
+			tr.postScale(vieww * 0.5f, -viewh * 0.5f, zScale);
+			tr.postTranslate(1f, -1f, 1f + (this.near * 32200.0f) / zScale);
+		}
+		else
+		{
+			// Degenerate range (near == far): depth collapses to a constant.
+			tr.postScale(vieww * 0.5f, -viewh * 0.5f, 1.0f);
+			tr.postTranslate(1f, -1f, this.near * 32200.0f);
+		}
 
 		// -> Screen space
 
@@ -1257,9 +1284,10 @@ public class Graphics3D
 		float ndcX = clip[0]/clip[3], ndcY = clip[1]/clip[3];
 
 		// Our depth buffer is now comprised of short values, so ndcZ has to be
-		// multiplied by the same factor used by the buffer, with a small margin
-		// for safety, just like when rendering meshes.
-		short ndcZ = (short) (clip[2]/clip[3] * 32200.0f);
+		// mapped by the JSR-184 depth range equation, zw = 0.5*(far-near)*(zndc+1)
+		// + near, and then scaled by the same factor used by the buffer, with a
+		// small margin for safety, just like when rendering meshes.
+		short ndcZ = (short) ((0.5f * (this.far - this.near) * (clip[2]/clip[3] + 1.0f) + this.near) * 32200.0f);
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
