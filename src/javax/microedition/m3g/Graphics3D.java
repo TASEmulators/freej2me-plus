@@ -49,6 +49,8 @@ public class Graphics3D
 		}
 	}
 
+	private static final int[] AA_INV_COUNT = { 0, 65536, 32768, 21845, 16384, 13107 };
+
 	// Special blend modes for fog and AA coverage
 	public static final int BLEND_FOG = -1;
 	public static final int BLEND_COVERAGE = -2;
@@ -128,6 +130,12 @@ public class Graphics3D
 	int[] rasterData;
 	final CompositingMode defaultCompositing;
 	Graphics3DPipelines.CompositingBlender compBlender;
+
+	// For Edge AA. This one is always assigned offsets in a cross pattern based
+	// on the target's width, so that AA sampling is more similar to MSAA's
+	// rotated grid sampling. The pattern offset in pixels from the center sample
+	// is as follows: [-1,-1], [1, -1], [-1,1], [1,1].
+	private final short[] AA_SAMPLE_OFFSETS = new short[4];
 
 	// Texturing
 	final Transform texcomptr;
@@ -330,6 +338,12 @@ public class Graphics3D
 
 		this.target = target;
 		updateViewportClip();
+
+		// This is cheap enough to keep allocated for AA always:
+		AA_SAMPLE_OFFSETS[0] = (short) (-canvasWidth - 1); // Top-Left
+		AA_SAMPLE_OFFSETS[1] = (short) (-canvasWidth + 1); // Top-Right
+		AA_SAMPLE_OFFSETS[2] = (short) (canvasWidth - 1); // Bottom-Left
+		AA_SAMPLE_OFFSETS[3] = (short) (canvasWidth + 1); // Bottom-Right
 
 		/*
 		 * Depth values belong to physical render-target pixels and are indexed just
@@ -601,7 +615,9 @@ public class Graphics3D
 		final int windingOrder = (pmode != null) ? pmode.getWinding() : PolygonMode.WINDING_CCW;
 		final boolean twoSidedLighting = (pmode != null) && pmode.isTwoSidedLightingEnabled();
 		final boolean localCameraLight = (pmode != null) && pmode.isLocalCameraLightingEnabled();
-		// This one can be overridden by FJ2ME+
+		// these ones can be overridden by FJ2ME+
+		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
+			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
 		boolean perspectiveCorrection = (pmode != null) && pmode.isPerspectiveCorrectionEnabled();
 
 		// Set up fog properties
@@ -831,7 +847,7 @@ public class Graphics3D
 			this.currLights, lightEyePos, lightEyeDir, scope,
 			// IndexArray, clipping, winding order and perspectiveCorrection
 			triangles.getIndexArray(), renderableTriangles, cullingMode, vertices,
-			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection);
+			windingOrder == PolygonMode.WINDING_CW, perspectiveCorrection, doAntiAlias);
 
 		// At this point the triangles in `trisScreen` are actually
 		// projected to Normalized Device Coordinates, but they will be tranformed
@@ -1115,6 +1131,32 @@ public class Graphics3D
 				renderTriangleHalf(defVertColor, 1, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
 					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
 					invMidSpan);
+			}
+		}
+
+		if (doAntiAlias && !(this.target instanceof Image2D))
+		{
+			for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
+			{
+				final Triangle tri = trisScreen[tri_id];
+
+				// TODO: Edge deduplication here. Right now this iterates
+				// on ALL edges, even shared ones (we could use the index buffer
+				// for this).
+				final float xA = tri.xA(), xB = tri.xB(), xC = tri.xC();
+				final float yA = tri.yA(), yB = tri.yB(), yC = tri.yC();
+
+				// Skip degenerate triangles
+				final float dxB = xB - xA, dyB = yB - yA;
+				final float dxC = xC - xA, dyC = yC - yA;
+				final float denominator = dxB * dyC - dxC * dyB;
+				if (denominator > -1e-6f && denominator < 1e-6f) { continue; }
+
+				final float zA = tri.zA(), zB = tri.zB(), zC = tri.zC();
+
+				if (tri.edgeABBoundary) { drawAALine(xA, yA, zA, xB, yB, zB, usesDepth); }
+				if (tri.edgeBCBoundary) { drawAALine(xB, yB, zB, xC, yC, zC, usesDepth); }
+				if (tri.edgeCABoundary) { drawAALine(xC, yC, zC, xA, yA, zA, usesDepth); }
 			}
 		}
 	}
@@ -1448,9 +1490,6 @@ public class Graphics3D
 		boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
 
-		boolean doAntiAlias = (Mobile.m3gAntiAliasingMode == MODE_FORCE_ENABLE)
-			|| (Mobile.m3gAntiAliasingMode == MODE_APP_CONTROLLED && (this.hints & ANTIALIAS) != 0);
-
 		final boolean hasFog = fog != null;
 
 		final float fogFarNorm = hasFog ? fog.getFarDistance() * invFogDiv : 0.0f;
@@ -1731,33 +1770,6 @@ public class Graphics3D
 					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 				}
 
-				// Apply basic edge coverage Anti-Aliasing, if the flag is enabled.
-				if (doAntiAlias && !renderToImage && (x == ixL || x == ixR - 1) &&
-					compBlender == null && alpha >= 255)
-				{
-					// The way this works is that we "extend" the geometry size a bit
-					// for the antialiased output, that way triangles don't get smoothed
-					// inwards, causing transparent edges between them to manifest.
-					if (x == ixL)
-					{
-						int distFx = (int) (((ixL + 1.0f) - xL) * 65536.0f);
-						int scaledDist = (distFx * 85) >> 16;
-
-						applyEdgeAA(x - 1, rasterIdx - 1, viewClipL, viewClipR, paintPixel, rasterData, 85 + scaledDist);
-						applyEdgeAA(x, rasterIdx, viewClipL, viewClipR, paintPixel, rasterData, 164 + scaledDist);
-					}
-					else
-					{
-						int distFx = (int) ((xR - (ixR - 1)) * 65536.0f);
-						int scaledDist = (distFx * 85) >> 16;
-
-						applyEdgeAA(x, rasterIdx, viewClipL, viewClipR, paintPixel, rasterData, 164 + scaledDist);
-						applyEdgeAA(x + 1, rasterIdx + 1, viewClipL, viewClipR, paintPixel, rasterData, 85 + scaledDist);
-					}
-
-					continue;
-				}
-
 				if(!renderToImage)
 				{
 					rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx],
@@ -1772,26 +1784,6 @@ public class Graphics3D
 					imageData.image[imgIdx] = compBlender == null ? paintPixel : compBlender.blend(imageData.image[imgIdx], paintPixel, alpha);
 				}
 			}
-		}
-	}
-
-	/* AA spill pixels are viewport-local, and must stay inside the visible viewport. */
-	private static final void applyEdgeAA(int targetX, int targetIdx, int clipLeft, int clipRight,
-							int paintPixel, int[] rasterData, int coverageAlpha)
-	{
-		if (coverageAlpha > 0 && targetX >= clipLeft && targetX < clipRight)
-		{
-			if (coverageAlpha > 255) { coverageAlpha = 255; }
-
-			int bgRB = rasterData[targetIdx] & 0x00FF00FF, fgRB = paintPixel & 0x00FF00FF;
-			int outRB = (bgRB + ((((fgRB - bgRB) * coverageAlpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-			int bgAG = (rasterData[targetIdx] >>> 8) & 0x00FF00FF, fgAG = (paintPixel >>> 8) & 0x00FF00FF;
-			int outAG = (bgAG + ((((fgAG - bgAG) * coverageAlpha) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
-
-			int aaPixel = outRB | (outAG << 8);
-
-			rasterData[targetIdx] = aaPixel;
 		}
 	}
 
@@ -1918,6 +1910,149 @@ public class Graphics3D
 		final int ag = ((agTop * invFy + agBot * fy) >>> 8) & 0x00FF00FF;
 
 		return (ag << 8) | rb;
+	}
+
+	// Antialiasing here is done by just drawing antialiased lines over the
+	// already drawn geometry. This one is pretty much just Wu's line drawing
+	// algorithm, but modified to handle depth, and sample pixels around the
+	// center one to be drawn.
+	private final void drawAALine(float x0, float y0, float z0, float x1, float y1, float z1, boolean usesDepth)
+	{
+		float dx = x1 - x0;
+		float dy = y1 - y0;
+
+		// If it's a steep line, that means AA must shift from horizontal to
+		// vertical stepping.
+		boolean steep = (dy < 0 ? -dy : dy) > (dx < 0 ? -dx : dx);
+
+		if (steep)
+		{
+			float tmp = x0; x0 = y0; y0 = tmp;
+			tmp = x1; x1 = y1; y1 = tmp;
+			dx = x1 - x0;
+			dy = y1 - y0;
+		}
+
+		if (x0 > x1)
+		{
+			float tmp = x0; x0 = x1; x1 = tmp;
+			tmp = y0; y0 = y1; y1 = tmp;
+			tmp = z0; z0 = z1; z1 = tmp;
+			dx = -dx;
+			dy = -dy;
+		}
+
+		// No sense in trying to AA lines that are just a dot.
+		if (dx == 0.0f) { return; }
+
+		float invDx = M3GMath.fastReciprocal(dx);
+		float gradient = dy * invDx;
+
+		int xpxl1 = (int)(x0 + 0.5f);
+		float yend = y0 + gradient * (xpxl1 - x0);
+		float xgap = 1.0f - (x0 + 0.5f - (int)(x0 + 0.5f));
+		int ypxl1 = (int) yend;
+
+		float zStep = (dx == 0.0f) ? 0.0f : (z1 - z0) * invDx;
+		float curZ = z0;
+
+		float intery = yend + gradient;
+		int xEndPxl = (int)(x1 + 0.5f);
+
+		// Main interpolation loop
+		for (int x = xpxl1; x < xEndPxl; x++)
+		{
+			curZ += zStep;
+
+			int yInt = (int) intery;
+			float frac = intery - yInt;
+			float invFrac = 1.0f - frac;
+
+			if (steep)
+			{
+				plotAALinePixel(yInt,     x, (short) curZ, invFrac, usesDepth);
+				plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
+			}
+			else
+			{
+				plotAALinePixel(x, yInt,     (short) curZ, invFrac, usesDepth);
+				plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
+			}
+
+			intery += gradient;
+		}
+	}
+
+	private final void plotAALinePixel(int x, int y, short z, float alpha, boolean usesDepth)
+	{
+		// Bound checks are a bit more lenient, as we do sample a grid around the center pixel.
+		if (x < viewClipL + 1 || x >= viewClipR - 1 || y < viewClipT + 1 || y >= viewClipB - 1) { return; }
+
+		// Pixels that are going to be nearly invisible may as well be ignored.
+		if (alpha <= 0.0392f) { return; } // alpha * 255 <= 10
+
+		final int rasterIdx = (originY + viewy + y) * canvasWidth + originX + viewx + x;
+		final short[] zBuffer = this.depthBuffer;
+
+		int fgIdx = -1;
+
+		if (usesDepth)
+		{
+			short currentZ = zBuffer[rasterIdx];
+
+			// Is occluded? DO NOT AA! This improves performance and also
+			// prevents occluded geometry from drawing ghosts.
+			if (currentZ < (z - 4)) { return; }
+
+			final int zLen = zBuffer.length;
+
+			// We must only antialias silhouettes, this is to prevent
+			// the line algorithm from over-blurring connected geometry.
+			boolean isSilhouette = false;
+
+			for (int i = 0; i < 4; i++)
+			{
+				//
+				int nIdx = rasterIdx + AA_SAMPLE_OFFSETS[i];
+				short nDepth = zBuffer[nIdx];
+
+				// We trigger AA on any edge that doesn't resolve to the same
+				// depth as its immediately connected pixels.
+				if (nDepth - z != 0) { isSilhouette = true; }
+
+				// If current pixel is a background/skybox, grab the closer mesh
+				// neighbor's color index
+				if (nDepth < currentZ) { fgIdx = nIdx; }
+			}
+
+			if (!isSilhouette) { return; }
+		}
+
+		final int[] rData = this.rasterData;
+
+		// 4. FETCH COLORS FOR TRUE BLEND
+		int bg = rData[rasterIdx];
+
+		// If we're on an outer pixel, we sample the foreground object's
+		// texture color, otherwise may as well just reuse the current bg pixel
+		int fg = (fgIdx != -1) ? rData[fgIdx] : bg;
+
+		// If fg and bg are identical in color
+		// (e.g. a flat, coplanar surface), no AA is needed at all.
+		if (fg == bg && fgIdx != -1) { return; }
+
+		// We don't need any complex blending here, just make sure the coverage
+		// is properly smoothed out with some alpha modulation.
+		int a = (int) (alpha * 255.0f);
+		if (a > 255) { a = 255; }
+
+		int bgRB = bg & 0x00FF00FF, fgRB = fg & 0x00FF00FF;
+		int outRB = (bgRB + ((((fgRB - bgRB) * a) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+		int bgAG = (bg >>> 8) & 0x00FF00FF, fgAG = (fg >>> 8) & 0x00FF00FF;
+		int outAG = (bgAG + ((((fgAG - bgAG) * a) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+
+		rData[rasterIdx] = outRB | (outAG << 8);
 	}
 
 	// Retained mode render order helpers.

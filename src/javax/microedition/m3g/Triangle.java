@@ -54,6 +54,13 @@ class Triangle
 
 	private boolean hasVertexColors = false;
 
+	// These are for AntiAliasing. Since we use Edge AA (Wu's algorithm), it
+	// can be optimized by checking against shared edges to not antialias those
+	// at all.
+	boolean edgeABBoundary = false;
+	boolean edgeBCBoundary = false;
+	boolean edgeCABoundary = false;
+
 	private final int[] colors = new int[3];
 
 	// 1/w of each vertex after projection, for perspective-correct texturing.
@@ -86,7 +93,7 @@ class Triangle
 		ArrayList<Light> lights, float[] lightEyePos, float[] lightEyeDir, int curScope,
 		// IndexArray, clipping, winding order and perspectiveCorrection
 		int[] tris, int[] renderableTriangles, int cullingMode, VertexBuffer vertices,
-		boolean polygonClockwise, boolean perspectiveCorrect)
+		boolean polygonClockwise, boolean perspectiveCorrect, boolean hasAA)
 	{
 		renderableTriangles[0] = 0;
 		final int totalTris = tris.length / 3;
@@ -137,6 +144,11 @@ class Triangle
 		// data the same way a TriangleStripArray reuses them.
 		int lastIdx0 = -1, lastIdx1 = -1, lastIdx2 = -1;
 		int lastColor0 = 0, lastColor1 = 0, lastColor2 = 0;
+
+		// Track the indices of the previously processed triangle in the strip
+		// for Edge AA.
+		int prevI0 = -1, prevI1 = -1, prevI2 = -1;
+		boolean tEdgeABBoundary = false, tEdgeBCBoundary = false, tEdgeCABoundary = false;
 
 		int triOffset = 0;
 
@@ -245,6 +257,7 @@ class Triangle
 			final boolean needsNearClip = (Triangle.inV[2] < -Triangle.inV[3]) ||
 				(Triangle.inV[6] < -Triangle.inV[7])  ||
 				(Triangle.inV[10] < -Triangle.inV[11]);
+
 			if (!needsNearClip)
 			{
 				outCount = 3;
@@ -264,10 +277,52 @@ class Triangle
 				srcC = Triangle.outC;
 			}
 
+			// AA is enabled? Check for shared edge boundaries
+			if(hasAA)
+			{
+				final boolean shared01 = (i0 == prevI0 || i0 == prevI1 || i0 == prevI2) &&
+	                             (i1 == prevI0 || i1 == prevI1 || i1 == prevI2);
+
+			    final boolean shared12 = (i1 == prevI0 || i1 == prevI1 || i1 == prevI2) &&
+			                             (i2 == prevI0 || i2 == prevI1 || i2 == prevI2);
+
+			    final boolean shared20 = (i2 == prevI0 || i2 == prevI1 || i2 == prevI2) &&
+			                             (i0 == prevI0 || i0 == prevI1 || i0 == prevI2);
+
+			    // An edge is a boundary ONLY IF it is NOT shared with the
+				// prior triangle.
+			    tEdgeABBoundary = !shared01;
+			    tEdgeBCBoundary = !shared12;
+			    tEdgeCABoundary = !shared20;
+			}
+
+		    // Update strip history for the next iteration
+		    prevI0 = i0;
+		    prevI1 = i1;
+		    prevI2 = i2;
+
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
 			for (int fan = 0; fan + 2 < outCount; fan++)
 			{
 				final Triangle tri = Triangle.result[renderableTriangles[0]];
+
+				if(hasAA)
+				{
+					if (outCount == 3)
+					{
+			            tri.edgeABBoundary = tEdgeABBoundary;
+			            tri.edgeBCBoundary = tEdgeBCBoundary;
+			            tri.edgeCABoundary = tEdgeCABoundary;
+			        }
+					else
+					{
+			            // Near-plane clipped fans should retain the real outer
+						// boundaries and completely ignore internal clip split.
+			            tri.edgeABBoundary = (fan == 0) ? tEdgeABBoundary : false;
+			            tri.edgeBCBoundary = (fan == 0) ? false : tEdgeBCBoundary;
+			            tri.edgeCABoundary = (fan == 0) ? false : tEdgeCABoundary;
+			        }
+				}
 
 				// Apply perspective division to the triangle, it's going to NDC
 
