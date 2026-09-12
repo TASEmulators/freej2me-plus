@@ -1388,6 +1388,7 @@ public class Graphics3D
 			final float v = (y + 0.5f - sy0) * invSpanY;
 			int texY = isectY + (int) ((flipY ? 1f - v : v) * isectH);
 			if (texY < isectY) { texY = isectY; } else if (texY >= isectY + isectH) { texY = isectY + isectH - 1; }
+			texY = spr.isPOT ? (texY << spr.widthShift) : (texY * spr.width);
 
 			final int rasterIdxY = (originY + viewy + y) * canvasWidth + originX + viewx;
 			int rasterIdx = rasterIdxY + pixL;
@@ -1401,10 +1402,7 @@ public class Graphics3D
 				int texX = isectX + (int) u;
 				if (texX < isectX) { texX = isectX; } else if (texX >= isectX + isectW) { texX = isectX + isectW - 1; }
 
-				final int sprIdx = spr.isPOT ? (texY << spr.widthShift) + texX :
-					(texY * spr.width) + texX;
-
-				paintPixel = spr.image[sprIdx];
+				paintPixel = spr.image[texY + texX];
 				int alpha = (((paintPixel >>> 24) * alphaFactor) >> 8);
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
