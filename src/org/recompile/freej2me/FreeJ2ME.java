@@ -30,6 +30,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -53,6 +54,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
 
@@ -70,6 +72,7 @@ public class FreeJ2ME
 	private int lcdHeight;
 	private int scaleFactor = 1;
 	private boolean spOnCmd = false;
+	private Image appIcon;
 
 	private static final String extInputFilePath = "FreeJ2MEExternalKeyEvents.txt";
 	private static final HashMap<String, Integer> extEventsMap = new HashMap<String, Integer>();
@@ -777,9 +780,14 @@ public class FreeJ2ME
 
 		try
 		{
-			main.setIconImage(ImageIO.read(main.getClass().getResourceAsStream("/org/recompile/icon.png")));
+			URL icon = main.getClass().getResource("/org/recompile/icon.png");
+			if (icon != null)
+			{
+			    appIcon = ImageIO.read(icon);
+			    main.setIconImage(appIcon);
+			}
 		}
-		catch (Exception e) { }
+		catch (Exception e) { System.out.println("Couldn't load app icon:" + e.getMessage()); }
 
 		main.addWindowListener(new WindowAdapter()
 		{
@@ -861,16 +869,19 @@ public class FreeJ2ME
 			{
 				if(!fjGUI.hasLoadedFile())
 				{
-					// Draw FreeJ2ME-Plus' intro screen
 					g.setColor(new Color(208, 208, 208));
 					g.fillRect(0, 0, getWidth(), getHeight());
 
-					g.drawImage(main.getIconImage(),
-						getWidth()/2 - main.getIconImage().getWidth(null)/2,
-						getHeight()/2 - main.getIconImage().getHeight(null)/2,
-						Math.min(getWidth(), main.getIconImage().getWidth(null)),
-						Math.min(getHeight(), main.getIconImage().getHeight(null)),
-						null);
+					if (appIcon != null)
+					{
+						int w = appIcon.getWidth(null);
+						int h = appIcon.getHeight(null);
+
+						g.drawImage(appIcon,
+							(getWidth() - w) / 2,
+							(getHeight() - h) / 2,
+							w, h, null);
+					}
 
 					((Graphics2D)g).setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
 						RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
