@@ -1134,7 +1134,7 @@ public class Graphics3D
 			}
 		}
 
-		if (doAntiAlias && !(this.target instanceof Image2D))
+		if (doAntiAlias)
 		{
 			for (int tri_id = 0; tri_id < renderableTriangles[0]; tri_id++)
 			{
@@ -1949,47 +1949,43 @@ public class Graphics3D
 		float gradient = dy * invDx;
 
 		int xpxl1 = (int)(x0 + 0.5f);
+		int xEndPxl = (int)(x1 + 0.5f);
 		float yend = y0 + gradient * (xpxl1 - x0);
-		float xgap = 1.0f - (x0 + 0.5f - (int)(x0 + 0.5f));
-		int ypxl1 = (int) yend;
 
 		float zStep = (dx == 0.0f) ? 0.0f : (z1 - z0) * invDx;
-		float curZ = z0;
+		float curZ = z0 + zStep * (xpxl1 - x0);
 
-		float intery = yend + gradient;
-		int xEndPxl = (int)(x1 + 0.5f);
+		float intery = yend;
 
 		// Main interpolation loop
 		for (int x = xpxl1; x < xEndPxl; x++)
 		{
-			curZ += zStep;
-
-			int yInt = (int) intery;
-			float frac = intery - yInt;
-			float invFrac = 1.0f - frac;
+			final int yInt = (int) intery;
+			final float frac = intery - yInt;
 
 			if (steep)
 			{
-				plotAALinePixel(yInt,     x, (short) curZ, invFrac, usesDepth);
+				plotAALinePixel(yInt,     x, (short) curZ, 1.0f - frac, usesDepth);
 				plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
 			}
 			else
 			{
-				plotAALinePixel(x, yInt,     (short) curZ, invFrac, usesDepth);
+				plotAALinePixel(x, yInt,     (short) curZ, 1.0f - frac, usesDepth);
 				plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
 			}
 
+			curZ += zStep;
 			intery += gradient;
 		}
 	}
 
 	private final void plotAALinePixel(int x, int y, short z, float alpha, boolean usesDepth)
 	{
-		// Bound checks are a bit more lenient, as we do sample a grid around the center pixel.
-		if (x < viewClipL + 1 || x >= viewClipR - 1 || y < viewClipT + 1 || y >= viewClipB - 1) { return; }
-
 		// Pixels that are going to be nearly invisible may as well be ignored.
 		if (alpha <= 0.0392f) { return; } // alpha * 255 <= 10
+
+		// Bound checks are a bit more lenient, as we do sample a grid around the center pixel.
+		if (x < viewClipL + 1 || x >= viewClipR - 1 || y < viewClipT + 1 || y >= viewClipB - 1) { return; }
 
 		final int rasterIdx = (originY + viewy + y) * canvasWidth + originX + viewx + x;
 		final short[] zBuffer = this.depthBuffer;
@@ -2004,52 +2000,49 @@ public class Graphics3D
 			// prevents occluded geometry from drawing ghosts.
 			if (currentZ < (z - 4)) { return; }
 
-			final int zLen = zBuffer.length;
+			int AAsum = 0, nIdx;
+
+			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[0];
+			// We trigger AA on any edge that doesn't resolve to the same
+			// depth as its immediately connected pixels.
+			AAsum |= (zBuffer[nIdx] - z);
+			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
+
+			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[1];
+			AAsum |= (zBuffer[nIdx] - z);
+			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
+
+			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[2];
+			AAsum |= (zBuffer[nIdx] - z);
+			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
+
+			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[3];
+			AAsum |= (zBuffer[nIdx] - z);
+			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
 
 			// We must only antialias silhouettes, this is to prevent
 			// the line algorithm from over-blurring connected geometry.
-			boolean isSilhouette = false;
-
-			for (int i = 0; i < 4; i++)
-			{
-				//
-				int nIdx = rasterIdx + AA_SAMPLE_OFFSETS[i];
-				short nDepth = zBuffer[nIdx];
-
-				// We trigger AA on any edge that doesn't resolve to the same
-				// depth as its immediately connected pixels.
-				if (nDepth - z != 0) { isSilhouette = true; }
-
-				// If current pixel is a background/skybox, grab the closer mesh
-				// neighbor's color index
-				if (nDepth < currentZ) { fgIdx = nIdx; }
-			}
-
-			if (!isSilhouette) { return; }
+			if (AAsum == 0 || fgIdx == -1) { return; }
 		}
 
 		final int[] rData = this.rasterData;
 
-		// 4. FETCH COLORS FOR TRUE BLEND
-		int bg = rData[rasterIdx];
-
 		// If we're on an outer pixel, we sample the foreground object's
 		// texture color, otherwise may as well just reuse the current bg pixel
-		int fg = (fgIdx != -1) ? rData[fgIdx] : bg;
+		int fg = rData[fgIdx];
 
 		// If fg and bg are identical in color
 		// (e.g. a flat, coplanar surface), no AA is needed at all.
-		if (fg == bg && fgIdx != -1) { return; }
+		if (fg == rData[rasterIdx]) { return; }
 
 		// We don't need any complex blending here, just make sure the coverage
 		// is properly smoothed out with some alpha modulation.
 		int a = (int) (alpha * 255.0f);
-		if (a > 255) { a = 255; }
 
-		int bgRB = bg & 0x00FF00FF, fgRB = fg & 0x00FF00FF;
+		int bgRB = rData[rasterIdx] & 0x00FF00FF, fgRB = fg & 0x00FF00FF;
 		int outRB = (bgRB + ((((fgRB - bgRB) * a) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
 
-		int bgAG = (bg >>> 8) & 0x00FF00FF, fgAG = (fg >>> 8) & 0x00FF00FF;
+		int bgAG = (rData[rasterIdx] >>> 8) & 0x00FF00FF, fgAG = (fg >>> 8) & 0x00FF00FF;
 		int outAG = (bgAG + ((((fgAG - bgAG) * a) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
 
 		rData[rasterIdx] = outRB | (outAG << 8);
