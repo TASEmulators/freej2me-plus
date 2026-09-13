@@ -1948,34 +1948,47 @@ public class Graphics3D
 		float invDx = M3GMath.fastReciprocal(dx);
 		float gradient = dy * invDx;
 
-		int xpxl1 = (int)(x0 + 0.5f);
-		int xEndPxl = (int)(x1 + 0.5f);
-		float yend = y0 + gradient * (xpxl1 - x0);
+		int xStart = (int)(x0 + 0.5f);
+		int xEnd = (int)(x1 + 0.5f);
 
 		float zStep = (dx == 0.0f) ? 0.0f : (z1 - z0) * invDx;
-		float curZ = z0 + zStep * (xpxl1 - x0);
+		float curZ = z0 + zStep * (xStart - x0);
 
-		float intery = yend;
+		float yGrad = y0 + gradient * (xStart - x0);
 
 		// Main interpolation loop
-		for (int x = xpxl1; x < xEndPxl; x++)
+		for (int x = xStart; x < xEnd; x++)
 		{
-			final int yInt = (int) intery;
-			final float frac = intery - yInt;
+			final int yInt = (int) yGrad;
+			final float frac = yGrad - yInt;
 
-			if (steep)
+			if(usesDepth)
 			{
-				plotAALinePixel(yInt,     x, (short) curZ, 1.0f - frac, usesDepth);
-				plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
+				if (steep)
+				{
+					plotAALinePixel(yInt,     x, (short) curZ, 1.0f - frac, usesDepth);
+					plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
+				}
+				else
+				{
+					plotAALinePixel(x, yInt,     (short) curZ, 1.0f - frac, usesDepth);
+					plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
+				}
 			}
 			else
 			{
-				plotAALinePixel(x, yInt,     (short) curZ, 1.0f - frac, usesDepth);
-				plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
+				if (steep)
+				{
+				    plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
+				}
+				else
+				{
+				    plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
+				}
 			}
 
 			curZ += zStep;
-			intery += gradient;
+			yGrad += gradient;
 		}
 	}
 
@@ -1989,6 +2002,8 @@ public class Graphics3D
 
 		final int rasterIdx = (originY + viewy + y) * canvasWidth + originX + viewx + x;
 		final short[] zBuffer = this.depthBuffer;
+		final int[] rData = this.rasterData;
+		final int bg = rData[rasterIdx];
 
 		int fgIdx = -1;
 
@@ -2022,10 +2037,24 @@ public class Graphics3D
 
 			// We must only antialias silhouettes, this is to prevent
 			// the line algorithm from over-blurring connected geometry.
-			if (AAsum == 0 || fgIdx == -1) { return; }
+			if (AAsum == 0) { return; }
+		}
+		else
+		{
+			// If we don't have depth, we fallback to simple color checks on
+			// neighbor pixels for AA.
+		   for (int i = 0; i < 4; i++)
+			{
+				int nIdx = rasterIdx + AA_SAMPLE_OFFSETS[i];
+				if (rData[nIdx] != bg)
+				{
+					fgIdx = nIdx;
+					break;
+				}
+			}
 		}
 
-		final int[] rData = this.rasterData;
+		if (fgIdx == -1) { return; }
 
 		// If we're on an outer pixel, we sample the foreground object's
 		// texture color, otherwise may as well just reuse the current bg pixel
@@ -2033,17 +2062,19 @@ public class Graphics3D
 
 		// If fg and bg are identical in color
 		// (e.g. a flat, coplanar surface), no AA is needed at all.
-		if (fg == rData[rasterIdx]) { return; }
+		if (fg == bg) { return; }
 
 		// We don't need any complex blending here, just make sure the coverage
 		// is properly smoothed out with some alpha modulation.
 		int a = (int) (alpha * 255.0f);
 
-		int bgRB = rData[rasterIdx] & 0x00FF00FF, fgRB = fg & 0x00FF00FF;
-		int outRB = (bgRB + ((((fgRB - bgRB) * a) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+		int bgRB = bg & 0x00FF00FF;
+		int fgRB = fg & 0x00FF00FF;
+		int outRB = ((fgRB * a + bgRB * (255 - a)) >> 8) & 0x00FF00FF;
 
-		int bgAG = (rData[rasterIdx] >>> 8) & 0x00FF00FF, fgAG = (fg >>> 8) & 0x00FF00FF;
-		int outAG = (bgAG + ((((fgAG - bgAG) * a) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
+		int bgAG = (bg >>> 8) & 0x00FF00FF;
+		int fgAG = (fg >>> 8) & 0x00FF00FF;
+		int outAG = ((fgAG * a + bgAG * (255 - a)) >> 8) & 0x00FF00FF;
 
 		rData[rasterIdx] = outRB | (outAG << 8);
 	}

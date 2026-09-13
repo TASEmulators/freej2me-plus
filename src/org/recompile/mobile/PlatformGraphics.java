@@ -158,7 +158,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	protected boolean usePictoColor = false;
 	protected boolean contextDisposed = false;
 
-	private static final String fastForwardIndicator = "⯈⯈";
+	private static final String ffIndicator = "▶▶";
 	private static final String pauseIndicator = "PAUSED!";
 
 	private static final Font HUDFont = new Font(Font.FACE_MONOSPACE, Font.STYLE_BOLD, Font.SIZE_LARGE);
@@ -3356,16 +3356,20 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public final void drawFastForwardIndicator()
 	{
-		int tmpColor = getColor();
-		Font tmpFont = getFont();
-		setAlphaRGB(0x90000000);
-		gc.fillRect(0, 0, canvasWidth, canvasHeight);
-		setFont(HUDFont);
-		setColor(0xFFFFAF00);
-		int x = (canvasWidth - HUDFont.stringWidth(fastForwardIndicator)) / 2;
-		gc.drawString(fastForwardIndicator, x, HUDFont.getHeight());
-		setColor(tmpColor);
-		setFont(tmpFont);
+		try
+		{
+			int tmpColor = getColor();
+			Font tmpFont = getFont();
+			setAlphaRGB(0x90000000);
+			gc.fillRect(0, 0, canvasWidth, canvasHeight);
+			setFont(HUDFont);
+			setColor(0xFFFFAF00);
+			int x = (canvasWidth - HUDFont.stringWidth(ffIndicator)) / 2;
+			gc.drawString(ffIndicator, x, HUDFont.getHeight());
+			setColor(tmpColor);
+			setFont(tmpFont);
+		}
+		catch (Exception e) { } // We don't care about exceptions here.
 	}
 
 	public final void drawPauseIndicator()
