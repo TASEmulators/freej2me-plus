@@ -5,8 +5,8 @@
 *    Class compilation
 ****************************************************
 -->
-	<property name="source.version" value="1.6"/>
-	<property name="target.version" value="1.6"/>
+	<property name="source.version" value="1.5"/>
+	<property name="target.version" value="1.5"/>
 
 	<mkdir dir="build/classes"/>
 	<mkdir dir="build/classes/org/objectweb"/>

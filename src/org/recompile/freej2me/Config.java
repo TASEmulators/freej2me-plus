@@ -288,7 +288,7 @@ public class Config
 				{
 					String key = parts[0].trim();
 					String val = parts[1].trim();
-					if (!key.isEmpty() && !val.isEmpty())
+					if (key.length() != 0 && val.length() != 0)
 					{
 						targetMap.put(key, val);
 					}

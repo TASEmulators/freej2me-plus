@@ -21,7 +21,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SipServerConnectionImpl extends SipConnectionImpl implements SipServerConnection 
+public class SipServerConnectionImpl extends SipConnectionImpl implements SipServerConnection
 {
 
     private String currentState;
@@ -29,28 +29,28 @@ public class SipServerConnectionImpl extends SipConnectionImpl implements SipSer
     private int statusCode;
     private String reasonPhrase;
 
-    public SipServerConnectionImpl() 
+    public SipServerConnectionImpl()
     {
         super();
         this.headers = new HashMap<String, String>();
     }
 
-    public void initResponse(int code) throws IllegalArgumentException, SipException 
+    public void initResponse(int code) throws IllegalArgumentException, SipException
     {
         if (currentState.equals("RequestReceived")) { throw new SipException(SipException.INVALID_STATE); }
         if (code < 100 || code > 699) { throw new IllegalArgumentException("Invalid status code"); }
-        
+
         this.statusCode = code;
         this.reasonPhrase = "OK";
 
         currentState = "Initialized";
     }
 
-    public void setReasonPhrase(String phrase) throws SipException 
+    public void setReasonPhrase(String phrase) throws SipException
     {
         if (currentState != "Initialized") { throw new SipException(SipException.INVALID_STATE); }
 
-        if (phrase == null || phrase.isEmpty()) { this.reasonPhrase = ""; } 
+        if (phrase == null || phrase.length() == 0) { this.reasonPhrase = ""; }
         else { this.reasonPhrase = phrase; }
     }
 }

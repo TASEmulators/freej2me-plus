@@ -19,7 +19,7 @@ package javax.microedition.theme;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SkinManager 
+public class SkinManager
 {
 
     private final String application;
@@ -29,26 +29,26 @@ public class SkinManager
     // Private constructor to enforce singleton pattern
     private SkinManager(String application) { this.application = application; }
 
-    public static SkinManager getInstance(String application) 
+    public static SkinManager getInstance(String application)
     {
-        if (application == null || application.isEmpty() || !application.matches("^[^:]+:[^:]+:[^:]+$")) 
+        if (application == null || application.length() == 0 || !application.matches("^[^:]+:[^:]+:[^:]+$"))
         {
             throw new IllegalArgumentException("Invalid application format. Must be name:version:vendor.");
         }
         return new SkinManager(application);
     }
 
-    public void activateSkin(String name) throws SkinException 
+    public void activateSkin(String name) throws SkinException
     {
         for (SkinListener listener : listeners) { listener.skinActivated(activeSkin, null); }
     }
 
-    public void addSkinListener(SkinListener listener) 
+    public void addSkinListener(SkinListener listener)
     {
         if (listener != null && !listeners.contains(listener)) { listeners.add(listener); }
     }
 
-    public void createSkin(String skinLocator, String name) throws SkinException, ModifyNotSupportedException 
+    public void createSkin(String skinLocator, String name) throws SkinException, ModifyNotSupportedException
     {
         for (SkinListener listener : listeners) { listener.skinCreated(null); }
     }
@@ -59,7 +59,7 @@ public class SkinManager
 
     public String[] getSkins() { return null; }
 
-    public void removeSkin(String name) throws SkinException 
+    public void removeSkin(String name) throws SkinException
     {
         for (SkinListener listener : listeners) { listener.skinRemoved(name, null); }
     }

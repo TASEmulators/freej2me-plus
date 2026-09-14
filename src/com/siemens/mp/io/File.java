@@ -29,7 +29,7 @@ import java.util.Map;
 
 import org.recompile.mobile.Mobile;
 
-public class File 
+public class File
 {
     public static final int INSIDE_STORAGE_PATH = 1;
     public static final int OUTSIDE_STORAGE_PATH = 0;
@@ -40,21 +40,21 @@ public class File
 
     public File() { }
 
-    public static String buildPath(String fileName) 
-    { 
+    public static String buildPath(String fileName)
+    {
         Mobile.log(Mobile.LOG_ERROR, File.class.getPackage().getName() + "." + File.class.getSimpleName() + ": " + "buildPath(string) not implemented");
         return fileName;
     }
 
-    public static int checkFileName(String fileName) 
-    { 
+    public static int checkFileName(String fileName)
+    {
         return fileName.indexOf(':') == -1 ? INSIDE_STORAGE_PATH : OUTSIDE_STORAGE_PATH;
     }
 
     public int close(int fileDescriptor) throws IOException
-    { 
+    {
         RandomAccessFile closeFile = openFiles.get(fileDescriptor);
-		if (closeFile != null) 
+		if (closeFile != null)
         {
 			openFiles.remove(fileDescriptor);
 			closeFile.close();
@@ -65,26 +65,26 @@ public class File
     }
 
     public static int copy(String source, String dest) throws IOException
-    { 
+    {
         java.io.File sourceFile = findFile(source);
 		java.io.File destFile = findFile(dest);
 		FileInputStream fis = new FileInputStream(sourceFile);
-		try 
+		try
         {
 			FileChannel sourceChannel = fis.getChannel();
-			try 
+			try
             {
 				FileOutputStream fos = new FileOutputStream(destFile);
-				try 
+				try
                 {
 					FileChannel destChannel = fos.getChannel();
-					try { destChannel.transferFrom(sourceChannel, 0, sourceChannel.size()); } 
+					try { destChannel.transferFrom(sourceChannel, 0, sourceChannel.size()); }
                     finally { destChannel.close(); }
-				} 
+				}
                 finally { fos.close(); }
-			} 
+			}
             finally { sourceChannel.close(); }
-		} 
+		}
         finally { fis.close(); }
 
         Mobile.log(Mobile.LOG_ERROR, File.class.getPackage().getName() + "." + File.class.getSimpleName() + ": " + "could not copy data from " + source + " to " + dest);
@@ -92,18 +92,18 @@ public class File
     }
 
     public static int debugWrite(String fileName, String infoString) throws IOException
-    { 
+    {
         try
         {
             FileWriter writer = new FileWriter(fileName, true);
-            writer.write(infoString + System.lineSeparator());
+            writer.write(infoString + "\n");
             writer.flush();
             writer.close();
             return 1;
-        } 
-        catch (IOException e) { throw new IOException("Failed to write to the file: " + e.getMessage(), e); }
+        }
+        catch (IOException e) { throw new IOException("Failed to write to the file: " + e.getMessage()); }
     }
-    
+
     public static int delete(String fileName) throws IOException { return findFile(fileName).delete() ? 1 : -1; }
 
 	public static int exists(String fileName) throws IOException { return findFile(fileName).exists() ? 1 : -1; }
@@ -111,7 +111,7 @@ public class File
     public static boolean isDirectory(String pathName) throws IOException { return findFile(pathName).isDirectory(); }
 
     public int seek(int fileDescriptor, int seekpos) throws IOException
-    { 
+    {
         RandomAccessFile file = openFiles.get(fileDescriptor);
 		if (file == null) { return -1; }
 
@@ -120,7 +120,7 @@ public class File
     }
 
     public int length(int fileDescriptor) throws IOException
-    { 
+    {
         RandomAccessFile file = openFiles.get(fileDescriptor);
 		if (file == null) { return -1; }
 
@@ -128,7 +128,7 @@ public class File
     }
 
     public static String[] list(String pathName) throws IOException
-    { 
+    {
 		String[] files = findFile(pathName).list();
 		if (files == null) { return new String[0]; }
 
@@ -137,7 +137,7 @@ public class File
     }
 
     public int open(String fileName) throws IOException
-    { 
+    {
         Mobile.log(Mobile.LOG_DEBUG, File.class.getPackage().getName() + "." + File.class.getSimpleName() + ": " + "Opening:" + fileName);
         java.io.File file = findFile(fileName);
 		RandomAccessFile rfile = new RandomAccessFile(file, "rw");
@@ -146,7 +146,7 @@ public class File
     }
 
     public int read(int fileDescriptor, byte[] buf, int offset, int numBytes) throws IOException
-    { 
+    {
         Mobile.log(Mobile.LOG_DEBUG, File.class.getPackage().getName() + "." + File.class.getSimpleName() + ": " + "Opening:" + fileDescriptor);
         RandomAccessFile file = openFiles.get(fileDescriptor);
 		if (file == null) { return -1; }
@@ -157,13 +157,13 @@ public class File
     public static int rename(String source, String dest) throws IOException { return findFile(source).renameTo(findFile(dest)) ? 1 : -1; }
 
     public static int spaceAvailable() throws IOException
-    { 
+    {
         Mobile.log(Mobile.LOG_WARNING, File.class.getPackage().getName() + "." + File.class.getSimpleName() + ": " + "spaceAvailable() measurements not implemented");
         return Integer.MAX_VALUE;
     }
 
     public static void truncate(int fileDescriptor, int size) throws IOException
-    { 
+    {
         RandomAccessFile file = openFiles.get(fileDescriptor);
 		if (file == null) { return; }
 
@@ -171,7 +171,7 @@ public class File
     }
 
     public int write(int fileDescriptor, byte[] buf, int offset, int numBytes) throws IOException
-    { 
+    {
         RandomAccessFile file = openFiles.get(fileDescriptor);
 		if (file == null) { return -1; }
 
@@ -185,8 +185,8 @@ public class File
         java.io.File file;
 		int colon = fileName.indexOf(':');
 
-		if (colon == -1) { file = new java.io.File(Mobile.SIEMENS_DATA_PATH, fileName); } 
-        else 
+		if (colon == -1) { file = new java.io.File(Mobile.SIEMENS_DATA_PATH, fileName); }
+        else
         {
 			fileName = fileName.substring(colon + 2);
 			file = new java.io.File(Mobile.SIEMENS_DATA_PATH, fileName);

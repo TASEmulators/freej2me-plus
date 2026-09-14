@@ -471,7 +471,7 @@ public final class FJGUI
 
 	final JTextArea logArea = new JTextArea();
 	final JTextArea memArea = new JTextArea();
-	final Font dialogFont = new Font(Font.DIALOG, Font.BOLD, 12);
+	final Font dialogFont = new Font("Dialog", Font.BOLD, 12);
 
 	private StringBuilder debugContent = null;
 	private BufferedReader logReader = null;
@@ -491,16 +491,16 @@ public final class FJGUI
 		for(int i = 0; i < inputButtons.length; i++)
 		{
 			inputButtons[i].setMargin(new Insets(0, 0, 0, 0));
-			inputButtons[i].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+			inputButtons[i].setFont(new Font("Dialog", Font.BOLD, 10));
 			flattenButton(inputButtons[i]);
 
 			gamepadButtons[i].setMargin(new Insets(0, 0, 0, 0));
-			gamepadButtons[i].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+			gamepadButtons[i].setFont(new Font("Dialog", Font.BOLD, 10));
 			flattenButton(gamepadButtons[i]);
 		}
 		// Same for the gamepad refresh button
 		swingButtons[7].setMargin(new Insets(0, 0, 0, 0));
-		swingButtons[7].setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+		swingButtons[7].setFont(new Font("Dialog", Font.BOLD, 10));
 		flattenButton(swingButtons[7]);
 
 		// The gamepad name area on the input map menu must only span 1 row.
@@ -508,7 +508,7 @@ public final class FJGUI
 		gamepadName.setEditable(false);
 		gamepadName.setForeground(Color.BLACK);
 		gamepadName.setBackground(new Color(238, 238, 238));
-		gamepadName.setFont(new Font(Font.DIALOG, Font.BOLD, 10));
+		gamepadName.setFont(new Font("Dialog", Font.BOLD, 10));
 
 		swingDialogs[1].setLayout( new FlowLayout(FlowLayout.CENTER, 200, 0));
 		swingDialogs[1].setUndecorated(true); /* Whenever a JDialog is undecorated, it's because it's meant to look like an internal menu on FreeJ2ME's main JFrame */
@@ -969,7 +969,7 @@ public final class FJGUI
 					if ("Waiting...".equals(inputButton.getText()))
 					{
 						String savedName = isGamepad ? gamepadKeyNames[buttonIndex] : KeyEvent.getKeyText(inputKeycodes[buttonIndex]);
-						inputButton.setText((savedName != null && !savedName.isEmpty()) ? savedName : "");
+						inputButton.setText((savedName != null && savedName.length() != 0) ? savedName : "");
 					}
 				}
 			});

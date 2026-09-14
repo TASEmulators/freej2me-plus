@@ -18,11 +18,11 @@ package com.jblend.net;
 
 import java.net.URLEncoder;
 
-public class HttpUrlEncoder 
+public class HttpUrlEncoder
 {
-    public static String encode(String url) 
+    public static String encode(String url)
     {
-        if (url == null || url.isEmpty()) { throw new IllegalArgumentException("Invalid URL string"); }
+        if (url == null || url.length() == 0) { throw new IllegalArgumentException("Invalid URL string"); }
 
         try { return URLEncoder.encode(url, "UTF-8"); }
 		catch (Exception e) { return url; }

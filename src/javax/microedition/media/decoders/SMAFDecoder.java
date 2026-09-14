@@ -18,7 +18,6 @@ package javax.microedition.media.decoders;
 
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -120,6 +119,67 @@ public final class SMAFDecoder
 	};
 
 	// These are used only for debugging
+	private static class SimpleEntry<K, V> implements Map.Entry<K, V>
+	{
+	    private final K key;
+	    private V value;
+
+	    public SimpleEntry(K key, V value)
+	    {
+	        this.key = key;
+	        this.value = value;
+	    }
+
+	    public SimpleEntry(Map.Entry<? extends K, ? extends V> entry)
+	    {
+	        this.key = entry.getKey();
+	        this.value = entry.getValue();
+	    }
+
+	    public K getKey()
+	    {
+	        return key;
+	    }
+
+	    public V getValue()
+	    {
+	        return value;
+	    }
+
+	    public V setValue(V value)
+	    {
+	        V oldValue = this.value;
+	        this.value = value;
+	        return oldValue;
+	    }
+
+	    public boolean equals(Object o)
+	    {
+	        if (!(o instanceof Map.Entry))
+	        {
+	            return false;
+	        }
+	        Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
+	        return eq(key, e.getKey()) && eq(value, e.getValue());
+	    }
+
+	    public int hashCode()
+	    {
+	        return (key == null ? 0 : key.hashCode()) ^
+	               (value == null ? 0 : value.hashCode());
+	    }
+
+	    public String toString()
+	    {
+	        return key + "=" + value;
+	    }
+
+	    private static boolean eq(Object o1, Object o2)
+	    {
+	        return o1 == null ? o2 == null : o1.equals(o2);
+	    }
+	}
+
 	private static final String[] formatTypes = {"Handy Phone Standard (MA-1/2)", "Mobile Standard (MA-3/5) - Compressed", "Mobile Standard (MA-3/5) - Not Compressed", "Yamaha MA-7 (Unsupported)", "Extended Voice/Softbank"};
 	private static final String[] sequenceTypes = {"Stream Sequence", "Sub-Sequence (UNTESTED)"};
 	private static final String[] channelTypes = {"No Care", "Melody", "No Melody", "Rhythm"};

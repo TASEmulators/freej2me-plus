@@ -30,22 +30,22 @@ public final class ThemeMetadata {
     private final MediaObject icon;
 
     public ThemeMetadata(Hashtable<String, String> titles, Hashtable<String, String> descriptions,
-                         String defaultLocale, String author, Date created, Date modified, MediaObject icon) 
+                         String defaultLocale, String author, Date created, Date modified, MediaObject icon)
     {
         if (titles == null || descriptions == null || defaultLocale == null || author == null ||
             created == null || modified == null || titles.isEmpty() || descriptions.isEmpty() ||
-            !titles.containsKey(defaultLocale)) 
+            !titles.containsKey(defaultLocale))
         {
             throw new IllegalArgumentException("Invalid parameters for ThemeMetadata");
         }
-        
+
         this.titles = titles;
         this.descriptions = descriptions;
         this.defaultLocale = defaultLocale;
         this.author = author;
         this.created = created;
         this.modified = modified;
-        this.icon = icon; 
+        this.icon = icon;
     }
 
     public String getAuthor() { return author; }
@@ -54,21 +54,23 @@ public final class ThemeMetadata {
 
     public String getDefaultLocale() { return defaultLocale; }
 
-    public String getDescription(String locale) 
+    public String getDescription(String locale)
     {
         if (locale == null) { throw new NullPointerException("Locale cannot be null"); }
 
-        return descriptions.getOrDefault(locale, descriptions.get(defaultLocale));
+        String desc = (String) descriptions.get(locale);
+        return (desc != null) ? desc : (String) descriptions.get(defaultLocale);
     }
 
     public MediaObject getIcon() { return icon; }
 
     public Date getModified() { return modified; }
 
-    public String getTitle(String locale) 
+    public String getTitle(String locale)
     {
         if (locale == null) { throw new NullPointerException("Locale cannot be null"); }
 
-        return titles.getOrDefault(locale, titles.get(defaultLocale));
+        String title = (String) titles.get(locale);
+        return (title != null) ? title : (String) titles.get(defaultLocale);
     }
 }

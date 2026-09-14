@@ -126,11 +126,11 @@ public class M3GMath
 	public static final float atan2(float y, float x)
 	{
 		final float abs_y = abs(y) + 1e-10f;
-		final float r = (x - Math.copySign(abs_y, x)) / (abs_y + abs(x));
-		float angle = (float) (Math.PI * 0.5) - Math.copySign((float) (Math.PI * 0.25), x);
+		final float r = (x - copySign(abs_y, x)) / (abs_y + abs(x));
+		float angle = (float) (Math.PI * 0.5) - copySign((float) (Math.PI * 0.25), x);
 
 		angle += (0.1963f * r * r - 0.9817f) * r;
-		return Math.copySign(angle, y); // Negate if y is negative
+		return copySign(angle, y); // Negate if y is negative
 	}
 
 	// Fast float reciprocal (1 / x) using two Newton-Raphson steps
@@ -315,5 +315,12 @@ public class M3GMath
 		}
 
 		return normalizeQuat(rot);
+	}
+
+	private static float copySign(float magnitude, float sign)
+	{
+	    boolean signBit = (Float.floatToIntBits(sign) & 0x80000000) != 0;
+	    float absVal = Math.abs(magnitude);
+	    return signBit ? -absVal : absVal;
 	}
 }

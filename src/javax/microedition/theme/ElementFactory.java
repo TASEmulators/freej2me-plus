@@ -16,22 +16,22 @@
 */
 package javax.microedition.theme;
 
-public class ElementFactory 
+public class ElementFactory
 {
 
-    public static Element createColorElement(String feature, String role, int argb) throws ModifyNotSupportedException 
+    public static Element createColorElement(String feature, String role, int argb) throws ModifyNotSupportedException
     {
         validateParameters(feature, role);
-        return null; 
+        return null;
     }
 
     public static Element createElementGroup(String feature, String role, Element[] initialElements)
-            throws ElementException, ModifyNotSupportedException 
+            throws ElementException, ModifyNotSupportedException
     {
         if (initialElements == null || initialElements.length == 0) { throw new IllegalArgumentException("Initial elements cannot be empty."); }
         validateParameters(feature, role);
 
-        for (Element element : initialElements) 
+        for (Element element : initialElements)
         {
             if (element == null) { throw new NullPointerException("Element cannot be null."); }
             if (!element.getFeature().equals(feature)) { throw new ElementException("Feature mismatch.", feature, role); }
@@ -40,50 +40,50 @@ public class ElementFactory
         return null;
     }
 
-    public static Element createFloatElement(String feature, String role, float value) throws ModifyNotSupportedException 
+    public static Element createFloatElement(String feature, String role, float value) throws ModifyNotSupportedException
     {
         validateParameters(feature, role);
-        return null; 
+        return null;
     }
 
     public static Element createFontElement(String feature, String role, String name, int style, int size)
-            throws ModifyNotSupportedException 
+            throws ModifyNotSupportedException
     {
         validateParameters(feature, role);
-        if (name == null || name.isEmpty()) { throw new IllegalArgumentException("Font name cannot be empty."); }
+        if (name == null || name.length() == 0) { throw new IllegalArgumentException("Font name cannot be empty."); }
         if (size < 0) { throw new IllegalArgumentException("Size must be non-negative."); }
-        return null; 
+        return null;
     }
 
-    public static Element createIntegerElement(String feature, String role, int value) throws ModifyNotSupportedException 
+    public static Element createIntegerElement(String feature, String role, int value) throws ModifyNotSupportedException
     {
         validateParameters(feature, role);
-        return null; 
+        return null;
     }
 
     public static Element createMediaElement(String feature, String role, String kind, MediaObject content)
-            throws ModifyNotSupportedException 
+            throws ModifyNotSupportedException
     {
         validateParameters(feature, role);
         if (content == null) { throw new NullPointerException("Media content cannot be null."); }
         if (!isValidMediaKind(kind)) { throw new IllegalArgumentException("Invalid media kind."); }
-       return null; 
+       return null;
     }
 
-    public static Element createStringElement(String feature, String role, String value) throws ModifyNotSupportedException 
+    public static Element createStringElement(String feature, String role, String value) throws ModifyNotSupportedException
     {
         validateParameters(feature, role);
         if (value == null) { throw new NullPointerException("Value cannot be null."); }
-        return null; 
+        return null;
     }
 
-    private static void validateParameters(String feature, String role) 
+    private static void validateParameters(String feature, String role)
     {
         if (feature == null || role == null) { throw new NullPointerException("Feature and role cannot be null."); }
-        if (feature.isEmpty() || role.isEmpty()) { throw new IllegalArgumentException("Feature and role cannot be empty."); }
+        if (feature.length() == 0 || role.length() == 0) { throw new IllegalArgumentException("Feature and role cannot be empty."); }
     }
 
-    private static boolean isValidMediaKind(String kind) 
+    private static boolean isValidMediaKind(String kind)
     {
         return kind.equals(Element.KIND_GRAPHIC) || kind.equals(Element.KIND_SOUND) || kind.equals(Element.KIND_VIDEO);
     }

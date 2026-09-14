@@ -19,32 +19,32 @@ package javax.microedition.sip;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SipHeader 
+public class SipHeader
 {
 
     private String name;
     private String headerValue;
     private final Map<String, String> parameters = new HashMap<String, String>();
 
-    public SipHeader(String name, String headerValue) 
+    public SipHeader(String name, String headerValue)
     {
         if (name == null) { throw new NullPointerException("Header name cannot be null"); }
-        if (name.trim().isEmpty() || headerValue == null) { throw new IllegalArgumentException("Invalid header name or value"); }
+        if (name.trim().length() == 0 || headerValue == null) { throw new IllegalArgumentException("Invalid header name or value"); }
 
         this.name = name.trim();
         this.headerValue = headerValue != null ? headerValue.trim() : "";
         parseHeaderValue();
     }
 
-    private void parseHeaderValue() 
+    private void parseHeaderValue()
     {
         int paramStart = headerValue.indexOf(';');
-        if (paramStart != -1) 
+        if (paramStart != -1)
         {
             String valuePart = headerValue.substring(0, paramStart).trim();
             this.headerValue = valuePart;
             String[] paramPairs = headerValue.substring(paramStart + 1).split(";");
-            for (String pair : paramPairs) 
+            for (String pair : paramPairs)
             {
                 String[] parts = pair.split("=", 2);
                 String key = parts[0].trim();
@@ -54,7 +54,7 @@ public class SipHeader
         }
     }
 
-    public String getHeaderValue() 
+    public String getHeaderValue()
     {
         return headerValue + (parameters.isEmpty() ? "" : ";" + getParametersAsString());
     }
@@ -69,31 +69,31 @@ public class SipHeader
 
     public void removeParameter(String name) { parameters.remove(name); }
 
-    public void setName(String name) 
+    public void setName(String name)
     {
         if (name == null) { throw new NullPointerException("Header name cannot be null"); }
 
         this.name = name.trim();
     }
 
-    public void setParameter(String name, String value) 
+    public void setParameter(String name, String value)
     {
         if (name == null) { throw new NullPointerException("Parameter name cannot be null"); }
 
         parameters.put(name.trim(), value != null ? value.trim() : "");
     }
 
-    public void setValue(String value) 
+    public void setValue(String value)
     {
         if (value != null && value.contains(";")) { throw new IllegalArgumentException("Header value cannot include parameters"); }
 
         this.headerValue = value != null ? value.trim() : "";
     }
 
-    private String getParametersAsString() 
+    private String getParametersAsString()
     {
         StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, String> entry : parameters.entrySet()) 
+        for (Map.Entry<String, String> entry : parameters.entrySet())
         {
             sb.append(entry.getKey()).append("=");
             sb.append(entry.getValue()).append("; ");

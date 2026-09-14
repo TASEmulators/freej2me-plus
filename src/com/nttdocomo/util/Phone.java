@@ -18,36 +18,36 @@ package com.nttdocomo.util;
 
 import com.nttdocomo.lang.XString;
 
-public class Phone 
+public class Phone
 {
     public static final String TEL_AV = "tel-av:";
     public static final String TERMINAL_ID = "terminal-id";
     public static final String UIM_VERSION = "uim-version";
     public static final String USER_ID = "user-id";
 
-	public static void call(String phoneNumber) 
+	public static void call(String phoneNumber)
     {
         if (phoneNumber == null) { throw new NullPointerException("phoneNumber cannot be null"); }
         if (!isValidPhoneNumber(phoneNumber)) { throw new IllegalArgumentException("Invalid phone number"); }
     }
 
-    public static void call(XString phoneNumber) 
+    public static void call(XString phoneNumber)
     {
         if (phoneNumber == null) { throw new NullPointerException("phoneNumber cannot be null"); }
         call(phoneNumber.toString());
     }
 
-    public static void call(String telType, XString phoneNumber) 
+    public static void call(String telType, XString phoneNumber)
     {
         if (!TEL_AV.equals(telType)) { throw new IllegalArgumentException("Invalid telType. Must be 'tel-av:'"); }
         if (phoneNumber == null) { throw new NullPointerException("phoneNumber cannot be null"); }
         call(phoneNumber.toString());
     }
 
-    public static String getProperty(String key) 
+    public static String getProperty(String key)
 	{
         if (key == null) { throw new NullPointerException("key cannot be null"); }
-        if (key.isEmpty()) { throw new IllegalArgumentException("key cannot be empty"); }
+        if (key.length() == 0) { throw new IllegalArgumentException("key cannot be empty"); }
 
         if(key.equals(TERMINAL_ID)) { return getTerminalId(); }
         if(key.equals(USER_ID)) { return getUserId(); }

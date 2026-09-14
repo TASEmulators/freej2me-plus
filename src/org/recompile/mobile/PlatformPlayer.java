@@ -816,7 +816,8 @@ public class PlatformPlayer implements Player
 					System.arraycopy(data, offset + 1, sysExData, 0, length - 2); // Exclude the 0xF0 and 0xF7
 
 					// Create the SysexMessage
-					SysexMessage sysexMessage = new SysexMessage(0xF0, sysExData, sysExData.length);
+					SysexMessage sysexMessage = new SysexMessage();
+					sysexMessage.setMessage(0xF0, sysExData, sysExData.length);
 					player.receiver.send(sysexMessage, player.getMediaTime() + 50000L); // Send the message
 				}
 				else // If it is not, send data as a series of short messages (probably implemented incorrectly, and being untested only makes things worse)
@@ -1197,12 +1198,16 @@ public class PlatformPlayer implements Player
 					int microsecondsPerBeat = 60000000 / (tempo * 4);
 					try
 					{
-						track.add(new MidiEvent(new MetaMessage(0x51, new byte[]
+						byte[] tempoData = new byte[]
 						{
 							(byte)(microsecondsPerBeat >> 16),
 							(byte)(microsecondsPerBeat >> 8),
 							(byte)(microsecondsPerBeat)
-						}, 3), currentTick));
+						};
+
+						MetaMessage metaMessage = new MetaMessage();
+						metaMessage.setMessage(0x51, tempoData, 3);
+						track.add(new MidiEvent(metaMessage, currentTick));
 					}
 					catch (InvalidMidiDataException e) {Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Invalid TEMPO event: " + e.getMessage());}
 				}
@@ -1219,11 +1224,13 @@ public class PlatformPlayer implements Player
 			int noteDuration = duration; // Use duration directly as tick increment
 
 			// Note on event with velocity set to currentVolume
-			ShortMessage noteOn = new ShortMessage(ShortMessage.NOTE_ON, 0, midiNote, volume);
+			ShortMessage noteOn = new ShortMessage();
+			noteOn.setMessage(ShortMessage.NOTE_ON, 0, midiNote, volume);
 			track.add(new MidiEvent(noteOn, tick)); // Start immediately
 
 			// Note off event
-			ShortMessage noteOff = new ShortMessage(ShortMessage.NOTE_OFF, 0, midiNote, tick + noteDuration);
+			ShortMessage noteOff = new ShortMessage();
+			noteOff.setMessage(ShortMessage.NOTE_OFF, 0, midiNote, 0);
 			track.add(new MidiEvent(noteOff, tick + noteDuration)); // End after the duration
 		}
 	}

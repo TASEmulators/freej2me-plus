@@ -16,39 +16,39 @@
 */
 package javax.microedition.theme;
 
-public class Capabilities 
+public class Capabilities
 {
 
-    public static String[] getSupportedKinds(String feature, String role) 
+    public static String[] getSupportedKinds(String feature, String role)
     {
         if (feature == null || role == null) { throw new NullPointerException(); }
-        if (feature.isEmpty() || role.isEmpty()) { throw new IllegalArgumentException(); }
-        
+        if (feature.length() == 0 || role.length() == 0) { throw new IllegalArgumentException(); }
+
         return null;
     }
 
-    public static String[] getSupportedMediaTypes(String feature, String role, String kind) throws ElementNotFoundException 
+    public static String[] getSupportedMediaTypes(String feature, String role, String kind) throws ElementNotFoundException
     {
         if (feature == null || role == null || kind == null) { throw new NullPointerException(); }
-        if (feature.isEmpty() || role.isEmpty() || kind.isEmpty()) { throw new IllegalArgumentException(); }
+        if (feature.length() == 0 || role.length() == 0 || kind.length() == 0) { throw new IllegalArgumentException(); }
 
         return null;
     }
 
-    public static boolean isBaseElementSupported(String feature, String role) 
+    public static boolean isBaseElementSupported(String feature, String role)
     {
         if (feature == null || role == null) { throw new NullPointerException(); }
-        if (feature.isEmpty() || role.isEmpty()) { throw new IllegalArgumentException(); }
-        
+        if (feature.length() == 0 || role.length() == 0) { throw new IllegalArgumentException(); }
+
         return false;
     }
 
     public static boolean isCustomizationPolicyEnabled() { return false; }
 
-    public static boolean isElementCustomizable(String feature, String role) throws ElementNotFoundException 
+    public static boolean isElementCustomizable(String feature, String role) throws ElementNotFoundException
     {
         if (feature == null || role == null) { throw new NullPointerException(); }
-        if (feature.isEmpty() || role.isEmpty()) { throw new IllegalArgumentException(); }
+        if (feature.length() == 0 || role.length() == 0) { throw new IllegalArgumentException(); }
 
         return false;
     }

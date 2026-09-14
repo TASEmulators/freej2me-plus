@@ -16,7 +16,7 @@
 */
 package javax.microedition.pki;
 
-public final class UserCredentialManager 
+public final class UserCredentialManager
 {
 
     public static final String ALGORITHM_RSA = "1.2.840.113549.1.1.1";
@@ -26,28 +26,28 @@ public final class UserCredentialManager
 
     public static byte[] generateCSR(String nameInfo, String algorithm, int keyLen, int keyUsage,
                                       String securityElementID, String securityElementPrompt,
-                                      boolean forceKeyGen) throws UserCredentialManagerException, javax.microedition.securityservice.CMSMessageSignatureServiceException 
+                                      boolean forceKeyGen) throws UserCredentialManagerException, javax.microedition.securityservice.CMSMessageSignatureServiceException
     {
-        if (nameInfo == null || algorithm == null || keyLen <= 0 || (keyUsage != KEY_USAGE_AUTHENTICATION && keyUsage != KEY_USAGE_NON_REPUDIATION)) 
+        if (nameInfo == null || algorithm == null || keyLen <= 0 || (keyUsage != KEY_USAGE_AUTHENTICATION && keyUsage != KEY_USAGE_NON_REPUDIATION))
         {
             throw new IllegalArgumentException("Invalid parameters");
         }
 
-        return new byte[0]; 
+        return new byte[0];
     }
 
-    public static boolean addCredential(String certDisplayName, byte[] pkiPath, String uri) throws UserCredentialManagerException 
+    public static boolean addCredential(String certDisplayName, byte[] pkiPath, String uri) throws UserCredentialManagerException
     {
-        if (certDisplayName == null || certDisplayName.isEmpty() || pkiPath == null) { throw new IllegalArgumentException("Invalid parameters"); }
-        
+        if (certDisplayName == null || certDisplayName.length() == 0 || pkiPath == null) { throw new IllegalArgumentException("Invalid parameters"); }
+
         return true;
     }
 
     public static boolean removeCredential(String certDisplayName, byte[] issuerAndSerialNumber,
-                                            String securityElementID, String securityElementPrompt) throws UserCredentialManagerException 
+                                            String securityElementID, String securityElementPrompt) throws UserCredentialManagerException
     {
-        if (certDisplayName == null || certDisplayName.isEmpty() || issuerAndSerialNumber == null) { throw new IllegalArgumentException("Invalid parameters"); }
-        
+        if (certDisplayName == null || certDisplayName.length() == 0 || issuerAndSerialNumber == null) { throw new IllegalArgumentException("Invalid parameters"); }
+
         return true;
     }
 }

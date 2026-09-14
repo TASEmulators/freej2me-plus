@@ -16,7 +16,7 @@
 */
 package javax.microedition.xml.rpc;
 
-public class Type 
+public class Type
 {
     public static final Type BOOLEAN = new Type(0);
     public static final Type BYTE = new Type(1);
@@ -31,13 +31,13 @@ public class Type
 
     protected Type() { value = 0; }
 
-    private Type(int value) 
+    private Type(int value)
     {
         this.value = value;
     }
-    
+
     @Override
-    public boolean equals(Object obj) 
+    public boolean equals(Object obj)
     {
         if (this == obj) { return true; }
         if (!(obj instanceof Type)) { return false; }
@@ -47,15 +47,12 @@ public class Type
     }
 
     @Override
-    public int hashCode() 
-    {
-        return Integer.hashCode(value);
-    }
+    public int hashCode() { return value; }
 
     @Override
-    public String toString() 
+    public String toString()
     {
-        switch (value) 
+        switch (value)
         {
             case 0: return "BOOLEAN";
             case 1: return "BYTE";

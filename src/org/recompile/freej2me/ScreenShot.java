@@ -23,8 +23,6 @@ import javax.imageio.ImageIO;
 import java.lang.Exception;
 import java.util.Date;
 import java.text.SimpleDateFormat;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class ScreenShot
 {
@@ -54,7 +52,7 @@ public class ScreenShot
 					Mobile.log(Mobile.LOG_ERROR, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + "Problem Creating Screenshot Path "+ screenshotPath);
 					Mobile.log(Mobile.LOG_ERROR, ScreenShot.class.getPackage().getName() + "." + ScreenShot.class.getSimpleName() + ": " + e.getMessage());
 				}
-				fileName = screenshotPath + "/Screenshot from " + 
+				fileName = screenshotPath + "/Screenshot from " +
 							dateFormat.format(date) + ".png";
 			}
 

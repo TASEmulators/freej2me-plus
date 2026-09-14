@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public final class Formatter 
+public final class Formatter
 {
     public static final int DATE_LONG = 1;
     public static final int DATE_SHORT = 0;
@@ -36,10 +36,10 @@ public final class Formatter
     private Locale locale;
     private static final Map<String, Locale> supportedLocales = new HashMap<String, Locale>();
 
-    static 
+    static
     {
         // Populate the list of supported locales with a few most common ones
-        
+
         supportedLocales.put("en-US", Locale.US); // English (United States)
         supportedLocales.put("en-UK", Locale.UK); // English (United Kingdom)
         supportedLocales.put("fr-FR", Locale.FRANCE); // French (France)
@@ -58,16 +58,16 @@ public final class Formatter
         supportedLocales.put("tr-TR", new Locale("tr", "TR")); // Turkish (Turkey)
     }
 
-    public Formatter() 
+    public Formatter()
     {
         String systemLocale = System.getProperty("microedition.locale");
         supportedLocales.get(systemLocale);
     }
 
-    public Formatter(String locale) 
+    public Formatter(String locale)
     {
-        if (locale == null || locale.isEmpty()) { this.locale = Locale.getDefault(); } 
-        else 
+        if (locale == null || locale.length() == 0) { this.locale = Locale.getDefault(); }
+        else
         {
             if (!isLocaleSupported(locale)) { throw new UnsupportedLocaleException("Unsupported locale: " + locale); }
 
@@ -75,18 +75,18 @@ public final class Formatter
         }
     }
 
-    public String formatCurrency(double number) 
+    public String formatCurrency(double number)
     {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(locale);
         return formatter.format(number);
     }
 
-    public String formatDateTime(Calendar dateTime, int style) 
+    public String formatDateTime(Calendar dateTime, int style)
     {
         if (dateTime == null) { throw new NullPointerException("dateTime cannot be null"); }
 
         SimpleDateFormat sdf;
-        switch (style) 
+        switch (style)
         {
             case DATE_LONG:
                 sdf = new SimpleDateFormat("EEEE, MMMM d, yyyy", locale);
@@ -112,13 +112,13 @@ public final class Formatter
         return sdf.format(dateTime.getTime());
     }
 
-    public String formatNumber(double number) 
+    public String formatNumber(double number)
     {
         NumberFormat formatter = NumberFormat.getInstance(locale);
         return formatter.format(number);
     }
 
-    public String formatPercentage(float value, int decimals) 
+    public String formatPercentage(float value, int decimals)
     {
         if (decimals < 1 || decimals > 15) { throw new IllegalArgumentException("Decimals must be between 1 and 15"); }
 
@@ -130,13 +130,13 @@ public final class Formatter
 
     public String getLocale() { return locale.toString(); }
 
-    public static String[] getSupportedLocales() 
+    public static String[] getSupportedLocales()
     {
         Set<String> keys = supportedLocales.keySet();
         return keys.toArray(new String[0]);
     }
 
-    public static String formatMessage(String template, String[] params) 
+    public static String formatMessage(String template, String[] params)
     {
         for (int i = 0; i < params.length; i++) {
             template = template.replace("{" + i + "}", params[i]);
@@ -144,7 +144,7 @@ public final class Formatter
         return template;
     }
 
-    public static boolean isLocaleSupported(String locale) 
+    public static boolean isLocaleSupported(String locale)
     {
         if (supportedLocales.containsKey(locale)) { return true; }
 

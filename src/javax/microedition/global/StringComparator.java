@@ -19,7 +19,7 @@ package javax.microedition.global;
 import java.text.Collator;
 import java.util.Locale;
 
-public final class StringComparator 
+public final class StringComparator
 {
     public static final int IDENTICAL = 15;
     public static final int LEVEL1 = 1;
@@ -29,21 +29,21 @@ public final class StringComparator
     private String locale;
     private int level;
 
-    public StringComparator() 
+    public StringComparator()
     {
         this.locale = System.getProperty("microedition.locale");
         this.level = LEVEL1;
         validateLocale();
     }
 
-    public StringComparator(String locale) 
+    public StringComparator(String locale)
     {
         this.locale = locale;
         this.level = LEVEL1;
         validateLocale();
     }
 
-    public StringComparator(String locale, int level) 
+    public StringComparator(String locale, int level)
     {
         this.locale = locale;
         this.level = level;
@@ -51,13 +51,14 @@ public final class StringComparator
         validateLevel();
     }
 
-    public int compare(String s1, String s2) 
+    public int compare(String s1, String s2)
     {
         if (s1 == null || s2 == null) { throw new NullPointerException("Strings cannot be null"); }
 
-        Collator collator = Collator.getInstance(locale != null ? Locale.forLanguageTag(locale) : Locale.getDefault());
-        
-        switch (level) 
+        Locale currentLocale = (locale != null) ? parseLocale(locale) : Locale.getDefault();
+        Collator collator = Collator.getInstance(currentLocale);
+
+        switch (level)
         {
             case LEVEL1:
                 collator.setStrength(Collator.PRIMARY);
@@ -86,15 +87,29 @@ public final class StringComparator
 
     public static String[] getSupportedLocales() { return Formatter.getSupportedLocales(); }
 
-    private void validateLocale() 
+    private void validateLocale()
     {
-        if (locale != null && !locale.isEmpty() && !isLocaleSupported(locale)) { throw new UnsupportedLocaleException("Unsupported locale: " + locale); }
+        if (locale != null && locale.length() != 0 && !isLocaleSupported(locale)) { throw new UnsupportedLocaleException("Unsupported locale: " + locale); }
     }
 
-    private void validateLevel() 
+    private void validateLevel()
     {
         if (level < LEVEL1 || level > IDENTICAL) { throw new IllegalArgumentException("Invalid comparison level: " + level); }
     }
 
     private boolean isLocaleSupported(String locale) { return Formatter.isLocaleSupported(locale); }
+
+    private static Locale parseLocale(String localeStr)
+    {
+        if (localeStr == null || localeStr.length() == 0) { return Locale.getDefault(); }
+
+        // Java 7+ uses '-' as the delimiter, older Java uses '_')
+        String[] parts = localeStr.replace('-', '_').split("_");
+
+        if (parts.length == 1) { return new Locale(parts[0]); }
+        else if (parts.length == 2) { return new Locale(parts[0], parts[1]); }
+        else if (parts.length >= 3) { return new Locale(parts[0], parts[1], parts[2]); }
+
+        return Locale.getDefault();
+    }
 }

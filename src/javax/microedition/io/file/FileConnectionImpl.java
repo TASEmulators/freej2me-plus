@@ -33,6 +33,9 @@ import org.recompile.mobile.Mobile;
 
 public class FileConnectionImpl implements FileConnection
 {
+	// We'll allow 16MB max for each file here.
+	private static final long MAX_FILE_SIZE = 16L * 1024L * 1024L;
+
 	private static final String BASE_DIR = ".";
 
 	private String url;
@@ -281,11 +284,19 @@ public class FileConnectionImpl implements FileConnection
 		return size;
 	}
 
-	public long availableSize() { return localFile.getFreeSpace(); }
-	public long totalSize() { return localFile.getTotalSpace(); }
-	public long usedSize() { return localFile.getTotalSpace() - localFile.getFreeSpace(); }
+	public long availableSize()
+	{
+		long available = totalSize() - usedSize();
+		return (available > 0L) ? available : 0L;
+	}
+	public long totalSize() { return MAX_FILE_SIZE; }
+	public long usedSize()
+	{
+		if (localFile == null || !localFile.exists()) { return 0L; }
+		return localFile.length();
+	}
 
 	public void setHidden(boolean hidden) throws IOException {}
-	public void setReadable(boolean readable) throws IOException { localFile.setReadable(readable); }
-	public void setWritable(boolean writable) throws IOException { localFile.setWritable(writable); }
+	public void setReadable(boolean readable) throws IOException { }
+	public void setWritable(boolean writable) throws IOException { }
 }

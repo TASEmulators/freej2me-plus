@@ -403,7 +403,7 @@ public class MIDletLoader extends URLClassLoader
 				String line;
 				while ((line = br.readLine()) != null)
 				{
-					if (line.trim().isEmpty()) { continue; }
+					if (line.trim().length() == 0) { continue; }
 					if (line.startsWith(" ")) { currentValue.append(line, 1, line.length()); }
 					else
 					{
@@ -478,7 +478,7 @@ public class MIDletLoader extends URLClassLoader
 			String line;
 			while ((line = br.readLine()) != null)
 			{
-				if (line.trim().isEmpty()) { continue; }
+				if (line.trim().length() == 0) { continue; }
 
 				if (line.startsWith(" ")) { currentValue.append(line.trim()); }
 				else

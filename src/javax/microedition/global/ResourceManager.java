@@ -19,7 +19,7 @@ package javax.microedition.global;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ResourceManager 
+public class ResourceManager
 {
     public static final String DEVICE = "";
 
@@ -28,34 +28,34 @@ public class ResourceManager
     private Map<Integer, Object> resources = new HashMap<Integer, Object>();
     private boolean cachingEnabled = true;
 
-    private ResourceManager(String baseName, String locale) 
+    private ResourceManager(String baseName, String locale)
     {
         this.baseName = baseName;
         this.locale = locale;
     }
 
-    public static ResourceManager getManager(String baseName) throws ResourceException 
+    public static ResourceManager getManager(String baseName) throws ResourceException
     {
         if (baseName == null) { throw new NullPointerException("Base name cannot be null"); }
-        if (baseName.isEmpty()) { return new ResourceManager(DEVICE, getDefaultLocale()); }
+        if (baseName.length() == 0) { return new ResourceManager(DEVICE, getDefaultLocale()); }
 
         return new ResourceManager(baseName, getDefaultLocale());
     }
 
-    public static ResourceManager getManager(String baseName, String locale) throws ResourceException 
+    public static ResourceManager getManager(String baseName, String locale) throws ResourceException
     {
         if (baseName == null || locale == null) { throw new NullPointerException("Base name and locale cannot be null"); }
-        
+
         return new ResourceManager(baseName, locale);
     }
 
-    public static ResourceManager getManager(String baseName, String[] locales) throws ResourceException 
+    public static ResourceManager getManager(String baseName, String[] locales) throws ResourceException
     {
-        if (baseName == null || locales == null || locales.length == 0) 
+        if (baseName == null || locales == null || locales.length == 0)
         {
             throw new NullPointerException("Base name or locales cannot be null or empty");
         }
-        for (String locale : locales) 
+        for (String locale : locales)
         {
             ResourceManager manager = new ResourceManager(baseName, locale);
             if (manager.hasResources()) { return manager; }
@@ -69,51 +69,51 @@ public class ResourceManager
 
     public boolean isCaching() { return cachingEnabled; }
 
-    public Object getResource(int id) throws ResourceException 
+    public Object getResource(int id) throws ResourceException
     {
         validateResourceId(id);
         Object resource = resources.get(id);
-        if (resource == null) 
+        if (resource == null)
         {
             throw new ResourceException(ResourceException.RESOURCE_NOT_FOUND, "Resource not found for ID: " + id);
         }
         return resource;
     }
 
-    public String getString(int id) throws ResourceException 
+    public String getString(int id) throws ResourceException
     {
         Object resource = getResource(id);
-        if (!(resource instanceof String)) 
+        if (!(resource instanceof String))
         {
             throw new ResourceException(ResourceException.WRONG_RESOURCE_TYPE, "Resource is not a string");
         }
         return (String) resource;
     }
 
-    public byte[] getData(int id) throws ResourceException 
+    public byte[] getData(int id) throws ResourceException
     {
         Object resource = getResource(id);
-        if (!(resource instanceof byte[])) 
+        if (!(resource instanceof byte[]))
         {
             throw new ResourceException(ResourceException.WRONG_RESOURCE_TYPE, "Resource is not binary data");
         }
         return (byte[]) resource;
     }
 
-    public static String[] getSupportedLocales(String baseName) throws ResourceException 
+    public static String[] getSupportedLocales(String baseName) throws ResourceException
     {
         if (baseName == null) { throw new NullPointerException("Base name cannot be null"); }
         return Formatter.getSupportedLocales();
     }
 
-    public boolean isValidResourceID(int id) 
+    public boolean isValidResourceID(int id)
     {
         return id >= 0 && id <= 0x7FFFFFFF && resources.containsKey(id);
     }
 
     private boolean hasResources() { return !resources.isEmpty(); }
 
-    private void validateResourceId(int id) 
+    private void validateResourceId(int id)
     {
         if (!isValidResourceID(id)) { throw new IllegalArgumentException("Invalid resource ID: " + id); }
     }

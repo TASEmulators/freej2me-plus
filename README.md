@@ -5,9 +5,9 @@
 
 <div align="center">
 
-[![Java CI](https://img.shields.io/github/actions/workflow/status/TASEmulators/freej2me-plus/ant.yml?style=for-the-badge&label=FreeJ2ME-Plus%20Core)](https://github.com/jpcsp/jpcsp/blob/master/.github/workflows/main.yml)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fjpcsp.org%2F&style=for-the-badge&label=FreeJ2ME-Plus%20Webpage)](https://tasemulators.github.io/freej2me-plus/)
-![Java version](https://img.shields.io/badge/Java-6-44cc11?style=for-the-badge&label=Minimum%20Java%20VM)
+[![Java CI](https://img.shields.io/github/actions/workflow/status/TASEmulators/freej2me-plus/ant.yml?style=for-the-badge&label=FreeJ2ME-Plus%20Core)](https://github.com/TASEmulators/freej2me-plus/blob/devel/.github/workflows/ant.yml)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Ftasemulators.github.io%2Ffreej2me-plus%2F&style=for-the-badge&label=FreeJ2ME-Plus%20Webpage)](https://tasemulators.github.io/freej2me-plus/)
+![Java version](https://img.shields.io/badge/Java-5-44bb11?style=for-the-badge&label=Minimum%20Java%20VM)
 ![License](https://img.shields.io/badge/license-GPLv3-red?style=for-the-badge&label=Project%20License)
 ![Open Issues](https://img.shields.io/github/issues/TASEmulators/freej2me-plus?style=for-the-badge)
 ![Last Commit](https://img.shields.io/github/last-commit/TASEmulators/freej2me-plus?style=for-the-badge)

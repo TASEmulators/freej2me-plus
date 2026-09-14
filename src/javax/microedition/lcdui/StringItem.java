@@ -55,16 +55,16 @@ public class StringItem extends Item
 
 	public void setFont(Font newfont) { }
 
-	public void setText(String textvalue) 
-	{ 
+	public void setText(String textvalue)
+	{
 		text = (textvalue == null ? "" : textvalue);
-		height = 0; 
-		this._invalidateContents(); 
+		height = 0;
+		this._invalidateContents();
 	}
 
-	protected boolean keyPressed(int key) 
-	{ 
-		if (key == Canvas.FIRE || key == Canvas.KEY_NUM5 || key == Canvas.KEY_SOFT_LEFT) 
+	protected boolean keyPressed(int key)
+	{
+		if (key == Canvas.FIRE || key == Canvas.KEY_NUM5 || key == Canvas.KEY_SOFT_LEFT)
 		{
 			doDefaultCommand();
 		}
@@ -73,54 +73,54 @@ public class StringItem extends Item
 		return false;
 	}
 
-	protected int getContentHeight(int width) 
+	protected int getContentHeight(int width)
 	{
 		if (appearance == Item.BUTTON)
 		{
 			height = Font.getDefaultFont().getHeight() + 2*buttonMargin + 2*buttonPadding;
-		} 
-		else if (height == 0 && text != null && !text.isEmpty()) 
+		}
+		else if (height == 0 && text != null && text.length() != 0)
 		{
 			lines = wrapText(text, width, Font.getDefaultFont());
 			lineSpacing = 1;
 
 			height = lines.size() > 0 ? (lines.size()*Font.getDefaultFont().getHeight() + (lines.size()-1)*lineSpacing) : 0;
-		} 
-		else if ((text == null || text.isEmpty()) && lines == null) { lines = new ArrayList<String>(); }
+		}
+		else if ((text == null || text.length() == 0) && lines == null) { lines = new ArrayList<String>(); }
 
 		return height;
 	}
 
-	public static List<String> wrapText(String text, int width, Font font) 
+	public static List<String> wrapText(String text, int width, Font font)
 	{
 		String[] lines = text.split("\n", -1);
 		List<String> wrappedLines = new ArrayList<String>();
-	
-		for (String line : lines) 
+
+		for (String line : lines)
 		{
 			StringBuilder wrappedLine = new StringBuilder();
-	
-			for (int i = 0; i < line.length(); i++) 
+
+			for (int i = 0; i < line.length(); i++)
 			{
 				String word = String.valueOf(line.charAt(i));
 				String wrapCandidate = wrappedLine.length() == 0 ? word : wrappedLine + word;
 				int wrapCandidateWidth = font.stringWidth(wrapCandidate);
-	
-				if (wrapCandidateWidth > width) 
+
+				if (wrapCandidateWidth > width)
 				{
 					if (wrappedLine.length() > 0) { wrappedLines.add(wrappedLine.toString()); }
 					wrappedLine = new StringBuilder(word);
-				} 
+				}
 				else { wrappedLine.append(word); }
 			}
-	
+
 			if (wrappedLine.length() > 0) { wrappedLines.add(wrappedLine.toString()); }
 		}
-	
+
 		return wrappedLines;
 	}
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height) 
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height)
 	{
 		if (appearance == Item.BUTTON)
 		{
@@ -132,11 +132,11 @@ public class StringItem extends Item
 
 			graphics.setColor(Mobile.lcduiTextColor);
 			graphics.drawString(text, x+buttonMargin+buttonPadding, y+buttonMargin+buttonPadding, 0);
-		} 
+		}
 		else
 		{
 			graphics.setColor(Mobile.lcduiTextColor);
-			for(int l=0;l<lines.size();l++) 
+			for(int l=0;l<lines.size();l++)
 			{
 				graphics.drawString( lines.get(l), x,
 					y + l*Font.getDefaultFont().getHeight() + (l > 0 ? (l-1)*lineSpacing : 0),

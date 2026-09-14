@@ -18,39 +18,39 @@ package javax.microedition.broadcast.esg;
 
 import java.util.Date;
 
-public class QueryComposer 
+public class QueryComposer
 {
 
-    public static Query after(DateAttribute attribute, Date value) 
+    public static Query after(DateAttribute attribute, Date value)
     {
         if (attribute == null || value == null) { throw new NullPointerException("Arguments cannot be null"); }
 
         return null;
     }
 
-    public static Query and(Query a, Query b) 
+    public static Query and(Query a, Query b)
     {
         if (a == null || b == null) { throw new NullPointerException("Arguments cannot be null"); }
 
         return null;
     }
 
-    public static Query before(DateAttribute attribute, Date value) 
+    public static Query before(DateAttribute attribute, Date value)
     {
         if (attribute == null || value == null) { throw new NullPointerException("Arguments cannot be null"); }
 
         return null;
     }
 
-    public static Query contains(StringAttribute attribute, String value) 
+    public static Query contains(StringAttribute attribute, String value)
     {
         if (attribute == null || value == null) { throw new NullPointerException("Arguments cannot be null"); }
-        if (value.isEmpty()) { throw new IllegalArgumentException("Value cannot be empty"); }
+        if (value.length() == 0) { throw new IllegalArgumentException("Value cannot be empty"); }
 
         return null;
     }
 
-    public static Query currentProgram() 
+    public static Query currentProgram()
     {
         Date now = new Date();
         Query q1 = before(CommonMetadataSet.PROGRAM_START_TIME, now);
@@ -59,49 +59,49 @@ public class QueryComposer
         return and(or(q1, q1e), q2);
     }
 
-    public static Query equivalent(Attribute attribute, Object value) 
+    public static Query equivalent(Attribute attribute, Object value)
     {
         if (attribute == null || value == null) { throw new NullPointerException("Arguments cannot be null"); }
 
         return null;
     }
 
-    public static Query equivalent(NumericAttribute attribute, double value) 
+    public static Query equivalent(NumericAttribute attribute, double value)
     {
         if (attribute == null) { throw new NullPointerException("NumericAttribute cannot be null"); }
 
         return null;
     }
 
-    public static Query greaterThan(NumericAttribute attribute, double value) 
+    public static Query greaterThan(NumericAttribute attribute, double value)
     {
         if (attribute == null) { throw new NullPointerException("NumericAttribute cannot be null"); }
 
         return null;
     }
 
-    public static Query isTrue(BooleanAttribute attribute) 
+    public static Query isTrue(BooleanAttribute attribute)
     {
         if (attribute == null) { throw new NullPointerException("BooleanAttribute cannot be null"); }
 
         return null;
     }
 
-    public static Query lessThan(NumericAttribute attribute, double value) 
+    public static Query lessThan(NumericAttribute attribute, double value)
     {
         if (attribute == null) { throw new NullPointerException("NumericAttribute cannot be null"); }
 
         return null;
     }
 
-    public static Query not(Query a) 
+    public static Query not(Query a)
     {
         if (a == null) { throw new NullPointerException("Query cannot be null"); }
 
         return null;
     }
 
-    public static Query or(Query a, Query b) 
+    public static Query or(Query a, Query b)
     {
         if (a == null || b == null) { throw new NullPointerException("Arguments cannot be null"); }
 

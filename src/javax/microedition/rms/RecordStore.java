@@ -161,8 +161,13 @@ public class RecordStore
 	private void loadRecord(byte[] data, int offset, int numBytes)
 	{
 		Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "loading Record...");
-		byte[] rec = Arrays.copyOfRange(data, offset, offset+numBytes);
-		if(rec==null) { rec = new byte[]{}; }
+		byte[] rec = null;
+		if (numBytes > 0 && data != null)
+		{
+			rec = new byte[numBytes];
+			System.arraycopy(data, offset, rec, 0, numBytes);
+		}
+		else { rec = new byte[]{}; }
 		records.addElement(rec);
 	}
 
@@ -256,7 +261,8 @@ public class RecordStore
 			if(data != null && data.length != 0)
 			{
 				if(offset < 0 || numBytes < 0 || offset + numBytes > data.length) { throw new ArrayIndexOutOfBoundsException("Tried to access invalid record data position"); }
-				rec = Arrays.copyOfRange(data, offset, offset+numBytes);
+				rec = new byte[numBytes];
+				System.arraycopy(data, offset, rec, 0, numBytes);
 			}
 
 			records.addElement(rec);

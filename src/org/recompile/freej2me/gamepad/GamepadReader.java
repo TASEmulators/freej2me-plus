@@ -39,7 +39,6 @@ public abstract class GamepadReader implements Runnable
 	// listener for input remapping support
 	protected volatile GamepadInputListener listener;
 
-	@FunctionalInterface
 	public interface GamepadInputListener
 	{
 		void onInputDetected(String inputName, int inputCode);

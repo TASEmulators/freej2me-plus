@@ -16,13 +16,13 @@
 */
 package com.nttdocomo.net;
 
-public class URLEncoder 
+public class URLEncoder
 {
-    public static String encode(String url) 
-    {
-        if (url == null || url.isEmpty()) { throw new IllegalArgumentException("Invalid URL string"); }
+	public static String encode(String url)
+	{
+		if (url == null || url.length() == 0) { throw new IllegalArgumentException("Invalid URL string"); }
 
-        try { return java.net.URLEncoder.encode(url, "UTF-8"); }
+		try { return java.net.URLEncoder.encode(url, "UTF-8"); }
 		catch(Exception e) { return url; }
-    }
+	}
 }

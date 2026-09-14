@@ -18,7 +18,7 @@ package javax.bluetooth;
 
 public class UUID
 {
-	
+
 	private static final long[] baseUUID = { 0x00000000L, 0x00001000L, 0x80000080L, 0x5F9B34FBL };
 
 	private long[] UUIDval  = { 0x00000000L, 0x00000000L, 0x00000000L, 0x00000000L };
@@ -37,7 +37,7 @@ public class UUID
 	}
 
 	public UUID(String uuidValue, boolean shortUUID) throws IllegalArgumentException, NullPointerException, NumberFormatException
-	{ 
+	{
 		int length = uuidValue.length();
 
 		if(length == 0 || length > 32 || (shortUUID && length > 8) )
@@ -48,7 +48,7 @@ public class UUID
 		if (shortUUID)
 		{
 			String formattedUuidValue = String.format("%1$" + 8 + "s", uuidValue).replace(' ', '0');
-			UUIDval[0] = Long.parseUnsignedLong(formattedUuidValue, 16);
+			UUIDval[0] = Long.parseLong(formattedUuidValue, 16);
 			UUIDval[1] = baseUUID[1];
 			UUIDval[2] = baseUUID[2];
 			UUIDval[3] = baseUUID[3];
@@ -56,15 +56,15 @@ public class UUID
 		else
 		{
 			String formattedUuidValue = String.format("%1$" + 32 + "s", uuidValue).replace(' ', '0');
-			UUIDval[0] = Long.parseUnsignedLong(formattedUuidValue.substring(0, 8), 16);
-			UUIDval[1] = Long.parseUnsignedLong(formattedUuidValue.substring(8, 16), 16);
-			UUIDval[2] = Long.parseUnsignedLong(formattedUuidValue.substring(16, 24), 16);
-			UUIDval[3] = Long.parseUnsignedLong(formattedUuidValue.substring(24, 32), 16);
+			UUIDval[0] = Long.parseLong(formattedUuidValue.substring(0, 8), 16);
+			UUIDval[1] = Long.parseLong(formattedUuidValue.substring(8, 16), 16);
+			UUIDval[2] = Long.parseLong(formattedUuidValue.substring(16, 24), 16);
+			UUIDval[3] = Long.parseLong(formattedUuidValue.substring(24, 32), 16);
 		}
 	}
 
 	@Override
-	public boolean equals(Object value) 
+	public boolean equals(Object value)
 	{
 		if (value == null || (value instanceof UUID) == false) { return false; }
 

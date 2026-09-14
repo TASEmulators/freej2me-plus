@@ -67,7 +67,7 @@ public abstract class Item
 
 	public Item() { }
 
-	public void addCommand(Command cmd) 
+	public void addCommand(Command cmd)
 	{
 		if(cmd == null) { throw new NullPointerException("Cannot insert a null command"); }
 		if(commands.contains(cmd)) { return; }
@@ -86,14 +86,14 @@ public abstract class Item
 
 	public int getPreferredWidth() { return prefWidth; }
 
-	public void notifyStateChanged() 
-	{ 
+	public void notifyStateChanged()
+	{
 		Form owner = getOwner();
 		if (owner != null) { owner.itemStateChanged(this); }
 	}
 
-	public void removeCommand(Command cmd) 
-	{ 
+	public void removeCommand(Command cmd)
+	{
 		if(cmd == null || !commands.contains(cmd)) { return; }
 		if (cmd == defaultCommand) { defaultCommand = null; }
 		synchronized(commands) { commands.remove(cmd); }
@@ -105,8 +105,8 @@ public abstract class Item
 
 	public ItemCommandListener getItemCommandListener() { return commandListener; }
 
-	public void setLabel(String text) 
-	{ 
+	public void setLabel(String text)
+	{
 		label = text;
 		invalidate();
 	}
@@ -120,14 +120,14 @@ public abstract class Item
 	}
 
 	protected void setOwner(Form newOwner) { owner = newOwner; }
-	
+
 	protected Form getOwner() { return owner; }
 
-	protected boolean hasLabel() { return label != null && !label.isEmpty(); }
+	protected boolean hasLabel() { return label != null && label.length() != 0; }
 
 	protected int getContentHeight(int width) { return Font.getDefaultFont().getHeight(); }
 
-	protected int getLabelHeight(int width) 
+	protected int getLabelHeight(int width)
 	{
 		if (!hasLabel()) { return 0; }
 
@@ -135,7 +135,7 @@ public abstract class Item
 		return Font.getDefaultFont().getHeight() + Font.getDefaultFont().getHeight() / 5;
 	}
 
-	protected void doDefaultCommand() 
+	protected void doDefaultCommand()
 	{
 		if(commandListener != null)
 		{
@@ -145,17 +145,17 @@ public abstract class Item
 
 	protected void renderItem(Graphics graphics, int x, int y, int width, int height) { }
 
-	protected void invalidate() 
+	protected void invalidate()
 	{
 		Form owner = getOwner();
-		if (owner != null) 
+		if (owner != null)
 		{
 			owner.needsLayout = true;
 			owner._invalidate();
 		}
 	}
 
-	protected void _invalidateContents() 
+	protected void _invalidateContents()
 	{
 		Form owner = getOwner();
 		if (owner != null) { owner._invalidate(); }
@@ -165,7 +165,7 @@ public abstract class Item
 
 	protected boolean keyPressed(int key) { return false; }
 
-	protected void renderItemLabel(Graphics graphics, int x, int y, int itemContentWidth) 
+	protected void renderItemLabel(Graphics graphics, int x, int y, int itemContentWidth)
 	{
 		Font oldFont = graphics.getFont();
 		graphics.setFont(Font.getDefaultFont());

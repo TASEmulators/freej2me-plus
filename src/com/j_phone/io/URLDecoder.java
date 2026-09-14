@@ -16,13 +16,13 @@
 */
 package com.j_phone.io;
 
-public class URLDecoder 
+public class URLDecoder
 {
-	public static String decode(String url) 
+	public static String decode(String url)
     {
-		if (url == null || url.isEmpty()) { throw new IllegalArgumentException("Invalid URL string"); }
+		if (url == null || url.length() == 0) { throw new IllegalArgumentException("Invalid URL string"); }
 
-		try { return java.net.URLDecoder.decode(url, "UTF-8"); } 
+		try { return java.net.URLDecoder.decode(url, "UTF-8"); }
 		catch(Exception e) { return url; }
 	}
 }

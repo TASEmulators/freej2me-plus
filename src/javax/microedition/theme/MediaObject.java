@@ -19,26 +19,26 @@ package javax.microedition.theme;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MediaObject extends Object 
+public class MediaObject extends Object
 {
 
     private final String mediaType;
     private final byte[] data;
 
-    public MediaObject(String mediaType, byte[] data) 
+    public MediaObject(String mediaType, byte[] data)
     {
         if (mediaType == null || data == null) { throw new NullPointerException("mediaType and data cannot be null"); }
-        if (mediaType.isEmpty() || !isValidMediaType(mediaType)) { throw new IllegalArgumentException("Invalid media type"); }
+        if (mediaType.length() == 0 || !isValidMediaType(mediaType)) { throw new IllegalArgumentException("Invalid media type"); }
         if (data.length == 0) { throw new IllegalArgumentException("Data array cannot be empty"); }
 
         this.mediaType = mediaType;
         this.data = data;
     }
 
-    public MediaObject(String mediaType, InputStream in) throws IOException 
+    public MediaObject(String mediaType, InputStream in) throws IOException
     {
         if (mediaType == null || in == null) { throw new NullPointerException("mediaType and input stream cannot be null"); }
-        if (mediaType.isEmpty()) { throw new IllegalArgumentException("mediaType cannot be empty"); }
+        if (mediaType.length() == 0) { throw new IllegalArgumentException("mediaType cannot be empty"); }
 
         this.mediaType = mediaType;
         this.data = new byte[in.available()];
@@ -49,9 +49,9 @@ public class MediaObject extends Object
 
     public String getMediaType() { return mediaType; }
 
-    private boolean isValidMediaType(String mediaType) 
+    private boolean isValidMediaType(String mediaType)
     {
         String[] parts = mediaType.split("/");
-        return parts.length == 2 && !parts[0].isEmpty() && !parts[1].isEmpty();
+        return parts.length == 2 && parts[0].length() != 0 && parts[1].length() != 0;
     }
 }

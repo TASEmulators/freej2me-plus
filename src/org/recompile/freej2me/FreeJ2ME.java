@@ -170,7 +170,7 @@ public class FreeJ2ME
 					int value = Integer.parseInt(parts[1].trim());
 					if(value != extEventsMap.get(key))
 					{
-						extEventsMap.replace(key, value);
+						extEventsMap.put(key, value);
 						processExternalKey(key, value);
 					}
 				}
