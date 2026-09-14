@@ -780,7 +780,7 @@ public class FreeJ2ME
 
 		try
 		{
-			URL icon = main.getClass().getResource("/org/recompile/icon.png");
+			URL icon = this.getClass().getResource("/org/recompile/icon.png");
 			if (icon != null)
 			{
 			    appIcon = ImageIO.read(icon);
