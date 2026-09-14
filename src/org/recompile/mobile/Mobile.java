@@ -163,6 +163,7 @@ public class Mobile
 	public static boolean compatSiemensFriendlyDrawing   = false;
 	public static boolean compatIgnoreVolumeChanges      = false;
 	public static boolean compatMCV3HorizontalFovFix     = false;
+	public static boolean compatDoNotTranslateDrawRGB    = false;
 
 	// M3G Debug Rendering settings
 	public static boolean M3GRenderUntexturedPolygons = false;
@@ -1116,6 +1117,10 @@ public class Mobile
 		String MCV3HorizFovFix = config.settings.get("compatmcv3horizfovfix");
 		if(MCV3HorizFovFix.equals("on"))        { compatMCV3HorizontalFovFix = true; }
 		else if (MCV3HorizFovFix.equals("off")) { compatMCV3HorizontalFovFix = false; }
+
+		String noTranslateDrawRGB = config.settings.get("compatnotranslatedrawrgb");
+		if(noTranslateDrawRGB.equals("on"))        { compatDoNotTranslateDrawRGB = true; }
+		else if (noTranslateDrawRGB.equals("off")) { compatDoNotTranslateDrawRGB = false; }
 
 		// Other settings
 		String fontOffset = config.settings.get("fontoffset");

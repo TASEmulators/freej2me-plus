@@ -540,8 +540,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if (rgbData == null) { throw new NullPointerException("RGB Data array is null"); }
 		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException("Invalid offset for RGB Data"); }
 
-		x += translateX;
-		y += translateY;
+		if(!Mobile.compatDoNotTranslateDrawRGB)
+		{
+			x += translateX;
+			y += translateY;
+		}
 
 		final int clipX = Math.max(0, getClipX() + translateX);
 		final int clipY = Math.max(0, getClipY() + translateY);

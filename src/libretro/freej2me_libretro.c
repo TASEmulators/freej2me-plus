@@ -205,6 +205,7 @@ unsigned int compatFantasyZoneFix          = 0; // Boolean
 unsigned int compatTransToOriginOnGFXReset = 0; // Boolean
 unsigned int compatImmediateRepaintCalls   = 0; // Boolean
 unsigned int compatRepaintOnSetCurrent     = 0; // Boolean
+unsigned int compatNoTranslateDrawRGB      = 0; // Boolean
 unsigned int compatOverridePlatCheck       = 1; // Boolean
 unsigned int compatSiemensFriendlyDraw     = 0; // Boolean
 unsigned int compatIgnoreVolumeChanges     = 0; // Boolean
@@ -721,6 +722,13 @@ static void check_variables()
 		else if (!strcmp(var.value, "on"))   { compatRepaintOnSetCurrent = 1; }
 	}
 
+	var.key = "freej2me_compatnotranslatedrawrgb";
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (!strcmp(var.value, "off"))       { compatNoTranslateDrawRGB = 0; }
+		else if (!strcmp(var.value, "on"))   { compatNoTranslateDrawRGB = 1; }
+	}
+
 	var.key = "freej2me_compatoverrideplatcheck";
 	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
@@ -787,11 +795,11 @@ static void check_variables()
 	/* Prepare a string to pass those core options to the Java app */
 	options_update = malloc(sizeof(char) * PIPE_MAX_LEN);
 
-	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1],
+	snprintf(options_update, PIPE_MAX_LEN, "FJ2ME_LR_OPTS:|%lux%lu|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", screenRes[0], screenRes[1],
 		rotateScreen, phoneType, gameFPS, soundEnabled, customMidi, dumpAudioStreams, loggingLevel, spdHackNoAlpha, backlightColor, compatFantasyZoneFix,
 		compatTransToOriginOnGFXReset, customFont, fontOffset, dumpGraphicsData, deleteTemporaryKJXFiles, m3gUntextured, m3gWireframe, spdFrameRateUnlock, compatImmediateRepaintCalls,
 		compatOverridePlatCheck, compatSiemensFriendlyDraw, spdHackM3GHalfRes, dojaVersion, compatIgnoreVolumeChanges, spdHackMCV3HalfRes, spdHackMCV3NoLight, compatMCV3HorFovFix,
-		mcv3Heap, mcv3TimeStats, M3GAntiAliasMode, M3GBilinearMode, M3GDitheringMode, M3GPerspCorrMode, M3GPerspCorrFact, M3GMipmapMode, M3GDisableFog, compatRepaintOnSetCurrent);
+		mcv3Heap, mcv3TimeStats, M3GAntiAliasMode, M3GBilinearMode, M3GDitheringMode, M3GPerspCorrMode, M3GPerspCorrFact, M3GMipmapMode, M3GDisableFog, compatRepaintOnSetCurrent, compatNoTranslateDrawRGB);
 	optstrlen = strlen(options_update);
 
 	/* 0xC = 12, which is the special case where the java app will receive the updated configs */

@@ -450,7 +450,8 @@ public final class FJGUI
 	final JCheckBox fantasyZoneFix = new JCheckBox("Fix for Fantasy Zone 176x208 weird mirroring", false);
 	final JCheckBox transToOriginOnReset = new JCheckBox("Translate to origin on gfx reset", false);
 	final JCheckBox immediateRepaints = new JCheckBox("Process canvas repaints immediately", false);
-	final JCheckBox repaintOnSetCurrent = new JCheckBox("Repaint on Display setCurrent.", false);
+	final JCheckBox repaintOnSetCurrent = new JCheckBox("Repaint on Display setCurrent", false);
+	final JCheckBox doNotTranslateDrawRGB = new JCheckBox("Don't translate drawRGB calls", false);
 	final JCheckBox overridePlatChecks = new JCheckBox("Override Mobile Platform checks", true);
 	final JCheckBox siemensFriendlyDrawing = new JCheckBox("Siemens-friendly drawing methods", false);
 	final JCheckBox ignoreVolumeChanges = new JCheckBox("Ignore volume changes", false);
@@ -652,6 +653,8 @@ public final class FJGUI
 			"By default, J2ME expects canvas repaints to be queued up, and applications can either request serviceRepaints() or use serial calls to synchronize rendering. However, this setting may help cases where an app is freezing by deadlocking on event sync."));
 		gridPanel.add(createSettingCard(repaintOnSetCurrent, "Repaint on MIDP Display setCurrent",
 			"By default, J2ME never explicitly makes a Canvas repaint itself when it is brought to the screen (set as current), the apps should do so when appropriate. This setting forces repaints to happen in that case, fixing apps that would get stuck in a blank or black screen at boot."));
+		gridPanel.add(createSettingCard(doNotTranslateDrawRGB, "Don't translate drawRGB calls",
+			"By default, J2ME drawRGB calls are affected by the graphics translation. However, Peggle for Sony Ericsson expects those to NOT be translated while Nokia versions work normally, this is also replicated in real hardware. Use this setting whenever objects are missing in Sony Ericsson apps."));
 		gridPanel.add(createSettingCard(overridePlatChecks, "Override Mobile Platform checks",
 			"Some applications check against specific platform strings (such as 'Nokia', 'Siemens S60'). This setting overrides any platform strings by FreeJ2ME's own to allow apps that check against specific devices to boot. This option helps far more than breaks, so it's on by default."));
 		gridPanel.add(createSettingCard(siemensFriendlyDrawing, "Siemens-friendly drawing methods",
@@ -1033,6 +1036,7 @@ public final class FJGUI
 		setToggle(transToOriginOnReset, "compattranstooriginonreset", false);
 		setToggle(immediateRepaints, "compatimmediaterepaints", true);
 		setToggle(repaintOnSetCurrent, "compatrepaintonsetcurrent", true);
+		setToggle(doNotTranslateDrawRGB, "compatnotranslatedrawrgb", true);
 		setToggle(overridePlatChecks, "compatoverrideplatchecks", true);
 		setToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing", true);
 		setToggle(ignoreVolumeChanges, "compatignorevolumechanges", false);
@@ -1446,6 +1450,7 @@ public final class FJGUI
 		updateToggle(transToOriginOnReset, "compattranstooriginonreset");
 		updateToggle(immediateRepaints, "compatimmediaterepaints");
 		updateToggle(repaintOnSetCurrent, "compatrepaintonsetcurrent");
+		updateToggle(doNotTranslateDrawRGB, "compatnotranslatedrawrgb");
 		updateToggle(overridePlatChecks, "compatoverrideplatchecks");
 		updateToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing");
 		updateToggle(ignoreVolumeChanges, "compatignorevolumechanges");

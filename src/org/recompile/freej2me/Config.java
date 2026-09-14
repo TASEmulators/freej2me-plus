@@ -166,6 +166,7 @@ public class Config
 				settings.put("compatoverrideplatchecks", "on");
 				settings.put("compatsiemensfriendlydrawing", "off");
 				settings.put("compatignorevolumechanges", "off");
+				settings.put("compatnotranslatedrawrgb", "off");
 				settings.put("compatmcv3horizfovfix", "off");
 				settings.put("fpshack", "Disabled");
 				settings.put("spdhackm3ghalfres", "off");
@@ -222,7 +223,6 @@ public class Config
 		settings.remove("height");
 		settings.remove("compatignoregccalls");
 		settings.remove("compatnonfatalnullimage");
-		settings.remove("compatdonottranslatedrawrgb");
 		settings.remove("sound");
 		settings.remove("soundfont");
 		settings.remove("textfont");
@@ -236,10 +236,31 @@ public class Config
 		if (!settings.containsKey("scrwidth")) { settings.put("scrwidth", "" + Mobile.lcdWidth); }
 		if (!settings.containsKey("scrheight")) { settings.put("scrheight", "" + Mobile.lcdHeight); }
 		if (!settings.containsKey("phone")) { settings.put("phone", "Standard"); }
+		if (!settings.containsKey("backlightcolor")) { settings.put("backlightcolor", "Disabled"); }
 		if (!settings.containsKey("rotate")) { settings.put("rotate", "" + Mobile.rotateDisplay); }
 		if (!settings.containsKey("fps")) { settings.put("fps", "" + Mobile.limitFPS); }
 		if (!settings.containsKey("fontoffset")) { settings.put("fontoffset", "" + Mobile.fontSizeOffset); }
 		if (!settings.containsKey("spdhacknoalpha")) { settings.put("spdhacknoalpha", Mobile.noAlphaOnBlankImages ? "on" : "off"); }
+		if (!settings.containsKey("compatfantasyzonefix")) { settings.put("compatfantasyzonefix", "off"); }
+		if (!settings.containsKey("compattranstooriginonreset")) { settings.put("compattranstooriginonreset", "off"); }
+		if (!settings.containsKey("compatimmediaterepaints")) { settings.put("compatimmediaterepaints", "off"); }
+		if (!settings.containsKey("compatrepaintonsetcurrent")) { settings.put("compatrepaintonsetcurrent", "off"); }
+		if (!settings.containsKey("compatoverrideplatchecks")) { settings.put("compatoverrideplatchecks", "on"); }
+		if (!settings.containsKey("compatsiemensfriendlydrawing")) { settings.put("compatsiemensfriendlydrawing", "off"); }
+		if (!settings.containsKey("compatignorevolumechanges")) { settings.put("compatignorevolumechanges", "off"); }
+		if (!settings.containsKey("compatnotranslatedrawrgb")) { settings.put("compatnotranslatedrawrgb", "off"); }
+		if (!settings.containsKey("compatmcv3horizfovfix")) { settings.put("compatmcv3horizfovfix", "off"); }
+		if (!settings.containsKey("fpshack")) { settings.put("fpshack", "Disabled"); }
+		if (!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", "off"); }
+		if (!settings.containsKey("m3gantialiasmode")) { settings.put("m3gantialiasmode", "app"); }
+		if (!settings.containsKey("m3gbilinearmode")) { settings.put("m3gbilinearmode", "app"); }
+		if (!settings.containsKey("m3gditheringmode")) { settings.put("m3gditheringmode", "app"); }
+		if (!settings.containsKey("m3gperspcorrmode")) { settings.put("m3gperspcorrmode", "app"); }
+		if (!settings.containsKey("m3gmipmapmode")) { settings.put("m3gmipmapmode", "app"); }
+		if (!settings.containsKey("m3gperspcorrsubfactor")) { settings.put("m3gperspcorrsubfactor", "high"); }
+		if (!settings.containsKey("m3gdisablefog")) { settings.put("m3gdisablefog", "off"); }
+		if (!settings.containsKey("spdhackmcv3halfres")) { settings.put("spdhackmcv3halfres", "off"); }
+		if (!settings.containsKey("spdhackmcv3nolighting")) { settings.put("spdhackmcv3nolighting", "off"); }
 		if (!settings.containsKey("dojaversion")) { settings.put("dojaversion", "" + Mobile.DoJaVersion); }
 	}
 
@@ -247,9 +268,16 @@ public class Config
 	{
 		if (!sysSettings.containsKey("fpsCounterPosition")) { sysSettings.put("fpsCounterPosition", "Off"); }
 		if (!sysSettings.containsKey("logLevel")) { sysSettings.put("logLevel", "2"); }
+		if (!sysSettings.containsKey("M3GWireframe")) { sysSettings.put("M3GWireframe", "off"); }
+		if (!sysSettings.containsKey("M3GUntextured")) { sysSettings.put("M3GUntextured", "off"); }
+		if (!sysSettings.containsKey("MCV3ShowTimeMetrics")) { sysSettings.put("MCV3ShowTimeMetrics", "off"); }
+		if (!sysSettings.containsKey("MCV3ShowHeapUsage")) { sysSettings.put("MCV3ShowHeapUsage", "off"); }
+		if (!sysSettings.containsKey("deleteTempKJXFiles")) { sysSettings.put("deleteTempKJXFiles", "on"); }
+		if (!sysSettings.containsKey("dumpAudioStreams")) { sysSettings.put("dumpAudioStreams", "off"); }
+		if (!sysSettings.containsKey("dumpGraphicsObjects")) { sysSettings.put("dumpGraphicsObjects", "off"); }
+		if (!sysSettings.containsKey("sound")) { sysSettings.put("sound", Mobile.sound ? "on" : "off"); }
 		if (!sysSettings.containsKey("soundfont")) { sysSettings.put("soundfont", "Default"); }
 		if (!sysSettings.containsKey("textfont")) { sysSettings.put("textfont", Mobile.useCustomTextFont ? "Custom" : "Default"); }
-		if (!sysSettings.containsKey("sound")) { sysSettings.put("sound", Mobile.sound ? "on" : "off"); }
 
 		for (int i = 0; i < KEY_NAMES.length; i++)
 		{

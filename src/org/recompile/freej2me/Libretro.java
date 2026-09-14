@@ -217,7 +217,6 @@ public class Libretro
 								 */
 								Mobile.config.settings.put("scrwidth",  ""+Integer.parseInt(cfgtokens[1]));
 								Mobile.config.settings.put("scrheight", ""+Integer.parseInt(cfgtokens[2]));
-
 								Mobile.config.settings.put("rotate", "" + (Integer.parseInt(cfgtokens[3])*90));
 
 								if(Integer.parseInt(cfgtokens[4])==0)  { Mobile.config.settings.put("phone", "Standard"); }
@@ -233,15 +232,10 @@ public class Libretro
 								if(Integer.parseInt(cfgtokens[4])==10) { Mobile.config.settings.put("phone", "KDDI"); }
 
 								Mobile.config.settings.put("fps", ""+ Integer.parseInt(cfgtokens[5]));
-
 								Mobile.config.sysSettings.put("sound", Integer.parseInt(cfgtokens[6]) == 1 ? "on" : "off");
-
 								Mobile.config.sysSettings.put("soundfont", Integer.parseInt(cfgtokens[7]) == 1 ? "Custom" : "Default");
-
 								Mobile.config.sysSettings.put("dumpAudioStreams", Integer.parseInt(cfgtokens[8]) == 1 ? "on" : "off");
-
 								Mobile.config.sysSettings.put("logLevel", "" + Integer.parseInt(cfgtokens[9]));
-
 								Mobile.config.settings.put("spdhacknoalpha", Integer.parseInt(cfgtokens[10]) == 1 ? "on" : "off");
 
 								if(Integer.parseInt(cfgtokens[11])==0) { Mobile.config.settings.put("backlightcolor", "Disabled"); }
@@ -252,19 +246,12 @@ public class Libretro
 								if(Integer.parseInt(cfgtokens[11])==5) { Mobile.config.settings.put("backlightcolor", "Red"); }
 
 								Mobile.config.settings.put("compatfantasyzonefix", Integer.parseInt(cfgtokens[12]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("compattranstooriginonreset", Integer.parseInt(cfgtokens[13]) == 1 ? "on" : "off");
-
 								Mobile.config.sysSettings.put("textfont", Integer.parseInt(cfgtokens[14]) == 1 ? "Custom" : "Default");
-
 								Mobile.config.settings.put("fontoffset", "" + Integer.parseInt(cfgtokens[15]));
-
 								Mobile.config.sysSettings.put("dumpGraphicsObjects", Integer.parseInt(cfgtokens[16]) == 1 ? "on" : "off");
-
 								Mobile.config.sysSettings.put("deleteTempKJXFiles", Integer.parseInt(cfgtokens[17]) == 1 ? "on" : "off");
-
 								Mobile.config.sysSettings.put("M3GUntextured", Integer.parseInt(cfgtokens[18]) == 1 ? "on" : "off");
-
 								Mobile.config.sysSettings.put("M3GWireframe", Integer.parseInt(cfgtokens[19]) == 1 ? "on" : "off");
 
 								if(Integer.parseInt(cfgtokens[20])==0) { Mobile.config.settings.put("fpshack", "Default"); }
@@ -273,25 +260,15 @@ public class Libretro
 								if(Integer.parseInt(cfgtokens[20])==3) { Mobile.config.settings.put("fpshack", "Aggressive");  }
 
 								Mobile.config.settings.put("compatimmediaterepaints", Integer.parseInt(cfgtokens[21]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("compatoverrideplatchecks", Integer.parseInt(cfgtokens[22]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("compatsiemensfriendlydrawing", Integer.parseInt(cfgtokens[23]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("spdhackm3ghalfres", Integer.parseInt(cfgtokens[24]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("dojaversion", "" + Integer.parseInt(cfgtokens[25]));
-
 								Mobile.config.settings.put("compatignorevolumechanges", Integer.parseInt(cfgtokens[26]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("spdhackmcv3halfres", Integer.parseInt(cfgtokens[27]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("spdhackmcv3nolighting", Integer.parseInt(cfgtokens[28]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("compatmcv3horizfovfix", Integer.parseInt(cfgtokens[29]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("MCV3ShowHeapUsage", Integer.parseInt(cfgtokens[30]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("MCV3ShowTimeMetrics", Integer.parseInt(cfgtokens[31]) == 1 ? "on" : "off");
 
 								if(Integer.parseInt(cfgtokens[32])==0) { Mobile.config.settings.put("m3gantialiasmode", "off"); }
@@ -321,8 +298,8 @@ public class Libretro
 								if(Integer.parseInt(cfgtokens[37])==0) { Mobile.config.settings.put("m3gmipmapmode", "off");  }
 
 								Mobile.config.settings.put("m3gdisablefog", Integer.parseInt(cfgtokens[38]) == 1 ? "on" : "off");
-
 								Mobile.config.settings.put("compatrepaintonsetcurrent", Integer.parseInt(cfgtokens[39]) == 1 ? "on" : "off");
+								Mobile.config.settings.put("compatnotranslatedrawrgb", Integer.parseInt(cfgtokens[40]) == 1 ? "on" : "off");
 
 								Mobile.config.saveConfig();
 								settingsChanged();

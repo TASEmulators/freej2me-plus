@@ -793,6 +793,20 @@ struct retro_core_option_v2_definition core_options[] =
 		"off"
 	},
 	{
+		"freej2me_compatnotranslatedrawrgb",
+		"Compatibility Settings > Don't translate drawRGB calls",
+		"Don't translate drawRGB calls",
+		"By default, J2ME drawRGB calls are affected by the graphics translation. However, Peggle for Sony Ericsson expects those to NOT be translated while Nokia versions work normally, this is also replicated in real hardware. Use this setting whenever objects are missing in Sony Ericsson apps.",
+		"By default, J2ME drawRGB calls are affected by the graphics translation. However, Peggle for Sony Ericsson expects those to NOT be translated while Nokia versions work normally, this is also replicated in real hardware. Use this setting whenever objects are missing in Sony Ericsson apps.",
+		"compat_settings",
+		{
+			{ "on",  "Enabled"            },
+			{ "off", "Disabled (Default)" },
+			{ NULL, NULL },
+		},
+		"off"
+	},
+	{
 		"freej2me_compatoverrideplatcheck",
 		"Compatibility Settings > Override Mobile Platform checks",
 		"Override Mobile Platform checks",
@@ -1446,6 +1460,17 @@ struct retro_core_option_definition core_options_v1 [] =
 		"off"
 	},
 	{
+		"freej2me_compatnotranslatedrawrgb",
+		"Don't translate drawRGB calls",
+		"By default, J2ME drawRGB calls are affected by the graphics translation. However, Peggle for Sony Ericsson expects those to NOT be translated while Nokia versions work normally, this is also replicated in real hardware. Use this setting whenever objects are missing in Sony Ericsson apps.",
+		{
+			{ "on",  "Enabled"            },
+			{ "off", "Disabled (Default)" },
+			{ NULL, NULL },
+		},
+		"off"
+	},
+	{
 		"freej2me_compatoverrideplatcheck",
 		"Override Mobile Platform checks",
 		"Some applications check against specific platform strings (such as 'Nokia', 'Siemens S60'), whenever this happens, FreeJ2ME's platform string doesn't match what they expect so they refuse to run. This setting overrides any platform strings by FreeJ2ME's own. This option helps far more than breaks, so it's on by default",
@@ -1689,6 +1714,10 @@ static const struct retro_variable vars[] =
 	{ /* Force Canvas to repaint on MIDP setCurrent */
 		"freej2me_compatrepaintonsetcurrent",
 		"Repaint on MIDP Display setCurrent; off|on"
+	},
+	{ /* Do not translate on drawRGB calls */
+		"freej2me_compatnotranslatedrawrgb",
+		"Don't translate drawRGB calls; off|on"
 	},
 	{ /* Override Mobile Platform checks */
 		"freej2me_compatoverrideplatcheck",
