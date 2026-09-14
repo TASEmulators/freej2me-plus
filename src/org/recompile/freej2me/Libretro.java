@@ -25,12 +25,12 @@ import java.net.URLDecoder;
 public class Libretro
 {
 	private int lcdWidth, lcdHeight;
-	int[] lcdData;
+	volatile int[] lcdData;
 
 	private static volatile boolean canPause = false;
 
 	private static final long PAUSE_DELAY_MS = 250;
-	private static volatile long lastCoreUpdateTime = System.currentTimeMillis(); // Tracks last core update for pause checks
+	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
 
 	private byte[] frameBuffer = new byte[854*854*3];
 	private final byte[] frameHeader = new byte[]{(byte)0xFE,
@@ -312,7 +312,6 @@ public class Libretro
 							break;
 
 							case 15: // Libretro core requested a new frame.
-								lastCoreUpdateTime = System.currentTimeMillis();
 
 								// Fire repeats for any currently held keys on
 								// every libretro frame tick
@@ -325,6 +324,7 @@ public class Libretro
 
 								if(din[3] == 1) // Frontend has processed the last sent frame, start counting for pause
 								{
+									lastCoreUpdateTime = System.currentTimeMillis();
 									canPause = true;
 									break;
 								}
@@ -392,7 +392,7 @@ public class Libretro
 								}
 								catch (Exception e)
 								{
-									Mobile.log(Mobile.LOG_DEBUG, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Error sending frame: "+e.getMessage());
+									Mobile.log(Mobile.LOG_ERROR, Libretro.class.getPackage().getName() + "." + Libretro.class.getSimpleName() + ": " + "Error sending frame: "+e.getMessage());
 									System.exit(0);
 								}
 								// We are now ready to start monitoring for pauses, the first frame was requested and sent
@@ -407,12 +407,12 @@ public class Libretro
 
 	private static void updatePauseTimer()
 	{
-		if(!canPause) { return; } // Only start counting this after libretro has finished processing the last sent frame
-		long currentTime = System.currentTimeMillis();
+		// Only start counting this after libretro has finished processing the last sent frame
+		if(!canPause || Mobile.isPaused) { return; }
 
 		// Check if the timer has expired since the last core update, as anything beyond the PAUSE_DELAY_MS delta
 		// between core updates means the frontend is pretty much effectively paused as well)
-		if (!Mobile.isPaused && (currentTime - lastCoreUpdateTime >= PAUSE_DELAY_MS))
+		if (System.currentTimeMillis() - lastCoreUpdateTime >= PAUSE_DELAY_MS)
 		{
 			MobilePlatform.pauseResumeApp(); // Call to pause the app
 		}
