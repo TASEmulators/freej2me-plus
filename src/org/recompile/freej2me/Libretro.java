@@ -32,7 +32,7 @@ public class Libretro
 	private static final long PAUSE_DELAY_MS = 250;
 	private static volatile long lastCoreUpdateTime = System.currentTimeMillis(); // Tracks last core update for pause checks
 
-	private byte[] frameBuffer = new byte[800*800*3];
+	private byte[] frameBuffer = new byte[854*854*3];
 	private final byte[] frameHeader = new byte[]{(byte)0xFE,
 		0, 0, 0, 0, // Display data
 		0,          // Rotation enabled
