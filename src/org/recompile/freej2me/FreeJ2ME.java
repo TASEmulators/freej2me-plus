@@ -131,16 +131,12 @@ public class FreeJ2ME
 
 	private static void checkExtInputFile() throws IOException
 	{
-		// Begin checking if this is the web frontend, which always has the file present at boot
+		// Begin checking if this is the web frontend, which always has the file
+		// present at boot for external inputs (On-screen keys)
 		File extFile = new File("/str/"+extInputFilePath);
 
-		// If File doesn't exist on that dir, we're running standalone. (TODO: Using a pipe for this would be better on standalone)
-		if(!extFile.exists())
-		{
-			return;
-			//extFile = new File("freej2me_system/"+extInputFilePath);
-			//extFile.createNewFile();
-		}
+		// If File doesn't exist on that dir, we're running standalone.
+		if(!extFile.exists()) { return; }
 
 		final String filePath = extFile.getPath();
 
@@ -152,7 +148,7 @@ public class FreeJ2ME
 				while (true)
 				{
 					readFile(filePath);
-					try { Thread.sleep(4); } // External inputs poll at a 250fps rate, more than fast enough for just about everything
+					try { Thread.sleep(5); } // External inputs poll at a 200fps rate, more than fast enough for just about everything
 					catch (InterruptedException e) { }
 				}
 			}
