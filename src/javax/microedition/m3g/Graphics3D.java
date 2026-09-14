@@ -28,6 +28,13 @@ import org.recompile.mobile.PlatformGraphics;
 
 public class Graphics3D
 {
+	/*
+	 * Depth buffer clear value: the maximum depth (1.0 in window coordinates)
+	 * mapped to the short-based buffer. Depth writes use the same 32200 scale
+	 * (slightly under the short limit to leave headroom against overflow).
+	 */
+	private static final short DEPTH_CLEAR_VALUE = (short) 32200;
+
 	// Flag values for FJ2ME+ rendering overrides (bilinear, AA, dithering, etc)
 	public static final int MODE_FORCE_DISABLE = 0;
 	public static final int MODE_APP_CONTROLLED = 1;
@@ -49,8 +56,6 @@ public class Graphics3D
 		}
 	}
 
-	private static final int[] AA_INV_COUNT = { 0, 65536, 32768, 21845, 16384, 13107 };
-
 	// Special blend modes for fog and AA coverage
 	public static final int BLEND_FOG = -1;
 	public static final int BLEND_COVERAGE = -2;
@@ -59,7 +64,6 @@ public class Graphics3D
 	public static final int DITHER = 4;
 	public static final int OVERWRITE = 16; // This is unused here, as SW rasterization gives us direct control over pixels
 	public static final int TRUE_COLOR = 8; // Also unused here, we always render at true color
-
 
 	public static final boolean SUPPORT_ANTIALIASING = true;
 	public static final boolean SUPPORT_TRUE_COLOR = true;
@@ -108,13 +112,6 @@ public class Graphics3D
 	private short[] depthBuffer;
 	private float near;
 	private float far;
-
-	/*
-	 * Depth buffer clear value: the maximum depth (1.0 in window coordinates)
-	 * mapped to the short-based buffer. Depth writes use the same 32200 scale
-	 * (slightly under the short limit to leave headroom against overflow).
-	 */
-	private static final short DEPTH_CLEAR_VALUE = (short) 32200;
 
 	private int hints;
 
@@ -1514,11 +1511,6 @@ public class Graphics3D
 		final boolean usesDepthWrite = usesDepth &&
 			compositingMode.isDepthWriteEnabled();
 
-		float xA = triScreen.xA();
-		float yA = triScreen.yA();
-		int colorA = 0;
-		if (hasColors) { colorA = triScreen.colorA(); }
-
 		// Get into the render loop proper.
 
 		float zStep  = (zMidR - zMidL) * invMidSpan;
@@ -1600,8 +1592,9 @@ public class Graphics3D
 			// that way, the inner loop only needs to do a simple addition.
 			if (hasColors)
 			{
-				float dx = ixL - xA;
-				float dy = y - yA;
+				final int colorA = triScreen.colorA();
+				final float dx = ixL - triScreen.xA();
+				final float dy = y - triScreen.yA();
 
 				// Everyone goes to 16.16 fixed point, innermost X loop can get colors right away
 				// with this.
@@ -1640,7 +1633,7 @@ public class Graphics3D
 				// Subsampling block. A.K.A, where we calculate anything that
 				// is too expensive to run per-pixel but cannot be done only once
 				// for the whole triangle Y scanline due to large precision loss.
-				if (doPerspective && ((x & Mobile.m3gPerspCorrSubFactor) == 0 | x == ixL))
+				if (doPerspective && ((x & Mobile.m3gPerspCorrSubFactor) == 0 || x == ixL))
 				{
 					int maxSpan = (Mobile.m3gPerspCorrSubFactor + 1) -
 						(x & Mobile.m3gPerspCorrSubFactor);
