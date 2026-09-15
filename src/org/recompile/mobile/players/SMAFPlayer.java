@@ -21,6 +21,7 @@ import java.io.InputStream;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaEventListener;
 import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Receiver;
@@ -158,6 +159,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 					if (curTime >= getDuration()) { setMediaTime(0); }
 					else { setMediaTime(curTime); }
 
+					this.platform.applyVolume();
 					this.midi.start();
 				}
 			}
@@ -250,6 +252,21 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 		{
 			synchronized (this.midi)
 			{
+				// We need to reset the channels and controller upon release,
+				// as sequenced tracks may change the channel's state.
+				MidiChannel[] channels = this.synthesizer.getChannels();
+				for (int i = 0; i < channels.length; i++)
+				{
+					// To do that, we just emit the respective Control Changes.
+					if (channels[i] != null)
+					{
+						channels[i].allSoundOff();         // Cut off lingering audio instantly (CC 120)
+						channels[i].allNotesOff();         // Stop any still lingering notes (CC 123)
+						channels[i].resetAllControllers(); // Reset Pitch Bend, Expression, Pan (CC 121)
+						channels[i].controlChange(7, 127); // Reset Channel Volume back to full (CC 127)
+					}
+				}
+
 				Manager.releaseSynthIndex(synthIdx);
 				synthReserved = false;
 				this.midi.removeMetaEventListener(this);

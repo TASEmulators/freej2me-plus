@@ -122,6 +122,7 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 		platform.state = Player.STARTED;
 		platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 
+		this.platform.applyVolume();
 		wavClip.start();
 	}
 

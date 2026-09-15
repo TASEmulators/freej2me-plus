@@ -287,6 +287,9 @@ public class PlatformPlayer implements Player
 		}
 	}
 
+	// Called by the players when they transition into STARTED.
+	public void applyVolume() { ((volumeControl)this.getControl("VolumeControl")).applyVolume(); }
+
 	public void close()
 	{
 		if(getState() == Player.CLOSED) { return; }
@@ -906,6 +909,7 @@ public class PlatformPlayer implements Player
 		private BasicPlayer player; // Reference to the player this is linked to, or else we won't be able to apply changes
 		private byte volume = 100;
 		private int panValue = 64; // Center panning
+		private boolean hasSetLevel = false; // Only real use for this is to adhere to JSR-135 in getLevel().
 
 		// MIDI Volume Sysex message
 		private byte[] volumeSysEx = new byte[]
@@ -923,7 +927,7 @@ public class PlatformPlayer implements Player
 
 		public int getLevel()
 		{
-			if(getState() == Player.REALIZED) { return -1; }
+			if(getState() == Player.REALIZED && !hasSetLevel) { return -1; }
 
 			return volume;
 		}
@@ -931,46 +935,59 @@ public class PlatformPlayer implements Player
 		public int setLevel(int level)
 		{
 			/* Some Digital Chocolate games actually go all the way to level = 120. E.g. Tornado Mania */
-			if(level > 100) { level = 100; }
-			else if(level < 0) { level = 0; }
+			if (level > 100) { level = 100; }
+			else if (level < 0) { level = 0; }
 
-			if(level == getLevel() || Mobile.compatIgnoreVolumeChanges || player == null) { return getLevel(); }
+			int oldLevel = this.volume;
+			this.volume = (byte) level;
+
+			hasSetLevel = true;
+
+			applyVolume();
+
+			if (oldLevel != level) { notifyListeners(PlayerListener.VOLUME_CHANGED, this); }
+
+			return getLevel();
+		}
+
+		void applyVolume()
+		{
+			// The only time where we can actually make changes effective is when
+			// the player has already started (due to scarce resource reuse).
+			if (getState() < Player.STARTED || Mobile.compatIgnoreVolumeChanges) { return; }
 
 			try
 			{
 				if (player instanceof MIDIPlayer)
 				{
-					if(((MIDIPlayer)player).synthesizer == null) { return getLevel(); } // Only make changes if the midi subsystem for this player is available
-
-					volumeSysEx[6] = isMuted() ? 0 : (byte) (level * 127 / 100); // Convert to MIDI volume range
+					volumeSysEx[6] = isMuted() ? 0 : (byte) (volume * 127 / 100); // Convert to MIDI volume range
 					sysexMessage.setMessage(volumeSysEx, volumeSysEx.length);
 					((MIDIPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
 				}
 				else if(player instanceof WAVPlayer)
 				{
-					if(((WAVPlayer)player).wavClip == null) { return getLevel(); } // Only make changes if the wav clip for this player is available
 					WAVPlayer wav = (WAVPlayer) player;
 
 					/* We have to map 0 <= value <= 100 to a clip's range of -30dB to 0dB  */
-					float dB = isMuted() ? -80.0f : -30.0f + ((level / 100.0f) * (30.0f));
+					float dB = isMuted() ? -80.0f : -30.0f + ((volume / 100.0f) * (30.0f));
 
 					FloatControl volumeControl = (FloatControl) wav.wavClip.getControl(FloatControl.Type.MASTER_GAIN);
 					volumeControl.setValue(dB);
 				}
 				else if(player instanceof SMAFPlayer) // SMAF is a mix of midi and WAVPlayer, so it pretty much borrows from both here
 				{
-					if(((SMAFPlayer)player).synthesizer != null) // MIDI portion of SMAF
-					{
-						volumeSysEx[6] = isMuted() ? 0 : (byte) (level * 127 / 100);
-						sysexMessage.setMessage(volumeSysEx, volumeSysEx.length);
-						((SMAFPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
-					}
+					// Sequenced portion of SMAF is always there, as it is what
+					// controls the PCM playback too.
+					volumeSysEx[6] = isMuted() ? 0 : (byte) (volume * 127 / 100);
+					sysexMessage.setMessage(volumeSysEx, volumeSysEx.length);
+					((SMAFPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
 
-					if(((SMAFPlayer) player).wavClips != null) // WAV portion of SMAF
-					{
-						FloatControl volumeControl;
-						float dB = isMuted() ? -80.0f : -40.0f + ((level / 100.0f) * (40.0f));
+					FloatControl volumeControl;
+					float dB = isMuted() ? -80.0f : -40.0f + ((volume / 100.0f) * (40.0f));
 
+					// PCM portion of SMAF, may not be used by some streams.
+					if(((SMAFPlayer) player).wavClips != null)
+					{
 						for(int i = 0; i < ((SMAFPlayer) player).wavClips.length; i++)
 						{
 							if(((SMAFPlayer) player).wavClips[i] == null) { continue; }
@@ -979,19 +996,13 @@ public class PlatformPlayer implements Player
 						}
 					}
 				}
-				else if(player instanceof MP3Player && ((MP3Player)player).mp3Player != null)
-					{ ((MP3Player)player).mp3Player.setLevel(level); }
+				else if(player instanceof MP3Player) { ((MP3Player)player).mp3Player.setLevel(volume); }
 			}
 			catch(Exception e)
 			{
 				Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "failed to set volume: " + e.getMessage());
 				e.printStackTrace();
 			}
-
-			volume = (byte) level;
-			notifyListeners(PlayerListener.VOLUME_CHANGED, this); // Notify that the volume state changed
-
-			return getLevel();
 		}
 
 		public void setMute(boolean mute)

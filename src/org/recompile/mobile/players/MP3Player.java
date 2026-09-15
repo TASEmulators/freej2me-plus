@@ -107,6 +107,7 @@ public class MP3Player extends BasicPlayer
 			platform.state =  Player.STARTED;
 			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 
+			this.platform.applyVolume();
 			playerThread.start();
 		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MP3Player.class.getPackage().getName() + "." + MP3Player.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
 	}

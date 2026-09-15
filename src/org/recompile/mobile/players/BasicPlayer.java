@@ -28,13 +28,13 @@ public class BasicPlayer
 {
 	PlatformPlayer platform = null;
 
-	public void start() {  }
-	public void stop() {  }
-	public void setLoopCount(int count) {  }
+	public void start() { }
+	public void stop() { }
+	public void setLoopCount(int count) { }
 	public long setMediaTime(long now) { return now; }
 	public long getMediaTime() { return 0; }
 	public boolean isRunning() { return false; }
-	public void deallocate() {  }
+	public void deallocate() { }
 	public void close() { }
 	public void realize() { }
 	public void prefetch() { }

@@ -22,13 +22,13 @@ import java.io.InputStream;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaEventListener;
 import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Synthesizer;
-import javax.sound.midi.Transmitter;
 
 import javax.microedition.media.Manager;
 import javax.microedition.media.Player;
@@ -50,7 +50,6 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 	private boolean synthReserved = false;
 	public Receiver receiver;
 
-	private Transmitter transmitter;
 	private volatile int numLoops = 0;
 	private volatile boolean isExplicitStop = false;
 	private long curTime = 0;
@@ -119,6 +118,8 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 				// If mediaTime >= getDuration, we should start playing from the beginning
 				if(curTime >= getDuration()) { setMediaTime(0); }
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
+
+				this.platform.applyVolume();
 
 				this.midi.start();
 			}
@@ -245,8 +246,6 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 			this.synthesizer = Manager.exclusiveSynths[synthIdx];
 			this.receiver = Manager.exclusiveReceivers[synthIdx];
 			this.midi = Manager.exclusiveSequencers[synthIdx];
-			transmitter = this.midi.getTransmitter();
-			transmitter.setReceiver(receiver);
 			synthReserved = true;
 		}
 	}
@@ -257,13 +256,24 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 		{
 			synchronized (this.midi)
 			{
-				if (this.transmitter != null)
+				// We need to reset the channels and controller upon release,
+				// as sequenced tracks may change the channel's state.
+				MidiChannel[] channels = this.synthesizer.getChannels();
+				for (int i = 0; i < channels.length; i++)
 				{
-					this.transmitter.close();
-					this.transmitter = null;
+					// To do that, we just emit the respective Control Changes.
+					if (channels[i] != null)
+					{
+						channels[i].allSoundOff();         // Cut off lingering audio instantly (CC 120)
+						channels[i].allNotesOff();         // Stop any still lingering notes (CC 123)
+						channels[i].resetAllControllers(); // Reset Pitch Bend, Expression, Pan (CC 121)
+						channels[i].controlChange(7, 127); // Reset Channel Volume back to full (CC 127)
+					}
 				}
+
 				Manager.releaseSynthIndex(synthIdx);
 				synthReserved = false;
+				this.midi.removeMetaEventListener(this);
 				this.midi = null;
 				this.synthesizer = null;
 				this.receiver = null;
