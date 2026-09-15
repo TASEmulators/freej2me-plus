@@ -17,64 +17,63 @@
 package com.nttdocomo.ui;
 
 import java.util.Vector;
-
 import org.recompile.mobile.Mobile;
 
-public class Palette 
+public class Palette
 {
-    private int[] entries;
-    private Vector<PalettedImage> boundImages = new Vector<PalettedImage>();
+	private int[] entries;
+	private Vector<PalettedImage> boundImages = new Vector<PalettedImage>();
 
-    public Palette(int n) 
-    {
-        if (n <= 0) { throw new IllegalArgumentException("Number of entries must be greater than zero"); }
+	public Palette(int n)
+	{
+		if (n <= 0) { throw new IllegalArgumentException("Number of entries must be greater than zero"); }
 
-        entries = new int[Math.min(n, 256)];
-        for (int i = 0; i < entries.length; i++) { entries[i] = 0xFF000000; } // Spec dictates it should initialize to black, so go with fully opaque
-    }
+		entries = new int[Math.min(n, 256)];
+		// Spec dictates it should initialize to black
+		for (int i = 0; i < entries.length; i++) { entries[i] = 0x000000; }
+	}
 
-    public Palette(int[] colors) 
-    {
-        if (colors == null) { throw new NullPointerException("Colors array cannot be null"); }
-        if (colors.length == 0) { throw new IllegalArgumentException("Colors array must have at least one entry"); }
-        if (colors.length > 256) { throw new IllegalArgumentException("Palette can have a maximum of 256 colors"); }
+	public Palette(int[] colors)
+	{
+		if (colors == null) { throw new NullPointerException("Colors array cannot be null"); }
+		if (colors.length == 0) { throw new IllegalArgumentException("Colors array must have at least one entry"); }
+		if (colors.length > 256) { throw new IllegalArgumentException("Palette can have a maximum of 256 colors"); }
 
-        // Has to be a copy of the received argument
-        entries = new int[colors.length];
-        System.arraycopy(colors, 0, entries, 0, colors.length);
-    }
+		// Has to be a copy of the received argument
+		entries = new int[colors.length];
+		for (int i = 0; i < colors.length; i++) { entries[i] = colors[i] & 0x00FFFFFF; }
+	}
 
-    public int getEntry(int index) 
-    {
-        if (index < 0 || index >= entries.length) { throw new ArrayIndexOutOfBoundsException("Index out of bounds"); }
+	public int getEntry(int index)
+	{
+		if (index < 0 || index >= entries.length)
+		{
+			throw new ArrayIndexOutOfBoundsException("Index out of bounds: " + index);
+		}
+		return entries[index];
+	}
 
-        return entries[index];
-    }
+	public int getEntryCount() { return entries.length; }
 
-    public int getEntryCount() { return entries.length; }
+	public void setEntry(int index, int color)
+	{
+		if (index < 0 || index >= entries.length) { throw new ArrayIndexOutOfBoundsException("Index out of bounds"); }
+		if((Mobile.DoJaVersion < 40 && (color < 0x000000 || color > 0xFFFFFF)) ||
+			(Mobile.DoJaVersion >= 40 && (color < Integer.MIN_VALUE || color > Integer.MAX_VALUE)))
+			{ throw new IllegalArgumentException("Invalid color value: " + String.format("%02X", color)); }
 
-    public void setEntry(int index, int color) 
-    {
-        if (index < 0 || index >= entries.length) { throw new ArrayIndexOutOfBoundsException("Index out of bounds"); }
-        if((Mobile.DoJaVersion < 40 && (color < 0x000000 || color > 0xFFFFFF)) ||
-            (Mobile.DoJaVersion >= 40 && (color < Integer.MIN_VALUE || color > Integer.MAX_VALUE))) { throw new IllegalArgumentException("Invalid color value: " + String.format("%02X", color)); }
-     
-        for(int i = 0; i < boundImages.size(); i++) 
-        {
-            boundImages.get(i).updateImagePalette(new int[] {(0xFF << 24) | entries[index]}, new int[] {(0xFF << 24) | color});
-        }
-        
-        entries[index] = color;
-    }
+		entries[index] = color & 0x00FFFFFF;
 
-    public void addImage(PalettedImage image) 
-    { 
-        if(!boundImages.contains(image)) { boundImages.add(image); }
-    }
+		for (int i = 0; i < boundImages.size(); i++)
+		{
+			boundImages.get(i).updateImagePalette(index, entries[index]);
+		}
+	}
 
-    public void removeImage(PalettedImage image) 
-    { 
-        if(boundImages.contains(image)) { boundImages.remove(image); }
-    }
+	public void addImage(PalettedImage image)
+	{
+		if (image != null && !boundImages.contains(image)) { boundImages.add(image); }
+	}
 
+	public void removeImage(PalettedImage image) { boundImages.remove(image); }
 }
