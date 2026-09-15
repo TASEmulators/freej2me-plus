@@ -106,7 +106,7 @@ public class PlatformPlayer implements Player
 
 		contentType = type;
 
-		if(Mobile.sound == false) { player = new BasicPlayer(); }
+		if(Mobile.sound == false) { player = new BasicPlayer(); disableControls = true; }
 		else
 		{
 			// Midi player will also play tones, as these are converted to midi in pretty much all cases at the moment

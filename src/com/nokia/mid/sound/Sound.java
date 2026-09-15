@@ -112,7 +112,7 @@ public class Sound
 					{
 						player.stop();
 						player.deallocate();
-						((ToneControl) player.getControl("ToneControl")).setSequence(NokiaOTTDecoder.convertToMidi(data));
+						if(Mobile.sound) { ((ToneControl) player.getControl("ToneControl")).setSequence(NokiaOTTDecoder.convertToMidi(data)); }
 						if(Mobile.dumpAudioStreams) { Manager.dumpAudioStream(new ByteArrayInputStream(NokiaOTTDecoder.convertToMidi(data)), "audio/x-tone-seq"); } // Here we have to dump the stream manually, as setSequence is a fast way to swap short tone sequences
 					}
 					player.prefetch();
