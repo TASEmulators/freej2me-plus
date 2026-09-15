@@ -25,7 +25,7 @@ public class Image extends javax.microedition.lcdui.Image
     public static final int COLOR_BMP_8BIT = 5;
 
     public static Image createImageFromFile(String filename, boolean ScaleToFullScreen) throws IOException
-    { 
+    {
         Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "createImageFromFile(String, boolean) untested");
         Image img = (Image) createImage(filename);
         if(ScaleToFullScreen) { img.setCanvas(scaleImage(img.getCanvas(), Mobile.getDisplay().getCurrent().getHeight(), Mobile.getDisplay().getCurrent().getHeight())); }
@@ -33,32 +33,32 @@ public class Image extends javax.microedition.lcdui.Image
     }
 
     public static Image createImageFromFile(String filename, int ScaleToWidth, int ScaleToHeight) throws IOException
-    { 
+    {
         Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "createImageFromFile(String, int, int) untested");
         Image img = (Image) createImage(filename);
         img.setCanvas(scaleImage(img.getCanvas(), ScaleToWidth, ScaleToHeight));
         return img;
     }
 
-    public static int getPixelColor(Image image, int x, int y) 
-    { 
+    public static int getPixelColor(javax.microedition.lcdui.Image image, int x, int y)
+    {
         Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "getPixelColor(Image, int, int) untested");
         return image.getPixel(x, y);
     }
 
-    public static void setPixelColor(Image image, int x, int y, int color) 
-    { 
-        Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "setPixelColor(String, int, int, int) untested");
+    // Works in Bubble Boost
+    public static void setPixelColor(javax.microedition.lcdui.Image image, int x, int y, int color)
+    {
         image.setPixel(x, y, color);
     }
 
-    public static void writeBmpToFile(Image image, String filename) throws IOException
-    { 
+    public static void writeBmpToFile(javax.microedition.lcdui.Image image, String filename) throws IOException
+    {
         Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "writeBmpToFile(Image, String) untested");
         Image.dumpImage(image.getCanvas(), filename, "");
     }
 
-    public static javax.microedition.lcdui.Image createTransparentImageFromMask(javax.microedition.lcdui.Image image, javax.microedition.lcdui.Image mask) 
+    public static javax.microedition.lcdui.Image createTransparentImageFromMask(javax.microedition.lcdui.Image image, javax.microedition.lcdui.Image mask)
     {
 		int width = image.getWidth();
 		int height = image.getHeight();
@@ -68,11 +68,11 @@ public class Image extends javax.microedition.lcdui.Image
 		image.getRGB(imagePixels, 0, width, 0, 0, width, height);
 		mask.getRGB(maskPixels, 0, width, 0, 0, width, height);
 
-		for (int y = 0; y < height; y++) 
+		for (int y = 0; y < height; y++)
         {
-			for (int x = 0; x < width; x++) 
+			for (int x = 0; x < width; x++)
             {
-				if (maskPixels[y * width + x] == 0xFFFFFFFF) 
+				if (maskPixels[y * width + x] == 0xFFFFFFFF)
                 {
 					imagePixels[y * width + x] = 0;
 				}

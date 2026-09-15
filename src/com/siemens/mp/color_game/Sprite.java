@@ -223,7 +223,7 @@ public class Sprite extends Layer
 		collisionRectHeight = height;
 	}
 
-	public final boolean collidesWith(Sprite s, boolean pixelLevel) 
+	public final boolean collidesWith(Sprite s, boolean pixelLevel)
 	{
 		if (!(s.visible && this.visible)) { return false; }
 
@@ -237,9 +237,9 @@ public class Sprite extends Layer
 		int right = left + this.collisionRectWidth;
 		int bottom = top + this.collisionRectHeight;
 
-		if (intersects(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom)) 
+		if (intersects(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom))
 		{
-			if (pixelLevel) 
+			if (pixelLevel)
 			{
 				if (this.collisionRectX < 0) { left = this.x; }
 				if (this.collisionRectY < 0) { top = this.y; }
@@ -272,13 +272,13 @@ public class Sprite extends Layer
 						s.sourceImage,
 						s.currentTransform,
 						intersectWidth, intersectHeight);
-			} 
+			}
 			else { return true; }
 		}
 		return false;
 	}
 
-	public final boolean collidesWith(Image image, int x, int y, boolean pixelLevel) 
+	public final boolean collidesWith(Image image, int x, int y, boolean pixelLevel)
 	{
 		if (!(visible)) { return false; }
 
@@ -292,9 +292,9 @@ public class Sprite extends Layer
 		int right = left + collisionRectWidth;
 		int bottom = top + collisionRectHeight;
 
-		if (intersects(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom)) 
+		if (intersects(otherLeft, otherTop, otherRight, otherBottom, left, top, right, bottom))
 		{
-			if (pixelLevel) 
+			if (pixelLevel)
 			{
 				if (this.collisionRectX < 0) { left = this.x; }
 				if (this.collisionRectY < 0) { top = this.y; }
@@ -376,7 +376,7 @@ public class Sprite extends Layer
 	}
 
 	private boolean intersects(int rect1x1, int rect1y1, int rect1x2,
-		int rect1y2, int rect2x1, int rect2y1, int rect2x2, int rect2y2) 
+		int rect1y2, int rect2x1, int rect2y1, int rect2x2, int rect2y2)
 	{
 		// If one is to the left of the other = no collision
 		if (rect1x2 < rect2x1 || rect1x1 > rect2x2)
@@ -393,69 +393,71 @@ public class Sprite extends Layer
 	private static boolean checkPixCollision(int image1XOffset,
 		int image1YOffset, int image2XOffset, int image2YOffset,
 		Image image1, int transform1, Image image2, int transform2,int width,
-		int height) 
+		int height)
 	{
-		final int[] argbData1 = getARGBData(image1, image1XOffset,
-			image1YOffset, width, height);
-
-		final int[] argbData2 = getARGBData(image2, image2XOffset,
-			image2YOffset, width, height);
+		int numPixels = width * height;
+		int[] argbData1 = new int[numPixels];
+		int[] argbData2 = new int[numPixels];
 
 		final int[] data1Pos = getSpriteIncrAndStartPos(transform1, width,
-			height);
+			height, numPixels);
 
 		final int[] data2Pos = getSpriteIncrAndStartPos(transform2, width,
-			height);
+			height, numPixels);
 
-		int row, col, x1, x2, alpha1, alpha2;
-		for (row = 0; row < height; row++)
+		image1.getRGB(argbData1, 0, data1Pos[3], image1XOffset, image1YOffset, data1Pos[3], data1Pos[4]);
+		image2.getRGB(argbData2, 0, data2Pos[3], image2XOffset, image2YOffset, data2Pos[3], data2Pos[4]);
+
+		int row1 = data1Pos[0];
+		int row2 = data2Pos[0];
+
+		int x1, x2, alpha1, alpha2;
+		for (int row = 0; row < height; row++)
 		{
-			x1 = 0;
-			x2 = 0;
-			for (col = 0; col < width; col++)
+			x1 = row1;
+			x2 = row2;
+			for (int col = 0; col < width; col++)
 			{
 				// If there's an opaque pixel in both image's positions, we
 				// have a collision
-				alpha1 = (argbData1[(row * data1Pos[2]) + x1] >> 24) & 0xFF;
-				alpha2 = (argbData2[(row * data2Pos[2]) + x2] >> 24) & 0xFF;
+				alpha1 = (argbData1[x1] >> 24) & 0xFF;
+				alpha2 = (argbData2[x2] >> 24) & 0xFF;
 				if ((alpha1 == 0xFF) && (alpha2 == 0xFF))
 					return true;
 
 				x1 += data1Pos[1];
 				x2 += data2Pos[1];
 			}
+
+			row1 += data1Pos[2];
+			row2 += data2Pos[2];
 		}
 
 		return false;
 	}
 
-	private static int[] getSpriteIncrAndStartPos(int transform, int width,
-		int height)
+	private static int[] getSpriteIncrAndStartPos(int transform, int width, int height, int numPixels)
 	{
-		boolean isRot180 = (transform & TRANS_MIRROR_ROT180) != 0;
-		boolean isMirrorX = (transform & TRANS_MIRROR) != 0;
-		int startYPos, incrX, incrY;
-		
-		// Is it mirrored vertically?
-		if ((transform & (TRANS_MIRROR | TRANS_MIRROR_ROT180)) != 0)
-		{
-			incrX = isRot180 ? -height : height;
-			startYPos = isRot180 ? (width * height) - height : 0;
-			incrY = isMirrorX ? -1 : 1;
-			if (isMirrorX) { startYPos = height - 1; }
-		} 
-		else 
-		{
-			incrY = isRot180 ? -width : width;
-			startYPos = isRot180 ? (width * height) - width : 0;
-			incrX = isMirrorX ? -1 : 1;
-			if (isMirrorX) { startYPos += (width - 1); }
-		}
-		return new int[] {startYPos, incrX, incrY};
+		boolean is90 = (transform & 0x4) != 0;
+		boolean isRot180 = (transform & 0x1) != 0;
+		boolean isMirrorX = (transform & 0x2) != 0;
+
+		// 90 degree rotations swap width and height
+		int stride = is90 ? height : width;
+		if (is90) { height = width; }
+
+		int xIncr = is90 ? (isRot180 ? -stride : stride) : (isMirrorX ? -1 : 1);
+		int yIncr = is90 ? (isMirrorX ? -1 : 1) : (isRot180 ? -stride : stride);
+
+		int startY = 0;
+		if (isRot180) { startY += numPixels - stride; }
+		if (isMirrorX) { startY += stride - 1; }
+
+		return new int[] { startY, xIncr, yIncr, stride, height };
 	}
 
 	private static int[] getARGBData(Image image, int xOffset, int yOffset,
-		int width, int height) 
+		int width, int height)
 	{
 		int[] argbData = new int[height * width];
 
@@ -464,10 +466,10 @@ public class Sprite extends Layer
 		return argbData;
 	}
 
-	private int getImageTopLeft(int x1, int y1, int x2, int y2, boolean isX) 
+	private int getImageTopLeft(int x1, int y1, int x2, int y2, boolean isX)
 	{
 		int ret = 0;
-	
+
 		switch (this.currentTransform)
 		{
 			case TRANS_NONE:
@@ -489,9 +491,9 @@ public class Sprite extends Layer
 			default:
 				return ret;
 		}
-	
+
 		ret += isX ? frameCoordsX[sequence[sequenceIndex]] : frameCoordsY[sequence[sequenceIndex]];
-	
+
 		return ret;
 	}
 
