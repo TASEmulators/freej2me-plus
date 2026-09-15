@@ -548,7 +548,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = Math.min(canvasWidth, getClipWidth() + getClipX() + translateX);
 		final int clipHeight = Math.min(canvasHeight, getClipHeight() + getClipY() + translateY);
 
-		if(Mobile.compatDoNotTranslateDrawRGB && (x > clipWidth || y > clipHeight))
+		if(Mobile.compatDoNotTranslateDrawRGB && (y > clipHeight && x + width > clipWidth))
 		{
 			x -= translateX;
 			y -= translateY;
