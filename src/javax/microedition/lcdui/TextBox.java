@@ -54,7 +54,7 @@ public class TextBox extends Screen
 		"我你他她它是不好在有這那了人們說去來好學吃喝玩笑愛天日月年時\n".toCharArray()                                            // IS_TRADITIONAL_HANZI
 	};
 
-	private char[][] charSetHint = 
+	private char[][] charSetHint =
 	{
 		"Lat".toCharArray(),
 		"LAT".toCharArray(),
@@ -88,7 +88,7 @@ public class TextBox extends Screen
 	public TextBox(String Title, String value, int maxSize, int Constraints)
 	{
 		title = Title;
-		text = value;
+		text = value == null ? "" : value;
 		max = maxSize;
 		constraints = Constraints;
 
@@ -164,8 +164,8 @@ public class TextBox extends Screen
 
 	public void setInputMode(int mode) { charSetIdx = (byte) mode; }
 
-	public void setInitialInputMode(String characterSubset) 
-	{ 
+	public void setInitialInputMode(String characterSubset)
+	{
 		mode = characterSubset;
 
 		if (mode.equals("MIDP_UPPERCASE_LATIN"))                           { charSetIdx = 1; }
@@ -185,18 +185,18 @@ public class TextBox extends Screen
 		else if (mode.equals("IS_FULLWIDTH_DIGITS"))                       { charSetIdx = 15; }
 		else if (mode.equals("IS_FULLWIDTH_LATIN"))                        { charSetIdx = 16; }
 		else if (mode.equals("IS_HALFWIDTH_KATAKANA"))                     { charSetIdx = 17; }
-		else if (mode.equals("IS_HANJA"))                                  { charSetIdx = 18; } 
-		else if (mode.equals("IS_SIMPLIFIED_HANZI"))                       { charSetIdx = 19; } 
-		else if (mode.equals("IS_TRADITIONAL_HANZI"))                      { charSetIdx = 20; } 
+		else if (mode.equals("IS_HANJA"))                                  { charSetIdx = 18; }
+		else if (mode.equals("IS_SIMPLIFIED_HANZI"))                       { charSetIdx = 19; }
+		else if (mode.equals("IS_TRADITIONAL_HANZI"))                      { charSetIdx = 20; }
 		else                                                               { charSetIdx = 0; } // Default subset (BASIC_LATIN, IS_LATIN)
 	}
 
 	public int setMaxSize(int maxSize) { max = maxSize; return max; }
 
-	public void setString(String value) 
-	{ 
+	public void setString(String value)
+	{
 		if (value == null) { value = ""; }
-		
+
 		text = value;
 		caretPosition = text.length();
 		_invalidate();
@@ -208,38 +208,38 @@ public class TextBox extends Screen
 
 	public int size() { return text.length(); }
 
-	public boolean screenKeyPressed(int key) 
+	public boolean screenKeyPressed(int key)
 	{
 		boolean handled = true;
 
 		if(constraints == TextField.UNEDITABLE) { return false; } // If this field is uneditable, the user shall not be able to make changes through input
-		else 
+		else
 		{
 			if (key == Canvas.DOWN) { selectedCharIndex = (selectedCharIndex - 1 + charSet[charSetIdx].length) % charSet[charSetIdx].length; } // Cycle down through the character set
 			else if (key == Canvas.UP) { selectedCharIndex = (selectedCharIndex + 1) % charSet[charSetIdx].length; } // Cycle up through the character set
 			else if (key == Canvas.LEFT && caretPosition > 0) // Move back one char
-			{ 
+			{
 				caretPosition--;
 				// Check the character under the caret
 				char currentChar = text.charAt(caretPosition);
 				// Find the index of the current character in charSet
-				for (int i = 0; i < charSet[charSetIdx].length; i++) 
+				for (int i = 0; i < charSet[charSetIdx].length; i++)
 				{
-					if (charSet[charSetIdx][i] == currentChar) 
+					if (charSet[charSetIdx][i] == currentChar)
 					{
 						selectedCharIndex = i;
 						break;
 					}
 				}
-			} 
+			}
 			else if (key == Canvas.RIGHT && caretPosition < text.length()) // Move forward one char
 			{
 				if(caretPosition+1 < text.length())
 				{
 					char currentChar = text.charAt(caretPosition+1);
-					for (int i = 0; i < charSet[charSetIdx].length; i++) 
+					for (int i = 0; i < charSet[charSetIdx].length; i++)
 					{
-						if (charSet[charSetIdx][i] == currentChar) 
+						if (charSet[charSetIdx][i] == currentChar)
 						{
 							selectedCharIndex = i;
 							break;
@@ -247,17 +247,17 @@ public class TextBox extends Screen
 					}
 				}
 				caretPosition++;
-			} 
+			}
 			else if (key == Canvas.FIRE || key == Canvas.KEY_NUM5) // Insert the selected character into the current caret position
-			{ 
+			{
 				if (caretPosition < text.length()) // Replace the character at the caret position
 				{
 					text = text.substring(0, caretPosition) + charSet[charSetIdx][selectedCharIndex] + text.substring(caretPosition + 1);
 					caretPosition++;
-				} 
+				}
 				else // Append if at the end if the caret is already at the end
 				{
-					if(text.length() < max) 
+					if(text.length() < max)
 					{
 						text += charSet[charSetIdx][selectedCharIndex];
 						caretPosition++;
@@ -265,8 +265,8 @@ public class TextBox extends Screen
 				}
 			}
 			else if (key == Canvas.KEY_STAR) // Remove the char at the current caret position
-			{ 
-				if (caretPosition < text.length()) 
+			{
+				if (caretPosition < text.length())
 				{
 					// Remove the character at the caret position
 					text = text.substring(0, caretPosition) + text.substring(caretPosition + 1);
@@ -275,15 +275,15 @@ public class TextBox extends Screen
 				}
 			}
 			else if (key == Canvas.KEY_POUND && constraints != (TextField.NUMERIC | TextField.EMAILADDR | TextField.PHONENUMBER | TextField.DECIMAL)) // Insert a space into the current caret position (in constrants that allow it)
-			{ 
+			{
 				if (caretPosition < text.length() && text.length() < max) // Replace the character at the caret position
 				{
 					text = text.substring(0, caretPosition) + ' ' + text.substring(caretPosition);
 					caretPosition++;
-				} 
+				}
 				else // Append if at the end if the caret is already at the end
 				{
-					if(text.length() < max) 
+					if(text.length() < max)
 					{
 						text += ' ';
 						caretPosition++;
@@ -297,25 +297,25 @@ public class TextBox extends Screen
 		}
 	}
 
-	protected String renderScreen(int x, int y, int width, int height) 
+	protected String renderScreen(int x, int y, int width, int height)
 	{
 		graphics.translate(x, y);
 
 		// Fill the whole textField area with specified BG color. TODO: Make sure everything is inside the textField area, right now up/down arrows and the inputMode hint aren't.
 		graphics.setColor(Mobile.lcduiBGColor);
 		graphics.fillRect(margin, 0, width - 1 - margin * 2, Font.getDefaultFont().getHeight() + 3*padding);
-		
+
 		// Draw the border of the field
 		graphics.setColor(Mobile.lcduiTextColor);
 		graphics.drawRect(margin, 0, width - 1 - margin * 2, Font.getDefaultFont().getHeight() + 3*padding);
 
 		// Replace line breaks, they aren't visible by default.
 		String formattedText = text.replace('\n', '↳');
-		
+
 		// Draw the existing text before the caret (we'll make a space to highlight the char position the user is currently editing)
 		graphics.setColor(Mobile.lcduiTextColor);
 
-		if (caretPosition > 0) 
+		if (caretPosition > 0)
 		{
 			graphics.drawChars(formattedText.substring(0, caretPosition).toCharArray(), 0, formattedText.substring(0, caretPosition).length(), margin + padding, margin + padding, 0);
 		}
@@ -337,12 +337,12 @@ public class TextBox extends Screen
 		// Draw the remaining text after the caret
 		int remainWidth = 0;
 		graphics.setColor(Mobile.lcduiTextColor); // Restore color to the text's default after the caret position
-		if(formattedText.length() - (caretPosition+1) > 0) 
+		if(formattedText.length() - (caretPosition+1) > 0)
 		{
 			graphics.drawChars(formattedText.substring(caretPosition + 1).toCharArray(), 0, formattedText.length() - (caretPosition + 1), margin + padding + caretWidth + caretCharWidth, margin + padding, 0);
 			remainWidth = Font.getDefaultFont().stringWidth(formattedText.substring(caretPosition + 1));
 		}
-		
+
 		// Draw indicators to show whether more text is allowed or not
 		String indicator = (formattedText.length() < max) ? "⨁" : "⨂";
 		graphics.setColor(formattedText.length() < max ? 0x00BB00 : 0x770000); // Color based on state
@@ -356,11 +356,11 @@ public class TextBox extends Screen
 		// Render the characterSet hint
 		String hintText = new String(charSetHint[charSetIdx]);
 		int hintWidth = Font.getDefaultFont().stringWidth(hintText);
-	
+
 		// Draw background for hint text (it follows the same logic as the highlighted caret char)
 		graphics.setColor(Mobile.lcduiTextColor);
 		graphics.fillRect(width - margin - hintWidth, padding + Font.getDefaultFont().getHeight(), hintWidth, Font.getDefaultFont().getHeight() - padding - 1);
-	
+
 		graphics.setColor(Mobile.lcduiBGColor);
 		graphics.drawString(hintText, width - margin - hintWidth, margin + Font.getDefaultFont().getHeight(), 0);
 
