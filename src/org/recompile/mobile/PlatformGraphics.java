@@ -540,16 +540,19 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if (rgbData == null) { throw new NullPointerException("RGB Data array is null"); }
 		if (offset < 0 || offset >= rgbData.length) { throw new ArrayIndexOutOfBoundsException("Invalid offset for RGB Data"); }
 
-		if(!Mobile.compatDoNotTranslateDrawRGB)
-		{
-			x += translateX;
-			y += translateY;
-		}
+		x += translateX;
+		y += translateY;
 
 		final int clipX = Math.max(0, getClipX() + translateX);
 		final int clipY = Math.max(0, getClipY() + translateY);
 		final int clipWidth = Math.min(canvasWidth, getClipWidth() + getClipX() + translateX);
 		final int clipHeight = Math.min(canvasHeight, getClipHeight() + getClipY() + translateY);
+
+		if(Mobile.compatDoNotTranslateDrawRGB && (x > clipWidth || y > clipHeight))
+		{
+			x -= translateX;
+			y -= translateY;
+		}
 
 		if(y + height > clipHeight) { height = clipHeight - y; }
 		if(x + width > clipWidth)   { width = clipWidth - x; }
