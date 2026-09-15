@@ -560,8 +560,12 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		/* If width or height ended up as zero, we can exit early */
 		if (width <= 0 || height <= 0) { return; }
 
-		final int icache = (x > clipX) ? 0 : (clipX - x);
-		final int jcache = (y > clipY) ? 0 : (clipY - y);
+		final int icache = (x >= clipX) ? 0 : (clipX - x);
+		final int jcache = (y >= clipY) ? 0 : (clipY - y);
+
+		// If the starting position has been made to start beyond the clip area,
+		// we have nothing to draw.
+		if (icache >= width || jcache >= height) { return; }
 
 		int rowOffset, destRow;
 
