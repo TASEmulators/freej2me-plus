@@ -49,11 +49,11 @@ body {
 .compat_graph h1 {
     color: #ff6600ff;
     font-weight: bold;
-    font-family: 'Times New Roman', Times, serif;
+    font-family:serif;
 }
 
 #total_apps {
-    font-family:'Times New Roman', Times, serif;
+    font-family:serif;
     font-weight: bold;
     font-size: 1.5em;
     text-align: center;
@@ -271,6 +271,28 @@ body {
     font-family:Verdana, Geneva, Tahoma, sans-serif;
     font-size: 0.85vw;
     color: white;
+}
+
+#entrydesc .req_settings_title {
+    margin-top: 6px;
+}
+
+#entrydesc .req_settings_list {
+    margin: 4px 0 0 18px;
+    padding: 0;
+    list-style-type: disc;
+}
+
+#entrydesc .req_settings_list li {
+    margin-bottom: 2px;
+}
+
+#entrydesc .setting_val {
+background-color: rgba(255, 255, 255, 0.125);
+color: #00ccdd;
+padding: 0px 2px;
+border-radius: 5px;
+font-family: monospace;
 }
 
 #entryupd {

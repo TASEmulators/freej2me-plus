@@ -65,12 +65,12 @@ function readCSV() {
     /* Draw inner donut chart */
     generatePieGraph('innerchart_canvas', {
       animation: true, 
-      animationSpeed: 15, 
+      animationSpeed: 10,
       fillTextData: true,
       fillTextColor: '#fff',
       fillTextAlign: 1.5,
       fillTextPosition: 'inner',
-      doughnutHoleSize: 40,
+      doughnutHoleSize: 35,
       doughnutHoleColor: '#1a1a1aff',
       offset: 0, 
       pie: 'normal',
@@ -83,7 +83,7 @@ function readCSV() {
   });
 }
 
-/* Helper function to generate the compatibility date separate from teh main csv function */
+/* Helper function to generate the compatibility date separate from the main csv function */
 function generateCompatData() {
   var statcolor = '', maindivname='', elem_bordercolor='';
   var compat_table = document.getElementById('compat_table');
@@ -98,32 +98,38 @@ function generateCompatData() {
 
     /* Last row of csv is always empty, so treat that case */
     if(row.length > 0) {
-      /* Columns are separated by '|' in the csv */
-      columndata = row.split('|');
+      // The CSV is formatted for better readability on github and text
+      // editors now, so we must trim the empty spaces here.
+      var line = row.trim();
 
-      /* TODO: Improve the text detection here, as any minor deviation can make a pass fail */
-      switch(columndata[2]) {
-        case 'Perfect':
+      // Columns are separated by '|' in the csv
+      if (line.startsWith('|')) { line = line.substring(1); }
+      if (line.endsWith('|')) { line = line.substring(0, line.length - 1); }
+
+      columndata = line.split('|');
+
+      switch(columndata[2].toLowerCase().trim()) {
+        case 'no issues':
           statcolor = 'style="background-color:' + colors[0] + ';"';
           elem_bordercolor = 'style="border-color:' + colors[0] + ';"';
           values[0] +=1;
           break;
-        case 'Minor issues':
+        case 'minor issues':
           statcolor = 'style="background-color:' + colors[1] + ';"';
           elem_bordercolor = 'style="border-color:' + colors[1] + ';"';
           values[1] +=1;
           break;
-        case 'Playable':
+        case 'playable':
           statcolor = 'style="background-color:' + colors[2] + ';"';
           elem_bordercolor = 'style="border-color:' + colors[2] + ';"';
           values[2] +=1;
           break;
-        case 'Ingame':
+        case 'intro/menu':
           statcolor = 'style="background-color:' + colors[3] + ';"';
           elem_bordercolor = 'style="border-color:' + colors[3] + ';"';
           values[3] +=1;
           break;
-        case 'Not booting':
+        case 'unplayable':
           statcolor = 'style="background-color:' + colors[4] + ';"';
           elem_bordercolor = 'style="border-color:' + colors[4] + ';"';
           values[4] +=1;
@@ -131,17 +137,49 @@ function generateCompatData() {
         default: /* Skip any invalid entries */
           continue;
       }
+
+
+      /* We are now embedding compat flags, etc. into the description as well, so format them. */
+      var rawDesc = columndata[3] ? columndata[3].trim() : '';
+      var formattedDesc = '';
+
+      if (rawDesc.indexOf('Required Settings:') !== -1) {
+        var parts = rawDesc.split('Required Settings:');
+        var mainText = parts[0].trim();
+        var settingsRaw = parts[1].trim();
+
+        if (mainText.length > 0) {
+          formattedDesc += '<div>' + mainText + '</div>';
+        }
+
+        if (settingsRaw.length > 0) {
+          var settingsArray = settingsRaw.split(',');
+          formattedDesc += '<div class="req_settings_title"><b>Required Settings:</b></div>';
+          formattedDesc += '<ul class="req_settings_list">';
+          for (var s = 0; s < settingsArray.length; s++) {
+            var settingItem = settingsArray[s].trim();
+            if (settingItem.length > 0) {
+              // Anything with double quotes becomes a badge for better readability.
+              settingItem = settingsArray[s].trim().replace(/"([^"]+)"/g, '<span class="setting_val">$1</span>');
+              formattedDesc += '<li><b>' + settingItem + '</b></li>';
+            }
+          }
+          formattedDesc += '</ul>';
+        }
+      } else {
+        formattedDesc = rawDesc;
+      }
       
       /* Inserts each row's data into the expected div */
       maindivname = 'id="compat_entry' + i + '"';
 
       temp_elements += '\
       <div class="compat_entry" ' + maindivname + elem_bordercolor +  '>' + '\n \
-        <div id="entryname">' + columndata[0] + '</div>\
-        <div id="entryres">'  + columndata[1] + '</div>\
-        <div id="entrystat"><div id="statbg" ' + statcolor + '>' + columndata[2] + '</div></div>\
-        <div id="entrydesc">' + columndata[3] + '</div>\
-        <div id="entryupd"><div id="extrabg">'  + columndata[4] + '</div></div>\
+        <div id="entryname">' + columndata[0].trim() + '</div>\
+        <div id="entryres">'  + columndata[1].trim() + '</div>\
+        <div id="entrystat"><div id="statbg" ' + statcolor + '>' + columndata[2].trim() + '</div></div>\
+        <div id="entrydesc">' + formattedDesc + '</div>\
+        <div id="entryupd"><div id="extrabg">'  + columndata[4].trim() + '</div></div>\
         <div id="entrymd5"><div id="extrabg">'  + columndata[5] + '</div></div>\
       </div>';
 
@@ -199,7 +237,7 @@ function updateCompatState() {
     /* Make all entries begin as 'display: none' to significantly shorten the conditionals below. */
     compat_entry.style.display = "none";
 
-    if(entrystat.textContent.toLowerCase() === "perfect" && perfect_enabled) {
+    if(entrystat.textContent.toLowerCase() === "no issues" && perfect_enabled) {
         compat_entry.style.display = "flex";
 
     } else if(entrystat.textContent.toLowerCase() === "minor issues" && minor_issue_enabled) {
@@ -208,17 +246,17 @@ function updateCompatState() {
     } else if(entrystat.textContent.toLowerCase() === "playable" && playable_enabled) {
         compat_entry.style.display = "flex";
 
-    } else if(entrystat.textContent.toLowerCase() === "ingame" && ingame_enabled) {
+    } else if(entrystat.textContent.toLowerCase() === "intro/menu" && ingame_enabled) {
         compat_entry.style.display = "flex";
 
-    } else if(entrystat.textContent.toLowerCase() === "not booting" && not_booting_enabled) {
+    } else if(entrystat.textContent.toLowerCase() === "unplayable" && not_booting_enabled) {
         compat_entry.style.display = "flex";
     }
   }
 }
 
 function toggleStatus(status) {
-  if (status === 'perfect') {
+  if (status === 'no_issue') {
     
     if(perfect_enabled) {
       document.getElementById('b_perfect').style.backgroundColor = 'transparent';
@@ -246,7 +284,7 @@ function toggleStatus(status) {
     }
     playable_enabled = !playable_enabled;
 
-  } else if (status === 'ingame') {
+  } else if (status === 'intro_menu') {
     
     if(ingame_enabled) {
       document.getElementById('b_ingame').style.backgroundColor = 'transparent';
@@ -255,7 +293,7 @@ function toggleStatus(status) {
     }
     ingame_enabled = !ingame_enabled;
 
-  } else if (status === 'not_booting') {
+  } else if (status === 'unplayable') {
     
     if(not_booting_enabled) {
       document.getElementById('b_not_booting').style.backgroundColor = 'transparent';
