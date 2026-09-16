@@ -207,7 +207,7 @@ public class MobilePlatform
 		if(appTerminated) { return; }
 
 		if(!MIDletLoader.MIDletSelected) { MIDletLoader.keyPress(Mobile.getGameAction(keycode)); }
-		else if (!Mobile.isPaused && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
+		else if (!Mobile.isPaused)
 		{
 			updateKeyState(Mobile.getGameAction(keycode), true);
 			updateVodafoneKeyState(Mobile.getCanvasAction(keycode), true);
@@ -233,12 +233,12 @@ public class MobilePlatform
 	{
 		if(appTerminated) { return; }
 
-		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
+		if(!Mobile.isPaused && MIDletLoader.MIDletSelected)
 		{
 			updateKeyState(Mobile.getGameAction(keycode), false);
 			updateVodafoneKeyState(Mobile.getCanvasAction(keycode), false);
 			updateDoJaKeyState(Mobile.getCanvasAction(keycode), false);
-			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null && MIDletLoader.MIDletSelected)
+			if (!Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
 			{
 				Mobile.getDisplay().postInputEvent(new Runnable()
 				{
