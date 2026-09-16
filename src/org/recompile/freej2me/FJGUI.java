@@ -1621,13 +1621,18 @@ public final class FJGUI
 					// We already have a reader running? Stop it before creating another
 					if (FJGUI.gamepadThread != null && FJGUI.gamepadThread.isAlive())
 					{
-						if (FJGUI.gamepadReader != null) { FJGUI.gamepadReader.stop(); }
+						if (FJGUI.gamepadReader != null)
+						{
+							FJGUI.gamepadReader.stop();
+							FJGUI.gamepadReader = null;
+						}
 
 						FJGUI.gamepadThread.interrupt();
 
 						// Wait for the thread a bit, so it can end normally.
 						try { FJGUI.gamepadThread.join(500); }
 						catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
+						FJGUI.gamepadThread = null;
 					}
 
 					if (os.contains("linux")) { FJGUI.gamepadReader = new LinuxGamepadReader(firstDevice, gui); }
@@ -1643,11 +1648,21 @@ public final class FJGUI
 				}
 				else
 				{
-					// Close any active readers, we have no devices now.
-					if (FJGUI.gamepadReader != null)
+					// We already have a reader running? Stop it before creating another
+					if (FJGUI.gamepadThread != null && FJGUI.gamepadThread.isAlive())
 					{
-						FJGUI.gamepadReader.stop();
-						FJGUI.gamepadReader = null;
+						if (FJGUI.gamepadReader != null)
+						{
+							FJGUI.gamepadReader.stop();
+							FJGUI.gamepadReader = null;
+						}
+
+						FJGUI.gamepadThread.interrupt();
+
+						// Wait for the thread a bit, so it can end normally.
+						try { FJGUI.gamepadThread.join(500); }
+						catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
+						FJGUI.gamepadThread = null;
 					}
 					gamepadName.setText("Pad: None");
 				}

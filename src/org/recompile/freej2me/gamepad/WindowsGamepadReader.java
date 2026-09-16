@@ -30,7 +30,6 @@ public class WindowsGamepadReader extends GamepadReader
 	private static final String WIN_32_PAD = "Win32Pad.exe";
 
 	private Process win32PadProcess;
-	private InputStream in;
 
 	// This one is used to kill the input reader process when FreeJ2ME-Plus
 	// closes, otherwise it will be dangling there doing nothing on the OS.
@@ -136,7 +135,6 @@ public class WindowsGamepadReader extends GamepadReader
 								MobilePlatform.pressedKeys[keyIndex] = true;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(keyIndex));
 							}
-							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(keyIndex)); }
 						}
 						else
 						{
@@ -176,7 +174,6 @@ public class WindowsGamepadReader extends GamepadReader
 								MobilePlatform.pressedKeys[axisKeyIndex] = true;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(axisKeyIndex));
 							}
-							else if (axisKeyIndex != Integer.MIN_VALUE) { MobilePlatform.keyRepeated(Mobile.getMobileKey(axisKeyIndex)); }
 						}
 						else
 						{

@@ -894,7 +894,7 @@ public class MobilePlatform
 				if(timeToUnfocus <= 0) { focusCommandBar = false; }
 			}
 
-			Mobile.getPlatform().limitFps();
+			limitFps();
 		}
 	}
 

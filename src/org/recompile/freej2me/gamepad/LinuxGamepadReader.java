@@ -18,7 +18,6 @@ package org.recompile.freej2me.gamepad;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.recompile.freej2me.FJGUI;
@@ -85,7 +84,7 @@ public class LinuxGamepadReader extends GamepadReader
 			return;
 		}
 
-		FileInputStream in = null;
+		in = null;
 		try
 		{
 			in = new FileInputStream(joystickFile);
@@ -135,7 +134,6 @@ public class LinuxGamepadReader extends GamepadReader
 								MobilePlatform.pressedKeys[keyIndex] = true;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(keyIndex));
 							}
-							else { MobilePlatform.keyRepeated(Mobile.getMobileKey(keyIndex)); }
 						}
 						else
 						{
@@ -175,7 +173,6 @@ public class LinuxGamepadReader extends GamepadReader
 								MobilePlatform.pressedKeys[axisKeyIndex] = true;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(axisKeyIndex));
 							}
-							else if (axisKeyIndex != Integer.MIN_VALUE) { MobilePlatform.keyRepeated(Mobile.getMobileKey(axisKeyIndex)); }
 						}
 						else
 						{
