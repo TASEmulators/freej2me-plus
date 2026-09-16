@@ -1,17 +1,17 @@
 | Game Name | Screen resolution | Current Status | Description | Last Updated | MD5 Hash(es) |
 | :--------- | :----------------- | :-------------: | :----------- | :-------------: | :-------------: |
 | 007 – Top Agent | 320x240 | No Issues | | 06/04/23 | 754b1accbfa8ed54f296375cde1a41bf (320x240) |
-| 1941 – Frozen Front | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/14/25 | b5d8869061e3ab8b4f1d951c83afe363 (101x80) |
+| 1941 – Frozen Front | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/14/25 | b5d8869061e3ab8b4f1d951c83afe363 (101x80) |
 | 1943 - The Battle of Midway | 240x320 | No Issues | | 09/17/24 | 58fb0a0f4cd0fdfa8318002e1733909d (240x320) |
 | 2012-末日传说 (2012 - The Legend of Doomsday) | 240x320, 320x240, 640x360 | No Issues | 640x360 is not rotated, instead it’s an actual 640x360 framebuffer | 06/04/23 | 18f783d7bb3aec5499703b5afa991485 (320x240) |
 | 24 – Jack Bauer | 240x320, 320x240 | No Issues | | 06/04/23 | f0db50d1d356bbcb475584399a4d9c43 (320x240) |
-| 3D Air Combat – Drift In Time | 240x320 | No Issues | Works fine, menu inputs are a bit weird (controls like a lever of sorts, pressing down then up moves up, can be replicated in other emulators and devices). Required Settings: FPS Lock to "30 FPS or less" | 08/01/25 | 1a6b483afe326925f364f2eee02281c5 (240x320) |
+| 3D Air Combat – Drift In Time | 240x320 | No Issues | Works fine, menu inputs are a bit weird (controls like a lever of sorts, pressing down then up moves up, can be replicated in other emulators and devices). Required Settings: FPS Lock to ›30 FPS or less‹ | 08/01/25 | 1a6b483afe326925f364f2eee02281c5 (240x320) |
 | 3D Bio Soldiers | 240x320 | No Issues | | 06/04/23 | fef0c82d96636760fe53ec640f522ad6 (240x320) |
 | 3D魔域镇魂曲 (3D Demon Realm: Requiem) | 240x320 | No Issues | | 07/05/25 | e7b050576482f4fe6ba7aecf5caa50fb (240x320) |
 | 3D Dungeon Warrior | 240x320 | No Issues | | 06/04/23 | f67dd7cb022d8e18a67a585505d5427f (240x320) |
 | 3D Fast and Furious - Pink Slip | 240x320 | No Issues | | 08/18/26 | 834b7bf2525890cd23d58687bec21cef (240x320) |
 | 3D Fast and Furious - The Movie | 240x320 | No Issues | | 08/18/26 | 3f11648a760aec58be49b17bfdfdc59f (240x320) |
-| 3D Formula Extreeme! | 240x320 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 09/16/26 | 79672f24f05f1274b1075d2620f7ea61 (240x320) |
+| 3D Formula Extreeme! | 240x320 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 09/16/26 | 79672f24f05f1274b1075d2620f7ea61 (240x320) |
 | 3D Saboteur – Mystery of the 3rd Reich | 352x416 | No Issues | Throws multiple 'Couldn't Load Image Data From Byte Array' messages at the console, does not affect gameplay. | 11/02/23 | 80fb0a939ec0a8ddf542af34eef29ab8 (352x416) |
 | 3D雷电-激战银河系 (3D Thunderbolt - Battle of the Galaxies) | 240x320 (portrait 320x240) | No Issues | Default rotation as 240x320 works fine | 06/04/23 | 3cadf82a401c138ee848fdd9ced3df08 (240x320) |
 | 3D Timeshock Super Pinball | 176x208, 320x240 | No Issues | | 08/18/26 | 58b933bf636fec89924e3ff45a575c41 (320x240) |
@@ -33,20 +33,20 @@
 | Agent Smith – World Assault | 320x240 | No Issues | | 06/04/23 | ea647dbfe32e938de1f9c509f0e87340 (320x240) |
 | Age of Empires 3 - The Asian Dynasties | 240x320 | No Issues | | 06/04/23 | 9bc72bb09bf76e28b33239e23278f2bd (320x240) |
 | A Good Day to Die Hard | 240x320 | Minor Issues | Almost perfect, can’t play audio/amr files | 06/04/23 | 5a8052c4150e3c8ba39340932760e98f (240x320) |
-| AH-1 SeaBomber | 128x128 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 12/01/24 | a40f809dccb127636f3485511c7b97f5 (128x128) |
+| AH-1 SeaBomber | 128x128 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 12/01/24 | a40f809dccb127636f3485511c7b97f5 (128x128) |
 | Air Combat 2012 | 240x320 | No Issues | | 09/22/24 | 003e6ecc26163fcb2bd3c4980b695434 (240x320) |
 | Aircraft Gear | 240x320 | No Issues | | 06/04/23 | b813cf20b1e0aeb1e4c28ca102ad9df3 (240x320) |
-| AirForceX | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/14/25 | 221c4001faca14439410570806d3fddf (101x80) |
+| AirForceX | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/14/25 | 221c4001faca14439410570806d3fddf (101x80) |
 | Air Strike 1944 – Fight for Freedom | 240x320 | No Issues | | 06/04/23 | 8437c276a28feecaf7a14bf9c54da674 (240x320) |
 | Air War 3D | 240x320 | No Issues | | 08/18/26 | 5f0df90bef4dd857b494067345410646 (320x240) |
 | 悪魔城伝説 (Akumajō Densetsu) [I-Appli] | 240x240 | No Issues | | 09/04/25 | 2bcf408d1ebdd9ef20babbd36c82a929 (240x240) |
-| Alien Attack | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/16/25 | 57ca3bde4b420cb4632c84c63c79bc65 (101x80) |
+| Alien Attack | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/16/25 | 57ca3bde4b420cb4632c84c63c79bc65 (101x80) |
 | Alien Massacre | 320x240 | No Issues | | 11/21/25 | 7adb13ab4e3872d0cc75044a45e3d26a (320x240) |
 | Alien Massacre 2 | 320x240 | No Issues | | 11/21/25 | cf9133e72f6b6441e3015dd3c601718e (320x240) |
 | Alien Quarantine | 320x240 | No Issues | | 06/04/23 | c67a56e10ce614ee4a807377b511333d (320x240) |
 | Alien Shooter 3D | 240x320 | No Issues | | 06/04/23 | 2d64e75d4f0520d354d33119bb8b110f (240x320) |
 | Alloy Storm | 240x320 | No Issues | | 06/04/23 | 10b503a49bc85ab46364130e2ac2bea8 (240x320) |
-| AlphaMania | 96x65 | No Issues | Required Settings: "Process Canvas repaints immediately" flag | 06/13/25 | c16c3293b9938253775dfc80e2292e1a (96x65) |
+| AlphaMania | 96x65 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag | 06/13/25 | c16c3293b9938253775dfc80e2292e1a (96x65) |
 | Alpha Wing | 240x320 | No Issues | | 06/04/23 | 369a27c8242ce3a27693131998d9bdff (240x320) |
 | Alpha Wing 2 | 320x240 | No Issues | | 09/16/26 | 807d408344e43d80276ea474e264d716 (320x240) |
 | Alpha Zone 3D | 208x208 | No Issues | | 04/15/25 | 36fff71ff155b6d172c345079d354775 (208x208) |
@@ -63,7 +63,7 @@
 | Apotheosize | 240x320 | No Issues | Runs perfectly | 09/17/24 | 190c1d339a45bc80526cb694035b7030 (240x320) |
 | Aqua Race | 101x80 | No Issues | | 11/17/24 | 214daa9a3bdebea62a118e91247a5edd (101x80) |
 | Arcadius | 240x320 (portrait 320x240) | No Issues | Free' version gets stuck at the first menu since it requires network connection, which isn’t implemented, but the cracked version is perfect. | 09/19/24 | aab94b77b9ae7789b067de381db482a1 (portrait 320x240) |
-| Archangel | 240x320 | No Issues | Normally locks to 30fps, but is more playable at either 20 or 15fps. Required Settings: FPS Lock to "20 FPS or less" | 06/25/25 | 7b820e283afb0fe0e0199a2bf3e5b5b5 (240x320) |
+| Archangel | 240x320 | No Issues | Normally locks to 30fps, but is more playable at either 20 or 15fps. Required Settings: FPS Lock to ›20 FPS or less‹ | 06/25/25 | 7b820e283afb0fe0e0199a2bf3e5b5b5 (240x320) |
 | Arkanoid Evolution | 320x240 | No Issues | Throws 'IllegalThreadStateException' on 'AWT-EventQueue-0' when starting, but it appears to cause no real issues. | 06/04/23 | a47e72fef5c8a41502d39a38644aa22f (320x240) |
 | Armor Hero | 240x320 | No Issues | | 06/04/23 | 9be3c0441c996a2df9d27f8aa35098b4 (240x320) |
 | Artic Assault 3D | 320x240 (landscape 240x320) | No Issues | | 06/04/23 | c38740a34ee33ad3c4a28af44cc1c4c5 (landscape 240x320) |
@@ -83,10 +83,10 @@
 | Assassin's Creed III | 320x240 | Minor Issues | Works almost perfectly (complains about the lack of a player for audio/amr, missing audio fx) | 11/16/24 | 2b5c644b98e2d07a80083488cfcd0180 (320x240) |
 | Assassin's Creed Revelations | 320x240 | No Issues | | 06/04/23 | 3c0aecff81759f6883dc890ee3746c61 (320x240) |
 | Asteroids | 240x320 | No Issues | | 11/20/24 | 033c830efa9d2c6ff586ba3936875d7d (240x320) |
-| Aston Golf | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 07/29/25 | 08d8cceddefb29909985141883654317 (101x80) |
-| Astro 3003 | 128x128 | No Issues | Required Settings: FPS Lock to "15 FPS or less" | 11/21/25 | 3b5ce054757f09e1fcc9202738141cdc (128x128) |
+| Aston Golf | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 07/29/25 | 08d8cceddefb29909985141883654317 (101x80) |
+| Astro 3003 | 128x128 | No Issues | Required Settings: FPS Lock to ›15 FPS or less‹ | 11/21/25 | 3b5ce054757f09e1fcc9202738141cdc (128x128) |
 | Astro Knight – Galaxy | 240x320 | No Issues | | 02/27/25 | 6f970aa4926a5ce5b0d564888abbd96c (240x320) |
-| Attack Mission - Atlantic Harbour | 240x320 | No Issues | Required Settings: "Process Canvas repaints immediately" flag, FPS Lock to "15 FPS or less" | 07/06/25 | 332e7f31def4e5a9a44d85f9adab2805 (240x320) |
+| Attack Mission - Atlantic Harbour | 240x320 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag, FPS Lock to ›15 FPS or less‹ | 07/06/25 | 332e7f31def4e5a9a44d85f9adab2805 (240x320) |
 | Atomic Underground | 101x80 | No Issues | | 05/14/25 | 589146dafcac6829372c76579ebbc337 (101x80) |
 | 阿图德拉天空战记 (Atudra Sky Warrior) | 240x320 | No Issues | | 10/09/24 | c6cb61687fc6435f5c941bb4cbbffb7c (240x320) |
 | Avalanche Snowboarding | 320x240 | No Issues | | 06/04/23 | 3925b9e3af7dec0f992cb33bc2070408 (320x240) |
@@ -104,7 +104,7 @@
 | Beach Rally | 128x128 | No Issues | | 12/01/24 | d919bf785316d0312cd2851f8b429f8f (128x128) |
 | 劲爆音乐画师 (Beatstroke) | 240x320 | No Issues | | 05/18/25 | 844d5cd38a251a1c4b51671e9492675d (240x320) |
 | Ben 10 – Ultimate Alien | 320x240 | No Issues | | 06/04/23 | 303c6165233700176bb77284b4891559 (320x240) |
-| Bermuda | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 07/29/25 | 8f04929a93364acf354e782e01140b29 (101x80) |
+| Bermuda | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 07/29/25 | 8f04929a93364acf354e782e01140b29 (101x80) |
 | 生化危城-僵尸爆发 (Biohazard – Zombie Outbreak) | 240x320 | No Issues | Fails to load some Image Stream objects, but gameplay and visuals are unaffected | 06/04/23 | 416d9557f788eac504d926b0c89edc06 (240x320) |
 | Billy the Kid Wanted | 176x220 | No Issues | | 09/25/25 | fee640d3d7e476a123998469800c62d0 (176x220 CN) |
 | Bionic Commando Rearmed | 240x320 | No Issues | | 06/04/23 | 27148bc083f76e95af32f3822ab30916 (240x320) |
@@ -151,7 +151,7 @@
 | Bubble Revolution | 320x240 | No Issues | | 06/04/23 | 7259204ce319a0a8a5f0af828854e9a8 (320x240) |
 | Bullet King | 176x208 | No Issues | | 10/30/24 | 217a22cb47dbd84c43d280cccb2ba7ef (176x208) |
 | 弾王2 (Bullet King 2, also goes by Dimensional Wing) | 240x320 | No Issues | | 04/21/25 | c7811f49a12c5be9b15b10765b210aea (240x320) |
-| Burning Skies | 240x320 | No Issues | Required Settings: "Process Canvas repaints immediately" flag, FPS Lock to "15 FPS or less" | 07/06/25 | efa6f5275e6c8af41bf6dc452b85324c (240x320) |
+| Burning Skies | 240x320 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag, FPS Lock to ›15 FPS or less‹ | 07/06/25 | efa6f5275e6c8af41bf6dc452b85324c (240x320) |
 | Call of Duty 2 – Stalingrad | 240x320 | Minor Issues | Has some minor animation bugs | 09/16/26 | cac2a5ad461420051d94810837ab6f78 (240x320) |
 | Call Of Juarez | 320x240 | No Issues | | 06/04/23 | 35575ed8394ca068a20917e4282f450d (320x240) |
 | Cannonball 8000 | 240x320 | No Issues | | 11/22/24 | 89b3026316d18c6b2c651cb0cc982ca4 (240x320) |
@@ -165,10 +165,10 @@
 | Castle of Magic | 240x320 | Minor Issues | Almost perfect, can’t play audio/amr files | 06/04/23 | ab8ab4fec457f166c3f4685e86c826b6 (240x320) |
 | Castlevania – Aria of Sorrow | 320x240 | No Issues | Throws 'Canvas repaint(): Cannot invoke 'String.length()' because '<parameter1>' is null' when loading new areas, but gameplay is unaffected. | 06/04/23 | 9daebbbb9afa7295c4a61aa8eb113eed (320x240) |
 | Castlevania – Dawn of Sorrow | 320x240 | No Issues | | 06/04/23 | fe42128b2aeddbf1738efdf2b4b090ee (320x240) |
-| 勇闯恶魔城-Konami正版 (Castlevania - Konami Original) | 240x320 | No Issues | Required Settings: FPS Lock to "15 FPS or less" | 09/17/24 | 2dae529b4d73b90a05a3126035efdd9b (240x320) |
+| 勇闯恶魔城-Konami正版 (Castlevania - Konami Original) | 240x320 | No Issues | Required Settings: FPS Lock to ›15 FPS or less‹ | 09/17/24 | 2dae529b4d73b90a05a3126035efdd9b (240x320) |
 | Castlevania – Order of Shadows | 320x240, 240x320 | No Issues | | 06/04/23 | a7ed422dfb3ae69479a2a5c078b5d3c0 (320x240, 240x320) |
 | Castlevania RPG (恶魔城RPG-血之召喚) | 240x320 | No Issues | | 04/16/25 | 869fe6d5f8d8bd352aa2a6e0127c9e20 (240x320) |
-| Cavecab | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "25 FPS or less" | 09/16/26 | 96e8814566df06315ef6bc01a97100e8 (101x80) |
+| Cavecab | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›25 FPS or less‹ | 09/16/26 | 96e8814566df06315ef6bc01a97100e8 (101x80) |
 | 混沌进行曲 (Chaos March) | 176x208 | No Issues | | 04/17/25 | afc02529ef6d0d843eff7cfcb12aa354 (176x208) |
 | Chase H.Q | 176x208 | No Issues | | 10/28/23 | 20e0913da326b6d0d57812815aad50b2 (176x208) |
 | Chessmaster | 101x80 | No Issues | | 01/02/25 | 5c549448babf41f5ebb0f3f6b4962719 (101x80) |
@@ -200,15 +200,15 @@
 | Cybores | 96x65 | No Issues | | 02/22/25 | 25ea38bdbd4d2790350523f8a63e53f2 (96x65) |
 | 댄스배틀오디션 (Dance Battle Audition) [SKT SK-VM] | 240x320 | Minor Issues | Has audio issues, and some minor graphics bugs | 07/21/25 | b812dda06a8aa6c379b936a2a322136f (240x320) |
 | Dance Dance Revolution [I-Appli] | 240x240 | Minor Issues | Has some audio issues | 09/04/25 | df856efc38c6173435ebb68a0a19f3e3 (240x240) |
-| Dangerous Roads | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "15 FPS or less" | 05/14/25 | 8d9a2d0b60e90540baa23bfb1d0673f5 (101x80) |
-| Danger Dash | 320x240 | No Issues | Almost perfect, can’t play audio/amr files. Required Settings: FPS Lock to "30 FPS or less" | 11/16/24 | 186c2e0d3c6e756954e4aa1f14884791 (320x240) |
+| Dangerous Roads | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›15 FPS or less‹ | 05/14/25 | 8d9a2d0b60e90540baa23bfb1d0673f5 (101x80) |
+| Danger Dash | 320x240 | No Issues | Almost perfect, can’t play audio/amr files. Required Settings: FPS Lock to ›30 FPS or less‹ | 11/16/24 | 186c2e0d3c6e756954e4aa1f14884791 (320x240) |
 | Dariusgate | 128x128 | No Issues | | 11/21/25 | bb677f1954333488e98cce710b5086d8 (128x128) |
 | Dark Emperor | 96x65 | No Issues | | 04/29/25 | ec08084019b1e6b6eda8f52bd79afbb1 (96x65) |
 | Darkest Fear | 240x320 | No Issues | | 09/20/24 | 5de628a776c14e1ba36561257ee4e04e (240x320) |
 | Darkest Fear 2 – Grim Oak | 240x320 | No Issues | | 09/20/24 | 4173444fca301c97e81254edd7ab0e2c (240x320) |
 | Darkest Fear 3 – Nightmare | 240x320 | No Issues | | 09/20/24 | 2ba0d093f61f9fdad61fab91e5870f71 (240x320) |
 | 暗黑聖域 (Dark Sanctuary) | 176x208 | No Issues | | 07/05/25 | 81f05aa5814ebccbac06ba2bba40f4ad (176x208) |
-| Darude Highway Racer | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "15 FPS or less" | 05/14/25 | 43850e574b6261045c9cde1e47b3d9fd (101x80) |
+| Darude Highway Racer | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›15 FPS or less‹ | 05/14/25 | 43850e574b6261045c9cde1e47b3d9fd (101x80) |
 | 死亡弹幕 (Death Danmaku) | 240x320 | No Issues | | 09/22/25 | 8743e9ed4fb8c88fc5e2cf1b5b73772e (240x320) |
 | 생존일기 (Death Game/Survival day/生存日記) [SKT SK-VM] | 240x320 | No Issues | | 09/22/25 | d7ae516d8abac949f5207cf928edde62 (240x320) |
 | Death Race | 240x320 | No Issues | | 12/02/24 | 164467fe4f1cb2448a03baa85698072b (240x320) |
@@ -229,7 +229,7 @@
 | DOOM RPG | 320x240 | No Issues | | 06/04/23 | f35b3eccb16ed859c1ee4131f95844e5 (320x240) |
 | Down | 128x128 | No Issues | | 02/23/25 | 0f87ef0dabb78792503b3faf574a887a (128x128) |
 | Dragon Ball RPG (Trial) [I-Appli] | 240x240 | No Issues | | 08/18/26 | d6d073696f485ea14a85938d6b350788 (240x240) |
-| Dragon & Dracula | 101x80 | No Issues | Required Settings: Siemens Control Scheme, FPS Lock to "30 FPS or less" | 05/14/25 | 7fe64e38a5b695c6d6c5b56650048ac1 (101x80) |
+| Dragon & Dracula | 101x80 | No Issues | Required Settings: Siemens Control Scheme, FPS Lock to ›30 FPS or less‹ | 05/14/25 | 7fe64e38a5b695c6d6c5b56650048ac1 (101x80) |
 | Dragon & Jade (龍玉偵探社) | 240x320 | No Issues | | 05/18/25 | c66f05251c86e0d9caa69f5dde413212 (240x320 CN) |
 | 龙之刃-暮光传奇 (Dragon Blade – Twilight Legend) | 320x240 (kinda) | No Issues | | 06/04/23 | 8f2fb0bef046a1afcd4f3f9e8ac62bf1 (320x240) |
 | Dragon Crystal | 240x320, 176x220 | No Issues | | 11/19/24 | ac2831a57b3cf1b2e99253bdd96eeeb2 (240x320) |
@@ -241,7 +241,7 @@
 | 紅樓夢 (Dream of the Red Chamber) | 176x208 | No Issues | | 07/05/25 | a3d8f967dbd8bcf0d539b940d05e43b9 (176x208) |
 | Driver L.A. Undercover | 320x240 | No Issues | | 06/04/23 | d04b7893cb3a340394a339289bb7c348 (320x240) |
 | Driver San Francisco | 240x320, 320x240 | No Issues | | 06/04/23 | fad2b6b72bf710854706ea7b46becb98 (320x240) |
-| Duke Nukem 3D Mobile | 240x320, 320x240 | Minor Issues | Can’t play audio/amr files. Required Settings: FPS Lock to "30 FPS or less" | 06/04/23 | 17a41ae3f6c41ac80b00f613d5eb42e4 (320x240) |
+| Duke Nukem 3D Mobile | 240x320, 320x240 | Minor Issues | Can’t play audio/amr files. Required Settings: FPS Lock to ›30 FPS or less‹ | 06/04/23 | 17a41ae3f6c41ac80b00f613d5eb42e4 (320x240) |
 | Dungeon Hunter 3 | 320x240 | No Issues | | 06/04/23 | 0e9a629ce4800f6b350ad3ffeb864ef5 (320x240) |
 | Dungeon Hunter – Curse of Heaven | 320x240 | Minor Issues | Almost perfect, can’t play audio/amr files | 06/04/23 | 9fda006127b62e427989da9323264916 (320x240) |
 | Dynamite Fishing Gold | 240x320 | No Issues | | 07/05/25 | b70f7f91c2add9300a042f8c24812fb7 (240x320) |
@@ -257,7 +257,7 @@
 | F-22 Raptor | 240x320 | No Issues | Fails to load some Image Streams (doesn not affect graphics whatsoever). | 01/21/24 | 498d28c64e982b71fdab22254ec4f027 (240x320) |
 | 仙劍情緣 (Fairy Sword) | 128x128 | No Issues | | 07/05/25 | 0b24591bd93270668d01e19ebedd0a89 (128x128) |
 | Fallout Mobile | 240x320 | No Issues | | 09/25/25 | 279340d431641188c8557ca5bf7a6d17 (240x320 CN) |
-| Fantasy Warrior | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "15 FPS or less" | 05/14/25 | 8377a41b83ff1f3ec31604645654b5c1 (101x80) |
+| Fantasy Warrior | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›15 FPS or less‹ | 05/14/25 | 8377a41b83ff1f3ec31604645654b5c1 (101x80) |
 | Fantasy Warrior Legends | 240x320 | No Issues | | 06/04/23 | cc04e667427ae85590711f7d54d6ee61 (240x320) |
 | Fantasy Zone | 176x208, 128x128 | No Issues | | 07/16/25 | 11148fd7a158d3ddd81144349fbc9c97 (176x208) e5d69795cc61572e44c0b850ed476e52 (128x128) |
 | Far Cry 2 | 320x240 | No Issues | | 06/04/23 | bb3be3a129b478789d6d14cf57208ec5 (320x240) |
@@ -270,7 +270,7 @@
 | Ferrari GT 3 – World Track | 240x320 | No Issues | NullPointerException’ and ‘NoSuchMethodError : io.Connector.open’ on console at the start but doesn’t affect the game. | 06/12/23 | fc8c50c2f506131f4cfcd02ef8d834b1 (240x320) |
 | Ferrari GT – Evolution | 240x320 | No Issues | | 06/12/23 | d74225f1c7910df0765fde6a77786a52 (240x320) |
 | Ferrari World Championship 2009 | 240x320 | No Issues | | 10/01/24 | 6b3367c149bc719dc4c8e707c0da7585 (240x320) |
-| FIFA 2003 | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "30 FPS or less" | 05/14/25 | c286239408b7486b97759889e9b4a8f9 (101x80) |
+| FIFA 2003 | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›30 FPS or less‹ | 05/14/25 | c286239408b7486b97759889e9b4a8f9 (101x80) |
 | Final Fantasy I [I-Appli] | 240x240 | Intro/Menu | Goes ingame but rendering freezes at the title screen | 09/04/25 | 5410362bcd1c098245e6999b814fa722 (240x240) |
 | Final Fantasy II | 240x320 | No Issues | | 06/04/23 | 1d98b18828254afa8d6d48d79d7a567a (240x320) |
 | 鮫!鮫!鮫! (Fire Shark) | 240x320 | No Issues | | 07/05/25 | 9d5897017ce2b42ff1a255279c56e422 (240x320) |
@@ -309,14 +309,14 @@
 | 鬼眼法师 (Ghost Eye Practitioner) | 176x208 | No Issues | | 05/18/25 | 481cf18bfb91ac74de9c22c545f23ac0 (176x208) |
 | Ghost Force | 240x320 | No Issues | | 06/04/23 | 0183212225a9fba87c9e12d515918d3a (240x320) |
 | Ghouls and Ghosts | 240x320 176x220 | No Issues | | 09/25/25 | 6ba12e3ef176c2d3ca83d868c9e5ff65 (240x320) 47edfe37a2ffc4097a7adb9368644918 (176x220) |
-| Glider | 128x128 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 02/23/25 | 1bd3c5ab7d7f6be28d462408abb383dc (128x128) |
-| Global Grand Prix | 96x65 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 12/07/24 | eb20cacb601f8df08c1a0075031d607c (96x65) |
+| Glider | 128x128 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 02/23/25 | 1bd3c5ab7d7f6be28d462408abb383dc (128x128) |
+| Global Grand Prix | 96x65 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 12/07/24 | eb20cacb601f8df08c1a0075031d607c (96x65) |
 | 女娲传说 1 (Goddess 1) | 176x208 | No Issues | | 05/18/25 | bc452d2ec685a167a3980ee4fce45e7c (176x208) |
 | 女娲传说 2 (Goddess 2) | 176x208 | No Issues | | 05/18/25 | 2aa0c6b85e07ae515b61bd736cef4c76 (176x208) |
 | 女娲传说 3 (Goddess 3) | 176x208 | No Issues | | 05/18/25 | 762bf961875d649a5e5279cabe7da044 (176x208) |
 | God of War - Betrayal | 320x240 | No Issues | | 06/04/23 | 8d41f9d98b3c6c1afaa1e5517f854072 (320x240) |
 | 神魔争霸之炎黄至尊 (Gods and Demons of the Inferno Supreme) | 240x320 | No Issues | | 06/04/23 | 4fe17d1d4e88d101958b5c92b8caae23 (240x320) |
-| Golden Warrior 3D | 240x320 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 09/16/26 | 2d40c4292aea36fd906960b18b864efb (240x320) |
+| Golden Warrior 3D | 240x320 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 09/16/26 | 2d40c4292aea36fd906960b18b864efb (240x320) |
 | Goofy Fishing | 320x240 | No Issues | In-App Purchase to unlock full game is bypassed. | 07/14/23 | 7dcb8a8e31e0c1eb70c2aa93c6a6f2d7 (320x240) |
 | Gorilla Rampage | 320x240 | No Issues | | 06/04/23 | 8f304a193c50e50213b6820c8b1bb0a0 (320x240, 240x320) |
 | Gradius | 176x208 | No Issues | | 06/13/25 | 415c3ffa502b1f85f07ea69f283c4664 (176x208) |
@@ -335,7 +335,7 @@
 | GT Racing Motor Academy | 240x320 | No Issues | | 06/04/23 | eed61e2d1c0ed75ee6ebc33b1254b95c (240x320) |
 | Guitar Hero 6 - Warriors of Rock | 320x240 | No Issues | | 09/20/24 | 351f63126e447c5e12c103a33685a811 (320x240) |
 | Guitar Hero III | 320x240 | No Issues | | 06/04/23 | c405f751b3f951d015d0033321815169 (320x240) |
-| Guitar Legend - Get On Stage | 320x240 | No Issues | Required Settings: "Nokia Full Keyboard" Key Layout | 06/26/25 | fd123b9240886f50d0bf8ccecaf713d6 (320x240) |
+| Guitar Legend - Get On Stage | 320x240 | No Issues | Required Settings: ›Nokia Full Keyboard‹ Key Layout | 06/26/25 | fd123b9240886f50d0bf8ccecaf713d6 (320x240) |
 | Guitar Rock Tour 2 | 240x320 | No Issues | | 06/12/23 | 60641c4707127d5b4584be94474a114c (240x320) |
 | Gunbird | 240x320 | No Issues | | 06/05/23 | d0eb3281df043c1d1f1f8d7cc56362e9 (240x320) |
 | Gundam - Ace Pilot | 240x320 | No Issues | | 09/04/25 | 101ab4aea40ae572de8214fbb21dbaf4 (240x320) |
@@ -346,7 +346,7 @@
 | Harry Potter And The Deathly Hallows Part 1 | 360x640 (touch) | No Issues | Renders at half res then gets scaled to the phone’s native res, which means that 180x320 has to be set. | 09/29/24 | 5ab216a5b3e028caab2a63def4232e83 (360x640 Touch) |
 | Harry Potter – Find Scabbers | 176x208, 96x65, 128x128 | No Issues | Motorola 176x208 cannot select non Time-Trial levels but others work fine. Switch the control scheme appropriately, as they all need their specific layouts (Motorola uses the Motorola V8 Control Scheme) | 02/22/25 | c1ad5ffb72c601e2ee41c4856d39425b (motorola 176x208) 5c1ab84613bf0daad0f8febe0110423c (nokia 128x128) d637870a29943d75033de0113720e3cd (nokia 176x208) |
 | Heli Strike 3D | 240x320 | No Issues | Fonts are mispositioned, seems to be an app bug. | 09/16/26 | b0566dace5f6a02a0e8a563ab63457be (240x320) |
-| Hell’s Pit | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/14/25 | 7141b6f62037d3466c5bb9720e66cfe4 (101x80) |
+| Hell’s Pit | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/14/25 | 7141b6f62037d3466c5bb9720e66cfe4 (101x80) |
 | Heroes Lore - Wind of Soltia | 240x320 | No Issues | | 05/13/25 | effe7386b9cf98755f0b9196d29439bd (240x320) |
 | Heroes Lore - Zero | 320x240 | No Issues | | 06/04/23 | a57f94f5f4747e265ced3b548f68e0f0 (320x240) |
 | Heroes of War – Nanowarrior 3D | 320x240 | No Issues | | 09/16/26 | c1ece83c6680c09f05410824d1cb369e (320x240) |
@@ -361,13 +361,13 @@
 | Holy Wars – Sons of Enoch | 320x240 | No Issues | | 06/12/23 | 0b660e81732f5b57e476186d6c992137 (320x240) |
 | House M.D. | 240x320 | No Issues | | 12/31/24 | 821f1c140b17985b0d1c2087bf012118 (240x320) |
 | Hoverball | 96x65 | No Issues | | 02/23/25 | 01b030d576e6106641945e8b62e7e6d4 (96x65) |
-| Hugo and the Evil Mirror Episode I - Beaver Fort | 240x320 | Minor Issues | Taking damage with audio enabled seems to freeze the game. Required Settings: "Motorola A1000" Key Layout | 09/16/26 | 79510b8c1f30ff07c6811d465f2f6722 (240x320) |
+| Hugo and the Evil Mirror Episode I - Beaver Fort | 240x320 | Minor Issues | Taking damage with audio enabled seems to freeze the game. Required Settings: ›Motorola A1000‹ Key Layout | 09/16/26 | 79510b8c1f30ff07c6811d465f2f6722 (240x320) |
 | Hyper Blocks Breaker | 240x320 | No Issues | | 10/09/24 | 8f91411f21e23946cb52ac5f29244c61 (240x320) |
 | ハイパー・スユーティング (Hyper Shooting) [KDDI EZplus] | 128x128 | No Issues | | 11/20/25 | d0870c145d6b1222a7e9a67292c78384 (128x128) |
 | Ice Age | 96x65 | No Issues | | 04/12/25 | 44484b88f0aa45f85d53ef7112a9b815 (96x65) |
 | Iceblox | 96x65 | No Issues | | 06/14/25 | 5caa3ddb78ddc0b9bec9b250701a0230 (96x65) |
 | Impossible Mission | 128x128 | No Issues | | 04/29/25 | 4c8d38afc26654061c5e18ddc912fff5 (128x128) |
-| Incubus | 101x80 | No Issues | Required Settings: "Process Canvas repaints immediately" flag, "Siemens" Key Layout | 04/29/25 | e601eaf8edfd10a26c93d23c1c72288f (101x80) |
+| Incubus | 101x80 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag, ›Siemens‹ Key Layout | 04/29/25 | e601eaf8edfd10a26c93d23c1c72288f (101x80) |
 | 世嘉头文字D-疾风骤雨 (Initial D - Arcade Stage ver. 3) | 240x320 | No Issues | | 09/16/26 | 9d4dfac70295a0760eb52e15c44da356 (240x320) |
 | 世嘉头文字D-宿命对决 (Initial D - Fated Duel) | 240x320 | No Issues | | 09/16/26 | dd80cdf3292e9271471bdd604688437c (240x320) |
 | 世嘉头文字D-初露锋芒 (Initial D - First Stage) | 240x320 | No Issues | | 09/16/26 | 4e413ef61425e8ec98970af9710c7e1c (240x320) |
@@ -388,7 +388,7 @@
 | Johnny Crash | 240x320 | No Issues | | 10/12/24 | 537430e700a09ff60af761dc8e754da4 (240x320) |
 | Johnny Crash Does Texas | 240x320 | No Issues | | 06/04/23 | d2c978b8f14dd747ed2e91c598f4d6bf (240x320) |
 | Jumping Jack | 96x65 | No Issues | | 04/17/25 | 128b65ce34c40c889223ad145d3c8a13 (96x65) |
-| Jungle Commando | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "30 FPS or less" | 05/14/25 | 4863a9a932cfb96e423f276c61ea9273 (101x80) |
+| Jungle Commando | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›30 FPS or less‹ | 05/14/25 | 4863a9a932cfb96e423f276c61ea9273 (101x80) |
 | Jungle Twister – Puzzle Expedition | 240x320, 320x240 | No Issues | | 06/04/23 | 8dd0b7279532e762b9a341586f23cb7d (320x240, 240x320) |
 | Jurassic Park | 320x240 | No Issues | | 12/29/24 | 8a9e5962bb9a34c1c799f5451575830c (320x240) |
 | Kamikaze Robots | 320x240 | No Issues | | 06/04/23 | df487054a4909f106fb68c2591e1e699 (320x240) |
@@ -405,7 +405,7 @@
 | Lady Commando | 176x208 | No Issues | | 11/20/25 | 3f66ef4f68af1be2178f36490482b846 (176x208) |
 | Landers - Counter Invasion Shmup Game | 240x320 | No Issues | | 09/16/26 | 13da6d5ec9535c3df0f6f84479c4d61b (240x320) |
 | Lemmings | 240x320 | No Issues | | 08/01/25 | 340c84d3b988c2a469d0c5b659ea9e90 (240x320) |
-| Light Cycle | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/14/25 | 08c89d0ede773d122b3bec553b1938a1 (101x80) |
+| Light Cycle | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/14/25 | 08c89d0ede773d122b3bec553b1938a1 (101x80) |
 | 闪电战机-雷霆出击 (Lightning Fighter - Thunder Attack) | 240x320 | No Issues | | 07/23/25 | 40cf78247a9dd0b7d9b2bbdc8fc7ec2f (240x320) |
 | Lightning Fighter 2 | 240x320 | No Issues | | 06/11/25 | 3766173af26db5f9eba450d07f7e26fc (240x320) |
 | Liquidator | 240x320 | No Issues | | 06/04/23 | dee95e4398a42cff413ea6ca614f7679 (240x320) |
@@ -415,7 +415,7 @@
 | Live Free or Die Hard – The Mobile Game | 320x240 | No Issues | | 06/04/23 | 253496800856bfc115d4d43d41f12ff3 (320x240) |
 | LOST | 240x320 | No Issues | | 09/04/25 | 3d85b16a8fedd2b6e16361e2aee9b6b9 (240x320) |
 | 迷鎮-逝去的記憶 (Lost Town) | 360x360 | No Issues | | 07/05/25 | 4b6016379b93614c6f22606c79779c04 (360x360) |
-| Love a Lemming | 240x320 | Minor Issues | Cannot play audio/amr files. Required Settings: "Motorola V8" Key Layout | 09/25/25 | 71016a8222980793ddb1f9bbba66dbff (240x320) |
+| Love a Lemming | 240x320 | Minor Issues | Cannot play audio/amr files. Required Settings: ›Motorola V8‹ Key Layout | 09/25/25 | 71016a8222980793ddb1f9bbba66dbff (240x320) |
 | 魔兽网恋 (Love in WOW) | 176x208 | No Issues | | 04/16/25 | 8e416829c7306c305b5f85f99558072b (176x208) |
 | 魔法波動拳 (Lucky Punch: Magic) | 176x208 | No Issues | | 07/05/25 | b5d1c048fece0e5b738b1d4bd8b6930a (176x208) |
 | 新春发财拳 (Lucky Punch: New Year) | 176x208 | No Issues | | 07/05/25 | 6aebd6854cf00ad43df769c6d79152f4 (176x208) |
@@ -426,8 +426,8 @@
 | 魔法双子星 (Magic Gemini) | 176x208 | No Issues | | 05/18/25 | 4d24120cc68e6e8f8db2fd5e2a4680ae (176x208) |
 | Manic Miner | 96x65 | No Issues | | 06/26/25 | 65bfb1f160223ce6c00934f4f234696b (96x65) |
 | 메이플스토리 (MapleStory) [SKT SK-VM] | 240x240 | Minor Issues | Has audio issues | 07/21/25 | 8c6522d557c84e85ba078ad79a3c07c2 (240x240) |
-| Mappy [I-Appli] | 240x240 | Minor Issues | Flickers from time to time. Required Settings: FPS Lock to "30 FPS or less" | 09/04/25 | 05425e41fdcc763087f61e283a690484 (240x240) |
-| マッピーforモバゲー (Mappy for Mobage) [I-Appli] | 240x240 | Minor Issues | Flickers from time to time. Required Settings: FPS Lock to "30 FPS or less" | 09/04/25 | ba0ad1875b19e427fc923a22d9ffdf00 (240x240) |
+| Mappy [I-Appli] | 240x240 | Minor Issues | Flickers from time to time. Required Settings: FPS Lock to ›30 FPS or less‹ | 09/04/25 | 05425e41fdcc763087f61e283a690484 (240x240) |
+| マッピーforモバゲー (Mappy for Mobage) [I-Appli] | 240x240 | Minor Issues | Flickers from time to time. Required Settings: FPS Lock to ›30 FPS or less‹ | 09/04/25 | ba0ad1875b19e427fc923a22d9ffdf00 (240x240) |
 | Marcel Desailly Pro Soccer | 96x65 | No Issues | | 09/25/25 | ec0e3f3584ab63f6544748e33db32151 (96x65) |
 | 迷城·潜伏·狙杀 (Maze City·Stealth·Sniper Kill) | 240x320 | No Issues | | 07/05/25 | 1e2112522adb6db482c881e9dd71c24e (240x320) |
 | Medal of Honor | 240x320 | No Issues | | 06/06/25 | d572b1df8c187b43a712e57c0f635703 (240x320) |
@@ -445,10 +445,10 @@
 | Microcraft | 240x320 | No Issues | | 09/16/26 | 92141466e5c459196a949fbf59d540f5 (240x320) |
 | Micro Counter Strike | 240x320 | Minor Issues | Has some minor animation issues. | 09/16/26 | 036aa47bf89d5aef22aae37b5c504c70 (240x320) |
 | Micro Machines | 176x208 | No Issues | | 01/01/25 | 9f09355ea7cdb09360c99746687524e9 (176x208) |
-| MIDP-MAN | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/15/25 | 3f30ccb36f954da1d654d8ddb7f17103 (101x80) |
+| MIDP-MAN | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/15/25 | 3f30ccb36f954da1d654d8ddb7f17103 (101x80) |
 | MIG 2D – Retro Shooter | 240x320 | No Issues | | 06/04/23 | cabbf3fd0e76eb9155708d12ab4a20c6 (240x320) |
 | Might and Magic II | 320x240 | No Issues | | 06/12/23 | bd449717df6f09adcaea3a15e055313a (320x240) |
-| Miki’s World | 96x65 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 01/01/25 | 11066f08149adbee6aad38625a17711b (96x65) |
+| Miki’s World | 96x65 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 01/01/25 | 11066f08149adbee6aad38625a17711b (96x65) |
 | 军魂1-十面埋伏 (Military Soul 1) | 240x320 | No Issues | | 07/05/25 | ec1c89bd52aaf236b5597c6ff95daf96 (240x320) |
 | 军魂2-联合进攻 (Military Soul 2) | 240x320 | No Issues | | 07/05/25 | e177cf9230efd111365814ccb17d91b9 (240x320) |
 | 军魂3-燃烧的群岛 (Military Soul 3) | 240x320 | No Issues | | 07/05/25 | fc0fee9e88dd5c8e89a2c806ef5ed881 (240x320) |
@@ -457,9 +457,9 @@
 | Mine in Line | 101x80 | No Issues | | 09/04/25 | 5a9c7527c704888644341352b782d00f (101x80) |
 | MiniGolf Mania | 240x320 | No Issues | | 06/25/25 | 4dd7f05f36264327aad1ad78292a2b13 (240x320) |
 | Mission Impossible III | 320x240 | No Issues | | 06/06/25 | 8ffc5e017ef214c6f49fd856e397ba4b (320x240) |
-| ジオン編/地上戦 (Mobile Suit Gundam MS Masters - Zeon/Ground Battle) [I-Appli] | 128x128 | No Issues | Required Settings: FPS Lock to "15 FPS or less" | 09/04/25 | cb1935986722ba22d4c9b07842cb9757 (128x128) |
-| ｼﾞｵﾝ編/宇宙戦 (Mobile Suit Gundam MS Masters - Zeon/Space Battle) [I-Appli] | 128x128 | No Issues | Required Settings: FPS Lock to "15 FPS or less" | 09/04/25 | d52e89823022c2657f1624c8c1738da3 (128x128) |
-| ｼﾞｵﾝ編/宇宙戦2 (Mobile Suit Gundam MS Masters - Zeon/Space Battle 2) [I-Appli] | 240x240 | No Issues | Required Settings: FPS Lock to "15 FPS or less" | 09/04/25 | b2e7bca5b1bb7913aae9bb81982f7986 (240x240) |
+| ジオン編/地上戦 (Mobile Suit Gundam MS Masters - Zeon/Ground Battle) [I-Appli] | 128x128 | No Issues | Required Settings: FPS Lock to ›15 FPS or less‹ | 09/04/25 | cb1935986722ba22d4c9b07842cb9757 (128x128) |
+| ｼﾞｵﾝ編/宇宙戦 (Mobile Suit Gundam MS Masters - Zeon/Space Battle) [I-Appli] | 128x128 | No Issues | Required Settings: FPS Lock to ›15 FPS or less‹ | 09/04/25 | d52e89823022c2657f1624c8c1738da3 (128x128) |
+| ｼﾞｵﾝ編/宇宙戦2 (Mobile Suit Gundam MS Masters - Zeon/Space Battle 2) [I-Appli] | 240x240 | No Issues | Required Settings: FPS Lock to ›15 FPS or less‹ | 09/04/25 | b2e7bca5b1bb7913aae9bb81982f7986 (240x240) |
 | Modern Combat 2 - Black Pegasus | 320x240 | No Issues | | 06/04/23 | 843381036660b3507af0c6f936b62531 (320x240) |
 | Modern Combat 4 - Zero Hour | 320x240 | No Issues | | 06/04/23 | 4bda642ea7b5ef5a8b8799cbde51123e (320x240) |
 | Monkey Ball Demo (Sprint) | 128x128 | No Issues | | 11/14/24 | c000245e54884d772c8cd06fb726c593 (128x128) |
@@ -501,11 +501,11 @@
 | Off-Road Dirt Motocross | 240x320 | No Issues | | 06/05/23 | 94a264ba7b5c084f4f98145029bf4ea0 (240x320) |
 | 密室逃脱-平安夜惊魂(Office Escape: Silent Nightmare) | 240x320 | No Issues | | 05/18/25 | c89dbc8808cef351d0cb8a2fe880ed25 (240x320) |
 | Opal's Quest | 176x208 | No Issues | | 05/18/25 | 6b6d1ce34fc1933a0aea34e481092538 (176x208) |
-| Open Stalker Mobile (MOD) | 240x320 | No Issues | Required Settings: "Repaint on MIDP Display setCurrent" flag, FPS Lock to "30 FPS or less" | 09/16/26 | 1976082874ab834269ddf0b9633feee2 (240x320) |
+| Open Stalker Mobile (MOD) | 240x320 | No Issues | Required Settings: ›Repaint on MIDP Display setCurrent‹ flag, FPS Lock to ›30 FPS or less‹ | 09/16/26 | 1976082874ab834269ddf0b9633feee2 (240x320) |
 | Orcs and Elves | 240x320 | No Issues | | 02/22/25 | 52c7a715ff56f784913c0d49c614352d (240x320) |
 | Orcs and Elves II | 320x240 | No Issues | | 06/04/23 | b5cc627162a30f6d5f8e0c401550b28f (320x240) |
 | 异世界豪侠幻魔传 (Otherworldly Heroic Fantasy Magic Legend) | 320x240 | No Issues | | 06/04/23 | e482c8ddd1287a59be3ad61be8331a78 (320x240) |
-| Othello [KDDI EZplus] | 128x128 | No Issues | Required Settings: "Process Canvas repaints immediately" flag | 11/21/25 | f00cdb2a5339b8bf6b9e8f3819b6a9ae (128x128) |
+| Othello [KDDI EZplus] | 128x128 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag | 11/21/25 | f00cdb2a5339b8bf6b9e8f3819b6a9ae (128x128) |
 | OutRoad 2 | 240x320 | No Issues | | 09/16/26 | 3beeecb4e3f129aa50a5394d2f3d00ac (240x320) |
 | OutRun | 132x176 | No Issues | | 11/20/24 | 66e26b75e6cc1b0c38cb37b69f3d3d14 (132x176) |
 | PAC-MAN | 176x220 | No Issues | | 11/20/25 | 64ca33b3709646d7c4ea52f4de53b912 (176x220) |
@@ -516,7 +516,7 @@
 | Panzer Panic | 320x240 | No Issues | | 06/04/23 | a1e5615712ec0df72f87e473137ecc64 (320x240) |
 | Paperboy Special Delivery | 240x320 | No Issues | | 09/22/25 | 3dcc18059529dd5a8b9d4c769194a265 (240x320) |
 | Peggle | 240x320 | No Issues | | 07/05/25 | b6e1c81a14e3182fd682d115a4e9dadb (240x320) |
-| Peggle (Sony Ericsson) | 240x320 | No Issues | Required Settings: "Don't translate drawRGB calls" flag | 09/16/26 | dcb0df0ade240af8814641577c7f7fbb (240x320) |
+| Peggle (Sony Ericsson) | 240x320 | No Issues | Required Settings: ›Don't translate drawRGB calls‹ flag | 09/16/26 | dcb0df0ade240af8814641577c7f7fbb (240x320) |
 | Penalty Kick [KDDI EZplus] | 128x128 | No Issues | | 11/20/25 | 193c93090f912cdd6689fe6a79757ec4 (128x128) |
 | 盗梦谜踪 (Phantom in the Dream) | 320x240 | No Issues | | 09/22/25 | a68aa5d51a32139869077426a2a65d76 (320x240) |
 | Phantom Spider 3D | 240x320 | Unplayable | Crashes at the start with 'lang.en-US Not Found' on the console | 06/04/23 | a389ed86a7758c50640a4fbd8dfcaa84 (240x320) |
@@ -528,9 +528,9 @@
 | Planet Zero | 128x128 | No Issues | | 12/26/24 | 51fa4446f257e8b0433c6e2317127973 (128x128) |
 | Plants vs. Zombies | 640x360 touch | No Issues | Needs to be manually rotated. 640X360 version is not rotated and actually has a 640x360 framebuffer, and uses audio/amr files so those can’t be played yet. | 06/04/23 | 2788f91c6430536ff9b6b090d9b37fb7 (640x360 touch) |
 | Plasma | 101x64 | Minor Issues | Requires the pause menu to be brought up when changing levels (seems to be a threading issue) | 07/06/25 | b7cbc0290782e865b9a227294fc79a81 (101x64) |
-| Plasma Inferno | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/15/25 | 1093558105fa4946ea98a5b504c3f21e (101x80) |
-| PopEye | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "20 FPS or less" | 05/15/25 | e4717857582aa6c1150f490d4ef79dbd (101x80) |
-| Postal Babes | 240x320 | No Issues | Required Settings: "Motorola A1000" Key Layout | 09/16/26 | bd604b38c3e6764f4d58117d4e60f8fb (240x320) |
+| Plasma Inferno | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/15/25 | 1093558105fa4946ea98a5b504c3f21e (101x80) |
+| PopEye | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›20 FPS or less‹ | 05/15/25 | e4717857582aa6c1150f490d4ef79dbd (101x80) |
+| Postal Babes | 240x320 | No Issues | Required Settings: ›Motorola A1000‹ Key Layout | 09/16/26 | bd604b38c3e6764f4d58117d4e60f8fb (240x320) |
 | Powerboat Challenge | 320x240 | Minor Issues | Almost perfect, can’t play audio/amr files. | 09/16/26 | 774141292adac23afdc2d8274a406bc6 (320x240) |
 | Predators | 240x320 | No Issues | | 09/17/24 | d69509dcb48da0f3e1cf678f3f8d892a (240x320) |
 | 美少女噩梦 (Pretty Girl's Nightmare) | 176x208 | No Issues | | 08/01/25 | ed442679bd06ed2f752ea877846c73fd (176x208) |
@@ -549,9 +549,9 @@
 | Puyo Pop Fever Re:Chained (MOD) | Multiscreen | No Issues | AMR version can’t play audio/amr files. | 07/16/25 | 0d5dca9840772346131f60acb3343f9d (Multiscreen) |
 | Puzzle Challenge Deluxe | 320x240 | No Issues | | 06/04/23 | 1b5f2ab71c21b2b4b9a48a2888541eea (320x240) |
 | Puzzlegeddon | 240x320 | No Issues | | 07/05/25 | 1e584cf0c3d9df32ff4d809d9ff89f5f (240x320 SE), 2e3bc77eb33fcf68ef761cfcb5cbcccc (240x320 Nokia) |
-| Puzzle Quest 2 | 320x240 | No Issues | Required Settings: "Nokia Full Keyboard" Key Layout | 07/05/25 | 435aa39ca71e07f9de1a12138bdc395c (320x240) |
+| Puzzle Quest 2 | 320x240 | No Issues | Required Settings: ›Nokia Full Keyboard‹ Key Layout | 07/05/25 | 435aa39ca71e07f9de1a12138bdc395c (320x240) |
 | Puzzle Quest - Warlords | 240x320 | No Issues | | 07/05/25 | a2b58a7c569848496e3b5d508702408b (240x320) |
-| Puzzler (Siemens) | 101x80 | No Issues | Required Settings: "Siemens" Key Layout | 05/15/25 | b8e1d56fd63354902434a0f4c74d9701 (101x80) |
+| Puzzler (Siemens) | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/15/25 | b8e1d56fd63354902434a0f4c74d9701 (101x80) |
 | Pyramid Bloxx | 320x240 | No Issues | | 06/04/23 | b85508d3a65387fa9ac34a742a510a7a (320x240) |
 | Quantum Blast | 101x64 | Minor Issues | Requires the pause menu to be brought up when changing levels (seems to be a threading issue) | 07/06/25 | acbfb1dfe3729fe9a13c93dfed58b474 (101x64) |
 | R.U.S.H | 320x240 | No Issues | | 09/16/26 | 0ede5675d9946f7c64a99e0491d39777 (320x240) |
@@ -569,7 +569,7 @@
 | Rally Master Pro | 240x320, 320x240 | No Issues | | 04/19/25 | 3db7c2de512d0be52bfe3a9e21540235 (240x320 M3G), efe282bc2aaa3d9cb05ea134ed34dabb (240x320 Mcv3) |
 | Rambo Forever | 240x320 | No Issues | | 06/04/23 | ef85f0caf72cf3099b96a9ccf53be363 (240x320) |
 | Rambo On Fire | 240x320 | No Issues | Audio randomly cuts off but I’ve seen some games do that even on actual phones, although it’s good to keep this audio problem in mind. | 06/04/23 | d915812e8acfe89002b7cbaecc0b11fb (240x320) |
-| Ratatouille | 240x320 | No Issues | Required Settings: "Repaint on MIDP Display setCurrent" flag | 09/16/26 | d75f8638eed46ec6c0ff43b94fa0c183 (240x320) |
+| Ratatouille | 240x320 | No Issues | Required Settings: ›Repaint on MIDP Display setCurrent‹ flag | 09/16/26 | d75f8638eed46ec6c0ff43b94fa0c183 (240x320) |
 | Ratatouille – Cheese Rush | 240x320 | No Issues | | 10/12/24 | faa80d52ce52ff9abf469a29b99341eb (240x320) |
 | RAW – Special Unit | 320x240 | No Issues | | 06/04/23 | f3a65abdc8ffdbcb7f64e1b52f9bb1a8 (320x240) |
 | Rayman 3 | 240x320 | No Issues | | 06/03/25 | 63c7067eb51711776a581d772867af63 (240x320) |
@@ -591,7 +591,7 @@
 | 火箭车 (Road Fighter) | 240x320 | No Issues | | 09/25/25 | 32fbb68777f07b23b132b2599694d6f9 (240x320) |
 | Road Raider | 240x320 | No Issues | | 11/22/24 | ce05869945fdaa81dc5e360dff7ab7c3 (240x320) |
 | Road Warrior | 101x80 | No Issues | | 05/14/25 | 3248d037c053b19be52bb688f019de7d (101x80) |
-| Robot Battle Tactics | 240x320 | No Issues | Required Settings: "Motorola/SoftBank/Sharp" Key Layout | 06/12/23 | 828c99aa643f11deeceed564659b2bff (240x320) |
+| Robot Battle Tactics | 240x320 | No Issues | Required Settings: ›Motorola/SoftBank/Sharp‹ Key Layout | 06/12/23 | 828c99aa643f11deeceed564659b2bff (240x320) |
 | Robinson Crusoe: Shipwrecked | 240x320 | No Issues | | 05/18/25 | 869b478961ef2194969903631a4bd8a2 (240x320) |
 | ROCK BAND Reloaded | 320x240 | No Issues | | 09/20/24 | 0e2aaa30043298c6db6a04a7eee7810e (320x240) |
 | 洛克人 1 (Rockman 1) | 240x320 | No Issues | | 09/22/25 | b2d5737104008495356c996229ab057b (240x320) |
@@ -603,7 +603,7 @@
 | ﾛｯｸﾏﾝｴｸﾞｾﾞ L.o.N. (Rockman .EXE Legend of Network) [I-Appli] | 240x240 | Minor Issues | Has some PCM playback issues and slight font misalignment | 09/04/25 | 10dae583eb2000f7da5b81277e4fa4a4 (240x240) |
 | ﾛｯｸﾏﾝｴｸﾞｾﾞ P.o.N. (Rockman .EXE Phantom of Network) [I-Appli] | 240x240 | Minor Issues | Has some PCM playback issues and slight font misalignment | 09/04/25 | 237e23bccc3d29bc5fd8713fbe2e732b (240x240) |
 | ロックマンGP (Rockman GP) [I-Appli] | 240x240 | No Issues | | 08/01/25 | 0336c17d3df25a705847f342adab7322 (240x240) |
-| Rockman Jump | 128x128 | No Issues | Required Settings: FPS Lock to "15 FPS or less" | 09/04/25 | 5cdce6ed1604afb7164cc6e6b75c18c8 (128x128) |
+| Rockman Jump | 128x128 | No Issues | Required Settings: FPS Lock to ›15 FPS or less‹ | 09/04/25 | 5cdce6ed1604afb7164cc6e6b75c18c8 (128x128) |
 | ﾛｯｸﾏﾝ ﾊﾟﾆｯｸﾌｧｲｱ (Rockman Panic Fire) [I-Appli] | 240x240 | No Issues | | 09/04/25 | a0a7fe130abba357fbd10c09c4b331ff (240x240) |
 | ﾛｯｸﾏﾝ ﾊﾟｽﾞﾙﾊﾞﾄﾙ (Rockman Puzzle Battle) [I-Appli] | 240x240 | Unplayable | Black screen at the start | 09/04/25 | 828a83c06c6ea189c56c9508c37f3f71 (240x240) |
 | ロックマン テニス (Rockman Tennis) [I-Appli] | 240x240 | Minor Issues | MLD support isn't very good yet, so audio isn't perfect. | 08/02/25 | 3fa6579dc95b557d1d29954525f5f3b9 (240x240) |
@@ -626,7 +626,7 @@
 | 風之海-宋末恩仇錄 (Sea of Winds) | 240x320 | No Issues | | 04/16/25 | a45e0a24023fec4d2c0e84c07572f291 (240x320) |
 | Section 7 | 176x208, 128x128 | No Issues | Perfect as long as FreeJ2ME-Plus' resolution matches what the jar expects. Required Settings: Exact Resolution Match | 02/23/25 | bb0618d57281ab4af26a5631cc1b263d (128x128) 7f259cc79d23eee4a9f3a72042696130 (176x208) |
 | Sega Rally 3D | 320x240 | Unplayable | White Screen after the audio selection screen, probably uses m3g | 06/04/23 | def50d213c538c209e1ce520690b96f7 (320x240) |
-| Sexy Ninja Foxy | 176x208 | Minor Issues | No longer freezes randomly but text is misaligned, could be specific to the jar. Required Settings: FPS Lock to "30 FPS or less" | 02/27/25 | 95e283ac9e94ca4b680531fb6856c4af (176x208) |
+| Sexy Ninja Foxy | 176x208 | Minor Issues | No longer freezes randomly but text is misaligned, could be specific to the jar. Required Settings: FPS Lock to ›30 FPS or less‹ | 02/27/25 | 95e283ac9e94ca4b680531fb6856c4af (176x208) |
 | Shadow of Egypt 3D | 240x320 | No Issues | | 06/04/23 | c23f434bd0e3661ac5017f34bbdf0a31 (240x320) |
 | Shadow Shoot | 240x320 | No Issues | | 10/30/24 | aaa7665cc7465cacb34de22a063b6ebe (240x320) |
 | Shadow Shoot (Trial) [I-Appli] | 240x240 | Minor Issues | Black screen after playing, could be because it's a trial | 09/04/25 | 72bd26489b40754f581155ed9c7bc6c9 (240x240) |
@@ -655,7 +655,7 @@
 | Sonic Advance | 320x240 | No Issues | | 10/19/24 | 1f39e8ef85c6b26dd07d95409554c386 (320x240) |
 | Sonic & SEGA All-Stars Racing | 240x320 | No Issues | | 10/12/24 | 009cf592bfd13149a3626ee8bd0f9414 (240x320) |
 | Sonic Jump 2 | 240x320 | No Issues | | 10/12/24 | 5f9e32061d366f236450b1f06eeb6eaf (240x320) |
-| Sonic Runners Adventure | 320x240 | No Issues | Required Settings: "Nokia Full Keyboard" Key Layout | 11/16/24 | 35fbe093fde433c8fa7ffea5d7c029dc (320x240) |
+| Sonic Runners Adventure | 320x240 | No Issues | Required Settings: ›Nokia Full Keyboard‹ Key Layout | 11/16/24 | 35fbe093fde433c8fa7ffea5d7c029dc (320x240) |
 | Sonic Spinball | 240x320 | No Issues | | 11/13/24 | da8142d19f174692f873b55837e87144 (240x320) |
 | Sonic The Hedgehog – Part One | 240x320 | Minor Issues | Cannot play audio/amr files | 12/09/24 | 386dd67f7d8beba3f3c1053116ce6e8e (240x320) |
 | Sonic The Hedgehog – Part Two | 240x320 | Minor Issues | Cannot play audio/amr files | 12/09/24 | 74d9b7576efd75f3e33f2d42300674fd (240x320) |
@@ -671,7 +671,7 @@
 | 苍穹默示录-吞噬时空 (Space Time Sky Apocalypse) | 240x320 | No Issues | | 07/05/25 | 00455a404fc5847b42b6871c556f8132 (240x320) |
 | Special Force 5 – District Blood | 320x240 | No Issues | Some minor console spam. | 06/04/23 | 3ee6c5624a0d2a15e97217c690f300ac (320x240) |
 | Speed Addict Underground II | 240x320 | No Issues | | 06/04/23 | abdc3fc19c8767319c25541ee605fac2 (240x320) |
-| Speed Devils | 176x208 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 12/01/24 | 09d57f7379d2901e10fdd3fb0ebfc9b4 (176x208) |
+| Speed Devils | 176x208 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 12/01/24 | 09d57f7379d2901e10fdd3fb0ebfc9b4 (176x208) |
 | Speed Racer | 240x320 | No Issues | | 06/09/25 | ef365b9c809de0bab3b9325f87e660dd (240x320) |
 | Speed Racer 3D | 320x240 | Minor Issues | Car shadows are white. | 09/16/26 | cf4ce12ec6981646b548040ebb57cef8 (320x240) |
 | Speed Spirit | 320x240 | No Issues | | 09/16/26 | 1a01229054b58d0381dd171dd10d198f (320x240) |
@@ -679,7 +679,7 @@
 | Spider-Man – Ultimate Power | 320x240 | Minor Issues | Can't play audio/amr files | 06/04/23 | 8728847daa516c7c68a1cbbee3af7bb0 (320x240) |
 | Splatterhouse | 240x320 | No Issues | | 11/01/24 | bf0d4e3adc05732a13e7e2067160bc4b (240x320) |
 | Spyro – Ripto Quest | 176x208 | No Issues | | 04/18/25 | 1571853102457c75375faa55d7362b26 (176x208) |
-| Stalker Mobile | 240x320 | No Issues | Required Settings: "Repaint on MIDP Display setCurrent" flag, FPS Lock to "30 FPS or less" | 09/16/26 | 20605d807dbb14781f065e3e71192d94 (240x320) |
+| Stalker Mobile | 240x320 | No Issues | Required Settings: ›Repaint on MIDP Display setCurrent‹ flag, FPS Lock to ›30 FPS or less‹ | 09/16/26 | 20605d807dbb14781f065e3e71192d94 (240x320) |
 | Starblaster | 320x240 | No Issues | | 06/04/23 | 9c6ff7a9d433ff1c03ac9a4064d8b0ca (320x240) |
 | Star Invasion | 320x240 | No Issues | | 06/04/23 | 40c6698fd56d37ee5e15acf0432385ff (320x240) |
 | Star Warriors (Raiden) | 240x320 | No Issues | Loading takes a while… also throws 'Canvas repaint(): null NullPointerException' about fonts at the start, but the game is unaffected. | 06/04/23 | 585c03bc66cc45a8cc448d940ff89706 (240x320) |
@@ -702,7 +702,7 @@
 | 孤岛历险 (Survival Kids) | 240x320 | No Issues | | 09/25/25 | dd622c1dbc4dc3d74c8d52a6113ce09b (240x320) |
 | SWAT – Elite Troops | 352x416 | No Issues | Throws some 'Couldn't Load Image Stream' messages at the console | 10/29/23 | ce2b31a131262d7385c79d7c291111f7 (352x416) |
 | SWAT Force | 240x320 | No Issues | | 11/21/25 | 6ae87ba6e7f4396194951b17210b9e62 (240x320) |
-| Swedish Touring Car Championship (STCC) | 176x220 (Multiscreen) | No Issues | Required Settings: "Siemens-friendly drawing methods" flag, "Siemens" Key Layout | 07/20/25 | 25f498d57ae2bfeaeb44e0e4867649c2 (176x220) |
+| Swedish Touring Car Championship (STCC) | 176x220 (Multiscreen) | No Issues | Required Settings: ›Siemens-friendly drawing methods‹ flag, ›Siemens‹ Key Layout | 07/20/25 | 25f498d57ae2bfeaeb44e0e4867649c2 (176x220) |
 | 聖劍玫瑰 1 (Sword Rose 1) | 128x128 | No Issues | | 02/22/25 | 864aa397565c7f4e8debac5ee63a2f02 (128x128) |
 | 聖劍玫瑰 2-上 (Sword Rose 2 Part.1) | 240x320 | No Issues | | 09/22/25 | e609bc226608cbb62abeb8231338e923 (240x320) |
 | 聖劍玫瑰 2-下 (Sword Rose 2 Part.2) | 240x320 | No Issues | | 09/22/25 | 68311fe64c040ce2ebf1b269659b184d (240x320) |
@@ -749,10 +749,10 @@
 | Tom Clancy's Rainbow Six 3 | 240x320 | No Issues | | 10/09/24 | a90f9d955b89f04f0823c487d5d6df43 (240x320) |
 | Tom Clancy's Rainbow Six – Lockdown | 240x320 | No Issues | | 10/09/24 | 98bd2365e8c55f67deb1c41870106b2b (240x320) |
 | Tom Clancy's Rainbow Six – Raven Shield | 128x128 | No Issues | Perfect (crashes if the screen resolution is incorrect) | 12/01/24 | 5858db56f985791ee281ff951fc1ddcd (128x128) |
-| Tom Clancy’s Rainbow Six – Urban Crisis | 96x65 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 12/05/24 | 4736a79e061d2b1d23ed42fc40de3a4b (96x65) |
+| Tom Clancy’s Rainbow Six – Urban Crisis | 96x65 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 12/05/24 | 4736a79e061d2b1d23ed42fc40de3a4b (96x65) |
 | Tom Clancy's Rainbow Six – Vegas | 240x320 | No Issues | | 10/09/24 | f883132fefbcde90351d57f62dec0c76 (240x320) |
-| Tom Clancy's Splinter Cell | 96x65 | No Issues | Required Settings: FPS Lock to "30 FPS or less" | 12/05/24 | 119daa35b5d8ee09d4dc3fee3c4dcdda (96x65) |
-| Tom Clancy's Splinter Cell - Pandora Tomorrow | 240x320 | No Issues | Required Settings: "Motorola/SoftBank/Sharp" Key Layout | 06/04/23 | 19ede4406110ad609ad05a917db52348 (240x320) |
+| Tom Clancy's Splinter Cell | 96x65 | No Issues | Required Settings: FPS Lock to ›30 FPS or less‹ | 12/05/24 | 119daa35b5d8ee09d4dc3fee3c4dcdda (96x65) |
+| Tom Clancy's Splinter Cell - Pandora Tomorrow | 240x320 | No Issues | Required Settings: ›Motorola/SoftBank/Sharp‹ Key Layout | 06/04/23 | 19ede4406110ad609ad05a917db52348 (240x320) |
 | Tom Clancy’s Splinter Cell Conviction | 240x320 | No Issues | | 06/04/23 | c4b2062d67bf41db27e457c2d0530caa (240x320) |
 | Tom & Jerry - Mouse Maze | 352x416 | No Issues | | 07/31/25 | 20631f81f2a766bfbcc1ebbb54388d2e (352x416) |
 | Top Gear – The Mobile Game | 320x240 | No Issues | | 06/04/23 | 6b7e2c51bd62b3402801b8c001604147 (320x240) |
@@ -769,7 +769,7 @@
 | Tower Bloxx Deluxe 3D | 240x320, 320x240 | No Issues | | 08/18/26 | b7a8fab33469e2bfd942b97d29c4d70b (320x240, 240x320) |
 | Tower Bloxx – New York | 240x320, 320x240 | No Issues | | 06/04/23 | 27151127cd53d858782c354c1d4d0916 (320x240, 240x320) |
 | Townsmen 4 (家园4) | 240x320 | No Issues | | 04/16/25 | f4069d91fdd00dad28664e97d454447e (240x320 CN) |
-| Track and Field 2006 | 240x320 | No Issues | Required Settings: "Motorola/SoftBank/Sharp" Key Layout | 07/06/25 | b32e35f9f1b5e14e9d6815ea014110f5 (240x320) |
+| Track and Field 2006 | 240x320 | No Issues | Required Settings: ›Motorola/SoftBank/Sharp‹ Key Layout | 07/06/25 | b32e35f9f1b5e14e9d6815ea014110f5 (240x320) |
 | Traffic Racing | 320x240 (landscape 240x320) | No Issues | | 06/04/23 | 511fe74943b69da2cd1eb7d85c5f5d15 (320x240) |
 | Trivial Pursuit | 240x320 | No Issues | | 11/14/24 | 319125e4a70cffd5dc9839a5edfa8ee8 (240x320) |
 | Tropical Madness | 240x320 | No Issues | | 06/04/23 | 979dd311bcfd875e5b158e2f9215939c (240x320) |
@@ -801,7 +801,7 @@
 | 魔女传说-横空出世 (Wizards Fantasy) | 176x208 | No Issues | | 05/18/25 | 9c3b42e86f2c902ad6b6bf9fd186d20c (176x208) |
 | Wolfenstein RPG | 320x240 | No Issues | | 06/04/23 | 4116d47bc6c1a6108052413a6b833c9b (320x240) |
 | Wolf Moon (月影狼跡) | 176x208 | No Issues | | 05/18/25 | 677686089e7f8c244255fc843a0d2a21 (176x208 CN) |
-| World Fighting Heroes II | 101x80 | No Issues | Required Settings: "Siemens" Key Layout, FPS Lock to "20 FPS or less" | 05/14/25 | 2b7a6e93585b713a20a4d8dec942fa2c (101x80) |
+| World Fighting Heroes II | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›20 FPS or less‹ | 05/14/25 | 2b7a6e93585b713a20a4d8dec942fa2c (101x80) |
 | Wrath of the Titans | 320x240 | No Issues | | 06/04/23 | b6eafa64128f82b6f4084f1a896b49d3 (320x240) |
 | 武林传之刀剑江湖录-上 (Wulin history 1) | 240x320 | Minor Issues | Missing AMR decoder | 09/25/25 | ecfaf48016be1a83b1cfe4ed0954a78d (240x320) |
 | 武林传之刀剑江湖录-中 (Wulin history 2) | 240x320 | Minor Issues | Missing AMR decoder | 09/25/25 | 6a2121c9e32584742aad6d3b1d1eeed1 (240x320) |

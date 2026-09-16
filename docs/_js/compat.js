@@ -160,7 +160,7 @@ function generateCompatData() {
             var settingItem = settingsArray[s].trim();
             if (settingItem.length > 0) {
               // Anything with double quotes becomes a badge for better readability.
-              settingItem = settingsArray[s].trim().replace(/"([^"]+)"/g, '<span class="setting_val">$1</span>');
+              settingItem = settingsArray[s].trim().replace(/["›“]([^"‹”]+)["‹”]/g, '<span class="setting_val">$1</span>');
               formattedDesc += '<li><b>' + settingItem + '</b></li>';
             }
           }
