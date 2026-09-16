@@ -1,6 +1,6 @@
 /* Global variable to indicate when the search function is available */
 var searchready = false;
-/* csv compatibility list lines split as rows */
+/* md compatibility list lines split as rows */
 var rowdata;
 /* Compatibility chart colors */
 var colors=['#81d41a','#0066ff','#ffff00', '#ff6600', '#ff0000'];
@@ -17,20 +17,20 @@ var ingame_enabled = true;
 var not_booting_enabled = true;
 
 /* 
- * Once the window loads, get the csv with the compatibility list and prepare
+ * Once the window loads, get the md with the compatibility list and prepare
  * to parse it, as well as to create the charts.
  */
 window.onload = function () {
-  readCSV();
+  readMD();
 }
 
 /* Biggest function of the entire website, tasked of building the compatibility list */
-function readCSV() {
-  /* Fetch the csv file and begin processing it */
-  fetch('../compat_data/FreeJ2ME Compatibility.csv').then(response => response.text()) 
-  .then(csvFile => {
-    /* Split csv lines as rows */
-    rowdata = csvFile.split('\n');
+function readMD() {
+  /* Fetch the md file and begin processing it */
+  fetch('../compat_data/FreeJ2ME Compatibility.md').then(response => response.text())
+  .then(mdFile => {
+    /* Split md lines as rows */
+    rowdata = mdFile.split('\n');
     generateCompatData();
 
     
@@ -83,7 +83,7 @@ function readCSV() {
   });
 }
 
-/* Helper function to generate the compatibility date separate from the main csv function */
+/* Helper function to generate the compatibility date separate from the main md function */
 function generateCompatData() {
   var statcolor = '', maindivname='', elem_bordercolor='';
   var compat_table = document.getElementById('compat_table');
@@ -96,13 +96,13 @@ function generateCompatData() {
   /* For each entry on the compatibility list: */
   for (row of rowdata) {
 
-    /* Last row of csv is always empty, so treat that case */
+    /* Last row of md is always empty, so treat that case */
     if(row.length > 0) {
       // The CSV is formatted for better readability on github and text
       // editors now, so we must trim the empty spaces here.
       var line = row.trim();
 
-      // Columns are separated by '|' in the csv
+      // Columns are separated by '|' in the md
       if (line.startsWith('|')) { line = line.substring(1); }
       if (line.endsWith('|')) { line = line.substring(0, line.length - 1); }
 
