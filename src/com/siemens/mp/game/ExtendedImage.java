@@ -14,7 +14,6 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-
 package com.siemens.mp.game;
 
 import org.recompile.mobile.Mobile;
@@ -37,8 +36,8 @@ public class ExtendedImage extends com.siemens.mp.misc.NativeMem
 
 	private int width;
 
-	private int height; 
-	
+	private int height;
+
 	public ExtendedImage(Image img)
 	{
 		image = Image.createImage(img);
@@ -50,116 +49,126 @@ public class ExtendedImage extends com.siemens.mp.misc.NativeMem
 
 	public Image getImage() { return image; }
 
-	public int getPixel(int x, int y) 
+	public int getPixel(int x, int y)
 	{
+		if (x < 0 || y < 0 || x >= width || y >= height) { return 0; }
+
 		int pixelValue = image.getPixel(x, y);
-		
-		if (image.is2Bpp()) 
+
+		if (image.is2Bpp())
 		{
-			switch (pixelValue) 
-			{
-				case 0x00FFFFFF:
-					return 0; // Transparent
-				case 0xFFFFFFFF:
-					return 1; // White
-				case 0xFF000000:
-				default:
-					return 2; // Black
-			}
-		} 
-		else 
+			// 0 = Transparent, 1 = White, 2 & 3 = Black
+			int alpha = (pixelValue >> 24) & 0xFF;
+			if (alpha == 0) { return 0; } // Transparent
+
+			int rgb = pixelValue & 0x00FFFFFF;
+			if (rgb == 0x00FFFFFF) return 1; // White
+
+			return 2; // Black
+		}
+		else
 		{
-			return (pixelValue == 0xFFFFFFFF) ? 0 : 1; // 0 = white, 1 = black
+			int rgb = pixelValue & 0x00FFFFFF;
+			return (rgb == 0x00FFFFFF) ? 0 : 1; // 0 = white, 1 = black
 		}
 	}
 
 	public void setPixel(int x, int y, byte color)
 	{
+		if (x < 0 || y < 0 || x >= width || y >= height) { return; }
+
 		if(image.is2Bpp()) { image.setPixel(x, y, palette2Bpp[color & 0x3]); }
 		else { image.setPixel(x, y, palette1Bpp[color & 0x1]); }
 	}
 
-	public void getPixelBytes(byte[] pixels, int x, int y, int width, int height) 
+	public void getPixelBytes(byte[] pixels, int x, int y, int width, int height)
 	{
-		if (x % (image.is2Bpp() ? 4 : 8) != 0 || width % (image.is2Bpp() ? 4 : 8) != 0) 
+		if ((x & 7) != 0 || (width & 7) != 0)
 		{
 			throw new IllegalArgumentException("x and width must be multiples of " + (image.is2Bpp() ? 4 : 8));
 		}
-	
-		for (int j = 0; j < height; j++) 
+
+		if (pixels == null) { throw new NullPointerException("Pixels byte array cannot be null."); }
+
+		boolean is2bpp = image.is2Bpp();
+		int pixelsPerByte = is2bpp ? 4 : 8;
+
+		for (int j = 0; j < height; j++)
 		{
-			for (int i = 0; i < width; i++) 
+			for (int i = 0; i < width; i++)
 			{
-				int pixelColor = getPixel(x + i, y + j);
-				int pixelIndex = (j * width + i) / (image.is2Bpp() ? 4 : 8);
-				int bitIndex = (j * width + i) % (image.is2Bpp() ? 4 : 8);
-	
-				if (image.is2Bpp()) 
+				int currX = x + i;
+				int currY = y + j;
+
+				int pixelColor = getPixel(currX, currY);
+				int bitOffset = j * width + i;
+				int byteIdx = bitOffset / pixelsPerByte;
+				int bitIdx = bitOffset % pixelsPerByte;
+
+				if (byteIdx >= pixels.length) { continue; }
+
+				if (bitIdx == 0) { pixels[byteIdx] = 0; }
+
+				if (is2bpp)
 				{
-					if (pixelColor == 0) { }  // Transparent
-					else if (pixelColor == 1) { pixels[pixelIndex] |= (1 << (6 - bitIndex * 2)); } // White 
-					else if (pixelColor == 2 || pixelColor == 3) { pixels[pixelIndex] |= (2 << (6 - bitIndex * 2)); } // Black
-				} 
-				else 
+					int shift = 6 - (bitIdx * 2);
+					pixels[byteIdx] |= (byte) ((pixelColor & 0x03) << shift);
+				}
+				else
 				{
-					if (pixelColor == 0) { pixels[pixelIndex] &= ~(1 << (7 - bitIndex)); } // White 
-					else if (pixelColor == 1) { pixels[pixelIndex] |= (1 << (7 - bitIndex)); } // Black
+					int shift = 7 - bitIdx;
+					if ((pixelColor & 0x01) != 0) { pixels[byteIdx] |= (byte) (1 << shift); }
 				}
 			}
 		}
 	}
-	
-	public void setPixels(byte[] pixels, int x, int y, int width, int height) 
+
+	public void setPixels(byte[] pixels, int x, int y, int width, int height)
 	{
-		if (x % (image.is2Bpp() ? 4 : 8) != 0 || width % (image.is2Bpp() ? 4 : 8) != 0) 
+		if ((x & 7) != 0 || (width & 7) != 0)
 		{
-			throw new IllegalArgumentException("x and width must be multiples of " + (image.is2Bpp() ? 4 : 8));
+			throw new IllegalArgumentException("x and width must be multiples of 8.");
 		}
 
-		int imgWidth = image.getWidth();
-		int imgHeight = image.getHeight();
-		
-		/* 
-		 * Some Siemens jars use negative coordinates, and in those cases, it appears to be so that the 
+		if (pixels == null) { return; }
+
+		boolean is2bpp = image.is2Bpp();
+		int pixelsPerByte = is2bpp ? 4 : 8;
+
+		/*
+		 * Some Siemens jars use negative coordinates, and in those cases, it appears to be so that the
 		 * data can be retrieved from an area of the byte array that would normally be outside the screen
-		*/
-		int dx = 0, dy = 0;
-		if(x < 0) { dx = -x; x = 0; }
-		if(y < 0) { dy = -y; y = 0; }
+		 */
+		int startX = Math.max(0, x);
+		int startY = Math.max(0, y);
+		int endX = Math.min(x + width, this.width);
+		int endY = Math.min(y + height, this.height);
 
-		width = Math.min(x + width, imgWidth) - x;
-		height = Math.min(y + height, imgHeight) - y;
-
-		for (int j = 0; j < Math.min(height, imgHeight); j++) 
+		for (int currY = startY; currY < endY; currY++)
 		{
-			for (int i = 0; i < Math.min(width, imgWidth); i++) 
+			int srcY = currY - y;
+			for (int currX = startX; currX < endX; currX++)
 			{
-				int pixelIndex = ((j+dy) * width + i+dx) / (image.is2Bpp() ? 4 : 8);
-				int bitIndex = ((j+dy) * width + i+dx) % (image.is2Bpp() ? 4 : 8);
-	
-				if(pixelIndex >= pixels.length) { continue; }
-				if (image.is2Bpp()) 
+				int srcX = currX - x;
+				int bitOffset = srcY * width + srcX;
+				int byteIdx = bitOffset / pixelsPerByte;
+				int bitIdx = bitOffset % pixelsPerByte;
+
+				if (byteIdx >= pixels.length) continue;
+
+				byte color;
+				if (is2bpp)
 				{
-					int value = (pixels[pixelIndex] >> (6 - bitIndex * 2)) & 0x03;
-					switch (value) 
-					{
-						case 0: // Transparent
-							setPixel(x + i, y + j, (byte) 0); // Transparent
-							break;
-						case 1: // White
-							setPixel(x + i, y + j, (byte) 1); // White
-							break;
-						case 2:
-						case 3:
-							setPixel(x + i, y + j, (byte) 2); // Black
-							break;
-					}
-				} 
-				else 
-				{
-					int bitValue = (pixels[pixelIndex] >> (7 - bitIndex)) & 0x01;
-					setPixel(x + i, y + j, (byte) (bitValue == 1 ? 1 : 0)); // 1 = black, 0 = white
+					int shift = 6 - (bitIdx * 2);
+					color = (byte) ((pixels[byteIdx] >> shift) & 0x03);
 				}
+				else
+				{
+					int shift = 7 - bitIdx;
+					color = (byte) ((pixels[byteIdx] >> shift) & 0x01);
+				}
+
+				setPixel(currX, currY, color);
 			}
 		}
 	}
@@ -172,8 +181,12 @@ public class ExtendedImage extends com.siemens.mp.misc.NativeMem
 		gc.setColor(0xFFFFFFFF);
 	}
 
-	public void blitToScreen(int x, int y) // from Micro Java Game Development By David Fox, Roman Verhovsek
+	// We don't flush the image directly to the front buffer with flushGraphics,
+	// instead we just draw onto the current Displayable and wait for a Canvas
+	// repaint to show it on screen.
+	public void blitToScreen(int x, int y)
 	{
-		Mobile.getPlatform().flushGraphics(image, x, y, width, height);
-	} 
+		Graphics screenGfx = Mobile.getDisplay().getCurrent().platformImage.getMIDPGraphics();
+		screenGfx.drawImage(image, x, y, 0);
+	}
 }

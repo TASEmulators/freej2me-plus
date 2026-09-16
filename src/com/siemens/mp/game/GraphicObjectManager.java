@@ -28,32 +28,32 @@ import java.util.ArrayList;
 
 public class GraphicObjectManager extends com.siemens.mp.misc.NativeMem
 {
-	private ArrayList<GraphicObject> list = new ArrayList<GraphicObject>();
+	private volatile ArrayList<GraphicObject> list = new ArrayList<GraphicObject>();
 
 	public GraphicObjectManager() { }
-	
-	public static byte[] createTextureBits(int width, int height, byte[] texture) 
+
+	public static byte[] createTextureBits(int width, int height, byte[] texture)
 	{
 		int bitArraySize = (width * height + 7) / 8;
 		byte[] bitTexture = new byte[bitArraySize];
-	
-		for (int y = 0; y < height; y++) 
+
+		for (int y = 0; y < height; y++)
 		{
-			for (int x = 0; x < width; x++) 
+			for (int x = 0; x < width; x++)
 			{
 				int pixelValue = texture[y * width + x] & 0xFF;
-	
+
 				// Calculate the byte and bit position in the bit array
 				int byteIndex = (y * width + x) / 8;
 				int bitIndex = (y * width + x) % 8;
-	
+
 				if (pixelValue != 0) { bitTexture[byteIndex] |= (1 << (7 - bitIndex)); }
 			}
 		}
-	
+
 		return bitTexture;
 	}
-	
+
 
 	public void addObject(GraphicObject g) { list.add(g); }
 
@@ -65,18 +65,26 @@ public class GraphicObjectManager extends com.siemens.mp.misc.NativeMem
 
 
 	public GraphicObject getObjectAt(int index) { return list.get(index); }
-	
+
 	public int getObjectPosition(GraphicObject g) { return list.indexOf(g); }
 
-	
+
 	public void paint(ExtendedImage img, int x, int y) { paint(img.getImage(), x, y); }
 
-	public void paint(Image image, int x, int y) 
-	{ 
-		for (GraphicObject obj : list) 
+	public void paint(Image image, int x, int y)
+	{
+		// Siemens is so unbelievably jank that apps apparently can make changes
+		// to the GraphicObjects whilst they're rendering, so be extra cautious.
+		for (int i = 0; i < list.size(); i++)
 		{
-			if (obj.getVisible()) { obj.paint(image.getGraphics(), x, y); }
+			if (i < list.size())
+			{
+				GraphicObject obj = list.get(i);
+				if (obj != null && obj.getVisible())
+				{
+					obj.paint(image.getGraphics(), x, y);
+				}
+			}
 		}
 	}
-
 }
