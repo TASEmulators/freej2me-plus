@@ -90,6 +90,8 @@ public abstract class GamepadReader implements Runnable
 		return Integer.MIN_VALUE;
 	}
 
+	public boolean isRunning() { return running; }
+
 	private synchronized void startKeyRepeatThread()
 	{
 		if (repeatRunning) { return; }
@@ -99,14 +101,25 @@ public abstract class GamepadReader implements Runnable
 		{
 			public void run()
 			 {
+				final long REPEAT_DELAY = 350;
+				long[] keyPressTime = new long[MobilePlatform.pressedKeys.length];
+
 				while (repeatRunning)
 				{
+					long time = System.currentTimeMillis();
+
 					for (int i = 0; i < MobilePlatform.pressedKeys.length; i++)
 					{
 						if (MobilePlatform.pressedKeys[i])
 						{
-							MobilePlatform.keyRepeated(Mobile.getMobileKey(i));
+							// Key was just pressed, don't send repeats yet.
+							if (keyPressTime[i] == 0) { keyPressTime[i] = time; }
+							else if (time - keyPressTime[i] >= REPEAT_DELAY)
+							{
+								MobilePlatform.keyRepeated(Mobile.getMobileKey(i));
+							}
 						}
+						else { keyPressTime[i] = 0; }
 					}
 					try { Thread.sleep(16); }
 					catch (InterruptedException e) { break; }
@@ -121,14 +134,6 @@ public abstract class GamepadReader implements Runnable
 	public void stop()
 	{
 		this.running = false;
-
-		// Close the input reading stream
-		if (this.in != null)
-		{
-			try { this.in.close(); }
-			catch (IOException e) { }
-			this.in = null;
-		}
 
 		// Stop the key repeat thread as well
 		synchronized (GamepadReader.class)

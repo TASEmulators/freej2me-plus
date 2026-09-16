@@ -18,6 +18,12 @@ package org.recompile.freej2me.gamepad;
 
 import java.io.File;
 import java.io.FileInputStream;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.FileChannel;
+
 import java.util.ArrayList;
 
 import org.recompile.freej2me.FJGUI;
@@ -85,27 +91,31 @@ public class LinuxGamepadReader extends GamepadReader
 		}
 
 		in = null;
+		FileChannel channel = null;
 		try
 		{
 			in = new FileInputStream(joystickFile);
-			byte[] buffer = new byte[8];
+			channel = ((FileInputStream)in).getChannel();
+			ByteBuffer buffer = ByteBuffer.allocate(8);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Connected: " + deviceName + " (" + devicePath + ")");
 
 			while (running)
 			{
-				int bytesRead = 0;
-				while (bytesRead < 8 && running)
+				buffer.clear();
+				while (buffer.hasRemaining() && running)
 				{
-					int r = in.read(buffer, bytesRead, 8 - bytesRead);
+					int r = channel.read(buffer);
 					if (r == -1) { break; }
-					bytesRead += r;
 				}
 
-				if (bytesRead < 8) { break; }
+				if (buffer.position() < 8) { break; }
 
-				short value = (short) ((buffer[4] & 0xFF) | ((buffer[5] & 0xFF) << 8));
-				int type = buffer[6] & 0xFF;
-				int number = buffer[7] & 0xFF;
+				buffer.flip();
+				int time = buffer.getInt();
+				short value = buffer.getShort();
+				int type = buffer.get() & 0xFF;
+				int number = buffer.get() & 0xFF;
 
 				boolean isInit = (type & 0x80) != 0;
 				type &= ~0x80;
@@ -191,7 +201,23 @@ public class LinuxGamepadReader extends GamepadReader
 				}
 			}
 		}
+		catch (ClosedByInterruptException ce) { Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input stream closed for refresh."); }
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input stream disconnected: " + e.getMessage()); }
-		finally { Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input reader stopped for " + devicePath); }
+		finally
+		{
+			if (channel != null)
+			{
+				try { channel.close(); }
+				catch (Exception e) { }
+			}
+			if (in != null)
+			{
+				try { in.close(); }
+				catch (Exception e) { }
+				in = null;
+			}
+			stop();
+			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input reader stopped for " + devicePath);
+		}
 	}
 }

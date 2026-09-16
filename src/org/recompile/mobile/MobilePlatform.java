@@ -127,7 +127,7 @@ public class MobilePlatform
 		lcd = new PlatformImage(width, height);
 
 
-        gcFrontbuffer = lcdFrontbuffer.getMIDPGraphics();
+		gcFrontbuffer = lcdFrontbuffer.getMIDPGraphics();
 
 
 		/*
@@ -207,7 +207,7 @@ public class MobilePlatform
 		if(appTerminated) { return; }
 
 		if(!MIDletLoader.MIDletSelected) { MIDletLoader.keyPress(Mobile.getGameAction(keycode)); }
-		else if (!Mobile.isPaused)
+		else if (!Mobile.isPaused && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
 		{
 			updateKeyState(Mobile.getGameAction(keycode), true);
 			updateVodafoneKeyState(Mobile.getCanvasAction(keycode), true);
@@ -233,7 +233,7 @@ public class MobilePlatform
 	{
 		if(appTerminated) { return; }
 
-		if(!Mobile.isPaused && MIDletLoader.MIDletSelected)
+		if (!Mobile.isPaused && MIDletLoader.MIDletSelected && !Mobile.isDoJa && Mobile.getDisplay() != null && (displayable = Mobile.getDisplay().getCurrent()) != null)
 		{
 			updateKeyState(Mobile.getGameAction(keycode), false);
 			updateVodafoneKeyState(Mobile.getCanvasAction(keycode), false);
@@ -604,7 +604,7 @@ public class MobilePlatform
 
 	public boolean load(String fileName)
 	{
-        Map<String, String> descriptorProperties = new HashMap<String, String>();
+		Map<String, String> descriptorProperties = new HashMap<String, String>();
 
 		/*
 		 * Java treats "!/" sequences as a pointer to a file inside a jar, which will cause
@@ -830,7 +830,7 @@ public class MobilePlatform
 				return false;
 			}
 		}
-    }
+	}
 
 	public void runJar()
 	{

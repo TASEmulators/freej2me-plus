@@ -253,7 +253,7 @@ public final class FJGUI
 	final CardLayout inputLayout = new CardLayout();
 	final JPanel inputPanel = new JPanel(inputLayout);
 	final JTextArea gamepadName = new JTextArea("Pad: None");
-	private static GamepadReader gamepadReader = null;
+	static GamepadReader gamepadReader = null;
 	private static Thread gamepadThread = null;
 
 	/* Items for each of the bar's JMenus */
@@ -1630,7 +1630,7 @@ public final class FJGUI
 						FJGUI.gamepadThread.interrupt();
 
 						// Wait for the thread a bit, so it can end normally.
-						try { FJGUI.gamepadThread.join(500); }
+						try { FJGUI.gamepadThread.join(100); }
 						catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
 						FJGUI.gamepadThread = null;
 					}
@@ -1660,7 +1660,7 @@ public final class FJGUI
 						FJGUI.gamepadThread.interrupt();
 
 						// Wait for the thread a bit, so it can end normally.
-						try { FJGUI.gamepadThread.join(500); }
+						try { FJGUI.gamepadThread.join(100); }
 						catch (InterruptedException e)  { Thread.currentThread().interrupt(); }
 						FJGUI.gamepadThread = null;
 					}

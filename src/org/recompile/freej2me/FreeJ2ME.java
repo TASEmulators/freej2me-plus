@@ -641,7 +641,9 @@ public class FreeJ2ME
 			}
 			else
 			{
-				if(mobikey < 20) { MobilePlatform.keyRepeated(Mobile.getMobileKey(mobikey)); }
+				// If gamepad thread is up, just let it send repeats instead
+				if(mobikey < 20 && (fjGUI.gamepadReader == null
+					|| !fjGUI.gamepadReader.isRunning()))  { MobilePlatform.keyRepeated(Mobile.getMobileKey(mobikey)); }
 			}
 		}
 	}
@@ -668,7 +670,9 @@ public class FreeJ2ME
 
 				for(int i = 0; i < MobilePlatform.pressedKeys.length; i++)
 				{
-					if(MobilePlatform.pressedKeys[i]) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
+					// If gamepad thread is up, just let it send repeats instead
+					if(MobilePlatform.pressedKeys[i] && (fjGUI.gamepadReader == null
+						|| !fjGUI.gamepadReader.isRunning())) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
 				}
 			}
 		}
@@ -779,8 +783,8 @@ public class FreeJ2ME
 			URL icon = this.getClass().getResource("/org/recompile/icon.png");
 			if (icon != null)
 			{
-			    appIcon = ImageIO.read(icon);
-			    main.setIconImage(appIcon);
+				appIcon = ImageIO.read(icon);
+				main.setIconImage(appIcon);
 			}
 		}
 		catch (Exception e) { System.out.println("Couldn't load app icon:" + e.getMessage()); }

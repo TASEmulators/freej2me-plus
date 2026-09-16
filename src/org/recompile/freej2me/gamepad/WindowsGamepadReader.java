@@ -18,6 +18,13 @@ package org.recompile.freej2me.gamepad;
 
 import java.io.File;
 import java.io.InputStream;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+
 import java.util.ArrayList;
 
 import org.recompile.freej2me.FJGUI;
@@ -63,6 +70,7 @@ public class WindowsGamepadReader extends GamepadReader
 	@Override
 	public void run()
 	{
+		ReadableByteChannel channel = null;
 		try
 		{
 			File win32Pad = getFromParentDir();
@@ -91,25 +99,29 @@ public class WindowsGamepadReader extends GamepadReader
 
 			// Direct binary input stream from C stdout
 			in = win32PadProcess.getInputStream();
-			byte[] buffer = new byte[8];
+			channel = Channels.newChannel(in);
+
+			ByteBuffer buffer = ByteBuffer.allocate(8);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
 
 			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Connected: " + deviceName + " (" + devicePath + ")");
 
 			while (running)
 			{
-				int bytesRead = 0;
-				while (bytesRead < 8 && running)
+				buffer.clear();
+				while (buffer.hasRemaining() && running)
 				{
-					int r = in.read(buffer, bytesRead, 8 - bytesRead);
+					int r = channel.read(buffer);
 					if (r == -1) { break; }
-					bytesRead += r;
 				}
 
-				if (bytesRead < 8 || !running) { break; }
+				if (buffer.position() < 8) { break; }
 
-				short value = (short) ((buffer[4] & 0xFF) | ((buffer[5] & 0xFF) << 8));
-				int type = buffer[6] & 0xFF;
-				int number = buffer[7] & 0xFF;
+				buffer.flip();
+				int time = buffer.getInt();
+				short value = buffer.getShort();
+				int type = buffer.get() & 0xFF;
+				int number = buffer.get() & 0xFF;
 
 				boolean isInit = (type & 0x80) != 0;
 				type &= ~0x80;
@@ -192,18 +204,18 @@ public class WindowsGamepadReader extends GamepadReader
 				}
 			}
 		}
+		catch (ClosedByInterruptException ce) { Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input stream closed for refresh."); }
 		catch (Exception e)
 		{
-			// That exception will be caught when we're closing the process,
-			// so only log the error if this happens when we're not actually
-			// closing it.
-			if (running)
-			{
-				Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Windows Input stream error: " + e.getMessage());
-			}
+			Mobile.log(Mobile.LOG_ERROR, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Windows Input stream disconnected: " + e.getMessage());
 		}
 		finally
 		{
+			if (channel != null)
+			{
+				try { channel.close(); }
+				catch (Exception e) { }
+			}
 			stop();
 			Mobile.log(Mobile.LOG_INFO, GamepadReader.class.getPackage().getName() + "." + GamepadReader.class.getSimpleName() + ": " + "[Gamepad] Input reader stopped for device " + devicePath);
 		}
