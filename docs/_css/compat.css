@@ -85,27 +85,27 @@ body {
  *
  */
 #b_perfect {
-    background-color: #81d41a;
+    background-color: #6ba544;
     border-color: #81d41a;
 }
 
 #b_minor_issue {
-    background-color: #0066ff;
+    background-color: #2a7fc0;
     border-color: #0066ff;
 }
 
 #b_playable {
-    background-color: #ffff00;
+    background-color: #c0c044;
     border-color: #ffff00;
 }
 
 #b_ingame {
-    background-color: #ff6600ff;
+    background-color: #c08444;
     border-color: #ff6600ff;
 }
 
 #b_not_booting {
-    background-color: #ff0000;
+    background-color: #c04a4a;
     border-color: #ff0000;
 }
 
@@ -231,6 +231,60 @@ body {
     color: white;
 }
 
+#entryname .platform_badge {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    padding: 2px 4px;
+    border-radius: 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* NTT DoCoMo i-appli / DoJa */
+.platform_i_appli {
+    background-color: rgba(180, 30, 70, 0.2);
+    color: #ff70ee;
+    border: 3px solid rgba(255, 64, 129, 0.3);
+}
+
+/* SK Telecom SK-VM */
+.platform_skt_sk_vm {
+    background-color: rgba(100, 80, 215, 0.33);
+    color: #9888ff;
+    border: 3px solid rgba(120, 130, 255, 0.4);
+}
+
+/* SoftBank S!Appli / Vodafone V-Appli */
+.platform_s_appli,
+.platform_v_appli {
+    background-color: rgba(10, 212, 176, 0.2);
+    color: #40ffbb;
+    border: 3px solid rgba(24, 255, 224, 0.3);
+}
+
+/* J-Sky Appli */
+.platform_j_sky_appli {
+    background-color: rgba(180, 190, 230, 0.2);
+    color: #a0afbf;
+    border: 3px solid rgba(220, 245, 255, 0.3);
+}
+
+/* KDDI EZplus */
+.platform_kddi_ezplus {
+    background-color: rgba(190, 210, 20, 0.2);
+    color: #aadd30;
+    border: 3px solid rgba(200, 250, 50, 0.3);
+}
+
+/* MIDP application*/
+.platform_midp {
+    background-color: rgba(230, 90, 20, 0.2);
+    color: #ff7e10;
+    border: 3px solid rgba(255, 160, 60, 0.3);
+}
+
 #entryres {
     width: 21%;
     text-align: center;
@@ -258,9 +312,11 @@ body {
 
 #entrystat #statbg {
     border-radius: 5px;
-    padding: 4% 5%;
+    padding: 4px 8px;
     width: fit-content;
     margin: auto;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
 
 #entrydesc {
@@ -322,11 +378,12 @@ font-family: monospace;
 }
 
 #extrabg {
-    border-radius: 15px;
-    padding: 4% 4%;
+    padding: 4px 8px;
     width: fit-content;
     margin: auto;
-    background-color: #c5d9ff;
+    background-color: #9baacd;
+    border: 3px solid #cacfff;
+    border-radius: 5px;
 }
 
 

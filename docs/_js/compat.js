@@ -3,6 +3,7 @@ var searchready = false;
 /* md compatibility list lines split as rows */
 var rowdata;
 /* Compatibility chart colors */
+var bgcolors=['#6ba544','#2a7fc0','#c0c044', '#c08444', '#c04a4a'];
 var colors=['#81d41a','#0066ff','#ffff00', '#ff6600', '#ff0000'];
 /* Amount of apps in each compatibility state */
         /* ['Perfect','Minor issues','Playable','Ingame','Not booting'] */
@@ -110,33 +111,40 @@ function generateCompatData() {
 
       switch(columndata[2].toLowerCase().trim()) {
         case 'no issues':
-          statcolor = 'style="background-color:' + colors[0] + ';"';
-          elem_bordercolor = 'style="border-color:' + colors[0] + ';"';
+          statcolor = 'background-color:' + bgcolors[0] + ';';
+          elem_bordercolor = 'border: 3px solid ' + colors[0] + ';';
           values[0] +=1;
           break;
         case 'minor issues':
-          statcolor = 'style="background-color:' + colors[1] + ';"';
-          elem_bordercolor = 'style="border-color:' + colors[1] + ';"';
+          statcolor = 'background-color:' + bgcolors[1] + ';';
+          elem_bordercolor = 'border: 3px solid ' + colors[1] + ';';
           values[1] +=1;
           break;
         case 'playable':
-          statcolor = 'style="background-color:' + colors[2] + ';"';
-          elem_bordercolor = 'style="border-color:' + colors[2] + ';"';
+          statcolor = 'background-color:' + bgcolors[2] + ';';
+          elem_bordercolor = 'border: 3px solid ' + colors[2] + ';';
           values[2] +=1;
           break;
         case 'intro/menu':
-          statcolor = 'style="background-color:' + colors[3] + ';"';
-          elem_bordercolor = 'style="border-color:' + colors[3] + ';"';
+          statcolor = 'background-color:' + bgcolors[3] + ';';
+          elem_bordercolor = 'border: 3px solid ' + colors[3] + ';';
           values[3] +=1;
           break;
         case 'unplayable':
-          statcolor = 'style="background-color:' + colors[4] + ';"';
-          elem_bordercolor = 'style="border-color:' + colors[4] + ';"';
+          statcolor = 'background-color:' + bgcolors[4] + ';';
+          elem_bordercolor = 'border: 3px solid ' + colors[4] + ';';
           values[4] +=1;
           break;
         default: /* Skip any invalid entries */
           continue;
       }
+
+      /* Names now have special markers to represent the platform they are built for (MIDP, DoJa, etc.) */
+      var rawName = columndata[0].trim();
+      var formattedName = rawName.replace(/\[([^\]]+)\]/g, function(match, platformText) {
+        var platClass = platformText.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return '<span class="platform_badge platform_' + platClass + '">•' + platformText + '•</span>';
+      });
 
 
       /* We are now embedding compat flags, etc. into the description as well, so format them. */
@@ -174,10 +182,10 @@ function generateCompatData() {
       maindivname = 'id="compat_entry' + i + '"';
 
       temp_elements += '\
-      <div class="compat_entry" ' + maindivname + elem_bordercolor +  '>' + '\n \
-        <div id="entryname">' + columndata[0].trim() + '</div>\
+      <div class="compat_entry" ' + maindivname + ' style="' + elem_bordercolor +  '">' + '\n \
+        <div id="entryname">' + formattedName + '</div>\
         <div id="entryres">'  + columndata[1].trim() + '</div>\
-        <div id="entrystat"><div id="statbg" ' + statcolor + '>' + columndata[2].trim() + '</div></div>\
+        <div id="entrystat"><div id="statbg" style="' + statcolor + ' ' + elem_bordercolor +  '">' + columndata[2].trim() + '</div></div>\
         <div id="entrydesc">' + formattedDesc + '</div>\
         <div id="entryupd"><div id="extrabg">'  + columndata[4].trim() + '</div></div>\
         <div id="entrymd5"><div id="extrabg">'  + columndata[5] + '</div></div>\
@@ -260,9 +268,10 @@ function toggleStatus(status) {
     
     if(perfect_enabled) {
       document.getElementById('b_perfect').style.backgroundColor = 'transparent';
+      document.getElementById('b_perfect').style.color = 'white';
     } else {
       document.getElementById('b_perfect').style.backgroundColor = colors[0];
-      document.getElementById('b_perfect').style.borderColor = colors[0];
+      document.getElementById('b_perfect').style.color = 'black';
     }
     perfect_enabled = !perfect_enabled;
 
@@ -270,8 +279,10 @@ function toggleStatus(status) {
     
     if(minor_issue_enabled) {
       document.getElementById('b_minor_issue').style.backgroundColor = 'transparent';
+      document.getElementById('b_minor_issue').style.color = 'white';
     } else {
       document.getElementById('b_minor_issue').style.backgroundColor = colors[1];
+      document.getElementById('b_minor_issue').style.color = 'black';
     }
     minor_issue_enabled = !minor_issue_enabled;
 
@@ -279,8 +290,10 @@ function toggleStatus(status) {
     
     if(playable_enabled) {
       document.getElementById('b_playable').style.backgroundColor = 'transparent';
+      document.getElementById('b_playable').style.color = 'white';
     } else {
       document.getElementById('b_playable').style.backgroundColor = colors[2];
+      document.getElementById('b_playable').style.color = 'black';
     }
     playable_enabled = !playable_enabled;
 
@@ -288,8 +301,10 @@ function toggleStatus(status) {
     
     if(ingame_enabled) {
       document.getElementById('b_ingame').style.backgroundColor = 'transparent';
+      document.getElementById('b_ingame').style.color = 'white';
     } else {
       document.getElementById('b_ingame').style.backgroundColor = colors[3];
+      document.getElementById('b_ingame').style.color = 'black';
     }
     ingame_enabled = !ingame_enabled;
 
@@ -297,8 +312,10 @@ function toggleStatus(status) {
     
     if(not_booting_enabled) {
       document.getElementById('b_not_booting').style.backgroundColor = 'transparent';
+      document.getElementById('b_not_booting').style.color = 'white';
     } else {
       document.getElementById('b_not_booting').style.backgroundColor = colors[4];
+      document.getElementById('b_not_booting').style.color = 'black';
     }
     not_booting_enabled = !not_booting_enabled;
 
