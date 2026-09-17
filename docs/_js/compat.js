@@ -270,7 +270,7 @@ function toggleStatus(status) {
       document.getElementById('b_perfect').style.backgroundColor = 'transparent';
       document.getElementById('b_perfect').style.color = 'white';
     } else {
-      document.getElementById('b_perfect').style.backgroundColor = colors[0];
+      document.getElementById('b_perfect').style.backgroundColor = bgcolors[0];
       document.getElementById('b_perfect').style.color = 'black';
     }
     perfect_enabled = !perfect_enabled;
@@ -281,7 +281,7 @@ function toggleStatus(status) {
       document.getElementById('b_minor_issue').style.backgroundColor = 'transparent';
       document.getElementById('b_minor_issue').style.color = 'white';
     } else {
-      document.getElementById('b_minor_issue').style.backgroundColor = colors[1];
+      document.getElementById('b_minor_issue').style.backgroundColor = bgcolors[1];
       document.getElementById('b_minor_issue').style.color = 'black';
     }
     minor_issue_enabled = !minor_issue_enabled;
@@ -292,7 +292,7 @@ function toggleStatus(status) {
       document.getElementById('b_playable').style.backgroundColor = 'transparent';
       document.getElementById('b_playable').style.color = 'white';
     } else {
-      document.getElementById('b_playable').style.backgroundColor = colors[2];
+      document.getElementById('b_playable').style.backgroundColor = bgcolors[2];
       document.getElementById('b_playable').style.color = 'black';
     }
     playable_enabled = !playable_enabled;
@@ -303,7 +303,7 @@ function toggleStatus(status) {
       document.getElementById('b_ingame').style.backgroundColor = 'transparent';
       document.getElementById('b_ingame').style.color = 'white';
     } else {
-      document.getElementById('b_ingame').style.backgroundColor = colors[3];
+      document.getElementById('b_ingame').style.backgroundColor = bgcolors[3];
       document.getElementById('b_ingame').style.color = 'black';
     }
     ingame_enabled = !ingame_enabled;
@@ -314,7 +314,7 @@ function toggleStatus(status) {
       document.getElementById('b_not_booting').style.backgroundColor = 'transparent';
       document.getElementById('b_not_booting').style.color = 'white';
     } else {
-      document.getElementById('b_not_booting').style.backgroundColor = colors[4];
+      document.getElementById('b_not_booting').style.backgroundColor = bgcolors[4];
       document.getElementById('b_not_booting').style.color = 'black';
     }
     not_booting_enabled = !not_booting_enabled;
