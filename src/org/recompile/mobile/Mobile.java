@@ -17,6 +17,7 @@
 package org.recompile.mobile;
 
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -344,12 +345,12 @@ public class Mobile
 
 	public static InputStream getResourceAsStream(Class c, String resource)
 	{
-		return platform.loader.getMIDletResourceAsStream(resource);
+		return new DataInputStream(platform.loader.getMIDletResourceAsStream(resource));
 	}
 
 	public static InputStream getMIDletResourceAsStream(String resource)
 	{
-		return platform.loader.getMIDletResourceAsStream(resource);
+		return new DataInputStream(platform.loader.getMIDletResourceAsStream(resource));
 	}
 
 	public static byte[] getMIDletResourceAsByteArray(String resource)
