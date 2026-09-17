@@ -70,7 +70,7 @@ public abstract class Canvas extends Displayable
 
 	private int barHeight;
 	private boolean suppressKeyEvents = false; // For GameCanvas
-	private boolean fullscreen = false;
+	protected boolean fullscreen = false;
 
 	// We now coalesce multiple paint calls into a single one spanning the
 	// union of all the areas passed to repaint(int, int, int, int).
@@ -387,7 +387,7 @@ public abstract class Canvas extends Displayable
 
 	public boolean getFullScreen() { return fullscreen; }
 
-	private void paintCommandsBar()
+	protected void paintCommandsBar()
 	{
 		// The command bar shouldn't influence canvas drawing operations, so it's added directly to the frontBuffer after swapping.
 		javax.microedition.lcdui.Graphics graphics = Mobile.getPlatform().getLcdFrontbufferGraphics();
