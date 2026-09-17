@@ -1151,13 +1151,13 @@ public final class SMAFDecoder
 					midiNoteNumber += 12 * channelData[channel].octaveShift;
 
 					// IF this note represents a PCM index within our stream boundary, inject a MetaMessage trigger
-					if (pcmData != null && noteNumber < PCM_RANGE_VAL)
+					if (midiNoteNumber < PCM_RANGE_VAL)
 					{
 						try
 						{
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding PCM event " + "(" + noteNumber + ")" + " to channel " + channel);
 							MetaMessage pcmMeta = new MetaMessage();
-							byte[] metaData = new byte[] { (byte) noteNumber, (byte) channelData[channel].velocity };
+							byte[] metaData = new byte[] { (byte) midiNoteNumber, (byte) channelData[channel].velocity };
 							pcmMeta.setMessage(0x7F, metaData, metaData.length);
 
 							track.add(new MidiEvent(pcmMeta, totalDuration));
@@ -1271,7 +1271,7 @@ public final class SMAFDecoder
 								return;
 							}
 
-							if (pcmData != null && noteNumber < PCM_RANGE_VAL)
+							if (noteNumber < PCM_RANGE_VAL)
 							{
 								try
 								{
@@ -1329,7 +1329,7 @@ public final class SMAFDecoder
 								return;
 							}
 
-							if (pcmData != null && noteNumber < PCM_RANGE_VAL)
+							if (noteNumber < PCM_RANGE_VAL)
 							{
 								try
 								{
@@ -1647,13 +1647,13 @@ public final class SMAFDecoder
 						return;
 					}
 
-					if (pcmData != null && noteNumber < PCM_RANGE_VAL)
+					if (noteValue < PCM_RANGE_VAL)
 					{
 						try
 						{
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding PCM event " + "(" + noteValue + ")" + " to channel " + channel);
 							MetaMessage pcmMeta = new MetaMessage();
-							byte[] metaData = new byte[] { (byte) noteNumber, (byte) channelData[channel].velocity };
+							byte[] metaData = new byte[] { (byte) noteValue, (byte) channelData[channel].velocity };
 							pcmMeta.setMessage(0x7F, metaData, metaData.length);
 
 							track.add(new MidiEvent(pcmMeta, totalDuration));

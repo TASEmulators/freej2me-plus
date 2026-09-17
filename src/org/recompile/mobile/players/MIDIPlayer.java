@@ -303,7 +303,6 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 					{
 						platform.notifyListeners(PlayerListener.LOOPED, getMediaTime());
 						if (numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
-						setMediaTime(0);
 						start();
 					}
 					else

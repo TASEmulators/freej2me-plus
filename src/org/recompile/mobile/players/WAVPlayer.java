@@ -211,7 +211,6 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 					{
 						platform.notifyListeners(PlayerListener.LOOPED, getMediaTime());
 						if (numLoops > 0) { numLoops--; }
-						setMediaTime(0);
 						start();
 					}
 					else

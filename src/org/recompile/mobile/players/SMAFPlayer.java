@@ -134,34 +134,28 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 		isExplicitStop = false;
 		try
 		{
-			if (!hasMidiPlaybackEvents && !hasPcmStreams())
+			if ((hasMidiPlaybackEvents || hasPcmStreams()) && (!synthReserved || midi.getSequence() == null))
 			{
-				platform.state = Player.PREFETCHED;
-				platform.notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
-				return;
+				prepareMidiSubsystem();
 			}
 
 			platform.state = Player.STARTED;
 			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 
-			if ((hasMidiPlaybackEvents || hasPcmStreams()) && (!synthReserved || midi.getSequence() == null))
+			synchronized (this.midi)
 			{
-				prepareMidiSubsystem();
+				if (this.midi.isRunning()) { this.midi.stop(); }
 
-				synchronized (this.midi)
-				{
-					if (this.midi.isRunning()) { this.midi.stop(); }
+				this.midi.setSequence(midiSequence);
+				this.midi.removeMetaEventListener(this);
+				this.midi.addMetaEventListener(this);
 
-					this.midi.setSequence(midiSequence);
-					this.midi.removeMetaEventListener(this);
-					this.midi.addMetaEventListener(this);
+				// If mediaTime >= getDuration, we should start playing from the beginning
+				if(curTime >= getDuration()) { setMediaTime(0); }
+				else { setMediaTime(curTime); } // Else, resume from where it stopped
 
-					if (curTime >= getDuration()) { setMediaTime(0); }
-					else { setMediaTime(curTime); }
-
-					this.platform.applyVolume();
-					this.midi.start();
-				}
+				this.platform.applyVolume();
+				this.midi.start();
 			}
 
 			isPlaying = true;
@@ -528,7 +522,6 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 					{
 						platform.notifyListeners(PlayerListener.LOOPED, curTime);
 						if (numLoops > 0) { numLoops--; }
-						setMediaTime(0);
 						start();
 					}
 					else
