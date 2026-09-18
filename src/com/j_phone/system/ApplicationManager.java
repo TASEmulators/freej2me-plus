@@ -16,18 +16,30 @@
 */
 package com.j_phone.system;
 
-public class ApplicationManager 
+import org.recompile.mobile.Mobile;
+
+public class ApplicationManager
 {
 
 	private static ApplicationManager instance;
 
-	public static ApplicationManager getInstance() 
-    {
+	public static ApplicationManager getInstance()
+	{
 		if (instance == null) { return instance = new ApplicationManager(); }
 
 		return instance;
 	}
 
-	public void setPausedTransitMenu(int n) { }
+	public void setPausedTransitMenu(int n)
+	{
+		Mobile.log(Mobile.LOG_INFO, ApplicationManager.class.getPackage().getName() + "." + ApplicationManager.class.getSimpleName() + ": " + "Set Paused Transit Menu" + n + ".");
+	}
+
+	// Ys - The Oath in Felghana uses this. Apparently just forces an RMS write
+	// to disk, which we don't need.
+	public void flushRMS()
+	{
+		Mobile.log(Mobile.LOG_INFO, ApplicationManager.class.getPackage().getName() + "." + ApplicationManager.class.getSimpleName() + ": " + "Flush RMS.");
+	}
 
 }

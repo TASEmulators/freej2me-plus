@@ -16,64 +16,9 @@
 */
 package com.vodafone.v10.util;
 
-public class FixedPoint 
+public class FixedPoint extends com.j_phone.util.FixedPoint
 {
+	public FixedPoint() { super(); }
 
-    private int value;
-
-    public FixedPoint() { this.value = 0; }
-
-    public FixedPoint(int value) { this.value = value; }
-
-    public FixedPoint acos(FixedPoint v) { return new FixedPoint((int) (Math.acos(v.toDouble()) * 65536)); }
-
-    public FixedPoint add(FixedPoint n) { return new FixedPoint(this.value + n.value); }
-
-    public FixedPoint add(int n) { return new FixedPoint(this.value + (n << 16)); }
-
-    public FixedPoint asin(FixedPoint v) { return new FixedPoint((int) (Math.asin(v.toDouble()) * 65536)); }
-
-    public FixedPoint atan(FixedPoint v) { return new FixedPoint((int) (Math.atan(v.toDouble()) * 65536)); }
-
-    public FixedPoint clone() { return new FixedPoint(this.value); }
-
-    public FixedPoint cos(FixedPoint r) { return new FixedPoint((int) (Math.cos(r.toDouble()) * 65536)); }
-
-    public FixedPoint divide(FixedPoint n) { return new FixedPoint((this.value << 16) / n.value); }
-
-    public FixedPoint divide(int n) { return new FixedPoint((this.value << 16) / n); }
-
-    public int getDecimal() { return value & 0xFFFF; }
-
-    public int getInteger() { return value >> 16; }
-
-    public static FixedPoint getMaximum() { return new FixedPoint(Integer.MAX_VALUE); }
-
-    public static FixedPoint getMinimum() { return new FixedPoint(Integer.MIN_VALUE); }
-
-    public static FixedPoint getPI() { return new FixedPoint((int) (Math.PI * 65536)); }
-
-    public FixedPoint inverse() { return new FixedPoint((1 << 16) / this.value); }
-
-    public boolean isInfinite() { return this.value == Integer.MAX_VALUE; }
-
-    public FixedPoint multiply(FixedPoint n) { return new FixedPoint((this.value * n.value) >> 16); }
-
-    public FixedPoint multiply(int n) { return new FixedPoint(this.value * n); }
-
-    public FixedPoint pow() { return multiply(this); }
-
-    public void setValue(int value) { this.value = value; }
-
-    public FixedPoint sin(FixedPoint r) { return new FixedPoint((int) (Math.sin(r.toDouble()) * 65536)); }
-
-    public FixedPoint sqrt() { return new FixedPoint((int) (Math.sqrt(toDouble()) * 65536)); }
-
-    public FixedPoint subtract(FixedPoint n) { return new FixedPoint(this.value - n.value); }
-
-    public FixedPoint subtract(int n) { return new FixedPoint(this.value - (n << 16)); }
-
-    public FixedPoint tan(FixedPoint r) { return new FixedPoint((int) (Math.tan(r.toDouble()) * 65536)); }
-
-    public double toDouble() { return value / 65536.0; }
+	public FixedPoint(int value) { super(value); }
 }
