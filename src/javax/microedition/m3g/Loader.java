@@ -772,26 +772,32 @@ public class Loader
 					}
 					else
 					{
-						byte last = 0;
+						/*
+						 * Per the M3G file format (VertexArray, encoding 1), deltas are
+						 * per-component: each component's difference is taken from the
+						 * corresponding component of the PREVIOUS VERTEX, with one 8/16-bit
+						 * overflowing accumulator per component. A single flat accumulator
+						 * chains x into y into z across the array and shreds the geometry.
+						 */
 						for (int i = 0; i < size; ++i)
 						{
-							last += (byte) readByte();
-							values[i] = last;
+							byte prev = (i < components) ? 0 : values[i - components];
+							values[i] = (byte) (prev + (byte) readByte());
 						}
 					}
 					va.set(0, vertices, values);
 				}
 				else
 				{
-					short last = 0;
 					short[] values = new short[size];
 					for (int i = 0; i < size; ++i)
 					{
 						if (encoding == 0) { values[i] = (short) readShort(); }
 						else
 						{
-							last += (short) readShort();
-							values[i] = last;
+							// Same per-component delta rule as the byte path above.
+							short prev = (i < components) ? 0 : values[i - components];
+							values[i] = (short) (prev + (short) readShort());
 						}
 					}
 					va.set(0, vertices, values);
