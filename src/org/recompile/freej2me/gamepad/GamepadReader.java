@@ -44,6 +44,7 @@ public abstract class GamepadReader implements Runnable
 	protected int activeAxis = -1; // -1 means no axis is active right now
 	protected volatile boolean running = true;
 	protected InputStream in;
+	protected volatile int lastPressedKey;
 
 	// listener for input remapping support
 	protected volatile GamepadInputListener listener;
@@ -101,27 +102,32 @@ public abstract class GamepadReader implements Runnable
 		{
 			public void run()
 			 {
-				final long REPEAT_DELAY = 350;
-				long[] keyPressTime = new long[MobilePlatform.pressedKeys.length];
+				final long START_DELAY = 350;
+				int currentActiveKey = -1;
+				long keyPressTime = 0;
 
 				while (repeatRunning)
 				{
 					long time = System.currentTimeMillis();
 
-					for (int i = 0; i < MobilePlatform.pressedKeys.length; i++)
+					if (lastPressedKey != -1 && MobilePlatform.pressedKeys[lastPressedKey])
 					{
-						if (MobilePlatform.pressedKeys[i])
+						if (lastPressedKey != currentActiveKey)
 						{
-							// Key was just pressed, don't send repeats yet.
-							if (keyPressTime[i] == 0) { keyPressTime[i] = time; }
-							else if (time - keyPressTime[i] >= REPEAT_DELAY)
+							currentActiveKey = lastPressedKey;
+							keyPressTime = time;
+						}
+						else
+						{
+							if (time - keyPressTime >= START_DELAY)
 							{
-								MobilePlatform.keyRepeated(Mobile.getMobileKey(i));
+								MobilePlatform.keyRepeated(Mobile.getMobileKey(currentActiveKey));
 							}
 						}
-						else { keyPressTime[i] = 0; }
 					}
-					try { Thread.sleep(16); }
+					else { currentActiveKey = -1; }
+
+					try { Thread.sleep(33); } // Repeat keys at a 30 fps interval, close to AWT
 					catch (InterruptedException e) { break; }
 				}
 			 }
@@ -129,6 +135,16 @@ public abstract class GamepadReader implements Runnable
 
 		repeatThread.setDaemon(true);
 		repeatThread.start();
+	}
+
+	// When a key is released, this is called to find if any other key is currently pressed for repeats
+	protected static int findPressedKey()
+	{
+		for (int i = 0; i < MobilePlatform.pressedKeys.length; i++)
+		{
+			if (MobilePlatform.pressedKeys[i]) { return i; }
+		}
+		return -1;
 	}
 
 	public void stop()

@@ -641,9 +641,7 @@ public class FreeJ2ME
 			}
 			else
 			{
-				// If gamepad thread is up, just let it send repeats instead
-				if(mobikey < 20 && (fjGUI.gamepadReader == null
-					|| !fjGUI.gamepadReader.isRunning()))  { MobilePlatform.keyRepeated(Mobile.getMobileKey(mobikey)); }
+				if(mobikey < 20) { MobilePlatform.keyRepeated(Mobile.getMobileKey(mobikey)); }
 			}
 		}
 	}
@@ -670,9 +668,7 @@ public class FreeJ2ME
 
 				for(int i = 0; i < MobilePlatform.pressedKeys.length; i++)
 				{
-					// If gamepad thread is up, just let it send repeats instead
-					if(MobilePlatform.pressedKeys[i] && (fjGUI.gamepadReader == null
-						|| !fjGUI.gamepadReader.isRunning())) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
+					if(MobilePlatform.pressedKeys[i]) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
 				}
 			}
 		}

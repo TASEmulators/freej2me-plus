@@ -142,12 +142,15 @@ public class LinuxGamepadReader extends GamepadReader
 							if(!MobilePlatform.pressedKeys[keyIndex])
 							{
 								MobilePlatform.pressedKeys[keyIndex] = true;
+								lastPressedKey = keyIndex;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(keyIndex));
 							}
 						}
 						else
 						{
 							MobilePlatform.pressedKeys[keyIndex] = false;
+							// Find any other pressed key to repeat
+							if (lastPressedKey == keyIndex) { lastPressedKey = findPressedKey(); }
 							MobilePlatform.keyReleased(Mobile.getMobileKey(keyIndex));
 						}
 					}
@@ -175,12 +178,14 @@ public class LinuxGamepadReader extends GamepadReader
 							if (opsKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[opsKeyIndex])
 							{
 								MobilePlatform.pressedKeys[opsKeyIndex] = false;
+								if (lastPressedKey == opsKeyIndex) { lastPressedKey = findPressedKey(); }
 								MobilePlatform.keyReleased(Mobile.getMobileKey(opsKeyIndex));
 							}
 
 							if(axisKeyIndex != Integer.MIN_VALUE && !MobilePlatform.pressedKeys[axisKeyIndex])
 							{
 								MobilePlatform.pressedKeys[axisKeyIndex] = true;
+								lastPressedKey = axisKeyIndex;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(axisKeyIndex));
 							}
 						}
@@ -189,11 +194,13 @@ public class LinuxGamepadReader extends GamepadReader
 							if (axisKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[axisKeyIndex])
 							{
 								MobilePlatform.pressedKeys[axisKeyIndex] = false;
+								if (lastPressedKey == axisKeyIndex) { lastPressedKey = findPressedKey(); }
 								MobilePlatform.keyReleased(Mobile.getMobileKey(axisKeyIndex));
 							}
 							if (opsKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[opsKeyIndex])
 							{
 								MobilePlatform.pressedKeys[opsKeyIndex] = false;
+								if (lastPressedKey == opsKeyIndex) { lastPressedKey = findPressedKey(); }
 								MobilePlatform.keyReleased(Mobile.getMobileKey(opsKeyIndex));
 							}
 						}
