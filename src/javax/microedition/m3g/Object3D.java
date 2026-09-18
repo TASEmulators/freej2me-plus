@@ -74,7 +74,16 @@ public abstract class Object3D implements Cloneable
 		if (visited.contains(this)) { return null; }
 		visited.addElement(this);
 
-		if (this.userID == targetUserID && targetUserID != 0)
+		/*
+		 * Per JSR-184, find() returns any reachable object with the given user ID,
+		 * and 0 is a perfectly valid ID to search for - it is in fact the default
+		 * ID of every object, so find(0) typically matches the object itself.
+		 * 
+		 * Sega Rally 3D calls world.find(0) on loaded wrapper Worlds (whose
+		 * objects all carry the default ID) and treats a null return as a load
+		 * failure, crashing during its loading screen.
+		 */
+		if (this.userID == targetUserID)
 		{
 			return this;
 		}
