@@ -24,7 +24,7 @@ import java.net.URLDecoder;
 
 public class Libretro
 {
-	private int lcdWidth, lcdHeight;
+	private int lcdWidth, lcdHeight, lastPressedKey = -1;
 	volatile int[] lcdData;
 
 	private static volatile boolean canPause = false;
@@ -135,11 +135,13 @@ public class Libretro
 						{
 							case 2:	// joypad key up
 								MobilePlatform.pressedKeys[code] = false;
+								if (lastPressedKey == code) { lastPressedKey = findPressedKey(); }
 								MobilePlatform.keyReleased(Mobile.getMobileKey(code));
 							break;
 
 							case 3: // joypad key down
 								MobilePlatform.pressedKeys[code] = true;
+								lastPressedKey = code;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(code));
 							break;
 
@@ -313,11 +315,12 @@ public class Libretro
 
 							case 15: // Libretro core requested a new frame.
 
-								// Fire repeats for any currently held keys on
-								// every libretro frame tick
-								for(int i = 0; i < MobilePlatform.pressedKeys.length; i++)
+								// Fire repeats for the last key to be held on
+								// every libretro frame tick (similar to how AWT
+								// and real devices handle this)
+								if (lastPressedKey != -1 && MobilePlatform.pressedKeys[lastPressedKey])
 								{
-									if(MobilePlatform.pressedKeys[i]) { MobilePlatform.keyRepeated(Mobile.getMobileKey(i)); }
+									MobilePlatform.keyRepeated(Mobile.getMobileKey(lastPressedKey));
 								}
 
 								int multiplierScaled = (din[1] << 8) | din[2];
@@ -404,6 +407,17 @@ public class Libretro
 			catch (Exception e) { System.exit(0); }
 		} // run()
 	} // LibretroIO
+
+	// When a key is released, this is called to find if any other key is currently pressed for repeats
+	protected static int findPressedKey()
+	{
+		for (int i = 0; i < MobilePlatform.pressedKeys.length; i++)
+		{
+			if (MobilePlatform.pressedKeys[i]) { return i; }
+		}
+		return -1;
+	}
+
 
 	private static void updatePauseTimer()
 	{

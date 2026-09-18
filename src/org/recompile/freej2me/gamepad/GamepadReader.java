@@ -47,7 +47,7 @@ public abstract class GamepadReader implements Runnable
 	protected int activeAxis = -1; // -1 means no axis is active right now
 	protected volatile boolean running = true;
 	protected InputStream in;
-	protected volatile int lastPressedKey;
+	protected volatile int lastPressedKey = -1;
 
 	// listener for input remapping support
 	protected volatile GamepadInputListener listener;
