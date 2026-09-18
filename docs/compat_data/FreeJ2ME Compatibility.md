@@ -308,7 +308,7 @@
 | ギャプラスforモバゲー (Gaplus for Mobage) [i-Appli] | 240x240 | No Issues | | 09/04/25 | 3a3b5115e7dbd7fb49731ce82a3097f1 (240x240) |
 | Garfield’s House (Trial) [MIDP] | 176x208 | No Issues | | 06/13/25 | 0eb98b0884a333ef7142ae38809d9fcc (176x208) |
 | Garfield 2 – Royal Adventure [MIDP] | 240x320 | No Issues | | 05/13/25 | 6e5ddf3d3cbef5767979d3f30ac0ffe1 (240x320) |
-| GeoBlasterZeroX [V-Appli] | 128x160 | Intro/Menu | Has a lot of flickering. Required Settings: ›KDDI‹ Key Layout, FPS Lock to ›30 FPS or less‹ | 09/04/25 | 964260372243375f540e13f7629d20d5 (240x320) |
+| GEOBLASTER ZeroX [V-Appli] | 128x128 | Minor Issues | Has some garbage pixels at the edges of the screen but those were probably hidden by the phone's bezels. Also has slightly misaligned bomb VFX, but these are drawn with standard MIDP methods. Required Settings: ›KDDI‹ Key Layout | 09/04/25 | d3b4c38fd469033be3d3b0f739a5b96f (128x128) |
 | G Gundam Fighting [MIDP] | 240x320 | No Issues | | 09/04/25 | 964260372243375f540e13f7629d20d5 (240x320) |
 | 鬼眼法师 (Ghost Eye Practitioner) [MIDP] | 176x208 | No Issues | | 05/18/25 | 481cf18bfb91ac74de9c22c545f23ac0 (176x208) |
 | Ghost Force [MIDP] | 240x320 | No Issues | | 06/04/23 | 0183212225a9fba87c9e12d515918d3a (240x320) |
@@ -626,7 +626,7 @@
 | Samurai [MIDP] | 240x320 | No Issues | Throws some 'drawImage A:null' messages at the console | 10/29/23 | 97f100eac80c70602442bc5e454a488c (240x320) |
 | 桃色校园-心跳回忆 (School Love) [MIDP] | 176x208 | No Issues | | 07/05/25 | 0f802c118d0f97729d98049c45f80bd8 (176x208) |
 | SCX GT [MIDP] | 240x320 | No Issues | | 10/29/23 | c2936a3965874a71c701f25be67c8875 (240x320) |
-| SDｶﾞﾝﾀﾞﾑﾊﾞﾄﾙ (SD Gundam Battle) [J-Sky Appli] | 176x208 | No Issues | | 09/25/25 | 0c43174452faf8ec9edfc66c7e590900 (176x208) |
+| SDｶﾞﾝﾀﾞﾑﾊﾞﾄﾙ (SD Gundam Battle) [J-Sky Appli] | 128x160 | No Issues | | 09/25/25 | 0c43174452faf8ec9edfc66c7e590900 (128x160) |
 | 風之海-宋末恩仇錄 (Sea of Winds) [MIDP] | 240x320 | No Issues | | 04/16/25 | a45e0a24023fec4d2c0e84c07572f291 (240x320) |
 | Section 7 [MIDP] | 176x208, 128x128 | No Issues | Perfect as long as FreeJ2ME-Plus' resolution matches what the jar expects. Required Settings: Exact Resolution Match | 02/23/25 | bb0618d57281ab4af26a5631cc1b263d (128x128) 7f259cc79d23eee4a9f3a72042696130 (176x208) |
 | Sega Rally 3D [MIDP] | 320x240 | Unplayable | White Screen after the audio selection screen, probably uses m3g | 06/04/23 | def50d213c538c209e1ce520690b96f7 (320x240) |
