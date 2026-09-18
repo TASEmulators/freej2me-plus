@@ -17,7 +17,7 @@ var playable_enabled = true;
 var ingame_enabled = true;
 var not_booting_enabled = true;
 
-/* 
+/*
  * Once the window loads, get the md with the compatibility list and prepare
  * to parse it, as well as to create the charts.
  */
@@ -34,38 +34,38 @@ function readMD() {
     rowdata = mdFile.split('\n');
     generateCompatData();
 
-    
+
     /* Add data to the buttons and app counter */
-  
+
     /* A "for" loop isn't really needed here since we'll only have 5 status categories */
     total_apps = values[0]+values[1]+values[2]+values[3]+values[4];
     document.getElementById('total_apps').textContent += total_apps;
-  
+
     document.getElementById('b_perfect').textContent += values[0];
     document.getElementById('b_minor_issue').textContent += values[1];
     document.getElementById('b_playable').textContent += values[2];
     document.getElementById('b_ingame').textContent += values[3];
     document.getElementById('b_not_booting').textContent += values[4];
-  
+
     /* Draw donut chart */
     generatePieGraph('chart_canvas', {
-      animation: true, 
-      animationSpeed: 10, 
+      animation: true,
+      animationSpeed: 10,
       fillTextData: true,
       fillTextColor: '#fff',
       fillTextAlign: 1.25,
       fillTextPosition: 'inner',
       doughnutHoleSize: 60,
       doughnutHoleColor: '#1a1a1aff',
-      offset: 0, 
+      offset: 0,
       pie: 'normal',
       values:values,
       colors:colors
     });
-  
+
     /* Draw inner donut chart */
     generatePieGraph('innerchart_canvas', {
-      animation: true, 
+      animation: true,
       animationSpeed: 10,
       fillTextData: true,
       fillTextColor: '#fff',
@@ -73,12 +73,12 @@ function readMD() {
       fillTextPosition: 'inner',
       doughnutHoleSize: 35,
       doughnutHoleColor: '#1a1a1aff',
-      offset: 0, 
+      offset: 0,
       pie: 'normal',
       values:[(values[0]+values[1]+values[2]), values[3], values[4]],
       colors:["#3faf46", colors[3], colors[4]]
     });
-  
+
     /* CSV has been parsed and the compatibility list is ready. Allow the user to search. */
     searchready = true;
   });
@@ -177,7 +177,7 @@ function generateCompatData() {
       } else {
         formattedDesc = rawDesc;
       }
-      
+
       /* Inserts each row's data into the expected div */
       maindivname = 'id="compat_entry' + i + '"';
 
@@ -185,7 +185,7 @@ function generateCompatData() {
       <div class="compat_entry" ' + maindivname + ' style="' + elem_bordercolor +  '">' + '\n \
         <div id="entryname">' + formattedName + '</div>\
         <div id="entryres">'  + columndata[1].trim() + '</div>\
-        <div id="entrystat"><div id="statbg" style="' + statcolor + ' ' + elem_bordercolor +  '">' + columndata[2].trim() + '</div></div>\
+        <div id="entrystat" style="' + statcolor + ' ' + elem_bordercolor + '">' + columndata[2].trim() + '</div>\
         <div id="entrydesc">' + formattedDesc + '</div>\
         <div id="entryupd"><div id="extrabg">'  + columndata[4].trim() + '</div></div>\
         <div id="entrymd5"><div id="extrabg">'  + columndata[5] + '</div></div>\
@@ -195,9 +195,9 @@ function generateCompatData() {
     }
   }
 
-  /* 
-   * Only effectively add all elements to the page after parsing everything. This avoids multiple 
-   * costly calls to concatenate text into 'compat_table.innerHTML'. 
+  /*
+   * Only effectively add all elements to the page after parsing everything. This avoids multiple
+   * costly calls to concatenate text into 'compat_table.innerHTML'.
    */
   compat_table.innerHTML += temp_elements;
 }
@@ -209,7 +209,7 @@ function searchApp() {
     var i;
     var compat_entry, entryname;
 
-    /* 
+    /*
      * No need to re-add elements to DOM, just hide everything that doesn't include the search string
      * and show everything that includes it. It's much faster and also shows all elements if the string
      * is empty.
@@ -236,11 +236,11 @@ function updateCompatState() {
   for (i = 0; i < total_apps; i++) {
     compat_entry = document.getElementById(`compat_entry${i}`);
 
-    /* 
+    /*
      * The compat status of any given entry is on the second element of compat_entry,
      * but it has a div inside of it, so the text is even further in.
      */
-    entrystat = compat_entry.children[2].children[0];
+    entrystat = compat_entry.children[2];
 
     /* Make all entries begin as 'display: none' to significantly shorten the conditionals below. */
     compat_entry.style.display = "none";
@@ -265,7 +265,7 @@ function updateCompatState() {
 
 function toggleStatus(status) {
   if (status === 'no_issue') {
-    
+
     if(perfect_enabled) {
       document.getElementById('b_perfect').style.backgroundColor = 'transparent';
       document.getElementById('b_perfect').style.color = 'white';
@@ -276,7 +276,7 @@ function toggleStatus(status) {
     perfect_enabled = !perfect_enabled;
 
   } else if (status === 'minor_issue') {
-    
+
     if(minor_issue_enabled) {
       document.getElementById('b_minor_issue').style.backgroundColor = 'transparent';
       document.getElementById('b_minor_issue').style.color = 'white';
@@ -287,7 +287,7 @@ function toggleStatus(status) {
     minor_issue_enabled = !minor_issue_enabled;
 
   } else if (status === 'playable') {
-    
+
     if(playable_enabled) {
       document.getElementById('b_playable').style.backgroundColor = 'transparent';
       document.getElementById('b_playable').style.color = 'white';
@@ -298,7 +298,7 @@ function toggleStatus(status) {
     playable_enabled = !playable_enabled;
 
   } else if (status === 'intro_menu') {
-    
+
     if(ingame_enabled) {
       document.getElementById('b_ingame').style.backgroundColor = 'transparent';
       document.getElementById('b_ingame').style.color = 'white';
@@ -309,7 +309,7 @@ function toggleStatus(status) {
     ingame_enabled = !ingame_enabled;
 
   } else if (status === 'unplayable') {
-    
+
     if(not_booting_enabled) {
       document.getElementById('b_not_booting').style.backgroundColor = 'transparent';
       document.getElementById('b_not_booting').style.color = 'white';

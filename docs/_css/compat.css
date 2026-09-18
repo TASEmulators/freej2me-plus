@@ -79,8 +79,8 @@ body {
     transform: scale(1.25);
 }
 
-/* 
- * Those have to be styled through javascript in order to 
+/*
+ * Those have to be styled through javascript in order to
  * change their toggles from on to off visually
  *
  */
@@ -266,9 +266,9 @@ body {
 
 /* J-Sky Appli */
 .platform_j_sky_appli {
-    background-color: rgba(180, 190, 230, 0.2);
-    color: #a0afbf;
-    border: 3px solid rgba(220, 245, 255, 0.3);
+    background-color: rgba(180, 190, 235, 0.2);
+    color: #b0b8cf;
+    border: 3px solid rgba(220, 240, 255, 0.3);
 }
 
 /* KDDI EZplus */
@@ -276,6 +276,13 @@ body {
     background-color: rgba(190, 210, 20, 0.2);
     color: #aadd30;
     border: 3px solid rgba(200, 250, 50, 0.3);
+}
+
+/* AIR-EDGE */
+.platform_air_edge {
+    background-color: rgba(190, 212, 200, 0.2);
+    color: #effffc;
+    border: 3px solid rgba(236, 255, 252, 0.3);
 }
 
 /* MIDP application*/
@@ -296,27 +303,20 @@ body {
 }
 
 #entrystat {
-    width: 14%;
-    margin-left: 1%;
+	width: 12%;
+	margin-left: 1%;
+    padding: 4px 0px;
+    border-radius: 5px;
     text-align: center;
     align-self: center;
-    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-weight: bolder;
+    font-size: 1.0em;
     transition-duration: 0.2s;
-    font-size: 1em;
 }
 
 #entrystat:hover {
-    transform: scale(1.2);
-}
-
-#entrystat #statbg {
-    border-radius: 5px;
-    padding: 4px 8px;
-    width: fit-content;
-    margin: auto;
-    font-weight: 700;
-    letter-spacing: 0.3px;
+    transform: scale(1.25);
 }
 
 #entrydesc {
@@ -480,16 +480,12 @@ font-family: monospace;
 
     #entrystat {
         width: 15%;
-        font-size: 2vw;
+        font-size: 2.75vw;
         margin-right: 0.75%;
     }
 
     #entrystat:hover {
         transform: scale(1);
-    }
-
-    #entrystat #statbg {
-        padding: 3% 3%;
     }
 
     #entrydesc {
@@ -569,16 +565,12 @@ font-family: monospace;
     }
 
     #entrystat {
-        font-size: 1.4vw;
+        font-size: 1.75vw;
         margin-right: 0;
     }
 
     #entrystat:hover {
         transform: scale(1.2);
-    }
-
-    #entrystat #statbg {
-        padding: 4% 5%;
     }
 
     #entrydesc {
@@ -603,7 +595,7 @@ font-family: monospace;
 
 /* Large devices (laptops/desktops, 992px and up) */
 @media only screen and (min-width: 992px) {
-    
+
 }
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */

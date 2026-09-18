@@ -786,6 +786,7 @@
 | Underground Racer [MIDP] | 176x220 | No Issues | | 06/04/23 | bd3dbb6cad2158cbdaea7b016d6fd0ab (176x220) |
 | Unparalleled Fighting Spirit of Jiuyangzhenjing [MIDP] | 240x320 | No Issues | | 01/23/24 | f71bf044a1cd7d8331f425c8b52be9c6 (240x320) |
 | Up (Disney Pixar) [MIDP] | 240x320 | No Issues | | 02/15/25 | 7d11f49cbb513abd0f82a0fea7d38a5a (K800 240x320) 8c79dcf0b18daecd1abaf7df595f9fe0 (N95 240x320) |
+| Upman [AIR-EDGE] | 240x320 | No Issues | | 09/17/26 | f794aa5a81cdf39d372c37c92264a5fb (240x320) |
 | ﾜﾙｷｭｰﾚの伝説 前編 (Valkyrie's Glory) [i-Appli] | 240x240 | No Issues | | 09/04/25 | a36d43f20430f4180fa5ebad926871e6 (240x240) |
 | ﾜﾙｷｭｰﾚの栄光2 (Valkyrie's Glory 2) [i-Appli] | 240x240 | Minor Issues | Has some minor audio issues. | 09/16/26 | a88bfc650db0e0a561fa73fe209e28cd (240x240) |
 | Vampires Dawn - Deceit of Heretics [MIDP] | 240x320 | No Issues | | 07/31/25 | 634151e9fcca4a7f2bfd58b98daa1fc8 (240x320) |
@@ -806,6 +807,7 @@
 | Wolfenstein RPG [MIDP] | 320x240 | No Issues | | 06/04/23 | 4116d47bc6c1a6108052413a6b833c9b (320x240) |
 | Wolf Moon (月影狼跡) [MIDP] | 176x208 | No Issues | | 05/18/25 | 677686089e7f8c244255fc843a0d2a21 (176x208 CN) |
 | World Fighting Heroes II [MIDP] | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›20 FPS or less‹ | 05/14/25 | 2b7a6e93585b713a20a4d8dec942fa2c (101x80) |
+| Worms Forts 3D - Under Siege [MIDP] | 176x220 | No Issues | | 09/17/26 | 1c8b54345fe75c4ca5e876c6e5d403f5 (176x220) |
 | Wrath of the Titans [MIDP] | 320x240 | No Issues | | 06/04/23 | b6eafa64128f82b6f4084f1a896b49d3 (320x240) |
 | 武林传之刀剑江湖录-上 (Wulin history 1) [MIDP] | 240x320 | Minor Issues | Missing AMR decoder | 09/25/25 | ecfaf48016be1a83b1cfe4ed0954a78d (240x320) |
 | 武林传之刀剑江湖录-中 (Wulin history 2) [MIDP] | 240x320 | Minor Issues | Missing AMR decoder | 09/25/25 | 6a2121c9e32584742aad6d3b1d1eeed1 (240x320) |
@@ -819,6 +821,7 @@
 | 县令黄马褂 2 (Yellow Jacket 2) [MIDP] | 176x208 | No Issues | | 07/05/25 | c7e53a1aaf37b2809a9cccd08baf6eba (176x208) |
 | 伏魔宗师风云录 (Young Onmyoji) [MIDP] | 240x320 | No Issues | | 05/18/25 | 1f18d81cbd2907bc9eb34e086fc7ff4a (240x320) |
 | イースⅠ 完全版 (Ys I - Complete Edition) [S!Appli] | 240x240 | No Issues | | 07/29/25 | 957febfa8f6f8e324329ce601464ca58 (240x240) |
+| 在処式 (Ritual of Placement - Tetris) [AIR-EDGE] | 240x320 | No Issues | | 09/17/26 | 660313b63e8b1c458c3124f50cdfc68e (240x320) |
 | 生肖宝贝 2007(Zodiac pets) [MIDP] | 176x208 | No Issues | The game has a bug, so the freeze after the final battle is expected behavior. | 09/22/25 | c33eba2645cacc51b8e7d3b66cc7e5f2 (176x208) |
 | Zombie Attack [MIDP] | 240x320 | No Issues | Throws some 'Couldn't Load Image Stream' messages at the console | 10/29/23 | 7f6cb5ee1885baf24a68c656fca094ec (240x320) |
 | 丧尸危机-全城爆发 (Zombie Crisis – Citywide Outbreak) [MIDP] | 240x320 | Minor Issues | Almost perfect, cannot play some audio/amr files | 11/02/23 | f949ff88b3088d5e9c54c854a24536b3 (240x320) |
