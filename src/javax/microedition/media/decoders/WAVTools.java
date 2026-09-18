@@ -29,7 +29,7 @@ import javax.sound.sampled.SourceDataLine;
 
 import org.recompile.mobile.Mobile;
 
-public final class WAVTools 
+public final class WAVTools
 {
 
     public static final byte PCMHEADERSIZE = 44;
@@ -44,11 +44,11 @@ public final class WAVTools
     /*
 	 * Since the header is always expected to be positioned right at the start
 	 * of a byte array, read it to determine the WAV type.
-	 * 
-	 * Optionally it also returns some information about the audio format to help build a 
+	 *
+	 * Optionally it also returns some information about the audio format to help build a
 	 * new header for the decoded stream.
 	*/
-	public static final int[] readHeader(InputStream input) throws IOException 
+	public static final int[] readHeader(InputStream input) throws IOException
 	{
 		/*
 			The header of a WAV (RIFF) file has the following format:
@@ -84,7 +84,7 @@ public final class WAVTools
 		int bytesPerSec = readInputStreamInt32(input); // 28 - 32
 		short frameSize = (short) readInputStreamInt16(input); // 32 - 34
 		short bitsPerSample = (short) readInputStreamInt16(input); // 34 - 36
-		
+
 		int totalBytesRead = 36; // Bytes consumed so far
 
 		// Read extra fmt bytes for IMA ADPCM, then skip any remaining extra
@@ -172,8 +172,8 @@ public final class WAVTools
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "BytesPerSec:" + Integer.toString(bytesPerSec));
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "FrameSize:" + Integer.toString(frameSize));
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "BitsPerSample:" + Integer.toString(bitsPerSample));
-		
-		if(audioFormat == 0x11) 
+
+		if(audioFormat == 0x11)
 		{
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "ByteExtraData:" + Integer.toString(ByteExtraData));
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "ExtraData:" + Integer.toString(ExtraData));
@@ -187,32 +187,32 @@ public final class WAVTools
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "---'" + junkHeader + "' header---");
 			Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "JunkSize:" + junkSize);
 		}
-		
+
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "---'" + dataHeader +"' header---");
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "SampleDataLength:" + Integer.toString(dataLen));
 
 		Mobile.log(Mobile.LOG_DEBUG, WAVTools.class.getPackage().getName() + "." + WAVTools.class.getSimpleName() + ": " + "WAV HEADER_END");
-		
-		/* 
-		 * We need the audio format to check if it's ADPCM or PCM, and the file's 
-		 * dataSize, SampleRate and audioChannels to decode ADPCM and build a new header. 
+
+		/*
+		 * We need the audio format to check if it's ADPCM or PCM, and the file's
+		 * dataSize, SampleRate and audioChannels to decode ADPCM and build a new header.
 		 */
 		return new int[] {audioFormat, sampleRate, audioChannels, frameSize, bitsPerSample, dataLen, totalBytesRead};
 	}
 
 	/* Read a 16-bit little-endian unsigned integer from input.*/
-	private static final int readInputStreamInt16(InputStream input) throws IOException 
+	private static final int readInputStreamInt16(InputStream input) throws IOException
 	{ return ( input.read() & 0xFF ) | ( ( input.read() & 0xFF ) << 8 ); }
 
 	/* Read a 32-bit little-endian signed integer from input.*/
-	private static final int readInputStreamInt32(InputStream input) throws IOException 
+	private static final int readInputStreamInt32(InputStream input) throws IOException
 	{
 		return ( input.read() & 0xFF ) | ( ( input.read() & 0xFF ) << 8 )
 			| ( ( input.read() & 0xFF ) << 16 ) | ( ( input.read() & 0xFF ) << 24 );
 	}
 
 	/* Return a String containing 'n' Characters of ASCII/ISO-8859-1 text from input. */
-	private static final String readInputStreamASCII(InputStream input, int nChars) throws IOException 
+	private static final String readInputStreamASCII(InputStream input, int nChars) throws IOException
 	{
 		byte[] chars = new byte[nChars];
 		readInputStreamData(input, chars, 0, nChars);
@@ -220,10 +220,10 @@ public final class WAVTools
 	}
 
 	/* Read 'n' Bytes from the InputStream starting from the specified offset into the output array. */
-	public static final void readInputStreamData(InputStream input, byte[] output, int offset, int nBytes) throws IOException 
+	public static final void readInputStreamData(InputStream input, byte[] output, int offset, int nBytes) throws IOException
 	{
 		int end = offset + nBytes;
-		while(offset < end) 
+		while(offset < end)
 		{
 			int read = input.read(output, offset, end - offset);
 			if(read < 0) throw new java.io.EOFException();
@@ -231,32 +231,32 @@ public final class WAVTools
 		}
 	}
 
-	/* 
-	 * Builds a WAV header that describes the decoded ADPCM file on the first 44 bytes. 
+	/*
+	 * Builds a WAV header that describes the decoded ADPCM file on the first 44 bytes.
 	 * Data: little-endian, 16-bit, signed, same sample rate and channels as source IMA ADPCM.
 	 */
-	public static final void buildHeader(byte[] buffer, final short numChannels, final int sampleRate, final short numBits, final int sampleDataLength) 
-	{ 
+	public static final void buildHeader(byte[] buffer, final short numChannels, final int sampleRate, final short numBits, final int sampleDataLength)
+	{
 		final short bitsPerSample = numBits;   /* 16-bit or 8-bit PCM */
 		final short audioFormat = 1;           /* WAV linear PCM */
 		final int subChunkSize = 16;           /* Fixed size for Wav Linear PCM */
-		final int chunk = 0x52494646;          /* 'RIFF' */ 
-		final int format = 0x57415645;         /* 'WAVE' */ 
-		final int subChunk1 = 0x666d7420;      /* 'fmt ' */ 
-		final int subChunk2 = 0x64617461;      /* 'data' */ 
+		final int chunk = 0x52494646;          /* 'RIFF' */
+		final int format = 0x57415645;         /* 'WAVE' */
+		final int subChunk1 = 0x666d7420;      /* 'fmt ' */
+		final int subChunk2 = 0x64617461;      /* 'data' */
 
-		/* 
-		 * Frame size is fairly standard, and PCM's fixed sample size makes it so the frameSize is either 2 bytes 
+		/*
+		 * Frame size is fairly standard, and PCM's fixed sample size makes it so the frameSize is either 2 bytes
 		 * for mono, or 4 bytes for stereo.
 		 */
 		final short frameSize = (short) (numChannels * (bitsPerSample / 8));
 
-		/* 
+		/*
 		 * Represents how many bytes are streamed per second. With all of the data above, it's trivial to
 		 * calculate by getting the sample rate, the amount of channels and bytes per sample (bitsPerSample / 8)
 		 */
 		final int bytesPerSec = sampleRate * numChannels * (bitsPerSample / 8);
-		
+
 		/* NOTE: ChunkSize is the total file size - 8 bytes */
 		writeIntBE(buffer, 0, chunk);                 // ChunkID
 		writeIntLE(buffer, 4, buffer.length - 8);     // ChunkSize
@@ -273,7 +273,7 @@ public final class WAVTools
 		writeIntLE(buffer, 40, sampleDataLength);     // Subchunk2 Size
 	}
 
-	private static final void writeIntLE(byte[] buffer, int index, int value) 
+	private static final void writeIntLE(byte[] buffer, int index, int value)
 	{
 		buffer[index] = (byte) (value & 0xFF);
 		buffer[index + 1] = (byte) ((value >> 8) & 0xFF);
@@ -282,7 +282,7 @@ public final class WAVTools
 	}
 
 	// A few of the header fields are big endian
-	private static final void writeIntBE(byte[] buffer, int index, int value) 
+	private static final void writeIntBE(byte[] buffer, int index, int value)
 	{
 		buffer[index] = (byte) ((value >> 24) & 0xFF);
 		buffer[index + 1] = (byte) ((value >> 16) & 0xFF);
@@ -290,7 +290,7 @@ public final class WAVTools
 		buffer[index + 3] = (byte) (value & 0xFF);
 	}
 
-	private static final void writeShort(byte[] buffer, int index, short value) 
+	private static final void writeShort(byte[] buffer, int index, short value)
 	{
 		buffer[index] = (byte) (value & 0xFF);
 		buffer[index + 1] = (byte) ((value >> 8) & 0xFF);
@@ -300,11 +300,11 @@ public final class WAVTools
 
 
 	// These will convert from different PCM formats to either 8 or 16-bit Signed PCM:
-	public static final byte[] convert4BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement) 
+	public static final byte[] convert4BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement)
 	{
 		byte[] convertedWav = new byte[2*input.length];
-		
-		for (int i = 0; i < input.length; i++) 
+
+		for (int i = 0; i < input.length; i++)
 		{
 			// Get the upper 4 bits (MSB) and lower 4 bits (LSB), since we have 2 samples per byte on the original 4-bit wav
 			int upperNibble = (input[i] >> 4) & 0x0F;
@@ -324,36 +324,36 @@ public final class WAVTools
 	}
 
 	// This one pretty much just converts from 2's complement to binary offset if needed, and builds a header (8-bit wav are unsigned binary offset instead of signed 2's complement like 16+ bits)
-	public static final byte[] convert8BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement) 
+	public static final byte[] convert8BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement)
 	{
-		if (is2Complement) 
+		if (is2Complement)
 		{
-			for (int i = 0; i < input.length; i++) 
+			for (int i = 0; i < input.length; i++)
 			{
 				input[i] = (byte) (input[i] ^ 0x80);
 			}
 		}
-		
+
 		return upsample(input, sampleRate, hostSampleRate, (short) numChannels, (short) 8, input.length);
 	}
 
 	// TODO: Does this kind of WAV even exist?
-	public static final byte[] convert12BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement) 
+	public static final byte[] convert12BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement)
 	{
 		byte[] convertedWav = new byte[(int)(1.5 * input.length) + 1]; // Add an extra byte for safety
 
-		for (int i = 0; i < input.length / 3; i++) 
+		for (int i = 0; i < input.length / 3; i++)
 		{
 			int sampleIndex = i * 3;
 
 			int sample = ((input[sampleIndex] & 0xFF) << 4) | ((input[sampleIndex + 1] & 0xFF) >> 4);
 
-			if (is2Complement) 
+			if (is2Complement)
 			{
 				convertedWav[i * 2] = (byte) (sample & 0xFF);
 				convertedWav[i * 2 + 1] = (byte) ((sample >> 8) & 0xFF);
-			} 
-			else 
+			}
+			else
 			{
 				sample -= 2048;
 				convertedWav[i * 2] = (byte) (sample & 0xFF);
@@ -363,11 +363,11 @@ public final class WAVTools
 		return upsample(convertedWav, sampleRate, hostSampleRate, (short) numChannels, (short) 16, convertedWav.length);
 	}
 
-	public static final byte[] convert16BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement) 
+	public static final byte[] convert16BitWav(byte[] input, int numChannels, int sampleRate, boolean is2Complement)
 	{
 		byte[] convertedWav = new byte[input.length];
 
-		for (int i = 0; i < input.length / 2; i++) 
+		for (int i = 0; i < input.length / 2; i++)
 		{
 			int sampleIndex = i * 2;
 			short sample = (short) ((input[sampleIndex] & 0xFF) | (input[sampleIndex + 1] << 8));
@@ -381,7 +381,37 @@ public final class WAVTools
 		return upsample(convertedWav, sampleRate, hostSampleRate, (short) numChannels, (short) 16, convertedWav.length);
 	}
 
-	public static final byte[] upsample(byte[] input, int originalSampleRate, int newSampleRate, short numChannels, short numBits, int inputLength) 
+	public static final byte[] convertFloatToS16(byte[] input, int numChannels, int sampleRate, int dataLen)
+	{
+		// S16 will use half the bytes of the original float input
+		byte[] convertedWav = new byte[dataLen / 2];
+
+		int outputIdx = 0;
+
+		for (int i = 0; i < dataLen; i += 4)
+		{
+			if(dataLen - i < 4) { break; }
+
+		    int bits = (input[i] & 0xFF)
+	            | ((input[i + 1] & 0xFF) << 8)
+	            | ((input[i + 2] & 0xFF) << 16)
+	            | ((input[i + 3] & 0xFF) << 24);
+
+		    float sample = Float.intBitsToFloat(bits);
+
+		    if (sample > 1.0f) { sample = 1.0f; }
+			else if (sample < -1.0f) { sample = -1.0f; }
+
+		    short s16Sample = (short) (sample * 32767.0f);
+
+		    convertedWav[outputIdx++] = (byte) (s16Sample & 0xFF);
+		    convertedWav[outputIdx++] = (byte) ((s16Sample >> 8) & 0xFF);
+		}
+
+		return upsample(convertedWav, sampleRate, hostSampleRate, (short) numChannels, (short) 16, convertedWav.length);
+	}
+
+	public static final byte[] upsample(byte[] input, int originalSampleRate, int newSampleRate, short numChannels, short numBits, int inputLength)
 	{
 		inputLength = Math.min(input.length, inputLength); // Some wav files might report a sample length bigger than the actual data (Shadow Shoot)
 
@@ -390,7 +420,7 @@ public final class WAVTools
 		final double ratio = (double) originalSampleRate / newSampleRate;
 		double cosineFraction;
 		int originalIndex, sample1, sample2, interpolatedValue;
-		
+
 		// No upsampling needed, just prepend a header to the data (this method is used as the final output of other PCM decoders)
 		if(originalSampleRate == newSampleRate)
 		{
@@ -399,56 +429,62 @@ public final class WAVTools
 
 			return upsampled;
 		}
-		
+
 		// Upsample the audio data based on how many bits per sample it has
-		for (int i = 0; i < newLength; i++) 
+		for (int i = 0; i < newLength; i++)
 		{
 			originalIndex = (int) (i * ratio);
 			cosineFraction = (1 - Math.cos(((i * ratio) - originalIndex) * Math.PI)) / 2;
 
-			if (numBits == 8) 
+			if (numBits == 8)
 			{
 				sample1 = (input[originalIndex] & 0xFF);
 				sample2 = (originalIndex + 1 < inputLength) ? (input[originalIndex + 1] & 0xFF) : sample1;
 
 				// Apply cosine interpolation instead of linear interpolation (results similar to cubic interp. at very little extra cost compared to linear)
 				upsampled[PCMHEADERSIZE + i] = (byte) (sample1 + (sample2 - sample1) * cosineFraction);
-			} 
+			}
 			else if (numBits == 16)  // For 16-bit PCM WAV, each sample takes 2 bytes
 			{
-				if (originalIndex * 2 + 2 >= inputLength) { break; }
+				int baseIdx = originalIndex * 2;
 
-				sample1 = ((input[originalIndex * 2] & 0xFF) | (input[originalIndex * 2 + 1] << 8));
-				sample2 = ((originalIndex + 1) * 2 < inputLength ? 
-					(input[(originalIndex + 1) * 2] & 0xFF) | (input[(originalIndex + 1) * 2 + 1] << 8) : sample1);
+				if (baseIdx + 1 >= inputLength) { break; }
+
+				sample1 = (short) ((input[baseIdx] & 0xFF) | ((input[baseIdx + 1] & 0xFF) << 8));
+				if (baseIdx + 3 < inputLength) { sample2 = (short) ((input[baseIdx + 2] & 0xFF) | ((input[baseIdx + 3] & 0xFF) << 8)); }
+				else { sample2 = sample1; }
 
 				interpolatedValue = (int) (sample1 + (sample2 - sample1) * cosineFraction);
-				upsampled[PCMHEADERSIZE + i * 2] = (byte) (interpolatedValue & 0xFF); // Low byte
-				upsampled[PCMHEADERSIZE + i * 2 + 1] = (byte) ((interpolatedValue >> 8) & 0xFF); // High byte
+				int outIdx = PCMHEADERSIZE + i * 2;
+			    if (outIdx + 1 < upsampled.length)
+				{
+			        upsampled[outIdx]     = (byte) (interpolatedValue & 0xFF);         // Low byte
+			        upsampled[outIdx + 1] = (byte) ((interpolatedValue >> 8) & 0xFF);  // High byte
+			    }
 			}
 		}
 
 		buildHeader(upsampled, numChannels, newSampleRate, numBits, newLength);
-		
+
 		return upsampled;
 	}
 
-	public static final int getDefaultAudioSampleRate() 
+	public static final int getDefaultAudioSampleRate()
 	{
 		Mixer.Info[] mixers = AudioSystem.getMixerInfo();
-		for (Mixer.Info mixerInfo : mixers) 
+		for (Mixer.Info mixerInfo : mixers)
 		{
 			Mixer mixer = AudioSystem.getMixer(mixerInfo);
 			Line.Info[] lineInfos = mixer.getSourceLineInfo();
-			for (Line.Info lineInfo : lineInfos) 
+			for (Line.Info lineInfo : lineInfos)
 			{
-				if (lineInfo instanceof Line.Info) 
+				if (lineInfo instanceof Line.Info)
 				{
 					Line line = null;
-					try 
+					try
 					{
 						line = mixer.getLine(lineInfo);
-						if (line instanceof SourceDataLine) 
+						if (line instanceof SourceDataLine)
 						{
 							return (int) ((SourceDataLine) line).getFormat().getSampleRate();
 						}

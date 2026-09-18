@@ -26,7 +26,7 @@ import org.recompile.mobile.Mobile;
 public final class WAVLawDecoder
 {
 
-	/* 
+	/*
 	 * This method will decode u-Law 8-bit PCM wav into linear PCM_S16LE.
 	 */
 	public static final byte[] decodeALaw(final byte[] input, final int[] wavHeaderData)
@@ -42,15 +42,15 @@ public final class WAVLawDecoder
         int step;
         int position;
 		byte aLawSample;
-        
-		for (int i = 0; i < input.length; i++) 
+
+		for (int i = 0; i < input.length; i++)
 		{
 
 			// Most of the logic here is pretty similar for u-law.
 			aLawSample = input[i];
 
 			// a-law code has its even bits inverted for transmission, so we
-			// need to invert them back first and foremost. 
+			// need to invert them back first and foremost.
 			aLawSample = (byte) (aLawSample ^ 0x55);
 
 			// Get state of the most significant (sign) bit, as it indicates
@@ -74,16 +74,16 @@ public final class WAVLawDecoder
 			// Instead of multiplying by the sign, we invert it here instead
 			if(isNegative)
 				decodedSample = -decodedSample;
-			
+
             output[i * 2] = (byte) (decodedSample & 0xFF);
 			output[i * 2 + 1] = (byte) ((decodedSample >> 8) & 0xFF);
         }
 
-	return WAVTools.upsample(output, wavHeaderData[1], WAVTools.hostSampleRate,
-							(short) wavHeaderData[2], (short) 16, output.length);
+        return WAVTools.upsample(output, wavHeaderData[1], WAVTools.hostSampleRate,
+			(short) wavHeaderData[2], (short) 16, output.length);
 	}
 
-	/* 
+	/*
 	 * This method will decode u-Law 8-bit PCM wav into linear PCM_S16LE.
 	 */
 	public static final byte[] decodeULaw(final byte[] input, final int[] wavHeaderData)
@@ -100,12 +100,12 @@ public final class WAVLawDecoder
         int position;
 		byte uLawSample;
 
-		for (int i = 0; i < input.length; i++) 
+		for (int i = 0; i < input.length; i++)
 		{
 			uLawSample = input[i];
 
 			// u-law code is inverted for transmission, so we need to invert
-			// the sample back first and foremost. 
+			// the sample back first and foremost.
 			uLawSample = (byte) ~uLawSample;
 
 			// Get state of the most significant (sign) bit, as it indicates
@@ -126,7 +126,7 @@ public final class WAVLawDecoder
 			// Instead of multiplying by the sign, we invert it here instead
 			if(isNegative)
 				decodedSample = -decodedSample;
-			
+
             output[i * 2] = (byte) (decodedSample & 0xFF);
 			output[i * 2 + 1] = (byte) ((decodedSample >> 8) & 0xFF);
         }

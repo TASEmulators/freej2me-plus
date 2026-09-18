@@ -33,6 +33,7 @@ import javax.microedition.media.PlayerListener;
 /* IMA ADPCM WAV support */
 import javax.microedition.media.decoders.WAVTools;
 import javax.microedition.media.decoders.WAVImaADPCMDecoder;
+import javax.microedition.media.decoders.WAVYamahaADPCMDecoder;
 /* WAV a/u-law support */
 import javax.microedition.media.decoders.WAVLawDecoder;
 
@@ -87,6 +88,10 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 				{
 					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.upsample(tmpStream, wavHeaderData[1], WAVTools.hostSampleRate, (short) wavHeaderData[2], (short) wavHeaderData[4], wavHeaderData[5]))));
 				}
+				else if(wavHeaderData[0] == 3) // IEEE Float
+				{
+					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.convertFloatToS16(tmpStream, wavHeaderData[2], wavHeaderData[1], wavHeaderData[5]))));
+				}
 				else if(wavHeaderData[0] == 6) // A-Law GSM WAV
 				{
 					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeALaw(tmpStream, wavHeaderData))));
@@ -98,6 +103,10 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 				else if(wavHeaderData[0] == 17) // IMA ADPCM
 				{
 					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVImaADPCMDecoder.decodeImaAdpcm(new ByteArrayInputStream(tmpStream), wavHeaderData))));
+				}
+				else if(wavHeaderData[0] == 32) // Yamaha ADPCM-B / SMAF ADPCM
+				{
+					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMBDecode(tmpStream, wavHeaderData[1], wavHeaderData[2]))));
 				}
 				else /* Unknown format. */
 				{
