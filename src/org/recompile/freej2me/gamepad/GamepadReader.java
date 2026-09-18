@@ -19,6 +19,9 @@ package org.recompile.freej2me.gamepad;
 import java.io.InputStream;
 import java.io.IOException;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+
 import java.util.Collections;
 import java.util.ArrayList;
 
@@ -89,6 +92,118 @@ public abstract class GamepadReader implements Runnable
 			if(keycode == gui.gamepadKeycodes[i]) { return Mobile.convertAWTKeycode(i);}
 		}
 		return Integer.MIN_VALUE;
+	}
+
+	// Reader implementations must call this (and handle IOExceptions)
+	protected int handleInput(ReadableByteChannel channel, ByteBuffer buffer) throws IOException
+	{
+		buffer.clear();
+		while (buffer.hasRemaining() && running)
+		{
+			int r = channel.read(buffer);
+			if (r == -1) { break; }
+		}
+
+		if (buffer.position() < 8) { return -1; }
+
+		buffer.flip();
+
+		int time = buffer.getInt();
+		short value = buffer.getShort();
+		int type = buffer.get() & 0xFF;
+		int number = buffer.get() & 0xFF;
+
+		boolean isInit = (type & 0x80) != 0;
+		type &= ~0x80;
+
+		GamepadInputListener listen = this.listener;
+
+		if (type == TYPE_BUTTON && !isInit)
+		{
+			String buttonName = "Button-" + number;
+
+			//System.out.println(deviceName + " -> " + buttonName + ": " + (value == 1 ? "PRESSED" : "RELEASED"));
+
+			// For remapping
+			if (listen != null) { listen.onInputDetected(buttonName, number); }
+			else
+			{
+				int keyIndex = this.getKey(number);
+
+				// Min value means this button is not mapped. Return.
+				if(keyIndex == Integer.MIN_VALUE) { return 0; }
+
+				if (value == 1)
+				{
+					if(!MobilePlatform.pressedKeys[keyIndex])
+					{
+						MobilePlatform.pressedKeys[keyIndex] = true;
+						lastPressedKey = keyIndex;
+						MobilePlatform.keyPressed(Mobile.getMobileKey(keyIndex));
+					}
+				}
+				else
+				{
+					MobilePlatform.pressedKeys[keyIndex] = false;
+					// Find any other pressed key to repeat
+					if (lastPressedKey == keyIndex) { lastPressedKey = findPressedKey(); }
+					MobilePlatform.keyReleased(Mobile.getMobileKey(keyIndex));
+				}
+			}
+		}
+		else if (type == TYPE_AXIS && !isInit)
+		{
+			String axisName = (value > 0 ? "+Axis-" : "-Axis-") + number;
+			int posCode = 100 + (number * 2) + 1;
+			int negCode = 100 + (number * 2);
+			int axisVal = value > 0 ? posCode : negCode;
+
+			if (listen != null && Math.abs(value) > ((number == 16 || number == 17) ? 0 : AXIS_PRESS_THRESHOLD))
+			{
+				listen.onInputDetected(axisName, axisVal);
+			}
+			else
+			{
+				int axisKeyIndex = this.getKey(axisVal);
+				int opsKeyIndex = this.getKey(value > 0 ? negCode : posCode);
+
+				if(axisKeyIndex == Integer.MIN_VALUE && opsKeyIndex == Integer.MIN_VALUE) { return 0; }
+
+				if (Math.abs(value) > ((number == 16 || number == 17) ? 0 : AXIS_PRESS_THRESHOLD))
+				{
+					if (opsKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[opsKeyIndex])
+					{
+						MobilePlatform.pressedKeys[opsKeyIndex] = false;
+						if (lastPressedKey == opsKeyIndex) { lastPressedKey = findPressedKey(); }
+						MobilePlatform.keyReleased(Mobile.getMobileKey(opsKeyIndex));
+					}
+
+					if(axisKeyIndex != Integer.MIN_VALUE && !MobilePlatform.pressedKeys[axisKeyIndex])
+					{
+						MobilePlatform.pressedKeys[axisKeyIndex] = true;
+						lastPressedKey = axisKeyIndex;
+						MobilePlatform.keyPressed(Mobile.getMobileKey(axisKeyIndex));
+					}
+				}
+				else
+				{
+					if (axisKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[axisKeyIndex])
+					{
+						MobilePlatform.pressedKeys[axisKeyIndex] = false;
+						if (lastPressedKey == axisKeyIndex) { lastPressedKey = findPressedKey(); }
+						MobilePlatform.keyReleased(Mobile.getMobileKey(axisKeyIndex));
+					}
+					if (opsKeyIndex != Integer.MIN_VALUE && MobilePlatform.pressedKeys[opsKeyIndex])
+					{
+						MobilePlatform.pressedKeys[opsKeyIndex] = false;
+						if (lastPressedKey == opsKeyIndex) { lastPressedKey = findPressedKey(); }
+						MobilePlatform.keyReleased(Mobile.getMobileKey(opsKeyIndex));
+					}
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	public boolean isRunning() { return running; }
