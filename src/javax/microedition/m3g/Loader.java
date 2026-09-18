@@ -888,7 +888,19 @@ public class Loader
 
 		int read = bytesRead + M3G_FILE_IDENTIFIER.length;
 
-		while (dis.available() > 0)
+		/*
+		 * Per the M3G file format, the header's totalFileSize is the authoritative
+		 * length of the whole file, identifier included. Games routinely embed M3G
+		 * data inside larger container files (e.g. Sega Rally's segarally.spg) and
+		 * hand the loader a stream with unrelated data following the M3G payload:
+		 * reading sections until the stream runs dry then misinterprets that
+		 * trailing data as a section header, with garbage lengths in the hundreds
+		 * of megabytes. Stop at totalFileSize instead, falling back to stream end
+		 * only when the header carries no usable size.
+		 */
+		final boolean bounded = totalFileSize > read;
+
+		while ((bounded ? read < totalFileSize : dis.available() > 0))
 		{
 			compressionScheme = readByte();
 			totalSectionLength = readInt();
