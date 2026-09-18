@@ -20,11 +20,11 @@ import com.jblend.ui.SequenceInterface;
 import com.vodafone.v10.graphics.sprite.SpriteCanvas;
 import org.recompile.mobile.Mobile;
 
-public abstract class ACanvas extends SpriteCanvas implements SequenceInterface 
+public abstract class ACanvas extends SpriteCanvas implements SequenceInterface
 {
 
-	public ACanvas(int numPalettes, int numPatterns, int fw, int fh) 
-    {
+	public ACanvas(int numPalettes, int numPatterns, int fw, int fh)
+	{
 		super(numPalettes, numPatterns);
 		createFrameBuffer(fw, fh);
 	}
@@ -32,12 +32,31 @@ public abstract class ACanvas extends SpriteCanvas implements SequenceInterface
 
 	public static int getVirtualHeight() { return Mobile.lcdHeight; }
 
-	public void scroll(int dx, int dy) { }
+	public void scroll(int dx, int dy)
+	{
+		if (dx == 0 && dy == 0) { return; }
+
+		int vw = getVirtualWidth();
+		int vh = getVirtualHeight();
+
+		int sx = (dx > 0) ? 0 : -dx;
+		int sy = (dy > 0) ? 0 : -dy;
+		int w  = vw - Math.abs(dx);
+		int h  = vh - Math.abs(dy);
+
+		if (w > 0 && h > 0)
+		{
+			int tx = (dx > 0) ? dx : 0;
+			int ty = (dy > 0) ? dy : 0;
+
+			copyFullScreen(dx, dy);
+		}
+	}
 
 	public void flush(int tx, int ty) { drawFrameBuffer(tx, ty); }
 
-	public static short createCharacterCommand(int offset, boolean transparent, int rotation, boolean isUpsideDown, boolean isRightsideLeft, int patternNo) 
-    {
+	public static short createCharacterCommand(int offset, boolean transparent, int rotation, boolean isUpsideDown, boolean isRightsideLeft, int patternNo)
+	{
 		return SpriteCanvas.createCharacterCommand(offset, transparent, rotation, isUpsideDown, isRightsideLeft, patternNo);
 	}
 

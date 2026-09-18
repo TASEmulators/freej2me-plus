@@ -21,6 +21,15 @@ import org.recompile.mobile.MobilePlatform;
 
 public abstract class Canvas extends Frame
 {
+	public Runnable postFlushDraw = new Runnable()
+	{
+		@Override
+		public void run()
+		{
+			// Draw FrameBuffer right before the commands bar.
+			if (labelVisible) { paintCommandsBar(); }
+		}
+	};
 
 	public Canvas()
 	{

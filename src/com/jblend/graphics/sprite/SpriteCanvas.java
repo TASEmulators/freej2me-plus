@@ -33,7 +33,7 @@ public abstract class SpriteCanvas extends Canvas
 	private byte[] patternData;
 	private int[] pixels;
 
-	private int fbTx, fbTy;
+	private int fbTx = 0, fbTy = 0;
 
 	// The "virtual screen" here is just the lcd backbuffer that any Displayable gets when being created
 
@@ -43,13 +43,24 @@ public abstract class SpriteCanvas extends Canvas
 		this.palettes = new int[numPalettes];
 		this.patternData = new byte[numPatterns * 64];
 		this.pixels = new int[64];
+
+		// The post flush draw for SpriteCanvas MUST include the framebuffer draw as well.
+		postFlushDraw = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				// Draw FrameBuffer right before the commands bar.
+				Mobile.getPlatform().getLcdFrontbufferGraphics().drawImage(fbImage, fbTx, fbTy);
+				if (!fullscreen && !commands.isEmpty()) { paintCommandsBar(); }
+			}
+		};
 	}
 
 	public void createFrameBuffer(int fw, int fh)
 	{
 		if(fbImage != null) { throw new IllegalStateException("FrameBuffer already exists!"); }
 		if(fw > getVirtualWidth() || fh > getVirtualHeight()) { throw new IllegalArgumentException("Size is larger than the screen"); }
-		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "creating FrameBuffer: " + fw + " " + fh);
 
 		fbImage = Image.createImage(fw, fh);
 		fbGraphics = (Graphics) fbImage.getGraphics();
@@ -63,7 +74,6 @@ public abstract class SpriteCanvas extends Canvas
 		if(fbImage == null) { throw new IllegalStateException("FrameBuffer is not ready!"); }
 		if(sx < 0 || sy < 0 || fw > fbImage.getWidth() || fh > fbImage.getHeight()) { throw new IllegalArgumentException("Invalid position and/or size received"); }
 
-		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "copyArea: " + sx + " " + sy + " " + fw + " " + fh + " " + tx + " " + ty);
 		if(Mobile.getDisplay().getCurrent() != this) { return; }
 
 		// Areas that go out of bounds must be discarded.
@@ -80,7 +90,6 @@ public abstract class SpriteCanvas extends Canvas
 	public void copyFullScreen(int tx, int ty)
 	{
 		if(fbImage == null) { throw new IllegalStateException("FrameBuffer is not ready!"); }
-		Mobile.log(Mobile.LOG_WARNING, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "copyFullscreen (Untested): " + tx + " " + ty);
 		if(Mobile.getDisplay().getCurrent() != this) { return; }
 
 		// Stuff that goes out of screen is just discarded
@@ -95,81 +104,14 @@ public abstract class SpriteCanvas extends Canvas
 	public void drawFrameBuffer(final int tx, final int ty)
 	{
 		if(fbImage == null) { throw new IllegalStateException("FrameBuffer is not ready!"); }
-		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "drawFrameBuffer: " + tx + " " + ty);
 		if(Mobile.getDisplay().getCurrent() != this) { return; }
 
 		fbTx = tx;
 		fbTy = ty;
+
 		// Effectively calls the repaintRequest override below, as this draws
 		// to the real screen.
 		repaint();
-	}
-
-	/*
-	 * This completely overrides lcdui.Canvas' repaintRequest() call just to make sure the sprite FrameBuffer is always drawn AFTER the virtual screen/backbuffer.
-	 * Since the documentation states that the backbuffer can be copied to the sprite frameBuffer but never the other way around, this should be safe
-	 */
-	public void repaintRequest()
-	{
-		// These can be called from another thread, at any time (even if the canvas is no longer visible),
-		// so ignore any repaints in cases where it isn't visible
-		if (!isShown() || listCommands) { return; }
-
-		int renderX, renderY, renderW, renderH;
-
-		synchronized (paintLock)
-		{
-			if (!needsRepaint)
-			{
-				paintLock.notifyAll();
-				return;
-			}
-			renderX = paintX;
-			renderY = paintY;
-			renderW = paintW;
-			renderH = paintH;
-			needsRepaint = false;
-		}
-
-		try
-		{
-			graphics.reset(renderX, renderY, renderW, renderH);
-			paint(graphics);
-		}
-		catch(NullPointerException npe)
-		{
-			Mobile.log(Mobile.LOG_ERROR, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Null Pointer Exception in draw event: " + npe.getMessage());
-			npe.printStackTrace();
-			//throw new NullPointerException("Null Pointer Exception in draw event");
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Serious Exception hit in repaint(): " + e.getMessage());
-			e.printStackTrace();
-		}
-		finally
-		{
-			// Unblock any threads waiting in serviceRepaints()
-			synchronized (paintLock)
-			{
-				paintLock.notifyAll();
-			}
-		}
-
-		if (!fullscreen && !commands.isEmpty())
-		{
-			Mobile.getPlatform().setPostFlushDraw(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					// Draw FrameBuffer right before the commands bar.
-					Mobile.getPlatform().getLcdFrontbufferGraphics().drawImage(fbImage, fbTx, fbTy);
-					paintCommandsBar();
-				}
-			});
-		}
-		Mobile.getPlatform().flushGraphics(platformImage, renderX, renderY, renderW, renderH);
 	}
 
 	public void setPalette(int index, int palette)
@@ -181,14 +123,17 @@ public abstract class SpriteCanvas extends Canvas
 	public void setPattern(int index, byte[] data)
 	{
 		if(index * 64 >= patternData.length) { throw new ArrayIndexOutOfBoundsException("Received invalid pattern index!"); }
-		if(data.length != 64) { throw new IllegalArgumentException("Pattern size is not 64!"); }
+		if(data == null || data.length != 64) { throw new IllegalArgumentException("Pattern size is not 64!"); }
 		System.arraycopy(data, 0, patternData, index * 64, data.length);
 	}
 
 	public static short createCharacterCommand(int offset, boolean transparent, int rotation, boolean isUpsideDown, boolean isRightsideLeft, int patternNo)
 	{
-		int cmd = (offset & 0x07) << 13;
+		if (offset < 0 || offset > 7) { throw new IllegalArgumentException("Offset must be between 0 and 7"); }
+		if (rotation < 0 || rotation > 3) { throw new IllegalArgumentException("Rotation must be between 0 and 3"); }
+		if (patternNo < 0 || patternNo > 255) { throw new IllegalArgumentException("Pattern number must be between 0 and 255"); }
 
+		int cmd = (offset & 0x07) << 13;
 		if (transparent) { cmd |= 0x1000; }
 		cmd |= (rotation & 0x03) << 10;
 		if (isUpsideDown) { cmd |= 0x200; }
@@ -200,41 +145,39 @@ public abstract class SpriteCanvas extends Canvas
 
 	public void drawBackground(short command, short x, short y)
 	{
-		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "drawBackground: " + command + " " + x + " " + y);
 		if(Mobile.getDisplay().getCurrent() != this) { return; }
 
 		command = (short) (command & 0xFFFF);
+		int patternNo = command & 0xFF;
+		int patternBase = patternNo * 64;
+
+		if (patternBase >= patternData.length) { throw new IllegalArgumentException("Pattern index out of bounds: " + patternNo); }
+
 		int offset = (command >> 13) & 0x7;
 		int rotation = (command >> 10) & 0x3;
 		boolean transparent = (command & 0x1000) != 0;
 		boolean isUpsideDown = (command & 0x200) != 0;
 		boolean isRightsideLeft = (command & 0x100) != 0;
-		int patternNo = command & 0xFF;
 
-		int patternBase = patternNo * 64;
-
-		for (int x1 = 0; x1 < 8; x1++)
+		for (int y1 = 0; y1 < 8; y1++)
 		{
-			for (int y1 = 0; y1 < 8; y1++)
+			for (int x1 = 0; x1 < 8; x1++)
 			{
-				int colorId = patternData[patternBase + (y1 * 8 + x1)] & 0xFF;
+				int sx = isRightsideLeft ? (7 - x1) : x1;
+				int sy = isUpsideDown ? (7 - y1) : y1;
 
 				int rx, ry;
 				switch (rotation)
 				{
-					case 1:  rx = 7 - y1; ry = x1; break;
-					case 2:  rx = 7 - x1; ry = 7 - y1; break;
-					case 3:  rx = y1;     ry = 7 - x1; break;
-					default: rx = x1;     ry = y1; break;
+					case 1:  rx = 7 - sy; ry = sx; break;
+					case 2:  rx = 7 - sx; ry = 7 - sy; break;
+					case 3:  rx = sy;     ry = 7 - sx; break;
+					default: rx = sx;     ry = sy; break;
 				}
 
-				if (isUpsideDown) { ry = 7 - ry; }
-				if (isRightsideLeft) { rx = 7 - rx; }
+				int colorId = patternData[patternBase + (y1 * 8 + x1)] & 0xFF;
 
-				int destIdx = ry * 8 + rx;
-
-				// Backgrounds ignore transparency entirely.
-				pixels[destIdx] = palettes[(colorId + (offset * 32)) & 0xFF];
+				pixels[ry * 8 + rx] = palettes[(colorId + (offset * 32)) & 0xFF];
 			}
 		}
 		// Draws directly onto the virtual screen (back buffer)
@@ -243,41 +186,41 @@ public abstract class SpriteCanvas extends Canvas
 
 	public void drawSpriteChar(short command, short x, short y)
 	{
-		Mobile.log(Mobile.LOG_DEBUG, SpriteCanvas.class.getPackage().getName() + "." + SpriteCanvas.class.getSimpleName() + ": " + "drawSpriteChar: " + command + " " + x + " " + y);
+		if (fbGraphics == null) { throw new IllegalStateException("Frame buffer has not been created yet!"); }
 
 		command = (short) (command & 0xFFFF);
+		int patternNo = command & 0xFF;
+		int patternBase = patternNo * 64;
+
+		if (patternBase >= patternData.length) { throw new IllegalArgumentException("Pattern index out of bounds: " + patternNo); }
+
 		int offset = (command >> 13) & 0x7;
 		int rotation = (command >> 10) & 0x3;
 		boolean transparent = (command & 0x1000) != 0;
 		boolean isUpsideDown = (command & 0x200) != 0;
 		boolean isRightsideLeft = (command & 0x100) != 0;
-		int patternNo = command & 0xFF;
 
-		int patternBase = patternNo * 64;
-
-		for (int x1 = 0; x1 < 8; x1++)
+		for (int y1 = 0; y1 < 8; y1++)
 		{
-			for (int y1 = 0; y1 < 8; y1++)
+			for (int x1 = 0; x1 < 8; x1++)
 			{
-				int colorId = patternData[patternBase + (y1 * 8 + x1)] & 0xFF;
+				int sx = isRightsideLeft ? (7 - x1) : x1;
+				int sy = isUpsideDown ? (7 - y1) : y1;
 
 				int rx, ry;
 				switch (rotation)
 				{
-					case 1:  rx = 7 - y1; ry = x1; break;
-					case 2:  rx = 7 - x1; ry = 7 - y1; break;
-					case 3:  rx = y1;     ry = 7 - x1; break;
-					default: rx = x1;     ry = y1; break;
+					case 1:  rx = 7 - sy; ry = sx; break;
+					case 2:  rx = 7 - sx; ry = 7 - sy; break;
+					case 3:  rx = sy;     ry = 7 - sx; break;
+					default: rx = sx;     ry = sy; break;
 				}
 
-				if (isUpsideDown) { ry = 7 - ry; }
-				if (isRightsideLeft) { rx = 7 - rx; }
+				int colorId = patternData[patternBase + (y1 * 8 + x1)] & 0xFF;
 
-				int destIdx = ry * 8 + rx;
-
-				// Transparency IS respected on the color ID 0 for Sprites.
-				if (transparent && colorId == 0) { pixels[destIdx] = 0x00000000; }
-				else { pixels[destIdx] = palettes[(colorId + (offset * 32)) & 0xFF]; }
+				// Transparency IS respected on color ID 0 for Sprites.
+				if (transparent && colorId == 0) { pixels[ry * 8 + rx] = 0x00000000; }
+				else { pixels[ry * 8 + rx] = palettes[(colorId + (offset * 32)) & 0xFF]; }
 			}
 		}
 		// This one draws to the FrameBuffer

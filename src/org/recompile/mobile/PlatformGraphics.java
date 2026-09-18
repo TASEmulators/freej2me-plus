@@ -2386,11 +2386,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			{
 				if (currentFrame.labelVisible)
 				{
-					Mobile.getPlatform().setPostFlushDraw(new Runnable()
-					{
-						@Override
-						public void run() { ((com.nttdocomo.ui.Canvas)currentFrame).paintCommandsBar(); }
-					});
+					Mobile.getPlatform().setPostFlushDraw(((com.nttdocomo.ui.Canvas)currentFrame).postFlushDraw);
 				}
 
 				// Instead of calling repaint (which was apparently wrong),

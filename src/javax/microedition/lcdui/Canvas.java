@@ -78,6 +78,17 @@ public abstract class Canvas extends Displayable
 	protected volatile boolean needsRepaint = false;
 	protected int paintX, paintY, paintW, paintH;
 
+	protected Runnable postFlushDraw = new Runnable()
+	{
+		@Override
+		public void run()
+		{
+			// Draw FrameBuffer right before the commands bar.
+			if (!fullscreen && !commands.isEmpty()) { paintCommandsBar(); }
+		}
+	};
+
+
 	protected Canvas()
 	{
 		Mobile.log(Mobile.LOG_INFO, Canvas.class.getPackage().getName() + "." + Canvas.class.getSimpleName() + ": " + "Create Canvas:"+width+", "+height);
@@ -310,14 +321,7 @@ public abstract class Canvas extends Displayable
 		}
 
 		// Draw command bar whenever the canvas is not fullscreen and there are commands in the bar, and always queue it to draw after the flush
-		if (!fullscreen && !commands.isEmpty())
-		{
-			Mobile.getPlatform().setPostFlushDraw(new Runnable()
-			{
-				@Override
-				public void run() { paintCommandsBar(); }
-			});
-		}
+		Mobile.getPlatform().setPostFlushDraw(postFlushDraw);
 
 		Mobile.getPlatform().flushGraphics(platformImage, renderX, renderY, renderW, renderH);
 	}
