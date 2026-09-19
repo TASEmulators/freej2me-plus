@@ -629,7 +629,7 @@
 | SDｶﾞﾝﾀﾞﾑﾊﾞﾄﾙ (SD Gundam Battle) [J-Sky Appli] | 128x160 | No Issues | | 09/25/25 | 0c43174452faf8ec9edfc66c7e590900 (128x160) |
 | 風之海-宋末恩仇錄 (Sea of Winds) [MIDP] | 240x320 | No Issues | | 04/16/25 | a45e0a24023fec4d2c0e84c07572f291 (240x320) |
 | Section 7 [MIDP] | 176x208, 128x128 | No Issues | Perfect as long as FreeJ2ME-Plus' resolution matches what the jar expects. Required Settings: Exact Resolution Match | 02/23/25 | bb0618d57281ab4af26a5631cc1b263d (128x128) 7f259cc79d23eee4a9f3a72042696130 (176x208) |
-| Sega Rally 3D [MIDP] | 320x240 | Unplayable | White Screen after the audio selection screen, probably uses m3g | 06/04/23 | def50d213c538c209e1ce520690b96f7 (320x240) |
+| Sega Rally 3D [MIDP] | 320x240 | No Issues | | 09/18/26 | def50d213c538c209e1ce520690b96f7 (320x240) |
 | Sexy Ninja Foxy [MIDP] | 176x208 | Minor Issues | No longer freezes randomly but text is misaligned, could be specific to the jar. Required Settings: FPS Lock to ›30 FPS or less‹ | 02/27/25 | 95e283ac9e94ca4b680531fb6856c4af (176x208) |
 | Shadow of Egypt 3D [MIDP] | 240x320 | No Issues | | 06/04/23 | c23f434bd0e3661ac5017f34bbdf0a31 (240x320) |
 | Shadow Shoot [MIDP] | 240x320 | No Issues | | 10/30/24 | aaa7665cc7465cacb34de22a063b6ebe (240x320) |
@@ -745,7 +745,7 @@
 | Thunder 2012 [MIDP] | 320x240 | No Issues | Some lcdui.Image.getWidth() errors in the console, but doesn't affect the game | 06/04/23 | 9cfb29ed16459267ce5066544383f8f5 (320x240) |
 | Time Crisis Elite [MIDP] | 320x240 | No Issues | | 06/04/23 | 19d6f2c499065df25baaa37e0301a29e (320x240) |
 | 时空旅者-七日的遗产 (Time Traveler – Legacy of Seven Days) [MIDP] | 240x320 | No Issues | | 06/04/23 | 32c738d0b31dd383c57a7fb6becf1aa9 (240x320) |
-| TOCA Race Driver 3 3D [MIDP] | 320x240 | Intro/Menu | Gets to the menu, but complains about the lack of a player for audio/amr, and shows a screen with the text 'Your Handset needs to re-organize its memory. Please reload to continue play' when trying to load a track. Appears to need multiple texture units | 06/04/23 | ba0c968623b829eed55011fdf3dac4cf (320x240) |
+| TOCA Race Driver 3 3D [MIDP] | 320x240 | Minor Issues | Complains about the lack of a player for audio/amr. | 09/18/26 | ba0c968623b829eed55011fdf3dac4cf (320x240) |
 | 阓子豆腐 To-Fu Oyako (MIDlet-1: Bomber) [MIDP] | 240x320 | No Issues | | 10/24/24 | b4a219abbef6bf3d6bd135efeb00ac07 (240x320) |
 | Tom Clancy's Ghost Recon - Future Soldier [MIDP] | 240x320 | No Issues | | 11/22/25 | 27b5c4e6f0ebe08e33699f30215ffe28 (240x320) |
 | Tom Clancy’s Ghost Recon 2 – Advanced Warfighter [MIDP] | 240x320 | No Issues | | 06/04/23 | 808842171fb49f36e4994f15e8fec9b1 (240x320) |
