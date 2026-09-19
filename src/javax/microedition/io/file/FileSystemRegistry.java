@@ -23,7 +23,7 @@ public class FileSystemRegistry extends Object
 {
 
 	private static final Vector<FileSystemListener> listeners = new Vector<FileSystemListener>();
-	private static final String SYSTEM_ROOT = "freej2me_system/";
+	static final String SYSTEM_ROOT = "freej2me_system/";
 
 	// Static immutable Enumeration for the "freej2me_system/" path. If MIDlets
 	// are going to have any kind of access to files through here, it'll be on

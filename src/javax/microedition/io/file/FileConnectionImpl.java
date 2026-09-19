@@ -36,8 +36,6 @@ public class FileConnectionImpl implements FileConnection
 	// We'll allow 16MB max for each file here.
 	private static final long MAX_FILE_SIZE = 16L * 1024L * 1024L;
 
-	private static final String BASE_DIR = ".";
-
 	private String url;
 	private boolean open;
 	private File localFile;
@@ -52,7 +50,7 @@ public class FileConnectionImpl implements FileConnection
 
 		Mobile.log(Mobile.LOG_DEBUG, FileConnectionImpl.class.getPackage().getName() +
 			"." + FileConnectionImpl.class.getSimpleName() + ": " +
-			"FileConnectionImpl: Opened " + url + " -> " + localFile.getAbsolutePath());
+			"FileConnectionImpl: Opened " + url + " -> " + localFile.getAbsolutePath() + ". Mode:" + mode);
 	}
 
 	private File resolveLocalFile(String url)
@@ -63,16 +61,20 @@ public class FileConnectionImpl implements FileConnection
 		if (path.startsWith("localhost/")) path = path.substring(10);
 		else if (path.startsWith("/")) path = path.substring(1);
 
-		try { path = URLDecoder.decode(path, "UTF-8"); }
+		try { path = URLDecoder.decode(path, Mobile.textEncoding); }
 		catch (Exception e) { }
 
-		return new File(BASE_DIR, path);
+		return new File(FileSystemRegistry.SYSTEM_ROOT, path);
 	}
 
 	public boolean isOpen() { return open; }
 	public void close() { this.open = false; }
 	public boolean exists() { return localFile.exists(); }
-	public boolean isDirectory() { return localFile.isDirectory() || url.endsWith("/"); }
+	public boolean isDirectory()
+	{
+		if (localFile.exists()) { return localFile.isDirectory(); }
+		return url.endsWith("/");
+	}
 	public boolean canRead() { return localFile.canRead(); }
 	public boolean canWrite() { return localFile.canWrite(); }
 	public boolean isHidden() { return localFile.isHidden(); }
@@ -192,8 +194,6 @@ public class FileConnectionImpl implements FileConnection
 	{
 		try
 		{
-			if (!localFile.exists()) create();
-
 			FileOutputStream fos = new FileOutputStream(localFile, byteOffset > 0);
 			if (byteOffset > 0)
 			{

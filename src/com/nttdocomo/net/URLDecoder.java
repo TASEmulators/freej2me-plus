@@ -16,13 +16,15 @@
 */
 package com.nttdocomo.net;
 
+import org.recompile.mobile.Mobile;
+
 public class URLDecoder
 {
 	public static String decode(String url)
     {
 		if (url == null || url.length() == 0) { throw new IllegalArgumentException("Invalid URL string"); }
 
-		try { return java.net.URLDecoder.decode(url, "UTF-8"); }
+		try { return java.net.URLDecoder.decode(url, Mobile.textEncoding); }
 		catch(Exception e) { return url; }
 	}
 }
