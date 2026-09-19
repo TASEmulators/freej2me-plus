@@ -533,6 +533,7 @@
 | Plants vs. Zombies [MIDP] | 640x360 touch | No Issues | Needs to be manually rotated. 640X360 version is not rotated and actually has a 640x360 framebuffer, and uses audio/amr files so those can’t be played yet. | 06/04/23 | 2788f91c6430536ff9b6b090d9b37fb7 (640x360 touch) |
 | Plasma [MIDP] | 101x64 | Minor Issues | Requires the pause menu to be brought up when changing levels (seems to be a threading issue) | 07/06/25 | b7cbc0290782e865b9a227294fc79a81 (101x64) |
 | Plasma Inferno [MIDP] | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout | 05/15/25 | 1093558105fa4946ea98a5b504c3f21e (101x80) |
+| Pooh and Piglet (NEC) [MIDP] | 176x220 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag, FPS Lock to ›15 FPS or less‹ | 09/19/26 | 2cbdbdc32268ef0f526fe4d714162c78 (176x220) |
 | PopEye [MIDP] | 101x80 | No Issues | Required Settings: ›Siemens‹ Key Layout, FPS Lock to ›20 FPS or less‹ | 05/15/25 | e4717857582aa6c1150f490d4ef79dbd (101x80) |
 | Postal Babes [MIDP] | 240x320 | No Issues | Required Settings: ›Motorola A1000‹ Key Layout | 09/16/26 | bd604b38c3e6764f4d58117d4e60f8fb (240x320) |
 | Powerboat Challenge [MIDP] | 320x240 | Minor Issues | Almost perfect, can’t play audio/amr files. | 09/16/26 | 774141292adac23afdc2d8274a406bc6 (320x240) |
@@ -551,6 +552,7 @@
 | Pure [MIDP] | 320x240 | No Issues | | 08/11/23 | 7b267f053e87136a21b0e8b1343cb323 (320x240) |
 | Puyo Pop Fever DX [MIDP] | 640x360 touch | No Issues | | 07/16/25 | d64785fb0cda5c0f00b53a309e99692d (640x360 touch) |
 | Puyo Pop Fever Re:Chained (MOD) [MIDP] | Multiscreen | No Issues | AMR version can’t play audio/amr files. | 07/16/25 | 0d5dca9840772346131f60acb3343f9d (Multiscreen) |
+| Puzzle Bobble (NEC) [MIDP] | 176x208 | No Issues | Required Settings: ›Process Canvas repaints immediately‹ flag | 09/19/26 | 6caac512e835ecf9f2ea5ab722b0a257 (176x208) |
 | Puzzle Challenge Deluxe [MIDP] | 320x240 | No Issues | | 06/04/23 | 1b5f2ab71c21b2b4b9a48a2888541eea (320x240) |
 | Puzzlegeddon [MIDP] | 240x320 | No Issues | | 07/05/25 | 1e584cf0c3d9df32ff4d809d9ff89f5f (240x320 SE), 2e3bc77eb33fcf68ef761cfcb5cbcccc (240x320 Nokia) |
 | Puzzle Quest 2 [MIDP] | 320x240 | No Issues | Required Settings: ›Nokia Full Keyboard‹ Key Layout | 07/05/25 | 435aa39ca71e07f9de1a12138bdc395c (320x240) |
@@ -728,6 +730,7 @@
 | The Legend of Spyro – Dawn of the Dragon [MIDP] | 240x320 | No Issues | | 10/19/24 | c46c0fc9750a1b115d575bd4ef3767f0 (240x320) |
 | The Legend of Spyro – The Eternal Night [MIDP] | 320x240 | No Issues | | 10/30/24 | e96add7b713d426369d6a43904f20221 (320x240) |
 | 魔塔战争 (The Magic Tower War) [MIDP] | 240x320 | No Issues | Constantly spams the console with useless messages. Could be specific to the tested jar file. | 06/04/23 | c002d68c14fae1692d8d2ec05c529c6b (240x320) |
+| 麻将之谜 (The Mystery of Mahjong - NEC) [MIDP] | 176x208 | No Issues | | 09/19/26 | a38b39773a54ac150051de6773b33a8d (176x208) |
 | まんが奥の細道 (The Narrow Path to Manga) [MIDP] | 240x320 | No Issues | | 05/18/25 | f5a9df3ba21c79843426f231c67e41ed (240x320) |
 | The Overtaker 3D [MIDP] | 352x416 | No Issues | | 06/04/23 | 0db8125264f2ca4e4e511709e050a9d6 (352x416) |
 | 海盗王2 (The Pirate King 2) [MIDP] | 320x240 | Minor Issues | Almost perfect, skill leveling menu has glitches with FreeJ2ME trying to draw images with 0 width. | 11/01/24 | c75ab0bd7874355177bf2aa27f45106b (320x240) |
@@ -814,6 +817,7 @@
 | 武林传之刀剑江湖录-下 (Wulin history 3) [MIDP] | 240x320 | Minor Issues | Missing AMR decoder | 09/25/25 | 6427cc563d26ef07298480686e3c357a (240x320) |
 | XIII [MIDP] | 240x320 | No Issues | | 06/04/23 | 8e8d65592a792bbd098e4f5940e66c61 (240x320) |
 | XIII 2 – Covert Identity [MIDP] | 240x320 | No Issues | | 06/04/23 | daa700fe734aaf1664f61d6f98b54676 (240x320) |
+| Xmas Pinball Fever (NEC) [MIDP] | 176x208 | No Issues | | 09/19/26 | ec2211e90112d5c04b753567161ce71f (176x208) |
 | X-Men Origins – Wolverine [MIDP] | 240x320, 320x240 | No Issues | | 06/04/23 | bfda5da530722e7c57ce589c07ab4bc6 (320x240) |
 | xXx 2 – The Next Level [MIDP] | 240x320 | No Issues | | 06/04/23 | 17126eaec0d2ac8107d57fc895d65fb5 (240x320) |
 | 魔炎兽猎传-血斩邪龙 (Yang Chuan Hunter: Blood Of The Evil Dragon) [MIDP] | 240x320 | No Issues | | 06/04/23 | e559921fc276af7d3be98ccb0179a17e (240x320) |
