@@ -39,7 +39,7 @@ public class AudioClip
 	public static final String[] formatMIMEType = {"audio/mmf", "audio/mp3", "audio/midi"};
 
 	private int playerFormat;
-	private Player player;
+	protected Player player; // NEC needs access to this.
 
 	public AudioClip(int clipType, byte[] audioData, int audioOffset, int audioLength)
 	{

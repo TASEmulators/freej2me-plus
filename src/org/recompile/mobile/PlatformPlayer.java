@@ -90,6 +90,9 @@ public class PlatformPlayer implements Player
 	private com.nttdocomo.ui.MediaListener doJaListener;
 	private com.nttdocomo.ui.AudioPresenter doJaPresenter;
 
+	private com.nec.media.AudioClip necClip;
+	public com.nec.media.AudioListener necListener;
+
 	private com.jblend.media.smaf.phrase.PhraseTrackListener phraseListener;
 
 	protected boolean disableControls = false; // For when a given audio format is not supported
@@ -359,7 +362,7 @@ public class PlatformPlayer implements Player
 	// Siemens listeners
 	public void addPlayerListener(com.siemens.mp.media.PlayerListener playerListener)
 	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot remove PlayerListener from a CLOSED player"); }
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot add PlayerListener to a CLOSED player"); }
 		if(playerListener == null) { return; }
 
 		siemensListeners.add(playerListener);
@@ -378,7 +381,7 @@ public class PlatformPlayer implements Player
 
 	public void addPlayerListener(com.kddi.media.MediaEventListener playerListener)
 	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot remove PlayerListener from a CLOSED player"); }
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot add MediaEventListener from a CLOSED player"); }
 		if(playerListener == null) { return; }
 
 		kddiListeners.add(playerListener);
@@ -386,7 +389,7 @@ public class PlatformPlayer implements Player
 
 	public void removePlayerListener(com.kddi.media.MediaEventListener playerListener)
 	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot remove PlayerListener from a CLOSED player"); }
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot remove MediaEventListener to a CLOSED player"); }
 		if(playerListener == null) { return; }
 
 		kddiListeners.remove(playerListener);
@@ -395,8 +398,7 @@ public class PlatformPlayer implements Player
 	//DoJa listeners
 	public void setDoJaListener(com.nttdocomo.ui.MediaListener listener, com.nttdocomo.ui.AudioPresenter presenter) // DoJa behaves akin to Nokia in how it sets listeners
 	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot add SoundListener to an UNINITIALIZED Sound"); }
-		if(listener == null) { return; }
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot set DoJa Listener to a CLOSED Player"); }
 
 		doJaListener = listener;
 		doJaPresenter = presenter;
@@ -405,11 +407,18 @@ public class PlatformPlayer implements Player
 	// JBlend/Vodafone/KDDI, etc Phrase listeners
 	public void setPhraseListener(com.jblend.media.smaf.phrase.PhraseTrackListener listener)
 	{
-		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot add SoundListener to an UNINITIALIZED Sound"); }
-
-		if(listener == null) { return; }
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot set Phrase Listener to a CLOSED Player"); }
 
 		phraseListener = listener;
+	}
+
+	//NEC listeners
+	public void setNecListener(com.nec.media.AudioListener listener, com.nec.media.AudioClip clip) // NEC is similar to Nokia and DoJa
+	{
+		if(getState() == Player.CLOSED) { throw new IllegalStateException("Cannot set NEC Listener to a CLOSED Player"); }
+
+		necListener = listener;
+		necClip = clip;
 	}
 
 	public void notifyListeners(String event, Object eventData)
@@ -433,6 +442,14 @@ public class PlatformPlayer implements Player
 			if(event == PlayerListener.CLOSED) { nokiaListener.soundStateChanged(nokiaSound, Sound.SOUND_UNINITIALIZED); }
 			else if(event == PlayerListener.STARTED) { nokiaListener.soundStateChanged(nokiaSound, Sound.SOUND_PLAYING); }
 			else if(event == PlayerListener.STOPPED || event == PlayerListener.END_OF_MEDIA || event == PlayerListener.LOOPED) { nokiaListener.soundStateChanged(nokiaSound, Sound.SOUND_STOPPED); }
+		}
+
+		if(necListener != null)
+		{
+			int necData = getState() == Player.CLOSED ? 0 : (int) getMediaTime();
+			if(event == PlayerListener.STARTED) { necListener.audioAction(necClip, com.nec.media.AudioListener.AUDIO_STARTED, necData); }
+			else if(event == PlayerListener.STOPPED) { necListener.audioAction(necClip, com.nec.media.AudioListener.AUDIO_STOPPED, necData); }
+			else if(event == PlayerListener.END_OF_MEDIA || event == PlayerListener.LOOPED) { necListener.audioAction(necClip, com.nec.media.AudioListener.AUDIO_COMPLETE, necData); }
 		}
 
 		// These are more robust and have additional events
