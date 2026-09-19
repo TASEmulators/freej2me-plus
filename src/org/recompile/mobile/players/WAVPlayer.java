@@ -126,12 +126,12 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 	public void start()
 	{
 		isExplicitStop = false;
+		this.platform.applyVolume();
 		if(getMediaTime() >= getDuration()) { setMediaTime(0); }
 
 		platform.state = Player.STARTED;
 		platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 
-		this.platform.applyVolume();
 		wavClip.start();
 	}
 

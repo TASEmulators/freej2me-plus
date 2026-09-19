@@ -112,14 +112,15 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 				if (this.midi.isRunning()) { this.midi.stop(); }
 
 				this.midi.setSequence(midiSequence);
+
+				this.platform.applyVolume();
+
 				this.midi.removeMetaEventListener(this);
 				this.midi.addMetaEventListener(this);
 
 				// If mediaTime >= getDuration, we should start playing from the beginning
 				if(curTime >= getDuration()) { setMediaTime(0); }
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
-
-				this.platform.applyVolume();
 
 				this.midi.start();
 			}

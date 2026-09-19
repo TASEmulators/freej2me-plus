@@ -147,6 +147,9 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				if (this.midi.isRunning()) { this.midi.stop(); }
 
 				this.midi.setSequence(midiSequence);
+
+				this.platform.applyVolume();
+
 				this.midi.removeMetaEventListener(this);
 				this.midi.addMetaEventListener(this);
 
@@ -154,7 +157,6 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				if(curTime >= getDuration()) { setMediaTime(0); }
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
 
-				this.platform.applyVolume();
 				this.midi.start();
 			}
 
