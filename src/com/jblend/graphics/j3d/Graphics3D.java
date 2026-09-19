@@ -16,6 +16,8 @@
 */
 package com.jblend.graphics.j3d;
 
+import com.mascotcapsule.micro3d.v3.*;
+
 public interface Graphics3D
 {
 	public int COMMAND_AFFINE_INDEX = -2030043136;

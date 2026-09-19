@@ -18,6 +18,7 @@ package org.recompile.mobile;
 
 import com.mascotcapsule.micro3d.v3.AffineTrans;
 import com.mascotcapsule.micro3d.v3.Effect3D;
+import com.mascotcapsule.micro3d.v3.Figure;
 import com.mascotcapsule.micro3d.v3.FigureLayout;
 import com.mascotcapsule.micro3d.v3.Graphics3D;
 import com.mascotcapsule.micro3d.v3.Light;
@@ -2614,66 +2615,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	//
 	//
 
-	public void drawCommandList(com.jblend.graphics.j3d.Texture texture, int x, int y,
-		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect, int[] commandlist)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.drawCommandList((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), commandlist);
-	}
-
-	public void drawCommandList(com.jblend.graphics.j3d.Texture[] textures, int x, int y,
-		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect, int[] commandlist)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		Texture[] texs = new Texture[textures.length];
-
-		for(int i = 0; i < textures.length; i++)
-			texs[i] = (Texture) textures[i];
-
-		mcv3gc.drawCommandList(texs, x, y, layout.getLayout(), effect.getEffect(), commandlist);
-	}
-
-	public void drawCommandList(com.motorola.graphics.j3d.Texture texture, int x, int y,
-		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect, int[] commandlist)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.drawCommandList((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), commandlist);
-	}
-
-	public void drawCommandList(com.motorola.graphics.j3d.Texture[] textures, int x, int y,
-		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect, int[] commandlist)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		Texture[] texs = new Texture[textures.length];
-
-		for(int i = 0; i < textures.length; i++)
-			texs[i] = (Texture) textures[i];
-
-		mcv3gc.drawCommandList(texs, x, y, layout.getLayout(), effect.getEffect(), commandlist);
-	}
-
-	public void drawCommandList(com.vodafone.v10.graphics.j3d.Texture texture, int x, int y,
-		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect,
+	public void drawCommandList(Texture texture, int x, int y,
+		FigureLayout layout, Effect3D effect,
 		int[] commandlist)
 	{
 		if(mcv3gc == null)
@@ -2682,11 +2625,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		mcv3gc.drawCommandList((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), commandlist);
+		mcv3gc.drawCommandList(texture, x, y, layout, effect, commandlist);
 	}
 
-	public void drawCommandList(com.vodafone.v10.graphics.j3d.Texture[] textures, int x, int y,
-		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect,
+	public void drawCommandList(Texture[] textures, int x, int y,
+		FigureLayout layout, Effect3D effect,
 		int[] commandlist)
 	{
 		if(mcv3gc == null)
@@ -2695,17 +2638,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		Texture[] texs = new Texture[textures.length];
-
-		for(int i = 0; i < textures.length; i++)
-			texs[i] = (Texture) textures[i];
-
-		mcv3gc.drawCommandList(texs, x, y, layout.getLayout(), effect.getEffect(), commandlist);
+		mcv3gc.drawCommandList(textures, x, y, layout, effect, commandlist);
 	}
 
-
-	public void drawFigure(com.jblend.graphics.j3d.Figure figure, int x, int y,
-		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect)
+	public void drawFigure(Figure figure, int x, int y,
+		FigureLayout layout, Effect3D effect)
 	{
 		if(mcv3gc == null)
 		{
@@ -2713,31 +2650,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		mcv3gc.drawFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
-	}
-
-	public void drawFigure(com.motorola.graphics.j3d.Figure figure, int x, int y,
-		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.drawFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
-	}
-
-	public void drawFigure(com.vodafone.v10.graphics.j3d.Figure figure, int x, int y,
-		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.drawFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+		mcv3gc.drawFigure(figure, x, y, layout, effect);
 	}
 
 
@@ -2752,9 +2665,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		mcv3gc.flush();
 	}
 
-
-	public void renderFigure(com.jblend.graphics.j3d.Figure figure, int x, int y,
-		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect)
+	public void renderFigure(Figure figure, int x, int y,
+		FigureLayout layout, Effect3D effect)
 	{
 		if(mcv3gc == null)
 		{
@@ -2762,36 +2674,12 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		mcv3gc.renderFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
-	}
-
-	public void renderFigure(com.motorola.graphics.j3d.Figure figure, int x, int y,
-		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.renderFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
-	}
-
-	public void renderFigure(com.vodafone.v10.graphics.j3d.Figure figure, int x, int y,
-		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.renderFigure(figure.getFigure(), x, y, layout.getLayout(), effect.getEffect());
+		mcv3gc.renderFigure(figure, x, y, layout, effect);
 	}
 
 
-	public void renderPrimitives(com.jblend.graphics.j3d.Texture texture, int x, int y,
-		com.jblend.graphics.j3d.FigureLayout layout, com.jblend.graphics.j3d.Effect3D effect, int command,
+	public void renderPrimitives(Texture texture, int x, int y,
+		FigureLayout layout, Effect3D effect, int command,
 		int numPrimitives, int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors)
 	{
 		if(mcv3gc == null)
@@ -2800,35 +2688,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		mcv3gc.renderPrimitives((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), command, numPrimitives,
-			vertexCoords, normals, textureCoords, colors);
-	}
-
-	public void renderPrimitives(com.motorola.graphics.j3d.Texture texture, int x, int y,
-		com.motorola.graphics.j3d.FigureLayout layout, com.motorola.graphics.j3d.Effect3D effect, int command,
-		int numPrimitives, int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.renderPrimitives((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), command, numPrimitives,
-			vertexCoords, normals, textureCoords, colors);
-	}
-
-	public void renderPrimitives(com.vodafone.v10.graphics.j3d.Texture texture, int x, int y,
-		com.vodafone.v10.graphics.j3d.FigureLayout layout, com.vodafone.v10.graphics.j3d.Effect3D effect, int command,int numPrimitives,
-		int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors)
-	{
-		if(mcv3gc == null)
-		{
-			mcv3gc = new Graphics3D();
-			mcv3gc.bind(this);
-		}
-
-		mcv3gc.renderPrimitives((Texture) texture, x, y, layout.getLayout(), effect.getEffect(), command, numPrimitives,
+		mcv3gc.renderPrimitives(texture, x, y, layout, effect, command, numPrimitives,
 			vertexCoords, normals, textureCoords, colors);
 	}
 

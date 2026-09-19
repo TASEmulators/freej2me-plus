@@ -138,7 +138,7 @@ public class MIDletLoader extends URLClassLoader
 			String jarName = new File(url.getFile()).getName().replace('.', '_');
 			suitename = jarName;
 			File file = new File(url.toURI());
-            jarFile = new JarFile(file);
+			jarFile = new JarFile(file);
 			loadJarEntries();
 			baseUrl = url;
 		}
@@ -260,18 +260,18 @@ public class MIDletLoader extends URLClassLoader
 		// the class might be abstract though..
 		for (JarEntry entry : jarEntries)
 		{
-            if (entry.getName().endsWith(".class"))
+			if (entry.getName().endsWith(".class"))
 			{
-                String className = entry.getName().replace('/', '.').replace(".class", "");
+				String className = entry.getName().replace('/', '.').replace(".class", "");
 				try
 				{
 					if (hasStartApp(className, jarFile.getInputStream(entry))) { return className; }
 				}
-                catch (IOException e) { e.printStackTrace(); }
-            }
-        }
-        return null;
-    }
+				catch (IOException e) { e.printStackTrace(); }
+			}
+		}
+		return null;
+	}
 
 	private void loadJarEntries()
 	{
@@ -281,7 +281,7 @@ public class MIDletLoader extends URLClassLoader
 			JarEntry entry = entries.nextElement();
 			jarEntries.add(entry);
 		}
-    }
+	}
 
 	private static boolean hasStartApp(String className, InputStream is)
 	{
@@ -299,22 +299,22 @@ public class MIDletLoader extends URLClassLoader
 				if (j == pattern.length) { return true; }
 			}
 		} catch (IOException e) { e.printStackTrace(); }
-  		finally
+		finally
 		{
 			try { is.close(); }
 			catch (IOException e) { e.printStackTrace(); }
 		}
-        return false;
-    }
+		return false;
+	}
 
 	private static byte[] readBytes(InputStream is) throws IOException
 	{
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        int nRead;
-        byte[] data = new byte[1024];
-        while ((nRead = is.read(data, 0, data.length)) != -1) { buffer.write(data, 0, nRead); }
-        return buffer.toByteArray();
-    }
+		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+		int nRead;
+		byte[] data = new byte[1024];
+		while ((nRead = is.read(data, 0, data.length)) != -1) { buffer.write(data, 0, nRead); }
+		return buffer.toByteArray();
+	}
 
 	public void start() throws MIDletStateChangeException
 	{
@@ -393,9 +393,9 @@ public class MIDletLoader extends URLClassLoader
 	public static void parseDescriptorInto(InputStream is, Map<String, String> keyValueMap)
 	{
 		boolean hasMIDlet = false;
-        String currentKey = null;
-        StringBuilder currentValue = new StringBuilder();
-        try
+		String currentKey = null;
+		StringBuilder currentValue = new StringBuilder();
+		try
 		{
 			BufferedReader br = new BufferedReader(new InputStreamReader(is));
 			try
@@ -459,12 +459,12 @@ public class MIDletLoader extends URLClassLoader
 				Mobile.isDoJa = !hasMIDlet;
 			}
 			finally { br.close(); }
-        }
+		}
 		catch (IOException e)
 		{
-            Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage());
-        }
-    }
+			Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage());
+		}
+	}
 
 	public static void parseJamDescriptorInto(InputStream is, Map<String, String> keyValueMap)
 	{
@@ -716,26 +716,26 @@ public class MIDletLoader extends URLClassLoader
 	}
 
 	@Override
-    public URL findResource(String name) {
-        // First, try to find the resource with the original, case-sensitive name
-        URL resource = super.findResource(name);
-        if (resource != null) {
-            return resource;
-        }
+	public URL findResource(String name) {
+		// First, try to find the resource with the original, case-sensitive name
+		URL resource = super.findResource(name);
+		if (resource != null) {
+			return resource;
+		}
 
-        // For each URL, check if it is a JAR file and perform a case-insensitive search
-        for (URL url : getURLs()) {
-            resource = findResourceInJar(url, name);
-            if (resource != null) {
-                return resource;
-            }
-        }
+		// For each URL, check if it is a JAR file and perform a case-insensitive search
+		for (URL url : getURLs()) {
+			resource = findResourceInJar(url, name);
+			if (resource != null) {
+				return resource;
+			}
+		}
 
-        // If not found, return null
-        return null;
-    }
+		// If not found, return null
+		return null;
+	}
 
-    private URL findResourceInJar(URL jarUrl, String resourceName)
+	private URL findResourceInJar(URL jarUrl, String resourceName)
 	{
 		if(resourceName == null) { return null; }
 
@@ -797,8 +797,8 @@ public class MIDletLoader extends URLClassLoader
 
 		Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Couldn't find resource '" + resourceName + "' in jar: " + jarUrl);
 
-        return null;
-    }
+		return null;
+	}
 
 	/*
 		********  loadClass Modifies Methods with ObjectWeb ASM  ********
@@ -936,6 +936,24 @@ public class MIDletLoader extends URLClassLoader
 
 		checkAPIUsage(name);
 
+		if (name.startsWith("com.jblend.graphics.j3d.") ||
+		name.startsWith("com.vodafone.v10.graphics.j3d.") ||
+		name.startsWith("com.motorola.graphics.j3d."))
+		{
+			// Allow Graphics3D to load normally as an interface (PlatformGraphics implements them)
+			if (!name.endsWith(".Graphics3D"))
+			{
+				// Swap to MascotCapsule package
+				String className = name.substring(name.lastIndexOf('.'));
+				String mappedClassName = "com.mascotcapsule.micro3d.v3" + className;
+
+				Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Redirecting vendor class " + name + " -> " + mappedClassName);
+
+				// Recursively load the MascotCapsule class instead
+				return loadClass(mappedClassName);
+			}
+		}
+
 		// zb3: this needs to be improved as this won't transform games
 		// like hypothetical com.nokia.tictactoe
 		if(
@@ -1050,20 +1068,98 @@ public class MIDletLoader extends URLClassLoader
 			super(visitor);
 		}
 
+		// Rewrites vendor package/class names to another's. Right now this is
+		// only used to rename vendor MascotCapsule "implementations" (that are
+		// really just the default MCv3 implementation in a another package) to
+		// the base mascotcapsule package, leaving Graphics3D alone because that
+		// class was turned into an interface (which PlatformGraphics implements).
+		private String mapInternalName(String internalName)
+		{
+			if (internalName == null) return null;
+
+			if (internalName.startsWith("com/jblend/graphics/j3d/") ||
+				internalName.startsWith("com/vodafone/v10/graphics/j3d/") ||
+				internalName.startsWith("com/motorola/graphics/j3d/"))
+			{
+				// Skip Graphics3D so it stays an interface
+				if (internalName.endsWith("/Graphics3D"))
+				{
+					return internalName;
+				}
+
+				// Swap package name, keeping the class name intact
+				String className = internalName.substring(internalName.lastIndexOf('/'));
+				return "com/mascotcapsule/micro3d/v3" + className;
+			}
+
+			return internalName;
+		}
+
+		// Similar to the above, but renames type descriptors
+		private String mapDesc(String desc)
+		{
+			if (desc == null) return null;
+
+			String rewritten = desc;
+			for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d"})
+			{
+				if (rewritten.contains(vendor) && !rewritten.contains(vendor + "/Graphics3D"))
+				{
+					rewritten = rewritten.replace(vendor, "com/mascotcapsule/micro3d/v3");
+				}
+			}
+			return rewritten;
+		}
+
 		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces)
 		{
 			this.superName = superName;
 
-			super.visit(version, access, name, signature, superName, interfaces);
+			// Remap super class and interfaces if they point to vendor graphics
+			String mappedSuper = mapInternalName(superName);
+			String mappedSignature = mapDesc(signature);
+			String[] mappedInterfaces = interfaces;
+			if (interfaces != null)
+			{
+				mappedInterfaces = new String[interfaces.length];
+				for (int i = 0; i < interfaces.length; i++)
+				{
+					mappedInterfaces[i] = mapInternalName(interfaces[i]);
+				}
+			}
+
+			super.visit(version, access, mapInternalName(name), mappedSignature, mappedSuper, mappedInterfaces);
+		}
+
+		public void visitInnerClass(String name, String outerName, String innerName, int access)
+		{
+			super.visitInnerClass(mapInternalName(name), mapInternalName(outerName), innerName, access);
+		}
+
+		public void visitOuterClass(String owner, String name, String desc)
+		{
+			super.visitOuterClass(mapInternalName(owner), name, mapDesc(desc));
 		}
 
 		public FieldVisitor visitField(int access, String name, String desc, String signature, Object value)
 		{
-			return super.visitField(access, name, desc, signature, value);
+			return super.visitField(access, name, mapDesc(desc), mapDesc(signature), value);
 		}
 
 		public MethodVisitor visitMethod(int access, String name, final String desc, final String signature, final String[] exceptions)
 		{
+
+			String mappedDesc = mapDesc(desc);
+
+			String[] mappedExceptions = exceptions;
+			if (exceptions != null)
+			{
+				mappedExceptions = new String[exceptions.length];
+				for (int i = 0; i < exceptions.length; i++)
+				{
+					mappedExceptions[i] = mapInternalName(exceptions[i]);
+				}
+			}
 
 			// Override invalid Thread methods
 			if ("java/lang/Thread".equals(superName))
@@ -1075,7 +1171,7 @@ public class MIDletLoader extends URLClassLoader
 				}
 			}
 
-			MethodVisitor visitor = super.visitMethod(access, name, desc, signature, exceptions);
+			MethodVisitor visitor = super.visitMethod(access, name, mappedDesc, mapDesc(signature), mappedExceptions);
 
 			// SKT security check bypass
 			if ((access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC && "(Ljavax/microedition/midlet/MIDlet;)Z".equals(desc) && Mobile.isSKT)
@@ -1093,7 +1189,7 @@ public class MIDletLoader extends URLClassLoader
 
 			public ASMSecureUtilWorkaroundMethodVisitor(MethodVisitor target)
 			{
-                super(target);
+				super(target);
 
 				this.target = target;
 			}
@@ -1152,43 +1248,89 @@ public class MIDletLoader extends URLClassLoader
 				}
 				else
 				{
-					mv.visitMethodInsn(opcode, owner, name, desc);
+					mv.visitMethodInsn(opcode, mapInternalName(owner), name, mapDesc(desc));
 				}
 			}
 
 			public void visitFieldInsn(int opcode, String owner, String name, String desc)
 			{
-				super.visitFieldInsn(opcode, owner, name, desc);
+				super.visitFieldInsn(opcode, mapInternalName(owner), name, mapDesc(desc));
 			}
 
 			public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index)
 			{
-				super.visitLocalVariable(name, desc, signature, start, end, index);
+				super.visitLocalVariable(name, mapDesc(desc), mapDesc(signature), start, end, index);
+			}
+
+			public void visitMultiANewArrayInsn(String desc, int dims)
+			{
+				super.visitMultiANewArrayInsn(mapDesc(desc), dims);
 			}
 
 			@Override
 			public void visitLdcInsn(Object value)
 			{
-				// The loaded app might be going for a check against a specific phone model, prepare to override it
-				if (value instanceof String && ((String)value).toLowerCase().contains("microedition.platform"))
+				if (value instanceof org.objectweb.asm.Type)
 				{
-					if(Mobile.compatOverridePlatformChecks) { foundPlatformCheck = true; }
-				}
-
-				if (foundPlatformCheck && value instanceof String)
-				{
-					for (String keyword : knownModelStrings)
+					org.objectweb.asm.Type t = (org.objectweb.asm.Type) value;
+					if (t.getSort() == org.objectweb.asm.Type.OBJECT)
 					{
-						if (((String)value).toLowerCase().contains(keyword)) // It is going for the check, replace the device string with FreeJ2ME-Plus'
+						String mappedInternal = mapInternalName(t.getInternalName());
+						value = org.objectweb.asm.Type.getObjectType(mappedInternal);
+					}
+					else if (t.getSort() == org.objectweb.asm.Type.ARRAY)
+					{
+						value = org.objectweb.asm.Type.getType(mapDesc(t.getDescriptor()));
+					}
+				}
+				else if (value instanceof String)
+				{
+					String strValue = (String) value;
+
+					// Check for mascotcapsulev3 vendor renames (as both slash and dot notations to be safe)
+					for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d"})
+					{
+						if (strValue.contains(vendor) && !strValue.contains(vendor + "/Graphics3D"))
 						{
-							Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Found explicit platform '" + value +  "' model check... overriding.");
-							String replacementModel = "FreeJ2ME-Plus, a Cross-Platform J2ME Emulator.";
-							value = replacementModel.substring(0, Math.min(((String)value).length(), replacementModel.length()));
-							break;
+							strValue = strValue.replace(vendor, "com/mascotcapsule/micro3d/v3");
+						}
+					}
+					for (String vendor : new String[]{"com.jblend.graphics.j3d", "com.vodafone.v10.graphics.j3d", "com.motorola.graphics.j3d"})
+					{
+						if (strValue.contains(vendor) && !strValue.contains(vendor + ".Graphics3D"))
+						{
+							strValue = strValue.replace(vendor, "com.mascotcapsule.micro3d.v3");
+						}
+					}
+					value = strValue;
+
+					// This check won't run if the above ones did, and they won't if this one does either...
+					// So, the loaded app might be going for a check against a specific phone model, prepare to override it
+					if (((String)value).toLowerCase().contains("microedition.platform"))
+					{
+						if(Mobile.compatOverridePlatformChecks) { foundPlatformCheck = true; }
+					}
+
+					if (foundPlatformCheck && value instanceof String)
+					{
+						for (String keyword : knownModelStrings)
+						{
+							if (((String)value).toLowerCase().contains(keyword)) // It is going for the check, replace the device string with FreeJ2ME-Plus'
+							{
+								Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Found explicit platform '" + value +  "' model check... overriding.");
+								String replacementModel = "FreeJ2ME-Plus, a Cross-Platform J2ME Emulator.";
+								value = replacementModel.substring(0, Math.min(((String)value).length(), replacementModel.length()));
+								break;
+							}
 						}
 					}
 				}
 				super.visitLdcInsn(value);
+			}
+
+			public void visitTypeInsn(int opcode, String type)
+			{
+				super.visitTypeInsn(opcode, mapInternalName(type));
 			}
 
 			// Ported from J2ME-Loader, originally by Nikita Shakarun and Yuri Kharchenko
@@ -1198,7 +1340,7 @@ public class MIDletLoader extends URLClassLoader
 			@Override
 			public void visitTryCatchBlock(Label start, Label end, Label handler, String type)
 			{
-				super.visitTryCatchBlock(start, end, handler, type);
+				super.visitTryCatchBlock(start, end, handler, mapInternalName(type));
 
 				if (ENABLE_EXCEPTION_DEBUG) { catchLabels.add(handler); }
 			}
