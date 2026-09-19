@@ -938,7 +938,8 @@ public class MIDletLoader extends URLClassLoader
 
 		if (name.startsWith("com.jblend.graphics.j3d.") ||
 		name.startsWith("com.vodafone.v10.graphics.j3d.") ||
-		name.startsWith("com.motorola.graphics.j3d."))
+		name.startsWith("com.motorola.graphics.j3d.") ||
+		name.startsWith("com.nec.mascotcapsule.v3."))
 		{
 			// Allow Graphics3D to load normally as an interface (PlatformGraphics implements them)
 			if (!name.endsWith(".Graphics3D"))
@@ -966,7 +967,7 @@ public class MIDletLoader extends URLClassLoader
 			name.startsWith("mmpp.") || name.startsWith("com.velox.") || name.startsWith("com.nttdocomo.") ||
 			name.startsWith("org.xml.") || name.startsWith("org.w3c.") || name.startsWith("javacard.") ||
 			name.startsWith("com.sonyericsson") || name.startsWith("com.xce.") || name.startsWith("com.skt.") ||
-			name.startsWith("com.sun.")
+			name.startsWith("com.nec.") || name.startsWith("com.sun.")
 			)
 		{
 
@@ -1079,7 +1080,8 @@ public class MIDletLoader extends URLClassLoader
 
 			if (internalName.startsWith("com/jblend/graphics/j3d/") ||
 				internalName.startsWith("com/vodafone/v10/graphics/j3d/") ||
-				internalName.startsWith("com/motorola/graphics/j3d/"))
+				internalName.startsWith("com/motorola/graphics/j3d/") ||
+				internalName.startsWith("com/nec/mascotcapsule/v3/"))
 			{
 				// Skip Graphics3D so it stays an interface
 				if (internalName.endsWith("/Graphics3D"))
@@ -1101,7 +1103,7 @@ public class MIDletLoader extends URLClassLoader
 			if (desc == null) return null;
 
 			String rewritten = desc;
-			for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d"})
+			for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d", "com/nec/mascotcapsule/v3"})
 			{
 				if (rewritten.contains(vendor) && !rewritten.contains(vendor + "/Graphics3D"))
 				{
@@ -1288,14 +1290,14 @@ public class MIDletLoader extends URLClassLoader
 					String strValue = (String) value;
 
 					// Check for mascotcapsulev3 vendor renames (as both slash and dot notations to be safe)
-					for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d"})
+					for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d", "com/nec/mascotcapsule/v3"})
 					{
 						if (strValue.contains(vendor) && !strValue.contains(vendor + "/Graphics3D"))
 						{
 							strValue = strValue.replace(vendor, "com/mascotcapsule/micro3d/v3");
 						}
 					}
-					for (String vendor : new String[]{"com.jblend.graphics.j3d", "com.vodafone.v10.graphics.j3d", "com.motorola.graphics.j3d"})
+					for (String vendor : new String[]{"com.jblend.graphics.j3d", "com.vodafone.v10.graphics.j3d", "com.motorola.graphics.j3d", "com.nec.mascotcapsule.v3"})
 					{
 						if (strValue.contains(vendor) && !strValue.contains(vendor + ".Graphics3D"))
 						{

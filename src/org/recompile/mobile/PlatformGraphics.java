@@ -41,7 +41,8 @@ import javax.microedition.lcdui.game.Sprite;
 
 public abstract class PlatformGraphics implements DirectGraphics,
 	com.jblend.graphics.j3d.Graphics3D, com.motorola.graphics.j3d.Graphics3D,
-	com.nttdocomo.opt.ui.j3d.Graphics3D, com.vodafone.v10.graphics.j3d.Graphics3D
+	com.nttdocomo.opt.ui.j3d.Graphics3D, com.vodafone.v10.graphics.j3d.Graphics3D,
+	com.nec.mascotcapsule.v3.Graphics3D
 {
 	private static final int FP_FACTOR = 16;
 
@@ -2692,7 +2693,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			vertexCoords, normals, textureCoords, colors);
 	}
 
-	// TODO: DoJa's com.nttdocomo.opt.ui.j3d.Graphics3D classes, as they DO NOT behave like the others
+	//
+	// DoJa's com.nttdocomo.opt.ui.j3d.Graphics3D classes, as they DO NOT behave like the other
+	// vendors, it does have some decent changes from the base MascotCapsuleV3 package.
+	//
 
 	public void drawFigure(com.nttdocomo.opt.ui.j3d.Figure figure)
 	{
@@ -2713,7 +2717,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3effect.setToonParams(shading.getToonThreshold(), shading.getToonHigh(), shading.getToonLow());
 		}
 
-		// TODO: Super 3D Wallpaper Box uses this, but the output seems incorrect
 		mcv3gc.drawFigure(figure.getFigure(), 0, 0, mcv3layout, mcv3effect);
 
 		if (shading != null && shading.getShadingType() == Effect3D.TOON_SHADING)
@@ -2860,7 +2863,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		int pCommand = command | (primitives.getType() << 24);
 
-		// TODO: Only found Espgaruda II Trial calling this, and i can't see the difference on screen
 		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa renderPrimitives B");
 
 		Texture activeTexture = null;
@@ -2874,13 +2876,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int[] normals = primitives.getNormalArray();
 		int[] texCoords = primitives.getTextureCoordArray();
 		int[] colors = primitives.getColorArray();
-
-		// TODO: MascotCapsule v3 requires non-null arrays for all these
-		// arguments, so as a hack for Espgaruda II, we make these empty arrays.
-		if (vertices == null)  { vertices = new int[0]; }
-		if (normals == null)   { normals = new int[0]; }
-		if (texCoords == null) { texCoords = new int[0]; }
-		if (colors == null)    { colors = new int[0]; }
 
 		mcv3gc.renderPrimitives(activeTexture, 0, 0, mcv3layout, mcv3effect, pCommand,
 			length, vertices, normals, texCoords, colors);
