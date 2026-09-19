@@ -14,7 +14,7 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-package com.jblend.graphics.m3d;
+package com.jblend.graphics.util;
 
 import java.io.IOException;
 import java.lang.Math.*;
