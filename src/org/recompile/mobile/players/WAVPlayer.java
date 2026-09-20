@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
@@ -47,6 +48,7 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 	private int[] wavHeaderData = new int[7];
 	private volatile int numLoops = 0;
 	private volatile boolean isExplicitStop = false;
+	private volatile AudioInputStream audioStream;
 
 	public WAVPlayer(InputStream stream)
 	{
@@ -65,63 +67,48 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 
 			tmpStream = new byte[stream.available()];
 			stream.read(tmpStream, 0, stream.available());
+
+			/* Process the wave data */
+			if(wavHeaderData[0] == 1) // standard PCM WAV, just upsample it
+			{
+				audioStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.upsample(tmpStream, wavHeaderData[1], WAVTools.hostSampleRate, (short) wavHeaderData[2], (short) wavHeaderData[4], wavHeaderData[5])));
+			}
+			else if(wavHeaderData[0] == 3) // IEEE Float
+			{
+				audioStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.convertFloatToS16(tmpStream, wavHeaderData[2], wavHeaderData[1], wavHeaderData[5])));
+			}
+			else if(wavHeaderData[0] == 6) // A-Law GSM WAV
+			{
+				audioStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeALaw(tmpStream, wavHeaderData)));
+			}
+			else if(wavHeaderData[0] == 7) // u-Law GSM WAV
+			{
+				audioStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeULaw(tmpStream, wavHeaderData)));
+			}
+			else if(wavHeaderData[0] == 17) // IMA ADPCM
+			{
+				audioStream =AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVImaADPCMDecoder.decodeImaAdpcm(new ByteArrayInputStream(tmpStream), wavHeaderData)));
+			}
+			else if(wavHeaderData[0] == 32) // Yamaha ADPCM-B / SMAF ADPCM
+			{
+				audioStream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMBDecode(tmpStream, wavHeaderData[1], wavHeaderData[2])));
+			}
+			else /* Unknown format. */
+			{
+				Mobile.log(Mobile.LOG_WARNING, WAVPlayer.class.getPackage().getName() + "." + WAVPlayer.class.getSimpleName() + ": " + "WAV Format is " + wavHeaderData[0] + " (Unsupported).");
+			}
+
+			wavClip = AudioSystem.getClip();
+			/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
+			wavClip.addLineListener(this);
+
+			wavClip.open(audioStream);
 		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, WAVPlayer.class.getPackage().getName() + "." + WAVPlayer.class.getSimpleName() + ": " + "Could not prepare wav stream:" + e.getMessage()); }
 	}
 
 	public void realize() { platform.state = Player.REALIZED; }
 
-	public void prefetch()
-	{
-		try
-		{
-			if(wavClip == null)
-			{
-				wavClip = AudioSystem.getClip();
-				/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
-				wavClip.addLineListener(this);
-			}
-
-			if(!wavClip.isOpen())
-			{
-				/* Process the wave data */
-				if(wavHeaderData[0] == 1) // standard PCM WAV, just upsample it
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.upsample(tmpStream, wavHeaderData[1], WAVTools.hostSampleRate, (short) wavHeaderData[2], (short) wavHeaderData[4], wavHeaderData[5]))));
-				}
-				else if(wavHeaderData[0] == 3) // IEEE Float
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVTools.convertFloatToS16(tmpStream, wavHeaderData[2], wavHeaderData[1], wavHeaderData[5]))));
-				}
-				else if(wavHeaderData[0] == 6) // A-Law GSM WAV
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeALaw(tmpStream, wavHeaderData))));
-				}
-				else if(wavHeaderData[0] == 7) // u-Law GSM WAV
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVLawDecoder.decodeULaw(tmpStream, wavHeaderData))));
-				}
-				else if(wavHeaderData[0] == 17) // IMA ADPCM
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVImaADPCMDecoder.decodeImaAdpcm(new ByteArrayInputStream(tmpStream), wavHeaderData))));
-				}
-				else if(wavHeaderData[0] == 32) // Yamaha ADPCM-B / SMAF ADPCM
-				{
-					wavClip.open(AudioSystem.getAudioInputStream(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMBDecode(tmpStream, wavHeaderData[1], wavHeaderData[2]))));
-				}
-				else /* Unknown format. */
-				{
-					Mobile.log(Mobile.LOG_WARNING, WAVPlayer.class.getPackage().getName() + "." + WAVPlayer.class.getSimpleName() + ": " + "WAV Format is " + wavHeaderData[0] + " (Unsupported).");
-				}
-			}
-
-			platform.state = Player.PREFETCHED;
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, WAVPlayer.class.getPackage().getName() + "." + WAVPlayer.class.getSimpleName() + ": " + "Couldn't prefetch wav stream: " + e.getMessage());
-			e.printStackTrace();
-		}
-	}
+	public void prefetch() { platform.state = Player.PREFETCHED; }
 
 	public void start()
 	{
@@ -143,7 +130,9 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 		platform.notifyListeners(PlayerListener.STOPPED, getMediaTime());
 	}
 
-	public void deallocate()
+	public void deallocate() { }
+
+	public void close()
 	{
 		final Clip clip = this.wavClip;
 
@@ -163,10 +152,6 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 			});
 		}
 		this.wavClip = null;
-	}
-
-	public void close()
-	{
 		tmpStream = null;
 		wavHeaderData = null;
 	}
