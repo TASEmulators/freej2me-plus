@@ -1,78 +1,155 @@
-<project name="FreeJ2ME">
+<project name="FreeJ2ME-Plus" default="jar" basedir=".">
 
-<!--
-****************************************************
-*    Class compilation
-****************************************************
--->
 	<property name="source.version" value="1.5"/>
 	<property name="target.version" value="1.5"/>
 
-	<mkdir dir="build/classes"/>
-	<mkdir dir="build/classes/org/objectweb"/>
+	<!-- Will be leaving separate properties for the compiler
+		and runtime paths. This facilitates compiling with
+		an older JDK, and later using jlink/jpackage to ship
+		a self-contained VM through a newer JDK runtime. -->
+	<property name="compile.jdk.home" value="${java.home}"/>
+	<property name="runtime.jdk.home" value="${java.home}"/>
 
-    <echo message="Building Objectweb asm libraries" />
-	<javac
-		srcdir="src"
-		destdir="build/classes"
-		includeantruntime="false"
-		source="${source.version}"
-		target="${target.version}"
-		bootclasspath="${java.home}/lib/rt.jar"
-	>
-	<include name="org/objectweb/asm/**"/>
-	<exclude name="org/objectweb/asm/package.html"/>
-	<compilerarg value="-nowarn"/>
-	</javac>
+	<!--
+	****************************************************
+	*   Initialization
+	****************************************************
+	-->
+	<target name="setup" description="Create build directories">
+		<mkdir dir="build/classes"/>
+		<mkdir dir="build/classes/org/objectweb"/>
+	</target>
 
-    <echo message="Building FreeJ2ME-Plus | Standalone + Libretro" />
-	<javac
-		srcdir="src"
-		destdir="build/classes"
-		includeantruntime="false"
-		source="${source.version}"
-		target="${target.version}"
-		bootclasspath="${java.home}/lib/rt.jar"
-	>
-    <exclude name="org/objectweb/**"/>
-	<exclude name="libretro/**"/>
-	<exclude name="win32pad/**"/>
-	<compilerarg value="-Xlint:unchecked"/>
-	<compilerarg value="-Xlint:deprecation"/>
-	<compilerarg line="-encoding utf-8"/>
-	</javac>
+	<!--
+	****************************************************
+	*   Class Compilation
+	****************************************************
+	-->
+	<target name="compile-asm" depends="setup" description="Build Objectweb asm libraries">
+		<echo message="Building Objectweb asm libraries" />
+		<javac
+			srcdir="src"
+			destdir="build/classes"
+			includeantruntime="false"
+			source="${source.version}"
+			target="${target.version}"
+			bootclasspath="${compile.jdk.home}/lib/rt.jar"
+			>
+			<include name="org/objectweb/asm/**"/>
+			<exclude name="org/objectweb/asm/package.html"/>
+			<compilerarg value="-nowarn"/>
+		</javac>
+	</target>
+
+	<target name="compile-main" depends="setup" description="Build FreeJ2ME-Plus core">
+		<echo message="Building FreeJ2ME-Plus | Standalone + Libretro" />
+		<javac
+			srcdir="src"
+			destdir="build/classes"
+			includeantruntime="false"
+			source="${source.version}"
+			target="${target.version}"
+			bootclasspath="${compile.jdk.home}/lib/rt.jar"
+			>
+			<exclude name="org/objectweb/**"/>
+			<exclude name="libretro/**"/>
+			<exclude name="win32pad/**"/>
+			<compilerarg value="-Xlint:unchecked"/>
+			<compilerarg value="-Xlint:deprecation"/>
+			<compilerarg line="-encoding utf-8"/>
+		</javac>
+	</target>
+
+	<target name="compile" depends="compile-asm, compile-main" description="Compile all java classes"/>
 
 
-<!--
-****************************************************
-*    Jar Files
-****************************************************
--->
-
-	<echo message="Building JAR - Standalone" />
-	<jar
-		destfile="build/freej2me_plus.jar">
-		<fileset dir="build/classes" excludes="**/Libretro*.class"/> <!-- Exclude Libretro classes -->
-		<fileset dir="resources" />
-		<metainf dir="META-INF" />
-		<manifest>
+	<!--
+	****************************************************
+	*   Jar Files
+	****************************************************
+	-->
+	<target name="jar-standalone" depends="compile" description="Builds the Standalone JAR">
+		<echo message="Building JAR - Standalone" />
+		<jar destfile="build/freej2me_plus.jar">
+			<!-- Exclude Libretro classes -->
+			<fileset dir="build/classes" excludes="**/Libretro*.class"/>
+			<fileset dir="resources" />
+			<metainf dir="META-INF" />
+			<manifest>
 			<!-- Standalone Version -->
-			<attribute name="Main-Class" value="org.recompile.freej2me.FreeJ2ME"/>
-			<attribute name="Implementation-Title" value="FreeJ2ME"/>
-		</manifest>
-	</jar>
+				<attribute name="Main-Class" value="org.recompile.freej2me.FreeJ2ME"/>
+				<attribute name="Implementation-Title" value="FreeJ2ME-Plus"/>
+			</manifest>
+		</jar>
+	</target>
 
-	<echo message="Building JAR - Libretro" />
-	<jar
-		destfile="build/freej2me_plus-lr.jar">
-		<fileset dir="build/classes" excludes="**/FJGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/gamepad/**, **/ScreenShot*.class"/> <!-- Exclude GUI classes (FreeJ2ME.class is only needed for GUI) -->
-		<fileset dir="resources" />
-		<metainf dir="META-INF" />
-		<manifest>
-			<!-- Libretro Version -->
-			<attribute name="Main-Class" value="org.recompile.freej2me.Libretro"/>
-			<attribute name="Implementation-Title" value="FreeJ2ME"/>
-		</manifest>
-	</jar>
+	<target name="jar-libretro" depends="compile" description="Builds the Libretro JAR">
+		<echo message="Building JAR - Libretro" />
+		<jar destfile="build/freej2me_plus-lr.jar">
+			<!-- Exclude GUI classes (FreeJ2ME.class is only needed for GUI) -->
+			<fileset dir="build/classes" excludes="**/FJGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/gamepad/**, **/ScreenShot*.class"/>
+			<fileset dir="resources" />
+			<metainf dir="META-INF" />
+			<manifest>
+				<!-- Libretro Version -->
+				<attribute name="Main-Class" value="org.recompile.freej2me.Libretro"/>
+				<attribute name="Implementation-Title" value="FreeJ2ME-Plus"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="jar" depends="jar-standalone, jar-libretro" description="Build Standalone and Libretro JAR files"/>
+
+	<target name="clean" description="Clean and rebuild everything from scratch">
+	<delete dir="build/classes"/>
+	<echo message="Build dir cleaned."/>
+
+	<antcall target="jar"/>
+	</target>
+
+
+	<!-- Entirely optional target. Requires JDK 9+, and builds a self-contained package that drops the need for the Host OS to
+		have a VM installed in order to run FreeJ2ME-Plus. Mostly useful for libretro, but even that is in testing phase still. -->
+	<target name="build-runtime" depends="jar-libretro" description="Generate minimal Java 9+ runtime for libretro">
+
+		<!-- Default to linux-x64 as platform, so i don't need to type it in every time when testing.
+			Any other platform may just run "ant build-runtime " with -Dplatform=[windows-x64, macos-arm64] and such,
+			provided "runtime.jdk.home" points to that platform's JDK. -->
+		<property name="platform" value="linux-x64"/>
+
+		<property name="temp.dir" value="build/temp"/>
+		<property name="runtime.target.dir" value="${temp.dir}/freej2me_plus_runtime/${platform}"/>
+		<property name="zip.output" value="build/freej2me_plus_runtime_${platform}.zip"/>
+
+		<echo message="Building runtime for platform [${platform}] at ${runtime.target.dir}..."/>
+
+		<!-- Clean any dangling temp directory before each platform-specific run -->
+		<delete dir="${runtime.target.dir}"/>
+
+		<exec executable="${runtime.jdk.home}/bin/jlink" failonerror="true">
+			<arg value="--module-path"/>
+			<arg value="${runtime.jdk.home}/jmods"/>
+			<arg value="--add-modules"/>
+			<arg value="java.base,java.desktop"/>
+			<arg value="--compress=2"/>
+			<arg value="--no-header-files"/>
+			<arg value="--no-man-pages"/>
+			<arg value="--strip-debug"/>
+			<arg value="--exclude-resources"/>
+			<arg value="**.diz,**.debuginfo"/>
+			<arg value="--output"/>
+			<arg value="${runtime.target.dir}"/>
+		</exec>
+
+		<echo message="Copying Libretro JAR to runtime executable folder..."/>
+		<copy file="build/freej2me_plus-lr.jar" todir="${runtime.target.dir}/bin"/>
+
+		<echo message="Creating distribution zip: ${zip.output}"/>
+		<zip destfile="${zip.output}" basedir="${temp.dir}"/>
+
+		<delete dir="${temp.dir}"/>
+
+		<echo message="Runtime bundle for [${platform}] is ready at '${zip.output}.'"/>
+	</target>
 
 </project>
