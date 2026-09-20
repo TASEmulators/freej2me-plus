@@ -368,12 +368,14 @@ public class Mobile
 
 	public static InputStream getResourceAsStream(Class c, String resource)
 	{
-		return new DataInputStream(platform.loader.getMIDletResourceAsStream(resource));
+		InputStream stream = platform.loader.getMIDletResourceAsStream(resource);
+		return stream == null ? stream : new DataInputStream(stream);
 	}
 
 	public static InputStream getMIDletResourceAsStream(String resource)
 	{
-		return new DataInputStream(platform.loader.getMIDletResourceAsStream(resource));
+		InputStream stream = platform.loader.getMIDletResourceAsStream(resource);
+		return stream == null ? stream : new DataInputStream(stream);
 	}
 
 	public static byte[] getMIDletResourceAsByteArray(String resource)
