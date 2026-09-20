@@ -16,24 +16,8 @@
 */
 package javax.microedition.jcrmi;
 
-import java.rmi.Remote;
-import java.rmi.RemoteException;
-
-public interface JavaCardRMIConnection 
+public interface JavaCardRMIConnection
 {
     short PINENTRY_CANCELLED = -1;
 
-    short changePin(int pinID) throws RemoteException;
-
-    short disablePin(int pinID) throws RemoteException;
-
-    short enablePin(int pinID) throws RemoteException;
-
-    short enterPin(int pinID) throws RemoteException;
-
-    Remote getInitialReference() throws RemoteException;
-
-    short unblockPin(int blockedPinID, int unblockingPinID) throws RemoteException;
-
-    void close() throws java.io.IOException;
 }
