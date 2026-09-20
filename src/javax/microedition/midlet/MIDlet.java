@@ -44,7 +44,7 @@ public abstract class MIDlet
 	protected abstract void destroyApp(boolean unconditional) throws MIDletStateChangeException;
 
 	public String getAppProperty(String key)
-	{ 
+	{
 		Mobile.log(Mobile.LOG_INFO, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + "getAppProperty: "+ key);
 		return properties.get(key);
 	}
@@ -55,13 +55,15 @@ public abstract class MIDlet
 	}
 
 	public final void notifyDestroyed()
-	{ 
+	{
 		Mobile.log(Mobile.LOG_INFO, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + "MIDlet sent Destroyed Notification");
-		for (StackTraceElement element : Thread.currentThread().getStackTrace()) 
+		for (StackTraceElement element : Thread.currentThread().getStackTrace())
         {
             Mobile.log(Mobile.LOG_DEBUG, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + element);
         }
 		Mobile.getPlatform().drawAppTerminated();
+
+		Mobile.midlet = null;
 	}
 
 	public final void notifyPaused() { }
@@ -71,8 +73,8 @@ public abstract class MIDlet
 	// These are only called by FreeJ2ME-Plus
 	public void callPauseApp() { pauseApp(); }
 
-	public void callStartApp() 
-	{ 
+	public void callStartApp()
+	{
 		try { startApp();  }
 		catch(MIDletStateChangeException e) { Mobile.log(Mobile.LOG_WARNING, MIDlet.class.getPackage().getName() + "." + MIDlet.class.getSimpleName() + ": " + "Failed to resume MIDlet"); }
 	}
@@ -82,4 +84,9 @@ public abstract class MIDlet
 	public final void resumeRequest() { }
 
 	protected abstract void startApp() throws MIDletStateChangeException;
+
+	public final void requestDestroy(boolean unconditional) throws MIDletStateChangeException
+	{
+		destroyApp(unconditional);
+	}
 }

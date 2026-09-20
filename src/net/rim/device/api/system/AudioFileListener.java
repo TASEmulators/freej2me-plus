@@ -14,11 +14,15 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+package net.rim.device.api.system;
 
-package net.rim.device.api.ui;
-
-
-public final class Touchscreen
+public interface AudioFileListener extends AudioListener
 {
-	public static boolean isSupported() { return true; }
+	public static final int OPERATION_PLAY = 0;
+	public static final int OPERATION_RECORD = 1;
+	public static final int OPERATION_STOP = 2;
+
+	void audioFileOperationComplete(int operation);
+
+	void audioFileOperationFailed(int operation, int errorCode);
 }

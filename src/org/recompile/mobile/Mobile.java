@@ -175,6 +175,7 @@ public class Mobile
 	public static boolean MCV3ShowHeapUsage = false;
 
 	// Keycode modifiers
+	public static boolean blackberry89 = false;
 	public static boolean kddi = false;
 	public static boolean lg = false;
 	public static boolean motorola = false;
@@ -222,6 +223,28 @@ public class Mobile
 	// Vibration support for Libretro and SDL
 	public static int vibrationDuration = 0;
 	public static int vibrationStrength = 0xFFFF;
+
+	// Blackberry 8220, 8520, 8800, 8900, 9000, 9500 keycodes
+	public static final int BLACKBERRY89_UP    = 1;
+	public static final int BLACKBERRY89_DOWN  = 6;
+	public static final int BLACKBERRY89_LEFT  = 2;
+	public static final int BLACKBERRY89_RIGHT = 5;
+	public static final int BLACKBERRY89_SOFT1 = -6;
+	public static final int BLACKBERRY89_SOFT2 = -7;
+	public static final int BLACKBERRY89_FIRE = -9;
+	public static final int BLACKBERRY89_CLR = -88;
+	//public static final int BLACKBERRY89_NUM0  = 109;
+	//public static final int BLACKBERRY89_NUM1  = 114;
+	//public static final int BLACKBERRY89_NUM2  = 116;
+	//public static final int BLACKBERRY89_NUM3  = 121;
+	//public static final int BLACKBERRY89_NUM4  = 102;
+	//public static final int BLACKBERRY89_NUM5  = 103;
+	//public static final int BLACKBERRY89_NUM6  = 104;
+	//public static final int BLACKBERRY89_NUM7  = 118;
+	//public static final int BLACKBERRY89_NUM8  = 98;
+	//public static final int BLACKBERRY89_NUM9  = 110;
+	//public static final int BLACKBERRY89_STAR  = 117;
+	//public static final int BLACKBERRY89_POUND = 106;
 
 	//KDDI keycodes
 	public static final int KDDI_UP    = 1;
@@ -371,6 +394,20 @@ public class Mobile
 	public static final int getMobileKey(int keycode)
 	{
 		// These keys are overridden by the modifier variables (comments simulate the Libretro interface with a NS Pro Controller)
+		if(blackberry89)
+		{
+			switch(keycode)
+			{
+				case 0:  return BLACKBERRY89_UP; // Up
+				case 1:  return BLACKBERRY89_DOWN; // Down
+				case 2:  return BLACKBERRY89_LEFT; // Left
+				case 3:  return BLACKBERRY89_RIGHT; // Right
+				case 7:  return BLACKBERRY89_FIRE; // Y
+				case 8:  return BLACKBERRY89_SOFT2; // Start
+				case 9:  return BLACKBERRY89_SOFT1; // Select
+				case 19: return BLACKBERRY89_CLR;
+			}
+		}
 		if(kddi)
 		{
 			switch(keycode)
@@ -550,6 +587,19 @@ public class Mobile
 	public static final int getGameAction(int keycode)
 	{
 		// NOTE: Canvas doesn't support SOFT keys by default. Those cases are all returning NOKIA softkeys to abstract lcdui's menu navigation
+		if (blackberry89)
+		{
+			switch(keycode)
+			{
+				case BLACKBERRY89_UP:    return Canvas.UP; // Up
+				case BLACKBERRY89_DOWN:  return Canvas.DOWN; // Down
+				case BLACKBERRY89_LEFT:  return Canvas.LEFT; // Left
+				case BLACKBERRY89_RIGHT: return Canvas.RIGHT; // Right
+				case BLACKBERRY89_FIRE:  return Canvas.FIRE; // Y
+				case BLACKBERRY89_SOFT1: return Canvas.GAME_A;
+				case BLACKBERRY89_SOFT2: return Canvas.GAME_B;
+			}
+		}
 		if (kddi)
 		{
 			switch(keycode)
@@ -706,6 +756,19 @@ public class Mobile
 	public static final int getCanvasAction(int keycode)
 	{
 		// NOTE: Canvas doesn't support SOFT keys by default. Those cases are all returning NOKIA softkeys to abstract lcdui's menu navigation
+		if (blackberry89)
+		{
+			switch(keycode)
+			{
+				case BLACKBERRY89_UP:    return Canvas.UP; // Up
+				case BLACKBERRY89_DOWN:  return Canvas.DOWN; // Down
+				case BLACKBERRY89_LEFT:  return Canvas.LEFT; // Left
+				case BLACKBERRY89_RIGHT: return Canvas.RIGHT; // Right
+				case BLACKBERRY89_FIRE:  return Canvas.FIRE; // Y
+				case BLACKBERRY89_SOFT1: return Canvas.KEY_SOFT_LEFT; // Start   (gameAction is GAME_A, but we go with the special keys for CanvasAction)
+				case BLACKBERRY89_SOFT2: return Canvas.KEY_SOFT_RIGHT; // Select (gameAction is GAME_B, but we go with the special keys for CanvasAction)
+			}
+		}
 		if (kddi)
 		{
 			switch(keycode)
@@ -1000,6 +1063,7 @@ public class Mobile
 		limitFPS = Integer.parseInt(config.settings.get("fps"));
 
 		String phone = config.settings.get("phone");
+		blackberry89 = false;
 		kddi = false;
 		lg = false;
 		motorola = false;
@@ -1010,6 +1074,7 @@ public class Mobile
 		sagem = false;
 		siemens = false;
 		skt = false;
+		if(phone.equals("BlackBerry89"))  { blackberry89 = true;}
 		if(phone.equals("KDDI"))          { kddi = true;}
 		if(phone.equals("LG"))            { lg = true;}
 		if(phone.equals("Motorola"))      { motorola = true;}

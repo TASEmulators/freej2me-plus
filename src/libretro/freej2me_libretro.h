@@ -259,6 +259,7 @@ struct retro_core_option_v2_definition core_options[] =
 		"system_settings",
 		{
 			{ "Default",                   NULL },
+			{ "BlackBerry89",              "BlackBerry 8xxx/9xxx Series" },
 			{ "KDDI",                      NULL },
 			{ "LG",                        NULL },
 			{ "Motorola/SoftBank/Sharp",   NULL },
@@ -1025,6 +1026,7 @@ struct retro_core_option_definition core_options_v1 [] =
 		"Due to the different mobile phone manufacturers on the J2ME space, it's usual to have some games expecting a certain phone's key layout like Nokia's for example. If a game is not responding to the inputs correctly, try changing this option. NOTE: Sharp devices are known to use motorola's mappings.",
 		{
 			{ "Default",                   NULL },
+			{ "BlackBerry89",              "BlackBerry 8xxx/9xxx Series" },
 			{ "KDDI",                      NULL },
 			{ "LG",                        NULL },
 			{ "Motorola/SoftBank/Sharp",   NULL },
@@ -1581,7 +1583,7 @@ static const struct retro_variable vars[] =
 	},
 	{ /* Phone Control Type */
 		"freej2me_phone",
-		"Phone Key Layout; Default|KDDI|LG|Motorola/SoftBank/Sharp|Motorola Triplets|Motorola V8|Motorola A1000|Nokia Full Keyboard|Sagem|Siemens|SKT"
+		"Phone Key Layout; Default|BlackBerry89|KDDI|LG|Motorola/SoftBank/Sharp|Motorola Triplets|Motorola V8|Motorola A1000|Nokia Full Keyboard|Sagem|Siemens|SKT"
 	},
 	{ /* LCD Backlight Color */
 		"freej2me_backlightcolor",

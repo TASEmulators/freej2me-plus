@@ -14,11 +14,17 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+package net.rim.device.api.system;
 
-package net.rim.device.api.ui;
-
-
-public final class Touchscreen
+public interface KeyListener extends KeypadListener
 {
-	public static boolean isSupported() { return true; }
+	boolean keyChar(char key, int status, int time);
+
+	boolean keyDown(int keycode, int time);
+
+	boolean keyRepeat(int keycode, int time);
+
+	boolean keyStatus(int keycode, int time);
+
+	boolean keyUp(int keycode, int time);
 }

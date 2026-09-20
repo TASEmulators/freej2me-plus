@@ -14,11 +14,23 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+package net.rim.device.api.system;
 
-package net.rim.device.api.ui;
-
-
-public final class Touchscreen
+public interface IOPortListener
 {
-	public static boolean isSupported() { return true; }
+	public static final int ERROR_FRAMING = 3;
+	public static final int ERROR_OVERRUN = 4;
+	public static final int ERROR_PARITY = 2;
+
+	void connected();
+
+	void dataReceived(int length);
+
+	void dataSent();
+
+	void disconnected();
+
+	void patternReceived(byte[] pattern);
+
+	void receiveError(int error);
 }

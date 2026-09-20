@@ -14,11 +14,18 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+package net.rim.device.api.system;
 
-package net.rim.device.api.ui;
-
-
-public final class Touchscreen
+public interface AlertListener
 {
-	public static boolean isSupported() { return true; }
+	public static final int REASON_COMPLETED = 2;
+	public static final int REASON_KEY_PRESSED = 1;
+	public static final int REASON_STOP_CALLED = 3;
+	public static final int REASON_TRACKBALL_ROLLED = 4;
+
+	void audioDone(int reason);
+
+	void buzzerDone(int reason);
+
+	void vibrateDone(int reason);
 }

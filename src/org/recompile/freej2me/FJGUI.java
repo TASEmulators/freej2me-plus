@@ -54,6 +54,7 @@ import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
@@ -310,6 +311,7 @@ public final class FJGUI
 	final JCheckBoxMenuItem[] layoutOptions =
 	{
 		new JCheckBoxMenuItem("Default", true),
+		new JCheckBoxMenuItem("BlackBerry 8xxx/9xxx", false),
 		new JCheckBoxMenuItem("KDDI", false),
 		new JCheckBoxMenuItem("LG", false),
 		new JCheckBoxMenuItem("Motorola/SoftBank/Sharp", false),
@@ -321,7 +323,7 @@ public final class FJGUI
 		new JCheckBoxMenuItem("Siemens", false),
 		new JCheckBoxMenuItem("SKT", false)
 	};
-	final String[] layoutValues = {"Standard", "KDDI", "LG", "Motorola", "MotoV8", "MotoTriplets", "MotoA1000", "NokiaKeyboard", "Sagem", "Siemens", "SKT"};
+	final String[] layoutValues = {"Standard", "BlackBerry89", "KDDI", "LG", "Motorola", "MotoV8", "MotoTriplets", "MotoA1000", "NokiaKeyboard", "Sagem", "Siemens", "SKT"};
 
 	final JCheckBoxMenuItem[] backlightOptions =
 	{
@@ -1123,9 +1125,12 @@ public final class FJGUI
 
 	private void bindRadioGroup(final JCheckBoxMenuItem[] options, final String[] values, final String settingKey, final boolean isSysSetting, final Runnable onChange)
 	{
+		ButtonGroup group = new ButtonGroup();
+
 		for (int i = 0; i < options.length; i++)
 		{
 			final int index = i;
+			group.add(options[index]);
 			options[index].addItemListener(new ItemListener()
 			{
 				public void itemStateChanged(ItemEvent e)

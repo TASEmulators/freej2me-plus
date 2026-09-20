@@ -967,7 +967,7 @@ public class MIDletLoader extends URLClassLoader
 			name.startsWith("mmpp.") || name.startsWith("com.velox.") || name.startsWith("com.nttdocomo.") ||
 			name.startsWith("org.xml.") || name.startsWith("org.w3c.") || name.startsWith("javacard.") ||
 			name.startsWith("com.sonyericsson") || name.startsWith("com.xce.") || name.startsWith("com.skt.") ||
-			name.startsWith("com.nec.") || name.startsWith("com.sun.")
+			name.startsWith("com.nec.") || name.startsWith("net.rim.") || name.startsWith("com.sun.")
 			)
 		{
 

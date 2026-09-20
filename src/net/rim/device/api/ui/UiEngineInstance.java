@@ -14,11 +14,21 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
-
 package net.rim.device.api.ui;
 
-
-public final class Touchscreen
+// TODO: Implement this one later.
+public abstract class UiEngineInstance
 {
-	public static boolean isSupported() { return true; }
+	public static final int GLOBAL_MODAL = 1;
+	public static final int GLOBAL_QUEUE = 2;
+	public static final int GLOBAL_SHOW_LOWER = 4;
+	public static final int PRIORITY_HIGH = 10;
+	public static final int PRIORITY_LOW = 100;
+	public static final int PRIORITY_MAX = 0;
+	public static final int PRIORITY_MIN = 2147483647;
+	public static final int PRIORITY_NORMAL = 50;
+	public static final int TRIGGER_POP = 56;
+	public static final int TRIGGER_PUSH = 7;
+
+	// Actual constructor, methods, etc.
 }

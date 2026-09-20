@@ -14,11 +14,13 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+package net.rim.device.api.system;
 
-package net.rim.device.api.ui;
-
-
-public final class Touchscreen
+public interface TrackwheelListener extends KeypadListener
 {
-	public static boolean isSupported() { return true; }
+	boolean trackwheelClick(int status, int time);
+
+	boolean trackwheelRoll(int amount, int status, int time);
+
+	boolean trackwheelUnclick(int status, int time);
 }

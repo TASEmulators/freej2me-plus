@@ -416,6 +416,7 @@ static void check_variables()
 		else if (!strcmp(var.value, "Siemens"))            { phoneType = 8; }
 		else if (!strcmp(var.value, "SKT"))                { phoneType = 9; }
 		else if (!strcmp(var.value, "KDDI"))               { phoneType = 10; }
+		else if (!strcmp(var.value, "BlackBerry89"))       { phoneType = 11; }
 	}
 
 	var.key = "freej2me_backlightcolor";

@@ -17,8 +17,13 @@
 
 package net.rim.device.api.ui;
 
-
-public final class Touchscreen
+// TODO: Implement this later. It's a massive class and i don't think it's
+// worth it right now.
+public abstract class Screen
 {
-	public static boolean isSupported() { return true; }
+	public static final long DEFAULT_CLOSE = 131072L;
+	public static final long DEFAULT_MENU = 65536L;
+	public static final long NO_SYSTEM_MENU_ITEMS = 262144L;
+
+	// Actual constructor and methods.
 }

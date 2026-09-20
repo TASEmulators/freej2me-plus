@@ -14,11 +14,16 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+package net.rim.device.api.system;
 
-package net.rim.device.api.ui;
-
-
-public final class Touchscreen
+public interface PeripheralListener
 {
-	public static boolean isSupported() { return true; }
+	public static final int TYPE_CAR_CHARGER = 2817;
+	public static final int TYPE_CRADLE = 2818;
+	public static final int TYPE_NONE = 2819;
+	public static final int TYPE_TRAVEL_CHARGER = 2823;
+	public static final int TYPE_UNKNOWN = 3071;
+	public static final int TYPE_USER = 2816;
+
+	void peripheralChange(int type);
 }
