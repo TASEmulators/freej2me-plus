@@ -893,8 +893,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle)
 	{
+		if (width <= 0 || height <= 0 || arcAngle == 0) { return; }
 		if (contextDisposed) throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed");
-		if (width <= 0 || height <= 0 || arcAngle == 0) return;
 
 		x += translateX;
 		y += translateY;
@@ -993,8 +993,22 @@ public abstract class PlatformGraphics implements DirectGraphics,
 					int crossStart = ((normDx * sinS) >> AFP_SHIFT) + crossYStart;
 					int crossEnd = ((normDx * sinE) >> AFP_SHIFT) + crossYEnd;
 
-					boolean inSector = !isConcave ? (crossStart >= -2 &&
-						crossEnd <= 2) : (crossStart >= -2 || crossEnd <= 2);
+					boolean inSector;
+					if (!isConcave)
+					{
+						// For arcs <= 180 degrees, the pixel must be on the
+						// correct side of both boundary rays, otherwise we'll
+						// have the whole quadrant drawn at the opposite end...
+						if (arcAngle > 0) { inSector = (crossStart >= -2) && (crossEnd <= 2); }
+						else { inSector = (crossStart <= 2) && (crossEnd >= -2); }
+					}
+					else
+					{
+						// For arcs > 180 degrees (concave), similar idea as
+						// above when <= 180 degrees.
+						if (arcAngle > 0) { inSector = (crossStart >= -2) || (crossEnd <= 2); }
+						else { inSector = (crossStart <= 2) || (crossEnd >= -2); }
+					}
 
 					if (!inSector) { continue; }
 				}
