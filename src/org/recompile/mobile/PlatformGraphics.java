@@ -670,6 +670,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		arcAngle = -arcAngle;
 		startAngle = -startAngle;
 
+		// Cap these to 360 degrees, otherwise we'll overdraw semi-transparent
+		// arcs. It also shouldn't matter whether the angle is positive or
+		// negative, it just gets clamped to a full circle anyway.
+		if (arcAngle > 360 || arcAngle < -360) { arcAngle = 360; }
+
 		width += 1;
 		height += 1;
 
@@ -681,20 +686,18 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int clipWidth = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
 		final int clipHeight = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
 
-		final int steps = Math.abs(arcAngle * (width + height)) / 100;
+		// This works similarly to Bresenham's midpoint circle algorithm.
+		//
+		// The number of steps must account for the maximum dimension and arc
+		// span, otherwise we get gaps and risk overdraws on oblique ovals.
+		//
+		// The magic "45" here is just the ideal step density divider of pi/4.
+		// Any lower and it causes overdraw, any bigger and gaps show up.
+		final int steps = Math.max(Math.abs(arcAngle),
+			(Math.max(width, height) * Math.abs(arcAngle)) / 45);
 
 		// If we don't have at least one step to be drawn, return outright.
 		if(steps <= 0) { return; }
-
-		/*
-		 * This works similarly to Bresenham's midpoint circle algorithm. "steps" dictates how many
-		 * iterations are used to draw the circle. A bigger value will result in the same pixels
-		 * being hit more times (and wasted cycles since they'll be discarded later) but will
-		 * guarantee a perfectly filled outline, whereas a small value will result in gaps
-		 * appearing in the circle since less points will be sampled. The current value is
-		 * a good balance between filling all positions on all kinds of shapes while hitting as
-		 * few pixels as possible.
-		 */
 
 		final int centerX = (x << 1) + width;
 		final int centerY = (y << 1) + height;
@@ -705,38 +708,21 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int angle = startAngleRad;
 		int angleStep = endAngleRad / steps;
 
-		int firstFillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
-		int firstFillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
+		// To prevent overdraw here, all we need to do is track the prior pixel.
 		int lastFillX = -1;
 		int lastFillY = -1;
 
 		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
 		int curPixel = 0; // Used only for DOTTED style lines
 
-		if((firstFillX >= clipX && firstFillX < clipWidth && firstFillY >= clipY && firstFillY < clipHeight))
-		{
-			if(isOpaque) { canvasData[(firstFillY * canvasWidth) + firstFillX] = getColor(); }
-			else
-			{
-				canvasData[(firstFillY * canvasWidth) + firstFillX] = blendPixels(getColor(), canvasData[(firstFillY * canvasWidth) + firstFillX]);
-			}
-			curPixel++;
-		}
-
-		/* First pixel was already drawn, so start from step 1 */
-		for (int i = 1; i <= steps; i++)
+		for (int i = 0; i < steps-1; i++)
 		{
 			angle += angleStep;
 			int fillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
 			int fillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
 
-			// Make sure we don't paint the same pixel more than once
-			if(((lastFillX == fillX) ^ (lastFillY == fillY)) || (firstFillX == fillX && firstFillY == fillY))
-			{
-				lastFillX = -1;
-				lastFillY = -1;
-				continue;
-			}
+			// If this is the exact same pixel as the last one, skip it.
+			if (fillX == lastFillX && fillY == lastFillY) { continue; }
 
 			lastFillX = fillX;
 			lastFillY = fillY;
