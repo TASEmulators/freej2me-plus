@@ -1561,12 +1561,8 @@ public class Graphics3D {
 			int[] textureCoords, int[] colors
 	) {
 		if (disposed) return;
-		if (
-			layout == null || effect == null || 
-			vertexCoords == null || normals == null || 
-			textureCoords == null || colors == null
-		) {
-			throw new NullPointerException(layout + " " + effect + " " + vertexCoords + " " + normals + " " + textureCoords + " " + colors);
+		if (layout == null || effect == null || vertexCoords == null) {
+			throw new NullPointerException(layout + " " + effect + " " + vertexCoords);
 		}
 		if (numPrimitives <= 0 || numPrimitives > 255) {
 			throw new IllegalArgumentException();
@@ -1575,15 +1571,38 @@ public class Graphics3D {
 			throw new IllegalArgumentException();
 		}
 		if (boundGraphics == null) throw new IllegalStateException();
-		
+
+		// These arguments are conditional on the render command. They are what
+		// dictate whether we really need the texture, normal, color, etc arrays
+		// to be non-null.
+		boolean hasTextureCoord = (command & Graphics3D.PDATA_TEXURE_COORD) != 0;
+		boolean hasNormals = ((command & Graphics3D.PDATA_NORMAL_PER_FACE) != 0) ||
+			((command & Graphics3D.PDATA_NORMAL_PER_VERTEX) != 0);
+		boolean hasColors = ((command & Graphics3D.PDATA_COLOR_PER_FACE) != 0);
+
+		// Point sprites also implicitly require texture coordinates/properties
+		int primType = command & 0xFF000000;
+		boolean isPointSprite = (primType == Graphics3D.PRIMITVE_POINT_SPRITES);
+
+		// Are we rendering textured data? We need texture and tex coordinates.
+		if ((hasTextureCoord || isPointSprite) && (texture == null || textureCoords == null)) {
+			throw new NullPointerException("Texture and textureCoords must not be null when texturing/sprites are enabled.");
+		}
+		// Are we using lighting? We need the normal array.
+		if (hasNormals && normals == null) {
+			throw new NullPointerException("Normals array must not be null when lighting/normal data is enabled.");
+		}
+		// Do we have face colors? We need the color array.
+		if (hasColors && colors == null) {
+			throw new NullPointerException("Colors array must not be null when face colors are enabled.");
+		}
+
 		long startTime = System.currentTimeMillis();
 
 		AffineTrans trans = layout.getAffineTrans();
 		setCenter(layout, x, y);
 		setProjection(layout);
 		setEffect(effect);
-
-		int primType = command & 0xFF000000;
 
 		switch (primType) {
 			case PRIMITVE_POINTS:
@@ -1595,7 +1614,7 @@ public class Graphics3D {
 			case PRIMITVE_TRIANGLES:
 				submitPrimitivePolygons(
 						texture, trans,
-						command, numPrimitives, false, 
+						command, numPrimitives, false,
 						vertexCoords, 0, normals, 0,
 						textureCoords, 0, colors, 0
 				);
@@ -1603,7 +1622,7 @@ public class Graphics3D {
 			case PRIMITVE_QUADS:
 				submitPrimitivePolygons(
 						texture, trans,
-						command, numPrimitives, true, 
+						command, numPrimitives, true,
 						vertexCoords, 0, normals, 0,
 						textureCoords, 0, colors, 0
 				);
@@ -1614,7 +1633,7 @@ public class Graphics3D {
 			default:
 				throw new IllegalArgumentException();
 		}
-		
+
 		primCmdAccum += (int) (System.currentTimeMillis() - startTime);
 	}
 
