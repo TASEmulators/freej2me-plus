@@ -245,6 +245,7 @@ public class Sprite extends Layer
 
 	public void setTransform(int transform)
 	{
+		if(transform < TRANS_NONE || transform > TRANS_MIRROR_ROT90) { throw new IllegalArgumentException("Invalid transform"); }
 		this.x = this.x + getTransformedPos(dRefX, dRefY, this.currentTransform, true) - getTransformedPos(dRefX, dRefY, transform, true);
 		this.y = this.y + getTransformedPos(dRefX, dRefY, this.currentTransform, false) - getTransformedPos(dRefX, dRefY, transform, false);
 
@@ -427,8 +428,8 @@ public class Sprite extends Layer
 		int otherRight = x + image.getWidth();
 		int otherBottom = y + image.getHeight();
 
-		int left = x + collisionRectX;
-		int top = y + collisionRectY;
+		int left = this.x + collisionRectX;
+		int top = this.y + collisionRectY;
 		int right = left + collisionRectWidth;
 		int bottom = top + collisionRectHeight;
 
@@ -518,12 +519,15 @@ public class Sprite extends Layer
 	private boolean intersects(int rect1x1, int rect1y1, int rect1x2,
 		int rect1y2, int rect2x1, int rect2y1, int rect2x2, int rect2y2)
 	{
+		// <= and >= are used because if the rectangles are just touching
+		// at the edges, no collision is happening.
+
 		// If one is to the left of the other = no collision
-		if (rect1x2 < rect2x1 || rect1x1 > rect2x2)
+		if (rect1x2 <= rect2x1 || rect1x1 >= rect2x2)
 			return false;
 
 		// If one is above the other = also no collision
-		if (rect1y2 < rect2y1 || rect1y1 > rect2y2)
+		if (rect1y2 <= rect2y1 || rect1y1 >= rect2y2)
 			return false;
 
 		// If none of the above conditions were met, the two rects do intersect

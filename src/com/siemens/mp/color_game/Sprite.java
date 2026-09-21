@@ -287,8 +287,8 @@ public class Sprite extends Layer
 		int otherRight = x + image.getWidth();
 		int otherBottom = y + image.getHeight();
 
-		int left = x + collisionRectX;
-		int top = y + collisionRectY;
+		int left = this.x + collisionRectX;
+		int top = this.y + collisionRectY;
 		int right = left + collisionRectWidth;
 		int bottom = top + collisionRectHeight;
 
@@ -379,11 +379,11 @@ public class Sprite extends Layer
 		int rect1y2, int rect2x1, int rect2y1, int rect2x2, int rect2y2)
 	{
 		// If one is to the left of the other = no collision
-		if (rect1x2 < rect2x1 || rect1x1 > rect2x2)
+		if (rect1x2 <= rect2x1 || rect1x1 >= rect2x2)
 			return false;
 
 		// If one is above the other = also no collision
-		if (rect1y2 < rect2y1 || rect1y1 > rect2y2)
+		if (rect1y2 <= rect2y1 || rect1y1 >= rect2y2)
 			return false;
 
 		// If none of the above conditions were met, the two rects do intersect
