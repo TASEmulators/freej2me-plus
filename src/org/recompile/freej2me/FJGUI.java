@@ -515,10 +515,10 @@ public final class FJGUI
 
 		swingDialogs[1].setLayout( new FlowLayout(FlowLayout.CENTER, 200, 0));
 		swingDialogs[1].setUndecorated(true); /* Whenever a JDialog is undecorated, it's because it's meant to look like an internal menu on FreeJ2ME's main JFrame */
-		swingDialogs[1].setSize(230, 235);
+		swingDialogs[1].setSize(240, 185);
 		swingDialogs[1].setResizable(false);
-		swingDialogs[1].add(new JLabel("FreeJ2ME-Plus - A free J2ME emulator"));
-		swingDialogs[1].add(new JLabel("Version " + VERSION));
+		swingDialogs[1].add(new JLabel("FreeJ2ME-Plus - Java ME emulator"));
+		swingDialogs[1].add(new JLabel("Version v" + VERSION));
 		swingDialogs[1].add(new JLabel("--------------------------------"));
 		swingDialogs[1].add(new JLabel("Original Project Authors:"));
 		swingDialogs[1].add(new JLabel("David Richardson (Recompile)"));
