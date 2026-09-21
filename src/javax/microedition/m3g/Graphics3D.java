@@ -30,10 +30,13 @@ public class Graphics3D
 {
 	/*
 	 * Depth buffer clear value: the maximum depth (1.0 in window coordinates)
-	 * mapped to the short-based buffer. Depth writes use the same 32200 scale
-	 * (slightly under the short limit to leave headroom against overflow).
+	 * mapped to the short-based buffer. Depth writes use a 32200 scale
+	 * for the depth range mapping but are clamped to 32767 to avoid
+	 * overflow when the camera far plane is large (e.g. 80 in
+	 * 3dConstructioCombat). Per JSR-184, clear() always resets to max
+	 * depth 1.0 regardless of the current depth range.
 	 */
-	private static final short DEPTH_CLEAR_VALUE = (short) 32200;
+	private static final short DEPTH_CLEAR_VALUE = (short) 32767;
 
 	// Flag values for FJ2ME+ rendering overrides (bilinear, AA, dithering, etc)
 	public static final int MODE_FORCE_DISABLE = 0;
@@ -1165,13 +1168,34 @@ public class Graphics3D
 			tr.setIdentity();
 			Node node = group.getChild(i);
 
-			if (node instanceof Light && node.getTransformTo(world, tr))
-				{ addLight((Light) node, tr); }
-			else if (node instanceof Group)
-				{ positionLights(world, (Group) node);}
-			else if (node instanceof SkinnedMesh)
-				/* A SkinnedMesh skeleton can hold lights in its own branch. */
-				{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
+			try
+			{
+				if (node instanceof Light && node.getTransformTo(world, tr))
+					{ addLight((Light) node, tr); }
+				else if (node instanceof Group)
+					{ positionLights(world, (Group) node);}
+				else if (node instanceof SkinnedMesh)
+					/* A SkinnedMesh skeleton can hold lights in its own branch. */
+					{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
+			}
+			catch (ArithmeticException ae)
+			{
+				// JSR-184: lighting is undefined for a non-invertible
+				// local-to-camera transform. For lights, a non-invertible
+				// world transform can happen if the node chain contains a
+				// degenerate scale. Treat it as identity so the light still
+				// contributes instead of disappearing (which would make the
+				// mesh fall back to the white defaultColor).
+				if (node instanceof Light)
+				{
+					tr.setIdentity();
+					addLight((Light) node, tr);
+				}
+				else if (node instanceof Group)
+					{ positionLights(world, (Group) node);}
+				else if (node instanceof SkinnedMesh)
+					{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
+			}
 		}
 	}
 
@@ -1328,7 +1352,7 @@ public class Graphics3D
 		// mapped by the JSR-184 depth range equation, zw = 0.5*(far-near)*(zndc+1)
 		// + near, and then scaled by the same factor used by the buffer, with a
 		// small margin for safety, just like when rendering meshes.
-		short ndcZ = (short) ((0.5f * (this.far - this.near) * (clip[2]/clip[3] + 1.0f) + this.near) * 32200.0f);
+		short ndcZ = (short) M3GMath.max(0, M3GMath.min(32767, (0.5f * (this.far - this.near) * (clip[2]/clip[3] + 1.0f) + this.near) * 32200.0f));
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
@@ -1675,7 +1699,7 @@ public class Graphics3D
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(usesDepth && this.depthBuffer[rasterIdx] < (short) z)
+				if(usesDepth && this.depthBuffer[rasterIdx] < (short) M3GMath.max(0, M3GMath.min(32767, z)))
 				{
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
@@ -1720,7 +1744,7 @@ public class Graphics3D
 				if (alpha < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
-				if (usesDepthWrite) { this.depthBuffer[rasterIdx] = (short) z; }
+				if (usesDepthWrite) { this.depthBuffer[rasterIdx] = (short) M3GMath.max(0, M3GMath.min(32767, z)); }
 
 				// Only write to the screen if color write is enabled.
 				if(!colorEnabled) { continue; }
