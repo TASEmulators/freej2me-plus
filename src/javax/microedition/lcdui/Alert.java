@@ -51,20 +51,7 @@ public class Alert extends Screen
 	private Displayable nextScreen = null;
 
 
-	public Alert(String title) 
-	{
-		setTitle(title);
-		setTimeout(getDefaultTimeout());
-		setType(new AlertType());
-
-		addCommand(Alert.DISMISS_COMMAND);
-
-		setCommandListener(defaultListener);
-
-		lineSpacing = 1;
-		scrollbarWidth = 4;
-		margin = Font.getDefaultFont().getHeight() / 4;
-	}
+	public Alert(String title) { this(title, null, null, null); }
 
 	public Alert(String title, String alertText, Image alertImage, AlertType alertType)
 	{
@@ -88,21 +75,23 @@ public class Alert extends Screen
 
 	public int getTimeout() { return timeout; }
 
-	public void setTimeout(final int time) 
-	{ 
-		// Alerts with more than one command are forced as modal
-		if(getCommands().size() < 2) 
-		{
-			timeout = time; 
+	public void setTimeout(final int time)
+	{
+		if(time <= 0 && time != FOREVER) { throw new IllegalArgumentException("Invalid timeout"); }
 
-			if(time != FOREVER) 
+		// Alerts with more than one command are forced as modal
+		if(getCommands().size() < 2)
+		{
+			timeout = time;
+
+			if(time != FOREVER)
 			{
-				new Thread(new Runnable() 
+				new Thread(new Runnable()
 				{
-					public void run() 
+					public void run()
 					{
-						try 
-						{ 
+						try
+						{
 							Thread.sleep(time);
 							// Dismiss alert after timeout if it hasn't been dismissed yet
 							if(isShown()) { doLeftCommand(); }
@@ -112,7 +101,7 @@ public class Alert extends Screen
 				}).start();
 			}
 		}
-		
+
 	}
 
 	public AlertType getType() { return type; }
@@ -121,7 +110,6 @@ public class Alert extends Screen
 
 	public String getString() { return message; }
 
-	// Tested, works.
 	public void setString(String text)
 	{
 		message = text;
@@ -132,7 +120,13 @@ public class Alert extends Screen
 
 	public void setImage(Image img) { image = img; }
 
-	public void setIndicator(Gauge gauge) { indicator = gauge; }
+	public void setIndicator(Gauge gauge)
+	{
+		if(!(gauge instanceof Gauge)) { throw new IllegalArgumentException("Indicator must be a gauge"); }
+		if(gauge.isInteractive()) { throw new IllegalArgumentException("Indicator must not be interactive"); }
+
+		indicator = gauge;
+	}
 
 	public Gauge getIndicator() { return indicator; }
 
@@ -151,7 +145,7 @@ public class Alert extends Screen
 	{
 		super.removeCommand(cmd);
 
-		if(getCommands().isEmpty()) 
+		if(getCommands().isEmpty())
 		{
 			addCommand(Alert.DISMISS_COMMAND);
 		}
@@ -175,7 +169,7 @@ public class Alert extends Screen
 	};
 
 	public void setNextScreen(Displayable next) { nextScreen = next; }
-	
+
 	public String renderScreen(int x, int y, int width, int height) {
 		clientHeight = height;
 
@@ -210,25 +204,25 @@ public class Alert extends Screen
 				lines.get(l),
 				x + margin,
 				y + ystart - scrollY,
-				Graphics.LEFT);
+				0);
 		}
-		
+
 		double fact = (double)height/scrollHeight;
 		int yscrollStart = (int)Math.round(scrollY * fact);
 		int yscrollHeight = (int)Math.min(height, Math.round(height * fact));
-	
+
 		if (height < scrollHeight)
 		{
 			graphics.setColor(Mobile.lcduiBGColor);
 			graphics.fillRect(x + width - scrollbarWidth, y+yscrollStart, scrollbarWidth, yscrollHeight);
 		}
-		
+
 		return null;
 	}
 
-	public boolean screenKeyPressed(int key) 
+	public boolean screenKeyPressed(int key)
 	{
-		if (needsLayout || lines.isEmpty() || scrollHeight <= clientHeight) 
+		if (needsLayout || lines.isEmpty() || scrollHeight <= clientHeight)
 		{
 			return false;
 		}
@@ -237,12 +231,12 @@ public class Alert extends Screen
 		int scrollAmount = clientHeight/4;
 		int maxScroll = scrollHeight - clientHeight;
 
-		if ((key == Canvas.UP || key == Canvas.KEY_NUM2) && scrollY > 0) 
+		if ((key == Canvas.UP || key == Canvas.KEY_NUM2) && scrollY > 0)
 		{
 			scrollY = Math.max(0, scrollY - scrollAmount);
 			handled = true;
-		} 
-		else if ((key == Canvas.DOWN || key == Canvas.KEY_NUM8) && scrollY < maxScroll) 
+		}
+		else if ((key == Canvas.DOWN || key == Canvas.KEY_NUM8) && scrollY < maxScroll)
 		{
 			scrollY = Math.min(maxScroll, scrollY + scrollAmount);
 			handled = true;

@@ -49,26 +49,54 @@ public class Form extends Screen
 	}
 
 
-	public int append(Image img) { return doInsert(items.size(), new ImageItem("", img , ImageItem.LAYOUT_DEFAULT, ""), false); }
+	public int append(Image img)
+	{
+		if(img == null) { throw new NullPointerException("Image cannot be null"); }
+		return doInsert(items.size(), new ImageItem("", img , ImageItem.LAYOUT_DEFAULT, ""), false);
+	}
 
 	public int append(Item item) { return doInsert(items.size(), item, false); }
 
-	public int append(String str) { return doInsert(items.size(), new StringItem("", str), false); }
+	public int append(String str)
+	{
+		if(str == null) { throw new NullPointerException("String cannot be null"); }
+		return doInsert(items.size(), new StringItem("", str), false);
+	}
 
-	public void insert(int itemNum, Item item) { doInsert(items.size(), item, false);  }
+	public void insert(int itemNum, Item item) { doInsert(itemNum, item, false);  }
 
 	public void set(int itemNum, Item item) { doInsert(itemNum, item, true);  }
 
-	int doInsert(int index, Item item, boolean replace) 
+	int doInsert(int index, Item item, boolean replace)
 	{
-		if (replace && index < items.size()) 
+		if (item == null) { throw new NullPointerException("Item cannot be null"); }
+
+		if (item.getOwner() != null && item.getOwner() != this)
 		{
+			throw new IllegalStateException("Item is already contained within another Form");
+		}
+
+		if (replace && index < items.size())
+		{
+			if (index < 0 || index >= items.size())
+			{
+				throw new IndexOutOfBoundsException("Invalid index for replacement: " + index);
+			}
+
 			Item oldItem = items.get(index);
 			if (oldItem != null) { oldItem.setOwner(null); }
 			items.set(index, item);
-		} 
-		else { items.add(index, item); }
-		
+		}
+		else
+		{
+			if (index < 0 || index > items.size())
+			{
+				throw new IndexOutOfBoundsException("Invalid index for insertion: " + index);
+			}
+
+			items.add(index, item);
+		}
+
 		item.setOwner(this);
 		needsLayout = true;
 		if (items.size() == 1) { focusedItemNeedsTraverse = true; }
@@ -76,19 +104,24 @@ public class Form extends Screen
 		return index;
 	}
 
-	public void delete(int itemNum) 
+	public void delete(int itemNum)
 	{
+		if (itemNum < 0 || itemNum >= items.size())
+		{
+			throw new IndexOutOfBoundsException("Invalid index for deletion: " + itemNum);
+		}
+
 		Item oldItem = items.get(itemNum);
 		oldItem.traverseOut();
 		oldItem.setOwner(null);
 		items.remove(itemNum);
 		needsLayout = true;
-		if (focusedItem >= items.size() && !items.isEmpty()) 
+		if (focusedItem >= items.size() && !items.isEmpty())
 		{
 			focusedItem = items.size()-1;
 			focusedItemNeedsTraverse = true;
-		} 
-		else if (items.isEmpty()) 
+		}
+		else if (items.isEmpty())
 		{
 			focusedItem = 0;
 			focusedItemNeedsTraverse = false;
@@ -96,9 +129,9 @@ public class Form extends Screen
 		_invalidate();
 	}
 
-	public void deleteAll() 
+	public void deleteAll()
 	{
-		for (Item item: items) 
+		for (Item item: items)
 		{
 			item.traverseOut();
 			item.setOwner(null);
@@ -118,7 +151,7 @@ public class Form extends Screen
 
 	public void setItemStateListener(ItemStateListener iListener) { listener = iListener; }
 
-	protected void itemStateChanged(Item item) 
+	protected void itemStateChanged(Item item)
 	{
 		if (listener != null) { listener.itemStateChanged(item); }
 	}
@@ -138,18 +171,18 @@ public class Form extends Screen
 		Item item = getFocusedItem();
 		if (item != null) { handled = item.keyPressed(key); }
 
-		if (!handled) 
+		if (!handled)
 		{
-			if (key == Canvas.UP || key == Canvas.KEY_NUM2 || key == Canvas.DOWN || key == Canvas.KEY_NUM8) 
+			if (key == Canvas.UP || key == Canvas.KEY_NUM2 || key == Canvas.DOWN || key == Canvas.KEY_NUM8)
 			{
 				// first see if internal traversal should be attempted
 				boolean traversed = false;
 				traversed = doTraverseItem(focusedItem, key);
-			
+
 				// we assume that traversed returning false for a limit doesn't imply traverseOut yet
 				// and if we've traversed internally, there's nothing left
 
-				if (!traversed) 
+				if (!traversed)
 				{
 					// check if we should scroll
 
@@ -159,38 +192,46 @@ public class Form extends Screen
 					Rectangle reasonableViewport = new Rectangle(0, scrollY+reasonablePadding, width, clientHeight-reasonablePadding);
 					int traverseDir = 0;
 
-					if (key == Canvas.UP || key == Canvas.KEY_NUM2) 
+					if (key == Canvas.UP || key == Canvas.KEY_NUM2)
 					{
-						if (focusedItem > 0 && itemBounds[focusedItem-1].intersects(reasonableViewport)) 
+						if (focusedItem > 0 && itemBounds[focusedItem-1].intersects(reasonableViewport))
 						{
 							// focusedItem--;
 							traverseDir = -1;
-						} 
-						else if (scrollY > 0) 
+						}
+						else if (scrollY > 0)
 						{
 							scrollY = Math.max(0, scrollY - scrollAmount);
 							shouldInvalidate = true;
 						}
-					} 
-					else 
+					}
+					else
 					{
 						int maxScroll = scrollHeight - clientHeight;
 
 						if (focusedItem < items.size()-1 && itemBounds[focusedItem+1].intersects(reasonableViewport)) {
 							// focusedItem++;
 							traverseDir = 1;
-						} 
+						}
 						else if (scrollY < maxScroll) {
 							scrollY = Math.min(maxScroll, scrollY + scrollAmount);
 							shouldInvalidate = true;
 						}
 					}
 
-					if (traverseDir != 0) 
+					if (traverseDir != 0)
 					{
 						if (!focusedItemNeedsTraverse && getFocusedItem() != null) { getFocusedItem().traverseOut(); }
 
 						focusedItem += traverseDir;
+
+						// Spacer isn't focusable
+						if(items.get(focusedItem) instanceof Spacer)
+						{
+							// If we're at the end of the item list, move back.
+							if(focusedItem == items.size()-1) { focusedItem -= traverseDir; }
+							else { focusedItem += traverseDir; }
+						}
 
 						// do the initial traverse, ignoring results
 						doTraverseItem(focusedItem, traverseDir > 0 ? Canvas.DOWN : Canvas.UP);
@@ -202,7 +243,7 @@ public class Form extends Screen
 				handled = true;
 			}
 		}
-		
+
 		if (shouldInvalidate) { _invalidate(); }
 
 		return handled;
@@ -216,23 +257,19 @@ public class Form extends Screen
 		focusedItemNeedsTraverse = !items.isEmpty();
 		itemBounds = new Rectangle[items.size()];
 
-		int spaceBetweenItems = 2;
-		int scrollbarWidth = 4;
+		int vGap = 2;
 		int padding = 5;
 
 		int currentY = padding;
-
 		int itemX = padding;
 
-		
-		itemContentWidth = width-scrollbarWidth-2*padding;
-
+		itemContentWidth = width - LCDUIRenderer.SCROLLBAR_W * 2;
 
 		for (int i=0; i<items.size(); i++)
 		{
 			if (i > 0)
 			{
-				currentY += spaceBetweenItems;
+				currentY += vGap;
 			}
 			int itemHeight = getItemHeight(items.get(i), itemContentWidth);
 
@@ -241,7 +278,7 @@ public class Form extends Screen
 		}
 
 		currentY += padding;
-		scrollHeight = currentY;	
+		scrollHeight = currentY;
 	}
 
 	private int getItemHeight(Item item, int width)
@@ -250,7 +287,7 @@ public class Form extends Screen
 		return height;
 	}
 
-	protected Item getFocusedItem() 
+	protected Item getFocusedItem()
 	{
 		if (items.isEmpty()) { return null; }
 
@@ -265,10 +302,10 @@ public class Form extends Screen
 		if (index == -1) { return; }
 
 		Item previousItem = getFocusedItem();
-		if (previousItem != null && previousItem != item) 
+		if (previousItem != null && previousItem != item)
 		{
 			previousItem.traverseOut();
-			
+
 			focusedItem = index;
 			focusedItemNeedsTraverse = true;
 		}
@@ -278,45 +315,45 @@ public class Form extends Screen
 		render();
 	}
 
-	private void scrollForRegion(int y, int height) 
+	private void scrollForRegion(int y, int height)
 	{
 		/*
 		 * zb3: current position is this.scrollY
 		 * screen height is this.clientHeight
-		 * 
+		 *
 		 * our goal is to change scrollY by a minimum amount such that:
 		 * - if height <= this.clientHeight, the whole region should be visible
 		 * - otherwise, the closer edge (top or bottom) is at the edge of our screen
 		 */
 
-		if (height <= this.clientHeight) 
+		if (height <= this.clientHeight)
 		{
 			int topInvisible = Math.max(0, scrollY - y);
 			int bottomInvisible = Math.max(0, (y + height) - (scrollY + clientHeight));
 
 			if (topInvisible == 0 && bottomInvisible == 0) { return; }
 
-			if (topInvisible > bottomInvisible) { scrollY -= topInvisible; } 
+			if (topInvisible > bottomInvisible) { scrollY -= topInvisible; }
 			else { scrollY += bottomInvisible; }
-		} 
-		else 
+		}
+		else
 		{
 			int topDistance = Math.abs(y - this.scrollY);
 			int bottomDistance = Math.abs((y + height) - (this.scrollY + this.clientHeight));
 
-			if (topDistance < bottomDistance) { this.scrollY = y; } 
+			if (topDistance < bottomDistance) { this.scrollY = y; }
 			else { this.scrollY = y + height - this.clientHeight; }
 		}
 	}
 
-	protected Command getItemCommand() 
+	protected Command getItemCommand()
 	{
 		Item focusedItem = getFocusedItem();
 		if (focusedItem != null) { return focusedItem._getItemCommand(); }
 		return null;
 	}
 
-	public boolean doTraverseItem(int itemIdx, int dir) 
+	public boolean doTraverseItem(int itemIdx, int dir)
 	{
 		Item item = items.get(itemIdx);
 		int itemLabelHeight = item.getLabelHeight(itemBounds[itemIdx].width);
@@ -345,7 +382,7 @@ public class Form extends Screen
 			needsLayout = false;
 		}
 
-		if (focusedItemNeedsTraverse) 
+		if (focusedItemNeedsTraverse)
 		{
 			// zb3: initial traverse occurs here and we ignore the return value
 			// if traverse returns false then it doesn't mean skip traversing
@@ -354,76 +391,66 @@ public class Form extends Screen
 			doTraverseItem(focusedItem, CustomItem.NONE);
 		}
 
+		if (items.size() == 0) { return null; }
+
 		int itemPadding = Font.fontPadding[Font.screenType];
+		int thisX, thisY, itemHeight;
+		Item item;
 
-		if(items.size()>0)
+		Rectangle viewport = new Rectangle(0, scrollY, width, height);
+
+		for (int t=0;t<items.size();t++)
 		{
-			int scrollbarWidth = 4, thisX, thisY, itemHeight;
+			item = items.get(t);
 
-			Item item;
-			
-			Rectangle viewport = new Rectangle(0, scrollY, width, height);
-
-			for (int t=0;t<items.size();t++)
+			if (item instanceof Gauge)
 			{
-				item = items.get(t);
-
-				if(t >= itemBounds.length) { break; }
-
-				if (!viewport.intersects(itemBounds[t])) { continue; }
-
-				thisX = x + itemBounds[t].x;
-				thisY = y + itemBounds[t].y - scrollY;
-
-				
-				if (t == focusedItem && items.size() > 1)
-				{
-					graphics.setColor(Mobile.lcduiTextColor);
-					graphics.setStrokeStyle(Graphics.SOLID);
-					graphics.drawRect(thisX - itemPadding, thisY - itemPadding, itemBounds[t].width + itemPadding, itemBounds[t].height + itemPadding - 1);
-				}
-				else 
-				{
-					graphics.setColor(Mobile.lcduiStrokeColor);
-					graphics.setStrokeStyle(Graphics.DOTTED);
-					graphics.drawRect(thisX - itemPadding, thisY - itemPadding, itemBounds[t].width + itemPadding, itemBounds[t].height + itemPadding - 1);
-					graphics.setStrokeStyle(Graphics.SOLID);
-					graphics.setColor(Mobile.lcduiTextColor);
-				}
-
-				if (item.hasLabel()) 
-				{
-					item.renderItemLabel(graphics, thisX, thisY, itemContentWidth-itemPadding);
-					thisY += item.getLabelHeight(itemContentWidth)-itemPadding;
-				}
-
-				// paint...
-
-				itemHeight = item.getContentHeight(itemContentWidth);
-
-				if(item instanceof ImageItem)
-				{
-					graphics.drawImage(((ImageItem)item).getImage(), (width/2)-((ImageItem)item).getImage().getWidth()/2, thisY, 0); // Draw all ImageItems centered for now
-				}
-				else { item.renderItem(graphics, thisX, thisY, itemContentWidth, itemHeight); }
+				Gauge gauge = (Gauge) item;
+				if (gauge.isAnimating()) { gauge.advanceAnimation(itemContentWidth); }
 			}
 
-			double fact = (double)height/scrollHeight;
-			int yscrollStart = (int)Math.round(scrollY * fact);
-			int yscrollHeight = (int)Math.min(height, Math.round(height * fact));
-		
-			if (height < scrollHeight)
-			{
-				graphics.setColor(Mobile.lcduiTextColor);
-				graphics.fillRect(x + width - scrollbarWidth, y+yscrollStart, scrollbarWidth, yscrollHeight);
-			}
+			if(t >= itemBounds.length) { break; }
 
-			ret = (focusedItem+1)+" of "+items.size();
+			if (!viewport.intersects(itemBounds[t])) { continue; }
+
+			thisX = x + itemBounds[t].x;
+			thisY = y + itemBounds[t].y - scrollY;
+
+			// paint...
+
+			boolean isSelected = (t == focusedItem && items.size() > 1);
+			int vGap = 1; // Add a small space between items
+			itemHeight = item.getContentHeight(itemContentWidth);
+			int imageHeight = (item instanceof ImageItem) ? ((ImageItem)item).getImage().getHeight() + (3 * vGap) : 0;
+			itemHeight = Math.max(itemHeight, imageHeight);
+
+			String itemLabel = item.hasLabel() ? item.getLabel() : null;
+			itemHeight += item.hasLabel() ? item.getLabelHeight(itemContentWidth)-itemPadding : 0;
+
+			Image itemImg = null;
+			if(item instanceof ImageItem) { itemImg = ((ImageItem)item).getImage(); }
+
+			LCDUIRenderer.drawItem(graphics, t, itemLabel, itemImg, 0, thisY, width, itemHeight - vGap, isSelected, false, Choice.IMPLICIT, false, item.getLayout());
+			if(itemLabel != null) { thisY += item.getLabelHeight(itemContentWidth)-itemPadding; }
+
+			// Any items that need additional drawing such as CustomItem, ChoiceGroup, TextField
+			// must be called right after the main item draw, otherwise we don't get their contents.
+			item.renderItem(graphics, thisX, thisY, itemContentWidth, itemHeight, isSelected);
 		}
 
-		graphics.setColor(0, 0, 0);
+		double fact = (double)height/scrollHeight;
+		int yscrollStart = (int)Math.round(scrollY * fact);
+		int yscrollHeight = (int)Math.min(height, Math.round(height * fact));
+
+		if (height < scrollHeight)
+		{
+			LCDUIRenderer.drawScrollBar(graphics, x + width, y+yscrollStart, yscrollHeight);
+		}
+
+		ret = (focusedItem+1)+"/"+items.size();
+
+		graphics.setColor(Mobile.lcduiTextColor);
 
 		return ret;
 	}
-
 }

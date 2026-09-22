@@ -46,7 +46,7 @@ public class Font extends PlatformFont
 	{
 		if(ch == null) { throw new NullPointerException("Cannot do charsWidth() with a null char array"); }
 		if(offset < 0 || length < 0 || (offset+length) > ch.length) { throw new ArrayIndexOutOfBoundsException("charsWidth tried to access invalid char array index"); }
-		
+
 		String str = new String(ch, offset, length);
 		return stringWidth(str);
 	}
@@ -57,23 +57,23 @@ public class Font extends PlatformFont
 
 	public static Font getDefaultFont() { return defaultFont; }
 
-	public static Font getFont(int fontSpecifier) 
+	public static Font getFont(int fontSpecifier)
 	{
 		if(fontSpecifier != FONT_INPUT_TEXT && fontSpecifier != FONT_STATIC_TEXT) { throw new IllegalArgumentException("Cannot get font with an invalid specifier"); }
 
-		return defaultFont; 
+		return defaultFont;
 	}
 
-	public static Font getFont(int face, int style, int size) 
+	public static Font getFont(int face, int style, int size)
 	{
 		if(face != FACE_SYSTEM && face != FACE_PROPORTIONAL && face != FACE_MONOSPACE
 			&& style != STYLE_PLAIN && style != STYLE_ITALIC && style != STYLE_BOLD
-			&& size != SIZE_SMALL && size != SIZE_MEDIUM && size != SIZE_LARGE) 
+			&& size != SIZE_SMALL && size != SIZE_MEDIUM && size != SIZE_LARGE)
 		{
 			throw new IllegalArgumentException("Cannot get a font with invalid face, style or size");
 		}
 
-		return new Font(face, style, size); 
+		return new Font(face, style, size);
 	}
 
 	public boolean isBold() { return (style & STYLE_BOLD) == STYLE_BOLD; }

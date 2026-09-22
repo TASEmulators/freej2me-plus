@@ -35,7 +35,7 @@ public class TextField extends Item
 	public static final int URL = 4;
 
 
-	private String text;
+	private String text = "";
 	private int max;
 	private int constraints;
 	private int caretPosition = 0;
@@ -69,7 +69,7 @@ public class TextField extends Item
 		"我你他她它是不好在有這那了人們說去來好學吃喝玩笑愛天日月年時\n".toCharArray()                                            // IS_TRADITIONAL_HANZI
 	};
 
-	private char[][] charSetHint = 
+	private char[][] charSetHint =
 	{
 		"Lat".toCharArray(),
 		"LAT".toCharArray(),
@@ -103,18 +103,18 @@ public class TextField extends Item
 	public TextField(String label, String value, int maxSize, int Constraints)
 	{
 		setLabel(label);
-		text = value == null ? "" : value;
-		max = maxSize;
-		constraints = Constraints;
+		setMaxSize(maxSize);
+		setConstraints(Constraints);
+		setString(value);
 
 		caretPosition = text.length();
 
 		// these can't be static because of Font.getDefaultFont().getHeight()
-		padding = Font.getDefaultFont().getHeight() / 3; 
+		padding = Font.getDefaultFont().getHeight() / 3;
 		margin = Font.getDefaultFont().getHeight() / 5;
 	}
 
-	void delete(int offset, int length)
+	public void delete(int offset, int length)
 	{
 		text = text.substring(0, offset) + text.substring(offset+length);
 		if (caretPosition > text.length()) { caretPosition = text.length(); }
@@ -140,12 +140,27 @@ public class TextField extends Item
 
 	public void insert(char[] data, int offset, int length, int position)
 	{
+		if(data == null) { throw new NullPointerException("String cannot be null"); }
+		if(text.length() + length > max) { throw new IllegalArgumentException("Resulting string would be too long"); }
+		if (offset < 0 || length < 0 || offset > data.length || (offset + length) > data.length)
+		{
+			throw new ArrayIndexOutOfBoundsException("Invalid offset or length for data array");
+		}
+		if(position > text.length() || position < 0) { throw new IllegalArgumentException("Invalid insert position"); }
+
 		StringBuilder out = new StringBuilder();
 		out.append(text, 0, position);
 		out.append(data, offset, length);
 		out.append(text.substring(position));
-		text = out.toString();
+		String res = out.toString();
 
+		int baseConstraint = constraints & CONSTRAINT_MASK;
+		if (!isTextValidForConstraint(res, baseConstraint))
+		{
+			throw new IllegalArgumentException("Resulting string is illegal for current input constraints");
+		}
+
+		text = res;
 		caretPosition = text.length();
 
 		_invalidateContents();
@@ -153,6 +168,10 @@ public class TextField extends Item
 
 	public void insert(String src, int position)
 	{
+		if(src == null) { throw new NullPointerException("String cannot be null"); }
+		if(text.length() + src.length() > max) { throw new IllegalArgumentException("Resulting string would be too long"); }
+		if(position > text.length() || position < 0) { throw new IllegalArgumentException("Invalid insert position"); }
+
 		StringBuilder out = new StringBuilder();
 		out.append(text, 0, position);
 		out.append(src);
@@ -178,12 +197,39 @@ public class TextField extends Item
 		_invalidateContents();
 	}
 
-	public void setConstraints(int Constraints) { constraints = Constraints; }
+	public void setConstraints(int Constraints)
+	{
+		int restrictiveConst = Constraints & CONSTRAINT_MASK;
+
+		boolean isValidBase = (restrictiveConst == ANY ||
+			restrictiveConst == EMAILADDR ||
+			restrictiveConst == NUMERIC ||
+			restrictiveConst == PHONENUMBER ||
+			restrictiveConst == URL ||
+			restrictiveConst == DECIMAL);
+
+		if (!isValidBase) { throw new IllegalArgumentException("Invalid base constraint."); }
+
+		int modifierFlags = PASSWORD | UNEDITABLE | SENSITIVE |
+			NON_PREDICTIVE | INITIAL_CAPS_WORD |  INITIAL_CAPS_SENTENCE;
+		int unknownBits = Constraints & ~(CONSTRAINT_MASK | modifierFlags);
+		if (unknownBits != 0) { throw new IllegalArgumentException("Unknown constraint modifier flags."); }
+
+		this.constraints = Constraints;
+		_invalidateContents();
+	}
 
 	public void setInputMode(int mode) { charSetIdx = (byte) mode; }
 
-	public void setInitialInputMode(String characterSubset) 
-	{ 
+	public void setInitialInputMode(String characterSubset)
+	{
+		if(characterSubset == null)
+		{
+			mode = "MIDP_UPPERCASE_LATIN";
+			charSetIdx = 1;
+			return;
+		}
+
 		mode = characterSubset;
 
 		if (mode.equals("MIDP_UPPERCASE_LATIN"))                           { charSetIdx = 1; }
@@ -203,18 +249,31 @@ public class TextField extends Item
 		else if (mode.equals("IS_FULLWIDTH_DIGITS"))                       { charSetIdx = 15; }
 		else if (mode.equals("IS_FULLWIDTH_LATIN"))                        { charSetIdx = 16; }
 		else if (mode.equals("IS_HALFWIDTH_KATAKANA"))                     { charSetIdx = 17; }
-		else if (mode.equals("IS_HANJA"))                                  { charSetIdx = 18; } 
-		else if (mode.equals("IS_SIMPLIFIED_HANZI"))                       { charSetIdx = 19; } 
-		else if (mode.equals("IS_TRADITIONAL_HANZI"))                      { charSetIdx = 20; } 
+		else if (mode.equals("IS_HANJA"))                                  { charSetIdx = 18; }
+		else if (mode.equals("IS_SIMPLIFIED_HANZI"))                       { charSetIdx = 19; }
+		else if (mode.equals("IS_TRADITIONAL_HANZI"))                      { charSetIdx = 20; }
 		else                                                               { charSetIdx = 0; } // Default subset (BASIC_LATIN, IS_LATIN)
 	}
 
-	public int setMaxSize(int maxSize) { max = maxSize; return max; }
+	public int setMaxSize(int maxSize)
+	{
+		if(maxSize <= 0) { throw new IllegalArgumentException("Invalid max size"); }
+		max = maxSize;
+		if(text.length() > maxSize) { text = text.substring(0, max); }
+		return max;
+	}
 
-	public void setString(String value) 
+	public void setString(String value)
 	{
 		if (value == null) { value = ""; }
-		
+		if(value.length() > max) { throw new IllegalArgumentException("String is too long"); }
+
+		int baseConstraint = constraints & CONSTRAINT_MASK;
+		if (!isTextValidForConstraint(value, baseConstraint))
+		{
+			throw new IllegalArgumentException("String is illegal for the current input constraints");
+		}
+
 		text = value;
 		caretPosition = text.length();
 		_invalidateContents();
@@ -224,39 +283,39 @@ public class TextField extends Item
 
 	protected int getContentHeight(int width) { return Font.getDefaultFont().getHeight() + padding*2 + 2*margin; /* padding */ }
 
-	protected boolean keyPressed(int key) 
+	protected boolean keyPressed(int key)
 	{
 		boolean handled = true, changed = true;
 
 		if(constraints == UNEDITABLE) { return false; } // If this field is uneditable, the user shall not be able to make changes through input
-		else 
+		else
 		{
 			if (key == Canvas.DOWN) { selectedCharIndex = (selectedCharIndex - 1 + charSet[charSetIdx].length) % charSet[charSetIdx].length; } // Cycle down through the character set
 			else if (key == Canvas.UP) { selectedCharIndex = (selectedCharIndex + 1) % charSet[charSetIdx].length; } // Cycle up through the character set
 			else if (key == Canvas.LEFT && caretPosition > 0) // Move back one char
-			{ 
+			{
 				caretPosition--;
 				// Check the character under the caret
 				char currentChar = text.charAt(caretPosition);
 				// Find the index of the current character in charSet
-				for (int i = 0; i < charSet[charSetIdx].length; i++) 
+				for (int i = 0; i < charSet[charSetIdx].length; i++)
 				{
-					if (charSet[charSetIdx][i] == currentChar) 
+					if (charSet[charSetIdx][i] == currentChar)
 					{
 						selectedCharIndex = i;
 						break;
 					}
 				}
 				changed = true;
-			} 
+			}
 			else if (key == Canvas.RIGHT && caretPosition < text.length()) // Move forward one char
 			{
 				if(caretPosition+1 < text.length())
 				{
 					char currentChar = text.charAt(caretPosition+1);
-					for (int i = 0; i < charSet[charSetIdx].length; i++) 
+					for (int i = 0; i < charSet[charSetIdx].length; i++)
 					{
-						if (charSet[charSetIdx][i] == currentChar) 
+						if (charSet[charSetIdx][i] == currentChar)
 						{
 							selectedCharIndex = i;
 							break;
@@ -265,17 +324,17 @@ public class TextField extends Item
 					changed = true;
 				}
 				caretPosition++;
-			} 
+			}
 			else if ((key == Canvas.RIGHT && caretPosition == text.length()) || key == Canvas.FIRE || key == Canvas.KEY_NUM5) // Insert the selected character into the current caret position
-			{ 
+			{
 				if (caretPosition < text.length()) // Replace the character at the caret position
 				{
 					text = text.substring(0, caretPosition) + charSet[charSetIdx][selectedCharIndex] + text.substring(caretPosition + 1);
 					caretPosition++;
-				} 
+				}
 				else // Append if at the end if the caret is already at the end
 				{
-					if(text.length() < max) 
+					if(text.length() < max)
 					{
 						text += charSet[charSetIdx][selectedCharIndex];
 						caretPosition++;
@@ -284,8 +343,8 @@ public class TextField extends Item
 				changed = true;
 			}
 			else if (key == Canvas.KEY_STAR) // Remove the char at the current caret position
-			{ 
-				if (caretPosition < text.length()) 
+			{
+				if (caretPosition < text.length())
 				{
 					// Remove the character at the caret position
 					text = text.substring(0, caretPosition) + text.substring(caretPosition + 1);
@@ -295,15 +354,15 @@ public class TextField extends Item
 				}
 			}
 			else if (key == Canvas.KEY_POUND && constraints != (NUMERIC | EMAILADDR | PHONENUMBER | DECIMAL)) // Insert a space into the current caret position (in constrants that allow it)
-			{ 
+			{
 				if (caretPosition < text.length() && text.length() < max) // Replace the character at the caret position
 				{
 					text = text.substring(0, caretPosition) + ' ' + text.substring(caretPosition);
 					caretPosition++;
-				} 
+				}
 				else // Append if at the end if the caret is already at the end
 				{
-					if(text.length() < max) 
+					if(text.length() < max)
 					{
 						text += ' ';
 						caretPosition++;
@@ -323,95 +382,70 @@ public class TextField extends Item
 
 	// For skt's com.xce.lcdui.XTextField
 	public void externalKeyPressed(int key) { keyPressed(key); }
-	public void externalRenderItem(Graphics graphics, int x, int y, int width, int height) { renderItem(graphics, x, y, width, height); }
+	public void externalRenderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected) { renderItem(graphics, x, y, width, height, isSelected); }
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height) 
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected)
 	{
-		graphics.translate(x, y);
-
-		// Fill the whole textField area with specified BG color. TODO: Make sure everything is inside the textField area, right now up/down arrows and the inputMode hint aren't.
-		graphics.setColor(Mobile.lcduiBGColor);
-		graphics.fillRect(margin, 0, width - 1 - margin * 2, Font.getDefaultFont().getHeight() + 3*padding);
-		
-		// Draw the border of the field
-		graphics.setColor(Mobile.lcduiTextColor);
-		graphics.drawRect(margin, 0, width - 1 - margin * 2, Font.getDefaultFont().getHeight() + 3*padding);
-
-		// Replace line breaks, they aren't visible by default.
-		String formattedText = text.replace('\n', '↳');
-		
-		// Draw the existing text before the caret (we'll make a space to highlight the char position the user is currently editing)
-		graphics.setColor(Mobile.lcduiTextColor);
-
-		if (caretPosition > 0) 
-		{
-			graphics.drawChars(formattedText.substring(0, caretPosition).toCharArray(), 0, formattedText.substring(0, caretPosition).length(), margin + padding, margin + padding, 0);
-		}
-
-		int caretWidth = Font.getDefaultFont().stringWidth(formattedText.substring(0, caretPosition));
-
-		// Fill the background for the character to be inserted (always at the caret position)
-		// Check if the character to be drawn at the caret is a line break
-		String caretChar = (charSet[charSetIdx][selectedCharIndex] == '\n') ? "↳" : String.valueOf(charSet[charSetIdx][selectedCharIndex]);
-		int caretCharWidth = Font.getDefaultFont().stringWidth(caretChar);
-
-		graphics.setColor(Mobile.lcduiTextColor); // Fill with the same color as the text (effectively giving a strong background color to the caret position
-		graphics.fillRect(margin + padding + caretWidth, margin + padding, caretCharWidth, Font.getDefaultFont().getHeight());
-
-		graphics.setColor(Mobile.lcduiBGColor); // Set to background color for the character
-		graphics.drawString(caretChar, margin + padding + caretWidth, margin + padding, 0);
-
-
-		// Draw the remaining text after the caret
-		int remainWidth = 0;
-		graphics.setColor(Mobile.lcduiTextColor); // Restore color to the text's default after the caret position
-		if(formattedText.length() - (caretPosition+1) > 0) 
-		{
-			graphics.drawChars(formattedText.substring(caretPosition + 1).toCharArray(), 0, formattedText.length() - (caretPosition + 1), margin + padding + caretWidth + caretCharWidth, margin + padding, 0);
-			remainWidth = Font.getDefaultFont().stringWidth(formattedText.substring(caretPosition + 1));
-		}
-		
-		// Draw indicators to show whether more text is allowed or not
-		String indicator = (formattedText.length() < max) ? "⨁" : "⨂";
-		graphics.setColor(formattedText.length() < max ? 0x00BB00 : 0x770000); // Color based on state
-		graphics.drawString(indicator, margin + padding + caretWidth + caretCharWidth + remainWidth, margin + padding, 0);
-
-		// Draw arrows using "^" and "v" characters to hint the user that the current field can be altered
-		graphics.setColor(Mobile.lcduiTextColor); // Set arrow color
-		graphics.drawString("^", margin + padding + caretWidth + caretCharWidth / 2 - 2, margin - Font.getDefaultFont().getHeight() / 3, 0); // Arrow up
-		graphics.drawString("v", margin + padding + caretWidth + caretCharWidth / 2 - 2, margin + Font.getDefaultFont().getHeight(), 0); // Arrow down
-
-		// Render the characterSet hint
-		String hintText = new String(charSetHint[charSetIdx]);
-		int hintWidth = Font.getDefaultFont().stringWidth(hintText);
-	
-		// Draw background for hint text (it follows the same logic as the highlighted caret char)
-		graphics.setColor(Mobile.lcduiTextColor);
-		graphics.fillRect(width - margin - hintWidth, padding + Font.getDefaultFont().getHeight(), hintWidth, Font.getDefaultFont().getHeight() - padding - 1);
-	
-		graphics.setColor(Mobile.lcduiBGColor);
-		graphics.drawString(hintText, width - margin - hintWidth, margin + Font.getDefaultFont().getHeight(), 0);
-
-		graphics.translate(-x, -y);
+		LCDUIRenderer.drawTextField(graphics, x, y, width, height,
+			text, caretPosition, charSet, charSetIdx, selectedCharIndex,
+			charSetHint, max, margin, padding, isSelected, true);
 	}
 
-	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout) 
+	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout)
 	{
-		if (!highlighted) 
+		if (!highlighted)
 		{
 			highlighted = true;
 			_invalidateContents();
 		}
-		
+
 		return false;
 	}
 
-	protected void traverseOut() 
-	{ 
-		if (highlighted) 
+	protected void traverseOut()
+	{
+		if (highlighted)
 		{
 			highlighted = false;
 			_invalidateContents();
+		}
+	}
+
+	static boolean isTextValidForConstraint(String val, int baseConstraint)
+	{
+		// Empty string is allowed for all constraints really.
+		if (val.length() == 0) { return true; }
+
+		switch (baseConstraint)
+		{
+			case ANY:
+				return true;
+
+			case NUMERIC:
+				try
+				{
+					Long.parseLong(val);
+					return true;
+				}
+				catch (NumberFormatException e) { return false; }
+
+			case DECIMAL:
+				try
+				{
+					Double.parseDouble(val);
+					return true;
+				}
+				catch (NumberFormatException e) { return false; }
+
+			case EMAILADDR:
+			case PHONENUMBER:
+			case URL:
+				// MIDP implementations treat these primarily as UI input mode hints
+				// rather than throwing exceptions on arbitrary strings during setString.
+				return true;
+
+			default:
+				return true;
 		}
 	}
 }

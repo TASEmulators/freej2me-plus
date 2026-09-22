@@ -239,6 +239,8 @@ public class PlatformImage
 
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
 	{
+		if(transform < Sprite.TRANS_NONE || transform > Sprite.TRANS_MIRROR_ROT90) { throw new IllegalArgumentException("Invalid transform"); }
+
 		// Create a transformed copy of an image
 		BufferedImage sub = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
 
@@ -309,6 +311,20 @@ public class PlatformImage
 		if (Math.abs(scanlength) < width)
 		{
 			throw new IllegalArgumentException("scanlength must be >= width");
+		}
+
+		int minIdx = offset;
+		int maxIdx = offset + (height - 1) * scanlength + width - 1;
+
+		if (scanlength < 0)
+		{
+			minIdx = offset + (height - 1) * scanlength;
+			maxIdx = offset + width - 1;
+		}
+
+		if (minIdx < 0 || maxIdx >= rgbData.length)
+		{
+			throw new ArrayIndexOutOfBoundsException("rgbData array is too small or offset/scanlength is out of bounds");
 		}
 
 		// Copy the data into rgbData, taking scanlength into account

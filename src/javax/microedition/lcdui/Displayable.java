@@ -31,17 +31,20 @@ public abstract class Displayable
 	public int width = 0;
 
 	public int height = 0;
-	
+
 	protected String title = "";
 
 	public ArrayList<Command> commands = new ArrayList<Command>();
+
+	// Array of 2 commands that forces select types on the left soft key, and cancel on the right.
+	private ArrayList<Command> swapped = new ArrayList<Command>(2);
 
 	protected ArrayList<Item> items = new ArrayList<Item>();
 
 	protected CommandListener commandlistener;
 
 	public boolean listCommands = false;
-	
+
 	public int currentCommand = 0;
 
 	protected int currentItem = -1;
@@ -59,35 +62,35 @@ public abstract class Displayable
 	public void addCommand(Command cmd)
 	{
 		MobilePlatform.showCommandBar();
-		
+
 		if(cmd == null) { throw new NullPointerException("Cannot insert a null command"); }
 		if(commands.contains(cmd)) { return; }
 		synchronized(commands) { commands.add(cmd); }
 		_invalidate();
 	}
 
-	public void removeCommand(Command cmd) 
+	public void removeCommand(Command cmd)
 	{
 		MobilePlatform.showCommandBar();
 		if(cmd == null || !commands.contains(cmd)) { return; }
 		synchronized(commands) { commands.remove(cmd); }
-		_invalidate(); 
+		_invalidate();
 	}
-	
+
 	public int getWidth() { return width; }
 
 	public int getHeight() { return height; }
-	
+
 	public String getTitle() { return title; }
 
-	public void setTitle(String text) { title = text; }        
+	public void setTitle(String text) { title = text; }
 
 	public boolean isShown() { return Mobile.getDisplay().getCurrent() == this; }
 
 	public Ticker getTicker() { return ticker; }
 
 	public void setTicker(Ticker tick) { ticker = tick; }
-	
+
 	public void setCommandListener(CommandListener listener) { commandlistener = listener; }
 
 	protected void sizeChanged(int width, int height) { this.width = width; this.height = height; }
@@ -104,7 +107,7 @@ public abstract class Displayable
 	public boolean screenKeyPressed(int key) { return false; } // Ignore, classes like Form and List inherit this, and do their own thing with it.
 	public void screenKeyReleased(int key) { }
 	public void screenKeyRepeated(int key) { }
-	
+
 	public void keyReleased(int key) { }
 	public void keyRepeated(int key) { }
 	public void pointerDragged(int x, int y) { }
@@ -122,142 +125,143 @@ public abstract class Displayable
 		graphics.translate(-restoreX, -restoreY);
 
 		// Draw Background:
-		graphics.setColor(Mobile.lcduiBGColor);
-		graphics.fillRect(0,0,width,height);
-		graphics.setColor(Mobile.lcduiTextColor);
+		LCDUIRenderer.fillBackground(graphics, width, height);
 
 		String currentTitle = listCommands ? "Options" : title;
-
 		int titlePadding = Font.fontPadding[Font.screenType];
-		int titleHeight = Font.getDefaultFont().getHeight() + titlePadding;
+		int titleHeight = Font.getDefaultFont().getHeight() - 1;
+		int commandsBarHeight = LCDUIRenderer.commandFont.getHeight() - 2;
 
-		int xPadding = Font.getDefaultFont().getHeight()/5;
-
-		int commandsBarHeight = titleHeight - titlePadding;
-
-		int contentHeight = height - titleHeight - commandsBarHeight - 2;
-		
-		// Draw Title:
-		graphics.drawString(currentTitle, width/2, 0, Graphics.HCENTER);
-		graphics.drawLine(0, titleHeight, width, titleHeight);
-		graphics.drawLine(0, height-commandsBarHeight, width, height-commandsBarHeight);
-
+		// Ticker reserves some space of its own, drawn right above the command bar.
+		Ticker ticker = getTicker();
+		int tickerHeight = 0;
+		if(ticker != null)
+		{
+			ticker.advanceOffset();
+			tickerHeight = LCDUIRenderer.commandFont.getHeight();
+		}
+		int contentHeight = height - titleHeight - commandsBarHeight - 1;
 		int currentY = titleHeight;
-		int textCenter;
-		int xPos;
+
+		// Draw Title:
+		LCDUIRenderer.drawTitleBar(graphics, width, title, titleHeight, Mobile.lcduiBGColor);
+
+		Command itemCommand = (this instanceof Form) ? ((Form)this).getItemCommand() : null;
+
+		// If we aren't listing commands, set the clip region to be between the
+		// title bar and the commands bar, as we'll render the items right now.
+		graphics.setClip(0, currentY + titlePadding, width, contentHeight);
+		String status = listCommands ? null : renderScreen(0, currentY+titlePadding, width, contentHeight);
+		graphics.setClip(0, 0, graphics.getCanvas().getWidth(), graphics.getCanvas().getHeight());
+
+		// Draw the ticker
+		if (ticker != null)
+		{
+			int tickerY = height - commandsBarHeight - tickerHeight+2;
+			LCDUIRenderer.drawTicker(graphics, width, ticker.getString(), tickerHeight, tickerY, ticker.getScrollOffset(), Mobile.lcduiBGColor);
+		}
+		// Then draw te command bar
+		boolean isThreeItems = (!listCommands && commands.size() == 2);
+
+		// Standardize OK/SELECT/etc commands on the left soft key, and
+		// CANCEL/EXIT/STOP/etc ones on the right soft key whenever we have two
+		// commands.
+		ArrayList<Command> displayCommands = commands;
+		if (!listCommands && commands.size() == 2)
+		{
+			Command c0 = commands.get(0);
+			Command c1 = commands.get(1);
+			if (isBackCommand(c0) && !isBackCommand(c1))
+			{
+				swapped.clear();
+				swapped.add(c1);
+				swapped.add(c0);
+				displayCommands = swapped;
+			}
+		}
+
+		LCDUIRenderer.drawCommandBar(graphics, status, !listCommands ? displayCommands : null,
+			itemCommand, width, height, commandsBarHeight, 1.0f,
+		Mobile.lcduiBGColor, isThreeItems);
 
 		if (listCommands) // Render Commands
 		{
-			if(commands.size()>0)
+			if(!commands.isEmpty())
 			{
-				if(currentCommand<0) { currentCommand = 0; }
-				// Draw commands //
+				if(currentCommand < 0) { currentCommand = 0; }
 
-				int listPadding = titlePadding;
 				int itemHeight = titleHeight;
+				int max = Math.min(commands.size(), (int)Math.floor(contentHeight / itemHeight));
+				int page = (int)Math.floor(currentCommand / max);
+				int first = page * max;
+				int last = Math.min(first + max - 1, commands.size() - 1);
 
-				int ah = contentHeight; // allowed height
-				int max = (int)Math.floor(ah / itemHeight); // max items per page			
-				if(commands.size()<max) { max = commands.size(); }
+				boolean hasUp = (first > 0);
+				boolean hasDown = (last < commands.size() - 1);
 
-				int page = 0;
-				page = (int)Math.floor(currentCommand/max); // current page
-				int first = page * max; // first item to show
-				int last = first + max - 1;
-
-				if(last>=commands.size()) { last = commands.size()-1; }
-				
-				int y = currentY + listPadding;
-				for(int i=first; i<=last; i++)
-				{	
-					if(currentCommand == i)
+				int vGap = 2; // Add a small space between items
+				// Apply a small vertical offset to avoid overlapping onto the
+				// scroll indicator arrows. 3 pixels looks good here.
+				int y = currentY + titlePadding + 3;
+				for(int i = first; i <= last; i++)
+				{
+					if(commands.get(i).getCommandType() == Command.BACK)
 					{
-						graphics.fillRect(0,y,width,itemHeight);
-						graphics.setColor(Mobile.lcduiBGColor);
+						// If the user navigated onto the hidden back command, move it
+						// forward or wrap safely if already at the end of the command
+						// list so it doesn't get stuck on an invisible slot.
+						if(currentCommand == i)
+						{
+							currentCommand = (i + 1 < commands.size()) ? i + 1 : i - 1;
+							if(currentCommand < 0) { currentCommand = 0; }
+						}
+						continue;
 					}
-					
-					graphics.drawString(commands.get(i).getLabel(), width/2, y, Graphics.HCENTER);
-					graphics.setColor(Mobile.lcduiTextColor);
-
+					boolean isSelected = (currentCommand == i);
+					LCDUIRenderer.drawItem(graphics, i, commands.get(i).getLabel(), null, 0, y, width, itemHeight - vGap, isSelected, false, Choice.IMPLICIT, false, Item.LAYOUT_CENTER);
 					y += itemHeight;
+				}
+
+				// Down Indicator (if there are items hidden above)
+				if (hasUp)
+				{
+					LCDUIRenderer.drawScrollIndicator(graphics, width / 2 - 2, currentY + 1, true);
+				}
+
+				// Down Indicator (if there are items hidden below)
+				if (hasDown)
+				{
+					LCDUIRenderer.drawScrollIndicator(graphics, width / 2 - 2, currentY + contentHeight + 1, false);
 				}
 			}
 
 			currentY += contentHeight;
-
 			graphics.setColor(Mobile.lcduiTextColor);
 
-			graphics.drawLine(width/2, height-commandsBarHeight, width/2, height);
+			int startY = height - commandsBarHeight;
 
-			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))/2;
-			xPos = (width / 4) - textCenter;
-			graphics.drawString("Okay", xPos, currentY+titlePadding, Graphics.LEFT);
+			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))/2;
+			graphics.drawString("Okay", (width / 4) - textCenter, startY, 0);
 
-			if(hasBackCommand()) 
+			if(hasBackCommand())
 			{
 				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back"))/2;
-				xPos = (3 * width / 4) - textCenter;
-				graphics.drawString("Back", xPos, currentY+titlePadding, Graphics.LEFT);
-			}
-		}
-		else // Render Items
-		{
-			graphics.setClip(0, currentY+titlePadding, width, contentHeight);
-			String status = renderScreen(0, currentY+titlePadding, width, contentHeight);
-
-			currentY += contentHeight;
-
-			graphics.setClip(0, 0, graphics.getCanvas().getWidth(), graphics.getCanvas().getHeight());
-
-			Command itemCommand = null;
-			if (this instanceof Form) { itemCommand = ((Form)this).getItemCommand(); }
-
-			graphics.setColor(Mobile.lcduiTextColor);
-			switch(commands.size())
-			{
-				case 0: break;
-				case 1:
-					// Draw a center line on the lower bar, we'll only have two objects there
-					graphics.drawLine(width/2, height-commandsBarHeight, width/2, height);
-
-					textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(0).getLabel()))/2;
-					xPos = (width / 4) - textCenter;
-					graphics.drawString(commands.get(0).getLabel(), xPos, height-commandsBarHeight+titlePadding, Graphics.LEFT);
-					if (status != null)
-					{
-						textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(status))/2;
-						xPos = (3* width / 4) - textCenter;
-						graphics.drawString(status, xPos, height-commandsBarHeight+titlePadding, Graphics.LEFT);
-					}
-					
-					break;
-				case 2:
-					
-					graphics.drawLine(3 * width / 4, height-commandsBarHeight+titlePadding, 4 * width / 6, height);
-
-					graphics.drawLine(width/4, height-commandsBarHeight+titlePadding, width/3, height);
-
-					graphics.drawString(commands.get(0).getLabel(), xPadding, height-commandsBarHeight+titlePadding, Graphics.LEFT);
-					graphics.drawString(commands.get(1).getLabel(), width-xPadding, height-commandsBarHeight+titlePadding, Graphics.RIGHT);
-
-					if (status != null && itemCommand == null)
-					{
-						graphics.drawString(status, width/2, height-commandsBarHeight+titlePadding, Graphics.HCENTER);
-					}
-					break;
-				default:
-					graphics.drawString("Options", xPadding, height-commandsBarHeight+titlePadding, Graphics.LEFT);
-			}
-
-			if (itemCommand != null) 
-			{
-				graphics.drawString(itemCommand.getLabel(), width/2, height-commandsBarHeight+titlePadding, Graphics.HCENTER);
+				graphics.drawString("Back", (3 * width / 4) - textCenter, startY, 0);
 			}
 		}
 
 		graphics.translate(restoreX, restoreY);
-	
 		Mobile.getPlatform().flushGraphics(platformImage, 0, 0, width, height);
+
+		// Repaint at given intervals
+		Mobile.getDisplay().postPaintRequest(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				render();
+			}
+		});
 	}
 
 	protected String renderScreen(int x, int y, int width, int height) { return null; } // Also inherited by Form, List, etc.
@@ -281,14 +285,14 @@ public abstract class Displayable
 			listCommands = true;
 			_invalidate();
 		}
-		else if(commands.size()>2 && listCommands) 
+		else if(commands.size()>2 && listCommands)
 		{
 			doCommand(currentCommand);
 			listCommands = false;
 		}
 		else if(commands.size()>0 && commands.size()<=2)
 		{
-			doCommand(0);
+			doCommand(getLeftCommandIndex());
 			currentCommand = 0;
 		}
 	}
@@ -297,24 +301,34 @@ public abstract class Displayable
 	{
 		if(commands.size()>1 && commands.size()<=2)
 		{
-			doCommand(1); 
+			doCommand(getRightCommandIndex());
 			currentCommand = 0;
 		}
 		else if(commands.size() > 2)
 		{
-			for(int i = 0; i < commands.size(); i++) 
+			for(int i = 0; i < commands.size(); i++)
 			{
-				if(commands.get(i).getCommandType() == Command.BACK) // Find the back command
-				{ 
-					doCommand(i); 
+				if(isBackCommand(commands.get(i))) // Find the back command
+				{
+					doCommand(i);
 					currentCommand = 0;
-					return; 
+					return;
 				}
 			}
 		}
 	}
 
-	public void _invalidate() 
+	public boolean hasBackCommand()
+	{
+		for(int i = 0; i < commands.size(); i++)
+		{
+			if(isBackCommand(commands.get(i))) { return true; }
+		}
+
+		return false;
+	}
+
+	public void _invalidate()
 	{
 		if (!isShown()) { return; }
 
@@ -322,16 +336,39 @@ public abstract class Displayable
 		{
 			@Override
 			public void run() { render(); }
-		}); 
+		});
 	}
 
-	public boolean hasBackCommand() 
+	private boolean isBackCommand(Command cmd)
 	{
-		for(int i = 0; i < commands.size(); i++) 
-		{
-			if(commands.get(i).getCommandType() == Command.BACK) { return true; }
-		}
+		if (cmd == null) { return false; }
+		int type = cmd.getCommandType();
+		return type == Command.BACK || type == Command.CANCEL || type == Command.STOP || type == Command.EXIT;
+	}
 
-		return false;
+	private int getLeftCommandIndex()
+	{
+		if (commands.size() == 2)
+		{
+			Command c0 = commands.get(0);
+			Command c1 = commands.get(1);
+			if (isBackCommand(c0) && !isBackCommand(c1)) {
+				return 1; // c1 is the primary command, place/execute on left
+			}
+		}
+		return 0;
+	}
+
+	private int getRightCommandIndex()
+	{
+		if (commands.size() == 2)
+		{
+			Command c0 = commands.get(0);
+			Command c1 = commands.get(1);
+			if (isBackCommand(c0) && !isBackCommand(c1)) {
+				return 0; // c0 is the back command, place/execute on right
+			}
+		}
+		return 1;
 	}
 }

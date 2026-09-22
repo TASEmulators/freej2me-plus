@@ -16,6 +16,8 @@
 */
 package javax.microedition.lcdui;
 
+import javax.microedition.media.Manager;
+
 public class AlertType
 {
 
@@ -32,6 +34,15 @@ public class AlertType
 
 	protected AlertType() { }
 
-	public boolean playSound(Display display) { return true; }
+	public boolean playSound(Display display)
+	{
+		if(display == null) { throw new NullPointerException("Display cannot be null"); }
+		try
+		{
+			Manager.playTone(64, 300, 100);
+			return true;
+		}
+		catch (Exception e) { return false; }
+	}
 
 }

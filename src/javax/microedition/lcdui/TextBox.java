@@ -21,7 +21,7 @@ import org.recompile.mobile.Mobile;
 public class TextBox extends Screen
 {
 
-	private String text;
+	private String text = "";
 	private int max;
 	private int constraints;
 	private String mode;
@@ -88,9 +88,9 @@ public class TextBox extends Screen
 	public TextBox(String Title, String value, int maxSize, int Constraints)
 	{
 		title = Title;
-		text = value == null ? "" : value;
-		max = maxSize;
-		constraints = Constraints;
+		setMaxSize(maxSize);
+		setConstraints(Constraints);
+		setString(value);
 
 		caretPosition = text.length();
 
@@ -127,12 +127,26 @@ public class TextBox extends Screen
 
 	public void insert(char[] data, int offset, int length, int position)
 	{
+		if(data == null) { throw new NullPointerException("String cannot be null"); }
+		if(text.length() + length > max) { throw new IllegalArgumentException("Resulting string would be too long"); }
+		if (offset < 0 || length < 0 || offset > data.length || (offset + length) > data.length)
+		{
+			throw new ArrayIndexOutOfBoundsException("Invalid offset or length for data array");
+		}
+
 		StringBuilder out = new StringBuilder();
 		out.append(text, 0, position);
 		out.append(data, offset, length);
 		out.append(text.substring(position));
-		text = out.toString();
+		String res = out.toString();
 
+		int baseConstraint = constraints & TextField.CONSTRAINT_MASK;
+		if (!TextField.isTextValidForConstraint(res, baseConstraint))
+		{
+			throw new IllegalArgumentException("Resulting string is illegal for current input constraints");
+		}
+
+		text = res;
 		caretPosition = text.length();
 
 		_invalidate();
@@ -140,6 +154,9 @@ public class TextBox extends Screen
 
 	public void insert(String src, int position)
 	{
+		if(src == null) { throw new NullPointerException("String cannot be null"); }
+		if(text.length() + src.length() > max) { throw new IllegalArgumentException("Resulting string would be too long"); }
+
 		StringBuilder out = new StringBuilder();
 		out.append(text, 0, position);
 		out.append(src);
@@ -160,12 +177,39 @@ public class TextBox extends Screen
 		_invalidate();
 	}
 
-	public void setConstraints(int Constraints) { constraints = Constraints; }
+	public void setConstraints(int Constraints)
+	{
+		int restrictiveConst = Constraints & TextField.CONSTRAINT_MASK;
+
+		boolean isValidBase = (restrictiveConst == TextField.ANY ||
+			restrictiveConst == TextField.EMAILADDR ||
+			restrictiveConst == TextField.NUMERIC ||
+			restrictiveConst == TextField.PHONENUMBER ||
+			restrictiveConst == TextField.URL ||
+			restrictiveConst == TextField.DECIMAL);
+
+		if (!isValidBase) { throw new IllegalArgumentException("Invalid base constraint."); }
+
+		int modifierFlags = TextField.PASSWORD | TextField.UNEDITABLE | TextField.SENSITIVE |
+			TextField.NON_PREDICTIVE | TextField.INITIAL_CAPS_WORD |  TextField.INITIAL_CAPS_SENTENCE;
+		int unknownBits = Constraints & ~(TextField.CONSTRAINT_MASK | modifierFlags);
+		if (unknownBits != 0) { throw new IllegalArgumentException("Unknown constraint modifier flags."); }
+
+		this.constraints = Constraints;
+		_invalidate();
+	}
 
 	public void setInputMode(int mode) { charSetIdx = (byte) mode; }
 
 	public void setInitialInputMode(String characterSubset)
 	{
+		if(characterSubset == null)
+		{
+			mode = "MIDP_UPPERCASE_LATIN";
+			charSetIdx = 1;
+			return;
+		}
+
 		mode = characterSubset;
 
 		if (mode.equals("MIDP_UPPERCASE_LATIN"))                           { charSetIdx = 1; }
@@ -191,11 +235,24 @@ public class TextBox extends Screen
 		else                                                               { charSetIdx = 0; } // Default subset (BASIC_LATIN, IS_LATIN)
 	}
 
-	public int setMaxSize(int maxSize) { max = maxSize; return max; }
+	public int setMaxSize(int maxSize)
+	{
+		if(maxSize <= 0) { throw new IllegalArgumentException("Invalid max size"); }
+		max = maxSize;
+		if(text.length() > maxSize) { text = text.substring(0, max); }
+		return max;
+	}
 
 	public void setString(String value)
 	{
 		if (value == null) { value = ""; }
+		if(value.length() > max) { throw new IllegalArgumentException("String is too long"); }
+
+		int baseConstraint = constraints & TextField.CONSTRAINT_MASK;
+		if (!TextField.isTextValidForConstraint(value, baseConstraint))
+		{
+			throw new IllegalArgumentException("String is illegal for the current input constraints");
+		}
 
 		text = value;
 		caretPosition = text.length();
@@ -299,73 +356,9 @@ public class TextBox extends Screen
 
 	protected String renderScreen(int x, int y, int width, int height)
 	{
-		graphics.translate(x, y);
-
-		// Fill the whole textField area with specified BG color. TODO: Make sure everything is inside the textField area, right now up/down arrows and the inputMode hint aren't.
-		graphics.setColor(Mobile.lcduiBGColor);
-		graphics.fillRect(margin, 0, width - 1 - margin * 2, Font.getDefaultFont().getHeight() + 3*padding);
-
-		// Draw the border of the field
-		graphics.setColor(Mobile.lcduiTextColor);
-		graphics.drawRect(margin, 0, width - 1 - margin * 2, Font.getDefaultFont().getHeight() + 3*padding);
-
-		// Replace line breaks, they aren't visible by default.
-		String formattedText = text.replace('\n', '↳');
-
-		// Draw the existing text before the caret (we'll make a space to highlight the char position the user is currently editing)
-		graphics.setColor(Mobile.lcduiTextColor);
-
-		if (caretPosition > 0)
-		{
-			graphics.drawChars(formattedText.substring(0, caretPosition).toCharArray(), 0, formattedText.substring(0, caretPosition).length(), margin + padding, margin + padding, 0);
-		}
-
-		int caretWidth = Font.getDefaultFont().stringWidth(formattedText.substring(0, caretPosition));
-
-		// Fill the background for the character to be inserted (always at the caret position)
-		// Check if the character to be drawn at the caret is a line break
-		String caretChar = (charSet[charSetIdx][selectedCharIndex] == '\n') ? "↳" : String.valueOf(charSet[charSetIdx][selectedCharIndex]);
-		int caretCharWidth = Font.getDefaultFont().stringWidth(caretChar);
-
-		graphics.setColor(Mobile.lcduiTextColor); // Fill with the same color as the text (effectively giving a strong background color to the caret position
-		graphics.fillRect(margin + padding + caretWidth, margin + padding, caretCharWidth, Font.getDefaultFont().getHeight());
-
-		graphics.setColor(Mobile.lcduiBGColor); // Set to background color for the character
-		graphics.drawString(caretChar, margin + padding + caretWidth, margin + padding, 0);
-
-
-		// Draw the remaining text after the caret
-		int remainWidth = 0;
-		graphics.setColor(Mobile.lcduiTextColor); // Restore color to the text's default after the caret position
-		if(formattedText.length() - (caretPosition+1) > 0)
-		{
-			graphics.drawChars(formattedText.substring(caretPosition + 1).toCharArray(), 0, formattedText.length() - (caretPosition + 1), margin + padding + caretWidth + caretCharWidth, margin + padding, 0);
-			remainWidth = Font.getDefaultFont().stringWidth(formattedText.substring(caretPosition + 1));
-		}
-
-		// Draw indicators to show whether more text is allowed or not
-		String indicator = (formattedText.length() < max) ? "⨁" : "⨂";
-		graphics.setColor(formattedText.length() < max ? 0x00BB00 : 0x770000); // Color based on state
-		graphics.drawString(indicator, margin + padding + caretWidth + caretCharWidth + remainWidth, margin + padding, 0);
-
-		// Draw arrows using "^" and "v" characters to hint the user that the current field can be altered
-		graphics.setColor(Mobile.lcduiTextColor); // Set arrow color
-		graphics.drawString("^", margin + padding + caretWidth + caretCharWidth / 2 - 2, margin - Font.getDefaultFont().getHeight() / 3, 0); // Arrow up
-		graphics.drawString("v", margin + padding + caretWidth + caretCharWidth / 2 - 2, margin + Font.getDefaultFont().getHeight(), 0); // Arrow down
-
-		// Render the characterSet hint
-		String hintText = new String(charSetHint[charSetIdx]);
-		int hintWidth = Font.getDefaultFont().stringWidth(hintText);
-
-		// Draw background for hint text (it follows the same logic as the highlighted caret char)
-		graphics.setColor(Mobile.lcduiTextColor);
-		graphics.fillRect(width - margin - hintWidth, padding + Font.getDefaultFont().getHeight(), hintWidth, Font.getDefaultFont().getHeight() - padding - 1);
-
-		graphics.setColor(Mobile.lcduiBGColor);
-		graphics.drawString(hintText, width - margin - hintWidth, margin + Font.getDefaultFont().getHeight(), 0);
-
-		graphics.translate(-x, -y);
-
+		LCDUIRenderer.drawTextField(graphics, x, y, width, height,
+			text, caretPosition, charSet, charSetIdx, selectedCharIndex,
+			charSetHint, max, margin, padding, true, true);
 		return null;
 	}
  }

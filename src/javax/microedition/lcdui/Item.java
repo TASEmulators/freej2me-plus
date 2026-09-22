@@ -61,9 +61,16 @@ public abstract class Item
 
 	private ItemCommandListener commandListener;
 
-	private int prefWidth = 64;
+	protected int minWidth = 1;
+	protected int minHeight = 1;
 
+	private int prefWidth = 64;
 	private int prefHeight = 8;
+
+	protected int appPrefWidth = -1;
+	protected int appPrefHeight = -1;
+
+	public Font font = Font.getDefaultFont();
 
 	public Item() { }
 
@@ -78,9 +85,9 @@ public abstract class Item
 
 	public int getLayout() { return layout; }
 
-	public int getMinimumHeight() { return 8; }
+	public int getMinimumHeight() { return minHeight; }
 
-	public int getMinimumWidth() { return 64; }
+	public int getMinimumWidth() { return minWidth; }
 
 	public int getPreferredHeight() { return prefHeight; }
 
@@ -89,7 +96,9 @@ public abstract class Item
 	public void notifyStateChanged()
 	{
 		Form owner = getOwner();
-		if (owner != null) { owner.itemStateChanged(this); }
+		if(owner == null) { throw new IllegalStateException("Owner cannot be null for notify"); }
+
+		owner.itemStateChanged(this);
 	}
 
 	public void removeCommand(Command cmd)
@@ -111,12 +120,32 @@ public abstract class Item
 		invalidate();
 	}
 
-	public void setLayout(int value) { layout = value; }
+	public void setLayout(int layout)
+	{
+		int ALL_LAYOUT_FLAGS = LAYOUT_LEFT | LAYOUT_RIGHT | LAYOUT_CENTER |
+			LAYOUT_TOP | LAYOUT_BOTTOM | LAYOUT_VCENTER | LAYOUT_SHRINK |
+			LAYOUT_EXPAND | LAYOUT_VSHRINK | LAYOUT_VEXPAND |
+			LAYOUT_NEWLINE_BEFORE | LAYOUT_NEWLINE_AFTER;
+
+		// If layout has any bits set outside of our known constants, it's invalid
+		if ((layout & ~ALL_LAYOUT_FLAGS) != 0)
+		{
+			throw new IllegalArgumentException("Unknown layout flags provided.");
+		}
+
+		this.layout = layout;
+		invalidate();
+	}
 
 	public void setPreferredSize(int width, int height)
 	{
-		prefWidth = width;
-		prefHeight = height;
+		if(width < -1 || height < -1) { throw new IllegalArgumentException("Invalid preferred size"); }
+
+		appPrefWidth = width;
+		appPrefHeight = height;
+
+		updatePreferredSize();
+		invalidate();
 	}
 
 	protected void setOwner(Form newOwner) { owner = newOwner; }
@@ -125,14 +154,12 @@ public abstract class Item
 
 	protected boolean hasLabel() { return label != null && label.length() != 0; }
 
-	protected int getContentHeight(int width) { return Font.getDefaultFont().getHeight(); }
-
 	protected int getLabelHeight(int width)
 	{
 		if (!hasLabel()) { return 0; }
 
 		// for now we assume one line + bottom padding
-		return Font.getDefaultFont().getHeight() + Font.getDefaultFont().getHeight() / 5;
+		return font.getHeight() + font.getHeight() / 5;
 	}
 
 	protected void doDefaultCommand()
@@ -143,7 +170,7 @@ public abstract class Item
 		}
 	}
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height) { }
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected) { }
 
 	protected void invalidate()
 	{
@@ -165,17 +192,22 @@ public abstract class Item
 
 	protected boolean keyPressed(int key) { return false; }
 
-	protected void renderItemLabel(Graphics graphics, int x, int y, int itemContentWidth)
-	{
-		Font oldFont = graphics.getFont();
-		graphics.setFont(Font.getDefaultFont());
-		graphics.setColor(Mobile.lcduiTextColor);
-		graphics.drawString(getLabel(), x, y, 0);
-		graphics.setFont(oldFont);
-	}
-
 	// Only CustomItem has a need for these traversal methods
 	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout) { return false; }
 
 	protected void traverseOut() { }
+
+	protected void updatePreferredSize()
+	{
+		// If width is unlocked (-1), compute base content width; otherwise use locked width
+		prefWidth = (appPrefWidth == -1) ? getContentWidth() : appPrefWidth;
+
+		// Height often depends on the chosen width (for wrapping text, etc.)
+		prefHeight = (appPrefHeight == -1) ? getContentHeight(prefWidth) + getLabelHeight(prefWidth) : appPrefHeight;
+	}
+
+	// Subclasses override these to return their true content dimensions when unlocked
+	protected int getContentWidth() { return 64; }
+
+	protected int getContentHeight(int width) { return font.getHeight(); }
 }

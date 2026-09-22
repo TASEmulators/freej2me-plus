@@ -26,20 +26,23 @@ public class ChoiceGroup extends Item implements Choice
 
 	private String label;
 
-    private int type;
+	private int type;
 
 	private ArrayList<String> strings = new ArrayList<String>();
-
+	private ArrayList<Font> fonts = new ArrayList<Font>();
 	private ArrayList<Image> images = new ArrayList<Image>();
 
-	private int fitPolicy;
+	private int fitPolicy = Choice.TEXT_WRAP_DEFAULT;
 
 	private int selectedIndex = -1;
 	private int highlightedIndex = -1;
-	private ArrayList<Boolean> selectedElements = new ArrayList<Boolean>();
+	private ArrayList<Boolean> selectedItems = new ArrayList<Boolean>();
 
 	public ChoiceGroup(String choiceLabel, int choiceType)
 	{
+		if(choiceType != Choice.EXCLUSIVE && choiceType != Choice.MULTIPLE && choiceType != Choice.POPUP)
+			{ throw new IllegalArgumentException("Invalid choice type for choice group"); }
+
 		setLabel(choiceLabel);
 		type = choiceType;
 	}
@@ -47,11 +50,18 @@ public class ChoiceGroup extends Item implements Choice
 	public ChoiceGroup(String choiceLabel, int choiceType, String[] stringElements, Image[] imageElements)
 	{
 		this(choiceLabel, choiceType);
-		for(int i=0; i<stringElements.length; i++) 
+		if(stringElements == null) { throw new NullPointerException("String array cannot be null");}
+		if(imageElements != null && imageElements.length != stringElements.length)
+			{ throw new IllegalArgumentException("Element array size mismatch"); }
+
+		for(int i=0; i<stringElements.length; i++)
 		{
+			if(stringElements[i] == null) { throw new NullPointerException("Null element in string array"); }
+
 			strings.add(stringElements[i]);
+			fonts.add(Font.getDefaultFont());
 			images.add((imageElements != null && i<imageElements.length) ? imageElements[i] : null);
-			selectedElements.add(false);
+			selectedItems.add(false);
 		}
 
 		if (!strings.isEmpty()) { selectedIndex = 0; }
@@ -64,27 +74,32 @@ public class ChoiceGroup extends Item implements Choice
 		this(choiceLabel, choiceType, stringElements, imageElements);
 	}
 
-	public int append(String stringPart, Image imagePart) 
-	{ 
+	public int append(String stringPart, Image imagePart)
+	{
+		if(stringPart == null) { throw new NullPointerException("String cannot be null"); }
+
 		strings.add(stringPart);
+		fonts.add(Font.getDefaultFont());
 		images.add(imagePart);
-		selectedElements.add(false);
+		selectedItems.add(false);
 
 		if (!strings.isEmpty() && selectedIndex == -1) { selectedIndex = 0; }
 		invalidate();
 
-		return strings.size() - 1;
-		
+		return size() - 1;
 	}
 
-	public void delete(int itemNum) 
+	public void delete(int itemNum)
 	{
-		strings.remove(itemNum);
-		images.remove(itemNum);
-		selectedElements.remove(itemNum);
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
 
-		if (strings.isEmpty()) { selectedIndex = highlightedIndex = -1; } 
-		else 
+		strings.remove(itemNum);
+		fonts.remove(itemNum);
+		images.remove(itemNum);
+		selectedItems.remove(itemNum);
+
+		if (strings.isEmpty()) { selectedIndex = highlightedIndex = -1; }
+		else
 		{
 			if (selectedIndex > itemNum) { selectedIndex--; }
 			if (highlightedIndex > itemNum) { highlightedIndex--; }
@@ -93,123 +108,155 @@ public class ChoiceGroup extends Item implements Choice
 		invalidate();
 	}
 
-	public void deleteAll() 
-	{ 
-		strings.clear(); images.clear(); selectedElements.clear();
+	public void deleteAll()
+	{
+		strings.clear(); images.clear(); selectedItems.clear();
+		fonts.clear();
 		selectedIndex = highlightedIndex = -1;
 		invalidate();
 	}
 
 	public int getFitPolicy() { return fitPolicy; }
 
-	public Font getFont(int itemNum) 
+	public Font getFont(int itemNum)
 	{
-		Mobile.log(Mobile.LOG_WARNING, Choice.class.getPackage().getName() + "." + Choice.class.getSimpleName() + ": " + "getFont() called.");
-		return Font.getDefaultFont();
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
+
+		return fonts.get(itemNum);
 	}
 
-	public Image getImage(int elementNum) { return images.get(elementNum); }
+	public Image getImage(int itemNum)
+	{
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
 
-	public int getSelectedFlags(boolean[] selectedArray_return) 
-	{ 
+		return images.get(itemNum);
+	}
+
+	public int getSelectedFlags(boolean[] selectedArray_return)
+	{
+		if(selectedArray_return.length < size()) { throw new IllegalArgumentException("Return array too small"); }
+		if(selectedArray_return == null) { throw new NullPointerException("Return array cannot be null"); }
+
 		int numSelected = 0;
 
-		for (int i=0; i<selectedElements.size(); i++) 
+		for (int i=0; i<selectedItems.size(); i++)
 		{
-			if(selectedElements.get(i) == true) { selectedArray_return[i] = true; numSelected++; }
+			if(selectedItems.get(i) == true) { selectedArray_return[i] = true; numSelected++; }
 			else { selectedArray_return[i] = false; }
 		}
 
 		return numSelected;
 	}
 
-  	public int getSelectedIndex() 
-	{ 
+	public int getSelectedIndex()
+	{
 		if(type == Choice.POPUP || type == Choice.EXCLUSIVE) { return selectedIndex; }
 
 		return -1;
 	}
 
-	public String getString(int elementNum) { return strings.get(elementNum); }
-
-	public void insert(int elementNum, String stringPart, Image imagePart)
+	public String getString(int itemNum)
 	{
-		strings.add(elementNum, stringPart);
-		images.add(elementNum, imagePart);
-		selectedElements.add(elementNum, false);
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
 
-		if (selectedIndex >= elementNum) { selectedIndex++; }
-		if (highlightedIndex >= elementNum) { highlightedIndex++; }
+		return strings.get(itemNum);
+	}
+
+	public void insert(int itemNum, String stringPart, Image imagePart)
+	{
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
+		if(stringPart == null) { throw new NullPointerException("String cannot be null"); }
+
+		strings.add(itemNum, stringPart);
+		fonts.add(itemNum, Font.getDefaultFont());
+		images.add(itemNum, imagePart);
+		selectedItems.add(itemNum, false);
+
+		if (selectedIndex >= itemNum) { selectedIndex++; }
+		if (highlightedIndex >= itemNum) { highlightedIndex++; }
 		if (!strings.isEmpty() && selectedIndex == -1) { selectedIndex = 0; }
 
 		invalidate();
 	}
 
-	public boolean isSelected(int elementNum) 
+	public boolean isSelected(int itemNum)
 	{
-		if(type == Choice.EXCLUSIVE) { return elementNum==selectedIndex; }
-		return selectedElements.get(elementNum); 
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
+
+		if(type == Choice.EXCLUSIVE) { return itemNum==selectedIndex; }
+		return selectedItems.get(itemNum);
 	}
 
-	public void set(int elementNum, String stringPart, Image imagePart)
+	public void set(int itemNum, String stringPart, Image imagePart)
 	{
-		strings.set(elementNum, stringPart);
-		images.set(elementNum, imagePart);
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
+		if(stringPart == null) { throw new NullPointerException("String cannot be null"); }
+
+		strings.set(itemNum, stringPart);
+		images.set(itemNum, imagePart);
 
 		_invalidateContents();
 	}
 
-	public void setFitPolicy(int policy) { fitPolicy = policy; }
-
-	public void setFont(int itemNum, Font font) 
-	{ 
-		Mobile.log(Mobile.LOG_WARNING, Choice.class.getPackage().getName() + "." + Choice.class.getSimpleName() + ": " + "setFont() called.");
+	public void setFitPolicy(int policy)
+	{
+		if(policy < Choice.TEXT_WRAP_DEFAULT || policy > Choice.TEXT_WRAP_OFF) { throw new IllegalArgumentException("Invalid policy"); }
+		fitPolicy = policy;
 	}
 
-	public void setSelectedFlags(boolean[] selectedArray) 
-	{ 
-		for (int i=0; i<selectedArray.length && i<size(); i++) { selectedElements.set(i, selectedArray[i]); }
+	public void setFont(int itemNum, Font font)
+	{
+		if(itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid item index"); }
+		fonts.set(itemNum, font != null ? font :  Font.getDefaultFont());
+	}
+
+	public void setSelectedFlags(boolean[] selectedArray)
+	{
+		if(selectedArray.length < size()) { throw new IllegalArgumentException("Return array too small"); }
+		if(selectedArray == null) { throw new NullPointerException("Return array cannot be null"); }
+
+		for (int i=0; i<selectedArray.length && i<size(); i++) { selectedItems.set(i, selectedArray[i]); }
 
 		_invalidateContents();
 	}
 
-	public void setSelectedIndex(int elementNum, boolean selected) 
+	public void setSelectedIndex(int itemNum, boolean selected)
 	{
-		if (elementNum < 0 || elementNum >= size()) { return; }
-		if (type == Choice.EXCLUSIVE) 
+		if (itemNum < 0 || itemNum >= size()) { throw new IndexOutOfBoundsException("Invalid element index"); }
+		if (type == Choice.EXCLUSIVE || type == Choice.POPUP)
 		{
-			selectedIndex = elementNum;
-			for (int i = 0; i < selectedElements.size(); i++) 
+			if(!selected) { return; }
+			selectedIndex = itemNum;
+			for (int i = 0; i < selectedItems.size(); i++)
 			{
-				selectedElements.set(i, false); // Deselect all others
+				selectedItems.set(i, false); // Deselect all others
 			}
 		}
-		selectedElements.set(elementNum, selected);
+		selectedItems.set(itemNum, selected);
 		_invalidateContents();
 	}
 
 	public int size() { return strings.size(); }
 
 
-
-	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout) 
+	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout)
 	{
 		if (type == Choice.POPUP) { return false; }
-		
+
 		// intial traverse
-		if (highlightedIndex == -1) 
+		if (highlightedIndex == -1)
 		{
-			if (!strings.isEmpty()) 
+			if (!strings.isEmpty())
 			{
 				highlightedIndex = dir == Canvas.UP ? strings.size() - 1 : 0;
 				return true;
-			} 
+			}
 			else { return false; }
-		} 
-		else 
+		}
+		else
 		{
-			if (dir == Canvas.UP && highlightedIndex > 0) { highlightedIndex--; } 
-			else if (dir == Canvas.DOWN && highlightedIndex < size()-1) { highlightedIndex++; } 
+			if (dir == Canvas.UP && highlightedIndex > 0) { highlightedIndex--; }
+			else if (dir == Canvas.DOWN && highlightedIndex < size()-1) { highlightedIndex++; }
 			else { return false; }
 
 			visRect_inout[1] = Font.getDefaultFont().getHeight() * highlightedIndex;
@@ -220,9 +267,9 @@ public class ChoiceGroup extends Item implements Choice
 		}
 	}
 
-	protected void traverseOut() 
-	{ 
-		if (highlightedIndex != -1) 
+	protected void traverseOut()
+	{
+		if (highlightedIndex != -1)
 		{
 			highlightedIndex = -1;
 			_invalidateContents();
@@ -230,32 +277,32 @@ public class ChoiceGroup extends Item implements Choice
 	}
 
 
-	protected boolean keyPressed(int key) 
-	{ 
+	protected boolean keyPressed(int key)
+	{
 		boolean handled = true;
 
-		if (type == Choice.POPUP) 
+		if (type == Choice.POPUP)
 		{
-			if ((key == Canvas.LEFT || key == Canvas.KEY_NUM4) && selectedIndex > 0) 
+			if ((key == Canvas.LEFT || key == Canvas.KEY_NUM4) && selectedIndex > 0)
 			{
 				selectedIndex--;
-			} 
-			else if ((key == Canvas.RIGHT || key == Canvas.KEY_NUM6) && selectedIndex < size()-1) 
+			}
+			else if ((key == Canvas.RIGHT || key == Canvas.KEY_NUM6) && selectedIndex < size()-1)
 			{
 				selectedIndex++;
-			} 
+			}
 			else { handled = false; }
-		} 
-		else if ((key == Canvas.KEY_NUM5 || key == Canvas.FIRE) && highlightedIndex != -1) 
+		}
+		else if ((key == Canvas.KEY_NUM5 || key == Canvas.FIRE) && highlightedIndex != -1)
 		{
 			if (type == Choice.EXCLUSIVE) { selectedIndex = highlightedIndex; }
-			setSelectedIndex(highlightedIndex, !selectedElements.get(highlightedIndex));
+			setSelectedIndex(highlightedIndex, !selectedItems.get(highlightedIndex));
 
 			handled = true;
-		} 
+		}
 		else { handled = false; }
 
-		if (handled) 
+		if (handled)
 		{
 			notifyStateChanged();
 			_invalidateContents();
@@ -265,89 +312,49 @@ public class ChoiceGroup extends Item implements Choice
 	}
 
 
-	protected int getContentHeight(int width) 
+	protected int getContentHeight(int width)
 	{
-		if (type == Choice.POPUP) { return Font.getDefaultFont().getHeight() + (Font.getDefaultFont().getHeight() / 6); } 
+		if (type == Choice.POPUP) { return Font.getDefaultFont().getHeight() + (Font.getDefaultFont().getHeight() / 6); }
 		else { return size() * Font.getDefaultFont().getHeight() + (Font.getDefaultFont().getHeight() / 6); }
 	}
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height) 
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected)
 	{
 		graphics.translate(x, y);
-		
-		if (type == Choice.POPUP) 
+
+		int lineHeight = Font.getDefaultFont().getHeight();
+
+		if (type == Choice.POPUP)
 		{
-			final int arrowWidth = Font.getDefaultFont().getHeight()/2;
-			final int arrowMargin = Font.getDefaultFont().getHeight()/15;
-			final int arrowPadding = Font.getDefaultFont().getHeight()/2;
-			final int arrowSpacing = arrowWidth+arrowMargin+arrowPadding;
+			// Popup mode renders as a single button showing the currently selected item
+			String text = (strings.size() > 0 && selectedIndex >= 0 && selectedIndex < strings.size()) ? strings.get(selectedIndex) : "";
+			Image img = (images != null && selectedIndex >= 0 && selectedIndex < images.size()) ? images.get(selectedIndex) : null;
 
-			graphics.drawString("<", arrowSpacing-1, 0, Graphics.RIGHT); // Arrow left
-			graphics.drawString(">", arrowSpacing + (width-2*arrowSpacing) + 2, 0, Graphics.LEFT); // Arrow right
-
-			graphics.setColor(Mobile.lcduiTextColor);
-			graphics.drawString(strings.get(selectedIndex), arrowSpacing, 0, 0);
-		} 
-		else 
+			LCDUIRenderer.drawItem(graphics, 0, text, img, 0, 0, width, lineHeight, isSelected, false, type, true, getLayout());
+		}
+		else
 		{
-			int lineHeight = Font.getDefaultFont().getHeight();
-			int tickOffset = lineHeight*4/3;
-			int textPadding = lineHeight/5;
+			for (int t = 0; t < strings.size(); t++)
+			{
+				String text = strings.get(t);
+				Image img = (images != null && t < images.size()) ? images.get(t) : null;
 
-			for (int t=0; t<strings.size(); t++) {
-				if (type == Choice.MULTIPLE) 
-				{
-					_drawTick(graphics, t, lineHeight, selectedElements.get(t).booleanValue(), false);					
-				} 
-				else { _drawTick(graphics, t, lineHeight, t == selectedIndex, true);	}
+				// Determine checkbox / radio button checked status
+				boolean checked = false;
+				if (type == Choice.MULTIPLE) { checked = selectedItems.get(t).booleanValue(); }
+				else if (type == Choice.EXCLUSIVE) { checked = (t == selectedIndex); }
 
-				if (highlightedIndex == t) 
-				{
-					graphics.fillRect(tickOffset, t*lineHeight, width-tickOffset, lineHeight);
-					graphics.setColor(Mobile.lcduiBGColor);
-				}
+				// Only the currently focused/highlighted row gets the visual "selected" gradient
+				boolean rowSelected = isSelected && (highlightedIndex == t);
 
-				if (images.get(t) != null) 
-				{
-					graphics.drawImage(images.get(t), tickOffset+textPadding, t*lineHeight, 0);
-					graphics.drawString(strings.get(t), tickOffset+textPadding+lineHeight, t*lineHeight, 0);
-				} 
-				else { graphics.drawString(strings.get(t), tickOffset+textPadding, t*lineHeight, 0); }
+				// Compute unique vertical offset for each row inside the ChoiceGroup
+				int itemY = t * lineHeight;
 
-				graphics.setColor(Mobile.lcduiTextColor);
+				LCDUIRenderer.drawItem(graphics, t, text, img, 0, itemY, width, lineHeight, rowSelected, checked, type, true, getLayout());
 			}
 		}
 
 		graphics.translate(-x, -y);
-	}
-
-	private void _drawTick(Graphics graphics, int index, int height, boolean filled, boolean isCircle) 
-	{
-		int tickMargin = height/2;
-		int tickWidth = height/2;
-	  
-		if (isCircle)
-		{
-			if (filled) 
-			{
-				graphics.fillArc(tickMargin, index * height + height/2 - tickWidth/2, tickWidth, tickWidth, 0, 360);
-			} 
-			else 
-			{
-				graphics.drawArc(tickMargin, index * height + height/2 - tickWidth/2, tickWidth, tickWidth, 0, 360);
-			}
-		} 
-		else 
-		{
-			if (filled) 
-			{
-				graphics.fillRect(tickMargin, index * height + height/2 - tickWidth/2, tickWidth, tickWidth);
-			} 
-			else 
-			{
-				graphics.drawRect(tickMargin, index * height + height/2 - tickWidth/2, tickWidth, tickWidth);
-			}
-		}  
 	}
 
 }

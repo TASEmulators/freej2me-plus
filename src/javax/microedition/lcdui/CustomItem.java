@@ -31,18 +31,9 @@ public abstract class CustomItem extends Item
 	protected static final int TRAVERSE_VERTICAL = 2;
 
 
-	protected CustomItem(String label)
-	{
-		Mobile.log(Mobile.LOG_WARNING, CustomItem.class.getPackage().getName() + "." + CustomItem.class.getSimpleName() + ": " + "CustomItem created. This LCDUI feature is untested");
-		setLabel(label);
-	}
+	protected CustomItem(String label) { setLabel(label); }
 
-	public int getGameAction(int keycode) 
-	{ 
-		int castKey = Mobile.getGameAction(keycode);
-
-		return castKey;
-	}
+	public int getGameAction(int keycode) { return Mobile.getGameAction(keycode); }
 
 	protected final int getInteractionModes() { return KEY_PRESS | KEY_RELEASE | POINTER_PRESS | POINTER_RELEASE | TRAVERSE_HORIZONTAL | TRAVERSE_VERTICAL; }
 
@@ -82,7 +73,7 @@ public abstract class CustomItem extends Item
 
 	protected int getContentHeight(int width) { return this.getPrefContentHeight(width); }
 
-	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout) 
+	protected boolean traverse(int dir, int viewportWidth, int viewportHeight, int[] visRect_inout)
 	{
 		int currentX = visRect_inout[0]; // Current X position
 		int currentY = visRect_inout[1]; // Current Y position
@@ -91,12 +82,12 @@ public abstract class CustomItem extends Item
 
 		// Initial state tracking for traversal
 		if (dir == NONE) { return true; } // Indicate traversal is happening within the item, but no direction
-	
+
 		// Track the current position based on direction
-		switch (dir) 
+		switch (dir)
 		{
 			case Canvas.UP:
-				if (currentY > 0) 
+				if (currentY > 0)
 				{
 					currentY -= 5; // Move up
 					visRect_inout[1] = currentY; // Update visible rectangle
@@ -109,11 +100,11 @@ public abstract class CustomItem extends Item
 					currentY += 5; // Move down
 					if(currentY + currentHeight > viewportHeight) { currentY = viewportHeight; }
 					visRect_inout[1] = currentY;
-					return true; 
+					return true;
 				}
 				break;
 			case Canvas.LEFT:
-				if (currentX > 0) 
+				if (currentX > 0)
 				{
 					currentX -= 5; // Move left
 					if(currentX < 0) { currentX = 0; }
@@ -122,7 +113,7 @@ public abstract class CustomItem extends Item
 				}
 				break;
 			case Canvas.RIGHT:
-				if (currentX + currentWidth < viewportWidth) 
+				if (currentX + currentWidth < viewportWidth)
 				{
 					currentX += 5; // Move right
 					if(currentX + currentWidth < viewportWidth) { currentX = viewportWidth; }
@@ -133,14 +124,14 @@ public abstract class CustomItem extends Item
 			default:
 				return false;
 		}
-	
+
 		// If no movement occurred, return false
 		return false;
 	}
 
 	protected void traverseOut() { repaint(); } // Request a repaint to clear highlights, traversing out of the object
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height) 
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected)
 	{
 		// TODO: Incomplete. Possibly we'd need to save/restore much more
 

@@ -27,38 +27,48 @@ public class StringItem extends Item
 	private String text;
 	private int appearance;
 	protected List<String> lines;
-	protected int lineSpacing;
-	protected int height = 0;
+	protected int lineSpacing = 1;
+	protected int cachedHeight = -1; // Use -1 or a tracked lastWidth to detect changes
+	protected int lastMeasuredWidth = -1;
 	private int buttonMargin;
 	private int buttonPadding;
 
 
 	public StringItem(String label, String textvalue)
 	{
-		setLabel(label);
-		text = (textvalue == null ? "" : textvalue);
-		buttonMargin = Font.getDefaultFont().getHeight() / 5;
-		buttonPadding = Font.getDefaultFont().getHeight() / 3;
+		this(label, textvalue, PLAIN);
 	}
 
 	public StringItem(String label, String textvalue, int appearanceMode)
 	{
-		this(label, textvalue);
+		if(appearanceMode < PLAIN || appearanceMode > BUTTON) { throw new IllegalArgumentException("Invalid appearance mode"); }
+		setLabel(label);
+		text = (textvalue == null ? "" : textvalue);
+		buttonMargin = font.getHeight() / 5;
+		buttonPadding = font.getHeight() / 3;
+
 		appearance = appearanceMode;
 	}
 
 	public int getAppearanceMode() { return appearance; }
 
-	public Font getFont() { return Font.getDefaultFont(); }
+	public Font getFont() { return font; }
 
 	public String getText() { return text; }
 
-	public void setFont(Font newfont) { }
+	public void setFont(Font newfont)
+	{
+		font = newfont != null ? newfont : Font.getDefaultFont();
+		cachedHeight = -1;
+		lastMeasuredWidth = -1;
+		this._invalidateContents();
+	}
 
 	public void setText(String textvalue)
 	{
 		text = (textvalue == null ? "" : textvalue);
-		height = 0;
+		cachedHeight = -1; // Invalidate cached height/lines
+		lastMeasuredWidth = -1;
 		this._invalidateContents();
 	}
 
@@ -77,50 +87,75 @@ public class StringItem extends Item
 	{
 		if (appearance == Item.BUTTON)
 		{
-			height = Font.getDefaultFont().getHeight() + 2*buttonMargin + 2*buttonPadding;
+			return font.getHeight() + 2 * buttonMargin + 2 * buttonPadding;
 		}
-		else if (height == 0 && text != null && text.length() != 0)
+
+		if (text == null || text.length() == 0)
 		{
-			lines = wrapText(text, width, Font.getDefaultFont());
-			lineSpacing = 1;
-
-			height = lines.size() > 0 ? (lines.size()*Font.getDefaultFont().getHeight() + (lines.size()-1)*lineSpacing) : 0;
+			lines = new ArrayList<String>();
+			return 0;
 		}
-		else if ((text == null || text.length() == 0) && lines == null) { lines = new ArrayList<String>(); }
 
-		return height;
+		// Re-wrap the text only if width changed or the cache was invalidated
+		if (cachedHeight == -1 || lastMeasuredWidth != width)
+		{
+			lastMeasuredWidth = width;
+			lines = wrapText(text, width, font);
+			cachedHeight = lines.size() > 0 ? (lines.size() * font.getHeight() + (lines.size() - 1) * lineSpacing) : 0;
+		}
+
+		return cachedHeight;
 	}
 
 	public static List<String> wrapText(String text, int width, Font font)
 	{
-		String[] lines = text.split("\n", -1);
 		List<String> wrappedLines = new ArrayList<String>();
+		if (text == null) { return wrappedLines; }
 
-		for (String line : lines)
+		for (String paragraph : text.split("\n", -1))
 		{
-			StringBuilder wrappedLine = new StringBuilder();
-
-			for (int i = 0; i < line.length(); i++)
+			if (paragraph.length() == 0)
 			{
-				String word = String.valueOf(line.charAt(i));
-				String wrapCandidate = wrappedLine.length() == 0 ? word : wrappedLine + word;
-				int wrapCandidateWidth = font.stringWidth(wrapCandidate);
-
-				if (wrapCandidateWidth > width)
-				{
-					if (wrappedLine.length() > 0) { wrappedLines.add(wrappedLine.toString()); }
-					wrappedLine = new StringBuilder(word);
-				}
-				else { wrappedLine.append(word); }
+				wrappedLines.add("");
+				continue;
 			}
 
-			if (wrappedLine.length() > 0) { wrappedLines.add(wrappedLine.toString()); }
+			String currentLine = "";
+			for (String word : paragraph.split(" "))
+			{
+				String candidate = currentLine.isEmpty() ? word : currentLine + " " + word;
+
+				if (font.stringWidth(candidate) <= width) { currentLine = candidate; }
+				else
+				{
+					if (!currentLine.isEmpty()) { wrappedLines.add(currentLine); }
+
+					// If a single word is wider than the whole screen, break it by character
+					if (font.stringWidth(word) > width)
+					{
+						currentLine = "";
+						for (int i = 0; i < word.length(); i++)
+						{
+							char ch = word.charAt(i);
+							String charCandidate = currentLine + ch;
+							if (font.stringWidth(charCandidate) > width)
+							{
+								wrappedLines.add(currentLine);
+								currentLine = String.valueOf(ch);
+							}
+							else { currentLine = charCandidate; }
+						}
+					}
+					else { currentLine = word; }
+				}
+			}
+			wrappedLines.add(currentLine);
 		}
 
 		return wrappedLines;
 	}
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height)
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected)
 	{
 		if (appearance == Item.BUTTON)
 		{
@@ -133,17 +168,33 @@ public class StringItem extends Item
 			graphics.setColor(Mobile.lcduiTextColor);
 			graphics.drawString(text, x+buttonMargin+buttonPadding, y+buttonMargin+buttonPadding, 0);
 		}
+		else if (appearance == Item.HYPERLINK)
+		{
+			Font tmpFont = graphics.getFont();
+
+			// Hyperlinks will be underlined and italic
+			graphics.setFont(new Font(tmpFont.getFace(), tmpFont.getStyle() |
+				Font.STYLE_UNDERLINED | Font.STYLE_ITALIC, tmpFont.getSize()));
+
+			graphics.setColor(0, 102, 204);
+
+			for (int l = 0; l < lines.size(); l++)
+			{
+				graphics.drawString(lines.get(l), x,
+					y + l * font.getHeight() + (l > 0 ? (l - 1) * lineSpacing : 0), 0);
+			}
+
+			graphics.setFont(tmpFont);
+			graphics.setColor(Mobile.lcduiTextColor);
+		}
 		else
 		{
 			graphics.setColor(Mobile.lcduiTextColor);
 			for(int l=0;l<lines.size();l++)
 			{
 				graphics.drawString( lines.get(l), x,
-					y + l*Font.getDefaultFont().getHeight() + (l > 0 ? (l-1)*lineSpacing : 0),
-					Graphics.LEFT);
+					y + l*font.getHeight() + (l > 0 ? (l-1)*lineSpacing : 0), 0);
 			}
 		}
-
 	}
-
 }

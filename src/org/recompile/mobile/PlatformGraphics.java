@@ -353,6 +353,24 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void drawImage(Image image, int x, int y, int anchor)
 	{
+		if(image == null) { throw new NullPointerException("Image cannot be null"); }
+
+		if (anchor != 0)
+	    {
+	        int hAlign = anchor & (LEFT | HCENTER | RIGHT);
+	        int vAlign = anchor & (TOP | BOTTOM | BASELINE | VCENTER);
+
+	        if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT) {
+	            throw new IllegalArgumentException("Invalid horizontal anchor");
+	        }
+	        if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE && vAlign != VCENTER) {
+	            throw new IllegalArgumentException("Invalid vertical anchor");
+	        }
+	        if (anchor != (hAlign | vAlign)) {
+	            throw new IllegalArgumentException("Invalid anchor combination");
+	        }
+	    }
+
 		try
 		{
 			x = AnchorX(x, image.getWidth(), anchor);
@@ -638,10 +656,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			if(x1 >= clipX && x1 < clipWidth && y1 >= clipY && y1 < clipHeight &&
 			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
 			{
-				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[y1*canvasWidth+x1] = getColor(); }
+				if(!Mobile.isDoJa && getAlphaComponent() == 255) { canvasData[y1*canvasWidth+x1] = color; }
 				else
 				{
-					canvasData[y1*canvasWidth+x1] = blendPixels(getColor(), canvasData[y1*canvasWidth+x1]);
+					canvasData[y1*canvasWidth+x1] = blendPixels(color, canvasData[y1*canvasWidth+x1]);
 				}
 			}
 
@@ -730,10 +748,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			if((fillX >= clipX && fillX < clipWidth && fillY >= clipY && fillY < clipHeight) &&
 			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
 			{
-				if(isOpaque) { canvasData[(fillY * canvasWidth) + fillX] = getColor(); }
+				if(isOpaque) { canvasData[(fillY * canvasWidth) + fillX] = color; }
 				else
 				{
-					canvasData[(fillY * canvasWidth) + fillX] = blendPixels(getColor(), canvasData[(fillY * canvasWidth) + fillX]);
+					canvasData[(fillY * canvasWidth) + fillX] = blendPixels(color, canvasData[(fillY * canvasWidth) + fillX]);
 				}
 			}
 			curPixel++;
@@ -766,10 +784,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				(j == height-1 && i % 4 <= 1) || (i == width-1 && j % 4 <= 1)))
 				|| strokeStyle == SOLID))
 				{
-					if(isOpaque) { canvasData[((y + j) * canvasWidth) + (x + i)] = getColor(); }
+					if(isOpaque) { canvasData[((y + j) * canvasWidth) + (x + i)] = color; }
 					else
 					{
-						canvasData[((y + j) * canvasWidth) + (x + i)] = blendPixels(getColor(), canvasData[((y + j) * canvasWidth) + (x + i)]);
+						canvasData[((y + j) * canvasWidth) + (x + i)] = blendPixels(color, canvasData[((y + j) * canvasWidth) + (x + i)]);
 					}
 				}
 
@@ -811,7 +829,26 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Patch: Line break support (May affect other games)
 	public void drawString(String str, int x, int y, int anchor)
 	{
-		if(str == null || str.length() == 0) { return; }
+		if(str == null) { throw new NullPointerException("String cannot be null"); }
+
+		if (anchor != 0)
+	    {
+	        int hAlign = anchor & (LEFT | HCENTER | RIGHT);
+	        int vAlign = anchor & (TOP | BOTTOM | BASELINE); // VCENTER is not allowed for strings.
+
+	        if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT) {
+	            throw new IllegalArgumentException("Invalid horizontal anchor");
+	        }
+	        if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE) {
+	            throw new IllegalArgumentException("Invalid vertical anchor for text (VCENTER is not allowed)");
+	        }
+	        if (anchor != (hAlign | vAlign)) {
+	            throw new IllegalArgumentException("Invalid anchor combination");
+	        }
+	    }
+
+		if(str.length() == 0) { return; }
+
 		if(str.indexOf('\n') < 0 && str.indexOf('\r') < 0)
 		{
 			drawStringSingleLine(str, x, y, anchor);
@@ -946,7 +983,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final boolean isConcave = Math.abs(arcAngle) > 180;
 
 		final boolean hasAlpha = getAlphaComponent() < 255;
-		final int color = getColor();
 
 		for (int py = startY; py < endY; py++)
 		{
@@ -1033,7 +1069,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		/* If width or height ended up as zero, we can exit early */
 		if(width <= 0 || height <= 0) { return; }
 
-		final int color = getColor();
 		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
 		int dstRow = y * canvasWidth + x;
 
@@ -1116,6 +1151,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void setColor(int r, int g, int b)
 	{
+		if(r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) { throw new IllegalArgumentException("Invalid color component"); }
+
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		color = (0xFF << 24) | (r<<16) | (g<<8) | b; // Alpha is ignored below, we set it just so the color variable is accurate
@@ -1136,14 +1173,15 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public int getBlueComponent() { return color & 0xFF; }
 
-	public int getColor() { return color; }
+	public int getColor() { return 0x00FFFFFF & color; }
 
-	public int getDisplayColor(int color) { return color; }
+	public int getDisplayColor(int col) { return 0x00FFFFFF & col; }
 
 	public Font getFont() { return font; }
 
 	public void setStrokeStyle(int stroke)
 	{
+		if(stroke < SOLID || stroke > DOTTED) { throw new IllegalArgumentException("Invalid stroke style"); }
 		if(stroke != strokeStyle) { strokeStyle = stroke; } // We set the stroke when actually drawing in draw* operations
 	}
 
@@ -1544,7 +1582,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3)
 	{
-		drawTriangle(x1, y1, x2, y2, x3, y3, getColor());
+		drawTriangle(x1, y1, x2, y2, x3, y3, color);
 	}
 
 	public void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int argbColor)
@@ -1654,7 +1692,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3)
 	{
-		fillTriangle(x1, y1, x2, y2, x3, y3, getColor());
+		fillTriangle(x1, y1, x2, y2, x3, y3, color);
 	}
 
 	public void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int argbColor)
@@ -2204,7 +2242,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		if(data == null) { throw new NullPointerException("Null char array received"); }
 		if(offset < 0 || length < 0 || offset > data.length || length > data.length - offset) { throw new StringIndexOutOfBoundsException("invalid length and/or position received"); }
-		drawChars(data, offset, length, x, y, BASELINE);
+		drawChars(data, offset, length, x, y, BASELINE | LEFT);
 	}
 
 	public void drawString(String str, int x, int y)
@@ -2212,7 +2250,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 		if(str == null) { throw new NullPointerException("Null string received"); }
 
-		if(str.length() > 0) { drawString(str, x, y, BASELINE); }
+		if(str.length() > 0) { drawString(str, x, y, BASELINE | LEFT); }
 	}
 
 	public void drawImage(com.nttdocomo.ui.Image image, int[] matrix)
@@ -2462,14 +2500,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		fillPolygon(xPoints, 0, yPoints, 0, numPoints, (0xFF << 24) | getColor());
+		fillPolygon(xPoints, 0, yPoints, 0, numPoints, (0xFF << 24) | color);
 	}
 
 	public void fillPolygon(final int[] xPoints, final int[] yPoints, final int offset, final int numPoints)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		fillPolygon(xPoints, offset, yPoints, offset, numPoints, (0xFF << 24) | getColor());
+		fillPolygon(xPoints, offset, yPoints, offset, numPoints, (0xFF << 24) | color);
 	}
 
 	// Haven't found those in use, but if there's fillPolygon for DoJa, there must be drawPolygon too
@@ -2477,14 +2515,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		drawPolygon(xPoints, 0, yPoints, 0, numPoints, (0xFF << 24) | getColor());
+		drawPolygon(xPoints, 0, yPoints, 0, numPoints, (0xFF << 24) | color);
 	}
 
 	public void drawPolygon(final int[] xPoints, final int[] yPoints, final int offset, final int numPoints)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		drawPolygon(xPoints, offset, yPoints, offset, numPoints, (0xFF << 24) | getColor());
+		drawPolygon(xPoints, offset, yPoints, offset, numPoints, (0xFF << 24) | color);
 	}
 
 	public void drawScaledImage(com.nttdocomo.ui.Image image, int dx, int dy, int width, int height, int sx, int sy, int swidth, int sheight)
@@ -2556,13 +2594,13 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		canvasData[y*canvasWidth+x] = getColor();
+		canvasData[y*canvasWidth+x] = color;
 	}
 
 	public void setPixel(int x, int y, int color)
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
-		int restorecolor = getColor();
+		int restorecolor = color;
 		setAlphaRGB(color);
 		setPixel(x, y);
 		setAlphaRGB(restorecolor);
@@ -3219,7 +3257,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		try
 		{
-			int tmpColor = getColor();
+			int tmpColor = color;
 			Font tmpFont = getFont();
 			setAlphaRGB(0x90000000);
 			gc.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -3235,7 +3273,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public final void drawPauseIndicator()
 	{
-		int tmpColor = getColor();
+		int tmpColor = color;
 		Font tmpFont = getFont();
 		setAlphaRGB(0x90000000);
 		gc.fillRect(0, 0, canvasWidth, canvasHeight);

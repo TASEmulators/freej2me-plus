@@ -30,6 +30,8 @@ public class Gauge extends Item
 	public static final int INCREMENTAL_UPDATING = 3;
 	public static final int INDEFINITE = -1;
 
+	private int animationOffset = 0;
+	private int animationDirection = 1; // 1 for moving right, -1 for left
 
 	private boolean interactive;
 	private int maxValue;
@@ -44,8 +46,9 @@ public class Gauge extends Item
 
 		setLabel(label);
 		interactive = isInteractive;
-		maxValue = maxvalue;
-		value = initialvalue;
+
+		setMaxValue(maxvalue);
+		setValue(initialvalue);
 	}
 
 
@@ -61,105 +64,125 @@ public class Gauge extends Item
 
 	public void setItemCommandListener(ItemCommandListener l) { super.setItemCommandListener(l); }
 
-	public void setMaxValue(int newmax) 
+	public void setMaxValue(int newmax)
 	{
-		if(!interactive) 
+		if (interactive)
 		{
-			if(newmax == INDEFINITE) 
+			if (newmax <= 0)
+			{
+				throw new IllegalArgumentException("Interactive gauge max value must be greater than zero");
+			}
+		}
+		else
+		{
+			if (newmax <= 0 && newmax != INDEFINITE)
+			{
+				throw new IllegalArgumentException("Non-interactive gauge max value must be > 0 or INDEFINITE");
+			}
+		}
+
+		boolean hadDefiniteRange = (maxValue != INDEFINITE);
+
+		if (newmax > 0)
+		{
+			if (hadDefiniteRange)
 			{
 				maxValue = newmax;
-				setValue(CONTINUOUS_IDLE);
+				if (value > newmax) { value = newmax; }
 			}
-			else if(newmax > 0) { maxValue = newmax; }
+			else
+			{
+				maxValue = newmax;
+				value = 0;
+			}
 		}
-		else if(newmax > maxValue) 
+		else
 		{
-			Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "setMaxValue received value " + newmax + " which is higher or equal to the current max of " + maxValue + ". Keeping its value unchanged.");
+			if (hadDefiniteRange)
+			{
+				maxValue = newmax;
+				value = CONTINUOUS_IDLE;
+			}
 		}
-		else if(newmax > 0) { maxValue = newmax; }
 
 		_invalidateContents();
 	}
 
-	public void setValue(int newvalue) 
+
+	public void setValue(int newvalue)
 	{
-		if(interactive || maxValue != INDEFINITE) 
+		if(interactive || maxValue != INDEFINITE)
 		{
-			if(newvalue < 0) 
-			{ 
-				Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "setValue received value " + newvalue + " which is below the min allowed value of 0. Clamping value to 0.");
-				value = 0;
-			}
-			else if(newvalue > maxValue) 
-			{
-				Mobile.log(Mobile.LOG_WARNING, Gauge.class.getPackage().getName() + "." + Gauge.class.getSimpleName() + ": " + "setValue received value " + newvalue + " which is beyond the max allowed value of " + maxValue + ". Clamping value to " + maxValue + ".");
-				value = maxValue; 
-			}
-			else { value = newvalue; }
+			if(newvalue > maxValue) { newvalue = maxValue; }
+			if(newvalue < 0) { newvalue = 0; }
 		}
-		else 
+		else
 		{
-			if(newvalue != CONTINUOUS_IDLE && newvalue != CONTINUOUS_RUNNING && newvalue != INCREMENTAL_IDLE && newvalue != INCREMENTAL_UPDATING) 
+			if(newvalue != CONTINUOUS_IDLE && newvalue != CONTINUOUS_RUNNING && newvalue != INCREMENTAL_IDLE && newvalue != INCREMENTAL_UPDATING)
 			{
 				throw new IllegalArgumentException("Gauge is non-interactive and has indefinite value. Received invalid value update");
 			}
-			value = newvalue;
 		}
+
+		value = newvalue;
 		_invalidateContents();
 	}
 
 	protected int getContentHeight(int width) { return Font.getDefaultFont().getHeight() + Font.getDefaultFont().getHeight()/5; }
 
 	protected boolean keyPressed(int key) // Gauge extends Item, which receives a converted Canvas key
-	{ 
+	{
 		boolean handled = false;
 
-		if(interactive) 
+		if(interactive)
 		{
-			if ((key == Canvas.LEFT || key == Canvas.KEY_NUM4) && value > 0) { setValue(value-1); handled = true; } 
-			else if ((key == Canvas.RIGHT || key == Canvas.KEY_NUM6) && value < maxValue) { setValue(value+1); handled = true; } 
+			if ((key == Canvas.LEFT || key == Canvas.KEY_NUM4) && value > 0) { setValue(value-1); handled = true; }
+			else if ((key == Canvas.RIGHT || key == Canvas.KEY_NUM6) && value < maxValue) { setValue(value+1); handled = true; }
 
-			if (handled) 
+			if (handled)
 			{
 				notifyStateChanged();
 				_invalidateContents();
 			}
 		}
-		
+
 		return handled;
 	}
 
-	protected void renderItem(Graphics graphics, int x, int y, int width, int height) 
+
+	public boolean isAnimating()
 	{
-		graphics.translate(x, y);
-
-		final int arrowWidth = Font.getDefaultFont().getHeight()/2;
-		final int arrowMargin = Font.getDefaultFont().getHeight()/15;
-		final int arrowPadding = Font.getDefaultFont().getHeight()/2;
-		final int arrowSpacing = arrowWidth+arrowMargin+arrowPadding;
-		
-		if(interactive)
-		{
-			graphics.drawString("<", arrowSpacing-1, 0, Graphics.RIGHT); // Arrow left
-			graphics.drawString(">", arrowSpacing + (width-2*arrowSpacing) + 2, 0, Graphics.LEFT); // Arrow right
-		}
-
-		graphics.setColor(Mobile.lcduiTextColor);
-		graphics.drawRect(arrowSpacing, 0, width-2*arrowSpacing, Font.getDefaultFont().getHeight());
-
-		int barWidth = maxValue == 0 ? 0 : ((value * (width-2*arrowSpacing))/maxValue);
-
-		graphics.fillRect(arrowSpacing+2, 2, barWidth-3, Font.getDefaultFont().getHeight()-3);
-		
-		graphics.setColor(Mobile.lcduiStrokeColor); // Gauge Value will be rendered with stroke color instead of "lcduiTextColor" (as the bar is TextColor and the BG is BGColor) 
-		
-		String text;
-		if(maxValue != INDEFINITE) { text = Integer.toString(value) + " (" + String.format("%.0f", (value / (float) maxValue * 100f)) + "%)"; }
-		else { text = "? (?%)"; }
-		int textWidth = (graphics.getGraphics2D().getFontMetrics().stringWidth(text));
-		graphics.drawString(text, (width-textWidth)/2 + 1, 0, Graphics.LEFT); // Using Graphics' HCENTER doesn't work as expected here, so centering has to be done manually
-			
-		graphics.translate(-x, -y);
+		// Only animate if it's non-interactive, indefinite, and in a running/updating state
+		return !interactive && maxValue == INDEFINITE &&
+			   (value == CONTINUOUS_RUNNING || value == INCREMENTAL_UPDATING);
 	}
 
+	public void advanceAnimation(int barWidth)
+	{
+		if (!isAnimating()) { return; }
+
+		animationOffset += animationDirection * (Mobile.limitFPS == 0 ? 1 : 60/Mobile.limitFPS);
+
+		// Bounce back and forth inside the gauge bar's bounds. Segment width is
+		// synced with LCDUIRenderer's drawGauge() code, so a change here must
+		// also be done there and vice-versa.
+		int segmentWidth = barWidth / 3;
+		if (animationOffset + segmentWidth >= barWidth)
+		{
+			animationOffset = barWidth - segmentWidth;
+			animationDirection = -1;
+		}
+		else if (animationOffset < 0)
+		{
+			animationOffset = 0;
+			animationDirection = 1;
+		}
+	}
+
+	public int getAnimationOffset() { return animationOffset; }
+
+	protected void renderItem(Graphics graphics, int x, int y, int width, int height, boolean isSelected)
+	{
+		LCDUIRenderer.drawGauge(graphics, x, y, width, height, value, maxValue, interactive, animationOffset, isSelected);
+	}
 }

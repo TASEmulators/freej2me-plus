@@ -33,7 +33,7 @@ public class PlatformFont
 {
 	protected static final byte[] fontSizes =
 	{
-		 7,  8, 10, 12, // < 128 minimum px dimension
+		 7,  8, 9, 11, // < 128 minimum px dimension
 		 9, 11, 13, 14, // < 176 minimum px dimension
 		10, 12, 13, 15, // < 220 minimum px dimension
 		11, 13, 15, 17, // >= 220 minimum px dimension
@@ -66,18 +66,49 @@ public class PlatformFont
 	public PlatformFont(int face, int style, int size, boolean isLCDUI)
 	{
 		// Validate font settings first
-		if(isLCDUI && face != Font.FACE_SYSTEM && face != Font.FACE_PROPORTIONAL && face != Font.FACE_MONOSPACE
-			&& style != Font.STYLE_PLAIN && style != Font.STYLE_ITALIC && style != Font.STYLE_BOLD
-			&& size != Font.SIZE_SMALL && size != Font.SIZE_MEDIUM && size != Font.SIZE_LARGE)
+		if(isLCDUI)
 		{
-			throw new IllegalArgumentException("Cannot create a LCDUI font with invalid face, style or size. style " + style + " face " + face + " size " + size);
-		}
+		    if (face != Font.FACE_SYSTEM && face != Font.FACE_PROPORTIONAL && face != Font.FACE_MONOSPACE)
+		    {
+		        throw new IllegalArgumentException("Invalid LCDUI font face: " + face);
+		    }
 
-		if(!isLCDUI && face != com.nttdocomo.ui.Font.FACE_SYSTEM && face != com.nttdocomo.ui.Font.FACE_PROPORTIONAL && face != com.nttdocomo.ui.Font.FACE_MONOSPACE
-			&& style != com.nttdocomo.ui.Font.STYLE_PLAIN && style != com.nttdocomo.ui.Font.STYLE_ITALIC && style != com.nttdocomo.ui.Font.STYLE_BOLD && style != com.nttdocomo.ui.Font.STYLE_BOLDITALIC
-			&& size != com.nttdocomo.ui.Font.SIZE_SMALL && size != com.nttdocomo.ui.Font.SIZE_MEDIUM && size != com.nttdocomo.ui.Font.SIZE_LARGE)
+		    if (size != Font.SIZE_SMALL && size != Font.SIZE_MEDIUM && size != Font.SIZE_LARGE)
+		    {
+		        throw new IllegalArgumentException("Invalid LCDUI font size: " + size);
+		    }
+
+		    int validStyleMask = Font.STYLE_PLAIN | Font.STYLE_BOLD | Font.STYLE_ITALIC | Font.STYLE_UNDERLINED;
+		    if (style < 0 || (style & ~validStyleMask) != 0)
+		    {
+		        throw new IllegalArgumentException("Invalid LCDUI font style: " + style);
+		    }
+		}
+		else
 		{
-			throw new IllegalArgumentException("Cannot create a DoJa font with invalid face, style or size. style " + style + " face " + face + " size " + size);
+			if (face != com.nttdocomo.ui.Font.FACE_SYSTEM &&
+		        face != com.nttdocomo.ui.Font.FACE_PROPORTIONAL &&
+		        face != com.nttdocomo.ui.Font.FACE_MONOSPACE)
+		    {
+		        throw new IllegalArgumentException("Invalid DoJa font face: " + face);
+		    }
+
+		    if (size != com.nttdocomo.ui.Font.SIZE_SMALL &&
+		        size != com.nttdocomo.ui.Font.SIZE_MEDIUM &&
+		        size != com.nttdocomo.ui.Font.SIZE_LARGE)
+		    {
+		        throw new IllegalArgumentException("Invalid DoJa font size: " + size);
+		    }
+
+		    int validDojaStyleMask = com.nttdocomo.ui.Font.STYLE_PLAIN |
+		        com.nttdocomo.ui.Font.STYLE_BOLD |
+                com.nttdocomo.ui.Font.STYLE_ITALIC |
+                com.nttdocomo.ui.Font.STYLE_BOLDITALIC;
+
+		    if (style < 0 || (style & ~validDojaStyleMask) != 0)
+		    {
+		        throw new IllegalArgumentException("Invalid DoJa font style: " + style);
+		    }
 		}
 
 		// Set over-arching font attributes (awtFont is internal and so are its face, size, etc properties)

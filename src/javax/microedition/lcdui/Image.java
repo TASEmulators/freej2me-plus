@@ -33,7 +33,7 @@ public class Image extends PlatformImage
 	protected Image(String name) throws IOException { super(name); }
 
 	protected Image(InputStream stream) throws IOException { super(stream); }
-	
+
 	protected Image(int Width, int Height, int ARGBcolor) { super(Width, Height, ARGBcolor); }
 
 	protected Image(Image source) { super(source); }
@@ -42,7 +42,7 @@ public class Image extends PlatformImage
 
 	protected Image(int[] rgb, int Width, int Height, boolean processAlpha) { super(rgb, Width, Height, processAlpha); }
 
-	protected Image(Image image, int x, int y, int Width, int Height, int transform) { super(image, x, y, Width, Height, transform); } 
+	protected Image(Image image, int x, int y, int Width, int Height, int transform) { super(image, x, y, Width, Height, transform); }
 
 	// TODO: This will create mutable images for both MIDP (shouldn't) and Nokia DirectGraphics (should)
 	public static Image createImage(byte[] imageData, int imageOffset, int imageLength) throws IllegalArgumentException
@@ -127,16 +127,16 @@ public class Image extends PlatformImage
 
 	// Some early siemens jars like Mine in Line, for whatever reason, expect some siemens.mp.ui Image methods to be here.
 
-	public static Image createImageFromBitmap(byte[] imageData, int imageWidth, int imageHeight) 
+	public static Image createImageFromBitmap(byte[] imageData, int imageWidth, int imageHeight)
 	{
 		if (imageWidth <= 0 || imageHeight <= 0) { throw new IllegalArgumentException("Width and height must be greater than zero.");}
 
 		Image image = Image.createImage(imageWidth, imageHeight);
 		int[] rgbData = image.getDataBuffer();
 
-		for (int j = 0; j < imageHeight; j++) 
+		for (int j = 0; j < imageHeight; j++)
 		{
-			for (int i = 0; i < imageWidth; i++) 
+			for (int i = 0; i < imageWidth; i++)
 			{
 				int byteIndex = (j * imageWidth + i) / 8;
 				int bitIndex = (j * imageWidth + i) % 8;

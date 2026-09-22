@@ -252,10 +252,7 @@ public abstract class Canvas extends Displayable
 				Mobile.getDisplay().postPaintRequest(new Runnable()
 				{
 					@Override
-					public void run()
-					{
-						repaintRequest();
-					}
+					public void run() { repaintRequest(); }
 				});
 			}
 		}
@@ -398,37 +395,13 @@ public abstract class Canvas extends Displayable
 
 		// Fade the command bar if there's one second left to hide it
 		long fadeStart = 1000000000L;
+		float alphaFactor = 0.8f;
 		if (MobilePlatform.timeToUnfocus < fadeStart)
 		{
-			graphics.setAlphaRGB(((byte)(0xFF * Math.max(0, Math.min(1, MobilePlatform.timeToUnfocus / 1000000000.0))) << 24) | Mobile.lcduiBGColor);
-			graphics.fillRect(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, barHeight);
-			graphics.setAlphaRGB(((byte)(0xFF * Math.max(0, Math.min(1, MobilePlatform.timeToUnfocus / 1000000000.0))) << 24) | Mobile.lcduiTextColor);
-		}
-		else
-		{
-			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiBGColor);
-			graphics.fillRect(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, barHeight);
-			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiTextColor);
+			alphaFactor = Math.max(0f, Math.min(0.8f, MobilePlatform.timeToUnfocus / 1000000000.0f));
 		}
 
-		graphics.drawLine(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, Mobile.lcdHeight-barHeight);
-		graphics.drawLine(Mobile.lcdWidth/2, Mobile.lcdHeight-barHeight, Mobile.lcdWidth/2, Mobile.lcdHeight);
-
-		// Command text drawing
-		int textCenter;
-		int xPos;
-
-		if (!commands.isEmpty())
-		{
-			String label = commands.size() > 2 ? "Options" : commands.get(0).getLabel();
-			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(label))/2;
-			xPos = (Mobile.lcdWidth / 4) - textCenter;
-			graphics.drawString(label, xPos, Mobile.lcdHeight-barHeight, Graphics.LEFT);
-
-			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.size() > 1 ? commands.get(1).getLabel() : ""))/2;
-			xPos = (3 * Mobile.lcdWidth / 4) + textCenter;
-			graphics.drawString(commands.size() > 1 ? commands.get(1).getLabel() : "", xPos, Mobile.lcdHeight-barHeight, Graphics.RIGHT);
-		}
+		LCDUIRenderer.drawCommandBar(graphics, null, commands, null, width, height, barHeight, alphaFactor, Mobile.lcduiBGColor, false);
 	}
 
 	public void addCommand(Command cmd)	{ super.addCommand(cmd); }

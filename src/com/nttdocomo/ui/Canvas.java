@@ -80,23 +80,19 @@ public abstract class Canvas extends Frame
 		javax.microedition.lcdui.Graphics graphics = Mobile.getPlatform().getLcdFrontbufferGraphics();
 
 		final int barHeight = Font.getDefaultFont().getHeight();
+
 		// Fade the command bar if there's one second left to hide it
 		long fadeStart = 1000000000L;
+		float alphaFactor = 0.8f;
 		if (MobilePlatform.timeToUnfocus < fadeStart)
 		{
-			graphics.setAlphaRGB(((byte)(0xFF * Math.max(0, Math.min(1, MobilePlatform.timeToUnfocus / 1000000000.0))) << 24) | Mobile.lcduiBGColor);
-			graphics.fillRect(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, barHeight);
-			graphics.setAlphaRGB(((byte)(0xFF * Math.max(0, Math.min(1, MobilePlatform.timeToUnfocus / 1000000000.0))) << 24) | Mobile.lcduiTextColor);
-		}
-		else
-		{
-			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiBGColor);
-			graphics.fillRect(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, barHeight);
-			graphics.setAlphaRGB((0xFF << 24) | Mobile.lcduiTextColor);
+			alphaFactor = Math.max(0f, Math.min(0.8f, MobilePlatform.timeToUnfocus / 1000000000.0f));
 		}
 
-		graphics.drawLine(0, Mobile.lcdHeight-barHeight, Mobile.lcdWidth, Mobile.lcdHeight-barHeight);
-		graphics.drawLine(Mobile.lcdWidth/2, Mobile.lcdHeight-barHeight, Mobile.lcdWidth/2, Mobile.lcdHeight);
+		javax.microedition.lcdui.LCDUIRenderer.drawCommandBar(graphics, null, null, null, width, height, barHeight, alphaFactor, Mobile.lcduiBGColor, false);
+
+		int baseAlpha = (int)(0xFF * alphaFactor);
+		graphics.setAlphaRGB((baseAlpha << 24) | Mobile.lcduiTextColor);
 
 		// Command text drawing
 		int textCenter;
@@ -105,11 +101,11 @@ public abstract class Canvas extends Frame
 		String label = softLabels[0] != null ? softLabels[0] : "";
 		textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(label))/2;
 		xPos = (Mobile.lcdWidth / 4) - textCenter;
-		graphics.drawString(label, xPos, Mobile.lcdHeight-barHeight, Graphics.LEFT);
+		graphics.drawString(label, xPos, Mobile.lcdHeight-barHeight, Graphics.TOP | Graphics.LEFT);
 
 		label = softLabels[1] != null ? softLabels[1] : "";
 		textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(label))/2;
 		xPos = (3 * Mobile.lcdWidth / 4) + textCenter;
-		graphics.drawString(softLabels[1], xPos, Mobile.lcdHeight-barHeight, Graphics.RIGHT);
+		graphics.drawString(softLabels[1], xPos, Mobile.lcdHeight-barHeight, Graphics.TOP | Graphics.RIGHT);
 	}
 }

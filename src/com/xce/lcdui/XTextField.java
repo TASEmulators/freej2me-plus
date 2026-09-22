@@ -34,7 +34,7 @@ public class XTextField
     private Canvas canvas;
     private Graphics g;
 
-    public XTextField(String text, int maxSize, int constraints, Canvas canvas) 
+    public XTextField(String text, int maxSize, int constraints, Canvas canvas)
     {
         this.canvas = canvas;
 
@@ -45,30 +45,30 @@ public class XTextField
 
     public String getText() { return textField.getString(); }
 
-    public void keyPressed(int keyCode) 
+    public void keyPressed(int keyCode)
     {
         textField.externalKeyPressed(canvas.SKTToMIDPKey(keyCode));
         repaint();
     }
 
-    public void keyReleased(int keyCode) 
+    public void keyReleased(int keyCode)
     {
     }
 
-    public void keyRepeated(int keyCode) 
+    public void keyRepeated(int keyCode)
     {
         textField.externalKeyPressed(canvas.SKTToMIDPKey(keyCode));
         repaint();
     }
 
-    public void paint(Graphics g) 
+    public void paint(Graphics g)
     {
-        textField.externalRenderItem(g, x, y, width, height);
+        textField.externalRenderItem(g, x, y, width, height, this.focus);
     }
 
     public void repaint() { canvas.repaint(); }
 
-    public void setMaxSize(int maxSize) 
+    public void setMaxSize(int maxSize)
     {
         this.maxSize = maxSize;
 
@@ -77,7 +77,7 @@ public class XTextField
 
     public int getMaxSize() { return this.maxSize; }
 
-    public void setBounds(int x, int y, int width, int height) 
+    public void setBounds(int x, int y, int width, int height)
     {
         this.x = x;
         this.y = y;
@@ -85,19 +85,19 @@ public class XTextField
         this.height = height;
     }
 
-    public boolean hasFocus() 
+    public boolean hasFocus()
     {
         Mobile.log(Mobile.LOG_WARNING, XTextField.class.getPackage().getName() + "." + XTextField.class.getSimpleName() + ": " + "hasFocus:" + this.focus);
         return this.focus;
     }
 
-    public void setFocus(boolean focus) 
+    public void setFocus(boolean focus)
     {
         Mobile.log(Mobile.LOG_WARNING, XTextField.class.getPackage().getName() + "." + XTextField.class.getSimpleName() + ": " + "setFocus:" + focus);
         this.focus = focus;
     }
 
-    public void inputChar(char key) 
+    public void inputChar(char key)
     {
         Mobile.log(Mobile.LOG_WARNING, XTextField.class.getPackage().getName() + "." + XTextField.class.getSimpleName() + ": " + "inputChar " + key);
         textField.insert(new String(new char[]{key}), textField.getCaretPosition());

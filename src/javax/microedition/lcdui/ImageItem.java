@@ -30,23 +30,23 @@ public class ImageItem extends Item
 	private Image image;
 	private String altText;
 	private int appearance;
-	private int layout;
 
-	public ImageItem(String label, Image img, int Layout, String alt)
+	public ImageItem(String label, Image img, int layout, String alt)
 	{
-		setLabel(label);
-		layout = Layout;
-		image = img;
-		altText = alt;
+		this(label, img, layout, alt, PLAIN);
 	}
 
-	public ImageItem(String label, Image img, int Layout, String alt, int appearanceMode)
+	public ImageItem(String label, Image img, int layout, String alt, int appearanceMode)
 	{
+		if(appearanceMode < PLAIN || appearanceMode > BUTTON) { throw new IllegalArgumentException("Invalid appearance mode"); }
+
 		setLabel(label);
-		layout = Layout;
+		setLayout(layout);
 		image = img;
 		altText = alt;
 		appearance = appearanceMode;
+
+		updatePreferredSize();
 	}
 
 	public String getAltText() { return altText; }
@@ -55,12 +55,18 @@ public class ImageItem extends Item
 
 	public Image getImage() { return image; }
 
-	public int getLayout() { return layout; }
-
 	public void setAltText(String text) { altText = text; }
 
 	public void setImage(Image img) { image = img; }
 
-	public void setLayout(int Layout) { layout = Layout; }
 
+	protected int getContentWidth()
+	{
+		return (image != null) ? image.getWidth() : 0;
+	}
+
+	protected int getContentHeight(int width)
+	{
+		return (image != null) ? image.getHeight() : 0;
+	}
 }

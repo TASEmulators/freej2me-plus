@@ -175,6 +175,8 @@ public class Display
 
 	public boolean flashBacklight(final int duration)
 	{
+		if(duration < 0) { throw new IllegalArgumentException("Invalid backlight duration"); }
+
 		try
 		{
 			if (flashThread != null && flashThread.isAlive())
@@ -201,6 +203,8 @@ public class Display
 
 	public boolean vodafoneFlashBacklight(final int duration, final int offDuration, final int reps)
 	{
+		if(duration < 0) { throw new IllegalArgumentException("Invalid backlight duration"); }
+
 		try
 		{
 			if (flashThread != null && flashThread.isAlive())
@@ -233,6 +237,9 @@ public class Display
 
 	public int getBestImageHeight(int imageType)
 	{
+		if(imageType < LIST_ELEMENT || imageType > ALERT)
+			{ throw new IllegalArgumentException("Invalid image type"); }
+
 		switch(imageType)
 		{
 			case LIST_ELEMENT: return Mobile.getPlatform().lcdHeight / 8;
@@ -242,7 +249,13 @@ public class Display
 		return Mobile.getPlatform().lcdHeight;
 	}
 
-	public int getBestImageWidth(int imageType) { return Mobile.getPlatform().lcdWidth; }
+	public int getBestImageWidth(int imageType)
+	{
+		if(imageType < LIST_ELEMENT || imageType > ALERT)
+			{ throw new IllegalArgumentException("Invalid image type"); }
+
+		return Mobile.getPlatform().lcdWidth;
+	}
 
 	public int getBorderStyle(boolean highlighted)
 	{
@@ -252,6 +265,8 @@ public class Display
 
 	public int getColor(int colorSpecifier)
 	{
+		if(colorSpecifier < COLOR_BACKGROUND || colorSpecifier > COLOR_HIGHLIGHTED_BORDER)
+			{ throw new IllegalArgumentException("Invalid color specifier"); }
 		switch(colorSpecifier)
 		{
 			case COLOR_BACKGROUND: return Mobile.lcduiBGColor;
@@ -407,11 +422,11 @@ public class Display
 			public void run()
 			{
 				Form form = item.getOwner();
-				if (form != null)
-				{
-					if (form != current) { setCurrent(form); }
-					form.focusItem(item);
-				}
+				if(form == null) { throw new IllegalStateException("Item does not have a container"); }
+
+				if (form != current) { setCurrent(form); }
+				form.focusItem(item);
+
 			}
 		};
 
@@ -425,6 +440,7 @@ public class Display
 
 	public boolean vibrate(int duration)
 	{
+		if(duration < 0) { throw new IllegalArgumentException("Duration cannot be negative"); }
 		Mobile.vibrationDuration = duration;
 		Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Vibrate");
 		return true;

@@ -46,7 +46,7 @@ public class Command
 	{
 		if(cmdType < SCREEN || cmdType > ITEM)
 			{ throw new IllegalArgumentException("Invalid command type"); }
-		if(shortText == null) 
+		if(shortText == null)
 			{ throw new NullPointerException("Commands cannot have a null short label"); }
 
 		label = text;

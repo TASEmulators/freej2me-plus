@@ -16,7 +16,7 @@
 */
 package com.nttdocomo.ui;
 
-public final class TextBox extends Component implements Interactable 
+public final class TextBox extends Component implements Interactable
 {
     public static final int ALPHA = 1;
     public static final int DISPLAY_ANY = 0;
@@ -36,11 +36,11 @@ public final class TextBox extends Component implements Interactable
 
     private Font font = Font.getDefaultFont();
 
-    public TextBox(String text, int columns, int rows, int mode) 
+    public TextBox(String text, int columns, int rows, int mode)
     {
         if (columns < 0 || rows < 0) { throw new IllegalArgumentException("Columns and rows must be non-negative"); }
         if (mode < 0 || mode > 4) { throw new IllegalArgumentException("Illegal mode value"); }
-        
+
         this.text = (text != null) ? text : "";
         this.columns = columns;
         this.rows = rows;
@@ -61,7 +61,7 @@ public final class TextBox extends Component implements Interactable
 
     public com.nttdocomo.lang.XString getXText() { return xText; }
 
-    public void setInputMode(int mode) 
+    public void setInputMode(int mode)
     {
         if (mode < 0 || mode > 4) { throw new IllegalArgumentException("Illegal mode value"); }
 

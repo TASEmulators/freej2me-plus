@@ -20,7 +20,7 @@ import java.awt.Rectangle;
 
 import org.recompile.mobile.PlatformImage;
 
-public class Graphics extends org.recompile.mobile.PlatformGraphics 
-{ 
+public class Graphics extends org.recompile.mobile.PlatformGraphics
+{
 	public Graphics(PlatformImage image) { super(image); }
 }

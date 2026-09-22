@@ -20,27 +20,24 @@ package javax.microedition.lcdui;
 public class Spacer extends Item
 {
 
-	private int minWidth; // TODO: Unused?
-	private int minHeight;
+	public Spacer(int minw, int minh) { setMinimumSize(minw, minh); }
 
+	public void addCommand(Command cmd) { throw new IllegalStateException("Spacer cannot have commands."); }
 
-	public Spacer(int minw, int minh)
+	public void setDefaultCommand(Command cmd) { throw new IllegalStateException("Spacer cannot have commands."); }
+
+	public void setLabel(String label) { throw new IllegalStateException("Spacer cannot have a label."); }
+
+	public void setMinimumSize(int minw, int minh)
 	{
-		minWidth = minw;
-		minHeight = minh;
+		if(minw < 0 || minh < 0) { throw new IllegalArgumentException("Invalid minimum size"); }
+		this.minWidth = minw;
+		this.minHeight = minh;
 	}
 
-	public void addCommand(Command cmd) { }
+	public int getPreferredWidth() { return this.minWidth; }
 
-	public void setDefaultCommand(Command cmd) { }
-
-	public void setLabel(String label) { }
-
-	public void setMinimumSize(int minwidth, int minheight)
-	{
-		this.minWidth = minwidth;
-		this.minHeight = minheight;
-	}
+	public int getPreferredHeight() { return this.minHeight; }
 
 	protected int getContentHeight(int width) { return minHeight; }
 

@@ -550,15 +550,13 @@ public class MobilePlatform
 			{
 				if(key == Canvas.KEY_NUM2 || key == Canvas.UP)
 				{
-					displayable.currentCommand--;
-					if(displayable.currentCommand<0) { displayable.currentCommand = displayable.commands.size()-1; }
+					if(displayable.currentCommand > 0) { displayable.currentCommand--; }
 					displayable._invalidate();
 					return true;
 				}
 				else if(key == Canvas.KEY_NUM8 || key == Canvas.DOWN)
 				{
-					displayable.currentCommand++;
-					if(displayable.currentCommand>=displayable.commands.size()) { displayable.currentCommand = 0; }
+					if(displayable.currentCommand < displayable.commands.size()-1) { displayable.currentCommand++; }
 					displayable._invalidate();
 					return true;
 				}
@@ -905,10 +903,10 @@ public class MobilePlatform
 			gcFrontbuffer.setColor(238, 238, 238);
 			gcFrontbuffer.fillRect(0, 0, lcdWidth, lcdHeight);
 			gcFrontbuffer.setColor(64, 64, 64);
-			gcFrontbuffer.drawString("APP TERMINATED!", lcdWidth/2, lcdHeight/10, org.recompile.mobile.PlatformGraphics.HCENTER);
-			gcFrontbuffer.drawString("Open a new one", lcdWidth/2, lcdHeight/10 + javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
-			gcFrontbuffer.drawString("through Drag-Drop", lcdWidth/2, lcdHeight/10 + 2*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
-			gcFrontbuffer.drawString("or 'File->Open'.", lcdWidth/2, lcdHeight/10 + 3*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.HCENTER);
+			gcFrontbuffer.drawString("APP TERMINATED!", lcdWidth/2, lcdHeight/10, org.recompile.mobile.PlatformGraphics.TOP | org.recompile.mobile.PlatformGraphics.HCENTER);
+			gcFrontbuffer.drawString("Open a new one", lcdWidth/2, lcdHeight/10 + javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.TOP | org.recompile.mobile.PlatformGraphics.HCENTER);
+			gcFrontbuffer.drawString("through Drag-Drop", lcdWidth/2, lcdHeight/10 + 2*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.TOP | org.recompile.mobile.PlatformGraphics.HCENTER);
+			gcFrontbuffer.drawString("or 'File->Open'.", lcdWidth/2, lcdHeight/10 + 3*javax.microedition.lcdui.Font.getDefaultFont().getHeight()+2, org.recompile.mobile.PlatformGraphics.TOP | org.recompile.mobile.PlatformGraphics.HCENTER);
 		}
 		else
 		{
