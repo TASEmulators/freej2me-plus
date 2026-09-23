@@ -29,7 +29,8 @@ public class Libretro
 
 	private static volatile boolean canPause = false;
 
-	private static final long PAUSE_DELAY_MS = 250;
+	// 1/3 of a second of pause delay to be extra safe, the core may stall a bit at boot.
+	private static final long PAUSE_DELAY_MS = 333;
 	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
 
 	private byte[] frameBuffer = new byte[854*854*3];
