@@ -421,14 +421,16 @@ public class Form extends Screen
 			boolean isSelected = (t == focusedItem && items.size() > 1);
 			int vGap = 1; // Add a small space between items
 			itemHeight = item.getContentHeight(itemContentWidth);
-			int imageHeight = (item instanceof ImageItem) ? ((ImageItem)item).getImage().getHeight() + (3 * vGap) : 0;
-			itemHeight = Math.max(itemHeight, imageHeight);
+
+			Image itemImg = null;
+			if(item instanceof ImageItem)
+			{
+				itemImg = ((ImageItem)item).getImage();
+				itemHeight = Math.max(itemHeight, itemImg.getHeight() + (3 * vGap));
+			}
 
 			String itemLabel = item.hasLabel() ? item.getLabel() : null;
 			itemHeight += item.hasLabel() ? item.getLabelHeight(itemContentWidth)-itemPadding : 0;
-
-			Image itemImg = null;
-			if(item instanceof ImageItem) { itemImg = ((ImageItem)item).getImage(); }
 
 			LCDUIRenderer.drawItem(graphics, t, itemLabel, itemImg, 0, thisY, width, itemHeight - vGap, isSelected, false, Choice.IMPLICIT, false, item.getLayout());
 			if(itemLabel != null) { thisY += item.getLabelHeight(itemContentWidth)-itemPadding; }

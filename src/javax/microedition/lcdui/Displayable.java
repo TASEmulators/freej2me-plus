@@ -253,14 +253,12 @@ public abstract class Displayable
 		graphics.translate(restoreX, restoreY);
 		Mobile.getPlatform().flushGraphics(platformImage, 0, 0, width, height);
 
-		// Repaint at given intervals
+		// Re-render this screen at set intervals, with the lower limit being
+		// dictated by the FPS limit.
 		Mobile.getDisplay().postPaintRequest(new Runnable()
 		{
 			@Override
-			public void run()
-			{
-				render();
-			}
+			public void run() { render(); }
 		});
 	}
 

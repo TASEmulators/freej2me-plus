@@ -159,6 +159,13 @@ public class LCDUIRenderer
 	public static void drawItem(Graphics graphics, int index, String label, Image image, int x, int y, int width, int height,
 		boolean selected, boolean checked, int choiceType, boolean isInner, int layoutFlag)
 	{
+		int clipX = graphics.getClipX();
+		int clipY = graphics.getClipY();
+		int clipW = graphics.getClipWidth();
+		int clipH = graphics.getClipHeight();
+
+		graphics.setClip(x, y, width, height);
+
 		int horizontalInset = 4; // 2px margin on each side so items don't kiss the screen edges
 		int drawX = x + horizontalInset;
 		int drawWidth = width - (horizontalInset * 2);
@@ -177,11 +184,8 @@ public class LCDUIRenderer
 
 				int val = (int)(BASE_GRAY + (255 - BASE_GRAY) * (1.0f - distFromCenter));
 				graphics.setColor(val, val, val);
-				graphics.drawLine(drawX, y + py, drawX + drawWidth, y + py);
+				graphics.drawLine(drawX, y + py, drawX + drawWidth - 1, y + py);
 			}
-
-			graphics.setColor(DARKER_GRAY, DARKER_GRAY, DARKER_GRAY);
-			graphics.drawRect(drawX, y, drawWidth, height);
 		}
 		else if(!isInner)
 		{
@@ -193,7 +197,7 @@ public class LCDUIRenderer
 
 				int val = (int)(BASE_GRAY + (LIGHTER_GRAY - BASE_GRAY) * distFromCenter);
 				graphics.setColor(val, val, val);
-				graphics.drawLine(drawX, y + py, drawX + drawWidth, y + py);
+				graphics.drawLine(drawX, y + py, drawX + drawWidth - 1, y + py);
 			}
 		}
 
@@ -221,62 +225,69 @@ public class LCDUIRenderer
 
 		int hAlign = layoutFlag & 0x3;  // LAYOUT_LEFT (1), LAYOUT_RIGHT (2), LAYOUT_CENTER (3)
 		int vAlign = layoutFlag & 0x30; // LAYOUT_TOP (0x10), LAYOUT_BOTTOM (0x20), LAYOUT_VCENTER (0x30)
+		int lineAlign = layoutFlag & 0x200; // NEWLINE_BEFORE (0x100), NEWLINE_AFTER (0x200)
+
+		int imgWidth = 0;
+		int imgHeight = 0;
+		if (image != null)
+		{
+			imgWidth = image.getWidth();
+			imgHeight = image.getHeight();
+		}
+
+		int contentHeight = Math.max(imgHeight, lineHeight);
+
+		if (vAlign == Item.LAYOUT_BOTTOM) { y += height - contentHeight; }
+		else if (vAlign == Item.LAYOUT_VCENTER) { y += (height - contentHeight) / 2; }
 
 		if (image != null)
 		{
-			int imgWidth = image.getWidth();
-			int imgHeight = image.getHeight();
 			int imgX = contentX;
 
-			if (choiceType == Choice.IMPLICIT)
-			{
-				if (hAlign == Item.LAYOUT_RIGHT) { imgX = drawX + drawWidth - imgWidth; }
-				else if (hAlign == Item.LAYOUT_CENTER) { imgX = drawX + (drawWidth - imgWidth) / 2; }
-				else { imgX = drawX; }
-			}
+			// Images don't care about the Item's Choice type.
+			if (hAlign == Item.LAYOUT_RIGHT) { imgX = drawX + drawWidth - imgWidth; }
+			else if (hAlign == Item.LAYOUT_CENTER) { imgX = drawX + (drawWidth - imgWidth) / 2; }
+			else { imgX = drawX; }
 
-			int imgY = y + (height - imgHeight) / 2; // Default to vertical center
-			if (vAlign == Item.LAYOUT_TOP) { imgY = y; }
-			else if (vAlign == Item.LAYOUT_BOTTOM) { imgY = y + height - imgHeight; }
-			if (imgY < y) { imgY = y; }
+			// Centering images vertically had issues, so we align it within
+			// its defined vertical bounds.
+			int imgY = y + (contentHeight - imgHeight) / 2;
 
+			// This means that the image should be last on its line or row, any
+			// other item is placed in a new row.
+			if((lineAlign & Item.LAYOUT_NEWLINE_AFTER) != 0) { imgY += lineHeight; }
 			graphics.drawImage(image, imgX, imgY, 0);
 
-			if (choiceType != Choice.IMPLICIT || hAlign == Item.LAYOUT_LEFT) { contentX += imgWidth + 4; }
+			if (hAlign == 0 || (hAlign & Item.LAYOUT_LEFT) != 0) {contentX += imgWidth; }
 		}
 
-		if (choiceType == Choice.IMPLICIT && image == null)
+		// TODO: Really should test this on a choice type that has images, and is
+		// either EXCLUSIVE or MULTIPLE.
+		int anchor = Graphics.TOP | Graphics.LEFT;
+
+		if (hAlign == Item.LAYOUT_RIGHT)
 		{
-			if (hAlign == Item.LAYOUT_RIGHT)
-			{
-				graphics.drawString(label != null ? label : "", drawX + drawWidth - 3, y, Graphics.TOP | Graphics.RIGHT);
-			}
-			else if (hAlign == Item.LAYOUT_CENTER)
-			{
-				graphics.drawString(label != null ? label : "", x + (width / 2), y, Graphics.TOP | Graphics.HCENTER);
-			}
-			else
-			{
-				graphics.drawString(label != null ? label : "", drawX + 3, y, Graphics.TOP | Graphics.LEFT);
-			}
+			contentX = drawX + drawWidth - 3;
+			anchor = Graphics.TOP | Graphics.RIGHT;
 		}
-		else
+		else if (hAlign == Item.LAYOUT_CENTER)
 		{
-			// If explicitly right-aligned or center-aligned via layout flags:
-			if (choiceType == Choice.IMPLICIT && hAlign == Item.LAYOUT_RIGHT)
-			{
-				graphics.drawString(label != null ? label : "", drawX + drawWidth - 3, y, Graphics.TOP | Graphics.RIGHT);
-			}
-			else if (choiceType == Choice.IMPLICIT && hAlign == Item.LAYOUT_CENTER)
-			{
-				graphics.drawString(label != null ? label : "", x + (width / 2), y, Graphics.TOP | Graphics.HCENTER);
-			}
-			else
-			{
-				graphics.drawString(label != null ? label : "", contentX + 3, y, Graphics.TOP | Graphics.LEFT);
-			}
+			contentX = x + (width / 2);
+			anchor = Graphics.TOP | Graphics.HCENTER;
+		}
+		else { contentX += 3; }
+
+		graphics.drawString(label != null ? label : "", contentX, y, anchor);
+
+		// Draw the outline over everything drawn so far. Otherwise images can
+		// draw over the outline and it looks ugly.
+		if(selected)
+		{
+			graphics.setColor(DARKER_GRAY, DARKER_GRAY, DARKER_GRAY);
+			graphics.drawRect(drawX, y, drawWidth - 1, height - 1);
 		}
 
+		graphics.setClip(clipX, clipY, clipW, clipH);
 		graphics.setColor(Mobile.lcduiTextColor);
 	}
 
