@@ -83,22 +83,24 @@ public class MP3Player extends BasicPlayer
 							* Check if mp3Player is still valid and exit early, since this thread can be
 							* interrupted and the player can also be closed abruptly.
 							*/
-							if (mp3Player == null || !mp3PlayerRunning)  { return; }
+							if (Mobile.isPaused || mp3Player == null || !mp3PlayerRunning)  { return; }
 
 							if (!Thread.currentThread().isInterrupted())
 							{
 								platform.state =  Player.PREFETCHED;
-								platform.notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 								if(numLoops != 0)
 								{
+									platform.notifyListeners(PlayerListener.LOOPED, getMediaTime());
 									if(numLoops > 0) { numLoops--; } // If numLoops = -1, we're looping indefinitely
 									mp3Player.reset();
 									mp3Player.play();
 								}
+
 								// Same idea as on start()
 								if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
 								mp3Player.reset();
 								mp3PlayerRunning = false;
+								platform.notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 							}
 						}
 					}
@@ -106,14 +108,17 @@ public class MP3Player extends BasicPlayer
 				}
 			});
 
-			platform.state =  Player.STARTED;
-			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
+			// This only matters when the app is the one issuing this call.
+			if(!Mobile.isPaused) { this.platform.applyVolume(); }
+			playerThread.start();
 
-			this.platform.applyVolume();
 			// Only track running players when unpaused, as pause/unpause logic calls
 			// for start/stop
 			if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
-			playerThread.start();
+			else { return; } // Don't send listener events when paused.
+
+			platform.state =  Player.STARTED;
+			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MP3Player.class.getPackage().getName() + "." + MP3Player.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
 	}
 
@@ -121,8 +126,11 @@ public class MP3Player extends BasicPlayer
 	{
 		mp3Player.stop();
 		mp3PlayerRunning = false;
+
 		// Same idea as on start()
 		if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
+		else { return; } // Emulator Paused? Don't send the listener event.
+
 		platform.state =  Player.PREFETCHED;
 		platform.notifyListeners(PlayerListener.STOPPED, getMediaTime());
 	}

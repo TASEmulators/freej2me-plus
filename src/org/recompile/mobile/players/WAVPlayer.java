@@ -114,24 +114,32 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 	public void start()
 	{
 		isExplicitStop = false;
-		this.platform.applyVolume();
+
+		// This only matters when the app is the one issuing this call.
+		if(!Mobile.isPaused) { this.platform.applyVolume(); }
+
 		if(getMediaTime() >= getDuration()) { setMediaTime(0); }
 
-		platform.state = Player.STARTED;
-		platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
+		wavClip.start();
 
 		// Only track running players when unpaused, as pause/unpause logic calls
 		// for start/stop
 		if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
-		wavClip.start();
+		else { return; } // Don't send listener events when paused.
+
+		platform.state = Player.STARTED;
+		platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 	}
 
 	public void stop()
 	{
 		isExplicitStop = true;
 		wavClip.stop();
+
 		// Same idea as on start()
 		if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
+		else { return; } // Emulator Paused? Don't release the subsystem nor send event.
+
 		platform.state = Player.PREFETCHED;
 		platform.notifyListeners(PlayerListener.STOPPED, getMediaTime());
 	}
@@ -196,6 +204,8 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 	@Override
 	public void update(LineEvent event)
 	{
+		if (Mobile.isPaused || isExplicitStop || wavClip == null) { return; }
+
 		if (event.getType() == LineEvent.Type.STOP)
 		{
 			// Do this on a thread, otherwise we risk deadlocking on the Java
@@ -205,7 +215,6 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 				@Override
 				public void run()
 				{
-					if (isExplicitStop || wavClip == null) { return; }
 					platform.state = Player.PREFETCHED;
 					if (numLoops != 0)
 					{
@@ -216,7 +225,7 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 					else
 					{
 						// Same idea as on start()
-						if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
+						Manager.runningPlayers.remove(this);
 						platform.notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 					}
 				}

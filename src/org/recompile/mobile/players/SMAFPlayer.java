@@ -139,16 +139,17 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				prepareMidiSubsystem();
 			}
 
-			platform.state = Player.STARTED;
-			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
-
 			synchronized (this.midi)
 			{
-				if (this.midi.isRunning()) { this.midi.stop(); }
+				// These only matter when the app is the one issuing this call.
+				if(!Mobile.isPaused)
+				{
+					if (this.midi.isRunning()) { this.midi.stop(); }
 
-				this.midi.setSequence(midiSequence);
+					this.midi.setSequence(midiSequence);
 
-				this.platform.applyVolume();
+					this.platform.applyVolume();
+				}
 
 				this.midi.removeMetaEventListener(this);
 				this.midi.addMetaEventListener(this);
@@ -157,14 +158,18 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				if(curTime >= getDuration()) { setMediaTime(0); }
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
 
-				// Only track running players when unpaused, as pause/unpause logic calls
-				// for start/stop
-				if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
-
 				this.midi.start();
 			}
 
 			isPlaying = true;
+
+			// Only track running players when unpaused, as pause/unpause logic calls
+			// for start/stop
+			if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
+			else { return; } // Don't send listener events.
+
+			platform.state = Player.STARTED;
+			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 		}
 		catch (Exception e)
 		{
@@ -188,9 +193,11 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 
 		stopPcmClips();
 		curTime = getMediaTime();
+
 		// Same idea as on start()
 		if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
-		else { return; } // Emulator Paused? Don't release the subsystem.
+		else { return; } // Emulator Paused? Don't release the subsystem nor send event.
+
 		releaseMidiSubsystem();
 
 		isPlaying = false;
@@ -505,6 +512,8 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	@Override
 	public void meta(MetaMessage meta)
 	{
+		if (Mobile.isPaused || isExplicitStop || midi == null) { return; }
+
 		onMeta(meta);
 		if (meta.getType() == 0x2F) // END_OF_MEDIA
 		{
@@ -524,6 +533,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 
 					if (sequencerLoopConfigured)
 					{
+						Manager.runningPlayers.remove(this);
 						releaseMidiSubsystem();
 						platform.notifyListeners(PlayerListener.END_OF_MEDIA, curTime);
 					}
@@ -547,6 +557,8 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	@Override
 	public void update(LineEvent event)
 	{
+		if (Mobile.isPaused || isExplicitStop) { return; }
+
 		if (event.getType() == LineEvent.Type.STOP)
 		{
 			final Clip clip = (Clip) event.getLine();
@@ -572,7 +584,6 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 									}
 								}
 							}
-							clip.removeLineListener(SMAFPlayer.this);
 							clip.close();
 						}
 					}
