@@ -217,6 +217,13 @@ public abstract class Canvas extends Displayable
 
 	public void repaint(final int x, final int y, final int width, final int height)
 	{
+		// DO NOT even issue repaints when paused. Lock here too.
+		while (Mobile.isPaused)
+		{
+			try { Thread.sleep(50); }
+			catch(Exception e) { }
+		}
+
 		// Also check if repaints are being serviced here, some jars like Garfield's House add repaint calls in a separate thread from that blocked by serviceRepaints
 		if (!isShown() || listCommands) { return; }
 
@@ -325,6 +332,13 @@ public abstract class Canvas extends Displayable
 
 	public void serviceRepaints()
 	{
+		// ServiceRepaints will lock when paused too.
+		while (Mobile.isPaused)
+		{
+			try { Thread.sleep(50); }
+			catch(Exception e) { }
+		}
+
 		if (!needsRepaint || !isShown()) { return; }
 
 		// If it was called directly from the Paint/EDT Thread, process now

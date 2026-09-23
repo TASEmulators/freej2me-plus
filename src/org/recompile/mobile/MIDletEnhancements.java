@@ -31,12 +31,19 @@ public class MIDletEnhancements
 
 	public static void drawSleep(long millis) throws InterruptedException
 	{
+		// Park any calling thread here when paused (whether it's the render
+		// thread or a separate logic thread)
+	    while (Mobile.isPaused) { Thread.sleep(50); }
+
 		if (Mobile.unlockFramerateHack == 0 && !MobilePlatform.pressedKeys[20]) { Thread.sleep(millis); }
 		else { Thread.sleep(1); }
 	}
 
 	public static void sleep(long millis) throws InterruptedException
 	{
+		// Park here as well
+	    while (Mobile.isPaused) { Thread.sleep(50); }
+
 		if (Mobile.unlockFramerateHack == 0 && !MobilePlatform.pressedKeys[20]) { Thread.sleep(millis); }
 		else { Thread.sleep(1); }
 	}
@@ -44,6 +51,14 @@ public class MIDletEnhancements
 	public static long currentTimeMillis()
 	{
 		long now = System.currentTimeMillis();
+
+		// If paused, just sync the baseline forward so we don't accumulate a massive delta until unpause
+		if (Mobile.isPaused)
+	    {
+	        lastMillisTime = now;
+	        return startMillisTime + curTimeMillis.get();
+	    }
+
 		long elapsedMillis = now - lastMillisTime;
 
 		if (MobilePlatform.pressedKeys[20])
@@ -62,6 +77,14 @@ public class MIDletEnhancements
 	public static long nanoTime()
 	{
 		long now = System.nanoTime();
+
+		// Same idea as currentTimeMillis
+	    if (Mobile.isPaused)
+	    {
+	        lastNanoTime = now;
+	        return startNanoTime + curNanoTime.get();
+	    }
+
 		long elapsedNanos = now - lastNanoTime;
 
 		if (MobilePlatform.pressedKeys[20])
@@ -81,5 +104,11 @@ public class MIDletEnhancements
 	public static void noGC() { }
 
 	/* Can reduce cpu usage in some games, and even helps fix others like Super Action Hero */
-	public static void yieldOverride() throws InterruptedException { Mobile.getPlatform().limitFps(); }
+	public static void yieldOverride() throws InterruptedException
+	{
+		// Also park yield when paused.
+		while (Mobile.isPaused) { Thread.sleep(50); }
+
+		Mobile.getPlatform().limitFps();
+	}
 }

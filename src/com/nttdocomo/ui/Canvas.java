@@ -60,6 +60,13 @@ public abstract class Canvas extends Frame
 
 	public void repaint(final int x, final int y, final int width, final int height)
 	{
+		// DO NOT even issue repaints when paused. Lock here too.
+		while (Mobile.isPaused)
+		{
+			try { Thread.sleep(50); }
+			catch(Exception e) { }
+		}
+
 		if (!isShown() || width <= 0 || height <= 0 || graphics == null) { return; }
 
 		try

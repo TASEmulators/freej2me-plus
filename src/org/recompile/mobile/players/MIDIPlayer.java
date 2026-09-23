@@ -122,6 +122,10 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 				if(curTime >= getDuration()) { setMediaTime(0); }
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
 
+				// Only track running players when unpaused, as pause/unpause logic calls
+				// for start/stop
+				if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
+
 				this.midi.start();
 			}
 		}
@@ -141,6 +145,9 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 			}
 		}
 		curTime = getMediaTime();
+		// Same idea as on start()
+		if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
+		else { return; } // Emulator Paused? Don't release the subsystem.
 		releaseMidiSubsystem();
 		platform.state = Player.PREFETCHED;
 		platform.notifyListeners(PlayerListener.STOPPED, getMediaTime());
@@ -286,6 +293,8 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 	@Override
 	public void meta(MetaMessage meta)
 	{
+		if (Mobile.isPaused || isExplicitStop || midi == null) { return; }
+
 		if (meta.getType() == 0x2F) // 0x2F = END_OF_MEDIA in Sequencer
 		{
 			// Do this on a thread, otherwise we risk deadlocking on the Java
@@ -308,6 +317,7 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 					}
 					else
 					{
+						Manager.runningPlayers.remove(this);
 						releaseMidiSubsystem();
 						platform.notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 					}

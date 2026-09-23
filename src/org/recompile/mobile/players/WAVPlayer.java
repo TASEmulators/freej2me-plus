@@ -28,6 +28,7 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineListener;
 
+import javax.microedition.media.Manager;
 import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
 
@@ -119,6 +120,9 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 		platform.state = Player.STARTED;
 		platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 
+		// Only track running players when unpaused, as pause/unpause logic calls
+		// for start/stop
+		if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
 		wavClip.start();
 	}
 
@@ -126,6 +130,8 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 	{
 		isExplicitStop = true;
 		wavClip.stop();
+		// Same idea as on start()
+		if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
 		platform.state = Player.PREFETCHED;
 		platform.notifyListeners(PlayerListener.STOPPED, getMediaTime());
 	}
@@ -209,6 +215,8 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 					}
 					else
 					{
+						// Same idea as on start()
+						if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
 						platform.notifyListeners(PlayerListener.END_OF_MEDIA, getMediaTime());
 					}
 				}

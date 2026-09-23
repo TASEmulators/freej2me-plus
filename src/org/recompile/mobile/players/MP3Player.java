@@ -19,10 +19,10 @@ package org.recompile.mobile.players;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import javax.microedition.media.Manager;
 import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
 
-/* audio/mpeg support */
 import javazoom.jl.player.MPEGPlayer;
 
 import org.recompile.mobile.Mobile;
@@ -95,6 +95,8 @@ public class MP3Player extends BasicPlayer
 									mp3Player.reset();
 									mp3Player.play();
 								}
+								// Same idea as on start()
+								if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
 								mp3Player.reset();
 								mp3PlayerRunning = false;
 							}
@@ -108,6 +110,9 @@ public class MP3Player extends BasicPlayer
 			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 
 			this.platform.applyVolume();
+			// Only track running players when unpaused, as pause/unpause logic calls
+			// for start/stop
+			if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
 			playerThread.start();
 		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MP3Player.class.getPackage().getName() + "." + MP3Player.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
 	}
@@ -116,6 +121,8 @@ public class MP3Player extends BasicPlayer
 	{
 		mp3Player.stop();
 		mp3PlayerRunning = false;
+		// Same idea as on start()
+		if(!Mobile.isPaused) { Manager.runningPlayers.remove(this); }
 		platform.state =  Player.PREFETCHED;
 		platform.notifyListeners(PlayerListener.STOPPED, getMediaTime());
 	}

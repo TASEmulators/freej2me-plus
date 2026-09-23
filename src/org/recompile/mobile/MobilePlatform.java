@@ -36,6 +36,10 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.game.GameCanvas;
 
+// For pause/resume handling pretty much
+import javax.microedition.media.Manager;
+import org.recompile.mobile.players.BasicPlayer;
+
 /*
 	Mobile Platform
 */
@@ -166,40 +170,32 @@ public class MobilePlatform
 
 	public void setPainter(Runnable r) { painter = r; }
 
-	public static void pauseResumeApp()
+	public static final void pauseResumeApp()
 	{
-		if(!Mobile.isDoJa)
+		if(!Mobile.isPaused)
 		{
-			displayable = Mobile.getDisplay().getCurrent();
-			if (!(displayable instanceof Canvas)) { return; }
+			Mobile.isPaused = true;
 
-			if(!Mobile.isPaused)
+			// Pause active players
+			for (int i = 0; i < Manager.runningPlayers.size(); i++)
 			{
-				((Canvas) displayable).hideNotify();
-
-				try { Mobile.midlet.callPauseApp(); }
-				catch (Exception e) { e.printStackTrace(); }
-
-				Mobile.isPaused = true;
-
-				painter.run();
-			}
-			else
-			{
-				Mobile.isPaused = false;
-
-				((Canvas) displayable).showNotify();
-
-				try { Mobile.midlet.callStartApp(); }
-				catch (Exception e) { e.printStackTrace(); }
-
-				painter.run();
+				BasicPlayer player = Manager.runningPlayers.get(i);
+				player.stop(); // Safe to call, as now the player will ignore meta/line events
 			}
 		}
 		else
 		{
-			// TODO: DoJa pause/resume
+			// Resume only the players that were running before the pause
+			for (int i = 0; i < Manager.runningPlayers.size(); i++)
+			{
+				BasicPlayer player = Manager.runningPlayers.get(i);
+				player.start(); // Safe to call, as now the player will ignore meta/line events
+			}
+
+			Mobile.isPaused = false;
 		}
+
+		painter.run();
 	}
 
 	public static void keyPressed(final int keycode)
@@ -872,7 +868,21 @@ public class MobilePlatform
 
 	public final void flushGraphics(PlatformImage img, int x, int y, int width, int height)
 	{
-		if(!Mobile.isPaused && !appTerminated)
+		while (Mobile.isPaused && !appTerminated)
+		{
+			try
+			{
+				Thread.sleep(50);
+				lastRenderTime = System.nanoTime();
+			}
+			catch (InterruptedException e)
+			{
+				Thread.currentThread().interrupt();
+				break;
+			}
+		}
+
+		if(!appTerminated)
 		{
 			/*
 			 * This must be Synchronized so a frontend reading the frontbuffer
@@ -883,6 +893,7 @@ public class MobilePlatform
 			{
 				gcFrontbuffer.flushGraphics(img, x, y, width, height);
 			}
+
 			if(postDraw != null) { postDraw.run(); postDraw = null; }
 			painter.run();
 

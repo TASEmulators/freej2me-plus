@@ -25,6 +25,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
@@ -41,6 +42,7 @@ import javax.microedition.media.protocol.DataSource;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
+import org.recompile.mobile.players.BasicPlayer;
 import org.recompile.mobile.JavaxPlatformPlayer;
 import org.recompile.mobile.SiemensPlatformPlayer;
 
@@ -60,6 +62,8 @@ public class Manager
 	public static final Transmitter[] exclusiveTransmitters = new Transmitter[NUM_EXCLUSIVE_SYNTHS];
 	public static final Receiver[] exclusiveReceivers = new Receiver[NUM_EXCLUSIVE_SYNTHS];
 	public static final boolean[] synthIdxInUse = new boolean[] { false, false, false, false };
+	// Track which players were actually playing when the pause command hit
+	public static volatile ArrayList<BasicPlayer> runningPlayers = new ArrayList<BasicPlayer>();
 
 	public static Synthesizer toneSynth = null;
 	public static Receiver toneReceiver = null;

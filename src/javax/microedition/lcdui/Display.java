@@ -111,6 +111,13 @@ public class Display
 		Runnable call = null;
 		while(true)
 		{
+			// Stop processing events when paused.
+			while (Mobile.isPaused)
+			{
+				try { Thread.sleep(50); }
+				catch(Exception e) { }
+			}
+
 			Runnable pendingPaint = null;
 			int inputCount = 0, serialCount = 0;
 
