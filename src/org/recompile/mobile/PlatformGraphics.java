@@ -356,20 +356,20 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(image == null) { throw new NullPointerException("Image cannot be null"); }
 
 		if (anchor != 0)
-	    {
-	        int hAlign = anchor & (LEFT | HCENTER | RIGHT);
-	        int vAlign = anchor & (TOP | BOTTOM | BASELINE | VCENTER);
+		{
+			int hAlign = anchor & (LEFT | HCENTER | RIGHT);
+			int vAlign = anchor & (TOP | BOTTOM | BASELINE | VCENTER);
 
-	        if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT) {
-	            throw new IllegalArgumentException("Invalid horizontal anchor");
-	        }
-	        if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE && vAlign != VCENTER) {
-	            throw new IllegalArgumentException("Invalid vertical anchor");
-	        }
-	        if (anchor != (hAlign | vAlign)) {
-	            throw new IllegalArgumentException("Invalid anchor combination");
-	        }
-	    }
+			if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT) {
+				throw new IllegalArgumentException("Invalid horizontal anchor");
+			}
+			if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE && vAlign != VCENTER) {
+				throw new IllegalArgumentException("Invalid vertical anchor");
+			}
+			if (anchor != (hAlign | vAlign)) {
+				throw new IllegalArgumentException("Invalid anchor combination");
+			}
+		}
 
 		try
 		{
@@ -682,7 +682,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void drawArc(int x, int y, int width, int height, int startAngle, int arcAngle)
 	{
-		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
+		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		// Java's coordinate system has positive angles moving counter-clockwise
 		arcAngle = -arcAngle;
@@ -715,16 +715,28 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			(Math.max(width, height) * Math.abs(arcAngle)) / 45);
 
 		// If we don't have at least one step to be drawn, return outright.
-		if(steps <= 0) { return; }
+		if (steps <= 0) { return; }
+
+		// Same notation as fillArc here, for better consistency between both
+		final int AFP_SHIFT = 15;
 
 		final int centerX = (x << 1) + width;
 		final int centerY = (y << 1) + height;
 		final int radiusX = width;
 		final int radiusY = height;
+
 		final int startAngleRad = fastToRadians(startAngle);
 		final int endAngleRad = fastToRadians(startAngle + arcAngle) - startAngleRad;
-		int angle = startAngleRad;
-		int angleStep = endAngleRad / steps;
+		final int angleStep = endAngleRad / steps;
+
+		// DDA, because cos/sin in the inner loop is expensive.
+		// Get only the increments for each step as well as starting values, and
+		// do simple FP operations inside the loop.
+		final int stepCos = fpCos(angleStep) >> (16 - AFP_SHIFT);
+		final int stepSin = fpSin(angleStep) >> (16 - AFP_SHIFT);
+
+		int fillCos = fpCos(startAngleRad) >> (16 - AFP_SHIFT);
+		int fillSin = fpSin(startAngleRad) >> (16 - AFP_SHIFT);
 
 		// To prevent overdraw here, all we need to do is track the prior pixel.
 		int lastFillX = -1;
@@ -733,28 +745,38 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		boolean isOpaque = !Mobile.isDoJa && getAlphaComponent() == 255;
 		int curPixel = 0; // Used only for DOTTED style lines
 
-		for (int i = 0; i < steps-1; i++)
+		for (int i = 0; i < steps; i++)
 		{
-			angle += angleStep;
-			int fillX = (centerX + (radiusX * (fpCos(angle)) >> FP_FACTOR)) >> 1;
-			int fillY = (centerY + (radiusY * (fpSin(angle)) >> FP_FACTOR)) >> 1;
+			int fillX = (centerX + ((radiusX * fillCos) >> AFP_SHIFT)) >> 1;
+			int fillY = (centerY + ((radiusY * fillSin) >> AFP_SHIFT)) >> 1;
 
 			// If this is the exact same pixel as the last one, skip it.
-			if (fillX == lastFillX && fillY == lastFillY) { continue; }
-
-			lastFillX = fillX;
-			lastFillY = fillY;
-
-			if((fillX >= clipX && fillX < clipWidth && fillY >= clipY && fillY < clipHeight) &&
-			((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
+			if (fillX != lastFillX || fillY != lastFillY)
 			{
-				if(isOpaque) { canvasData[(fillY * canvasWidth) + fillX] = color; }
-				else
+				lastFillX = fillX;
+				lastFillY = fillY;
+
+				if ((fillX >= clipX && fillX < clipWidth && fillY >= clipY && fillY < clipHeight) &&
+					((strokeStyle == DOTTED && curPixel % 4 <= 1) || strokeStyle == SOLID))
 				{
-					canvasData[(fillY * canvasWidth) + fillX] = blendPixels(color, canvasData[(fillY * canvasWidth) + fillX]);
+					if (isOpaque)
+					{
+						canvasData[(fillY * canvasWidth) + fillX] = color;
+					}
+					else
+					{
+						canvasData[(fillY * canvasWidth) + fillX] = blendPixels(color, canvasData[(fillY * canvasWidth) + fillX]);
+					}
 				}
+				curPixel++;
 			}
-			curPixel++;
+
+			// As the cos/sin step increments were calculated out of the loop,
+			// all we need to do hare are simple multiply-adds on each step.
+			int nextCos = (fillCos * stepCos - fillSin * stepSin) >> AFP_SHIFT;
+			int nextSin = (fillSin * stepCos + fillCos * stepSin) >> AFP_SHIFT;
+			fillCos = nextCos;
+			fillSin = nextSin;
 		}
 	}
 
@@ -832,20 +854,20 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(str == null) { throw new NullPointerException("String cannot be null"); }
 
 		if (anchor != 0)
-	    {
-	        int hAlign = anchor & (LEFT | HCENTER | RIGHT);
-	        int vAlign = anchor & (TOP | BOTTOM | BASELINE); // VCENTER is not allowed for strings.
+		{
+			int hAlign = anchor & (LEFT | HCENTER | RIGHT);
+			int vAlign = anchor & (TOP | BOTTOM | BASELINE); // VCENTER is not allowed for strings.
 
-	        if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT) {
-	            throw new IllegalArgumentException("Invalid horizontal anchor");
-	        }
-	        if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE) {
-	            throw new IllegalArgumentException("Invalid vertical anchor for text (VCENTER is not allowed)");
-	        }
-	        if (anchor != (hAlign | vAlign)) {
-	            throw new IllegalArgumentException("Invalid anchor combination");
-	        }
-	    }
+			if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT) {
+				throw new IllegalArgumentException("Invalid horizontal anchor");
+			}
+			if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE) {
+				throw new IllegalArgumentException("Invalid vertical anchor for text (VCENTER is not allowed)");
+			}
+			if (anchor != (hAlign | vAlign)) {
+				throw new IllegalArgumentException("Invalid anchor combination");
+			}
+		}
 
 		if(str.length() == 0) { return; }
 
@@ -925,7 +947,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		// Arcs are filled by calculating the arc's bounding box, and painting
 		// with a standard scanline raster algorithm. We normalize the
 		// coordinates (normDx, normDy) so that ovals match Java SE's behavior
-		// of angles scaling with the bounding box.
+		// of angles scaling with the bounding box for any shape.
 
 		// Figure out the start and end points of the bounding box right away,
 		// as we can use the clip rectangle as the direct limits for those.
@@ -940,10 +962,16 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		// SquirrelJME uses Q16.16 as its fixed point scale. Trying to use that
 		// here would need many variable promotions to long (invRadius, the
-		// normalized coordinates, and more). We use Q12.20 here as that is
+		// normalized coordinates, and more). We use Q16.15 here as that is
 		// still precise enough and does not need long promotions.
-		final int AFP_SHIFT = 12;
-		final int AFP_ONE = 1 << AFP_SHIFT; // 4096
+		final int AFP_SHIFT = 15;
+		final int AFP_ONE = 1 << AFP_SHIFT; // 32768
+		// Minor error margin for vector cross-product checks, can't be too
+		// strict here or we get arcs that are slightly misaligned because
+		// the product causes pixels to evaluate as out of bounds. This one
+		// results to 64 in Q15.16 and seems to be the best on a wide assortment
+		// of angles.
+		final int MARGIN = 2 << (AFP_SHIFT - 10);
 
 		final int radiusX = width >> 1;
 		final int radiusY = height >> 1;
@@ -970,15 +998,19 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		// pixel we're going to paint is inside the arc or not (much better
 		// performance than doing these per angle step, and also removes the
 		// need for atan2() entirely!), while also being easier to read.
-		final int cosS = fpCos(fastToRadians(nStart)) >> (16 - AFP_SHIFT);
-		final int sinS = fpSin(fastToRadians(nStart)) >> (16 - AFP_SHIFT);
-		final int cosE = fpCos(fastToRadians(nEnd)) >> (16 - AFP_SHIFT);
-		final int sinE = fpSin(fastToRadians(nEnd)) >> (16 - AFP_SHIFT);
+		int cosS = 0, cosE = 0, sinS = 0, sinE = 0, crossYStart = 0, crossYEnd = 0, crossStart = 0, crossEnd = 0;
+		if (!isFullCircle)
+		{
+			cosS = fpCos(fastToRadians(nStart)) >> (16 - AFP_SHIFT);
+			sinS = fpSin(fastToRadians(nStart)) >> (16 - AFP_SHIFT);
+			cosE = fpCos(fastToRadians(nEnd)) >> (16 - AFP_SHIFT);
+			sinE = fpSin(fastToRadians(nEnd)) >> (16 - AFP_SHIFT);
+		}
 
 		// Arcs may be either convex or concave, thus we need to adapt
-		// drawing accordingly. Convex needs pixels to be after the start &&
-		// before the end cross-products, while Concave has pixel swwps going
-		// past the arc's boundaries, thus the pixels must be after the start ||
+		// drawing accordingly. Convex needs pixels to be after the start AND
+		// before the end cross-products, while Concave has pixel sweeps going
+		// past the arc's boundaries, thus the pixels must be after the start OR
 		// before the end cross-products.
 		final boolean isConcave = Math.abs(arcAngle) > 180;
 
@@ -986,22 +1018,25 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		for (int py = startY; py < endY; py++)
 		{
-			int dy = py - centerY;
+			int dy = centerY - py;
 			int normY = (dy * invRadiusY) >> AFP_SHIFT;
 			int normY2 = (normY * normY) >> AFP_SHIFT;
 
 			if (normY2 >= AFP_ONE) { continue; }
 
 			// Find out the arc's boundaries for the current scanline.
-			int maxDx = (radiusX * fpSqrt12(AFP_ONE - normY2)) >> AFP_SHIFT;
+			int maxDx = (radiusX * fpSqrt15(AFP_ONE - normY2)) >> AFP_SHIFT;
 			int lineStartX = Math.max(startX, centerX - maxDx);
 			int lineEndX = Math.min(endX, centerX + maxDx + 1);
 			int lineOffset = py * canvasWidth;
 
 			// Pre-scale normDy for 2D cross-product scanline checks in X loop,
 			// otherwise we'd waste cycles doing this per-pixel.
-			int crossYStart = (-normY * cosS) >> AFP_SHIFT;
-			int crossYEnd = (-normY * cosE) >> AFP_SHIFT;
+			if (!isFullCircle)
+			{
+				crossYStart = (normY * cosS) >> AFP_SHIFT;
+				crossYEnd = (normY * cosE) >> AFP_SHIFT;
+			}
 
 			for (int px = lineStartX; px < lineEndX; px++)
 			{
@@ -1012,8 +1047,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 					int dx = px - centerX;
 					int normDx = (dx * invRadiusX) >> AFP_SHIFT;
 
-					int crossStart = ((normDx * sinS) >> AFP_SHIFT) + crossYStart;
-					int crossEnd = ((normDx * sinE) >> AFP_SHIFT) + crossYEnd;
+					if (!isFullCircle)
+					{
+						crossStart = ((normDx * sinS) >> AFP_SHIFT) + crossYStart;
+						crossEnd = ((normDx * sinE) >> AFP_SHIFT) + crossYEnd;
+					}
 
 					boolean inSector;
 					if (!isConcave)
@@ -1021,15 +1059,15 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						// For arcs <= 180 degrees, the pixel must be on the
 						// correct side of both boundary rays, otherwise we'll
 						// have the whole quadrant drawn at the opposite end...
-						if (arcAngle > 0) { inSector = (crossStart >= -2) && (crossEnd <= 2); }
-						else { inSector = (crossStart <= 2) && (crossEnd >= -2); }
+						if (arcAngle > 0) { inSector = (crossStart >= -MARGIN) && (crossEnd <= MARGIN); }
+						else { inSector = (crossStart <= MARGIN) && (crossEnd >= -MARGIN); }
 					}
 					else
 					{
 						// For arcs > 180 degrees (concave), similar idea as
 						// above when <= 180 degrees.
-						if (arcAngle > 0) { inSector = (crossStart >= -2) || (crossEnd <= 2); }
-						else { inSector = (crossStart <= 2) || (crossEnd >= -2); }
+						if (arcAngle > 0) { inSector = (crossStart >= -MARGIN) || (crossEnd <= MARGIN); }
+						else { inSector = (crossStart <= MARGIN) || (crossEnd >= -MARGIN); }
 					}
 
 					if (!inSector) { continue; }
@@ -3288,14 +3326,18 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Helper methods
 	protected static final int clamp(int value) { return Math.max(0, Math.min(255, value)); }
 
-	// Square root in fixed point Q12.20 format, specifically for fillArc()
-	protected static final int fpSqrt12(int val)
+	// Square root in fixed point Q16.15 format, specifically for fillArc()
+	protected static final int fpSqrt15(int val)
 	{
 		if (val <= 0) { return 0; }
 		int res = 0;
 
-		// Start being bit-adjusted for 32-bit bounds
-		int bit = 1 << 14;
+		// Multiply by 2, just so we can shift into Q15 without dropping a fractional
+		// part.
+		val <<= 1;
+
+		// Start being bit-adjusted for the largest power of 4 value in 32-bit bounds
+		int bit = 1 << 30;
 		while (bit > val) { bit >>= 2; }
 
 		while (bit != 0)
@@ -3308,7 +3350,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			else { res >>= 1; }
 			bit >>= 2;
 		}
-		return res << 6; // Q12 shift adjustment
+		return res << 7; // Q15 shift adjustment
 	}
 
 	// All math below here uses a factor of 65536, same as shifting by 16 bits
