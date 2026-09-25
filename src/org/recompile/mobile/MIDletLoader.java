@@ -811,6 +811,12 @@ public class MIDletLoader extends URLClassLoader
 	{
 		Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Get Resource As Stream: "+resource + " path:" + className[selectedMidlet]);
 
+		//Temp fix for Disney Brain Pop, because for some reason it would hang here but it works when mapped to normal java getResourceAsStream
+		if(mainClass.getName().equals("com.nttdocomo.ui.i")){
+    		String path = resource.substring(12);
+        	return super.getResourceAsStream(path);
+        }
+		
 		boolean isSiemens = false;
 		// Remove the "resource:" token that some jars pass into this method. FreeJ2ME doesn't need it.
 		if(resource.contains("resource:"))
@@ -964,7 +970,7 @@ public class MIDletLoader extends URLClassLoader
 			name.startsWith("com.vodafone.") || name.startsWith("com.jblend.") || name.startsWith("com.motorola.") ||
 			name.startsWith("com.sprintpcs.") || name.startsWith("com.bmc.") || name.startsWith("com.immersion.") ||
 			name.startsWith("com.j_phone.") || name.startsWith("com.kddi.") || name.startsWith("com.pantech.") ||
-			name.startsWith("mmpp.") || name.startsWith("com.velox.") || name.startsWith("com.nttdocomo.") ||
+			name.startsWith("mmpp.") || name.startsWith("com.velox.") ||
 			name.startsWith("org.xml.") || name.startsWith("org.w3c.") || name.startsWith("javacard.") ||
 			name.startsWith("com.sonyericsson") || name.startsWith("com.xce.") || name.startsWith("com.skt.") ||
 			name.startsWith("com.nec.") || name.startsWith("net.rim.") || name.startsWith("com.sun.")
@@ -978,13 +984,13 @@ public class MIDletLoader extends URLClassLoader
 				Mobile.textEncoding = "Shift_JIS";
 				MobilePlatform.checkFileEncoding();
 			}
-			else if(name.startsWith("com.nttdocomo."))
-			{
-				Mobile.isDoJa = true;
-				Mobile.textEncoding = "Shift_JIS";
-				MobilePlatform.checkFileEncoding();
-			}
 			return loadClass(name, true);
+		}else if (name.startsWith("com.nttdocomo.") && Mobile.isDoJa){
+			Mobile.isDoJa = true;
+			Mobile.textEncoding = "Shift_JIS";
+			MobilePlatform.checkFileEncoding();
+			return loadClass(name, true);
+			
 		}
 
 		try
