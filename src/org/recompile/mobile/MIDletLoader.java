@@ -985,12 +985,13 @@ public class MIDletLoader extends URLClassLoader
 				MobilePlatform.checkFileEncoding();
 			}
 			return loadClass(name, true);
-		}else if (name.startsWith("com.nttdocomo.") && Mobile.isDoJa){
+		}
+		else if (name.startsWith("com.nttdocomo.") && Mobile.isDoJa)
+		{
 			Mobile.isDoJa = true;
 			Mobile.textEncoding = "Shift_JIS";
 			MobilePlatform.checkFileEncoding();
 			return loadClass(name, true);
-			
 		}
 
 		try
