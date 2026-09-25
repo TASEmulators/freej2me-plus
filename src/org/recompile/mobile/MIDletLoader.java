@@ -812,7 +812,8 @@ public class MIDletLoader extends URLClassLoader
 		Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Get Resource As Stream: "+resource + " path:" + className[selectedMidlet]);
 
 		//Temp fix for Disney Brain Pop, because for some reason it would hang here but it works when mapped to normal java getResourceAsStream
-		if(mainClass.getName().equals("com.nttdocomo.ui.i")){
+		if(mainClass.getName().equals("com.nttdocomo.ui.i"))
+		{
     		String path = resource.substring(12);
         	return super.getResourceAsStream(path);
         }
