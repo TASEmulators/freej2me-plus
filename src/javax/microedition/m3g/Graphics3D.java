@@ -30,10 +30,13 @@ public class Graphics3D
 {
 	/*
 	 * Depth buffer clear value: the maximum depth (1.0 in window coordinates)
-	 * mapped to the short-based buffer. Depth writes use the same 32200 scale
-	 * (slightly under the short limit to leave headroom against overflow).
+	 * mapped to the short-based buffer. Depth writes use a 32200 scale
+	 * for the depth range mapping but are clamped to 32767 to avoid
+	 * overflow when the camera far plane is large (e.g. 80 in
+	 * 3dConstructioCombat). Per JSR-184, clear() always resets to max
+	 * depth 1.0 regardless of the current depth range.
 	 */
-	private static final short DEPTH_CLEAR_VALUE = (short) 32200;
+	private static final short DEPTH_CLEAR_VALUE = (short) 32767;
 
 	// Flag values for FJ2ME+ rendering overrides (bilinear, AA, dithering, etc)
 	public static final int MODE_FORCE_DISABLE = 0;
@@ -1165,13 +1168,34 @@ public class Graphics3D
 			tr.setIdentity();
 			Node node = group.getChild(i);
 
-			if (node instanceof Light && node.getTransformTo(world, tr))
-				{ addLight((Light) node, tr); }
-			else if (node instanceof Group)
-				{ positionLights(world, (Group) node);}
-			else if (node instanceof SkinnedMesh)
-				/* A SkinnedMesh skeleton can hold lights in its own branch. */
-				{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
+			try
+			{
+				if (node instanceof Light && node.getTransformTo(world, tr))
+					{ addLight((Light) node, tr); }
+				else if (node instanceof Group)
+					{ positionLights(world, (Group) node);}
+				else if (node instanceof SkinnedMesh)
+					/* A SkinnedMesh skeleton can hold lights in its own branch. */
+					{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
+			}
+			catch (ArithmeticException ae)
+			{
+				// JSR-184: lighting is undefined for a non-invertible
+				// local-to-camera transform. For lights, a non-invertible
+				// world transform can happen if the node chain contains a
+				// degenerate scale. Treat it as identity so the light still
+				// contributes instead of disappearing (which would make the
+				// mesh fall back to the white defaultColor).
+				if (node instanceof Light)
+				{
+					tr.setIdentity();
+					addLight((Light) node, tr);
+				}
+				else if (node instanceof Group)
+					{ positionLights(world, (Group) node);}
+				else if (node instanceof SkinnedMesh)
+					{ positionLights(world, ((SkinnedMesh) node).getSkeleton()); }
+			}
 		}
 	}
 

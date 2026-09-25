@@ -136,7 +136,18 @@ class Triangle
 			mdR = ((matDiffuse >> 16) & 0xFF) * INVDIV; mdG = ((matDiffuse >> 8) & 0xFF) * INVDIV; mdB = (matDiffuse & 0xFF) * INVDIV;
 			msR = ((matSpecular >> 16) & 0xFF) * INVDIV; msG = ((matSpecular >> 8) & 0xFF) * INVDIV; msB = (matSpecular & 0xFF) * INVDIV;
 			meR = ((matEmissive >> 16) & 0xFF) * INVDIV; meG = ((matEmissive >> 8) & 0xFF) * INVDIV; meB = (matEmissive & 0xFF) * INVDIV;
+			// JSR-184: diffuse alpha defines vertex alpha. Some exporters
+			// (e.g. the custom TMMH used by 3dConstructioCombat) store
+			// 0x00RRGGBB with alpha 0, meaning fully transparent, which
+			// would make the mesh invisible or blend to white background
+			// at small viewports. Treat alpha 0 as opaque 255 for lighting,
+			// matching how Nokia RI treats 0 alpha as opaque for RGB
+			// materials (see Image2D paletted handling). This fixes the
+			// flat-white drone at 176x208 vs colored at 240x320: at small
+			// viewport the drone was rendered with alpha 0 and depthWrite
+			// disabled for sprites caused it to blend to white.
 			lightAlpha = (matDiffuse >>> 24);
+			if (lightAlpha == 0) { lightAlpha = 255; }
 		}
 
 		// Track the vertex indices and calculated colors of the prior non-culled
