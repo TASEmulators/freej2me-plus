@@ -1352,7 +1352,7 @@ public class Graphics3D
 		// mapped by the JSR-184 depth range equation, zw = 0.5*(far-near)*(zndc+1)
 		// + near, and then scaled by the same factor used by the buffer, with a
 		// small margin for safety, just like when rendering meshes.
-		short ndcZ = (short) M3GMath.max(0, M3GMath.min(32767, (0.5f * (this.far - this.near) * (clip[2]/clip[3] + 1.0f) + this.near) * 32200.0f));
+		short ndcZ = (short) ((0.5f * (this.far - this.near) * (clip[2]/clip[3] + 1.0f) + this.near) * 32200.0f);
 
 		float halfW = M3GMath.abs(clip[4]/clip[7] - ndcX);
 		float halfH = M3GMath.abs(clip[9]/clip[11] - ndcY);
@@ -1699,7 +1699,7 @@ public class Graphics3D
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(usesDepth && this.depthBuffer[rasterIdx] < (short) M3GMath.max(0, M3GMath.min(32767, z)))
+				if(usesDepth && this.depthBuffer[rasterIdx] < (short) z)
 				{
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
@@ -1744,7 +1744,7 @@ public class Graphics3D
 				if (alpha < alphaThreshold) { continue; }
 
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
-				if (usesDepthWrite) { this.depthBuffer[rasterIdx] = (short) M3GMath.max(0, M3GMath.min(32767, z)); }
+				if (usesDepthWrite) { this.depthBuffer[rasterIdx] = (short) z; }
 
 				// Only write to the screen if color write is enabled.
 				if(!colorEnabled) { continue; }
