@@ -202,7 +202,7 @@ public class PhrasePlayerBase
 			{
 				if (entry.getValue() != null && entry.getValue().equals(t))
 				{
-					usedTracks.put(entry.getKey(), null);
+					usedTracks.remove(entry.getKey());
 					break;
 				}
 			}
@@ -220,7 +220,7 @@ public class PhrasePlayerBase
 			{
 				if (entry.getValue() != null && entry.getValue().equals(t))
 				{
-					usedAudioTracks.put(entry.getKey(), null);
+					usedAudioTracks.remove(entry.getKey());
 					break;
 				}
 			}
