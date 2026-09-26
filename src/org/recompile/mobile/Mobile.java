@@ -176,6 +176,7 @@ public class Mobile
 
 	// Keycode modifiers
 	public static boolean blackberry89 = false;
+	public static boolean blackberry70 = false;
 	public static boolean kddi = false;
 	public static boolean lg = false;
 	public static boolean motorola = false;
@@ -229,9 +230,9 @@ public class Mobile
 	public static final int BLACKBERRY89_DOWN  = 6;
 	public static final int BLACKBERRY89_LEFT  = 2;
 	public static final int BLACKBERRY89_RIGHT = 5;
-	public static final int BLACKBERRY89_SOFT1 = 10;
-	public static final int BLACKBERRY89_SOFT2 = 27;
-	public static final int BLACKBERRY89_FIRE = -9;
+	public static final int BLACKBERRY89_SOFT1 = 113;
+	public static final int BLACKBERRY89_SOFT2 = 112;
+	public static final int BLACKBERRY89_FIRE = 100;
 	public static final int BLACKBERRY89_CLR = -88;
 	//public static final int BLACKBERRY89_NUM0  = 109;
 	//public static final int BLACKBERRY89_NUM1  = 114;
@@ -246,6 +247,16 @@ public class Mobile
 	//public static final int BLACKBERRY89_STAR  = 117;
 	//public static final int BLACKBERRY89_POUND = 106;
 
+	// Blackberry 7100 keycodes
+	public static final int BLACKBERRY70_UP    = 1;
+	public static final int BLACKBERRY70_DOWN  = 6;
+	public static final int BLACKBERRY70_LEFT  = 2;
+	public static final int BLACKBERRY70_RIGHT = 5;
+	public static final int BLACKBERRY70_SOFT1 = -6;
+	public static final int BLACKBERRY70_SOFT2 = -7;
+	public static final int BLACKBERRY70_FIRE = 8;
+	public static final int BLACKBERRY70_CLR = -88;
+	
 	//KDDI keycodes
 	public static final int KDDI_UP    = 1;
 	public static final int KDDI_DOWN  = 6;
@@ -408,6 +419,20 @@ public class Mobile
 				case 8:  return BLACKBERRY89_SOFT2; // Start
 				case 9:  return BLACKBERRY89_SOFT1; // Select
 				case 19: return BLACKBERRY89_CLR;
+			}
+		}
+		if(blackberry70)
+		{
+			switch(keycode)
+			{
+				case 0:  return BLACKBERRY70_UP; // Up
+				case 1:  return BLACKBERRY70_DOWN; // Down
+				case 2:  return BLACKBERRY70_LEFT; // Left
+				case 3:  return BLACKBERRY70_RIGHT; // Right
+				case 7:  return BLACKBERRY70_FIRE; // Y
+				case 8:  return BLACKBERRY70_SOFT2; // Start
+				case 9:  return BLACKBERRY70_SOFT1; // Select
+				case 19: return BLACKBERRY70_CLR;
 			}
 		}
 		if(kddi)
@@ -602,6 +627,19 @@ public class Mobile
 				case BLACKBERRY89_SOFT2: return Canvas.GAME_B;
 			}
 		}
+	    if (blackberry70)
+		{
+			switch(keycode)
+			{
+				case BLACKBERRY70_UP:    return Canvas.UP; // Up
+				case BLACKBERRY70_DOWN:  return Canvas.DOWN; // Down
+				case BLACKBERRY70_LEFT:  return Canvas.LEFT; // Left
+				case BLACKBERRY70_RIGHT: return Canvas.RIGHT; // Right
+				case BLACKBERRY70_FIRE:  return Canvas.FIRE; // Y
+				case BLACKBERRY70_SOFT1: return Canvas.GAME_A;
+				case BLACKBERRY70_SOFT2: return Canvas.GAME_B;
+			}
+		}
 		if (kddi)
 		{
 			switch(keycode)
@@ -769,6 +807,19 @@ public class Mobile
 				case BLACKBERRY89_FIRE:  return Canvas.FIRE; // Y
 				case BLACKBERRY89_SOFT1: return Canvas.KEY_SOFT_LEFT; // Start   (gameAction is GAME_A, but we go with the special keys for CanvasAction)
 				case BLACKBERRY89_SOFT2: return Canvas.KEY_SOFT_RIGHT; // Select (gameAction is GAME_B, but we go with the special keys for CanvasAction)
+			}
+		}
+		if (blackberry70)
+		{
+			switch(keycode)
+			{
+				case BLACKBERRY70_UP:    return Canvas.UP; // Up
+				case BLACKBERRY70_DOWN:  return Canvas.DOWN; // Down
+				case BLACKBERRY70_LEFT:  return Canvas.LEFT; // Left
+				case BLACKBERRY70_RIGHT: return Canvas.RIGHT; // Right
+				case BLACKBERRY70_FIRE:  return Canvas.FIRE; // Y
+				case BLACKBERRY70_SOFT1: return Canvas.GAME_A;
+				case BLACKBERRY70_SOFT2: return Canvas.GAME_B;
 			}
 		}
 		if (kddi)
@@ -1066,6 +1117,7 @@ public class Mobile
 
 		String phone = config.settings.get("phone");
 		blackberry89 = false;
+		blackberry70 = false;
 		kddi = false;
 		lg = false;
 		motorola = false;
