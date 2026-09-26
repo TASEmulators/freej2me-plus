@@ -229,9 +229,9 @@ public class Mobile
 	public static final int BLACKBERRY89_DOWN  = 6;
 	public static final int BLACKBERRY89_LEFT  = 2;
 	public static final int BLACKBERRY89_RIGHT = 5;
-	public static final int BLACKBERRY89_SOFT1 = 10;
-	public static final int BLACKBERRY89_SOFT2 = 27;
-	public static final int BLACKBERRY89_FIRE = -9;
+	public static final int BLACKBERRY89_SOFT1 = 113;
+	public static final int BLACKBERRY89_SOFT2 = 112;
+	public static final int BLACKBERRY89_FIRE = 100;
 	public static final int BLACKBERRY89_CLR = -88;
 	//public static final int BLACKBERRY89_NUM0  = 109;
 	//public static final int BLACKBERRY89_NUM1  = 114;
@@ -245,7 +245,7 @@ public class Mobile
 	//public static final int BLACKBERRY89_NUM9  = 110;
 	//public static final int BLACKBERRY89_STAR  = 117;
 	//public static final int BLACKBERRY89_POUND = 106;
-
+	
 	//KDDI keycodes
 	public static final int KDDI_UP    = 1;
 	public static final int KDDI_DOWN  = 6;
