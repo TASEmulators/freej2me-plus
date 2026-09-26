@@ -225,7 +225,7 @@ public class Mobile
 	public static int vibrationDuration = 0;
 	public static int vibrationStrength = 0xFFFF;
 
-	// Blackberry 8220, 8520, 8800, 8900, 9000, 9500 keycodes
+	// Blackberry 7100, 8220, 8520, 8800, 8900, 9000, 9500 keycodes
 	public static final int BLACKBERRY89_UP    = 1;
 	public static final int BLACKBERRY89_DOWN  = 6;
 	public static final int BLACKBERRY89_LEFT  = 2;
@@ -234,6 +234,8 @@ public class Mobile
 	public static final int BLACKBERRY89_SOFT2 = 112;
 	public static final int BLACKBERRY89_FIRE = 100;
 	public static final int BLACKBERRY89_CLR = -88;
+	public static final int BLACKBERRY89_SOFT3 = -6;
+	public static final int BLACKBERRY89_SOFT4 = -7;
 	//public static final int BLACKBERRY89_NUM0  = 109;
 	//public static final int BLACKBERRY89_NUM1  = 114;
 	//public static final int BLACKBERRY89_NUM2  = 116;
@@ -247,11 +249,6 @@ public class Mobile
 	//public static final int BLACKBERRY89_STAR  = 117;
 	//public static final int BLACKBERRY89_POUND = 106;
 
-	// Blackberry 7100 keycodes
-	public static final int BLACKBERRY70_SOFT1 = -6;
-	public static final int BLACKBERRY70_SOFT2 = -7;
-	public static final int BLACKBERRY70_FIRE = 8;
-	public static final int BLACKBERRY70_CLR = -88;
 	
 	//KDDI keycodes
 	public static final int KDDI_UP    = 1;
@@ -415,20 +412,8 @@ public class Mobile
 				case 8:  return BLACKBERRY89_SOFT2; // Start
 				case 9:  return BLACKBERRY89_SOFT1; // Select
 				case 19: return BLACKBERRY89_CLR;
-			}
-		}
-		if(blackberry70)
-		{
-			switch(keycode)
-			{
-				case 0:  return BLACKBERRY89_UP; // Up
-				case 1:  return BLACKBERRY89_DOWN; // Down
-				case 2:  return BLACKBERRY89_LEFT; // Left
-				case 3:  return BLACKBERRY89_RIGHT; // Right
-				case 7:  return BLACKBERRY70_FIRE; // Y
-				case 8:  return BLACKBERRY70_SOFT2; // Start
-				case 9:  return BLACKBERRY70_SOFT1; // Select
-				case 19: return BLACKBERRY70_CLR;
+				case 10:  return BLACKBERRY89_SOFT3; // Start
+				case 11:  return BLACKBERRY89_SOFT4; // Select
 			}
 		}
 		if(kddi)
@@ -621,19 +606,8 @@ public class Mobile
 				case BLACKBERRY89_FIRE:  return Canvas.FIRE; // Y
 				case BLACKBERRY89_SOFT1: return Canvas.GAME_A;
 				case BLACKBERRY89_SOFT2: return Canvas.GAME_B;
-			}
-		}
-	    if (blackberry70)
-		{
-			switch(keycode)
-			{
-				case BLACKBERRY89_UP:    return Canvas.UP; // Up
-				case BLACKBERRY89_DOWN:  return Canvas.DOWN; // Down
-				case BLACKBERRY89_LEFT:  return Canvas.LEFT; // Left
-				case BLACKBERRY89_RIGHT: return Canvas.RIGHT; // Right
-				case BLACKBERRY70_FIRE:  return Canvas.FIRE; // Y
-				case BLACKBERRY70_SOFT1: return Canvas.GAME_A;
-				case BLACKBERRY70_SOFT2: return Canvas.GAME_B;
+				case BLACKBERRY89_SOFT3: return Canvas.GAME_A;
+				case BLACKBERRY89_SOFT4: return Canvas.GAME_B;
 			}
 		}
 		if (kddi)
@@ -803,19 +777,8 @@ public class Mobile
 				case BLACKBERRY89_FIRE:  return Canvas.FIRE; // Y
 				case BLACKBERRY89_SOFT1: return Canvas.KEY_SOFT_LEFT; // Start   (gameAction is GAME_A, but we go with the special keys for CanvasAction)
 				case BLACKBERRY89_SOFT2: return Canvas.KEY_SOFT_RIGHT; // Select (gameAction is GAME_B, but we go with the special keys for CanvasAction)
-			}
-		}
-		if (blackberry70)
-		{
-			switch(keycode)
-			{
-				case BLACKBERRY89_UP:    return Canvas.UP; // Up
-				case BLACKBERRY89_DOWN:  return Canvas.DOWN; // Down
-				case BLACKBERRY89_LEFT:  return Canvas.LEFT; // Left
-				case BLACKBERRY89_RIGHT: return Canvas.RIGHT; // Right
-				case BLACKBERRY70_FIRE:  return Canvas.FIRE; // Y
-				case BLACKBERRY70_SOFT1: return Canvas.GAME_A;
-				case BLACKBERRY70_SOFT2: return Canvas.GAME_B;
+				case BLACKBERRY89_SOFT3: return Canvas.GAME_A;
+				case BLACKBERRY89_SOFT4: return Canvas.GAME_B;
 			}
 		}
 		if (kddi)
