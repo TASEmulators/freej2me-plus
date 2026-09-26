@@ -1651,13 +1651,18 @@ public class Graphics3D
 				}
 			}
 
+			// If we don't do perspective correction, this will basically always
+			// evaluate to false below (screens with higher horizontal res bigger
+			// than Integer.MAX_VALUE don't even exist).
+			int perspX = doPerspective ? ixL : Integer.MAX_VALUE;
+
 			// Draw the pixels for the current y-coordinate
 			for (int x = ixL; x < ixR; x++, z += zStep, pw += pwStep, invPw += stepInvPw, fogFactor += stepFogFactor, rasterIdx++)
 			{
 				// Subsampling block. A.K.A, where we calculate anything that
 				// is too expensive to run per-pixel but cannot be done only once
 				// for the whole triangle Y scanline due to large precision loss.
-				if (doPerspective && ((x & Mobile.m3gPerspCorrSubFactor) == 0 || x == ixL))
+				if (x == perspX)
 				{
 					int maxSpan = (Mobile.m3gPerspCorrSubFactor + 1) -
 						(x & Mobile.m3gPerspCorrSubFactor);
@@ -1695,6 +1700,9 @@ public class Graphics3D
 						fogFactor = fStart < 0.0f ? 0.0f : (fStart > 255.0f ? 255.0f : fStart);
 						stepFogFactor = (fEnd < 0.0f ? 0.0f : (fEnd > 255.0f ? 255.0f : fEnd) - fogFactor) * invSpanLen;
 					}
+
+					// perspX now moves to the next span.
+					perspX += spanLen;
 				}
 
 				// Only depth test if the compositingMode has the feature enabled. If
