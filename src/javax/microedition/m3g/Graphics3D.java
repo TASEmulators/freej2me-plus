@@ -283,6 +283,7 @@ public class Graphics3D
 			 * comprises all of its pixels, as per JSR-184. */
 			canvasWidth = i2d.getWidth();
 			canvasHeight = i2d.getHeight();
+			rasterData = i2d.image;
 			originX = 0;
 			originY = 0;
 			targetClipX = 0;
@@ -923,8 +924,7 @@ public class Graphics3D
 			// Degenerate triangle? Skip it.
 			if (denominator > -1e-6f && denominator < 1e-6f) { continue; }
 
-			// We don't draw wireframes to Image2Ds
-			if (Mobile.M3GRenderWireframe && !(this.target instanceof Image2D))
+			if (Mobile.M3GRenderWireframe)
 			{
 				final PlatformGraphics pgrp = (PlatformGraphics) this.target;
 				int tempcolor = pgrp.getColor();
@@ -1296,19 +1296,11 @@ public class Graphics3D
 	 */
 	private void renderSprite(Sprite3D sprite, Transform transform)
 	{
-		boolean renderToImage = false;
-		Image2D imageData = null;
-
 		final Image2D spr = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
 
 		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
 		if (spr == null || appearance == null) { return; }
-		if((this.target instanceof Image2D))
-		{
-			renderToImage = true;
-			imageData = (Image2D) this.target;
-		}
 
 		// JSR-184 scope culling, same rule as for meshes.
 		if ((sprite.getScope() & this.currCam.getScope()) == 0) { return; }
@@ -1438,7 +1430,7 @@ public class Graphics3D
 		for (int y = pixT; y < pixB; y++)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
-			if(Mobile.halfResM3GRaster && (y & 1) != 0 && !(this.target instanceof Image2D))
+			if(Mobile.halfResM3GRaster && (y & 1) != 0)
 			{
 				if (y > viewClipT && viewClipR > viewClipL)
 				{
@@ -1484,18 +1476,7 @@ public class Graphics3D
 					paintPixel = (paintPixel & 0xFF000000) | outRB | (outG << 8);
 				}
 
-				if(!renderToImage)
-				{
-					rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx], paintPixel, alpha);
-				}
-				else
-				{
-					final int imgIdx = imageData.isPOT ?
-						((y+viewy) << imageData.widthShift) + (x+viewx) :
-						((y+viewy) * imageData.width) + (x+viewx);
-
-					imageData.image[imgIdx] = compBlender == null ? paintPixel : compBlender.blend(imageData.image[imgIdx], paintPixel, alpha);
-				}
+				rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx], paintPixel, alpha);
 
 				if (depthWrite) { this.depthBuffer[rasterIdx] = ndcZ; }
 			}
@@ -1521,15 +1502,6 @@ public class Graphics3D
 
 		float fogFactor = 255.0f;
 		float stepFogFactor = 0.0f;
-
-		boolean renderToImage = false;
-		Image2D imageData = null;
-
-		if((this.target instanceof Image2D))
-		{
-			renderToImage = true;
-			imageData = (Image2D) this.target;
-		}
 
 		final int compBlending = compositingMode.getBlending();
 		final boolean usesDepthWrite = usesDepth &&
@@ -1574,7 +1546,7 @@ public class Graphics3D
 		for (int y = yStart; y < yEnd; y++, xL += dxL_dy, xR += dxR_dy, zL += dzL_dy, pwL += dpwL_dy, rowIdx += canvasWidth)
 		{
 			// Odd scanlines just copy from even ones in half res mode.
-			if(!renderToImage && Mobile.halfResM3GRaster && (y & 1) != 0)
+			if(Mobile.halfResM3GRaster && (y & 1) != 0)
 			{
 				if (y > viewClipT && viewClipR > viewClipL)
 				{
@@ -1795,19 +1767,8 @@ public class Graphics3D
 					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 				}
 
-				if(!renderToImage)
-				{
-					rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx],
-						paintPixel, alpha);
-				}
-				else
-				{
-					final int imgIdx = imageData.isPOT ?
-						((y+viewy) << imageData.widthShift) + (x+viewx) :
-						((y+viewy) * imageData.width) + (x+viewx);
-
-					imageData.image[imgIdx] = compBlender == null ? paintPixel : compBlender.blend(imageData.image[imgIdx], paintPixel, alpha);
-				}
+				rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx],
+					paintPixel, alpha);
 			}
 		}
 	}
