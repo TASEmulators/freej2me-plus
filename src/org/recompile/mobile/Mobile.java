@@ -245,7 +245,6 @@ public class Mobile
 	//public static final int BLACKBERRY89_NUM9  = 110;
 	//public static final int BLACKBERRY89_STAR  = 117;
 	//public static final int BLACKBERRY89_POUND = 106;
-
 	
 	//KDDI keycodes
 	public static final int KDDI_UP    = 1;
