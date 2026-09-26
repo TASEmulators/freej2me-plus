@@ -18,11 +18,9 @@ function checkForKeyword(message)
     const keyword = "Create Canvas:";
     if (typeof message === 'string' && message.includes(keyword)) 
     {
-        // Run your code here
         document.getElementById('cheerpjDisplay').style.transitionDuration = '0.5s';
         document.getElementById('loadAnim').style.opacity = '0';
         setTimeout(() => {
-            document.getElementById('disclaimer').style.display = 'none';
             document.getElementById('loadAnim').style.display = 'none';
             document.getElementById('cheerpjDisplay').style.visibility = 'visible';
             document.getElementById('commandBar').style.display = 'block';
@@ -73,6 +71,11 @@ function fastForward() // Ctrl+Alt+Space key
     if(fastForwarding) { keyValues['ff'] = 1; }
     else { keyValues['ff'] = 0; }
     updateKeyPresses(); 
+}
+
+function reloadPage() // Only usable by the on-screen button
+{
+	window.top.location.reload();
 }
 
 // OSD Phone buttons
@@ -224,6 +227,7 @@ function loadPage()
         setTimeout(() => {
             document.getElementById('startupSettings').style.display = 'none';
             document.getElementById('loadAnim').style.display = 'flex';
+            document.getElementById('disclaimer').style.display = 'none';
             setTimeout(() => { document.getElementById('loadAnim').style.opacity = '1'; }, 16);
             setTimeout(() => { document.getElementById('loadingindicator').style.opacity = '1'; }, 516);
             startFreeJ2ME();

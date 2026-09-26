@@ -31,12 +31,12 @@
 
         <link rel="stylesheet" type="text/css" href="../_css/webplayer.css">
         <!-- CheerpJ functionality -->
-        <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+        <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
         <script src="../_js/webplayer.js"></script>
     </head>
     <body>
 
-        <h2 id="disclaimer">NOTE: FreeJ2ME-Plus Web is a proof of concept and should be used as a preview. The native binary runs much faster and has higher compatibility.</h2>
+        <h2 id="disclaimer">NOTE: FreeJ2ME-Plus Web should be used as a preview. The native binary runs much faster and has slightly higher compatibility.</h2>
 
         <div class="contentDiv" id="binaryLoad">
             <p class="helperText">Supply your J2ME JAR or KJX binary file here.</p>
@@ -159,7 +159,7 @@
                         <option value="45">45 FPS</option>
                         <option value="50">50 FPS</option>
                         <option value="55">55 FPS</option>
-                        <option value="60">60 FPS</option>
+                        <option selected value="60">60 FPS</option>
                     </select>
                 </div>
             </div>
@@ -179,6 +179,7 @@
                 <button class="commandButton" id="midTopPos"><img class="commandImg" src="../images/webplayer/ScreenRotationButton.svg" onclick="rotateScreen()"></button>
                 <button class="commandButton" id="midBotPos"><img class="commandImg" src="../images/webplayer/PauseResumeButton.svg" onclick="pauseResume()"></button>
                 <button class="commandButton" id="botPos"><img class="commandImg" src="../images/webplayer/FastForwardButton.svg" onclick="fastForward()"></button>
+                <button class="commandButton" id="lastPos"><img class="commandImg" src="../images/webplayer/ReloadPageButton.svg" onclick="reloadPage()"></button>
             </div>
         </div>
 
