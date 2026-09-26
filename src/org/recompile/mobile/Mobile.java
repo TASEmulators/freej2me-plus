@@ -229,8 +229,8 @@ public class Mobile
 	public static final int BLACKBERRY89_DOWN  = 6;
 	public static final int BLACKBERRY89_LEFT  = 2;
 	public static final int BLACKBERRY89_RIGHT = 5;
-	public static final int BLACKBERRY89_SOFT1 = -6;
-	public static final int BLACKBERRY89_SOFT2 = -7;
+	public static final int BLACKBERRY89_SOFT1 = 10;
+	public static final int BLACKBERRY89_SOFT2 = 27;
 	public static final int BLACKBERRY89_FIRE = -9;
 	public static final int BLACKBERRY89_CLR = -88;
 	//public static final int BLACKBERRY89_NUM0  = 109;

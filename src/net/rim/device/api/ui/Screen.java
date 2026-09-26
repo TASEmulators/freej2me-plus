@@ -17,6 +17,8 @@
 
 package net.rim.device.api.ui;
 
+import org.recompile.mobile.Mobile;
+
 // TODO: Implement this later. It's a massive class and i don't think it's
 // worth it right now.
 public abstract class Screen
@@ -26,4 +28,13 @@ public abstract class Screen
 	public static final long NO_SYSTEM_MENU_ITEMS = 262144L;
 
 	// Actual constructor and methods.
+	public void setTrackballSensitivityXOffset(int trackballSensitivityXOffset)
+	{
+		Mobile.log(Mobile.LOG_WARNING, Screen.class.getPackage().getName() + "." + Screen.class.getSimpleName() + ": " + "setTrackballSensitivityXOffset not implemented. Val:" + trackballSensitivityXOffset);
+	}
+
+	public void setTrackballSensitivityYOffset(int trackballSensitivityYOffset)
+	{
+		Mobile.log(Mobile.LOG_WARNING, Screen.class.getPackage().getName() + "." + Screen.class.getSimpleName() + ": " + "setTrackballSensitivityYOffset not implemented. Val:" + trackballSensitivityYOffset);
+	}
 }
