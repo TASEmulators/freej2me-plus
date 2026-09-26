@@ -248,10 +248,6 @@ public class Mobile
 	//public static final int BLACKBERRY89_POUND = 106;
 
 	// Blackberry 7100 keycodes
-	public static final int BLACKBERRY70_UP    = 1;
-	public static final int BLACKBERRY70_DOWN  = 6;
-	public static final int BLACKBERRY70_LEFT  = 2;
-	public static final int BLACKBERRY70_RIGHT = 5;
 	public static final int BLACKBERRY70_SOFT1 = -6;
 	public static final int BLACKBERRY70_SOFT2 = -7;
 	public static final int BLACKBERRY70_FIRE = 8;
@@ -425,10 +421,10 @@ public class Mobile
 		{
 			switch(keycode)
 			{
-				case 0:  return BLACKBERRY70_UP; // Up
-				case 1:  return BLACKBERRY70_DOWN; // Down
-				case 2:  return BLACKBERRY70_LEFT; // Left
-				case 3:  return BLACKBERRY70_RIGHT; // Right
+				case 0:  return BLACKBERRY89_UP; // Up
+				case 1:  return BLACKBERRY89_DOWN; // Down
+				case 2:  return BLACKBERRY89_LEFT; // Left
+				case 3:  return BLACKBERRY89_RIGHT; // Right
 				case 7:  return BLACKBERRY70_FIRE; // Y
 				case 8:  return BLACKBERRY70_SOFT2; // Start
 				case 9:  return BLACKBERRY70_SOFT1; // Select
@@ -631,10 +627,10 @@ public class Mobile
 		{
 			switch(keycode)
 			{
-				case BLACKBERRY70_UP:    return Canvas.UP; // Up
-				case BLACKBERRY70_DOWN:  return Canvas.DOWN; // Down
-				case BLACKBERRY70_LEFT:  return Canvas.LEFT; // Left
-				case BLACKBERRY70_RIGHT: return Canvas.RIGHT; // Right
+				case BLACKBERRY89_UP:    return Canvas.UP; // Up
+				case BLACKBERRY89_DOWN:  return Canvas.DOWN; // Down
+				case BLACKBERRY89_LEFT:  return Canvas.LEFT; // Left
+				case BLACKBERRY89_RIGHT: return Canvas.RIGHT; // Right
 				case BLACKBERRY70_FIRE:  return Canvas.FIRE; // Y
 				case BLACKBERRY70_SOFT1: return Canvas.GAME_A;
 				case BLACKBERRY70_SOFT2: return Canvas.GAME_B;
@@ -813,10 +809,10 @@ public class Mobile
 		{
 			switch(keycode)
 			{
-				case BLACKBERRY70_UP:    return Canvas.UP; // Up
-				case BLACKBERRY70_DOWN:  return Canvas.DOWN; // Down
-				case BLACKBERRY70_LEFT:  return Canvas.LEFT; // Left
-				case BLACKBERRY70_RIGHT: return Canvas.RIGHT; // Right
+				case BLACKBERRY89_UP:    return Canvas.UP; // Up
+				case BLACKBERRY89_DOWN:  return Canvas.DOWN; // Down
+				case BLACKBERRY89_LEFT:  return Canvas.LEFT; // Left
+				case BLACKBERRY89_RIGHT: return Canvas.RIGHT; // Right
 				case BLACKBERRY70_FIRE:  return Canvas.FIRE; // Y
 				case BLACKBERRY70_SOFT1: return Canvas.GAME_A;
 				case BLACKBERRY70_SOFT2: return Canvas.GAME_B;
