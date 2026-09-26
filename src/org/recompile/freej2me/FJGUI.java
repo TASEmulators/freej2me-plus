@@ -312,6 +312,7 @@ public final class FJGUI
 	{
 		new JCheckBoxMenuItem("Default", true),
 		new JCheckBoxMenuItem("BlackBerry 8xxx/9xxx", false),
+		new JCheckBoxMenuItem("BlackBerry 7xxx", false),
 		new JCheckBoxMenuItem("KDDI", false),
 		new JCheckBoxMenuItem("LG", false),
 		new JCheckBoxMenuItem("Motorola/SoftBank/Sharp", false),
@@ -323,7 +324,7 @@ public final class FJGUI
 		new JCheckBoxMenuItem("Siemens", false),
 		new JCheckBoxMenuItem("SKT", false)
 	};
-	final String[] layoutValues = {"Standard", "BlackBerry89", "KDDI", "LG", "Motorola", "MotoV8", "MotoTriplets", "MotoA1000", "NokiaKeyboard", "Sagem", "Siemens", "SKT"};
+	final String[] layoutValues = {"Standard", "BlackBerry89", "BlackBerry70", "KDDI", "LG", "Motorola", "MotoV8", "MotoTriplets", "MotoA1000", "NokiaKeyboard", "Sagem", "Siemens", "SKT"};
 
 	final JCheckBoxMenuItem[] backlightOptions =
 	{
