@@ -234,7 +234,6 @@ public class Libretro
 								if(Integer.parseInt(cfgtokens[4])==9)  { Mobile.config.settings.put("phone", "SKT"); }
 								if(Integer.parseInt(cfgtokens[4])==10) { Mobile.config.settings.put("phone", "KDDI"); }
 								if(Integer.parseInt(cfgtokens[4])==11) { Mobile.config.settings.put("phone", "BlackBerry89"); }
-								if(Integer.parseInt(cfgtokens[4])==12) { Mobile.config.settings.put("phone", "BlackBerry70"); }
 
 								Mobile.config.settings.put("fps", ""+ Integer.parseInt(cfgtokens[5]));
 								Mobile.config.sysSettings.put("sound", Integer.parseInt(cfgtokens[6]) == 1 ? "on" : "off");
