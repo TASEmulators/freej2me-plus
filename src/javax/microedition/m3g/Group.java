@@ -16,7 +16,8 @@
 */
 package javax.microedition.m3g;
 
-public class Group extends Node {
+public class Group extends Node
+{
     public Node firstChild = null;
     public int numNonCullables = 0, numRenderables = 0;
 
@@ -510,15 +511,11 @@ public class Group extends Node {
 
         if (array.getComponentType() == 1)
         {
-            byte[] values = new byte[elements];
-            array.get(0, vertices, values);
-            for (int i = 0; i < elements; i++) { result[i] = values[i]; }
+            for (int i = 0; i < elements; i++) { result[i] = array.vertArrayByteSize[i]; }
         }
         else
         {
-            short[] values = new short[elements];
-            array.get(0, vertices, values);
-            for (int i = 0; i < elements; i++) { result[i] = values[i]; }
+            for (int i = 0; i < elements; i++) { result[i] = array.vertArrayShortSize[i]; }
         }
         return result;
     }
@@ -537,7 +534,7 @@ public class Group extends Node {
             node = null;
             distance = Float.POSITIVE_INFINITY;
             submesh = 0;
-            normal[0] = 0.0f; normal[0] = 0.0f; normal[2] = 1.0f;
+            normal[0] = 0.0f; normal[1] = 0.0f; normal[2] = 1.0f;
         }
     }
 }
