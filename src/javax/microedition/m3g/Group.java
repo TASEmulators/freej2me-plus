@@ -304,7 +304,8 @@ public class Group extends Node
     {
         if ((scope & mesh.getScope()) == 0) { return; }
 
-        VertexBuffer vertices = mesh.getVertexBuffer();
+        // Picking a SkinnedMesh/MorphingMesh uses its deformed geometry.
+        VertexBuffer vertices = mesh.getPosedVertexBuffer();
         VertexArray positions = vertices.getPositions(scaleBias);
         if (positions == null) { throw new IllegalStateException("Pickable Mesh has no positions"); }
 
