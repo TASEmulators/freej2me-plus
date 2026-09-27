@@ -1509,8 +1509,8 @@ public class Graphics3D
 
 		// Get into the render loop proper.
 
-		float zStep  = (zMidR - zMidL) * invMidSpan;
-		float pwStep = (pwMidR - pwMidL) * invMidSpan;
+		float zStep  = usesDepth ? (zMidR - zMidL) * invMidSpan : 0;
+		float pwStep = doPerspective ? (pwMidR - pwMidL) * invMidSpan : 0;
 
 		float yDiv = half == 0 ? M3GMath.fastReciprocal(yMid - yTop) : M3GMath.fastReciprocal(yBot - yMid);
 
@@ -1604,10 +1604,10 @@ public class Graphics3D
 			int rasterIdx = rowIdx + ixL;
 
 			final float diffX = ixL - xL;
-			float pw = pwL + (diffX) * pwStep;
+			float pw = doPerspective ? pwL + (diffX) * pwStep : 0.0f;
 			float invPw = doPerspective ? M3GMath.fastReciprocal(pw) : 1.0f;
 			float stepInvPw = 0.0f;
-			float z  = zL  + (diffX) * zStep + depthOffset;
+			float z  = usesDepth ? zL  + (diffX) * zStep + depthOffset : -32768.0f;
 
 			if (hasTexture)
 			{
@@ -1679,7 +1679,7 @@ public class Graphics3D
 
 				// Only depth test if the compositingMode has the feature enabled. If
 				// compositingMode is not set, check if this target has depthBuffer enabled.
-				if(usesDepth && this.depthBuffer[rasterIdx] < (short) z)
+				if(this.depthBuffer[rasterIdx] < (short) z)
 				{
 					// We need to increment the color and texture deltas even when discarding
 					// by depth, otherwise color and texturing spans on objects partially
