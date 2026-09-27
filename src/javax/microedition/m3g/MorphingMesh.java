@@ -149,10 +149,15 @@ public class MorphingMesh extends Mesh
 	private static final int ATTR_COLORS = 2;
 	private static final int ATTR_TEXCOORDS = 3;
 
+	/*
+	 * Same as in SkinnedMesh: the morphed buffer is private to the
+	 * implementation, getVertexBuffer() keeps returning the base mesh as
+	 * mandated by JSR-184.
+	 */
 	@Override
-	public VertexBuffer getVertexBuffer()
+	VertexBuffer getPosedVertexBuffer()
 	{
-		VertexBuffer base = super.getVertexBuffer();
+		VertexBuffer base = getVertexBuffer();
 		if (targets == null || targets.length == 0 || base == null)
 		{
 			return base;

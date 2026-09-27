@@ -220,10 +220,15 @@ public class SkinnedMesh extends Mesh
 		return total;
 	}
 
+	/*
+	 * The skinned (posed) vertices are an implementation detail: per JSR-184
+	 * getVertexBuffer() keeps returning the base buffer, and the deformed result
+	 * is only ever handed to the renderer/picker through getPosedVertexBuffer().
+	 */
 	@Override
-	public VertexBuffer getVertexBuffer()
+	VertexBuffer getPosedVertexBuffer()
 	{
-		VertexBuffer base = super.getVertexBuffer();
+		VertexBuffer base = getVertexBuffer();
 		if (bones.isEmpty() || base == null)
 		{
 			return base;

@@ -118,6 +118,19 @@ public class Mesh extends Node
 
 	public VertexBuffer getVertexBuffer() { return this.vertices; }
 
+	/*
+	 * Internal counterpart of getVertexBuffer(), used by the renderer and the
+	 * picker, which need the deformed geometry.
+	 *
+	 * Per JSR-184, getVertexBuffer() must always return the original VertexBuffer
+	 * supplied at construction: "The VertexBuffer is never written to by the
+	 * implementation. Specifically, the results of morphing (MorphingMesh) and
+	 * skinning (SkinnedMesh) are not written to the VertexBuffer, nor are they
+	 * exposed to the application by any other means." Those subclasses therefore
+	 * keep their posed buffer private and hand it over through this method.
+	 */
+	VertexBuffer getPosedVertexBuffer() { return getVertexBuffer(); }
+
 	public void setAppearance(int index, Appearance appearance)
 	{
 		if (index < 0 || index >= submeshes.length) { throw new IndexOutOfBoundsException("Cannot set to invalid appearance index"); }

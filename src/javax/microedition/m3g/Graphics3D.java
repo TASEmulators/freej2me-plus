@@ -2091,7 +2091,8 @@ public class Graphics3D
 		{
 			Mesh mesh = (Mesh) node;
 			int subMeshes = mesh.getSubmeshCount();
-			VertexBuffer vertices = mesh.getVertexBuffer();
+			// Posed buffer: skinning/morphing results are internal, see Mesh.getPosedVertexBuffer()
+			VertexBuffer vertices = mesh.getPosedVertexBuffer();
 			for (int i = 0; i < subMeshes; i++)
 			{
 				if (mesh.getAppearance(i) != null)
