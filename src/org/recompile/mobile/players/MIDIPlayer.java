@@ -112,8 +112,6 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 					if (this.midi.isRunning()) { this.midi.stop(); }
 
 					this.midi.setSequence(midiSequence);
-
-					this.platform.applyVolume();
 				}
 
 				this.midi.removeMetaEventListener(this);
@@ -123,6 +121,9 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 				if(curTime >= getDuration()) { setMediaTime(0); }
 				else { setMediaTime(curTime); } // Else, resume from where it stopped
 
+				platform.state = Player.STARTED;
+				// This only matters if the app is the one that called for start.
+				if(!Mobile.isPaused) { this.platform.applyVolume(); }
 				this.midi.start();
 			}
 
@@ -130,8 +131,6 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 			// for start/stop
 			if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
 			else { return; } // Don't send listener events.
-
-			platform.state = Player.STARTED;
 			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 		}
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MIDIPlayer.class.getPackage().getName() + "." + MIDIPlayer.class.getSimpleName() + ": " + "Failed to clean MIDI sequencer and start playback:" + e.getMessage()); e.printStackTrace(); }

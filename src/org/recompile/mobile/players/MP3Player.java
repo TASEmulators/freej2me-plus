@@ -108,7 +108,8 @@ public class MP3Player extends BasicPlayer
 				}
 			});
 
-			// This only matters when the app is the one issuing this call.
+			platform.state =  Player.STARTED;
+			// This only matters if the app is the one that called for start.
 			if(!Mobile.isPaused) { this.platform.applyVolume(); }
 			playerThread.start();
 
@@ -117,7 +118,6 @@ public class MP3Player extends BasicPlayer
 			if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
 			else { return; } // Don't send listener events when paused.
 
-			platform.state =  Player.STARTED;
 			platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, MP3Player.class.getPackage().getName() + "." + MP3Player.class.getSimpleName() + ": " + "Couldn't start mpeg player:" + e.getMessage()); }
 	}

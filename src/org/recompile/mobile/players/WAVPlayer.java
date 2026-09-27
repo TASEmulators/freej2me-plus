@@ -115,11 +115,11 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 	{
 		isExplicitStop = false;
 
-		// This only matters when the app is the one issuing this call.
-		if(!Mobile.isPaused) { this.platform.applyVolume(); }
-
 		if(getMediaTime() >= getDuration()) { setMediaTime(0); }
 
+		platform.state = Player.STARTED;
+		// This only matters if the app is the one that called for start.
+		if(!Mobile.isPaused) { this.platform.applyVolume(); }
 		wavClip.start();
 
 		// Only track running players when unpaused, as pause/unpause logic calls
@@ -127,7 +127,6 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 		if(!Mobile.isPaused) { Manager.runningPlayers.add(this); }
 		else { return; } // Don't send listener events when paused.
 
-		platform.state = Player.STARTED;
 		platform.notifyListeners(PlayerListener.STARTED, getMediaTime());
 	}
 
