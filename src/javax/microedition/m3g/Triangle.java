@@ -415,18 +415,22 @@ class Triangle
 		normalMatrix.get(L_MAT);
 
 		// Flat Shading? We calculate only vertex 0 (A) and copy to others
-		int lastVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 0 : 2;
-		for (int v = 0; v <= lastVertex; v++)
+		int firstVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 2 : 0;
+		for (int v = firstVertex; v <= 2; v++)
 		{
 			int vertIndex = tris[triOffset + v];
 
-			// Check if this vertex is one of the "reused" ones of a StripArray.
-			// If it is, we can just reuse its color from the previous triangle
-			// right away, skipping the need to calculate lighting at all.
-			if (vertIndex == prev0) { outColors[v] = color0; continue; }
-			if (vertIndex == prev1) { outColors[v] = color1; continue; }
-			if (vertIndex == prev2) { outColors[v] = color2; continue; }
-
+			if(shadingMode != PolygonMode.SHADE_FLAT)
+			{
+				// Check if this vertex is one of the "reused" ones of a StripArray.
+				// If it is, we can just reuse its color from the previous triangle
+				// right away, skipping the need to calculate lighting at all.
+				// Flat shading doesn't benefit from this (and introduces
+				// breakages) since it calculates far less vertices to begin with.
+				if (vertIndex == prev0) { outColors[v] = color0; continue; }
+				if (vertIndex == prev1) { outColors[v] = color1; continue; }
+				if (vertIndex == prev2) { outColors[v] = color2; continue; }
+			}
 			// Didn't hit any of those above? That means we must calculate the
 			// lighting on this vertex.
 
@@ -661,7 +665,7 @@ class Triangle
 			// On flat shading we just apply vertex 2's color to the others.
 			if (shadingMode == PolygonMode.SHADE_FLAT)
 			{
-				outColors[1] = outColors[2] = outColors[v];
+				outColors[0] = outColors[1] = outColors[v];
 				break;
 			}
 		}
