@@ -18,6 +18,8 @@ package javax.microedition.lcdui;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.microedition.lcdui.game.GameCanvas;
+
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.mobile.PlatformImage;
@@ -326,6 +328,9 @@ public abstract class Canvas extends Displayable
 
 		// Draw command bar whenever the canvas is not fullscreen and there are commands in the bar, and always queue it to draw after the flush
 		Mobile.getPlatform().setPostFlushDraw(postFlushDraw);
+
+		// GameCanvas will only flush to the screen with a flushGraphics call.
+		if (this instanceof GameCanvas) { return; }
 
 		Mobile.getPlatform().flushGraphics(platformImage, renderX, renderY, renderW, renderH);
 	}

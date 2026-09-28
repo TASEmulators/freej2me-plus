@@ -1063,6 +1063,7 @@ public class Mobile
 		lcdHeight = Integer.parseInt(config.settings.get("scrheight"));
 
 		limitFPS = Integer.parseInt(config.settings.get("fps"));
+		if(limitFPS > 0) { getPlatform().requiredFrametime = 1000000000 / limitFPS;}
 
 		String phone = config.settings.get("phone");
 		blackberry89 = false;

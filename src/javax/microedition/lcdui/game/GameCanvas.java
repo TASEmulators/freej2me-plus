@@ -48,15 +48,24 @@ public abstract class GameCanvas extends Canvas
 
 	protected Graphics getGraphics() 
 	{
-		buffer.getGraphics().reset(); 
-		return buffer.getGraphics(); 
+		Graphics g = buffer.getGraphics();
+		g.reset(); 
+		return g;
 	}
 
 	public void paint(Graphics g) { g.drawImage(buffer, 0, 0, Graphics.LEFT | Graphics.TOP); }
 
 	public void flushGraphics(int x, int y, int width, int height)
 	{
-		if (width <= 0 || height <= 0 || x + width < 0 || y + height < 0 || x >= this.width || y >= this.height || !isShown()) { return; }
+		if (width <= 0 || height <= 0 || !isShown()) { return; }
+
+		if (x < 0) { width += x; x = 0; }
+		if (y < 0) { height += y; y = 0; }
+		if (x + width > this.width) { width = this.width - x; }
+		if (y + height > this.height) { height = this.height - y; }
+
+		// If nothing will be drawn, don't even waste a call...
+		if (width <= 0 || height <= 0 || x >= this.width || y >= this.height) { return; }
 
 		Mobile.getPlatform().flushGraphics(buffer, x, y, width, height);
 	}

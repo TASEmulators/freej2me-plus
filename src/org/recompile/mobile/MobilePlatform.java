@@ -57,10 +57,8 @@ public class MobilePlatform
 	public static int lcdHeight;
 
 	// Frame Limit Variables
-	private long lastRenderTime = System.nanoTime();
-	private long requiredFrametime = 0;
-	private long elapsedTime = 0;
-	private long sleepTime = 0;
+	private static volatile long lastRenderTime = System.nanoTime();
+	static volatile long requiredFrametime = 0;
 
 	// Whether the user has toggled the ShowFPS option
 	public static String showFPS = "Off";
@@ -932,11 +930,10 @@ public class MobilePlatform
 
 	public void limitFps()
 	{
-		if(Mobile.limitFPS == 0 || pressedKeys[20]) { lastRenderTime = System.nanoTime(); return; }
+		if(Mobile.limitFPS <= 0 || pressedKeys[20]) { lastRenderTime = System.nanoTime(); return; }
 
-		requiredFrametime = 1000000000 / Mobile.limitFPS;
-		elapsedTime = System.nanoTime() - lastRenderTime;
-		sleepTime = (requiredFrametime - elapsedTime); // Sleep time in nanoseconds
+		long elapsedTime = System.nanoTime() - lastRenderTime;
+		long sleepTime = (requiredFrametime - elapsedTime); // Sleep time in nanoseconds
 
 		if (sleepTime > 0) { LockSupport.parkNanos(sleepTime); }
 
