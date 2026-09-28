@@ -1326,7 +1326,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if (width < 0 || height < 0) { throw new IllegalArgumentException("drawPixels(byte) received negative width or height"); }
 		if (pixels == null) { throw new NullPointerException("drawPixels(byte) received a null pixel array"); }
-		if (offset < 0 || offset >= (pixels.length * 8)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length * 8) + "| offset:" + offset); }
+
+		int lastRow = offset + (height - 1) * scanlength;
+		int reqLen = lastRow + width;
+		
+		if (offset < 0 || reqLen > pixels.length * nokiaPixPerByte(format)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length * 8) + "| offset:" + offset); }
 
 		if(width == 0 || height == 0) { return; }
 
@@ -1359,9 +1363,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 						if (transparencyMask != null)
 						{
-							a = ((transparencyMask[tmp + xj] >> bit) & 1) << 1;
-
-							a *= 255;
+							a = ((transparencyMask[tmp + xj] >> bit) & 1) * 255;
 						}
 
 						c = (1 - c) * 255;
@@ -1389,10 +1391,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 						if (transparencyMask != null)
 						{
-							a = ((transparencyMask[(line + xj) / 8] >> bit)
-								& 1) << 1;
-
-							a *= 255;
+							a = ((transparencyMask[(line + xj) / 8] >> bit) & 1) * 255;
 						}
 
 						c = (1 - c) * 255;
@@ -1554,7 +1553,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if (width < 0 || height < 0) { throw new IllegalArgumentException("drawPixels(int) received negative width or height"); }
 		if (pixels == null) { throw new NullPointerException("drawPixels(int) received a null pixel array"); }
-		if (offset < 0 || offset >= pixels.length) { throw new ArrayIndexOutOfBoundsException("drawPixels(int) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
+		
+		int lastRow = offset + (height - 1) * scanlength;
+		int reqLen = lastRow + width;
+		
+		if (offset < 0 || reqLen > pixels.length) { throw new ArrayIndexOutOfBoundsException("drawPixels(int) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
 
 		if(width == 0 || height == 0) { return; }
 
@@ -1580,7 +1583,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if (width < 0 || height < 0) { throw new IllegalArgumentException("drawPixels(short) received negative width or height"); }
 		if (pixels == null) { throw new NullPointerException("drawPixels(short) received a null pixel array"); }
-		if (offset < 0 || offset >= pixels.length) { throw new ArrayIndexOutOfBoundsException("drawPixels(short) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
+		
+		int lastRow = offset + (height - 1) * scanlength;
+		int reqLen = lastRow + width;
+		
+		if (offset < 0 || reqLen > pixels.length * nokiaPixPerByte(format)) { throw new ArrayIndexOutOfBoundsException("drawPixels(short) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
 
 		if(width == 0 || height == 0) { return; }
 
@@ -1750,11 +1757,14 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			throw new IllegalArgumentException("Invalid width,height,x or y");
 		}
 
-		if (x < 0 || y < 0 || width * height > pixels.length)
+		int lastRow = offset + (height - 1) * scanlength;
+		int reqLen = lastRow + width;
+		
+		if (offset < 0 || reqLen > pixels.length * nokiaPixPerByte(format))
 		{
 			throw new ArrayIndexOutOfBoundsException("Requested copy area exceeds bounds of the image");
 		}
-
+		
 		// Copy only the area that's on screen.
 		if(x+width >= canvasWidth) { width = canvasWidth-x; }
 		if(y+height >= canvasHeight) { height = canvasHeight-y; }
@@ -1770,12 +1780,13 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						int pixelValue = canvasData[pixelIndex];
 
 						// Store pixel value as a bit in the pixels array
-						int byteIndex = (offset + row) * scanlength + (col / 8);
-						int bitIndex = col % 8;
-
+						int rowOffset = (offset / scanlength) + row;
+						int byteIndex = (rowOffset / 8) * scanlength + (offset % scanlength) + col;
+						int bitShift = 7 - (rowOffset % 8);
+						
 						// Set the bit in the retrieved byte to the expected value.
-						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 0 : 1) << (7 - bitIndex);
-						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << (7 - bitIndex); }
+						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 1 : 0) << bitShift;
+						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << bitShift; }
 					}
 				}
 				break;
@@ -1787,10 +1798,12 @@ public abstract class PlatformGraphics implements DirectGraphics,
 					{
 						int pixelIndex = (y + row) * canvasWidth + (x + col);
 						int pixelValue = canvasData[pixelIndex];
-						int byteIndex = (offset / 8) + ((row * width + col) / 8);
-						int bitIndex = (row * width + col) % 8;
+						
+						int packedIndex = offset + (row * scanlength) + col;
+						int byteIndex = packedIndex / 8;
+						int bitIndex = packedIndex % 8;
 
-						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 0 : 1) << (7 - bitIndex);
+						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 1 : 0) << (7 - bitIndex);
 						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << (7 - bitIndex); }
 					}
 				}
@@ -1960,6 +1973,25 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				// If we just add the canvas pixel directly to it, the transparency will override anything previously in the array pos
 				pixels[pixelIndex] = colorToShortPixel(blendPixels(canvasPixel, pixelToColor(pixels[pixelIndex], format)), format);
 			}
+		}
+	}
+
+	private int nokiaPixPerByte(int format)
+	{
+		switch (format)
+		{
+			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL:
+			case DirectGraphics.TYPE_BYTE_1_GRAY:
+				return 8;
+			case DirectGraphics.TYPE_BYTE_2_GRAY:
+				return 4;
+			case DirectGraphics.TYPE_BYTE_4_GRAY:
+				return 2;
+			case DirectGraphics.TYPE_BYTE_332_RGB:
+			case DirectGraphics.TYPE_BYTE_8_GRAY:
+				return 1;
+			default:
+				throw new IllegalArgumentException("Unsupported format: " + format);
 		}
 	}
 
