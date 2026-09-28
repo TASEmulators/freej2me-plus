@@ -18,11 +18,8 @@ package javax.microedition.lcdui;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.microedition.lcdui.game.GameCanvas;
-
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
-import org.recompile.mobile.PlatformImage;
 
 public abstract class Canvas extends Displayable
 {
@@ -78,6 +75,7 @@ public abstract class Canvas extends Displayable
 	// union of all the areas passed to repaint(int, int, int, int).
 	protected final Object paintLock = new Object();
 	protected volatile boolean needsRepaint = false;
+	protected volatile boolean hasFlushedToScreen = false;
 	protected int paintX, paintY, paintW, paintH;
 
 	protected Runnable postFlushDraw = new Runnable()
@@ -329,10 +327,13 @@ public abstract class Canvas extends Displayable
 		// Draw command bar whenever the canvas is not fullscreen and there are commands in the bar, and always queue it to draw after the flush
 		Mobile.getPlatform().setPostFlushDraw(postFlushDraw);
 
-		// GameCanvas will only flush to the screen with a flushGraphics call.
-		if (this instanceof GameCanvas) { return; }
+		// There are apps like Fast and Furious that call flushGraphics in
+		// the paint(graphics) statement above, so in such cases, we already
+		// flushed to screen, don't double-dip here as it will cause flicker.
+		if(this.hasFlushedToScreen) { this.hasFlushedToScreen = false; return; }
 
 		Mobile.getPlatform().flushGraphics(platformImage, renderX, renderY, renderW, renderH);
+		this.hasFlushedToScreen = false;
 	}
 
 	public void serviceRepaints()
