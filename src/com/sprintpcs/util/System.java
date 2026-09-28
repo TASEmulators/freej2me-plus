@@ -16,21 +16,48 @@
 */
 package com.sprintpcs.util;
 
+import org.recompile.mobile.Mobile;
+
 public class System
 {
-	public static String getSystemState(String s) { return null; }
+	public static String getSystemState(String s)
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "getSystemStatenot implemented: " + s);
+		return "";
+	}
 
-	public static void setExitURI(String s) { return; }
+	public static void setExitURI(String s)
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "setExitURI not implemented: " + s);
+		return;
+	}
 
-	public static void addSystemListener(SystemEventListener listener) { }
+	public static void addSystemListener(SystemEventListener listener)
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "addSystemListener not implemented. ");
+	}
 
-	public static String[] getPropertiesList() { return null; }
+	public static String[] getPropertiesList()
+	{
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "getPropertiesList not implemented. ");
+		return null;
+	}
 
-	public static void setSystemSetting(String property, String value) { }
+	public static void setSystemSetting(String property, String value)
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "setSystemSetting not implemented: " + property + " " + value);
+	}
 
-	public static String getProtectedProperty(String property) { return null; }
+	public static String getProtectedProperty(String property)
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "getProtectedProperty not implemented: " + property);
+		return "";
+	}
 
-	public static void promptMasterVolume() { }
+	public static void promptMasterVolume()
+	{ 
+		Mobile.log(Mobile.LOG_WARNING, System.class.getPackage().getName() + "." + System.class.getSimpleName() + ": " + "promptMasterVolume not implemented. ");
+	}
 
 	public static void getTactileFeedback()
 	{
