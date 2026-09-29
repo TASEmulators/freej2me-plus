@@ -10,21 +10,16 @@ jobs:
   libretro:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: build linux & win32 cores
         run: |
           sudo apt-get update && sudo apt-get install -y mingw-w64
           cd src/libretro && make
           find . -name "*.o" -delete
           platform=win CC=x86_64-w64-mingw32-gcc CPP=x86_64-w64-mingw32-g++ CXX=x86_64-w64-mingw32-g++ make
-      - name: Compute commit short SHA
-        id: shortsha
-        run: |
-          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
-          echo "Build Sha: ${{ env.sha_short }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: freej2me_plus_libretro-${{ env.sha_short }}
+          name: unix-win32
           path: |
             src/libretro/freej2me_plus_libretro.so
             src/libretro/freej2me_plus_libretro.dll
@@ -32,17 +27,33 @@ jobs:
   libretro-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: build macOS core
         run: |
           cd src/libretro && make platform=osx
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: |
+            src/libretro/freej2me_plus_libretro.dylib
+
+  package:
+    needs: [libretro, libretro-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
       - name: Compute commit short SHA
         id: shortsha
         run: |
-          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "sha_short=\((git rev-parse --short "\)GITHUB_SHA")" >> "$GITHUB_ENV"
           echo "Build Sha: ${{ env.sha_short }}"
-      - uses: actions/upload-artifact@v7
+      - name: Download all core artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: combined-cores
+          merge-multiple: true
+      - name: Upload single unified artifact
+        uses: actions/upload-artifact@v7
         with:
           name: freej2me_plus_libretro-${{ env.sha_short }}
-          path: |
-            src/libretro/freej2me_plus_libretro.dylib
+          path: combined-cores/
