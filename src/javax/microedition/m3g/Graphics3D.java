@@ -1730,7 +1730,7 @@ public class Graphics3D
 				if(!colorEnabled) { continue; }
 
 				// Blend the fog, all important calculations were done prior.
-				if (hasFog && fogFactor < 255.0f)
+				if (hasFog)
 				{
 					/*
 					 * M3G specifies that, the smaller the fogFactor value, the more we
