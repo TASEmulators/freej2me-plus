@@ -28,3 +28,21 @@ jobs:
           path: |
             src/libretro/freej2me_plus_libretro.so
             src/libretro/freej2me_plus_libretro.dll
+
+  libretro-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: build macOS core
+        run: |
+          cd src/libretro && make platform=osx
+      - name: Compute commit short SHA
+        id: shortsha
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "Build Sha: ${{ env.sha_short }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: freej2me_plus_libretro-${{ env.sha_short }}
+          path: |
+            src/libretro/freej2me_plus_libretro.dylib

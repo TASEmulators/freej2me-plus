@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <stdarg.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -34,8 +34,10 @@
 
 const char *slash = path_default_slash();
 
-// These may change to .so and .dll at some point
-#ifdef __linux__
+// These may change to .so, .dll or .dylib at some point
+#if defined(__linux__)
+const char *freej2meapp = "freej2me_plus-lr.jar";
+#elif __APPLE__
 const char *freej2meapp = "freej2me_plus-lr.jar";
 #elif _WIN32
 const char *freej2meapp = "freej2me_plus-lr.jar";
@@ -101,7 +103,7 @@ struct retro_game_geometry Geometry;
 bool isRunning();
 bool javaOpen(char *cmd, char **params);
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 int javaProcess;
 int pRead[2];
 int pWrite[2];
@@ -281,7 +283,7 @@ unsigned int joymouseClickedImage[408] =
  * to be done here instead of all around the core whenever a
  * pipe write/read is requested.
  */
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 void write_to_pipe(int pipe, void *data, int datasize) { if(isRunning()) { write(pipe, data, datasize); } }
 int read_from_pipe(int pipe, void *data, int datasize) { return isRunning() ? read(pipe, data, datasize) : -1; }
 
@@ -862,7 +864,7 @@ void retro_init(void)
 
 	/* Allocate memory for launch arguments */
 	params = (char**)malloc(sizeof(char*) * NUM_ARGUMENTS);
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 	params[0] = strdup("java");
 #elif _WIN32
 	params[0] = strdup("javaw");
@@ -930,7 +932,7 @@ bool retro_load_game(const struct retro_game_info *info)
 	/* Tell java app to load and run game */
 	char romPath[PATH_MAX_LENGTH];
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 	realpath(info->path, romPath);
 #elif _WIN32
 	_fullpath(romPath, info->path, PATH_MAX_LENGTH);
@@ -1447,7 +1449,7 @@ void retro_deinit(void)
 {
 	if(isRunning())
 	{
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 		kill(javaProcess, SIGKILL);
 		wait(NULL);
 #elif _WIN32
@@ -1540,7 +1542,7 @@ bool javaOpen(char *cmd, char **params)
 
 	log_fn(RETRO_LOG_INFO, "Opening: %s %s %s %s ...\n", *(params+0), *(params+1), *(params+2), *(params+3));
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 	int pid = 0;
 	int fd_stdin  = 0;
 	int fd_stdout = 1;
@@ -1708,7 +1710,7 @@ bool javaOpen(char *cmd, char **params)
 bool isRunning()
 {
 	if(stoppedRunning) { return false; } // If the app is no longer running, only a core restart can solve it
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 	int status;
 	if(waitpid(javaProcess, &status, WNOHANG) == 0) { return true; }
 

@@ -38,14 +38,15 @@ ifeq ($(ARCHFLAGS),)
 ifeq ($(archs),ppc)
    ARCHFLAGS = -arch ppc -arch ppc64
 else
-   ARCHFLAGS = -arch i386 -arch x86_64
+   ARCHFLAGS = -arch x86_64 -arch arm64
 endif
 endif
 
 ifeq ($(platform), osx)
-ifndef ($(NOUNIVERSAL))
+ifndef NOUNIVERSAL
    CXXFLAGS += $(ARCHFLAGS)
-   LFLAGS += $(ARCHFLAGS)
+   LDFLAGS  += $(ARCHFLAGS)
+   CFLAGS   += $(ARCHFLAGS)
 endif
 endif
 
