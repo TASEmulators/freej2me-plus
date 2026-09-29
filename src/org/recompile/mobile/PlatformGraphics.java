@@ -132,7 +132,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	// Graphics context variables
 	protected BufferedImage canvas;
 	protected Graphics2D gc;
-	protected ArrayList<Integer> mcv3commands = new ArrayList<Integer>();
 	protected int canvasWidth;
 	protected int canvasHeight;
 	protected int[] canvasData;
@@ -185,9 +184,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		canvasHeight = canvas.getHeight();
 
 		canvasData = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
-
-		// This command is always required for MascotCapsuleV3 command lists, and DoJa does not initialize it.
-		mcv3commands.add(Graphics3D.COMMAND_LIST_VERSION_1_0);
 
 		setClip(0, 0, canvasWidth, canvasHeight);
 		gc.setFont(font.awtFont);
@@ -2835,81 +2831,21 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void enableLight(boolean b)
 	{
-		int newVal = mcv3commands.get(mcv3commands.size() - 1);
-
-		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
-		{
-			if(b)
-				newVal |= Graphics3D.ENV_ATTR_LIGHTING;
-			else
-				newVal &= ~Graphics3D.ENV_ATTR_LIGHTING;
-
-			mcv3commands.set(mcv3commands.size() - 1, newVal);
-		}
-		else
-			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_LIGHTING :
-				Graphics3D.COMMAND_ATTRIBUTE);
-
 		mcv3effect.setLight(b ? mcv3light : null);
 	}
 
 	public void enableSemiTransparent(boolean b)
 	{
-		int newVal = mcv3commands.get(mcv3commands.size() - 1);
-
-		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
-		{
-			if(b)
-				newVal |= Graphics3D.ENV_ATTR_SEMI_TRANSPARENT;
-			else
-				newVal &= ~Graphics3D.ENV_ATTR_SEMI_TRANSPARENT;
-
-			mcv3commands.set(mcv3commands.size() - 1, newVal);
-		}
-		else
-			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_SEMI_TRANSPARENT :
-				Graphics3D.COMMAND_ATTRIBUTE);
-
 		mcv3effect.setSemiTransparentEnabled(b);
 	}
 
 	public void enableSphereMap(boolean b)
 	{
-		int newVal = mcv3commands.get(mcv3commands.size() - 1);
-
-		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
-		{
-			if(b)
-				newVal |= Graphics3D.ENV_ATTR_SPHERE_MAP;
-			else
-				newVal &= ~Graphics3D.ENV_ATTR_SPHERE_MAP;
-
-			mcv3commands.set(mcv3commands.size() - 1, newVal);
-		}
-		else
-			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_SPHERE_MAP :
-				Graphics3D.COMMAND_ATTRIBUTE);
-
 		mcv3effect.setSphereTexture(b ? mcv3envMap : null);
 	}
 
 	public void enableToonShader(boolean b)
 	{
-		int newVal = mcv3commands.get(mcv3commands.size() - 1);
-
-		if((newVal & Graphics3D.COMMAND_ATTRIBUTE) == Graphics3D.COMMAND_ATTRIBUTE)
-		{
-			if(b)
-				newVal |= Graphics3D.ENV_ATTR_TOON_SHADING;
-			else
-				newVal &= ~Graphics3D.ENV_ATTR_TOON_SHADING;
-
-			mcv3commands.set(mcv3commands.size() - 1, newVal);
-		}
-		else
-			mcv3commands.add(b ? Graphics3D.COMMAND_ATTRIBUTE | Graphics3D.ENV_ATTR_TOON_SHADING :
-				Graphics3D.COMMAND_ATTRIBUTE);
-
 		mcv3effect.setShading(b ? Effect3D.TOON_SHADING : Effect3D.NORMAL_SHADING);
 	}
 
@@ -2921,25 +2857,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		if (commandlist == null || commandlist.length == 0) { return; }
-
-		for(int i = 0; i < commandlist.length; i++)
-			{ mcv3commands.add(commandlist[i]); }
-
-		mcv3commands.add(Graphics3D.COMMAND_FLUSH);
-		mcv3commands.add(Graphics3D.COMMAND_END);
-
-		int[] commands = new int[mcv3commands.size()];
-
-		for(int i = 0; i < commands.length; i++)
-			{ commands[i] = mcv3commands.get(i); }
-
-		// TODO: Find something that uses this.
-		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa executeCommandList");
-		mcv3gc.drawCommandList(mcv3textures, 0, 0, mcv3layout, mcv3effect, commands);
-
-		mcv3commands.clear();
-		mcv3commands.add(Graphics3D.COMMAND_LIST_VERSION_1_0);
+		// LocoRoco for SO uses this
+		mcv3gc.drawCommandList(mcv3textures, 0, 0, mcv3layout, mcv3effect, commandlist);
 	}
 
 	public void renderFigure(com.nttdocomo.opt.ui.j3d.Figure figure)
@@ -3034,8 +2953,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void setPrimitiveTexture(int index)
 	{
-		mcv3commands.add(Graphics3D.COMMAND_TEXTURE_INDEX | index);
-
 		mcv3ActiveTextureIdx = index;
 	}
 
@@ -3063,8 +2980,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	public void setSphereTexture(com.nttdocomo.opt.ui.j3d.Texture texture)
 	{
+		if(texture == null) { throw new NullPointerException("Texture cannot be null"); }
+		if(!texture.isForEnv()) { throw new IllegalArgumentException("Texture is for model, not environment."); }
+		
 		mcv3envMap = (Texture) texture;
-		mcv3effect.setSphereTexture((Texture) texture);
 	}
 
 	public void setToonParam(int threshold, int high, int low)

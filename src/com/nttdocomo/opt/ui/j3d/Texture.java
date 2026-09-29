@@ -45,4 +45,6 @@ public class Texture extends com.mascotcapsule.micro3d.v3.Texture
 		super(is, !forEnv);
 		isForEnv = forEnv;
 	}
+
+	public boolean isForEnv() { return isForEnv; }
 }
