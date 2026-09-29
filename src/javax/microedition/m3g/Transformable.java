@@ -221,7 +221,8 @@ public abstract class Transformable extends Object3D
 				setTranslation(value[0], value[1], value[2]);
 				break;
 			case AnimationTrack.SCALE:
-				setScale(value[0], value[1], value[2]);
+				if(value.length == 1) { setScale(value[0], value[0], value[0]); }
+				else { setScale(value[0], value[1], value[2]); }
 				break;
 			default:
 				super.updateProperty(property, value);

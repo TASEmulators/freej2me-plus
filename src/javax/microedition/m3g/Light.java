@@ -94,8 +94,8 @@ public class Light extends Node
 
 	public void setSpotAngle(float theta)
 	{
-		if ((theta < 0.0f || theta > 90.0f) && theta != 180.0f)
-			{ throw new IllegalArgumentException("Spot angle must be either in range of [0, 90], or equal to 180."); }
+		if ((theta < 0.0f || theta > 90.0f))
+			{ throw new IllegalArgumentException("Spot angle must be either in range of [0, 90]."); }
 
 		this.angle = theta;
 		this.cutoffCos = M3GMath.cos(M3GMath.toRadians(theta));
