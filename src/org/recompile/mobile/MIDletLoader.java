@@ -1062,7 +1062,9 @@ public class MIDletLoader extends URLClassLoader
 	private byte[] instrument(InputStream stream) throws Exception
 	{
 		ClassReader reader = new ClassReader(stream);
-		ClassWriter writer = new ClassWriter(0);
+		// Recompute stack sizes when writing classes. Allows debugging of
+		// Exceptions caught by apps.
+		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 		ClassVisitor visitor = new ASMVisitor(writer);
 		reader.accept(visitor, ClassReader.SKIP_DEBUG);
 		return writer.toByteArray();
@@ -1344,7 +1346,6 @@ public class MIDletLoader extends URLClassLoader
 			}
 
 			// Ported from J2ME-Loader, originally by Nikita Shakarun and Yuri Kharchenko
-			private static final boolean ENABLE_EXCEPTION_DEBUG = false; // TODO: Make this into a debug setting?
 			private final HashSet<Label> catchLabels = new HashSet<Label>();
 
 			@Override
@@ -1352,7 +1353,7 @@ public class MIDletLoader extends URLClassLoader
 			{
 				super.visitTryCatchBlock(start, end, handler, mapInternalName(type));
 
-				if (ENABLE_EXCEPTION_DEBUG) { catchLabels.add(handler); }
+				if (Mobile.minLogLevel == Mobile.LOG_DEBUG) { catchLabels.add(handler); }
 			}
 
 			@Override
@@ -1360,18 +1361,15 @@ public class MIDletLoader extends URLClassLoader
 			{
 				super.visitLabel(label);
 
-				if (ENABLE_EXCEPTION_DEBUG)
+				if (Mobile.minLogLevel == Mobile.LOG_DEBUG && catchLabels.contains(label))
 				{
-					if (catchLabels.contains(label))
-					{
-						super.visitInsn(Opcodes.DUP);
-						super.visitMethodInsn(
-								Opcodes.INVOKEVIRTUAL,
-								"java/lang/Throwable",
-								"printStackTrace",
-								"()V"
-						);
-					}
+					super.visitInsn(Opcodes.DUP);
+					super.visitMethodInsn(
+							Opcodes.INVOKEVIRTUAL,
+							"java/lang/Throwable",
+							"printStackTrace",
+							"()V"
+					);
 				}
 			}
 		}

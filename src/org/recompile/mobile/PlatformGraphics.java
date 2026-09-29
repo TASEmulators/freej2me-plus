@@ -2857,7 +2857,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			mcv3gc.bind(this);
 		}
 
-		// LocoRoco for SO uses this
+		// TODO: LocoRoco for SO uses this, seems incorrect.
 		mcv3gc.drawCommandList(mcv3textures, 0, 0, mcv3layout, mcv3effect, commandlist);
 	}
 
@@ -2889,8 +2889,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		}
 
 		int pCommand = command | (primitives.getType() << 24);
-
-		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa renderPrimitives B");
 
 		Texture activeTexture = null;
 		if (mcv3textures != null && mcv3ActiveTextureIdx >= 0 &&
