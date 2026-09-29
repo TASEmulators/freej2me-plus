@@ -891,6 +891,7 @@ public class Graphics3D
 		boolean hasColors = trisScreen[0].hasVertexColors(); // If one triangle has colors, all will have.
 
 		final boolean usesDepth = this.depthEnabled && compositingMode.isDepthTestEnabled() && isDepthBufferEnabled();
+		final boolean usesDepthWrite = usesDepth && compositingMode.isDepthWriteEnabled();
 		final float depthUnits = compositingMode.getDepthOffsetUnits();
 		final float depthFactor = compositingMode.getDepthOffsetFactor();
 		final boolean hasDepthOffset = usesDepth && (depthFactor != 0.0f || depthUnits != 0.0f);
@@ -1118,9 +1119,9 @@ public class Graphics3D
 
 			if (yStart < yEnd)
 			{
-				renderTriangleHalf(defVertColor, 0, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
-					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
-					invMidSpan);
+				renderTriangleHalf(defVertColor, 0, yStart, yEnd, tri, hasColors, hasTexture, fog, invFogDiv,
+					alphaThreshold, usesDepth, usesDepthWrite, colorEnabled, depthOffset,
+					perspectiveCorrection, invMidSpan);
 			}
 
 			yStart = M3GMath.max((int) (yMid + 0.999999f), viewClipT);
@@ -1128,9 +1129,9 @@ public class Graphics3D
 
 			if (yStart < yEnd)
 			{
-				renderTriangleHalf(defVertColor, 1, yStart, yEnd, tri, hasColors, hasTexture, compositingMode,
-					fog, invFogDiv, alphaThreshold, usesDepth, colorEnabled, depthOffset, perspectiveCorrection,
-					invMidSpan);
+				renderTriangleHalf(defVertColor, 1, yStart, yEnd, tri, hasColors, hasTexture, fog, invFogDiv,
+					alphaThreshold, usesDepth, usesDepthWrite, colorEnabled, depthOffset,
+					perspectiveCorrection, invMidSpan);
 			}
 		}
 
@@ -1388,9 +1389,9 @@ public class Graphics3D
 		final boolean depthWrite = depthTest && compositingMode.isDepthWriteEnabled();
 		float fogFactor = 255.0f;
 		int intFogFactor = 255;
-		int fogColor = fog != null ? fog.getColor() : 0;
-		int compBlending = compositingMode.getBlending();
-		compBlender = getCompositingBlender(compBlending);
+		final int fogRB = fog != null ? fog.getColor() & 0x00FF00FF : 0;
+		final int fogG = fog != null ? (fog.getColor() >> 8) & 0xFF : 0;
+		compBlender = getCompositingBlender(compositingMode.getBlending());
 
 		// fixed point alpha factor, so we don't need a float mult and int cast
 		// in the innermost loop.
@@ -1462,13 +1463,10 @@ public class Graphics3D
 
 				if (alpha < alphaThreshold || alpha == 0) { continue; }
 
-				if (fog != null && intFogFactor < 255)
+				if (fog != null)
 				{
 					int pixRB = paintPixel & 0x00FF00FF;
 					int pixG  = (paintPixel >> 8) & 0xFF;
-
-					int fogRB = fogColor & 0x00FF00FF;
-					int fogG  = (fogColor >> 8) & 0xFF;
 
 					int outRB = (fogRB + (((pixRB - fogRB) * intFogFactor) >> 8)) & 0x00FF00FF;
 					int outG  = fogG + (((pixG - fogG) * intFogFactor) >> 8);
@@ -1484,9 +1482,9 @@ public class Graphics3D
 	}
 
 	private void renderTriangleHalf(int defVertColor, int half, int yStart, int yEnd,
-		Triangle triScreen, boolean hasColors, boolean hasTexture, CompositingMode compositingMode,
-		Fog fog, float invFogDiv, int alphaThreshold, boolean usesDepth, boolean colorEnabled,
-		float depthOffset, boolean doPerspective, float invMidSpan)
+		Triangle triScreen, boolean hasColors, boolean hasTexture, Fog fog, float invFogDiv,
+		int alphaThreshold, boolean usesDepth, boolean usesDepthWrite,
+		boolean colorEnabled, float depthOffset, boolean doPerspective, float invMidSpan)
 	{
 		// Prepare the flags that can be overridden by the UI.
 		boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
@@ -1498,14 +1496,10 @@ public class Graphics3D
 		final float fogNearNorm = hasFog ? fog.getNearDistance() * invFogDiv : 0.0f;
 		final float fogDensity = hasFog ? fog.getDensity() : 0.0f;
 		final int fogMode = hasFog ? fog.getMode() : 0;
-		final int fogColor = hasFog ? fog.getColor() : 0;
-
-		float fogFactor = 255.0f;
-		float stepFogFactor = 0.0f;
-
-		final int compBlending = compositingMode.getBlending();
-		final boolean usesDepthWrite = usesDepth &&
-			compositingMode.isDepthWriteEnabled();
+		final int fogRB = hasFog ? fog.getColor() & 0x00FF00FF : 0;
+		final int fogG  = hasFog ? (fog.getColor() >> 8) & 0xFF : 0;
+		int fogFactor = 65535;
+		int stepFogFactor = 0;
 
 		// Get into the render loop proper.
 
@@ -1669,8 +1663,12 @@ public class Graphics3D
 							fEnd   = M3GMath.exp(-fogDensity * zEyeEnd)   * 256.0f;
 						}
 
-						fogFactor = fStart < 0.0f ? 0.0f : (fStart > 255.0f ? 255.0f : fStart);
-						stepFogFactor = (fEnd < 0.0f ? 0.0f : (fEnd > 255.0f ? 255.0f : fEnd) - fogFactor) * invSpanLen;
+						fogFactor = (int) ((fStart < 0.0f ? 0.0f : (fStart > 255.0f ? 255.0f : fStart)) * 256.0f);
+						// This one bears a bit of explanation as we aren't just clamping and multiplying
+						// by 256 to use fixed point:
+						// The stepping factor is calculated by unscaling the start factor (0.00390625f is 1/256), then
+						// scaling by delta (invSpanLen * 256).
+						stepFogFactor = (int) (((fEnd < 0.0f ? 0.0f : (fEnd > 255.0f ? 255.0f : fEnd)) - (fogFactor * 0.00390625f)) * invSpanLen * 256.0f);
 					}
 
 					// perspX now moves to the next span.
@@ -1738,13 +1736,10 @@ public class Graphics3D
 					 * that the fog's contribution to the resulting color should be
 					 * 1 - fogFactor;
 					 */
-					final int fAmount = (int) fogFactor;
-
+					final int fAmount = fogFactor >> 8;
+					
 					int pixRB = paintPixel & 0x00FF00FF;
 					int pixG  = (paintPixel >> 8) & 0xFF;
-
-					int fogRB = fogColor & 0x00FF00FF;
-					int fogG  = (fogColor >> 8) & 0xFF;
 
 					int outRB = (fogRB + (((pixRB - fogRB) * fAmount) >> 8)) & 0x00FF00FF;
 					int outG  = fogG + (((pixG - fogG) * fAmount) >> 8);
