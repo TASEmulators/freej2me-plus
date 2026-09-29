@@ -5,6 +5,7 @@ on:
     paths: 'src/libretro/**'
   pull_request:
     paths: 'src/libretro/**'
+  workflow_dispatch:
 
 jobs:
   libretro:
@@ -45,15 +46,15 @@ jobs:
       - name: Compute commit short SHA
         id: shortsha
         run: |
-          echo "sha_short=\((git rev-parse --short "\)GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
           echo "Build Sha: ${{ env.sha_short }}"
-      - name: Download all core artifacts
+      - name: Download built artifacts
         uses: actions/download-artifact@v8
         with:
-          path: combined-cores
+          path: cores
           merge-multiple: true
-      - name: Upload single unified artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: freej2me_plus_libretro-${{ env.sha_short }}
-          path: combined-cores/
+          path: cores/
