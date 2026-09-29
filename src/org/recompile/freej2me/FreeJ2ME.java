@@ -793,6 +793,21 @@ public class FreeJ2ME
 			}
 		});
 
+		// Force the main window to pass focus down to the game canvas. Swing
+		// seems to need this in order to focus it properly when other Java
+		// apps are running alongside FreeJ2ME-Plus.
+		main.addWindowFocusListener(new WindowAdapter()
+		{
+			@Override
+			public void windowGainedFocus(WindowEvent e)
+			{
+				javax.swing.SwingUtilities.invokeLater(new Runnable()
+				{
+					public void run() { lcd.requestFocusInWindow(); }
+				});
+			}
+		});
+
 		/* Add LCD screen to FreeJ2ME's GUI frame */
 		main.add(lcd);
 
@@ -840,6 +855,7 @@ public class FreeJ2ME
 			setDropTarget();
 			setBackground(Color.WHITE);
 			setOpaque(true);
+			setFocusable(true);
 		}
 
 		public void updateScale(int vw, int vh)
