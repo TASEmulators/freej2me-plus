@@ -87,7 +87,7 @@ public final class FJGUI
 	private static final int PORTRAIT = 1;
 	private static final int LANDSCAPE = 2;
 
-	final String VERSION = "1.52";
+	final String VERSION = "1.53";
 	/* This is used to indicate to FreeJ2ME that it has to call "settingsChanged()" to apply changes made here */
 	private boolean hasPendingChange;
 

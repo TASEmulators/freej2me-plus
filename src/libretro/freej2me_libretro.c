@@ -1426,7 +1426,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name = "FreeJ2ME-Plus";
-	info->library_version = "1.52";
+	info->library_version = "1.53";
 	info->valid_extensions = "jar|kjx";
 	info->need_fullpath = true;
 }
