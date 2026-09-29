@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 #elif _WIN32
 #include <windows.h>
 #include <tlhelp32.h>
