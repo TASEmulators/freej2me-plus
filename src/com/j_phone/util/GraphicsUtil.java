@@ -41,19 +41,31 @@ public class GraphicsUtil
 
 	public static void drawRegion(Graphics g, Image src, int x_src, int y_src, int width, int height, int transform,
 	int x_dest, int y_dest, int anchor) 
-    {
+	{
+		// TODO: No docs on this, but Disney Meteos for SoftBank expects the drawn region to be clipped to fit in bounds
+		if (x_src < 0) { x_src = 0; }
+		if (y_src < 0) { y_src = 0; }
+		if (x_src + width > src.getWidth()) { width = src.getWidth() - x_src; }
+		if (y_src + height > src.getHeight()) { height = src.getHeight() - y_src; }
+		
 		g.drawRegion(src, x_src, y_src, width, height, transform, x_dest, y_dest, anchor);
 	}
 
 	public static void drawRegion(Graphics g, Image src, int x_src, int y_src, int width, int height, int transform,
-    int x_dest, int y_dest, int width_dest, int height_dest, int anchor,
-    int stretch_quality) 
-    {
+	int x_dest, int y_dest, int width_dest, int height_dest, int anchor,
+	int stretch_quality) 
+	{
+		// TODO: This wasn't found in use yet, but same logic as above probably applies.
+		if (x_src < 0) { x_src = 0; }
+		if (y_src < 0) { y_src = 0; }
+		if (x_src + width > src.getWidth()) { width = src.getWidth() - x_src; }
+		if (y_src + height > src.getHeight()) { height = src.getHeight() - y_src; }
+		
 		g.drawRegion(src, x_src, y_src, width, height, transform, x_dest, y_dest, width_dest, height_dest, anchor, stretch_quality);
 	}
 
 	public static void drawPseudoTransparentImage(Graphics g, Image src, int x_dest, int y_dest, int anchor, short mask_pattern, int element_size) 
-    {
+	{
 		g.drawImage(src, x_dest, y_dest, anchor);
 	}
 }

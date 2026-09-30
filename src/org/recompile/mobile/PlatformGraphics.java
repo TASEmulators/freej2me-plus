@@ -477,7 +477,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		if (image == null) { throw new NullPointerException("Source image cannot be null"); }
 
-		if (subx < 0 || suby < 0 || subx + subw > image.getCanvas().getWidth() || suby + subh > image.getCanvas().getHeight())
+		if (subx < 0 || suby < 0 || subx + subw > image.getWidth() || suby + subh > image.getHeight())
 		{
 			throw new IllegalArgumentException("Source region is out of bounds");
 		}
