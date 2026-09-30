@@ -172,7 +172,7 @@ class Graphics3DPipelines
 				int overG = (sumG & 0x00010000) - ((sumG & 0x00010000) >>> 8);
 				int outG = (sumG | overG) & 0x0000FF00;
 
-				return (fg & 0xFF000000) | outG | outRB;
+				return (bg & 0xFF000000) | outG | outRB;
 			}
 		};
 
@@ -233,7 +233,7 @@ class Graphics3DPipelines
 				int outG = fG + (((cG - fG) * tG + 128) >> 8);
 				int outB = fB + (((cB - fB) * tB + 128) >> 8);
 
-				return (fg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
+				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
 			}
 		};
 
@@ -249,7 +249,7 @@ class Graphics3DPipelines
 				int fAG = (bg >>> 8) & 0x00FF00FF, tAG = (fg >>> 8) & 0x00FF00FF;
 				int outAG = (fAG + ((((tAG - fAG) * tA) >> 8) & 0x00FF00FF)) & 0x00FF00FF;
 
-				return (fg & 0xFF000000) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
+				return (bg & 0xFF000000) | ((outRB | (outAG << 8)) & 0x00FFFFFF);
 			}
 		};
 
@@ -274,7 +274,7 @@ class Graphics3DPipelines
 				int outG = ((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF);
 				int outB = ( bg        & 0xFF) * ( fg        & 0xFF);
 
-				return (fg & 0xFF000000)
+				return (bg & 0xFF000000)
 					 | ((outR & 0xFF00) << 8)
 					 |  (outG & 0xFF00)
 					 |  (outB >> 8);

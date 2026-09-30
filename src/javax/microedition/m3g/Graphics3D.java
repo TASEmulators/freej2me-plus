@@ -2317,7 +2317,6 @@ public class Graphics3D
 			case ((Texture2D.FUNC_MODULATE & 7) << 3) | (Image2D.LUMINANCE & 7):
 				return Graphics3DPipelines.TextureBlenders.MODULATE_RGB;
 
-			// REPLACE mode, and also DECAL for RGB textures.
 			default:
 				return Graphics3DPipelines.TextureBlenders.PASSTHROUGH;
 		}
