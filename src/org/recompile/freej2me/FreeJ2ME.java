@@ -61,6 +61,7 @@ import java.util.HashMap;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class FreeJ2ME
@@ -995,6 +996,7 @@ public class FreeJ2ME
 				public void drop(DropTargetDropEvent dtde)
 				{
 					boolean success = false;
+					File droppedFile = null;
 					try
 					{
 						if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
@@ -1008,16 +1010,11 @@ public class FreeJ2ME
 							// Check if the file is supported
 							if (!files.isEmpty())
 							{
-								File droppedFile = files.get(0);
+								File file = files.get(0);
 
-								if (isSupportedFile(droppedFile.getName()))
+								if (isSupportedFile(file.getName()))
 								{
-									if (!fjGUI.hasLoadedFile()) { fjGUI.loadJarFile(droppedFile.toURI().toString()); }
-									else
-									{
-										MobilePlatform.fileName = droppedFile.toURI().toString();
-										fjGUI.showRestartDialog();
-									}
+									droppedFile = file;
 									success = true;
 								}
 							}
@@ -1030,6 +1027,24 @@ public class FreeJ2ME
 						dtde.dropComplete(success);
 						showDragMessage = false;
 						repaint();
+					}
+
+					if (droppedFile != null)
+					{
+						final String droppedPath = droppedFile.toURI().toString();
+						SwingUtilities.invokeLater(new Runnable()
+						{
+							public void run()
+							{
+								if (!fjGUI.hasLoadedFile()) { fjGUI.loadJarFile(droppedPath); }
+								else
+								{
+									MobilePlatform.fileName = droppedPath;
+									fjGUI.setJarPath(droppedPath);
+									fjGUI.showRestartDialog();
+								}
+							}
+						});
 					}
 				}
 			});
