@@ -120,7 +120,8 @@ public final class FJGUI
 	final JMenu unlockFPSHack = new JMenu("Unlock FPS Hack");
 	final JMenu showFPS = new JMenu("Show FPS Counter");
 	final JMenu phoneType = new JMenu("Phone Key Layout");
-	final JMenu DoJaVersion = new JMenu("DoJa API Version");
+	final JMenu doJaVersion = new JMenu("DoJa API Version");
+	final JMenu numExclusiveSynths = new JMenu("Number of MIDI Synthesizers");
 	final JMenu screenRotation = new JMenu("Screen Rotation (Ctrl+Alt+R)");
 	final JMenu backlightColor = new JMenu("Backlight Color");
 	final JMenu fontOffset = new JMenu("Font Size Offset");
@@ -278,6 +279,16 @@ public final class FJGUI
 	final JCheckBoxMenuItem fullScreen = new JCheckBoxMenuItem("Toggle Fullscreen (Ctrl+Alt+F)", false);
 	final JCheckBoxMenuItem enableAudio = new JCheckBoxMenuItem("Enable Audio", true);
 	final JCheckBoxMenuItem useCustomMidi = new JCheckBoxMenuItem("Use custom midi soundfont", false);
+
+	final JCheckBoxMenuItem[] exclusiveSynths =
+	{
+		new JCheckBoxMenuItem("1 Synthesizer", false),
+		new JCheckBoxMenuItem("2 Synthesizers", false),
+		new JCheckBoxMenuItem("3 Synthesizers", false),
+		new JCheckBoxMenuItem("4 Synthesizers", true)
+	};
+	final String[] excSynthValues = {"1", "2", "3", "4"};
+	
 	final JCheckBoxMenuItem useCustomFont = new JCheckBoxMenuItem("Use custom text font", false);
 
 	final JCheckBoxMenuItem[] dojaVersions =
@@ -1066,6 +1077,10 @@ public final class FJGUI
 		});
 
 		// System toggleable settings.
+		bindRadioGroup(exclusiveSynths, excSynthValues, "numsynths", true, new Runnable()
+		{
+			public void run() { showRestartDialog(); }
+		});
 		setSysToggle(enableAudio, "sound");
 		setSysToggle(deleteTemporaryKJXFiles, "deleteTempKJXFiles");
 		setSysToggle(dumpAudioData, "dumpAudioStreams");
@@ -1180,12 +1195,13 @@ public final class FJGUI
 		optionMenu.add(fullScreen);
 		optionMenu.add(enableAudio);
 		optionMenu.add(useCustomMidi);
+		optionMenu.add(numExclusiveSynths);
 		optionMenu.add(useCustomFont);
 		optionMenu.add(resChangeMenuItem);
 		optionMenu.add(compatSettingsMenu);
 		optionMenu.add(mapInputs);
 		optionMenu.add(phoneType);
-		optionMenu.add(DoJaVersion);
+		optionMenu.add(doJaVersion);
 		optionMenu.add(screenRotation);
 		optionMenu.add(backlightColor);
 		optionMenu.add(fpsCap);
@@ -1241,8 +1257,8 @@ public final class FJGUI
 		MCV3Debug.add(MCV3ShowHeapUsage);
 		MCV3Debug.add(MCV3ShowTimeMetrics);
 
-
-		for(int i = 0; i < dojaVersions.length; i++) { DoJaVersion.add(dojaVersions[i]); }
+		for(int i = 0; i < exclusiveSynths.length; i++) { numExclusiveSynths.add(exclusiveSynths[i]); }
+		for(int i = 0; i < dojaVersions.length; i++) { doJaVersion.add(dojaVersions[i]); }
 		for(int i = 0; i < rotations.length; i++) { screenRotation.add(rotations[i]); }
 		for(int i = 0; i < layoutOptions.length; i++) { phoneType.add(layoutOptions[i]); }
 		for(int i = 0; i < backlightOptions.length; i++) { backlightColor.add(backlightOptions[i]); }
@@ -1463,6 +1479,7 @@ public final class FJGUI
 
 		// Sys Settings
 		updateRadioGroup(logLevels, logLevelValues, "logLevel", true);
+		updateRadioGroup(exclusiveSynths, excSynthValues, "numsynths", true);
 		updateRadioGroup(fpsCounterPos, showFPSValues, "fpsCounterPosition", true);
 		updateSysToggle(enableAudio, "sound");
 		updateSysToggle(dumpGraphicsData, "dumpGraphicsObjects");

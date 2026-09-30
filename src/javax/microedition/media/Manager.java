@@ -56,12 +56,11 @@ public class Manager
 	private static Soundbank customSoundfont;
 	private static Soundbank defaultSoundbank = null;
 
-	public static final int NUM_EXCLUSIVE_SYNTHS = 4;
-	public static final Synthesizer[] exclusiveSynths = new Synthesizer[NUM_EXCLUSIVE_SYNTHS];
-	public static final Sequencer[] exclusiveSequencers = new Sequencer[NUM_EXCLUSIVE_SYNTHS];
-	public static final Transmitter[] exclusiveTransmitters = new Transmitter[NUM_EXCLUSIVE_SYNTHS];
-	public static final Receiver[] exclusiveReceivers = new Receiver[NUM_EXCLUSIVE_SYNTHS];
-	public static final boolean[] synthIdxInUse = new boolean[] { false, false, false, false };
+	public static Synthesizer[] exclusiveSynths;
+	public static Sequencer[] exclusiveSequencers;
+	public static Transmitter[] exclusiveTransmitters;
+	public static Receiver[] exclusiveReceivers;
+	public static byte synthIdxInUse = 0; // We'll never have more than 8 exclusive synths, 8 bits is fine.
 	// Track which players were actually playing when the pause command hit
 	public static volatile ArrayList<BasicPlayer> runningPlayers = new ArrayList<BasicPlayer>();
 
@@ -177,8 +176,8 @@ public class Manager
 		else if (volume > 100) { volume = 100; }
 
 		final int restoreBankMSB = toneChannel.getController(0);    // Bank MSB
-        final int restoreBankLSB = toneChannel.getController(32);   // Bank LSB
-        final int restoreInstrument = toneChannel.getProgram();     // Current instrument
+		final int restoreBankLSB = toneChannel.getController(32);   // Bank LSB
+		final int restoreInstrument = toneChannel.getProgram();     // Current instrument
 
 		toneChannel.controlChange(0, 1);   // Bank change MSB (Bank 1)
 		toneChannel.controlChange(32, 0);  // Bank change LSB
@@ -291,23 +290,23 @@ public class Manager
 
 	private static String generateMD5Hash(InputStream stream, int byteCount)
 	{
-        try
+		try
 		{
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] data = new byte[byteCount];
-            int bytesRead = stream.read(data, 0, byteCount);
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			byte[] data = new byte[byteCount];
+			int bytesRead = stream.read(data, 0, byteCount);
 
-            if (bytesRead != -1) { md.update(data, 0, bytesRead); }
+			if (bytesRead != -1) { md.update(data, 0, bytesRead); }
 
-            // Convert MD5 hash to hex string
-            StringBuilder md5Sum = new StringBuilder();
-            for (byte b : md.digest()) { md5Sum.append(String.format("%02x", b)); }
+			// Convert MD5 hash to hex string
+			StringBuilder md5Sum = new StringBuilder();
+			for (byte b : md.digest()) { md5Sum.append(String.format("%02x", b)); }
 
-            return md5Sum.toString();
-        } catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to generate stream MD5:" + e.getMessage()); }
+			return md5Sum.toString();
+		} catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to generate stream MD5:" + e.getMessage()); }
 
 		return null;
-    }
+	}
 
 	private static final void checkCustomMidi()
 	{
@@ -372,7 +371,7 @@ public class Manager
 				wasPlaying = true;
 			}
 
-			for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++)
+			for(int i = 0; i < Mobile.numExclusiveSynths; i++)
 			{
 				if(exclusiveSynths[i] != null) { exclusiveSynths[i].loadAllInstruments(Manager.getCustomSoundfont()); }
 			}
@@ -403,22 +402,26 @@ public class Manager
 
 	public static int retrieveAvailableSynthIndex()
 	{
-		for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++)
+		for(int i = 0; i < Mobile.numExclusiveSynths; i++)
 		{
-			if(!exclusiveSequencers[i].isRunning() && synthIdxInUse[i] == false) { return i; }
+			if(!exclusiveSequencers[i].isRunning() && (synthIdxInUse & (1 << i)) == 0)
+			{
+				synthIdxInUse |= (byte) (1 << i);
+				return i;
+			}
 		}
 
-		return NUM_EXCLUSIVE_SYNTHS-1; // We have no option but to reuse a synth here, as the four exclusive ones are all in use
+		return Mobile.numExclusiveSynths-1; // We have no option but to reuse a synth here, as the four exclusive ones are all in use
 	}
 
 	public static synchronized void releaseSynthIndex(int index)
-    {
-        if (index >= 0 && index < NUM_EXCLUSIVE_SYNTHS)
-        {
-            synthIdxInUse[index] = false;
-            exclusiveSequencers[index].setMicrosecondPosition(0);
-        }
-    }
+	{
+		if (index >= 0 && index < Mobile.numExclusiveSynths)
+		{
+			synthIdxInUse &= (byte) ~(1 << index);
+			exclusiveSequencers[index].setMicrosecondPosition(0);
+		}
+	}
 
 	public static Soundbank getCustomSoundfont() { return customSoundfont; }
 
@@ -426,7 +429,12 @@ public class Manager
 	{
 		try
 		{
-			for(int i = 0; i < NUM_EXCLUSIVE_SYNTHS; i++)
+			exclusiveSynths = new Synthesizer[Mobile.numExclusiveSynths];
+			exclusiveSequencers = new Sequencer[Mobile.numExclusiveSynths];
+			exclusiveTransmitters = new Transmitter[Mobile.numExclusiveSynths];
+			exclusiveReceivers = new Receiver[Mobile.numExclusiveSynths];
+			
+			for(int i = 0; i < Mobile.numExclusiveSynths; i++)
 			{
 				exclusiveSynths[i] = prepareSynthesizer();
 				exclusiveSequencers[i] = MidiSystem.getSequencer(false);
@@ -438,11 +446,11 @@ public class Manager
 				exclusiveTransmitters[i] = exclusiveSequencers[i].getTransmitter();
 				exclusiveTransmitters[i].setReceiver(exclusiveReceivers[i]);
 			}
-			toneSynth = exclusiveSynths[NUM_EXCLUSIVE_SYNTHS-1]; // Get the last synth of PlatformPlayer
+			toneSynth = exclusiveSynths[Mobile.numExclusiveSynths-1]; // Get the last synth of PlatformPlayer
 			toneReceiver = toneSynth.getReceiver();
 			toneChannel = toneSynth.getChannels()[15]; // Also get the last channel of the last synth, to minimize chances of this causing issues with other MIDI streams
 
-			toneSequencer = exclusiveSequencers[NUM_EXCLUSIVE_SYNTHS-1];
+			toneSequencer = exclusiveSequencers[Mobile.numExclusiveSynths-1];
 			toneSequencer.getTransmitter().setReceiver(toneReceiver);
 			toneSequencer.open();
 

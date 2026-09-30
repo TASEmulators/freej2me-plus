@@ -104,6 +104,9 @@ public class Mobile
 	// Support for loading custom MIDI soundfonts
 	public static boolean useCustomMidi = false;
 
+	// Maximum amount of exclusive synths. Mainly useful for SMAF/MLD. MIDP can use just 1 or 2.
+	public static byte numExclusiveSynths = 4;
+
 	// Support for loading custom text fonts
 	public static boolean useCustomTextFont = false;
 	public static byte fontSizeOffset = 0; // Size offset to tweak font sizing
@@ -1053,6 +1056,8 @@ public class Mobile
 		String midiSoundfont = config.sysSettings.get("soundfont");
 		if(midiSoundfont.equals("Custom") && useCustomMidi == false)      { useCustomMidi = true;  Manager.changeCustomMidi(); }
 		else if(midiSoundfont.equals("Default") && useCustomMidi == true) { useCustomMidi = false; Manager.changeCustomMidi(); }
+
+		numExclusiveSynths = (byte) Integer.parseInt(config.sysSettings.get("numsynths"));
 
 		String textFont = config.sysSettings.get("textfont");
 		if(textFont.equals("Custom"))       { useCustomTextFont = true; }

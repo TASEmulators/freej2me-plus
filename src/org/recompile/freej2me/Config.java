@@ -189,6 +189,7 @@ public class Config
 			{
 				sysSettings.put("fpsCounterPosition", "Off");
 				sysSettings.put("logLevel", "2");
+				sysSettings.put("numsynths", "4");
 				sysSettings.put("M3GWireframe", "off");
 				sysSettings.put("M3GUntextured", "off");
 				sysSettings.put("MCV3ShowTimeMetrics", "off");
@@ -268,6 +269,7 @@ public class Config
 	{
 		if (!sysSettings.containsKey("fpsCounterPosition")) { sysSettings.put("fpsCounterPosition", "Off"); }
 		if (!sysSettings.containsKey("logLevel")) { sysSettings.put("logLevel", "2"); }
+		if (!sysSettings.containsKey("numsynths")) { sysSettings.put("numsynths", "4"); }
 		if (!sysSettings.containsKey("M3GWireframe")) { sysSettings.put("M3GWireframe", "off"); }
 		if (!sysSettings.containsKey("M3GUntextured")) { sysSettings.put("M3GUntextured", "off"); }
 		if (!sysSettings.containsKey("MCV3ShowTimeMetrics")) { sysSettings.put("MCV3ShowTimeMetrics", "off"); }

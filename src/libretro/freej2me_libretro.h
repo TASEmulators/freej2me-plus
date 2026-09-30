@@ -348,6 +348,22 @@ struct retro_core_option_v2_definition core_options[] =
 		"off"
 	},
 	{
+		"freej2me_numsynths",
+		"System > Number of MIDI Synthesizers",
+		"Number of MIDI Synthesizers",
+		"FreeJ2ME-Plus pre-allocates a set amount of MIDI syntherizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility, as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
+		"FreeJ2ME-Plus pre-allocates a set amount of MIDI syntherizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility, as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
+		"system_settings",
+		{
+			{ "4",   "4 Synthesizers"   },
+			{ "3",   "3 Synthesizers"   },
+			{ "2",   "2 Synthesizers"   },
+			{ "1",   "1 Synthesizer"    },
+			{ NULL, NULL },
+		},
+		"4"
+	},
+	{
 		"freej2me_textfont",
 		"System > Text Font",
 		"Text Font",
@@ -1104,6 +1120,19 @@ struct retro_core_option_definition core_options_v1 [] =
 		"off"
 	},
 	{
+		"freej2me_numsynths",
+		"Number of MIDI Synthesizers",
+		"FreeJ2ME-Plus pre-allocates a set amount of MIDI syntherizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility, as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
+		{
+			{ "4",   "4 Synthesizers"   },
+			{ "3",   "3 Synthesizers"   },
+			{ "2",   "2 Synthesizers"   },
+			{ "1",   "1 Synthesizer"    },
+			{ NULL, NULL },
+		},
+		"4"
+	},
+	{
 		"freej2me_textfont",
 		"Text Font",
 		"Selects whether you want to use a custom text font or not. 'Default' uses the font bundled with the system or Java VM, while 'Custom' allows you to place a custom font on '<freej2me-lr.jar folder>/freej2me_system/customFont' and use it on J2ME apps to simulate a specific phone's font family. Do note that some fonts may end up being too large or too small to fit in some screen sizes, so you might need to adjust the size offset.",
@@ -1604,6 +1633,10 @@ static const struct retro_variable vars[] =
 	{ /* MIDI Soundfont */
 		"freej2me_midifont",
 		"MIDI Soundfont; off|on"
+	},
+	{ /* Number of MIDI Synthesizers */
+		"freej2me_numsynths",
+		"Number of MIDI Synthesizers; 4|3|2|1",
 	},
 	{ /* Custom Text Font */
 		"freej2me_textfont",

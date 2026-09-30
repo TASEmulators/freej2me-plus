@@ -305,6 +305,8 @@ public class Libretro
 								Mobile.config.settings.put("compatrepaintonsetcurrent", Integer.parseInt(cfgtokens[39]) == 1 ? "on" : "off");
 								Mobile.config.settings.put("compatnotranslatedrawrgb", Integer.parseInt(cfgtokens[40]) == 1 ? "on" : "off");
 
+								Mobile.config.sysSettings.put("numsynths", "" + Integer.parseInt(cfgtokens[41]));
+
 								Mobile.config.saveConfig();
 								settingsChanged();
 							break;
