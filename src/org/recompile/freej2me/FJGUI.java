@@ -1790,14 +1790,28 @@ public final class FJGUI
 
 	public String getJarPath() { return jarfile; }
 
+	public void setJarPath(String jarpath) { jarfile = jarpath; }
+
 	public boolean hasJustLoaded() { return firstLoad; }
 
 	public void showRestartDialog()
 	{
 		// If we're still in the init stage, ignore changes that call this up.
 		if(!this.allowRestartDialog) { return; }
-		swingDialogs[3].setLocationRelativeTo(main);
-		swingDialogs[3].setVisible(true);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			public void run()
+			{
+				if(swingDialogs[3].isVisible())
+				{
+					swingDialogs[3].toFront();
+					return;
+				}
+				swingDialogs[3].setLocationRelativeTo(main);
+				swingDialogs[3].setAlwaysOnTop(true);
+				swingDialogs[3].setVisible(true);
+			}
+		});
 	}
 
 	public void updateDialogs()
