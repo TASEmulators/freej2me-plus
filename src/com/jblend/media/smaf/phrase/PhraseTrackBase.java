@@ -67,6 +67,9 @@ public abstract class PhraseTrackBase
 		if(player == null) { throw new RuntimeException("Cannot play: null player"); }
 		if(loop == 0) { loop = -1; } // Loop as 0 means infinite looping here
 
+		// Armored Core 3 sets an already playing player to play again.
+		if(player.getState() >= Player.STARTED) { player.stop(); }
+		
 		player.setLoopCount(loop);
 		player.setMediaTime(0); // Play starts from the beginning of the track
 		((PlatformPlayer)player).setPhraseListener(listener);

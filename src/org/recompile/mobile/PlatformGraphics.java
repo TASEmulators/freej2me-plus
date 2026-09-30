@@ -42,7 +42,7 @@ import javax.microedition.lcdui.game.Sprite;
 public abstract class PlatformGraphics implements DirectGraphics,
 	com.jblend.graphics.j3d.Graphics3D, com.motorola.graphics.j3d.Graphics3D,
 	com.nttdocomo.opt.ui.j3d.Graphics3D, com.vodafone.v10.graphics.j3d.Graphics3D,
-	com.nec.mascotcapsule.v3.Graphics3D
+	com.nec.mascotcapsule.v3.Graphics3D, com.j_phone.amuse.j3d.Graphics3D
 {
 	private static final int FP_FACTOR = 16;
 

@@ -944,9 +944,10 @@ public class MIDletLoader extends URLClassLoader
 		checkAPIUsage(name);
 
 		if (name.startsWith("com.jblend.graphics.j3d.") ||
-		name.startsWith("com.vodafone.v10.graphics.j3d.") ||
-		name.startsWith("com.motorola.graphics.j3d.") ||
-		name.startsWith("com.nec.mascotcapsule.v3."))
+			name.startsWith("com.vodafone.v10.graphics.j3d.") ||
+			name.startsWith("com.motorola.graphics.j3d.") ||
+			name.startsWith("com.nec.mascotcapsule.v3.") ||
+			name.startsWith("com.j_phone.amuse.j3d."))
 		{
 			// Allow Graphics3D to load normally as an interface (PlatformGraphics implements them)
 			if (!name.endsWith(".Graphics3D"))
@@ -1091,7 +1092,8 @@ public class MIDletLoader extends URLClassLoader
 			if (internalName.startsWith("com/jblend/graphics/j3d/") ||
 				internalName.startsWith("com/vodafone/v10/graphics/j3d/") ||
 				internalName.startsWith("com/motorola/graphics/j3d/") ||
-				internalName.startsWith("com/nec/mascotcapsule/v3/"))
+				internalName.startsWith("com/nec/mascotcapsule/v3/") ||
+				internalName.startsWith("com/j_phone/amuse/j3d/"))
 			{
 				// Skip Graphics3D so it stays an interface
 				if (internalName.endsWith("/Graphics3D"))
@@ -1113,7 +1115,7 @@ public class MIDletLoader extends URLClassLoader
 			if (desc == null) return null;
 
 			String rewritten = desc;
-			for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d", "com/nec/mascotcapsule/v3"})
+			for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d", "com/nec/mascotcapsule/v3", "com/j_phone/amuse/j3d"})
 			{
 				if (rewritten.contains(vendor) && !rewritten.contains(vendor + "/Graphics3D"))
 				{

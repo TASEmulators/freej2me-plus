@@ -77,7 +77,7 @@ public class PhraseTrack extends com.jblend.media.smaf.phrase.PhraseTrackBase
 			setJPhoneSyncMaster(master);
 			master.slaveJPhonePhrases.add(this);
 		}
-		else // Clear sync relation
+		else if(getJPhoneSyncMaster() != null) // Clear sync relation
 		{
 			getJPhoneSyncMaster().slaveJPhonePhrases.remove(this);
 			setJPhoneSyncMaster(master);
