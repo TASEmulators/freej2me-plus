@@ -18,9 +18,14 @@ jobs:
           cd src/libretro && make
           find . -name "*.o" -delete
           platform=win CC=x86_64-w64-mingw32-gcc CPP=x86_64-w64-mingw32-g++ CXX=x86_64-w64-mingw32-g++ make
+      - name: Compute commit short SHA
+        id: shortsha
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "Sha: ${{ env.sha_short }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: unix-win32
+          name: unix-win32-${{ env.sha_short }}
           path: |
             src/libretro/freej2me_plus_libretro.so
             src/libretro/freej2me_plus_libretro.dll
@@ -32,29 +37,13 @@ jobs:
       - name: build macOS core
         run: |
           cd src/libretro && make platform=osx
-      - uses: actions/upload-artifact@v7
-        with:
-          name: macos
-          path: |
-            src/libretro/freej2me_plus_libretro.dylib
-
-  package:
-    needs: [libretro, libretro-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
       - name: Compute commit short SHA
         id: shortsha
         run: |
           echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
-          echo "Build Sha: ${{ env.sha_short }}"
-      - name: Download built artifacts
-        uses: actions/download-artifact@v8
+          echo "Sha: ${{ env.sha_short }}"
+      - uses: actions/upload-artifact@v7
         with:
-          path: cores
-          merge-multiple: true
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: freej2me_plus_libretro-${{ env.sha_short }}
-          path: cores/
+          name: macos-${{ env.sha_short }}
+          path: |
+            src/libretro/freej2me_plus_libretro.dylib
