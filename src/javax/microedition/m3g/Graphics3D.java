@@ -1721,6 +1721,13 @@ public class Graphics3D
 
 				if (alpha < alphaThreshold) { continue; }
 
+				/*
+				 * Yes, this is back. Now there's a bunch of apps that rely on
+				 * this. Namely, 3D Constructo Combat and some versions of Tower
+				 * Bloxx Deluxe 3D.
+				 */
+				if(alpha == 0) { paintPixel |= 0xFF000000; }
+
 				// Update the depth buffer if depth write is enabled (alpha pixels do not write Z)
 				if (usesDepthWrite) { this.depthBuffer[rasterIdx] = (short) z; }
 
