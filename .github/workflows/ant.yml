@@ -6,6 +6,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v7
@@ -28,7 +30,21 @@ jobs:
         echo "Sha: ${{ env.sha_short }}"
     - uses: actions/upload-artifact@v7
       with:
-        name: freej2me-${{ env.sha_short }}
+        name: freej2me_plus-${{ env.sha_short }}
         path: |
           build/*.jar
           build/Win32Pad.exe
+    - name: Package nightly into a zip
+      run: |
+        mkdir -p rel
+        cp build/*.jar rel/
+        cp build/Win32Pad.exe rel/
+
+        cd rel
+        zip -r ../freej2me_plus-nightly.zip *
+        cd ..
+    - name: Send it to the nightly release tag
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload nightlies freej2me_plus-nightly.zip --clobber

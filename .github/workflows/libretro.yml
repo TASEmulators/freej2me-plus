@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  libretro:
+  libretro-linux-win32:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -47,3 +47,27 @@ jobs:
           name: macos-${{ env.sha_short }}
           path: |
             src/libretro/freej2me_plus_libretro.dylib
+
+  release-libretro:
+    needs: [libretro-linux-win32, libretro-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download built libretro cores
+        uses: actions/download-artifact@v8
+        with:
+          path: lr-cores
+          merge-multiple: true
+      - name: Package everything into a zip
+        run: |
+          cd lr-cores
+          zip -r ../freej2me_plus_libretro-nightly.zip *
+          cd ..
+      - name: Send it to the nightly release tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload nightlies freej2me_plus_libretro-nightly.zip --clobber
