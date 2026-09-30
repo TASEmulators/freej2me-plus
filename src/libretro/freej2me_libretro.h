@@ -351,8 +351,8 @@ struct retro_core_option_v2_definition core_options[] =
 		"freej2me_numsynths",
 		"System > Number of MIDI Synthesizers",
 		"Number of MIDI Synthesizers",
-		"FreeJ2ME-Plus pre-allocates a set amount of MIDI syntherizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility, as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
-		"FreeJ2ME-Plus pre-allocates a set amount of MIDI syntherizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility, as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
+		"FreeJ2ME-Plus pre-allocates a set amount of MIDI synthesizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
+		"FreeJ2ME-Plus pre-allocates a set amount of MIDI synthesizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
 		"system_settings",
 		{
 			{ "4",   "4 Synthesizers"   },
@@ -1122,7 +1122,7 @@ struct retro_core_option_definition core_options_v1 [] =
 	{
 		"freej2me_numsynths",
 		"Number of MIDI Synthesizers",
-		"FreeJ2ME-Plus pre-allocates a set amount of MIDI syntherizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility, as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
+		"FreeJ2ME-Plus pre-allocates a set amount of MIDI synthesizers for smoother MIDI/SMAF/MLD playback. The default of 4 is used for maximum compatibility as no vendor spec so far states that more than 4 sequences can play at the same time, but most times 1 or 2 are enough (MIDP mostly uses 1). You can decrease the pre-allocated amount to reduce memory usage and improve performance a bit. Note that DoJa, KDDI, SoftBank, and some others may need more than 2 to work properly.",
 		{
 			{ "4",   "4 Synthesizers"   },
 			{ "3",   "3 Synthesizers"   },
