@@ -214,6 +214,16 @@ public class Graphics3D
 	private Object[] renderObjData = new Object[64 * 4];
 	// Indirect sort index pointer array
 	private int[] renderIndices = new int[64];
+
+	/*
+	 * Effective alpha factor per queued render op, in 0-256 fixed point, and the
+	 * one currently being rasterized. JSR-184: "This can be used to fade groups
+	 * of meshes and sprites in and out", and getAlphaFactor() is explicitly the
+	 * local factor with "the alpha factors of any ancestors ... not multiplied
+	 * in", so the effective value is the product down the scene graph branch.
+	 */
+	private int[] renderAlphaData = new int[64];
+	private int currAlphaFactor = 256;
 	private int renderOpCount = 0;
 
 	public Graphics3D()
@@ -575,7 +585,7 @@ public class Graphics3D
 		if (!(node instanceof Mesh || node instanceof Sprite3D || node instanceof Group)) { throw new IllegalArgumentException("Node is not an instance of any of the following: Sprite3D, Mesh, Group"); }
 
 		renderOpCount = 0;
-		queueNode(node, transform);
+		queueNode(node, transform, 256);
 		flushRenderQueue();
 	}
 
@@ -583,7 +593,12 @@ public class Graphics3D
 	{ this.render(vertices, triangles, appearance, transform, -1); }
 
 	public void render(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform, int scope)
+	{ renderSubmesh(vertices, triangles, appearance, transform, scope, 256); }
+
+	private void renderSubmesh(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform, int scope, int alphaFactor)
 	{
+		this.currAlphaFactor = alphaFactor;
+
 		/* As per JSR-184, if vertices, triangles or appearence are null, throw a NullPointerException. */
 		if (vertices == null || triangles == null || appearance == null) { throw new NullPointerException("Tried to render a submesh with incomplete info."); }
 
@@ -1295,7 +1310,7 @@ public class Graphics3D
 	 * to the screen axes, projected, and the resulting NDC quad is rasterized directly
 	 * with the sprite's crop as texture source.
 	 */
-	private void renderSprite(Sprite3D sprite, Transform transform)
+	private void renderSprite(Sprite3D sprite, Transform transform, int alphaFactor)
 	{
 		final Image2D spr = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
@@ -1395,7 +1410,6 @@ public class Graphics3D
 
 		// fixed point alpha factor, so we don't need a float mult and int cast
 		// in the innermost loop.
-		final int alphaFactor = (int) (sprite.getAlphaFactor() * 256.0f);
 
 		// The Sprite3D has the same depth for its entire area, so we only need
 		// to calculate fog once.
@@ -1717,7 +1731,7 @@ public class Graphics3D
 				 * with alpha cutouts drawn before the ground). The depth buffer is only
 				 * updated by fragments that survive this test.
 				 */
-				final int alpha = paintPixel >>> 24;
+				final int alpha = ((paintPixel >>> 24) * currAlphaFactor) >> 8;
 
 				if (alpha < alphaThreshold) { continue; }
 
@@ -2078,16 +2092,20 @@ public class Graphics3D
 			renderIndices = new int[newCapacity];
 			renderIntData = new int[newCapacity * 3];
 			renderObjData = new Object[newCapacity * 4];
+			renderAlphaData = new int[newCapacity];
 		}
 	}
 
 	// What we do when queuing things up for rendering is that we just
 	// store their references in global arrays, and sort their drawing order,
 	// that way, no extra memory is used for this functionality.
-	private void queueNode(Node node, Transform transform)
+	private void queueNode(Node node, Transform transform, int parentAlpha)
 	{
 		// Node not renderable? Skip it and its children.
 		if (!node.isRenderingEnabled()) { return; }
+
+		// Effective alpha factor: ancestors multiplied in, see renderAlphaData.
+		final int alphaFactor = (parentAlpha * (int) (node.getAlphaFactor() * 256.0f)) >> 8;
 
 		if (node instanceof Mesh)
 		{
@@ -2100,7 +2118,7 @@ public class Graphics3D
 				if (mesh.getAppearance(i) != null)
 				{
 					// Queue the submesh for rendering
-					queueRenderOp(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope());
+					queueRenderOp(vertices, mesh.getIndexBuffer(i), mesh.getAppearance(i), transform, node.getScope(), alphaFactor);
 				}
 			}
 
@@ -2118,7 +2136,7 @@ public class Graphics3D
 					Transform sktr = new Transform();
 					skeleton.getCompositeTransform(sktr);
 					if (transform != null) { sktr.preMultiply(transform); }
-					queueNode(skeleton, sktr);
+					queueNode(skeleton, sktr, alphaFactor);
 				}
 			}
 		}
@@ -2129,7 +2147,7 @@ public class Graphics3D
 			if (sprite.getAppearance() != null)
 			{
 				// Queue the Sprite3D for rendering
-				queueRenderOp(sprite, null, sprite.getAppearance(), transform, sprite.getScope());
+				queueRenderOp(sprite, null, sprite.getAppearance(), transform, sprite.getScope(), alphaFactor);
 			}
 		}
 		else if (node instanceof Group)
@@ -2145,7 +2163,7 @@ public class Graphics3D
 						child.getCompositeTransform(nodetr);
 						if (transform != null) { nodetr.preMultiply(transform); }
 
-						queueNode(child, nodetr);
+						queueNode(child, nodetr, alphaFactor);
 					}
 					child = child.right;
 				}
@@ -2154,7 +2172,7 @@ public class Graphics3D
 		}
 	}
 
-	private void queueRenderOp(Object geomOrSprite, IndexBuffer triangles, Appearance appearance, Transform transform, int scope)
+	private void queueRenderOp(Object geomOrSprite, IndexBuffer triangles, Appearance appearance, Transform transform, int scope, int alphaFactor)
 	{
 		checkRenderOpQueueSize(renderOpCount + 1);
 
@@ -2166,6 +2184,7 @@ public class Graphics3D
 		renderIntData[intIdx + 0] = appearance.getLayer();
 		renderIntData[intIdx + 1] = blended ? 1 : 0;
 		renderIntData[intIdx + 2] = scope;
+		renderAlphaData[renderOpCount] = alphaFactor;
 
 		// Then its object data that's used for rendering:
 		// Order: [VertexBuffer / Sprite3D], [IndexBuffer / null], Appearance, Transform
@@ -2241,8 +2260,10 @@ public class Graphics3D
 			// reordering.
 			if (obj == null || appearance == null) { continue; }
 
-			if (obj instanceof Sprite3D) { renderSprite((Sprite3D) obj, transform); }
-			else { render((VertexBuffer) obj, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope); }
+			final int alphaFactor = renderAlphaData[op];
+
+			if (obj instanceof Sprite3D) { renderSprite((Sprite3D) obj, transform, alphaFactor); }
+			else { renderSubmesh((VertexBuffer) obj, (IndexBuffer) renderObjData[objIdx + 1], appearance, transform, scope, alphaFactor); }
 		}
 		renderOpCount = 0;
 	}
