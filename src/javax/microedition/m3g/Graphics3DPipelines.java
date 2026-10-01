@@ -47,11 +47,10 @@ class Graphics3DPipelines
 				int fgRB = fg & 0x00FF00FF;
 				int outRB = ((fgRB * alpha + bgRB * invA) >> 8) & 0x00FF00FF;
 
-				int bgAG = (bg >>> 8) & 0x00FF00FF;
-				int fgAG = (fg >>> 8) & 0x00FF00FF;
-				int outAG = ((fgAG * alpha + bgAG * invA) >> 8) & 0x00FF00FF;
+				int outG = (((fg >>> 8 & 0xFF) * alpha + (bg >>> 8 & 0xFF) * invA) >> 8) & 0xFF;
+				int outA = alpha + (((bg >>> 24) * invA) >> 8);
 
-				return outRB | (outAG << 8);
+				return (outA << 24) | (outG << 8) | outRB;
 			}
 		};
 
