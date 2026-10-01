@@ -1782,7 +1782,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						
 						// Set the bit in the retrieved byte to the expected value.
 						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 1 : 0) << bitShift;
-						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << bitShift; }
+						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 1 : 0) << bitShift; }
 					}
 				}
 				break;
@@ -1800,7 +1800,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						int bitIndex = packedIndex % 8;
 
 						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 1 : 0) << (7 - bitIndex);
-						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 0 : 1) << (7 - bitIndex); }
+						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 1 : 0) << (7 - bitIndex); }
 					}
 				}
 				break;
