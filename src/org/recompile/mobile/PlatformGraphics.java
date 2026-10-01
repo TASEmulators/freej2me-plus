@@ -1583,7 +1583,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int lastRow = offset + (height - 1) * scanlength;
 		int reqLen = lastRow + width;
 		
-		if (offset < 0 || reqLen > pixels.length * nokiaPixPerByte(format)) { throw new ArrayIndexOutOfBoundsException("drawPixels(short) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
+		if (offset < 0 || reqLen > pixels.length) { throw new ArrayIndexOutOfBoundsException("drawPixels(short) index out of bounds:" + width + " * " + height + "| len:" + pixels.length); }
 
 		if(width == 0 || height == 0) { return; }
 
