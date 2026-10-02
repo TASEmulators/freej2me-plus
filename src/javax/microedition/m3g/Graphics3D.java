@@ -59,10 +59,6 @@ public class Graphics3D
 		}
 	}
 
-	// Special blend modes for fog and AA coverage
-	public static final int BLEND_FOG = -1;
-	public static final int BLEND_COVERAGE = -2;
-
 	public static final int ANTIALIAS = 2;
 	public static final int DITHER = 4;
 	public static final int OVERWRITE = 16; // This is unused here, as SW rasterization gives us direct control over pixels
@@ -1948,56 +1944,58 @@ public class Graphics3D
 		if (dx == 0.0f) { return; }
 
 		float invDx = M3GMath.fastReciprocal(dx);
-		float gradient = dy * invDx;
-
 		int xStart = (int)(x0 + 0.5f);
 		int xEnd = (int)(x1 + 0.5f);
+		
+		int yGradient = (int)((dy * invDx) * 65536.0f);
+		int yGrad = (int)((y0 + (dy * invDx) * (xStart - x0)) * 65536.0f + 0.5f);
 
-		float zStep = (dx == 0.0f) ? 0.0f : (z1 - z0) * invDx;
-		float curZ = z0 + zStep * (xStart - x0);
-
-		float yGrad = y0 + gradient * (xStart - x0);
+		float zStep = (z1 - z0) * invDx;
+		int zGradient = (int)(zStep * 65536.0f);
+		int zGrad = (int)((z0 + zStep * (xStart - x0)) * 65536.0f + 0.5f);
 
 		// Main interpolation loop
 		for (int x = xStart; x < xEnd; x++)
 		{
-			final int yInt = (int) yGrad;
-			final float frac = yGrad - yInt;
+			final int yInt = yGrad >> 16;
+			final int frac = (yGrad >> 8) & 0xFF;
 
 			if(usesDepth)
 			{
 				if (steep)
 				{
-					plotAALinePixel(yInt,     x, (short) curZ, 1.0f - frac, usesDepth);
-					plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
+					plotAALinePixel(yInt,     x, zGrad >> 16, 255 - frac, usesDepth);
+					plotAALinePixel(yInt + 1, x, zGrad >> 16, frac,    usesDepth);
 				}
 				else
 				{
-					plotAALinePixel(x, yInt,     (short) curZ, 1.0f - frac, usesDepth);
-					plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
+					plotAALinePixel(x, yInt,     zGrad >> 16, 255 - frac, usesDepth);
+					plotAALinePixel(x, yInt + 1, zGrad >> 16, frac,    usesDepth);
 				}
 			}
 			else
 			{
 				if (steep)
 				{
-				    plotAALinePixel(yInt + 1, x, (short) curZ, frac,    usesDepth);
+					plotAALinePixel(yInt + 1, x, zGrad >> 16, frac,    usesDepth);
 				}
 				else
 				{
-				    plotAALinePixel(x, yInt + 1, (short) curZ, frac,    usesDepth);
+					plotAALinePixel(x, yInt + 1, zGrad >> 16, frac,    usesDepth);
 				}
 			}
 
-			curZ += zStep;
-			yGrad += gradient;
+			zGrad += zGradient;
+			yGrad += yGradient;
 		}
 	}
 
-	private final void plotAALinePixel(int x, int y, short z, float alpha, boolean usesDepth)
+	// Z can be an int here, removes the need to cast stuff to short above and we
+	// know values will be in short range for comparison anyway.
+	private final void plotAALinePixel(int x, int y, int z, int alpha, boolean usesDepth)
 	{
 		// Pixels that are going to be nearly invisible may as well be ignored.
-		if (alpha <= 0.0392f) { return; } // alpha * 255 <= 10
+		if (alpha <= 10) { return; }
 
 		// Bound checks are a bit more lenient, as we do sample a grid around the center pixel.
 		if (x < viewClipL + 1 || x >= viewClipR - 1 || y < viewClipT + 1 || y >= viewClipB - 1) { return; }
@@ -2017,25 +2015,27 @@ public class Graphics3D
 			// prevents occluded geometry from drawing ghosts.
 			if (currentZ < (z - 4)) { return; }
 
-			int AAsum = 0, nIdx;
-
-			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[0];
+			int AAsum = 0, nIdx = rasterIdx + AA_SAMPLE_OFFSETS[0];
 			// We trigger AA on any edge that doesn't resolve to the same
 			// depth as its immediately connected pixels.
-			AAsum |= (zBuffer[nIdx] - z);
-			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
-
+			short zN = zBuffer[nIdx];
+			AAsum |= (zN - z);
+			if (zN < currentZ) { fgIdx = nIdx; }
+			
 			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[1];
-			AAsum |= (zBuffer[nIdx] - z);
-			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
-
+			zN = zBuffer[nIdx];
+			AAsum |= (zN - z);
+			if (zN < currentZ) { fgIdx = nIdx; }
+			
 			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[2];
-			AAsum |= (zBuffer[nIdx] - z);
-			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
-
+			zN = zBuffer[nIdx];
+			AAsum |= (zN - z);
+			if (zN < currentZ) { fgIdx = nIdx; }
+			
 			nIdx = rasterIdx + AA_SAMPLE_OFFSETS[3];
-			AAsum |= (zBuffer[nIdx] - z);
-			if (zBuffer[nIdx] < currentZ) { fgIdx = nIdx; }
+			zN = zBuffer[nIdx];
+			AAsum |= (zN - z);
+			if (zN < currentZ) { fgIdx = nIdx; }
 
 			// We must only antialias silhouettes, this is to prevent
 			// the line algorithm from over-blurring connected geometry.
@@ -2068,15 +2068,13 @@ public class Graphics3D
 
 		// We don't need any complex blending here, just make sure the coverage
 		// is properly smoothed out with some alpha modulation.
-		int a = (int) (alpha * 255.0f);
-
 		int bgRB = bg & 0x00FF00FF;
 		int fgRB = fg & 0x00FF00FF;
-		int outRB = ((fgRB * a + bgRB * (255 - a)) >> 8) & 0x00FF00FF;
+		int outRB = ((fgRB * alpha + bgRB * (255 - alpha)) >> 8) & 0x00FF00FF;
 
 		int bgAG = (bg >>> 8) & 0x00FF00FF;
 		int fgAG = (fg >>> 8) & 0x00FF00FF;
-		int outAG = ((fgAG * a + bgAG * (255 - a)) >> 8) & 0x00FF00FF;
+		int outAG = ((fgAG * alpha + bgAG * (255 - alpha)) >> 8) & 0x00FF00FF;
 
 		rData[rasterIdx] = outRB | (outAG << 8);
 	}
