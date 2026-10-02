@@ -683,7 +683,7 @@ public class RecordStore
 			if(index < 0) { index = 0; }
 			if(index >= count) { throw(new InvalidRecordIDException("Next Record ID is out of bounds")); }
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Enum Next Record " + index);
-			return records.get(elements[index++]).clone();
+			return records.get(recordIds.indexOf(elements[index++])).clone();
 		}
 
 		public int nextRecordId() throws InvalidRecordIDException, RecordStoreNotOpenException
@@ -706,11 +706,11 @@ public class RecordStore
 			if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the previous record of a closed Record Store"); }
 			if(index == 0 || count == 0) { throw new InvalidRecordIDException("Previous Record is out of bounds"); }
 
-			if(index < 0) { index = records.size(); }
+			if(index < 0) { index = count; }
 
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Enum Previous Record " + (index-1));
 
-			return records.get(elements[--index]).clone();
+			return records.get(recordIds.indexOf(elements[--index])).clone();
 		}
 
 		public int previousRecordId() throws InvalidRecordIDException, RecordStoreNotOpenException
@@ -718,7 +718,7 @@ public class RecordStore
 			if (!recordStoreIsOpen) { throw new RecordStoreNotOpenException("Cannot get the previous record ID of a closed Record Store"); }
 			if(index == 0 || count == 0) { throw new InvalidRecordIDException("Previous Record is out of bounds"); }
 
-			if(index < 0) { index = records.size(); }
+			if(index < 0) { index = count; }
 
 			Mobile.log(Mobile.LOG_DEBUG, RecordStore.class.getPackage().getName() + "." + RecordStore.class.getSimpleName() + ": " + "> Enum Previous Record ID " + elements[index-1]);
 
