@@ -91,9 +91,18 @@ class HttpConnectionImpl implements HttpConnection, com.nttdocomo.io.HttpConnect
 
 	public DataInputStream openDataInputStream() throws UnsupportedEncodingException { return new DataInputStream(this.openInputStream()); }
 
-	public InputStream openInputStream() throws UnsupportedEncodingException { return null; }
+	public InputStream openInputStream() throws UnsupportedEncodingException
+	{ 
+		// DoJa apps have stubs for most network stuff, so return an empty stream for it
+		if(Mobile.isDoJa) { return new ByteArrayInputStream(new byte[0]); }
+
+		return null;
+	}
 
 	public DataOutputStream openDataOutputStream() { return new DataOutputStream(this.openOutputStream()); }
 
-	public OutputStream openOutputStream() { return null; }
+	public OutputStream openOutputStream()
+	{ 
+		return null;
+	}
 }

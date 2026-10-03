@@ -43,10 +43,10 @@ public class Connector
 			return new com.nttdocomo.util.ScratchPadConnection(name).openInputStream();
 		}
 		if (name.startsWith("file://"))
-        {
-            InputConnection conn = (InputConnection) open(name, READ, false);
-            return conn.openInputStream();
-        }
+		{
+			InputConnection conn = (InputConnection) open(name, READ, false);
+			return conn.openInputStream();
+		}
 		return new InputConnectionImpl(name).openInputStream();
 	}
 
@@ -57,10 +57,10 @@ public class Connector
 			return new com.nttdocomo.util.ScratchPadConnection(name).openDataInputStream();
 		}
 		if (name.startsWith("file://"))
-        {
-            InputConnection conn = (InputConnection) open(name, READ, false);
-            return conn.openDataInputStream();
-        }
+		{
+			InputConnection conn = (InputConnection) open(name, READ, false);
+			return conn.openDataInputStream();
+		}
 		return new InputConnectionImpl(name).openDataInputStream();
 	}
 
@@ -83,16 +83,19 @@ public class Connector
 		if (name.startsWith("http://") || name.startsWith("https://") || name.startsWith("socket://")) { return new HttpConnectionImpl(name); }
 
 		// JSR-75 File Connection API
-        if (name.startsWith("file://"))
-        {
-            return new FileConnectionImpl(name, mode);
-        }
+		if (name.startsWith("file://"))
+		{
+			return new FileConnectionImpl(name, mode);
+		}
 
 		if(Mobile.usingMessagingAPI)
 		{
 			return new MessageConnectionImpl(name);
 		}
 
+		// Stub for patched DoJa apps.
+		if(name.startsWith("dojanetstub://")) { return new HttpConnectionImpl(name); }
+		
 		throw new ConnectionNotFoundException("Unsupported protocol: " + name);
 	}
 
@@ -103,10 +106,10 @@ public class Connector
 			return new com.nttdocomo.util.ScratchPadConnection(name).openDataOutputStream();
 		}
 		if (name.startsWith("file://"))
-        {
-            OutputConnection conn = (OutputConnection) open(name, WRITE, false);
-            return conn.openDataOutputStream();
-        }
+		{
+			OutputConnection conn = (OutputConnection) open(name, WRITE, false);
+			return conn.openDataOutputStream();
+		}
 		return new DataOutputStream(output);
 	}
 
@@ -117,10 +120,10 @@ public class Connector
 			return new com.nttdocomo.util.ScratchPadConnection(name).openOutputStream();
 		}
 		if (name.startsWith("file://"))
-        {
-            OutputConnection conn = (OutputConnection) open(name, WRITE, false);
-            return conn.openOutputStream();
-        }
+		{
+			OutputConnection conn = (OutputConnection) open(name, WRITE, false);
+			return conn.openOutputStream();
+		}
 		return output;
 	}
 
