@@ -852,19 +852,24 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if (anchor != 0)
 		{
 			int hAlign = anchor & (LEFT | HCENTER | RIGHT);
-			int vAlign = anchor & (TOP | BOTTOM | BASELINE); // VCENTER is not allowed for strings.
+			int vAlign = anchor & (TOP | BOTTOM | BASELINE | VCENTER);
+
+			// no hAlign flag set? Default to LEFT
+			if(hAlign == 0) { vAlign = LEFT; }
+			// no vAlign flag set? Default to TOP
+			if(vAlign == 0) { vAlign = TOP; }
 
 			if (hAlign != LEFT && hAlign != HCENTER && hAlign != RIGHT)
 			{
 				throw new IllegalArgumentException("Invalid horizontal anchor: " + hAlign);
 			}
-			if (vAlign != 0 && vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE)
+			if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE)
 			{
 				throw new IllegalArgumentException("Invalid vertical anchor for text (VCENTER is not allowed): " + vAlign);
 			}
 			if (anchor != (hAlign | vAlign))
 			{
-				throw new IllegalArgumentException("Invalid anchor combination: " + anchor);
+				throw new IllegalArgumentException("Invalid anchor combination: " + anchor + " " + vAlign);
 			}
 		}
 
