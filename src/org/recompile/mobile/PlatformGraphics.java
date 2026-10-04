@@ -123,8 +123,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 	// FPS Counter variables
 	private static int frameCount = 0;
-	private static long lastFpsTime = System.nanoTime();
-	private static int fps = 0;
+	private static volatile long lastFpsTime = System.nanoTime();
+	private static volatile int fps = 0;
 
 	// Scale factor
 	private static final int GAUSSIAN_SCALE_FACTOR = 159;
@@ -3218,7 +3218,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 
 	// For now, the logic here works by updating the framerate counter every second
-	public final void showFPS()
+	public synchronized final void showFPS()
 	{
 		frameCount++;
 		if (System.nanoTime() - lastFpsTime >= 1000000000)
@@ -3238,10 +3238,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		else if(MobilePlatform.showFPS.equals("BottomRight")) { setOrigin(MobilePlatform.lcdWidth-scaledWidth-2, MobilePlatform.lcdHeight-scaledHeight-2 - (MobilePlatform.focusCommandBar ? font.getHeight() : 0)); }
 
 		// Set the overlay background and draw
-		setARGBColor(0xCCFFFFFF); // BG is a semi-transparent white
+		setAlphaRGB(0xCCFFFFFF); // BG is a semi-transparent white
 		fillRect(0, 0, scaledWidth, scaledHeight);
 		// Set the font color and draw it
-		setAlphaRGB(0xFF000000); // Text color is blue
+		setColor(0x000000); // Text color is black
 		drawRect(0, 0, scaledWidth, scaledHeight);
 		drawString(fpsText, 0, -1, TOP | LEFT);
 		setOrigin(0, 0);

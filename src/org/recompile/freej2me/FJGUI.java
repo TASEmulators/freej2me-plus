@@ -1501,7 +1501,6 @@ public final class FJGUI
 		}
 
 		firstLoad = false;
-		allowRestartDialog = true;
 	}
 
 	private void updateRadioGroup(JCheckBoxMenuItem[] options, String[] values, String settingKey, boolean isSysSetting)

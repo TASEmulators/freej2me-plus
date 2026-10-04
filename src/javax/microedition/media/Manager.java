@@ -56,6 +56,7 @@ public class Manager
 	private static Soundbank customSoundfont;
 	private static Soundbank defaultSoundbank = null;
 
+	private static volatile boolean engineReady = false;
 	public static Synthesizer[] exclusiveSynths;
 	public static Sequencer[] exclusiveSequencers;
 	public static Transmitter[] exclusiveTransmitters;
@@ -359,6 +360,9 @@ public class Manager
 
 	public static void changeCustomMidi()
 	{
+		// Check if the engine is ready. This method can run earlier than jar load.
+		prepareMediaEngine();
+		
 		try
 		{
 			boolean wasPlaying = false;
@@ -383,7 +387,7 @@ public class Manager
 				wasPlaying = false;
 			}
 		}
-		catch (Exception e) {Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to change MIDI soundfont: " + e.getMessage()); }
+		catch (Exception e) {Mobile.log(Mobile.LOG_WARNING, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Failed to change MIDI soundfont: " + e.getMessage()); e.printStackTrace(); }
 	}
 
 	public static Synthesizer prepareSynthesizer() throws MidiUnavailableException
@@ -392,10 +396,6 @@ public class Manager
 		synth.open();
 
 		defaultSoundbank = synth.getDefaultSoundbank();
-
-		changeCustomMidi();
-
-		synth.loadAllInstruments(customSoundfont);
 
 		return synth;
 	}
@@ -425,15 +425,18 @@ public class Manager
 
 	public static Soundbank getCustomSoundfont() { return customSoundfont; }
 
-	public static void prepareMediaEngine()
+	public static synchronized void prepareMediaEngine()
 	{
+		// Is it already prepped? Nothing to do then...
+		if(engineReady) { return; }
+		
 		try
 		{
 			exclusiveSynths = new Synthesizer[Mobile.numExclusiveSynths];
 			exclusiveSequencers = new Sequencer[Mobile.numExclusiveSynths];
 			exclusiveTransmitters = new Transmitter[Mobile.numExclusiveSynths];
 			exclusiveReceivers = new Receiver[Mobile.numExclusiveSynths];
-			
+
 			for(int i = 0; i < Mobile.numExclusiveSynths; i++)
 			{
 				exclusiveSynths[i] = prepareSynthesizer();
@@ -454,6 +457,7 @@ public class Manager
 			toneSequencer.getTransmitter().setReceiver(toneReceiver);
 			toneSequencer.open();
 
+			engineReady = true;
 			Mobile.log(Mobile.LOG_DEBUG, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Synthesizer for sequenced and tone data is ready.");
 		}
 		catch (MidiUnavailableException e) { Mobile.log(Mobile.LOG_ERROR, Manager.class.getPackage().getName() + "." + Manager.class.getSimpleName() + ": " + "Couldn't open Tone Player: " + e.getMessage()); }

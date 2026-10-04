@@ -298,7 +298,7 @@ public class FreeJ2ME
 						int rotation = Mobile.rotateDisplay + 90;
 						if(rotation == 360) { rotation = 0; }
 						Mobile.config.settings.put("rotate",  "" + rotation);
-						app.settingsChanged();
+						app.settingsChanged(false);
 					}
 					break;
 				case 22: // Pause - pa
@@ -373,7 +373,7 @@ public class FreeJ2ME
 		lcdWidth = Mobile.lcdWidth;
 		lcdHeight = Mobile.lcdHeight;
 
-		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight), new Runnable() { public void run() { settingsChanged(); } });
+		Mobile.setPlatform(new MobilePlatform(lcdWidth, lcdHeight), new Runnable() { public void run() { settingsChanged(false); } });
 
 		lcd = new LCD();
 		lcd.setFocusable(true);
@@ -499,7 +499,7 @@ public class FreeJ2ME
 				if(fjGUI.hasJustLoaded()) { fjGUI.updateOptions(); fjGUI.clearChanged(); }
 
 				/* Whenever the GUI notifies that its menu options were changed, update settings */
-				if(fjGUI.hasChanged()) { settingsChanged(); fjGUI.clearChanged(); }
+				if(fjGUI.hasChanged()) { settingsChanged(true); fjGUI.clearChanged(); }
 
 				lcd.repaint();
 			}
@@ -555,7 +555,7 @@ public class FreeJ2ME
 				Mobile.config.settings.put("dojaversion", ""+Integer.parseInt(args[argLen-1])+"");
 			}
 
-			boolean needsResChange = settingsChanged();
+			boolean needsResChange = settingsChanged(false);
 
 			// If this launched with arguments, then the call to display the
 			// greeter GUI above didn't run, thus we must run it here.
@@ -615,7 +615,7 @@ public class FreeJ2ME
 						int rotation = Mobile.rotateDisplay + 90;
 						if(rotation == 360) { rotation = 0; }
 						Mobile.config.settings.put("rotate",  "" + rotation);
-						settingsChanged();
+						settingsChanged(false);
 					}
 				break;
 			}
@@ -690,7 +690,7 @@ public class FreeJ2ME
 		return file.toURI().toString();
 	}
 
-	private boolean settingsChanged()
+	private boolean settingsChanged(boolean fromGUI)
 	{
 		boolean hasRotated = Mobile.updateSettings();
 
@@ -715,7 +715,7 @@ public class FreeJ2ME
 			lcd.clearScreen();
 		}
 
-		fjGUI.updateOptions();
+		if(!fromGUI) { fjGUI.updateOptions(); }
 
 		return needsResChange;
 	}
@@ -813,6 +813,7 @@ public class FreeJ2ME
 		main.add(lcd);
 
 		fjGUI.setMainFrame(main);
+		main.setResizable(true);
 	}
 
 	private void displayGUI()
