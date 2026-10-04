@@ -153,6 +153,7 @@ struct retro_core_option_v2_category option_categories[] =
 		"MascotCapsuleV3 Debug Settings",
 		"Debug settings related to FreeJ2ME's MascotCapsuleV3 renderer."
 	},
+	{ NULL, NULL, NULL },
 };
 
 /* Core config options if running on a frontend with support for config version 2 */
