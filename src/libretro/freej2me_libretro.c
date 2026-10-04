@@ -28,6 +28,7 @@
 #include <io.h>
 #endif
 #include "freej2me_libretro.h"
+#include "bundled_jre.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -875,11 +876,22 @@ void retro_init(void)
 
 	/* Allocate memory for launch arguments */
 	params = (char**)malloc(sizeof(char*) * NUM_ARGUMENTS);
+	/* A Java runtime from an archive in freej2me_system, unpacked there too
+	 * (bundled_jre.c); without one, the java on PATH */
+	{
+		char archiveDir[PATH_MAX_LENGTH], bundledJava[PATH_MAX_LENGTH];
+		snprintf(archiveDir, sizeof(archiveDir), "%s%sfreej2me_system", systemPath, slash);
+		if (bundled_jre_find(archiveDir, archiveDir, bundledJava, sizeof(bundledJava), Environ, log_fn))
+			params[0] = strdup(bundledJava);
+		else
+		{
 #if defined(__linux__) || defined(__APPLE__)
-	params[0] = strdup("java");
+			params[0] = strdup("java");
 #elif _WIN32
-	params[0] = strdup("javaw");
+			params[0] = strdup("javaw");
 #endif
+		}
+	}
 	params[1] = strdup("-jar");
 	params[2] = strdup(supported_encodings[characterEncoding]);
 	params[3] = strdup(freej2meapp);
@@ -1659,7 +1671,7 @@ bool javaOpen(char *cmd, char **params)
 	/* Try starting the child process. Windows requires the commandline argument to be a single string. */
 	char cmdWin[PATH_MAX_LENGTH];
 
-	snprintf(cmdWin, PATH_MAX_LENGTH, "%s", params[0]); // First argument needs no space separator
+	snprintf(cmdWin, PATH_MAX_LENGTH, "\"%s\"", params[0]); // First argument needs no space separator; quoted, as a bundled runtime's path can hold spaces
 
 	for (int i = 1; i < NUM_ARGUMENTS; i++)
 	{
