@@ -1,18 +1,24 @@
 /*
- * A Java runtime that comes as an archive instead of being installed.
+ * A Java runtime that comes with the core instead of being installed.
  *
  * FreeJ2ME's Java app is started with "java" (javaw on Windows) from PATH, so
  * the core works only where a Java runtime is installed and on PATH - which a
  * frontend in a sandbox, a handheld or a portable setup often does not have.
- * An archive of a Java runtime put in the system directory (as distributed:
- * Adoptium/Temurin's .tar.gz for Linux and macOS, .zip for Windows) is
- * unpacked next to it once, and the java in it is used from then on - by both
- * FreeJ2ME cores, which look in the same place. A different archive (another
- * size or date) is unpacked again.
  *
- * Unpacking is left to the system's tar, which every platform the core runs on
- * has: GNU tar on Linux, bsdtar on macOS and on Windows 10 and later, the
- * latter two reading .zip as well.
+ * "ant build-runtime" makes a runtime for it with jlink: java.base and
+ * java.desktop, the two modules FreeJ2ME-Plus uses, ~50 MB instead of a whole
+ * JRE, as freej2me_plus_runtime_<platform>.zip. The core uses the one for its
+ * own platform only, so a system directory shared between machines of
+ * different kinds (synced, or on a card) can hold one runtime for each:
+ *
+ *   system/freej2me_plus_runtime_<platform>.zip    as downloaded; unpacked
+ *                                                  once, again when it changes
+ *   system/freej2me_plus_runtime/<platform>/       the runtime, unpacked by the
+ *                                                  core or by hand
+ *
+ * The archive is a .tar.gz, or a .zip for Windows (see build.xml), so that the
+ * system's tar unpacks it: GNU tar on Linux, bsdtar on macOS and on Windows 10
+ * and later.
  */
 
 #include <stdio.h>
@@ -39,7 +45,37 @@
 #define JAVA_EXE "java"
 #endif
 
-static const char *archive_names[] = { "jre.tar.gz", "jre.tgz", "jre.tar.xz", "jre.zip", NULL };
+/* The platform names of "ant build-runtime -Dplatform=..." */
+#if defined(_WIN32)
+#if defined(_M_ARM64) || defined(__aarch64__)
+#define RUNTIME_PLATFORM "windows-arm64"
+#elif defined(_WIN64)
+#define RUNTIME_PLATFORM "windows-x64"
+#else
+#define RUNTIME_PLATFORM "windows-x86"
+#endif
+#define RUNTIME_ARCHIVE_EXT ".zip"
+#elif defined(__APPLE__)
+#if defined(__aarch64__) || defined(__arm64__)
+#define RUNTIME_PLATFORM "macos-arm64"
+#else
+#define RUNTIME_PLATFORM "macos-x64"
+#endif
+#define RUNTIME_ARCHIVE_EXT ".tar.gz"
+#else
+#if defined(__aarch64__)
+#define RUNTIME_PLATFORM "linux-arm64"
+#elif defined(__x86_64__)
+#define RUNTIME_PLATFORM "linux-x64"
+#elif defined(__i386__)
+#define RUNTIME_PLATFORM "linux-x86"
+#elif defined(__arm__)
+#define RUNTIME_PLATFORM "linux-arm"
+#else
+#define RUNTIME_PLATFORM "linux-other"
+#endif
+#define RUNTIME_ARCHIVE_EXT ".tar.gz"
+#endif
 
 static bool file_exists(const char *path)
 {
@@ -168,95 +204,32 @@ static bool run_tar(const char *archive, const char *dest)
 #endif
 }
 
-/* The java in an unpacked runtime: at its top, in the single directory the
- * archive puts everything in (jdk-21.0.4+7-jre/), or in that directory's
- * Contents/Home on macOS. */
-static bool find_java(const char *root, char *out, size_t out_len)
-{
-	static const char *inside[] = { SLASH "bin" SLASH JAVA_EXE,
-		SLASH "Contents" SLASH "Home" SLASH "bin" SLASH JAVA_EXE, NULL };
-	int i;
-
-	snprintf(out, out_len, "%s%s", root, inside[0]);
-	if (file_exists(out))
-		return true;
-
-#if defined(_WIN32)
-	{
-		char pattern[BUNDLED_JRE_PATH_MAX];
-		WIN32_FIND_DATAA fd;
-		HANDLE h;
-		bool found = false;
-
-		snprintf(pattern, sizeof(pattern), "%s\\*", root);
-		h = FindFirstFileA(pattern, &fd);
-		if (h == INVALID_HANDLE_VALUE)
-			return false;
-		do
-		{
-			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || fd.cFileName[0] == '.')
-				continue;
-			for (i = 0; inside[i] && !found; i++)
-			{
-				snprintf(out, out_len, "%s\\%s%s", root, fd.cFileName, inside[i]);
-				found = file_exists(out);
-			}
-		} while (!found && FindNextFileA(h, &fd));
-		FindClose(h);
-		return found;
-	}
-#else
-	{
-		DIR *dir = opendir(root);
-		struct dirent *entry;
-		bool found = false;
-
-		if (!dir)
-			return false;
-		while (!found && (entry = readdir(dir)) != NULL)
-		{
-			if (entry->d_name[0] == '.')
-				continue;
-			for (i = 0; inside[i] && !found; i++)
-			{
-				snprintf(out, out_len, "%s/%s%s", root, entry->d_name, inside[i]);
-				found = file_exists(out);
-			}
-		}
-		closedir(dir);
-		return found;
-	}
-#endif
-}
-
-bool bundled_jre_find(const char *archiveDir, const char *unpackDir,
+bool bundled_jre_find(const char *systemDir,
 	char *java, size_t java_len, retro_environment_t environ_cb, retro_log_printf_t log)
 {
-	char archive[BUNDLED_JRE_PATH_MAX], jreDir[BUNDLED_JRE_PATH_MAX], tmpDir[BUNDLED_JRE_PATH_MAX];
+	char archive[BUNDLED_JRE_PATH_MAX], parentDir[BUNDLED_JRE_PATH_MAX], runtimeDir[BUNDLED_JRE_PATH_MAX];
+	char tmpDir[BUNDLED_JRE_PATH_MAX], unpacked[BUNDLED_JRE_PATH_MAX];
 	char stampPath[BUNDLED_JRE_PATH_MAX], stamp[BUNDLED_JRE_PATH_MAX], current[BUNDLED_JRE_PATH_MAX];
-	const char *name = NULL;
 	struct stat st;
 	FILE *f;
-	int i;
 
-	for (i = 0; archive_names[i]; i++)
+	snprintf(archive, sizeof(archive), "%s%sfreej2me_plus_runtime_" RUNTIME_PLATFORM RUNTIME_ARCHIVE_EXT, systemDir, SLASH);
+	snprintf(parentDir, sizeof(parentDir), "%s%sfreej2me_plus_runtime", systemDir, SLASH);
+	snprintf(runtimeDir, sizeof(runtimeDir), "%s%s" RUNTIME_PLATFORM, parentDir, SLASH);
+	snprintf(java, java_len, "%s%sbin%s" JAVA_EXE, runtimeDir, SLASH, SLASH);
+	snprintf(stampPath, sizeof(stampPath), "%s%s.source", runtimeDir, SLASH);
+
+	/* No archive: a runtime unpacked by hand, if there is one */
+	if (stat(archive, &st) != 0 || (st.st_mode & S_IFDIR))
 	{
-		snprintf(archive, sizeof(archive), "%s%s%s", archiveDir, SLASH, archive_names[i]);
-		if (stat(archive, &st) == 0 && !(st.st_mode & S_IFDIR))
-		{
-			name = archive_names[i];
-			break;
-		}
+		if (!file_exists(java))
+			return false;
+		log(RETRO_LOG_INFO, "Using the Java runtime in %s\n", runtimeDir);
+		return true;
 	}
-	if (!name)
-		return false;
-
-	snprintf(jreDir, sizeof(jreDir), "%s%sjre", unpackDir, SLASH);
-	snprintf(tmpDir, sizeof(tmpDir), "%s%sjre.tmp", unpackDir, SLASH);
-	snprintf(stampPath, sizeof(stampPath), "%s%s.source", jreDir, SLASH);
-	snprintf(stamp, sizeof(stamp), "%s %lld %lld", name, (long long)st.st_size, (long long)st.st_mtime);
 
 	/* Unpacked from this same archive already */
+	snprintf(stamp, sizeof(stamp), "%lld %lld", (long long)st.st_size, (long long)st.st_mtime);
 	current[0] = '\0';
 	if ((f = fopen(stampPath, "r")) != NULL)
 	{
@@ -264,13 +237,13 @@ bool bundled_jre_find(const char *archiveDir, const char *unpackDir,
 			current[0] = '\0';
 		fclose(f);
 	}
-	if (!strcmp(current, stamp) && find_java(jreDir, java, java_len))
+	if (!strcmp(current, stamp) && file_exists(java))
 	{
-		log(RETRO_LOG_INFO, "Using the Java runtime unpacked from %s: %s\n", name, java);
+		log(RETRO_LOG_INFO, "Using the Java runtime in %s\n", runtimeDir);
 		return true;
 	}
 
-	log(RETRO_LOG_INFO, "Unpacking the Java runtime from %s into %s\n", archive, jreDir);
+	log(RETRO_LOG_INFO, "Unpacking the Java runtime from %s into %s\n", archive, runtimeDir);
 	if (environ_cb)
 	{
 		struct retro_message_ext msg = { "Unpacking the Java runtime...", 3000, 1, RETRO_LOG_INFO,
@@ -279,7 +252,9 @@ bool bundled_jre_find(const char *archiveDir, const char *unpackDir,
 	}
 
 	/* Into a directory of its own first, so that an interrupted unpack never
-	 * passes for a complete one */
+	 * passes for a complete one. The archive holds
+	 * freej2me_plus_runtime/<platform>/. */
+	snprintf(tmpDir, sizeof(tmpDir), "%s%sfreej2me_plus_runtime.tmp", systemDir, SLASH);
 	remove_tree(tmpDir);
 	make_dirs(tmpDir);
 	if (!run_tar(archive, tmpDir))
@@ -288,26 +263,30 @@ bool bundled_jre_find(const char *archiveDir, const char *unpackDir,
 		remove_tree(tmpDir);
 		return false;
 	}
-	if (!find_java(tmpDir, java, java_len))
+	snprintf(unpacked, sizeof(unpacked), "%s%sfreej2me_plus_runtime%s" RUNTIME_PLATFORM, tmpDir, SLASH, SLASH);
+	snprintf(current, sizeof(current), "%s%sbin%s" JAVA_EXE, unpacked, SLASH, SLASH);
+	if (!file_exists(current))
 	{
-		log(RETRO_LOG_ERROR, "%s holds no " JAVA_EXE " in bin/\n", archive);
+		log(RETRO_LOG_ERROR, "%s holds no freej2me_plus_runtime/" RUNTIME_PLATFORM "/bin/" JAVA_EXE "\n", archive);
 		remove_tree(tmpDir);
 		return false;
 	}
-	remove_tree(jreDir);
-	if (rename(tmpDir, jreDir) != 0)
+	remove_tree(runtimeDir);
+	make_dirs(parentDir);
+	if (rename(unpacked, runtimeDir) != 0)
 	{
-		log(RETRO_LOG_ERROR, "Could not move the unpacked Java runtime to %s\n", jreDir);
+		log(RETRO_LOG_ERROR, "Could not move the unpacked Java runtime to %s\n", runtimeDir);
 		remove_tree(tmpDir);
 		return false;
 	}
+	remove_tree(tmpDir);
 	if ((f = fopen(stampPath, "w")) != NULL)
 	{
 		fputs(stamp, f);
 		fclose(f);
 	}
-	if (!find_java(jreDir, java, java_len))
+	if (!file_exists(java))
 		return false;
-	log(RETRO_LOG_INFO, "Using the Java runtime unpacked from %s: %s\n", name, java);
+	log(RETRO_LOG_INFO, "Using the Java runtime in %s\n", runtimeDir);
 	return true;
 }

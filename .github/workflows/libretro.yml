@@ -2,9 +2,9 @@ name: Libretro cores
 
 on:
   push:
-    paths: 'src/libretro/**'
+    paths: ['src/libretro/**', 'build.xml', '.github/workflows/libretro.yml']
   pull_request:
-    paths: 'src/libretro/**'
+    paths: ['src/libretro/**', 'build.xml', '.github/workflows/libretro.yml']
   workflow_dispatch:
 
 jobs:
@@ -48,8 +48,48 @@ jobs:
           path: |
             src/libretro/freej2me_plus_libretro.dylib
 
+  # The Java runtime the cores start FreeJ2ME-Plus with where no Java is
+  # installed: "ant build-runtime" (jlink, java.base + java.desktop) for each
+  # platform, on that platform's runner, from a JDK that has jmods
+  libretro-runtime:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x64, os: ubuntu-latest }
+          - { platform: linux-arm64, os: ubuntu-24.04-arm }
+          - { platform: windows-x64, os: windows-latest }
+          - { platform: macos-arm64, os: macos-latest }
+          - { platform: macos-x64, os: macos-13 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: install Ant
+        shell: bash
+        run: |
+          command -v ant && exit 0
+          case "$RUNNER_OS" in
+            Linux) sudo apt-get update && sudo apt-get install -y ant ;;
+            macOS) brew install ant ;;
+            Windows) choco install ant -y --no-progress ;;
+          esac
+      - name: build runtime
+        shell: bash
+        run: |
+          PATH="$PATH:/c/ProgramData/chocolatey/lib/ant/tools/apache-ant-$(ls /c/ProgramData/chocolatey/lib/ant/tools 2>/dev/null | sed -n 's/apache-ant-//p' | head -1)/bin"
+          ant build-runtime -Dplatform=${{ matrix.platform }} "-Druntime.jdk.home=$JAVA_HOME"
+          ls -la build/freej2me_plus_runtime_*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: runtime-${{ matrix.platform }}
+          path: build/freej2me_plus_runtime_*
+
   release-libretro:
-    needs: [libretro-linux-win32, libretro-macos]
+    needs: [libretro-linux-win32, libretro-macos, libretro-runtime]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,6 +103,8 @@ jobs:
           merge-multiple: true
       - name: Package everything into a zip
         run: |
+          mkdir runtimes
+          mv lr-cores/freej2me_plus_runtime_* runtimes/
           cd lr-cores
           zip -r ../freej2me_plus_libretro-nightly.zip *
           cd ..
@@ -70,4 +112,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload nightlies freej2me_plus_libretro-nightly.zip --clobber
+          gh release upload nightlies freej2me_plus_libretro-nightly.zip runtimes/* --clobber

@@ -8,12 +8,13 @@
 
 #define BUNDLED_JRE_PATH_MAX 4096
 
-/* Looks for a Java runtime archive (jre.tar.gz, jre.tgz, jre.tar.xz or
- * jre.zip) in archiveDir, unpacks it into unpackDir/jre unless that holds this
- * archive's contents already, and writes the java executable in it (javaw.exe
- * on Windows) to java. Returns false when there is no archive or it could not
- * be used; the java on PATH is the one to start then. */
-bool bundled_jre_find(const char *archiveDir, const char *unpackDir,
+/* Writes the java executable (javaw.exe on Windows) of the runtime "ant
+ * build-runtime" makes for this platform to java: from
+ * systemDir/freej2me_plus_runtime/<platform>/, which
+ * systemDir/freej2me_plus_runtime_<platform>.tar.gz (.zip on Windows) is
+ * unpacked into first when it is there and has not been yet. Returns false
+ * when there is neither; the java on PATH is the one to start then. */
+bool bundled_jre_find(const char *systemDir,
 	char *java, size_t java_len, retro_environment_t environ_cb, retro_log_printf_t log);
 
 #endif

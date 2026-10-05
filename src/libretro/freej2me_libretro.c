@@ -876,12 +876,11 @@ void retro_init(void)
 
 	/* Allocate memory for launch arguments */
 	params = (char**)malloc(sizeof(char*) * NUM_ARGUMENTS);
-	/* A Java runtime from an archive in freej2me_system, unpacked there too
+	/* The runtime "ant build-runtime" makes, from the system directory
 	 * (bundled_jre.c); without one, the java on PATH */
 	{
-		char archiveDir[PATH_MAX_LENGTH], bundledJava[PATH_MAX_LENGTH];
-		snprintf(archiveDir, sizeof(archiveDir), "%s%sfreej2me_system", systemPath, slash);
-		if (bundled_jre_find(archiveDir, archiveDir, bundledJava, sizeof(bundledJava), Environ, log_fn))
+		char bundledJava[PATH_MAX_LENGTH];
+		if (bundled_jre_find(systemPath, bundledJava, sizeof(bundledJava), Environ, log_fn))
 			params[0] = strdup(bundledJava);
 		else
 		{
