@@ -718,6 +718,7 @@ public final class MLDDecoder
 		private static final int DEFAULT_PITCH_RANGE = 2;
 		private static final int DEFAULT_MODULATION = 0;
 		private static final int[] OCTAVE_TABLE = new int[] { 0, 12, -24, -12 };
+		private static final int[] LOW_BANK_PROGRAMS = new int[] { 0, 9, 16, 24, 13, 74 };
 		private static final int MIDI_DRUM_CHANNEL = 9;
 
 		private MLDMelodyDecoder()
@@ -737,6 +738,12 @@ public final class MLDDecoder
 
 			PlaybackTimeline timeline = new PlaybackTimeline();
 			ScheduledExecution execution = scheduleEvents(decodedTracks, effectiveTrackCount, warnings, timeline);
+			// Classify sounding lanes across the scheduled execution before emitting patches.
+			LoopSimulationState outputLanes = new LoopSimulationState(effectiveTrackCount);
+			for (int i = 0; i < execution.events.size(); i++)
+			{
+				outputLanes.process(execution.events.get(i));
+			}
 			List<TempoPoint> tempoPoints = buildTempoPoints(execution.events, warnings);
 			timeline.tempoPoints = tempoPoints;
 			if (timeline.displayEndRawTick > 0)
@@ -769,14 +776,15 @@ public final class MLDDecoder
 					channels,
 					partChannelMap,
 					new LinkedHashMap<Integer, ActiveNote>(),
-					new ArrayList<Long>());
+					new ArrayList<Long>(),
+					outputLanes.percussionNoteMask);
 			emitInitialMidiDefaults(controlCollector, channels, 0L);
 
 			long maxTick = 0L;
 			for (int i = 0; i < execution.events.size(); i++)
 			{
 				TrackEvent event = execution.events.get(i);
-				maxTick = Math.max(maxTick, flushExpiredNotes(event.rawTick, renderState.activeNotes, messageEvents));
+				maxTick = Math.max(maxTick, flushExpiredNotes(event.rawTick, renderState));
 				if (event instanceof NoteEvent)
 				{
 					maxTick = Math.max(maxTick, handleNoteEvent((NoteEvent) event, tempoPoints, warnings, renderState));
@@ -786,7 +794,7 @@ public final class MLDDecoder
 					maxTick = Math.max(maxTick, handleSystemEvent((SystemEvent) event, tempoPoints, warnings, renderState));
 				}
 			}
-			maxTick = Math.max(maxTick, flushExpiredNotes(Integer.MAX_VALUE, renderState.activeNotes, messageEvents));
+			maxTick = Math.max(maxTick, flushExpiredNotes(Integer.MAX_VALUE, renderState));
 			maxTick = Math.max(maxTick, rawToMidiTick(tempoPoints, execution.endRawTick));
 
 			boolean hasLoop = execution.hasLoop();
@@ -800,7 +808,23 @@ public final class MLDDecoder
 			}
 			addStopMarkers(conductorTrack, renderState.stopTicks);
 
-			int[] outputChannelMap = buildOutputChannelMap(renderState.activeOutputMask);
+			int[] outputChannelMap = buildOutputChannelMap(outputLanes.noteUseMask, outputLanes.percussionNoteMask);
+			if (hasLoop)
+			{
+				for (int i = messageEvents.size() - 1; i >= 0; i--)
+				{
+					MessageEvent event = messageEvents.get(i);
+					if (event.noteStartTick >= contentEndTick)
+					{
+						messageEvents.remove(i);
+					}
+					else if (event.status == ShortMessage.NOTE_OFF && event.tick > contentEndTick)
+					{
+						messageEvents.set(i, MessageEvent.noteOff(event.midiChannel, contentEndTick,
+								event.data1, event.noteStartTick, event.order));
+					}
+				}
+			}
 			Collections.sort(messageEvents, MESSAGE_EVENT_COMPARATOR);
 			for (int i = 0; i < messageEvents.size(); i++)
 			{
@@ -1538,48 +1562,36 @@ public final class MLDDecoder
 			ChannelState channel = renderState.channels[logicalChannel];
 			boolean sounding = channel.allowsOrdinaryNoteOn() && logicalChannel < MIDI_CHANNEL_COUNT;
 			long midiStartTick = rawToMidiTick(tempoPoints, noteEvent.rawTick);
-			if (sounding)
-			{
-				renderState.activeOutputMask |= (1 << logicalChannel);
-				emitPatchIfNeeded(renderState.controlCollector, channel, logicalChannel, midiStartTick);
-			}
-			else if (logicalChannel >= MIDI_CHANNEL_COUNT)
+			if (logicalChannel >= MIDI_CHANNEL_COUNT)
 			{
 				warnings.add("Skipping note mapped to logical channel " + logicalChannel + " because the host exposes only 16 MIDI channels.");
 			}
 
 			int pitchOffset = noteEvent.pitch + octaveOffset(noteEvent.octaveShift);
-			int nativeNote = baseMidiNoteForMode(channel.mode) + pitchOffset;
-			int noteBase = sounding && logicalChannel == MIDI_DRUM_CHANNEL ? 35 : baseMidiNoteForMode(channel.mode);
-			int midiNote = clamp(0, 127, noteBase + pitchOffset);
+			int nativeNote = baseNativeNote(channel) + pitchOffset;
+			int midiNote = clamp(0, 127, nativeNote);
 			int velocity = noteEvent.hasExtraByte ? clamp(1, 127, noteEvent.velocity * 2) : 126;
 			int rawEndTick = noteEvent.rawTick + noteEvent.gate;
 			long midiEndTick = rawToMidiTick(tempoPoints, rawEndTick);
-			// Gate identity follows the native pitch, even when the drum channel emits a
-			// different MIDI note. A matching active note is extended instead of retriggered.
+			// Gates are keyed by logical channel and native pitch.
+			// Matching active keys refresh the existing gate.
 			Integer activeKey = Integer.valueOf((logicalChannel << 8) | (nativeNote & 0xFF));
-			ActiveNote active = renderState.activeNotes.get(activeKey);
+			ActiveNote active = renderState.activeNotes.remove(activeKey);
 			if (active != null)
 			{
 				active.rawEndTick = rawEndTick;
 				active.midiEndTick = midiEndTick;
-				if (active.sounding)
-				{
-					return normalizeMidiEnd(active.midiStartTick, midiEndTick);
-				}
+				renderState.activeNotes.put(activeKey, active);
 				return active.midiChannel < MIDI_CHANNEL_COUNT ? midiEndTick : -1L;
 			}
 
-			int order = renderState.controlCollector.allocateOrder();
 			if (sounding)
 			{
-				renderState.messageEvents.add(MessageEvent.noteOn(logicalChannel, midiStartTick, midiNote, velocity, order));
+				emitPatch(renderState, channel, logicalChannel, midiStartTick);
+				renderState.messageEvents.add(MessageEvent.noteOn(logicalChannel, midiStartTick, midiNote,
+						velocity, renderState.controlCollector.allocateOrder()));
 			}
-			renderState.activeNotes.put(activeKey, new ActiveNote(logicalChannel, midiNote, rawEndTick, midiEndTick, order, midiStartTick, sounding));
-			if (sounding)
-			{
-				return normalizeMidiEnd(midiStartTick, midiEndTick);
-			}
+			renderState.activeNotes.put(activeKey, new ActiveNote(logicalChannel, midiNote, rawEndTick, midiEndTick, midiStartTick, sounding));
 			return logicalChannel < MIDI_CHANNEL_COUNT ? midiEndTick : -1L;
 		}
 
@@ -1611,12 +1623,10 @@ public final class MLDDecoder
 					{
 						int logicalChannel = (systemEvent.value >> 3) & 0x0F;
 						ChannelState channel = renderState.channels[logicalChannel];
-						channel.mode = systemEvent.value & 0x07;
+						applyChannelMode(systemEvent.value, channel);
 						if (channel.mode == 1)
 						{
-							applyNativePatchHelperState(channel);
-							channel.patchDirty = true;
-							emitPatchIfNeeded(renderState.controlCollector, channel, logicalChannel, midiTick);
+							emitPatch(renderState, channel, logicalChannel, midiTick);
 						}
 					}
 					break;
@@ -1650,23 +1660,11 @@ public final class MLDDecoder
 				return midiTick;
 			}
 
-			Iterator<Map.Entry<Integer, ActiveNote>> iterator = renderState.activeNotes.entrySet().iterator();
-			while (iterator.hasNext())
-			{
-				ActiveNote active = iterator.next().getValue();
-				if (active.sounding)
-				{
-					renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick, active.midiNote, renderState.controlCollector.allocateOrder()));
-				}
-				iterator.remove();
-			}
-
-			renderState.controlCollector.emitAllSoundOff(midiTick);
-			recordStopTick(renderState.stopTicks, midiTick);
+			stopActiveNotes(midiTick, renderState);
 			return midiTick;
 		}
 
-		private static long applySessionReset(long midiTick, RenderState renderState)
+		private static void stopActiveNotes(long midiTick, RenderState renderState)
 		{
 			Iterator<Map.Entry<Integer, ActiveNote>> iterator = renderState.activeNotes.entrySet().iterator();
 			while (iterator.hasNext())
@@ -1674,13 +1672,19 @@ public final class MLDDecoder
 				ActiveNote active = iterator.next().getValue();
 				if (active.sounding)
 				{
-					renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick, active.midiNote, renderState.controlCollector.allocateOrder()));
+					renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiTick,
+							active.midiNote, active.midiStartTick, renderState.controlCollector.allocateOrder()));
 				}
 				iterator.remove();
 			}
 
 			renderState.controlCollector.emitAllSoundOff(midiTick);
 			recordStopTick(renderState.stopTicks, midiTick);
+		}
+
+		private static long applySessionReset(long midiTick, RenderState renderState)
+		{
+			stopActiveNotes(midiTick, renderState);
 			resetChannelStates(renderState.channels);
 			resetPartChannelMap(renderState.partChannelMap);
 			renderState.masterVolume = DEFAULT_MASTER_VOLUME;
@@ -1716,18 +1720,9 @@ public final class MLDDecoder
 			switch (systemEvent.command)
 			{
 				case 0xE0:
-					channel.patchDirty = true;
-					emitPatchIfNeeded(controlCollector, channel, logicalChannel, midiTick);
-					break;
 				case 0xE1:
-					if (channel.mode == 1)
-					{
-						channel.patchDirty = true;
-						if (channel.hasProgramEvent)
-						{
-							emitPatchIfNeeded(controlCollector, channel, logicalChannel, midiTick);
-						}
-					}
+					// Emit bank/program updates in modes 0 and 1.
+					emitPatch(renderState, channel, logicalChannel, midiTick);
 					break;
 				case 0xE2:
 				case 0xE6:
@@ -1784,6 +1779,13 @@ public final class MLDDecoder
 			}
 		}
 
+		private static void applyChannelMode(int value, ChannelState channel)
+		{
+			channel.mode = value & 0x07;
+			channel.percussion = (value & 1) != 0;
+			if (channel.mode == 1) { applyNativePatchHelperState(channel); }
+		}
+
 		private static void applyNativePatchHelperState(ChannelState channel)
 		{
 			channel.noteOnSuppressed = channel.mode != 0 && channel.mode != 1;
@@ -1795,7 +1797,6 @@ public final class MLDDecoder
 			{
 				case 0xE0:
 					channel.program = event.value & 0x3F;
-					channel.hasProgramEvent = true;
 					applyNativePatchHelperState(channel);
 					break;
 				case 0xE1:
@@ -1842,9 +1843,9 @@ public final class MLDDecoder
 			}
 		}
 
-		private static void emitPatchIfNeeded(ControlCollector controlCollector, ChannelState channel, int midiChannel, long midiTick)
+		private static void emitPatch(RenderState renderState, ChannelState channel, int logicalChannel, long midiTick)
 		{
-			if (midiChannel < 0 || midiChannel >= MIDI_CHANNEL_COUNT)
+			if (logicalChannel < 0 || logicalChannel >= MIDI_CHANNEL_COUNT)
 			{
 				return;
 			}
@@ -1852,40 +1853,21 @@ public final class MLDDecoder
 			{
 				return;
 			}
-			int hostProgram = translateHostProgram(channel);
-			if (!channel.patchDirty && channel.lastProgram >= 0)
-			{
-				return;
-			}
-			if (channel.lastProgram == hostProgram)
-			{
-				channel.patchDirty = false;
-				return;
-			}
-
-			controlCollector.emitProgramChange(midiChannel, midiTick, hostProgram);
-			channel.patchDirty = false;
-			channel.lastProgram = hostProgram;
+			boolean percussionLane = (renderState.percussionNoteMask & (1 << logicalChannel)) != 0;
+			renderState.controlCollector.emitProgramChange(logicalChannel, midiTick, translateHostProgram(channel, percussionLane));
 		}
 
-		private static int translateHostProgram(ChannelState channel)
+		private static int translateHostProgram(ChannelState channel, boolean percussionLane)
 		{
+			if (percussionLane) { return 0; }
 			int program = channel.program & 0x3F;
 			int bank = channel.bank & 0x3F;
-			if ((bank & 0x3E) == 0)
+			if (bank < 2)
 			{
-				switch (program)
-				{
-					case 0: return 0;
-					case 1: return 9;
-					case 2: return 16;
-					case 3: return 24;
-					case 4: return 13;
-					case 5: return 74;
-					default: break;
-				}
+				return program < LOW_BANK_PROGRAMS.length ? LOW_BANK_PROGRAMS[program] : 0;
 			}
-			return (program | (bank << 6)) & 0x7F;
+			// Bank parity flips between lower/upper 64 program pages.
+			return program | ((bank & 1) << 6);
 		}
 
 		private static void emitTempoTrack(List<TempoPoint> tempoPoints, Track conductorTrack, long contentEndTick)
@@ -1904,11 +1886,11 @@ public final class MLDDecoder
 			}
 		}
 
-		private static long flushExpiredNotes(int currentRawTick, Map<Integer, ActiveNote> activeNotes, List<MessageEvent> messageEvents)
+		private static long flushExpiredNotes(int currentRawTick, RenderState renderState)
 		{
 			// Native gates expire before another event at the same raw tick is handled.
 			long maxTick = -1L;
-			Iterator<Map.Entry<Integer, ActiveNote>> iterator = activeNotes.entrySet().iterator();
+			Iterator<Map.Entry<Integer, ActiveNote>> iterator = renderState.activeNotes.entrySet().iterator();
 			while (iterator.hasNext())
 			{
 				ActiveNote active = iterator.next().getValue();
@@ -1918,9 +1900,9 @@ public final class MLDDecoder
 				}
 				if (active.sounding)
 				{
-					long midiEndTick = normalizeMidiEnd(active.midiStartTick, active.midiEndTick);
-					messageEvents.add(MessageEvent.noteOff(active.midiChannel, midiEndTick, active.midiNote, active.order));
-					maxTick = Math.max(maxTick, midiEndTick);
+					renderState.messageEvents.add(MessageEvent.noteOff(active.midiChannel, active.midiEndTick,
+							active.midiNote, active.midiStartTick, renderState.controlCollector.allocateOrder()));
+					maxTick = Math.max(maxTick, active.midiEndTick);
 				}
 				else if (active.midiChannel < MIDI_CHANNEL_COUNT)
 				{
@@ -1994,7 +1976,7 @@ public final class MLDDecoder
 			ChannelState[] channels = new ChannelState[MAX_LOGICAL_CHANNELS];
 			for (int i = 0; i < channels.length; i++)
 			{
-				channels[i] = new ChannelState();
+				channels[i] = new ChannelState(i == MIDI_DRUM_CHANNEL);
 			}
 			return channels;
 		}
@@ -2003,7 +1985,7 @@ public final class MLDDecoder
 		{
 			for (int i = 0; i < channels.length; i++)
 			{
-				channels[i].reset();
+				channels[i].reset(i == MIDI_DRUM_CHANNEL);
 			}
 		}
 
@@ -2050,31 +2032,46 @@ public final class MLDDecoder
 			return (trackIndex * 4) + voice;
 		}
 
-		private static int[] buildOutputChannelMap(int activeOutputMask)
+		private static int[] buildOutputChannelMap(int noteUseMask, int percussionNoteMask)
 		{
-			// Keep MIDI channel 10 for drums and pack the active melodic channels around it.
+			// Map percussion lanes to MIDI channel 10.
 			int[] outputChannelMap = createIdentityPartChannelMap(MIDI_CHANNEL_COUNT);
 			int nextMelodicChannel = 0;
+			int usedOutputs = 0;
 			for (int logicalChannel = 0; logicalChannel < MIDI_CHANNEL_COUNT; logicalChannel++)
 			{
-				if (((activeOutputMask >>> logicalChannel) & 1) == 0)
-				{
-					continue;
-				}
-				if (logicalChannel == MIDI_DRUM_CHANNEL)
+				int bit = 1 << logicalChannel;
+				if ((noteUseMask & bit) == 0) { continue; }
+				if ((percussionNoteMask & bit) != 0)
 				{
 					outputChannelMap[logicalChannel] = MIDI_DRUM_CHANNEL;
-					continue;
 				}
-				outputChannelMap[logicalChannel] = nextMelodicChannel;
-				if (nextMelodicChannel == MIDI_DRUM_CHANNEL - 1)
+				else
 				{
-					nextMelodicChannel += 2;
+					outputChannelMap[logicalChannel] = nextMelodicChannel;
+					if (nextMelodicChannel == MIDI_DRUM_CHANNEL - 1)
+					{
+						nextMelodicChannel += 2;
+					}
+					else if (nextMelodicChannel < MIDI_CHANNEL_COUNT - 1)
+					{
+						nextMelodicChannel++;
+					}
 				}
-				else if (nextMelodicChannel < MIDI_CHANNEL_COUNT - 1)
+				usedOutputs |= 1 << outputChannelMap[logicalChannel];
+			}
+			// Assign control-only lanes to unused output channels.
+			for (int logicalChannel = 0; logicalChannel < MIDI_CHANNEL_COUNT; logicalChannel++)
+			{
+				if ((noteUseMask & (1 << logicalChannel)) != 0) { continue; }
+				int output = logicalChannel;
+				if ((usedOutputs & (1 << output)) != 0)
 				{
-					nextMelodicChannel++;
+					output = 0;
+					while ((usedOutputs & (1 << output)) != 0) { output++; }
 				}
+				outputChannelMap[logicalChannel] = output;
+				usedOutputs |= 1 << output;
 			}
 			return outputChannelMap;
 		}
@@ -2101,9 +2098,9 @@ public final class MLDDecoder
 			}
 		}
 
-		private static int baseMidiNoteForMode(int mode)
+		private static int baseNativeNote(ChannelState channel)
 		{
-			return mode == 1 ? 35 : 45;
+			return channel.percussion ? 35 : 45;
 		}
 
 		private static int octaveOffset(int octaveShift)
@@ -2125,11 +2122,6 @@ public final class MLDDecoder
 		private static int computePitchBend(ChannelState channel)
 		{
 			return clamp(0, 16383, (8 * (channel.pitchFine + (32 * channel.pitchCoarse))) - 256);
-		}
-
-		private static long normalizeMidiEnd(long midiStartTick, long midiEndTick)
-		{
-			return midiEndTick <= midiStartTick ? (midiStartTick + 1L) : midiEndTick;
 		}
 
 		private static int clamp(int min, int max, int value)
@@ -2157,7 +2149,7 @@ public final class MLDDecoder
 			final ControlCollector controlCollector;
 			final ChannelState[] channels;
 			final int[] partChannelMap;
-			int activeOutputMask = 0;
+			final int percussionNoteMask;
 			final Map<Integer, ActiveNote> activeNotes;
 			final List<Long> stopTicks;
 			int masterVolume = DEFAULT_MASTER_VOLUME;
@@ -2168,7 +2160,8 @@ public final class MLDDecoder
 					ChannelState[] channels,
 					int[] partChannelMap,
 					Map<Integer, ActiveNote> activeNotes,
-					List<Long> stopTicks)
+					List<Long> stopTicks,
+					int percussionNoteMask)
 			{
 				this.messageEvents = messageEvents;
 				this.controlCollector = controlCollector;
@@ -2176,6 +2169,7 @@ public final class MLDDecoder
 				this.partChannelMap = partChannelMap;
 				this.activeNotes = activeNotes;
 				this.stopTicks = stopTicks;
+				this.percussionNoteMask = percussionNoteMask;
 			}
 		}
 
@@ -2300,6 +2294,8 @@ public final class MLDDecoder
 			int timebase = DEFAULT_TIMEBASE;
 			int tempo = DEFAULT_TEMPO;
 			int masterVolume = DEFAULT_MASTER_VOLUME;
+			int noteUseMask;
+			int percussionNoteMask;
 
 			LoopSimulationState(int effectiveTrackCount)
 			{
@@ -2344,8 +2340,8 @@ public final class MLDDecoder
 				for (int i = 0; i < channels.length; i++)
 				{
 					ChannelState channel = channels[i];
-					result.append(channel.mode).append(',').append(channel.bank).append(',').append(channel.program).append(',')
-							.append(channel.hasProgramEvent ? 1 : 0).append(',').append(channel.level).append(',')
+					result.append(channel.mode).append(',').append(channel.percussion ? 1 : 0).append(',')
+							.append(channel.bank).append(',').append(channel.program).append(',').append(channel.level).append(',')
 							.append(channel.pan).append(',').append(channel.pitchCoarse).append(',').append(channel.pitchFine).append(',')
 							.append(channel.pitchRange).append(',').append(channel.modulation).append(',')
 							.append(channel.noteOnSuppressed ? 1 : 0).append(';');
@@ -2371,7 +2367,7 @@ public final class MLDDecoder
 
 				ChannelState channel = channels[logicalChannel];
 				int pitchOffset = event.pitch + octaveOffset(event.octaveShift);
-				int nativeNote = baseMidiNoteForMode(channel.mode) + pitchOffset;
+				int nativeNote = baseNativeNote(channel) + pitchOffset;
 				Integer key = Integer.valueOf((logicalChannel << 8) | (nativeNote & 0xFF));
 				int rawEndTick = event.rawTick + event.gate;
 				LoopActiveNote active = activeNotes.remove(key);
@@ -2383,9 +2379,12 @@ public final class MLDDecoder
 				}
 
 				boolean sounding = channel.allowsOrdinaryNoteOn() && logicalChannel < MIDI_CHANNEL_COUNT;
-				int noteBase = sounding && logicalChannel == MIDI_DRUM_CHANNEL ? 35 : baseMidiNoteForMode(channel.mode);
-				int midiNote = clamp(0, 127, noteBase + pitchOffset);
-				activeNotes.put(key, new LoopActiveNote(rawEndTick, sounding, midiNote));
+				if (sounding)
+				{
+					noteUseMask |= 1 << logicalChannel;
+					if (channel.percussion) { percussionNoteMask |= 1 << logicalChannel; }
+				}
+				activeNotes.put(key, new LoopActiveNote(rawEndTick, sounding, clamp(0, 127, nativeNote)));
 			}
 
 			private void processSystem(SystemEvent event)
@@ -2419,8 +2418,7 @@ public final class MLDDecoder
 						if (acceptTrackZero7Bit(event))
 						{
 							ChannelState channel = channels[(event.value >> 3) & 0x0F];
-							channel.mode = event.value & 0x07;
-							if (channel.mode == 1) { applyNativePatchHelperState(channel); }
+							applyChannelMode(event.value, channel);
 						}
 						return;
 					case 0xBE:
@@ -2554,41 +2552,42 @@ public final class MLDDecoder
 		private static final class ChannelState
 		{
 			int mode = 0;
+			boolean percussion;
 			int bank = 0;
 			int program = 0;
-			boolean hasProgramEvent = false;
 			int level = DEFAULT_LEVEL;
 			int pan = DEFAULT_PAN;
 			int pitchCoarse = DEFAULT_PITCH_COARSE;
 			int pitchFine = DEFAULT_PITCH_FINE;
 			int pitchRange = DEFAULT_PITCH_RANGE;
 			int modulation = DEFAULT_MODULATION;
-			boolean patchDirty = true;
 			boolean pitchRangeDirty = false;
 			boolean noteOnSuppressed = false;
-			int lastProgram = -1;
+
+			ChannelState(boolean percussion)
+			{
+				this.percussion = percussion;
+			}
 
 			boolean allowsOrdinaryNoteOn()
 			{
 				return !noteOnSuppressed;
 			}
 
-			void reset()
+			void reset(boolean percussion)
 			{
 				mode = 0;
+				this.percussion = percussion;
 				bank = 0;
 				program = 0;
-				hasProgramEvent = false;
 				level = DEFAULT_LEVEL;
 				pan = DEFAULT_PAN;
 				pitchCoarse = DEFAULT_PITCH_COARSE;
 				pitchFine = DEFAULT_PITCH_FINE;
 				pitchRange = DEFAULT_PITCH_RANGE;
 				modulation = DEFAULT_MODULATION;
-				patchDirty = true;
 				pitchRangeDirty = false;
 				noteOnSuppressed = false;
-				lastProgram = -1;
 			}
 		}
 
@@ -2596,19 +2595,17 @@ public final class MLDDecoder
 		{
 			final int midiChannel;
 			final int midiNote;
-			final int order;
 			final long midiStartTick;
 			final boolean sounding;
 			int rawEndTick;
 			long midiEndTick;
 
-			ActiveNote(int midiChannel, int midiNote, int rawEndTick, long midiEndTick, int order, long midiStartTick, boolean sounding)
+			ActiveNote(int midiChannel, int midiNote, int rawEndTick, long midiEndTick, long midiStartTick, boolean sounding)
 			{
 				this.midiChannel = midiChannel;
 				this.midiNote = midiNote;
 				this.rawEndTick = rawEndTick;
 				this.midiEndTick = midiEndTick;
-				this.order = order;
 				this.midiStartTick = midiStartTick;
 				this.sounding = sounding;
 			}
@@ -2639,7 +2636,7 @@ public final class MLDDecoder
 
 			void emitProgramChange(int midiChannel, long tick, int program)
 			{
-				emit(midiChannel, tick, ShortMessage.PROGRAM_CHANGE, clamp(0, 127, program), 0);
+				emit(midiChannel, tick, ShortMessage.PROGRAM_CHANGE, program, 0);
 			}
 
 			void emitVolume(int midiChannel, long tick, int value)
@@ -2722,23 +2719,19 @@ public final class MLDDecoder
 
 		private static final class MessageEvent
 		{
-			static final int PHASE_NOTE_OFF = 0;
-			static final int PHASE_CONTROL = 1;
-			static final int PHASE_NOTE_ON = 2;
-
 			final int midiChannel;
 			final long tick;
-			final int phase;
+			final long noteStartTick;
 			final int status;
 			final int data1;
 			final int data2;
 			final int order;
 
-			private MessageEvent(int midiChannel, long tick, int phase, int status, int data1, int data2, int order)
+			private MessageEvent(int midiChannel, long tick, long noteStartTick, int status, int data1, int data2, int order)
 			{
 				this.midiChannel = midiChannel;
 				this.tick = tick;
-				this.phase = phase;
+				this.noteStartTick = noteStartTick;
 				this.status = status;
 				this.data1 = data1;
 				this.data2 = data2;
@@ -2747,17 +2740,17 @@ public final class MLDDecoder
 
 			static MessageEvent control(int midiChannel, long tick, int status, int data1, int data2, int order)
 			{
-				return new MessageEvent(midiChannel, tick, PHASE_CONTROL, status, data1, data2, order);
+				return new MessageEvent(midiChannel, tick, -1L, status, data1, data2, order);
 			}
 
-			static MessageEvent noteOff(int midiChannel, long tick, int midiNote, int order)
+			static MessageEvent noteOff(int midiChannel, long tick, int midiNote, long noteStartTick, int order)
 			{
-				return new MessageEvent(midiChannel, tick, PHASE_NOTE_OFF, ShortMessage.NOTE_OFF, midiNote, 0, order);
+				return new MessageEvent(midiChannel, tick, noteStartTick, ShortMessage.NOTE_OFF, midiNote, 0, order);
 			}
 
 			static MessageEvent noteOn(int midiChannel, long tick, int midiNote, int velocity, int order)
 			{
-				return new MessageEvent(midiChannel, tick, PHASE_NOTE_ON, ShortMessage.NOTE_ON, midiNote, velocity, order);
+				return new MessageEvent(midiChannel, tick, tick, ShortMessage.NOTE_ON, midiNote, velocity, order);
 			}
 		}
 
@@ -2802,8 +2795,7 @@ public final class MLDDecoder
 			public int compare(MessageEvent left, MessageEvent right)
 			{
 				if (left.tick != right.tick) { return left.tick < right.tick ? -1 : 1; }
-				if (left.order != right.order) { return left.order < right.order ? -1 : 1; }
-				return left.phase < right.phase ? -1 : (left.phase == right.phase ? 0 : 1);
+				return left.order < right.order ? -1 : (left.order == right.order ? 0 : 1);
 			}
 		};
 	}
