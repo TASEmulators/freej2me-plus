@@ -60,7 +60,7 @@ jobs:
           - { platform: linux-arm64, os: ubuntu-24.04-arm }
           - { platform: windows-x64, os: windows-latest }
           - { platform: macos-arm64, os: macos-latest }
-          - { platform: macos-x64, os: macos-13 }
+          - { platform: macos-x64, os: macos-15-intel }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -80,7 +80,10 @@ jobs:
       - name: build runtime
         shell: bash
         run: |
-          PATH="$PATH:/c/ProgramData/chocolatey/lib/ant/tools/apache-ant-$(ls /c/ProgramData/chocolatey/lib/ant/tools 2>/dev/null | sed -n 's/apache-ant-//p' | head -1)/bin"
+          # Chocolatey's Ant is not on the path of this shell
+          if [ "$RUNNER_OS" = Windows ] && ! command -v ant >/dev/null; then
+            PATH="$PATH:$(ls -d /c/ProgramData/chocolatey/lib/ant/tools/apache-ant-*/bin | head -1)"
+          fi
           ant build-runtime -Dplatform=${{ matrix.platform }} "-Druntime.jdk.home=$JAVA_HOME"
           ls -la build/freej2me_plus_runtime_*
       - uses: actions/upload-artifact@v7
