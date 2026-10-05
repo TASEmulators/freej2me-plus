@@ -84,7 +84,8 @@ jobs:
           if [ "$RUNNER_OS" = Windows ] && ! command -v ant >/dev/null; then
             PATH="$PATH:$(ls -d /c/ProgramData/chocolatey/lib/ant/tools/apache-ant-*/bin | head -1)"
           fi
-          ant build-runtime -Dplatform=${{ matrix.platform }} "-Druntime.jdk.home=$JAVA_HOME"
+          # The jar for Java 8 and later, as upstream builds it; JDK 21 refuses the default 5
+          ant build-runtime -Dsource.version=8 -Dtarget.version=8 -Dplatform=${{ matrix.platform }} "-Druntime.jdk.home=$JAVA_HOME"
           ls -la build/freej2me_plus_runtime_*
       - uses: actions/upload-artifact@v7
         with:
