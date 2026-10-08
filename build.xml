@@ -110,17 +110,23 @@
 
 	<!-- Entirely optional target. Requires JDK 9+, and builds a self-contained package that drops the need for the Host OS to
 		have a VM installed in order to run FreeJ2ME-Plus. Mostly useful for libretro, but even that is in testing phase still. -->
-	<target name="build-runtime" depends="jar-libretro" description="Generate minimal Java 9+ runtime for libretro">
-
+	<!-- The runtime's archive: a .zip for Windows, a .tar.gz elsewhere. The core
+		unpacks it with the system's tar, and GNU tar - the one on Linux - reads
+		no .zip; a .tar.gz also keeps the java executable executable, which a
+		.zip from Ant does not. -->
+	<target name="runtime-platform">
 		<!-- Default to linux-x64 as platform, so i don't need to type it in every time when testing.
 			Any other platform may just run "ant build-runtime " with -Dplatform=[windows-x64, macos-arm64] and such,
 			provided "runtime.jdk.home" points to that platform's JDK. -->
 		<property name="platform" value="linux-x64"/>
-
+		<condition property="runtime.windows">
+			<matches string="${platform}" pattern="^windows"/>
+		</condition>
 		<property name="temp.dir" value="build/temp"/>
 		<property name="runtime.target.dir" value="${temp.dir}/freej2me_plus_runtime/${platform}"/>
-		<property name="zip.output" value="build/freej2me_plus_runtime_${platform}.zip"/>
+	</target>
 
+	<target name="runtime-image" depends="jar-libretro,runtime-platform">
 		<echo message="Building runtime for platform [${platform}] at ${runtime.target.dir}..."/>
 
 		<!-- Clean any dangling temp directory before each platform-specific run -->
@@ -143,13 +149,24 @@
 
 		<echo message="Copying Libretro JAR to runtime executable folder..."/>
 		<copy file="build/freej2me_plus-lr.jar" todir="${runtime.target.dir}/bin"/>
+	</target>
 
-		<echo message="Creating distribution zip: ${zip.output}"/>
-		<zip destfile="${zip.output}" basedir="${temp.dir}"/>
+	<target name="runtime-zip" if="runtime.windows">
+		<property name="archive.output" value="build/freej2me_plus_runtime_${platform}.zip"/>
+		<zip destfile="${archive.output}" basedir="${temp.dir}"/>
+	</target>
 
+	<target name="runtime-tar" unless="runtime.windows">
+		<property name="archive.output" value="build/freej2me_plus_runtime_${platform}.tar.gz"/>
+		<tar destfile="${archive.output}" compression="gzip" longfile="posix">
+			<tarfileset dir="${temp.dir}" excludes="**/bin/**,**/lib/jspawnhelper"/>
+			<tarfileset dir="${temp.dir}" includes="**/bin/**,**/lib/jspawnhelper" filemode="755"/>
+		</tar>
+	</target>
+
+	<target name="build-runtime" depends="runtime-image,runtime-zip,runtime-tar" description="Generate minimal Java 9+ runtime for libretro">
 		<delete dir="${temp.dir}"/>
-
-		<echo message="Runtime bundle for [${platform}] is ready at '${zip.output}.'"/>
+		<echo message="Runtime bundle for [${platform}] is ready at '${archive.output}'."/>
 	</target>
 
 </project>
