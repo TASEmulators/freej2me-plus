@@ -23,12 +23,7 @@ class Triangle
 	// 1.0f / 255.0f, to prevent a bunch of divisions in lighting calculations
 	private static final float INVDIV = 0.003921569f;
 
-	// Temporary buffer for vertex colors
-	private static final byte[] COLOR_VERTEX = new byte[4];
-
 	// Temporary buffer for normals and lighting calculations
-	private static final byte[] B_NORM  = new byte[3];
-	private static final short[] S_NORM = new short[3];
 	private static final float[] N_EYE = new float[4];
 	private static final float[] V_EYE = new float[4];
 	private static final float[] L_MAT = new float[16];
@@ -101,7 +96,8 @@ class Triangle
 		// Is the app using lights? Set up to calculate per-vertex lighting.
 		boolean hasLighting = (vertNorms != null && material != null &&
 			lights != null && !lights.isEmpty());
-		boolean hasColors = hasLighting || (vertices.getColors() != null);
+		VertexArray colorArray = vertices.getColors();
+		boolean hasColors = hasLighting || (colorArray != null);
 
 		// Only allocate a new triangle array if it doesn't exist, or cannot fit the incoming mesh.
 		// Near-plane clipping can split a crossing triangle into two, hence the `* 2`, as
@@ -209,19 +205,24 @@ class Triangle
 			}
 
 			// Do we have vertex colors? If so, prep them here
-			if (vertices.getColors() != null)
+			if (colorArray != null)
 			{
+				byte[] components = colorArray.vertArrayByteSize;
+				int compCount = colorArray.getComponentCount();
+							
 				for (int i = 0; i < 3; i++)
 				{
-					vertices.getColors().get(tris[triOffset + i], 1, Triangle.COLOR_VERTEX);
-					inC[i] = (vertices.getColors().getComponentCount() == 3) ?
-						(0xFF << 24) | ((Triangle.COLOR_VERTEX[0] & 0xFF) << 16) |
-						((Triangle.COLOR_VERTEX[1] & 0xFF) << 8) |
-						(Triangle.COLOR_VERTEX[2] & 0xFF) :
-						((Triangle.COLOR_VERTEX[3] & 0xFF) << 24) |
-						((Triangle.COLOR_VERTEX[0] & 0xFF) << 16) |
-						((Triangle.COLOR_VERTEX[1] & 0xFF) << 8) |
-						(Triangle.COLOR_VERTEX[2] & 0xFF);
+					int idx = tris[triOffset + i] * compCount;
+							
+					inC[i] = (compCount == 3) ?
+						(0xFF << 24) | 
+						((components[idx + 0] & 0xFF) << 16) |
+						((components[idx + 1] & 0xFF) << 8) |
+						(components[idx + 2] & 0xFF) :
+						((components[idx + 3] & 0xFF) << 24) |
+						((components[idx + 0] & 0xFF) << 16) |
+						((components[idx + 1] & 0xFF) << 8) |
+						(components[idx + 2] & 0xFF);
 				}
 			}
 			else { inC[0] = inC[1] = inC[2] = vertices.getDefaultColor(); }
@@ -281,25 +282,25 @@ class Triangle
 			if(hasAA)
 			{
 				final boolean shared01 = (i0 == prevI0 || i0 == prevI1 || i0 == prevI2) &&
-	                             (i1 == prevI0 || i1 == prevI1 || i1 == prevI2);
+					(i1 == prevI0 || i1 == prevI1 || i1 == prevI2);
 
-			    final boolean shared12 = (i1 == prevI0 || i1 == prevI1 || i1 == prevI2) &&
-			                             (i2 == prevI0 || i2 == prevI1 || i2 == prevI2);
+				final boolean shared12 = (i1 == prevI0 || i1 == prevI1 || i1 == prevI2) &&
+					(i2 == prevI0 || i2 == prevI1 || i2 == prevI2);
 
-			    final boolean shared20 = (i2 == prevI0 || i2 == prevI1 || i2 == prevI2) &&
-			                             (i0 == prevI0 || i0 == prevI1 || i0 == prevI2);
+				final boolean shared20 = (i2 == prevI0 || i2 == prevI1 || i2 == prevI2) &&
+					(i0 == prevI0 || i0 == prevI1 || i0 == prevI2);
 
-			    // An edge is a boundary ONLY IF it is NOT shared with the
+				// An edge is a boundary ONLY IF it is NOT shared with the
 				// prior triangle.
-			    tEdgeABBoundary = !shared01;
-			    tEdgeBCBoundary = !shared12;
-			    tEdgeCABoundary = !shared20;
+				tEdgeABBoundary = !shared01;
+				tEdgeBCBoundary = !shared12;
+				tEdgeCABoundary = !shared20;
 			}
 
-		    // Update strip history for the next iteration
-		    prevI0 = i0;
-		    prevI1 = i1;
-		    prevI2 = i2;
+			// Update strip history for the next iteration
+			prevI0 = i0;
+			prevI1 = i1;
+			prevI2 = i2;
 
 			/* Triangulate the resulting polygon (3 or 4 vertices) as a fan. */
 			for (int fan = 0; fan + 2 < outCount; fan++)
@@ -310,18 +311,18 @@ class Triangle
 				{
 					if (outCount == 3)
 					{
-			            tri.edgeABBoundary = tEdgeABBoundary;
-			            tri.edgeBCBoundary = tEdgeBCBoundary;
-			            tri.edgeCABoundary = tEdgeCABoundary;
-			        }
+						tri.edgeABBoundary = tEdgeABBoundary;
+						tri.edgeBCBoundary = tEdgeBCBoundary;
+						tri.edgeCABoundary = tEdgeCABoundary;
+					}
 					else
 					{
-			            // Near-plane clipped fans should retain the real outer
+						// Near-plane clipped fans should retain the real outer
 						// boundaries and completely ignore internal clip split.
-			            tri.edgeABBoundary = (fan == 0) ? tEdgeABBoundary : false;
-			            tri.edgeBCBoundary = (fan == 0) ? false : tEdgeBCBoundary;
-			            tri.edgeCABoundary = (fan == 0) ? false : tEdgeCABoundary;
-			        }
+						tri.edgeABBoundary = (fan == 0) ? tEdgeABBoundary : false;
+						tri.edgeBCBoundary = (fan == 0) ? false : tEdgeBCBoundary;
+						tri.edgeCABoundary = (fan == 0) ? false : tEdgeCABoundary;
+					}
 				}
 
 				// Apply perspective division to the triangle, it's going to NDC
@@ -407,7 +408,7 @@ class Triangle
 		int firstVertex = (shadingMode == PolygonMode.SHADE_FLAT) ? 2 : 0;
 		for (int v = firstVertex; v <= 2; v++)
 		{
-			int vertIndex = tris[triOffset + v];
+			final int vertIndex = tris[triOffset + v];
 
 			if(shadingMode != PolygonMode.SHADE_FLAT)
 			{
@@ -441,17 +442,15 @@ class Triangle
 			// Normals may be stored as either short or byte
 			if (vertNorms.getComponentType() == 1)
 			{
-				vertNorms.get(vertIndex, 1, B_NORM);
-				N_EYE[0] = B_NORM[0] * 0.007874016f; // * (1 / 127)
-				N_EYE[1] = B_NORM[1] * 0.007874016f;
-				N_EYE[2] = B_NORM[2] * 0.007874016f;
+				N_EYE[0] = vertNorms.vertArrayByteSize[vertIndex * 3 + 0] * 0.007874016f; // * (1 / 127)
+				N_EYE[1] = vertNorms.vertArrayByteSize[vertIndex * 3 + 1] * 0.007874016f;
+				N_EYE[2] = vertNorms.vertArrayByteSize[vertIndex * 3 + 2] * 0.007874016f;
 			}
 			else
 			{
-				vertNorms.get(vertIndex, 1, S_NORM);
-				N_EYE[0] = S_NORM[0] * 3.051851E-5f; // * (1 / 32767)
-				N_EYE[1] = S_NORM[1] * 3.051851E-5f;
-				N_EYE[2] = S_NORM[2] * 3.051851E-5f;
+				N_EYE[0] = vertNorms.vertArrayShortSize[vertIndex * 3 + 0] * 3.051851E-5f; // * (1 / 32767)
+				N_EYE[1] = vertNorms.vertArrayShortSize[vertIndex * 3 + 1] * 3.051851E-5f;
+				N_EYE[2] = vertNorms.vertArrayShortSize[vertIndex * 3 + 2] * 3.051851E-5f;
 			}
 
 			// Vertex normals must now be multiplied by the normal matrix to
