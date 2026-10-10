@@ -900,7 +900,7 @@ public class Loader
 		 */
 		final boolean bounded = totalFileSize > read;
 
-		while ((bounded ? read < totalFileSize : dis.available() > 0))
+		while ((bounded ? read < Math.min(dis.available(), totalFileSize) : dis.available() > 0))
 		{
 			compressionScheme = readByte();
 			totalSectionLength = readInt();

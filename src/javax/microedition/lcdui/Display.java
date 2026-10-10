@@ -311,32 +311,24 @@ public class Display
 				Displayable prev = current;
 				if (next == null || current == next) { return; }
 
-				// Alert and Canvas preparation
+				// displayable setup and notify
 				try
 				{
 					if(next instanceof Alert) { ((Alert) next).setNextScreen(current); }
-
-					// Call upon showNotify right before the new canvas is made visible
-					if (next instanceof Canvas) { ((Canvas) next).showNotify(); }
-				}
-				catch (Exception e)
-				{
-					Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "SetCurrent Alert/Canvas preparation block failed: " + e.getMessage());
-					e.printStackTrace();
-				}
-
-				// displayable setup and hideNotify
-				try
-				{
+					
 					// Make the new displayable effective
 					current = next;
+
+					// Call upon showNotify right before the new canvas is made visible (flushed
+					// to screen)
+					if (current instanceof Canvas) { ((Canvas) current).showNotify(); }
 
 					// Call upon hideNotify right after removing the previous canvas from the display
 					if (prev instanceof Canvas) { ((Canvas) prev).hideNotify(); }
 				}
 				catch (Exception e)
 				{
-					Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "SetCurrent displayable setup and hideNotify block failed: " + e.getMessage());
+					Mobile.log(Mobile.LOG_ERROR, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "SetCurrent displayable setup and notify block failed: " + e.getMessage());
 					e.printStackTrace();
 				}
 
