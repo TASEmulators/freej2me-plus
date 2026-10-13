@@ -44,6 +44,9 @@ jobs:
         zip -r ../freej2me_plus-nightly.zip *
         cd ..
     - name: Send it to the nightly release tag
+      # Only this repository has the nightlies release, and a pull request's
+      # token cannot write to it
+      if: github.repository == 'TASEmulators/freej2me-plus' && github.event_name != 'pull_request'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
