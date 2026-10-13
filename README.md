@@ -56,6 +56,8 @@
 >**`freej2me-lr.jar` -> Libretro executable (has to be placed on the frontend's `system/` folder, since it acts as a BIOS for the libretro core and is what runs J2ME jars)**
 >
 >### **NOTE: The Libretro jar file needs additional binaries to be compiled before use. Look at the additional steps below if you're going to use it.**
+>
+>### **NOTE: FreeJ2ME-Plus and the original FreeJ2ME are not cross-compatible, as cores or standalone: settings and save data made by one do not work in the other. FreeJ2ME-Plus keeps saves in a more accurate format developed jointly with SquirrelJME, and those saves are meant to be compatible between the two (not tested extensively).**
 
 # :gear: :video_game: Building the Libretro core
 
