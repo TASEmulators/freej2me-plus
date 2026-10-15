@@ -1,7 +1,7 @@
 <project name="FreeJ2ME-Plus" default="jar" basedir=".">
 
-	<property name="source.version" value="1.5"/>
-	<property name="target.version" value="1.5"/>
+	<property name="source.version" value="1.8"/>
+	<property name="target.version" value="1.8"/>
 
 	<!-- Will be leaving separate properties for the compiler
 		and runtime paths. This facilitates compiling with
