@@ -29,6 +29,17 @@ public class Libretro
 
 	private static volatile boolean canPause = false;
 
+	/*
+	 * Repeats of the held key: on frame requests, after keyRepeatDelay ms, then
+	 * every keyRepeatInterval ms (-Dfreej2me.keyRepeatDelay, -Dfreej2me.keyRepeatInterval).
+	 * Both 0 by default: a repeat on every frame request, as before. Phones wait
+	 * about half a second, then repeat about ten times a second; a repeat on every
+	 * frame makes menus skip items under a quick tap.
+	 */
+	private static final int keyRepeatDelay = Integer.getInteger("freej2me.keyRepeatDelay", 0);
+	private static final int keyRepeatInterval = Integer.getInteger("freej2me.keyRepeatInterval", 0);
+	private long keyDownTime, lastRepeatTime;
+
 	// 1/3 of a second of pause delay to be extra safe, the core may stall a bit at boot.
 	private static final long PAUSE_DELAY_MS = 333;
 	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
@@ -143,6 +154,8 @@ public class Libretro
 							case 3: // joypad key down
 								MobilePlatform.pressedKeys[code] = true;
 								lastPressedKey = code;
+								keyDownTime = System.currentTimeMillis();
+								lastRepeatTime = 0;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(code));
 							break;
 
@@ -320,11 +333,17 @@ public class Libretro
 							case 15: // Libretro core requested a new frame.
 
 								// Fire repeats for the last key to be held on
-								// every libretro frame tick (similar to how AWT
-								// and real devices handle this)
-								if (lastPressedKey != -1 && MobilePlatform.pressedKeys[lastPressedKey])
+								// libretro frame ticks (similar to how AWT
+								// and real devices handle this): on the requests,
+								// not on the acknowledgements that follow them too.
+								if (din[3] != 1 && lastPressedKey != -1 && MobilePlatform.pressedKeys[lastPressedKey])
 								{
-									MobilePlatform.keyRepeated(Mobile.getMobileKey(lastPressedKey));
+									long now = System.currentTimeMillis();
+									if (now - keyDownTime >= keyRepeatDelay && now - lastRepeatTime >= keyRepeatInterval)
+									{
+										lastRepeatTime = now;
+										MobilePlatform.keyRepeated(Mobile.getMobileKey(lastPressedKey));
+									}
 								}
 
 								int multiplierScaled = (din[1] << 8) | din[2];
