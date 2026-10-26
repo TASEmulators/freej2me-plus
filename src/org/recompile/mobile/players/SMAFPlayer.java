@@ -301,7 +301,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				if (target == null)
 				{
 					wavStreams[pcmIndex].reset();
-					target = AudioSystem.getClip();
+					target = org.recompile.mobile.SoftMixer.getClip(); // AudioSystem.getClip(), or the software mixer's
 					target.addLineListener(this);
 					target.open(wavStreams[pcmIndex]);
 				}

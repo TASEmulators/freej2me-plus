@@ -99,7 +99,7 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 				Mobile.log(Mobile.LOG_WARNING, WAVPlayer.class.getPackage().getName() + "." + WAVPlayer.class.getSimpleName() + ": " + "WAV Format is " + wavHeaderData[0] + " (Unsupported).");
 			}
 
-			wavClip = AudioSystem.getClip();
+			wavClip = org.recompile.mobile.SoftMixer.getClip(); // AudioSystem.getClip(), or the software mixer's
 			/* Like for midi, we need to listen for END_OF_MEDIA events here too. */
 			wavClip.addLineListener(this);
 

@@ -101,7 +101,11 @@ public class JavaSoundAudioDevice extends AudioDeviceBase
         Throwable t = null;
         try
         {
-			Line line = AudioSystem.getLine(getSourceLineInfo());
+			// The software mixer's line when the emulator mixes its sounds itself
+			// (org.recompile.mobile.SoftMixer), else the system's as before.
+			Line line = org.recompile.mobile.SoftMixer.isEnabled()
+				? org.recompile.mobile.SoftMixer.getSourceDataLine(getAudioFormat())
+				: AudioSystem.getLine(getSourceLineInfo());
             if (line instanceof SourceDataLine)
             {
          		source = (SourceDataLine)line;

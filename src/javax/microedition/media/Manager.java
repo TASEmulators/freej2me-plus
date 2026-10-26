@@ -393,7 +393,7 @@ public class Manager
 	public static Synthesizer prepareSynthesizer() throws MidiUnavailableException
 	{
 		Synthesizer synth = MidiSystem.getSynthesizer();
-		synth.open();
+		org.recompile.mobile.SoftMixer.openSynthesizer(synth); // synth.open(), or on the software mixer's line
 
 		defaultSoundbank = synth.getDefaultSoundbank();
 
