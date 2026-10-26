@@ -29,6 +29,17 @@ public class Libretro
 
 	private static volatile boolean canPause = false;
 
+	/*
+	 * Frontends that can show their last frame again (the FunKey S port's host)
+	 * may be answered a frame request with a single 0xFD byte when the app hasn't
+	 * drawn anything since the last frame sent, instead of the whole frame:
+	 * enabled with -Dfreej2me.skipUnchangedFrames=true. Every change of the screen
+	 * goes through the platform's flushGraphics, then its painter, which counts.
+	 */
+	private static final boolean skipUnchangedFrames = Boolean.getBoolean("freej2me.skipUnchangedFrames");
+	private static volatile int paintCount = 0;
+	private int sentPaintCount = -1;
+
 	// 1/3 of a second of pause delay to be extra safe, the core may stall a bit at boot.
 	private static final long PAUSE_DELAY_MS = 333;
 	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
@@ -84,7 +95,7 @@ public class Libretro
 		// The painter here is only really used to check for frontend pauses
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
-			public void run() { updatePauseTimer(); }
+			public void run() { paintCount++; updatePauseTimer(); }
 		});
 
 		lio = new LibretroIO();
@@ -359,6 +370,21 @@ public class Libretro
 								/* Send Frame to Libretro */
 								try
 								{
+									/*
+									 * Nothing drawn since the last frame sent (read before the frame is
+									 * copied: a flush racing with the copy only makes the next request
+									 * send the frame again), and nothing else to tell: one byte.
+									 */
+									int paints = paintCount;
+									if(skipUnchangedFrames && paints == sentPaintCount && Mobile.vibrationDuration == 0
+										&& Mobile.libretroRestartRequested == 0)
+									{
+										System.out.write(0xFD);
+										System.out.flush();
+										break;
+									}
+									sentPaintCount = paints;
+
 									//frameHeader[0] = (byte)0xFE;
 									frameHeader[1] = (byte)((lcdWidth>>8)&0xFF);
 									frameHeader[2] = (byte)((lcdWidth)&0xFF);
@@ -386,14 +412,21 @@ public class Libretro
 									/* Send display data to libretro */
 									synchronized (Mobile.getPlatform().getLcdFrontbuffer())
 									{
-										for(int i=0; i<lcdData.length; i++)
+										/*
+										 * lcdData is volatile: read once, not three times a pixel (on ARM
+										 * each volatile read is also a memory barrier).
+										 */
+										final int[] data = lcdData;
+										final byte[] out = frameBuffer;
+										for(int i=0, o=0; i<data.length; i++, o+=3)
 										{
-											frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
-											frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);
-											frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
+											final int pixel = data[i];
+											out[o]   = (byte)(pixel>>16);
+											out[o+1] = (byte)(pixel>>8);
+											out[o+2] = (byte)pixel;
 										}
 
-										System.out.write(frameBuffer, 0, lcdData.length*3);
+										System.out.write(out, 0, data.length*3);
 										System.out.flush();
 									}
 								}
