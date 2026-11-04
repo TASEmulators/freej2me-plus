@@ -1664,35 +1664,38 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int ymax = Integer.MIN_VALUE;
 		for (int i = 0; i < nPoints; i++)
 		{
-			if (yPoints[i+yOffset] < ymin) { ymin = yPoints[i+yOffset]; }
-			if (yPoints[i+yOffset] > ymax) { ymax = yPoints[i+yOffset]; }
+			if (yPoints[i + yOffset] < ymin) { ymin = yPoints[i + yOffset]; }
+			if (yPoints[i + yOffset] > ymax) { ymax = yPoints[i + yOffset]; }
 		}
 
-		if(ymin+translateY < clipY) { ymin = clipY-translateY; }
-		if(ymax+translateY >= clipHeight) { ymax = clipHeight-translateY; }
+		if (ymin + translateY < clipY) { ymin = clipY - translateY; }
+		if (ymax + translateY >= clipHeight) { ymax = clipHeight - translateY; }
 
 		if (ymin >= ymax) { return; }
 
-		final int[] intersections = new int[nPoints];
-		int intersectionCount = 0;
-
+		final int[] intersections = new int[nPoints + 1];
 		final boolean isOpaque = ((argbColor >>> 24) == 255);
 
 		for (int y = ymin; y < ymax; y++)
 		{
-			intersectionCount = 0;
+			int intersectionCount = 0;
 			for (int i = 0; i < nPoints; i++)
 			{
 				int j = (i + 1) % nPoints;
 
-				if ((yPoints[i + yOffset] <= y && yPoints[j + yOffset] > y) || (yPoints[j + yOffset] <= y && yPoints[i + yOffset] > y))
+				if ((yPoints[i + yOffset] <= y && yPoints[j + yOffset] > y) ||
+					(yPoints[j + yOffset] <= y && yPoints[i + yOffset] > y))
 				{
 					int dy = yPoints[j + yOffset] - yPoints[i + yOffset];
 					if (dy != 0)
 					{
-						int x = xPoints[i + xOffset] * dy + (y - yPoints[i + yOffset]) * (xPoints[j + xOffset] - xPoints[i + xOffset]);
-						x /= dy;
-						intersections[intersectionCount++] = x;
+						int rem = (y - yPoints[i + yOffset]) * (xPoints[j + xOffset] - xPoints[i + xOffset]);
+
+						int div;
+						if ((rem ^ dy) < 0 && (rem % dy) != 0) { div = (rem - (dy - 1)) / dy; }
+						else { div = rem / dy; }
+
+						intersections[intersectionCount++] = xPoints[i + xOffset] + div;
 					}
 				}
 			}
@@ -1717,18 +1720,19 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				{
 					int xStart = intersections[i] + translateX;
 					int xEnd = intersections[i + 1] + translateX;
-					if(xStart < clipX) { xStart = clipX; }
-					if(xEnd > clipWidth) { xEnd = clipWidth; }
-					if (xStart >= xEnd) { continue; }
+
+					if (xStart < clipX) { xStart = clipX; }
+					if (xEnd >= clipWidth) { xEnd = clipWidth - 1; }
+					if (xStart > xEnd) { continue; }
 
 					int pixelIdx = rowOffset + xStart;
 					if (isOpaque)
 					{
-						for (int x = xStart; x < xEnd; x++) { canvasData[pixelIdx++] = argbColor; }
+						for (int x = xStart; x <= xEnd; x++) { canvasData[pixelIdx++] = argbColor; }
 					}
 					else
 					{
-						for (int x = xStart; x < xEnd; x++)
+						for (int x = xStart; x <= xEnd; x++)
 						{
 							canvasData[pixelIdx] = blendPixels(argbColor, canvasData[pixelIdx]);
 							pixelIdx++;
