@@ -71,20 +71,21 @@ public class Config
 		65,  // A key
 		32,  // Space Key (for AWT fast-forward)
 		67,  // C Key (for AWT screenshots)
-		88   // X Key (for AWT Pause/Resume)
+		88,  // X Key (for AWT Pause/Resume)
+		90   // Z Key (for AWT App BG/FG support)
 	};
 
 	public static int gamepadKeycodes[] = new int[]
 	{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
 
 	// Gamepad key names are given by the custom gamepad API itself.
 	public static String gamepadKeyNames[] = new String[]
 	{
 		"", "", "", "", "", "", "", "", "", "", "", "", "", "",
-		"", "", "", "", "", "", "", "", ""
+		"", "", "", "", "", "", "", "", "", ""
 	};
 
 	// Array with key names that match to each array index above.
@@ -94,7 +95,8 @@ public class Config
 		"input_Num8", "input_Num9", "input_Num4", "input_Num5",
 		"input_Num6", "input_Num1", "input_Num2", "input_Num3",
 		"input_Star", "input_Num0", "input_Pound", "input_CLR",
-		"input_FastForward", "input_Screenshot", "input_PauseResume"
+		"input_FastForward", "input_Screenshot", "input_PauseResume",
+		"input_HideRestore"
 	};
 
 	public Runnable onChange;

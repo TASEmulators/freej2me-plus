@@ -191,14 +191,12 @@ public class Mobile
 	public static boolean skt = false;
 
 	/*
-	 * For AWTGUI, the input array is as follows:    [LeftSoft, RightSoft, Up, Left, Fire, Right, Down, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, 0, #, Fast-Forward, Screenshot]
-	 * Whereas in SDL it's:                          [Fire, 7, 9, #, LeftSoft, 0, RightSoft, 5, CLR, 1, 3, Up, Down, Left, Right, 2(todo), 4(todo), 6(todo), 8(todo)] // Special hotkeys are not implemented
-	 * While on Libretro, it's:                      [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1,  3.  *.  #,  2,  4,  6,  8,  5] // Fast-Forward, pause/resume and screenshot are frontend-governed
-	 * private static final int[] libretroKeycodes = {0,  1,    2,     3,    4, 5, 6,  7,     8,          9,     10, 11, 12, 13, 14, 15, 16, 17, 18}; // Doesn't need to be explicitly defined, it's the default array
+	 * For AWTGUI, the input array is as follows:    [LeftSoft, RightSoft, Up, Left, Fire, Right, Down, 1, 2, 3, 4, 5, 6, 7, 8, 9, *, 0, #, CLR, Fast-Forward, Screenshot, Pause/Resume, BG/FG]
+	 * While on Libretro, it's:                      [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1,  3,  *,  #,  2,  4,  6,  8,  5, CLR] // Fast-Forward, pause/resume, and screenshot are frontend-governed. BG/FG is not supported because we are out of gamepad keys
+	 * private static final int[] libretroKeycodes = {0,  1,    2,     3,    4, 5, 6,  7,     8,          9,     10, 11, 12, 13, 14, 15, 16, 17, 18, 19}; // Doesn't need to be explicitly defined, it's the default array
 	 */
-	private static final int[] awtguiKeycodes      = {9,  8,    0,     2,    7, 3, 1, 10,    14,         11,     15, 18, 16,  5, 17,  4, 12,  6, 13, 19, 20, 21, 22};
-	private static final int[] sdlguiKeycodes      = {7,  5,    4,    13,    9, 6, 8, 18,    19,         10,     11,  0,  1,  2,  3, 14, 15, 16, 17, 20};
-	private static final String[] keyArray = {"Up", "Down", "Left", "Right", "9", "7", "0", "Fire", "RightSoft", "LeftSoft", "1", "3", "*", "#", "2", "4", "6", "8", "5", "CLR", "Fast Forward", "Screenshot", "MIDlet Pause/Resume"};
+	private static final int[] awtguiKeycodes      = {9,  8,    0,     2,    7, 3, 1, 10,    14,         11,     15, 18, 16,  5, 17,  4, 12,  6, 13, 19, 20, 21, 22, 23};
+	private static final String[] keyArray = {"Up", "Down", "Left", "Right", "9", "7", "0", "Fire", "RightSoft", "LeftSoft", "1", "3", "*", "#", "2", "4", "6", "8", "5", "CLR", "Fast Forward", "Screenshot", "MIDlet Pause/Resume", "MIDlet FG/BG"};
 
 	// Set whether audio should be enabled or not. Can work around jars that crash FreeJ2ME due to audio
 	public static boolean sound = true;
@@ -216,6 +214,7 @@ public class Mobile
 	// Libretro flags
 	public static boolean isFastForwarding = false;
 	public static boolean isPaused = false;
+	public static boolean isHidden = false;
 	public static volatile float fastForwardMultiplier = 20.0f;
 	public static byte libretroRestartRequested = 0; // Set when FreeJ2ME has to be restarted in some way (often to change character encoding)
 	public static byte libretroEncodingRequested = 0; // Encoding FreeJ2ME requested to be re-opened with (check the restartApp() method below)
@@ -223,7 +222,7 @@ public class Mobile
 	// Vodafone has a use for this, but maybe this can be made into an actual viewport AA toggle
 	public static boolean isAAEnabled = false;
 
-	// Vibration support for Libretro and SDL
+	// Vibration support for Libretro
 	public static int vibrationDuration = 0;
 	public static int vibrationStrength = 0xFFFF;
 
@@ -384,11 +383,6 @@ public class Mobile
 	public static byte[] getMIDletResourceAsByteArray(String resource)
 	{
 		return platform.loader.getMIDletResourceAsByteArray(resource);
-	}
-
-	public static final int convertSDLKeycode(int keycode)
-	{
-		return sdlguiKeycodes[keycode]; // Cast the received sdl key to the correct value.
 	}
 
 	public static final int convertAWTKeycode(int keycode)

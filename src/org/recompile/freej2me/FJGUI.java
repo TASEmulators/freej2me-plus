@@ -196,11 +196,13 @@ public final class FJGUI
 		new JButton("A"),
 		new JButton("Space"),
 		new JButton("C"),
-		new JButton("X")
+		new JButton("X"),
+		new JButton("Z")
 	};
 
 	final JButton gamepadButtons[] = new JButton[]
 	{
+		new JButton(""),
 		new JButton(""),
 		new JButton(""),
 		new JButton(""),
@@ -235,20 +237,20 @@ public final class FJGUI
 		KeyEvent.VK_NUMPAD4, KeyEvent.VK_NUMPAD5, KeyEvent.VK_NUMPAD6,
 		KeyEvent.VK_NUMPAD1, KeyEvent.VK_NUMPAD2, KeyEvent.VK_NUMPAD3,
 		KeyEvent.VK_E, KeyEvent.VK_NUMPAD0, KeyEvent.VK_R, KeyEvent.VK_A,
-		KeyEvent.VK_SPACE, KeyEvent.VK_C, KeyEvent.VK_X
+		KeyEvent.VK_SPACE, KeyEvent.VK_C, KeyEvent.VK_X, KeyEvent.VK_Z
 	};
 
 	/* Gamepad inputs. Zeroed by default as these vary per joystick. */
 	public static int gamepadKeycodes[] = new int[]
 	{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
 
 	public static String gamepadKeyNames[] = new String[]
 	{
 		"", "", "", "", "", "", "", "", "", "", "", "", "", "",
-		"", "", "", "", "", "", "", "", ""
+		"", "", "", "", "", "", "", "", "", ""
 	};
 
 	// Container for input mappings that allows swapping between keyboard and gamepad
@@ -266,10 +268,11 @@ public final class FJGUI
 
 	final JMenuItem openMenuItem = new JMenuItem("Open JAR / JAD / KJX / MSD File");
 	final JMenuItem openSpMenuItem = new JMenuItem("Open DoJa SP / SP0 File");
-	final JMenuItem restartMenuItem = new JMenuItem("Restart Running Jar");
-	final JMenuItem closeMenuItem = new JMenuItem("Close Running Jar");
-	final JMenuItem scrShot = new JMenuItem("Take Screenshot (Ctrl+Alt+C)");
-	final JMenuItem pauseRes = new JMenuItem("Pause / Resume (Ctrl+Alt+X)");
+	final JMenuItem restartMenuItem = new JMenuItem("Restart Running App");
+	final JMenuItem closeMenuItem = new JMenuItem("Close Running App");
+	final JMenuItem scrShot = new JMenuItem("Take Screenshot");
+	final JMenuItem pauseRes = new JMenuItem("Pause / Resume");
+	final JMenuItem bgFgMenuItem = new JMenuItem("Move App to BG/FG");
 	final JMenuItem exitMenuItem = new JMenuItem("Exit FreeJ2ME");
 	final JMenuItem mapInputs = new JMenuItem("Manage Inputs");
 	final JMenuItem compatSettingsMenu = new JMenuItem("Compatibility Settings");
@@ -698,6 +701,7 @@ public final class FJGUI
 		openSpMenuItem.setActionCommand("OpenSp");
 		restartMenuItem.setActionCommand("RestartNow");
 		closeMenuItem.setActionCommand("Close");
+		bgFgMenuItem.setActionCommand("MoveBGFG");
 		scrShot.setActionCommand("Screenshot");
 		pauseRes.setActionCommand("PauseResume");
 		exitMenuItem.setActionCommand("Exit");
@@ -718,6 +722,7 @@ public final class FJGUI
 		openSpMenuItem.addActionListener(menuItemListener);
 		restartMenuItem.addActionListener(menuItemListener);
 		closeMenuItem.addActionListener(menuItemListener);
+		bgFgMenuItem.addActionListener(menuItemListener);
 		scrShot.addActionListener(menuItemListener);
 		pauseRes.addActionListener(menuItemListener);
 		exitMenuItem.addActionListener(menuItemListener);
@@ -866,7 +871,7 @@ public final class FJGUI
 		hotkeyHeader.add(new JLabel("Hotkeys"));
 		hotkeyHeader.add(new JLabel("(Ctrl+Alt+*)"));
 
-		JPanel hotkeyGrid = new JPanel(new GridLayout(2, 3, 2, 2));
+		JPanel hotkeyGrid = new JPanel(new GridLayout(4, 3, 2, 2));
 		hotkeyGrid.setMaximumSize(new Dimension(260, 50));
 
 		hotkeyGrid.add(new JLabel("Fast-Fwd", SwingConstants.CENTER));
@@ -876,6 +881,12 @@ public final class FJGUI
 		hotkeyGrid.add(buttons[20]);
 		hotkeyGrid.add(buttons[21]);
 		hotkeyGrid.add(buttons[22]);
+
+		hotkeyGrid.add(new JLabel("MIDP FG/BG", SwingConstants.CENTER));
+		hotkeyGrid.add(new JLabel(" ", SwingConstants.CENTER));
+		hotkeyGrid.add(new JLabel(" ", SwingConstants.CENTER));
+
+		hotkeyGrid.add(buttons[23]);
 
 		// Stack sub-panels
 		container.add(phonePanel);
@@ -1174,6 +1185,7 @@ public final class FJGUI
 	private void buildMenuBar()
 	{
 		closeMenuItem.setEnabled(false);
+		bgFgMenuItem.setEnabled(false);
 		restartMenuItem.setEnabled(false);
 		pauseRes.setEnabled(false);
 		scrShot.setEnabled(false);
@@ -1186,6 +1198,7 @@ public final class FJGUI
 		fileMenu.addSeparator();
 		fileMenu.add(scrShot);
 		fileMenu.add(pauseRes);
+		fileMenu.add(bgFgMenuItem);
 		fileMenu.addSeparator();
 		fileMenu.add(showPlayer);
 		fileMenu.addSeparator();
@@ -1560,6 +1573,7 @@ public final class FJGUI
 			else if(command.equals("Close")) { FreeJ2ME.closeApp(); }
 			else if(command.equals("Screenshot")) { ScreenShot.takeScreenshot(false); }
 			else if(command.equals("PauseResume")) { MobilePlatform.pauseResumeApp(); }
+			else if(command.equals("MoveBGFG")) { MobilePlatform.hideRestoreApp(); }
 			else if(command.equals("Exit")) { System.exit(0); }
 			else if(command.equals("AboutMenu")) { swingDialogs[1].setLocationRelativeTo(main); swingDialogs[1].setVisible(true); }
 			else if(command.equals("CloseAboutMenu")) { swingDialogs[1].setVisible(false); }
@@ -1756,6 +1770,7 @@ public final class FJGUI
 		optionMenu.setEnabled(true);
 		debugMenu.setEnabled(true);
 		closeMenuItem.setEnabled(true);
+		bgFgMenuItem.setEnabled(true);
 		restartMenuItem.setEnabled(true);
 		pauseRes.setEnabled(true);
 		scrShot.setEnabled(true);

@@ -84,7 +84,7 @@ public class MobilePlatform
 	public volatile static int doJaKeyState = 0;
 
 	// MobilePlatform will handle the input repeats as well
-	public static boolean[] pressedKeys = new boolean[23];
+	public static boolean[] pressedKeys = new boolean[24];
 
 	public static Runnable painter, postDraw;
 
@@ -195,6 +195,45 @@ public class MobilePlatform
 		}
 
 		painter.run();
+	}
+
+	public static void hideRestoreApp()
+	{
+		if(!Mobile.isDoJa)
+		{
+			displayable = Mobile.getDisplay().getCurrent();
+			if (!(displayable instanceof Canvas)) { return; }
+
+			if(!Mobile.isHidden)
+			{
+				((Canvas) displayable).hideNotify();
+
+				try { Mobile.midlet.callPauseApp(); }
+				catch (Exception e) { e.printStackTrace(); }
+
+				Mobile.isHidden = true;
+
+				painter.run();
+				PlatformGraphics g = lcdFrontbuffer.getMIDPGraphics();
+				g.setAlphaRGB(0x88ffffff);
+				g.fillRect(0, 0, lcdWidth, lcdHeight);
+			}
+			else
+			{
+				Mobile.isHidden = false;
+
+				((Canvas) displayable).showNotify();
+
+				try { Mobile.midlet.callStartApp(); }
+				catch (Exception e) { e.printStackTrace(); }
+
+				painter.run();
+			}
+		}
+		else
+		{
+			// TODO: DoJa background/foreground
+		}
 	}
 
 	public static void keyPressed(final int keycode)
