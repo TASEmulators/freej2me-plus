@@ -418,7 +418,7 @@ public class Form extends Screen
 
 			// paint...
 
-			boolean isSelected = (t == focusedItem && items.size() > 1);
+			boolean isSelected = (t == focusedItem);
 			int vGap = 1; // Add a small space between items
 			itemHeight = item.getContentHeight(itemContentWidth);
 

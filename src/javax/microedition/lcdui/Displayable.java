@@ -124,7 +124,7 @@ public abstract class Displayable
 		int restoreX = graphics.getTranslateX(), restoreY = graphics.getTranslateY();
 		graphics.translate(-restoreX, -restoreY);
 
-		// Draw Background:
+		// Draw Background
 		LCDUIRenderer.fillBackground(graphics, width, height);
 
 		String currentTitle = listCommands ? "Options" : title;
@@ -143,9 +143,6 @@ public abstract class Displayable
 		int contentHeight = height - titleHeight - commandsBarHeight - 1;
 		int currentY = titleHeight;
 
-		// Draw Title:
-		LCDUIRenderer.drawTitleBar(graphics, width, title, titleHeight, Mobile.lcduiBGColor);
-
 		Command itemCommand = (this instanceof Form) ? ((Form)this).getItemCommand() : null;
 
 		// If we aren't listing commands, set the clip region to be between the
@@ -153,36 +150,6 @@ public abstract class Displayable
 		graphics.setClip(0, currentY + titlePadding, width, contentHeight);
 		String status = listCommands ? null : renderScreen(0, currentY+titlePadding, width, contentHeight);
 		graphics.setClip(0, 0, graphics.getCanvas().getWidth(), graphics.getCanvas().getHeight());
-
-		// Draw the ticker
-		if (ticker != null)
-		{
-			int tickerY = height - commandsBarHeight - tickerHeight+2;
-			LCDUIRenderer.drawTicker(graphics, width, ticker.getString(), tickerHeight, tickerY, ticker.getScrollOffset(), Mobile.lcduiBGColor);
-		}
-		// Then draw te command bar
-		boolean isThreeItems = (!listCommands && commands.size() == 2);
-
-		// Standardize OK/SELECT/etc commands on the left soft key, and
-		// CANCEL/EXIT/STOP/etc ones on the right soft key whenever we have two
-		// commands.
-		ArrayList<Command> displayCommands = commands;
-		if (!listCommands && commands.size() == 2)
-		{
-			Command c0 = commands.get(0);
-			Command c1 = commands.get(1);
-			if (isBackCommand(c0) && !isBackCommand(c1))
-			{
-				swapped.clear();
-				swapped.add(c1);
-				swapped.add(c0);
-				displayCommands = swapped;
-			}
-		}
-
-		LCDUIRenderer.drawCommandBar(graphics, status, !listCommands ? displayCommands : null,
-			itemCommand, width, height, commandsBarHeight, 1.0f,
-		Mobile.lcduiBGColor, isThreeItems);
 
 		if (listCommands) // Render Commands
 		{
@@ -250,6 +217,42 @@ public abstract class Displayable
 			}
 		}
 
+		// After drawing the inner content, draw the overlays, which are the title, ticker, cmd bar.
+
+		// Draw Title
+		LCDUIRenderer.drawTitleBar(graphics, width, title, titleHeight, Mobile.lcduiBGColor);
+		
+		// Draw the ticker
+		if (ticker != null)
+		{
+			int tickerY = height - commandsBarHeight - tickerHeight+2;
+			LCDUIRenderer.drawTicker(graphics, width, ticker.getString(), tickerHeight, tickerY, ticker.getScrollOffset(), Mobile.lcduiBGColor);
+		}
+		// Then draw the command bar
+		boolean isThreeItems = (!listCommands && commands.size() == 2);
+
+		// Standardize OK/SELECT/etc commands on the left soft key, and
+		// CANCEL/EXIT/STOP/etc ones on the right soft key whenever we have two
+		// commands.
+		ArrayList<Command> displayCommands = commands;
+		if (!listCommands && commands.size() == 2)
+		{
+			Command c0 = commands.get(0);
+			Command c1 = commands.get(1);
+			if (isBackCommand(c0) && !isBackCommand(c1))
+			{
+				swapped.clear();
+				swapped.add(c1);
+				swapped.add(c0);
+				displayCommands = swapped;
+			}
+		}
+
+		LCDUIRenderer.drawCommandBar(graphics, status, !listCommands ? displayCommands : null,
+			itemCommand, width, height, commandsBarHeight, 1.0f,
+		Mobile.lcduiBGColor, isThreeItems);
+
+		// Restore the graphics translation and flush to the screen, we're done.
 		graphics.translate(restoreX, restoreY);
 		Mobile.getPlatform().flushGraphics(platformImage, 0, 0, width, height);
 
