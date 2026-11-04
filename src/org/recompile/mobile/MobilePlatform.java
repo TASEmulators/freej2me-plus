@@ -59,6 +59,7 @@ public class MobilePlatform
 	// Frame Limit Variables
 	private static volatile long lastRenderTime = System.nanoTime();
 	static volatile long requiredFrametime = 0;
+	static volatile boolean hasLimited = false; // For when yield throttles execution speed, so we don't need to limit FPS.
 
 	// Whether the user has toggled the ShowFPS option
 	public static String showFPS = "Off";
@@ -901,7 +902,11 @@ public class MobilePlatform
 				if(timeToUnfocus <= 0) { focusCommandBar = false; }
 			}
 
-			limitFps();
+			synchronized(this)
+			{
+				if(!hasLimited) { limitFps(); }
+				hasLimited = false;
+			}
 		}
 	}
 

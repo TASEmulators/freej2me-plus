@@ -109,6 +109,10 @@ public class MIDletEnhancements
 		// Also park yield when paused.
 		while (Mobile.isPaused) { Thread.sleep(50); }
 
-		Mobile.getPlatform().limitFps();
+		synchronized(Mobile.getPlatform())
+		{
+			Mobile.getPlatform().hasLimited = true;
+			Mobile.getPlatform().limitFps();
+		}
 	}
 }
