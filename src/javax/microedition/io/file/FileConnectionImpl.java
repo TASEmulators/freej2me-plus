@@ -64,7 +64,10 @@ public class FileConnectionImpl implements FileConnection
 		try { path = URLDecoder.decode(path, Mobile.textEncoding); }
 		catch (Exception e) { }
 
-		return new File(FileSystemRegistry.SYSTEM_ROOT, path);
+		// If the path already contains the system root, we already have the
+		// parent argument baked in, otherwise include it explicitly.
+		return new File(path.contains(FileSystemRegistry.SYSTEM_ROOT) ? "" :
+			FileSystemRegistry.SYSTEM_ROOT, path);
 	}
 
 	public boolean isOpen() { return open; }
