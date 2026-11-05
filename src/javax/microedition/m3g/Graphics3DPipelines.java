@@ -258,8 +258,8 @@ class Graphics3DPipelines
 			{
 				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
 				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
-				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
-				int outA = ((bg >>> 24) * (fg >>> 24) + (bg >>> 24)) >> 8;
+				int outB = (( bg       & 0xFF)  * ( fg       & 0xFF) + 128) >> 8;
+				int outA = ((bg >>> 24)         * (fg >>> 24)        + 128) >> 8;
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
@@ -269,14 +269,11 @@ class Graphics3DPipelines
 		{
 			public int blend(int bg, int fg, int texBlendColor)
 			{
-				int outR = ((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF);
-				int outG = ((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF);
-				int outB = ( bg        & 0xFF) * ( fg        & 0xFF);
+				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
+				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
+				int outB = (( bg       & 0xFF) * ( fg       & 0xFF) + 128) >> 8;
 
-				return (bg & 0xFF000000)
-					 | ((outR & 0xFF00) << 8)
-					 |  (outG & 0xFF00)
-					 |  (outB >> 8);
+				return (bg & 0xFF000000) | (outR << 16) | (outG << 8) | outB;
 			}
 		};
 	}
