@@ -1700,17 +1700,16 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				}
 			}
 
-			for (int i = 0; i < intersectionCount - 1; i++)
+			for (int i = 1; i < intersectionCount; i++)
 			{
-				for (int j = 0; j < intersectionCount - 1 - i; j++)
+				int key = intersections[i];
+				int j = i - 1;
+				while (j >= 0 && intersections[j] > key)
 				{
-					if (intersections[j] > intersections[j + 1])
-					{
-						int temp = intersections[j];
-						intersections[j] = intersections[j + 1];
-						intersections[j + 1] = temp;
-					}
+					intersections[j + 1] = intersections[j];
+					j--;
 				}
+				intersections[j + 1] = key;
 			}
 
 			int rowOffset = (y + translateY) * canvasWidth;
@@ -1728,7 +1727,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 					int pixelIdx = rowOffset + xStart;
 					if (isOpaque)
 					{
-						for (int x = xStart; x <= xEnd; x++) { canvasData[pixelIdx++] = argbColor; }
+						java.util.Arrays.fill(canvasData, pixelIdx, pixelIdx + (xEnd - xStart + 1), argbColor);
 					}
 					else
 					{
