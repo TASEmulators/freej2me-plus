@@ -19,10 +19,75 @@ package net.rim.device.api.lcdui.game;
 
 import javax.microedition.lcdui.game.GameCanvas;
 import javax.microedition.media.Controllable;
+import javax.microedition.media.Control;
+import net.rim.device.api.lcdui.control.DirectionControl;
+import net.rim.device.api.lcdui.control.MediaBehaviourControl;
+import net.rim.device.api.lcdui.control.VirtualKeyboardControl;
+import net.rim.device.api.ui.TouchEvent;
+import org.recompile.mobile.Mobile;
 
-
-public abstract class BlackBerryGameCanvas extends GameCanvas implements Controllable {
-	public BlackBerryGameCanvas(boolean suppressKeyEvents) {
+public abstract class BlackBerryGameCanvas extends GameCanvas implements Controllable
+{
+	protected Control[] controls;
+	
+	public BlackBerryGameCanvas(boolean suppressKeyEvents)
+	{ 
 		super(suppressKeyEvents);
+		controls = new Control[3];
+		controls[0] = new directionControl();
+		controls[1] = new mediaBehaviourControl();
+		controls[2] = new virtualKeyboardControl();
+	}
+
+	public Control getControl(String controlType)
+	{
+		if(controlType.contains("DirectionControl"))       { return this.controls[0]; }
+		if(controlType.contains("MediaBehaviourControl"))  { return this.controls[1]; }
+		if(controlType.contains("VirtualKeyboardControl")) { return this.controls[2]; }
+
+		return null;
+	}
+
+	public Control[] getControls()
+	{
+		return this.controls;
+	}
+
+	public void touchEvent(TouchEvent message)
+	{
+		// TODO
+	}
+
+	public class directionControl implements DirectionControl
+	{
+		private int directions = 0;
+		
+		public int getOrientation()
+		{
+			if(Mobile.getPlatform().lcdWidth == Mobile.getPlatform().lcdHeight) { return DirectionControl.ORIENTATION_SQUARE; }
+			else if(Mobile.getPlatform().lcdWidth > Mobile.getPlatform().lcdHeight) { return DirectionControl.ORIENTATION_LANDSCAPE; }
+
+			return DirectionControl.ORIENTATION_PORTRAIT;
+		}
+    
+		public void setAcceptableScreenDirections(int directions) { this.directions = directions; }
+	}
+
+	public class mediaBehaviourControl implements MediaBehaviourControl
+	{
+		private boolean mediaEnabled = Mobile.midlet.getAppProperty("RIM-MIDlet-MediaPlayerModeEnabled") != null;
+		
+		public void setMediaPlayerModeEnabled(boolean enabled) { this.mediaEnabled = enabled; }
+		
+		public boolean isMediaPlayerModeEnabled() { return this.mediaEnabled; }
+	}
+
+	public class virtualKeyboardControl implements VirtualKeyboardControl
+	{
+		private int kbVisibility = VirtualKeyboardControl.KEYBOARD_HIDE;
+		
+		public void setKeyboardVisibility(int visibility) { this.kbVisibility = visibility; }
+		
+		public int getKeyboardVisibility() { return this.kbVisibility; }
 	}
 }
