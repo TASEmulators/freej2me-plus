@@ -1737,7 +1737,12 @@ public class Graphics3D {
 					break;
 				}
 				case COMMAND_CLIP:
-					setClip(commandList[idx++], commandList[idx++], commandList[idx++], commandList[idx++]);
+					int x1 = commandList[idx++];
+					int y1 = commandList[idx++];
+					int x2 = commandList[idx++];
+					int y2 = commandList[idx++];
+					
+					setClip(x1, y1, x2 - x1, y2 - y1);
 					break;
 				case COMMAND_AMBIENT_LIGHT:
 					g3dLight.ambIntensity = commandList[idx++];
