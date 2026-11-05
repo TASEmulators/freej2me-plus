@@ -201,26 +201,12 @@ public abstract class Displayable
 					LCDUIRenderer.drawScrollIndicator(graphics, width / 2 - 2, currentY + contentHeight + 1, false);
 				}
 			}
-
-			currentY += contentHeight;
-			graphics.setColor(Mobile.lcduiTextColor);
-
-			int startY = height - commandsBarHeight;
-
-			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))/2;
-			graphics.drawString("Okay", (width / 4) - textCenter, startY, 0);
-
-			if(hasBackCommand())
-			{
-				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back"))/2;
-				graphics.drawString("Back", (3 * width / 4) - textCenter, startY, 0);
-			}
 		}
 
 		// After drawing the inner content, draw the overlays, which are the title, ticker, cmd bar.
 
 		// Draw Title
-		LCDUIRenderer.drawTitleBar(graphics, width, title, titleHeight, Mobile.lcduiBGColor);
+		LCDUIRenderer.drawTitleBar(graphics, width, currentTitle, titleHeight, Mobile.lcduiBGColor);
 		
 		// Draw the ticker
 		if (ticker != null)
@@ -229,7 +215,7 @@ public abstract class Displayable
 			LCDUIRenderer.drawTicker(graphics, width, ticker.getString(), tickerHeight, tickerY, ticker.getScrollOffset(), Mobile.lcduiBGColor);
 		}
 		// Then draw the command bar
-		boolean isThreeItems = (!listCommands && commands.size() == 2);
+		boolean isThreeItems = (!listCommands && commands.size() >= 2);
 
 		// Standardize OK/SELECT/etc commands on the left soft key, and
 		// CANCEL/EXIT/STOP/etc ones on the right soft key whenever we have two
@@ -251,6 +237,24 @@ public abstract class Displayable
 		LCDUIRenderer.drawCommandBar(graphics, status, !listCommands ? displayCommands : null,
 			itemCommand, width, height, commandsBarHeight, 1.0f,
 		Mobile.lcduiBGColor, isThreeItems);
+
+		// Command list, when opened, only has two fixed commands
+		if(listCommands)
+		{
+			currentY += contentHeight;
+			graphics.setColor(Mobile.lcduiTextColor);
+
+			int startY = height - commandsBarHeight;
+
+			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))/2;
+			graphics.drawString("Okay", (width / 4) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+
+			if(hasBackCommand())
+			{
+				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back"))/2;
+				graphics.drawString("Back", (3 * width / 4) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
+			}
+		}
 
 		// Restore the graphics translation and flush to the screen, we're done.
 		graphics.translate(restoreX, restoreY);
@@ -300,7 +304,7 @@ public abstract class Displayable
 
 	public void doRightCommand()
 	{
-		if(commands.size()>1 && commands.size()<=2)
+		if(commands.size() == 2)
 		{
 			doCommand(getRightCommandIndex());
 			currentCommand = 0;
@@ -311,6 +315,11 @@ public abstract class Displayable
 			{
 				if(isBackCommand(commands.get(i))) // Find the back command
 				{
+					if(listCommands)
+					{
+						listCommands = false;
+						return;
+					}
 					doCommand(i);
 					currentCommand = 0;
 					return;

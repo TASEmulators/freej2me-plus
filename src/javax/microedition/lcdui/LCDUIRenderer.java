@@ -145,7 +145,17 @@ public class LCDUIRenderer
 		{
 			// Options view, opens the command list.
 			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Options")) / 2;
-			graphics.drawString("Options", (threeItems ? (width / 6) : (width / 4)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+			graphics.drawString("Options",
+				(threeItems ? (width / 6) : (width / 4)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back")) / 2;
+			graphics.drawString("Back",
+				(threeItems ? (5 * width / 6) : (3 * width / 4)) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
+
+			if (status != null && itemCommand == null)
+			{
+				graphics.drawString(status != null ? status : "", width / 2, startY, Graphics.TOP | Graphics.HCENTER);
+			}
 		}
 
 		if (itemCommand != null)
