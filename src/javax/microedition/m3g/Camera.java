@@ -129,14 +129,15 @@ public class Camera extends Node
 
 		// For perspective, we try to keep depth precision in check.
 		// For that, we make sure that the ratio between near and far
-		// is never more than 8192:1, which gives us enough precision to
+		// is never more than 32767:1, which gives us enough precision to
 		// handle a large variety of scenes, and apps that set ridiculous
 		// ranges such as 0.1-50000 (500.000 : 1 ratio!) only seem to benefit
 		// positively from this as well.
 		//
 		// Cases where near > far are not treated, but i don't think any
 		// app ever used such a thing.
-		this.params[2] = M3GMath.max(near, far * 0.0001220703125f); // 1 / 8192
+		far = M3GMath.min(far, 50000.0f); // Clamp far to, at max, 50000. Fixes more instances of depth issues.
+		this.params[2] = M3GMath.max(near, far * 0.0000305184f); // ~ 1 / 32767
 		this.params[3] = far;
 		this.dirtyMatrix = true;
 	}
