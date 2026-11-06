@@ -506,7 +506,8 @@ public class RecordStore
 					}
 				}
 
-				return outList.toArray(new String[0]);
+				// If there are no records, this must return null.
+				return outList.size() > 0 ? outList.toArray(new String[0]) : null;
 			}
 		}
 		catch (Exception e) { e.printStackTrace(); }
