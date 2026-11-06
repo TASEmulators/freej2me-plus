@@ -52,6 +52,9 @@ import org.objectweb.asm.Opcodes;
 import com.nttdocomo.ui.IApplication;
 
 import javax.microedition.content.Registry;
+
+import javax.microedition.io.file.FileSystemRegistry;
+
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 
@@ -184,6 +187,13 @@ public class MIDletLoader extends URLClassLoader
 		System.setProperty("wireless.messaging.sms.smsc", "+8613800010000");
 		System.setProperty("wireless.messaging.version", "1.0");
 
+		// Nokia specifics
+		System.setProperty("fileconn.dir.tones", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "tones/");
+		System.setProperty("fileconn.dir.photos", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "photos/");
+		System.setProperty("fileconn.dir.music", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "music/");
+		System.setProperty("fileconn.dir.private", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "private/");
+		System.setProperty("fileconn.dir.memorycard", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "extsd/");
+
 		// SKT stuff
 		System.setProperty("com.xce.wipi.version", "1.0.0");
 		System.setProperty("m.SK_VM", "20");
@@ -239,6 +249,13 @@ public class MIDletLoader extends URLClassLoader
 		properties.put("wireless.messaging.mms.mmsc", "http://abc.stubfreej2meplus.net");
 		properties.put("wireless.messaging.sms.smsc", "+8613800010000");
 		properties.put("wireless.messaging.version", "1.0");
+
+		// Nokia specifics
+		properties.put("fileconn.dir.tones", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "tones/");
+		properties.put("fileconn.dir.photos", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "photos/");
+		properties.put("fileconn.dir.music", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "music/");
+		properties.put("fileconn.dir.private", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "private/");
+		properties.put("fileconn.dir.memorycard", "file:///" + FileSystemRegistry.SYSTEM_ROOT + "extsd/");
 
 		// SKT stuff
 		properties.put("com.xce.wipi.version", "1.0.0");
