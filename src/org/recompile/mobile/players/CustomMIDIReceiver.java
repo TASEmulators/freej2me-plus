@@ -31,7 +31,6 @@ public class CustomMIDIReceiver implements Receiver
 
 	public void setVolMult(int val) { this.volumeMultiplier = val / 100.0f; }
 
-	@Override
 	public void send(MidiMessage message, long time)
 	{
 		if (message instanceof ShortMessage)
@@ -63,6 +62,5 @@ public class CustomMIDIReceiver implements Receiver
 		target.send(message, time);
 	}
 
-	@Override
 	public void close() { target.close(); }
 }
