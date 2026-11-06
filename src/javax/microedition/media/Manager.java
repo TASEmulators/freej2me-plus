@@ -43,6 +43,7 @@ import javax.microedition.media.protocol.DataSource;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformPlayer;
 import org.recompile.mobile.players.BasicPlayer;
+import org.recompile.mobile.players.CustomMIDIReceiver;
 import org.recompile.mobile.JavaxPlatformPlayer;
 import org.recompile.mobile.SiemensPlatformPlayer;
 
@@ -60,7 +61,7 @@ public class Manager
 	public static Synthesizer[] exclusiveSynths;
 	public static Sequencer[] exclusiveSequencers;
 	public static Transmitter[] exclusiveTransmitters;
-	public static Receiver[] exclusiveReceivers;
+	public static CustomMIDIReceiver[] exclusiveReceivers;
 	public static byte synthIdxInUse = 0; // We'll never have more than 8 exclusive synths, 8 bits is fine.
 	// Track which players were actually playing when the pause command hit
 	public static volatile ArrayList<BasicPlayer> runningPlayers = new ArrayList<BasicPlayer>();
@@ -435,17 +436,16 @@ public class Manager
 			exclusiveSynths = new Synthesizer[Mobile.numExclusiveSynths];
 			exclusiveSequencers = new Sequencer[Mobile.numExclusiveSynths];
 			exclusiveTransmitters = new Transmitter[Mobile.numExclusiveSynths];
-			exclusiveReceivers = new Receiver[Mobile.numExclusiveSynths];
+			exclusiveReceivers = new CustomMIDIReceiver[Mobile.numExclusiveSynths];
 
 			for(int i = 0; i < Mobile.numExclusiveSynths; i++)
 			{
 				exclusiveSynths[i] = prepareSynthesizer();
+				
 				exclusiveSequencers[i] = MidiSystem.getSequencer(false);
-
 				exclusiveSequencers[i].open();
-				exclusiveSequencers[i].getTransmitter().setReceiver(exclusiveSynths[i].getReceiver());
 
-				exclusiveReceivers[i] = exclusiveSynths[i].getReceiver();
+				exclusiveReceivers[i] = new CustomMIDIReceiver(exclusiveSynths[i].getReceiver());
 				exclusiveTransmitters[i] = exclusiveSequencers[i].getTransmitter();
 				exclusiveTransmitters[i].setReceiver(exclusiveReceivers[i]);
 			}

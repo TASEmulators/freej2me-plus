@@ -24,7 +24,6 @@ import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
-import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
@@ -50,7 +49,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	// For SMAF, the Sequenced data will dictate player events
 	public Sequencer midi;
 	public Synthesizer synthesizer;
-	public Receiver receiver;
+	public CustomMIDIReceiver receiver;
 
 	private int synthIdx = -1;
 	private boolean synthReserved = false;

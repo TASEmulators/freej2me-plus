@@ -25,7 +25,6 @@ import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Synthesizer;
@@ -48,7 +47,7 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 
 	private int synthIdx = -1;
 	private boolean synthReserved = false;
-	public Receiver receiver;
+	public CustomMIDIReceiver receiver;
 
 	private volatile int numLoops = 0;
 	private volatile boolean isExplicitStop = false;

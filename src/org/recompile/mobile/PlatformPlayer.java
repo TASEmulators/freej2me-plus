@@ -977,9 +977,11 @@ public class PlatformPlayer implements Player
 			{
 				if (player instanceof MIDIPlayer)
 				{
-					volumeSysEx[6] = isMuted() ? 0 : (byte) (volume * 127 / 100); // Convert to MIDI volume range
+					volumeSysEx[6] = isMuted() ? 0 : (byte) (volume * 127 / 100);
 					sysexMessage.setMessage(volumeSysEx, volumeSysEx.length);
-					((MIDIPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
+					CustomMIDIReceiver receiver = ((MIDIPlayer)player).receiver;
+					receiver.send(sysexMessage, -1); // Send the volume change message
+					receiver.setVolMult(volume); // Setup the override for in-file volume changes.
 				}
 				else if(player instanceof WAVPlayer)
 				{
@@ -997,7 +999,9 @@ public class PlatformPlayer implements Player
 					// controls the PCM playback too.
 					volumeSysEx[6] = isMuted() ? 0 : (byte) (volume * 127 / 100);
 					sysexMessage.setMessage(volumeSysEx, volumeSysEx.length);
-					((SMAFPlayer)player).receiver.send(sysexMessage, -1); // Send the volume change message
+					CustomMIDIReceiver receiver = ((SMAFPlayer)player).receiver;
+					receiver.send(sysexMessage, -1); // Send the volume change message
+					receiver.setVolMult(volume); // Setup the override for in-file volume changes.
 
 					FloatControl volumeControl;
 					float dB = isMuted() ? -80.0f : -40.0f + ((volume / 100.0f) * (40.0f));
