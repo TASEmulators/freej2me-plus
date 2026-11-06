@@ -941,11 +941,8 @@ public class MobilePlatform
 				if(timeToUnfocus <= 0) { focusCommandBar = false; }
 			}
 
-			synchronized(this)
-			{
-				if(!hasLimited) { limitFps(); }
-				hasLimited = false;
-			}
+			if(!hasLimited) { limitFps(); }
+			hasLimited = false;
 		}
 	}
 
