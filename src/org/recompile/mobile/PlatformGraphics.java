@@ -2124,18 +2124,17 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			case com.nttdocomo.opt.ui.Graphics2.OP_REPL: // Also used by MIDP, which does this operation by default (SRC_OVER)
 			{
 				if (srcAlpha == 255) { return srcPixel; }
-
+				
 				final int invAlpha = 255 - srcAlpha;
+				final int newAlpha = Math.min(255, srcAlpha + (destPixel >>> 24));
 
-				final int srcRB  = srcPixel & 0x00FF00FF;
-				final int destRB = destPixel & 0x00FF00FF;
-				final int blendedRB = (((srcRB * srcAlpha + destRB * invAlpha) >> 8) & 0x00FF00FF);
+				final int blendedRB = ((( (srcPixel & 0x00FF00FF) * srcAlpha + 
+					(destPixel & 0x00FF00FF) * invAlpha ) >> 8) & 0x00FF00FF);
 
-				int srcAG = (srcPixel >>> 8) & 0x00FF00FF;
-				int destAG = (destPixel >>> 8) & 0x00FF00FF;
-				int blendedAG = (((srcAG * srcAlpha + destAG * invAlpha)) & 0xFF00FF00);
+				final int blendedG  = ((( (srcPixel & 0x0000FF00) * srcAlpha + 
+					(destPixel & 0x0000FF00) * invAlpha ) >> 8) & 0x0000FF00);
 
-				return blendedAG | blendedRB;
+				return (newAlpha << 24) | blendedRB | blendedG;
 			}
 			// ADD and SUB never take alpha into consideration for RGB values
 			case com.nttdocomo.opt.ui.Graphics2.OP_ADD:
