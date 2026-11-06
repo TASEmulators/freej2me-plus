@@ -108,7 +108,7 @@ public class RecordStore
 		try
 		{
 			// For ISO-8859-1 encodings, we'll use UTF-8 for save paths, helps with chinese and special characters
-			rmsPath = new String((Mobile.getPlatform().dataPath + "./rms/"+suitename).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
+			rmsPath = new String((Mobile.getPlatform().dataPath + "./rms/"+cleanDirName(suitename)).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
 			rmsFile = rmsPath+"/"+basename+".rms";
 		}
 		catch (UnsupportedEncodingException e) { } // Shouldn't really happen
@@ -330,7 +330,7 @@ public class RecordStore
 			// Just like for saving, we use UTF-8 ONLY IF Mobile encoding is ISO_8859_1, handling Shift_JIS and EUC_KR as normal.
 			String encoding = System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding;
 
-			String folderPath = Mobile.getPlatform().dataPath + "./rms/" + Mobile.getPlatform().loader.suitename;
+			String folderPath = Mobile.getPlatform().dataPath + "./rms/" + cleanDirName(Mobile.getPlatform().loader.suitename);
 			folderPath = new String(folderPath.getBytes(System.getProperty("file.encoding")), encoding);
 
 			File folder = new File(folderPath);
@@ -481,7 +481,7 @@ public class RecordStore
 		{
 			try
 			{
-				rmsPath = new String((Mobile.getPlatform().dataPath + "./rms/"+Mobile.getPlatform().loader.suitename).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
+				rmsPath = new String((Mobile.getPlatform().dataPath + "./rms/"+cleanDirName(Mobile.getPlatform().loader.suitename)).getBytes(System.getProperty("file.encoding")), System.getProperty("file.encoding").equals(Mobile.supportedEncodings[Mobile.ISO_8859_1]) ? "UTF-8" : Mobile.textEncoding);
 				File rmsDir = new File(rmsPath);
 				if (!rmsDir.exists()) { rmsDir.mkdirs(); }
 			}
@@ -1129,4 +1129,6 @@ public class RecordStore
 	}
 
 	public static final int ownerHashcode(String owner, String name) { return name.hashCode() ^ owner.hashCode(); }
+
+	public static final String cleanDirName(String dir) { return dir.replaceAll("[\\\\/:*?\"<>|]", "_"); }
 }
