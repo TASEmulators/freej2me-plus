@@ -36,8 +36,6 @@ import javax.microedition.midlet.MIDlet;
 
 import org.recompile.freej2me.Config;
 
-import com.nttdocomo.ui.IApplication;
-
 /*
 
 	Mobile
@@ -66,7 +64,7 @@ public class Mobile
 
 	// Used mostly for pause/resume requests
 	public static MIDlet midlet;
-	public static IApplication iAppli;
+	public static String[] scratchPadSizes;
 
 	public static boolean isDoJa = false;
 	public static boolean isKDDI = false;

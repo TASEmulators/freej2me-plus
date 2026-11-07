@@ -145,7 +145,7 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 				int prevRegionsSize = 0;
 				for (int i = 0; i < spIndex; i++)
 				{
-					prevRegionsSize += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+					prevRegionsSize += Integer.parseInt(Mobile.scratchPadSizes[i]);
 				}
 
 				// If pos is still out of bounds, map it into the local region space
@@ -200,7 +200,7 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 				int prevRegionsSize = 0;
 				for (int i = 0; i < spIndex; i++)
 				{
-					prevRegionsSize += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+					prevRegionsSize += Integer.parseInt(Mobile.scratchPadSizes[i]);
 				}
 
 				// If pos is still out of bounds, map it into the local region space
@@ -278,11 +278,11 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 			int prevSizes = 0;
 			for (int i = 0; i < spIndex; i++)
 			{
-				prevSizes += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+				prevSizes += Integer.parseInt(Mobile.scratchPadSizes[i]);
 			}
 
 			int spDataStart = prevSizes + 64;
-			int spDataEnd = spDataStart + Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex]);
+			int spDataEnd = spDataStart + Integer.parseInt(Mobile.scratchPadSizes[spIndex]);
 			buffer.write(data, spDataStart, spDataEnd-spDataStart);
 			return buffer.toByteArray();
 		}
@@ -304,11 +304,11 @@ public class ScratchPadConnection implements javax.microedition.io.StreamConnect
 				int prevSizes = 0;
 				for (int i = 0; i < spIndex; i++)
 				{
-					prevSizes += Integer.parseInt(Mobile.iAppli.scratchPadSizes[i]);
+					prevSizes += Integer.parseInt(Mobile.scratchPadSizes[i]);
 				}
 
 				int spDataStart = prevSizes;
-				int spDataEnd = spDataStart + Integer.parseInt(Mobile.iAppli.scratchPadSizes[spIndex]);
+				int spDataEnd = spDataStart + Integer.parseInt(Mobile.scratchPadSizes[spIndex]);
 				buffer.write(data, spDataStart, spDataEnd-spDataStart);
 				Mobile.log(Mobile.LOG_WARNING, ScratchPadConnection.class.getPackage().getName() + "." + ScratchPadConnection.class.getSimpleName() + ": " + "Copying without the 64 byte header offset succeeded!");
 				return buffer.toByteArray();
