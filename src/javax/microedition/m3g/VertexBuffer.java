@@ -39,7 +39,7 @@ public class VertexBuffer extends Object3D
 	private VertexArray[] texCoords;
 
 	private float positionScale;
-	private float[] positionBias;
+	float[] positionBias;
 	private float[] texCoordScale;
 	private float[][] texCoordBias;
 	// colorScale =   1/255

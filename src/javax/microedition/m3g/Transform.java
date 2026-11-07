@@ -26,7 +26,7 @@ public class Transform
 	//   [  4,  5,  6,  7 ]   Addressing in 2D vs in 1D:
 	//   [  8,  9, 10, 11 ]     mat_2D[row][col] == mat_1D[4*row + col]
 	//   [ 12, 13, 14, 15 ]
-	private float[] matrix = new float[]
+	float[] matrix = new float[]
 	{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
