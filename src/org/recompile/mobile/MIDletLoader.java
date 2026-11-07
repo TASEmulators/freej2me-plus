@@ -51,6 +51,9 @@ import org.objectweb.asm.Opcodes;
 
 import com.nttdocomo.ui.IApplication;
 
+import com.docomostar.StarApplication;
+import com.docomostar.StarApplicationManager;
+
 import javax.microedition.content.Registry;
 
 import javax.microedition.io.file.FileSystemRegistry;
@@ -79,6 +82,9 @@ public class MIDletLoader extends URLClassLoader
 	private Class<?> mainClass;
 	private MIDlet midletInst;
 	private IApplication IAppliInst;
+	private StarApplication StarAppliInst;
+
+	private static boolean isStar = false;
 
 	private Registry reg;
 
@@ -358,15 +364,21 @@ public class MIDletLoader extends URLClassLoader
 				constructor = mainClass.getConstructor();
 				constructor.setAccessible(true);
 
-				if(!Mobile.isDoJa)
+				if(MIDletLoader.isStar)
 				{
-					MIDlet.initAppProperties(properties);
-					midletInst = (MIDlet)constructor.newInstance();
+					StarApplicationManager.initAppProperties(properties);
+					StarAppliInst = (StarApplication)constructor.newInstance();
+					StarAppliInst.setApplicationManager(new StarApplicationManager());
 				}
-				else
+				else if (Mobile.isDoJa)
 				{
 					IApplication.initAppProperties(properties);
 					IAppliInst = (IApplication) constructor.newInstance();
+				}
+				else
+				{
+					MIDlet.initAppProperties(properties);
+					midletInst = (MIDlet)constructor.newInstance();
 				}
 
 			}
@@ -386,7 +398,12 @@ public class MIDletLoader extends URLClassLoader
 			{
 				try
 				{
-					start = Mobile.isDoJa ? mainClass.getDeclaredMethod("start") : mainClass.getDeclaredMethod("startApp");
+					if(MIDletLoader.isStar) { start = mainClass.getDeclaredMethod("started"); }
+					else if(Mobile.isDoJa)
+					{
+						start = mainClass.getDeclaredMethod("start");
+					}
+					else { start = mainClass.getDeclaredMethod("startApp"); }
 					start.setAccessible(true);
 				}
 				catch (NoSuchMethodException e)
@@ -526,6 +543,12 @@ public class MIDletLoader extends URLClassLoader
 				Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Adding prop:" + currentKey + " (" + currentKey + ") val:" + currentValue.toString().trim());
 			}
 
+			if(keyValueMap.containsKey("AppType"))
+			{
+				MIDletLoader.isStar = true;
+				Mobile.log(Mobile.LOG_INFO, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "App is a DoCoMo Star i-Appli.");
+			}
+
 			br.close();
 		}
 		catch (IOException e) { Mobile.log(Mobile.LOG_ERROR, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Failed to parse descriptor:" + e.getMessage()); }
@@ -554,7 +577,7 @@ public class MIDletLoader extends URLClassLoader
 
 		if (Mobile.isDoJa) // No manifest found in the jar, or the manifest doesn't have a midlet specified. Maybe it's a DoJa file that has an accompanying .jam?
 		{
-			Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "JAR Manifest file not found or lacks MIDlet entry! Checking if it's a DoJa File");
+			Mobile.log(Mobile.LOG_WARNING, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "JAR Manifest file not found or lacks MIDlet entry! Checking if it's a DoJa/Star app.");
 
 			try
 			{
@@ -665,7 +688,7 @@ public class MIDletLoader extends URLClassLoader
 
 			vendorname = "Keitai-DoJa"; // Used to generate the basename for Scratchpad RMS copies
 
-			Mobile.log(Mobile.LOG_INFO, "Loading I-Appli: " + name[0] +" | Main Class: " + className[0]);
+			Mobile.log(Mobile.LOG_INFO, "Loading i-Appli: " + name[0] +" | Main Class: " + className[0]);
 			reg = new Registry(className[0]);
 		}
 	}
@@ -960,6 +983,7 @@ public class MIDletLoader extends URLClassLoader
 
 		checkAPIUsage(name);
 
+		// MascotCapsule3D vendor classes get transformed into the base ones
 		if (name.startsWith("com.jblend.graphics.j3d.") ||
 			name.startsWith("com.vodafone.v10.graphics.j3d.") ||
 			name.startsWith("com.motorola.graphics.j3d.") ||
@@ -976,6 +1000,30 @@ public class MIDletLoader extends URLClassLoader
 				Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Redirecting vendor class " + name + " -> " + mappedClassName);
 
 				// Recursively load the MascotCapsule class instead
+				return loadClass(mappedClassName);
+			}
+		}
+
+		// Same idea for DoCoMoStar in relation to DoJa.
+		if (name.startsWith("com.docomostar."))
+		{
+			// These all differ almost entirely from DoJa in how they work.
+			if (!name.endsWith(".AccessToken") &&
+				!name.endsWith(".EventListener") &&
+				!name.endsWith(".StarAccessToken") &&
+				!name.endsWith(".StarApplication") &&
+				!name.endsWith(".StarApplicationManager") &&
+				!name.endsWith(".StarEventObject") &&
+				!name.endsWith(".StarEventObjct") &&
+				!name.endsWith(".StarStorageService"))
+			{
+				// Swap to DoJa package
+				String className = name.substring(name.lastIndexOf('.'));
+				String mappedClassName = "com.nttdocomo." + className;
+
+				Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Redirecting Star class " + name + " -> " + mappedClassName);
+
+				// Recursively load the DoJa class instead
 				return loadClass(mappedClassName);
 			}
 		}
@@ -1005,9 +1053,8 @@ public class MIDletLoader extends URLClassLoader
 			}
 			return loadClass(name, true);
 		}
-		else if (name.startsWith("com.nttdocomo.") && Mobile.isDoJa)
+		else if ((name.startsWith("com.nttdocomo.") || name.startsWith("com.docomostar.")) && Mobile.isDoJa)
 		{
-			Mobile.isDoJa = true;
 			Mobile.textEncoding = "Shift_JIS";
 			MobilePlatform.checkFileEncoding();
 			return loadClass(name, true);
@@ -1098,13 +1145,14 @@ public class MIDletLoader extends URLClassLoader
 		}
 
 		// Rewrites vendor package/class names to another's. Right now this is
-		// only used to rename vendor MascotCapsule "implementations" (that are
-		// really just the default MCv3 implementation in a another package) to
-		// the base mascotcapsule package, leaving Graphics3D alone because that
-		// class was turned into an interface (which PlatformGraphics implements).
+		// only used to rename Star packages to DoJa ones, and vendor
+		// MascotCapsule "implementations" (that are really just the default
+		// MCv3 implementation in a another package) to the base mascotcapsule
+		// package, leaving Graphics3D alone because that class was turned
+		// into an interface on those (which PlatformGraphics implements).
 		private String mapInternalName(String internalName)
 		{
-			if (internalName == null) return null;
+			if (internalName == null) { return null; }
 
 			if (internalName.startsWith("com/jblend/graphics/j3d/") ||
 				internalName.startsWith("com/vodafone/v10/graphics/j3d/") ||
@@ -1123,20 +1171,56 @@ public class MIDletLoader extends URLClassLoader
 				return "com/mascotcapsule/micro3d/v3" + className;
 			}
 
+			// Same idea for DoCoMoStar in relation to DoJa.
+			if (internalName.startsWith("com/docomostar/"))
+			{
+				// These all differ almost entirely from DoJa in how they work.
+				if (internalName.endsWith("/AccessToken") ||
+					internalName.endsWith("/EventListener") ||
+					internalName.endsWith("/StarAccessToken") ||
+					internalName.endsWith("/StarApplication") ||
+					internalName.endsWith("/StarApplicationManager") ||
+					internalName.endsWith("/StarEventObject") ||
+					internalName.endsWith("/StarEventObjct") ||
+					internalName.endsWith("/StarStorageService"))
+				{
+					return internalName;
+				}
+				// Swap package name, keeping the class name intact
+				String className = internalName.substring(internalName.lastIndexOf('/'));
+				return "com/nttdocomo" + className;
+			}
+
 			return internalName;
 		}
 
 		// Similar to the above, but renames type descriptors
 		private String mapDesc(String desc)
 		{
-			if (desc == null) return null;
+			if (desc == null) { return null; }
 
 			String rewritten = desc;
 			for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d", "com/nec/mascotcapsule/v3", "com/j_phone/amuse/j3d"})
 			{
-				if (rewritten.contains(vendor) && !rewritten.contains(vendor + "/Graphics3D"))
+				if (rewritten.contains(vendor) && !rewritten.contains("/Graphics3D"))
 				{
 					rewritten = rewritten.replace(vendor, "com/mascotcapsule/micro3d/v3");
+				}
+			}
+
+			// DoCoMoStar to DoJa
+			for (String vendor : new String[]{"com/docomostar"})
+			{
+				if (rewritten.contains(vendor) && !rewritten.contains("/AccessToken") &&
+					!rewritten.contains("/EventListener") &&
+					!rewritten.contains("/StarAccessToken") &&
+					!rewritten.contains("/StarApplication") &&
+					!rewritten.contains("/StarApplicationManager") &&
+					!rewritten.contains("/StarEventObject") &&
+					!rewritten.contains("/StarEventObjct") &&
+					!rewritten.contains("/StarStorageService"))
+				{
+					rewritten = rewritten.replace(vendor, "com/nttdocomo");
 				}
 			}
 			return rewritten;
@@ -1321,18 +1405,50 @@ public class MIDletLoader extends URLClassLoader
 					// Check for mascotcapsulev3 vendor renames (as both slash and dot notations to be safe)
 					for (String vendor : new String[]{"com/jblend/graphics/j3d", "com/vodafone/v10/graphics/j3d", "com/motorola/graphics/j3d", "com/nec/mascotcapsule/v3"})
 					{
-						if (strValue.contains(vendor) && !strValue.contains(vendor + "/Graphics3D"))
+						if (strValue.contains(vendor) && !strValue.contains("/Graphics3D"))
 						{
 							strValue = strValue.replace(vendor, "com/mascotcapsule/micro3d/v3");
 						}
 					}
 					for (String vendor : new String[]{"com.jblend.graphics.j3d", "com.vodafone.v10.graphics.j3d", "com.motorola.graphics.j3d", "com.nec.mascotcapsule.v3"})
 					{
-						if (strValue.contains(vendor) && !strValue.contains(vendor + ".Graphics3D"))
+						if (strValue.contains(vendor) && !strValue.contains(".Graphics3D"))
 						{
 							strValue = strValue.replace(vendor, "com.mascotcapsule.micro3d.v3");
 						}
 					}
+
+					// DoCoMoStar to DoJa
+					for (String vendor : new String[]{"com/docomostar"})
+					{
+						if (strValue.contains(vendor) && !strValue.contains("/AccessToken") &&
+							!strValue.contains("/EventListener") &&
+							!strValue.contains("/StarAccessToken") &&
+							!strValue.contains("/StarApplication") &&
+							!strValue.contains("/StarApplicationManager") &&
+							!strValue.contains("/StarEventObject") &&
+							!strValue.contains("/StarEventObjct") &&
+							!strValue.contains("/StarStorageService"))
+						{
+							strValue = strValue.replace(vendor, "com/nttdocomo");
+						}
+					}
+
+					for (String vendor : new String[]{"com.docomostar"})
+					{
+						if (strValue.contains(vendor) && !strValue.contains(".AccessToken") &&
+							!strValue.contains(".EventListener") &&
+							!strValue.contains(".StarAccessToken") &&
+							!strValue.contains(".StarApplication") &&
+							!strValue.contains(".StarApplicationManager") &&
+							!strValue.contains(".StarEventObject") &&
+							!strValue.contains(".StarEventObjct") &&
+							!strValue.contains(".StarStorageService"))
+						{
+							strValue = strValue.replace(vendor, "com.nttdocomo");
+						}
+					}
+					
 					value = strValue;
 
 					// This check won't run if the above ones did, and they won't if this one does either...
