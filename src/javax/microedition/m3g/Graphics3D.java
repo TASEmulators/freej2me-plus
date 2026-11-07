@@ -219,6 +219,7 @@ public class Graphics3D
 	 * in", so the effective value is the product down the scene graph branch.
 	 */
 	private int[] renderAlphaData = new int[64];
+	private float[] renderDistanceData = new float[64];
 	private int currAlphaFactor = 256;
 	private int renderOpCount = 0;
 
@@ -2051,6 +2052,7 @@ public class Graphics3D
 			renderIntData = new int[newCapacity * 3];
 			renderObjData = new Object[newCapacity * 4];
 			renderAlphaData = new int[newCapacity];
+			renderDistanceData = new float[newCapacity];
 		}
 	}
 
@@ -2163,6 +2165,34 @@ public class Graphics3D
 		if (transform != null) { tr.set(transform); }
 		else { tr.setIdentity(); }
 
+		// Calculate camera distance for depth sorting within layers
+		float dist = 0.0f;
+		if (this.currCamTransInv != null)
+		{
+			float bx = 0.0f, by = 0.0f, bz = 0.0f;
+			if (geomOrSprite instanceof VertexBuffer)
+			{
+				float[] bias = ((VertexBuffer) geomOrSprite).positionBias;
+				if (bias != null) { bx = bias[0]; by = bias[1]; bz = bias[2]; }
+			}
+			float wx, wy, wz;
+			if (transform != null)
+			{
+				float[] tm = transform.matrix;
+				wx = tm[0] * bx + tm[1] * by + tm[2] * bz + tm[3];
+				wy = tm[4] * bx + tm[5] * by + tm[6] * bz + tm[7];
+				wz = tm[8] * bx + tm[9] * by + tm[10] * bz + tm[11];
+			}
+			else
+			{
+				wx = bx; wy = by; wz = bz;
+			}
+			float[] camMat = this.currCamTransInv.matrix;
+			float eyeZ = camMat[8] * wx + camMat[9] * wy + camMat[10] * wz + camMat[11];
+			dist = -eyeZ;
+		}
+		renderDistanceData[renderOpCount] = dist;
+
 		renderIndices[renderOpCount] = renderOpCount;
 		renderOpCount++;
 	}
@@ -2180,20 +2210,41 @@ public class Graphics3D
 			int keyIndex = renderIndices[i];
 			int keyIntIdx = keyIndex * 3;
 
-			// The sorting key is (layerIdx << 1) | blended
-			int keySortValue = ((renderIntData[keyIntIdx + 0] + 63) << 1) | renderIntData[keyIntIdx + 1];
+			int keyLayer = renderIntData[keyIntIdx + 0];
+			int keyBlended = renderIntData[keyIntIdx + 1];
+			float keyDist = renderDistanceData[keyIndex];
 
 			int j = i - 1;
 			while (j >= 0)
 			{
 				int curIndex = renderIndices[j];
 				int curIntIdx = curIndex * 3;
-				int curSortValue = ((renderIntData[curIntIdx + 0] + 63) << 1) | renderIntData[curIntIdx + 1];
+				int curLayer = renderIntData[curIntIdx + 0];
+				int curBlended = renderIntData[curIntIdx + 1];
+				float curDist = renderDistanceData[curIndex];
 
-				// We use ">" instead of ">=" to ensure the sort remains stable,
-				// otherwise flickering could occur by having identical object
-				// layer/blending values have them swap orders between renders.
-				if (curSortValue > keySortValue)
+				boolean swap;
+				if (curLayer != keyLayer)
+				{
+					swap = curLayer > keyLayer;
+				}
+				else if (curBlended != keyBlended)
+				{
+					// Opaque (0) before blended (1)
+					swap = curBlended > keyBlended;
+				}
+				else if (curBlended != 0)
+				{
+					// Blended: back-to-front (furthest rendered first, so larger dist comes first)
+					swap = curDist < keyDist;
+				}
+				else
+				{
+					// Opaque: front-to-back (closest rendered first, so smaller dist comes first)
+					swap = curDist > keyDist;
+				}
+
+				if (swap)
 				{
 					renderIndices[j + 1] = renderIndices[j];
 					j--;
