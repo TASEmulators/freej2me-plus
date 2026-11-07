@@ -113,6 +113,6 @@ public abstract class Canvas extends Frame
 		label = softLabels[1] != null ? softLabels[1] : "";
 		textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(label))/2;
 		xPos = (3 * Mobile.lcdWidth / 4) + textCenter;
-		graphics.drawString(softLabels[1], xPos, Mobile.lcdHeight-barHeight, Graphics.TOP | Graphics.RIGHT);
+		graphics.drawString(label, xPos, Mobile.lcdHeight-barHeight, Graphics.TOP | Graphics.RIGHT);
 	}
 }

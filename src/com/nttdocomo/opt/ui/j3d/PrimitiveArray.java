@@ -54,27 +54,44 @@ public class PrimitiveArray
 
 		this.vertexArray = new int[size * verticesPerPrimitive * 3];
 
-		boolean hasColor = (param & (Graphics3D.COLOR_PER_COMMAND | Graphics3D.COLOR_PER_FACE)) != 0;
-		boolean hasTexCoord = (param & Graphics3D.TEXTURE_COORD_PER_VERTEX) != 0;
-		if (hasColor && hasTexCoord)
-			{ throw new IllegalArgumentException("Cannot combine Color and Texture Coordinates."); }
-
-		 if (primitiveType != Graphics3D.PRIMITIVE_POINT_SPRITES)
-		 {
-			if ((param & Graphics3D.NORMAL_PER_FACE) != 0) { this.normalArray = new int[size * 3]; }
-			else if ((param & Graphics3D.NORMAL_PER_VERTEX) != 0)
-				{ this.normalArray = new int[size * verticesPerPrimitive * 3]; }
-
-			if ((param & Graphics3D.COLOR_PER_COMMAND) != 0) { this.colorArray = new int[1]; }
-			else if ((param & Graphics3D.COLOR_PER_FACE) != 0) { this.colorArray = new int[size]; }
-
+		if (primitiveType != Graphics3D.PRIMITIVE_POINT_SPRITES)
+		{
+			if ((param & Graphics3D.NORMAL_PER_VERTEX) == Graphics3D.NORMAL_PER_VERTEX)
+			{
+				this.normalArray = new int[size * verticesPerPrimitive * 3];
+			}
+			else if ((param & Graphics3D.NORMAL_PER_FACE) == Graphics3D.NORMAL_PER_FACE)
+			{
+				this.normalArray = new int[size * 3];
+			}
+			
+			boolean hasColorFace = (param & Graphics3D.COLOR_PER_FACE) == Graphics3D.COLOR_PER_FACE;
+			boolean hasColorCmd = (param & Graphics3D.COLOR_PER_COMMAND) == Graphics3D.COLOR_PER_COMMAND;
+			boolean hasTexCoord = (param & Graphics3D.TEXTURE_COORD_PER_VERTEX) == Graphics3D.TEXTURE_COORD_PER_VERTEX;
+			
+			if ((hasColorFace || hasColorCmd) && hasTexCoord)
+			{
+				throw new IllegalArgumentException("Cannot combine Color and Texture Coordinates.");
+			}
+			
+			if (hasColorCmd) { this.colorArray = new int[1]; }
+			else if (hasColorFace) { this.colorArray = new int[size]; }
+			
 			if (hasTexCoord)
-				{ this.texCoordArray = new int[size * verticesPerPrimitive * 2]; }
+			{
+				this.texCoordArray = new int[size * verticesPerPrimitive * 2];
+			}
 		}
 		else
 		{
-			if ((param & Graphics3D.POINT_SPRITE_PER_COMMAND) != 0) { this.spriteArray = new int[8]; }
-			else if ((param & Graphics3D.POINT_SPRITE_PER_VERTEX) != 0) { this.spriteArray = new int[size * 8]; }
+			if ((param & Graphics3D.POINT_SPRITE_PER_VERTEX) == Graphics3D.POINT_SPRITE_PER_VERTEX)
+			{
+				this.spriteArray = new int[size * 8];
+			}
+			else if ((param & Graphics3D.POINT_SPRITE_PER_COMMAND) == Graphics3D.POINT_SPRITE_PER_COMMAND)
+			{
+				this.spriteArray = new int[8];
+			}
 		}
 	}
 
