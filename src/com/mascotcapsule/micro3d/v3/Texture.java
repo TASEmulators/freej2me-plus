@@ -74,6 +74,7 @@ public class Texture {
 	{
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		byte[] buffer = new byte[Math.max(1024, is.available())];
+		this.isForModel = isForModel;
 
 		int len;
 		while ((len = is.read(buffer)) > 0) {
