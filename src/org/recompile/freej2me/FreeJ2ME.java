@@ -31,6 +31,8 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -44,7 +46,6 @@ import java.awt.dnd.DropTargetListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionAdapter;
@@ -385,17 +386,6 @@ public class FreeJ2ME
 		// Only now we can load the jar passed as argument
 		if(MobilePlatform.fileName != null) { fjGUI.loadJarFile(MobilePlatform.fileName); }
 
-		/* Inputs should only register if a jar has been loaded, otherwise the GUI will throw NullPointerException */
-		lcd.addKeyListener(new KeyListener()
-		{
-			public void keyPressed(KeyEvent e) { pressKey(e, false); }
-
-			public void keyReleased(KeyEvent e) { releaseKey(e); }
-
-			public void keyTyped(KeyEvent e) { }
-
-		});
-
 		lcd.addMouseListener(new MouseListener()
 		{
 
@@ -490,6 +480,10 @@ public class FreeJ2ME
 			}
 		});
 
+		// Arrow keys will not do focus traversal of any kind, they can be used
+		// by running apps, and are so by default.
+		lcd.setFocusTraversalKeysEnabled(false);
+
 		// Set painter right before the jar is loaded
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
@@ -574,6 +568,30 @@ public class FreeJ2ME
 		}
 		// Go fullscreen as soon as the jar is loaded from the commandline path above
 		if(fullscreenAtStartup) { toggleFullscreen(); }
+
+		// Keyboard inputs are now allowed, so set the event dispatcher for it.
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher()
+		{
+			public boolean dispatchKeyEvent(KeyEvent e)
+			{
+				if (main.isFocused())
+				{ 
+					int id = e.getID();
+					
+					if (id == KeyEvent.KEY_PRESSED)
+					{
+						pressKey(e, false);
+						return true;
+					} 
+					else if (id == KeyEvent.KEY_RELEASED)
+					{
+						releaseKey(e);
+						return true;
+					}
+				}
+				return false;
+			}
+		});
 	}
 
 	protected void pressKey(KeyEvent e, boolean ignoreModifiers)
