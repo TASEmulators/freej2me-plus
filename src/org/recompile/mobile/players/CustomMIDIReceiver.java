@@ -37,24 +37,26 @@ public class CustomMIDIReceiver implements Receiver
 		{
 			ShortMessage sm = (ShortMessage) message;
 			
-			// Intercept Channel Volume (CC 7) and Expression (CC 11) messages,
-			// we'll override the volume on them only.
-			if (sm.getCommand() == ShortMessage.CONTROL_CHANGE && 
-			   (sm.getData1() == 7 || sm.getData1() == 11))
+			// Intercept NOTE_ON messages, we'll override the volume (velocity)
+			// on them.
+			if (sm.getCommand() == ShortMessage.NOTE_ON)
 			{
 				int originalVol = sm.getData2();
-				int scaledVol = (int) (originalVol * volumeMultiplier);
-				
-				try
+
+				if(originalVol > 0)
 				{
-					ShortMessage msg = new ShortMessage();
-					msg.setMessage(sm.getCommand(), sm.getChannel(), sm.getData1(), scaledVol);
-					target.send(msg, time);
+					int scaledVol = (int) (originalVol * volumeMultiplier);
 					
-					// We already sent the updated message, no need to continue.
-					return;
+					try
+					{
+						ShortMessage msg = new ShortMessage();
+						msg.setMessage(sm.getCommand(), sm.getChannel(), sm.getData1(), scaledVol);
+						target.send(msg, time);
+						// We already sent the updated message, no need to continue.
+						return;
+					}
+					catch (InvalidMidiDataException e) { e.printStackTrace(); }
 				}
-				catch (InvalidMidiDataException e) { e.printStackTrace(); }
 			}
 		}
 
