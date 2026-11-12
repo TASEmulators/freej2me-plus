@@ -25,10 +25,13 @@ import java.net.URLDecoder;
 public class Libretro
 {
 	private int lcdWidth, lcdHeight, lastPressedKey = -1;
-	volatile int[] lcdData;
+	private volatile int[] lcdData;
 
 	private static volatile boolean canPause = false;
 
+	// Key press delay before becoming a key repeat
+	private final int REPEAT_START_DELAY = 350;
+	private long keyPressTime = 0;
 	// 1/3 of a second of pause delay to be extra safe, the core may stall a bit at boot.
 	private static final long PAUSE_DELAY_MS = 333;
 	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
@@ -142,6 +145,7 @@ public class Libretro
 
 							case 3: // joypad key down
 								MobilePlatform.pressedKeys[code] = true;
+								keyPressTime = System.currentTimeMillis();
 								lastPressedKey = code;
 								MobilePlatform.keyPressed(Mobile.getMobileKey(code));
 							break;
@@ -320,11 +324,16 @@ public class Libretro
 							case 15: // Libretro core requested a new frame.
 
 								// Fire repeats for the last key to be held on
-								// every libretro frame tick (similar to how AWT
-								// and real devices handle this)
-								if (lastPressedKey != -1 && MobilePlatform.pressedKeys[lastPressedKey])
+								// every libretro frame request tick (similar to
+								// how AWT and real devices handle this)
+								if (lastPressedKey != -1 && din[3] == 0 && MobilePlatform.pressedKeys[lastPressedKey])
 								{
-									MobilePlatform.keyRepeated(Mobile.getMobileKey(lastPressedKey));
+									long now = System.currentTimeMillis();
+									if (now - keyPressTime >= REPEAT_START_DELAY)
+									{
+										MobilePlatform.keyRepeated(Mobile.getMobileKey(lastPressedKey));
+										keyPressTime = now - REPEAT_START_DELAY + 33; // Repeats will happen each 33ms, like on standalone.
+									}
 								}
 
 								int multiplierScaled = (din[1] << 8) | din[2];
@@ -386,7 +395,7 @@ public class Libretro
 									/* Send display data to libretro */
 									synchronized (Mobile.getPlatform().getLcdFrontbuffer())
 									{
-										for(int i=0; i<lcdData.length; i++)
+										for(int i=0; i<lcdWidth*lcdHeight; i++)
 										{
 											frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
 											frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);

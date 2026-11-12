@@ -217,7 +217,7 @@ public abstract class GamepadReader implements Runnable
 		{
 			public void run()
 			 {
-				final long START_DELAY = 350;
+				final int START_DELAY = 350;
 				int currentActiveKey = -1;
 				long keyPressTime = 0;
 
