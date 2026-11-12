@@ -20,7 +20,7 @@
 #define DEFAULT_FPS 60
 #define BASE_WIDTH 320
 #define BASE_HEIGHT 240
-#define MAX_WIDTH 854
+#define MAX_WIDTH 480
 #define MAX_HEIGHT 854
 
 /* Used as a limit to the string of core option updates to be sent to the Java app */

@@ -26,6 +26,7 @@ public class Libretro
 {
 	private int lcdWidth, lcdHeight, lastPressedKey = -1;
 	private volatile int[] lcdData;
+	private volatile boolean hasRepainted = false;
 
 	private static volatile boolean canPause = false;
 
@@ -36,7 +37,7 @@ public class Libretro
 	private static final long PAUSE_DELAY_MS = 100;
 	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
 
-	private byte[] frameBuffer = new byte[854*854*3];
+	private byte[] frameBuffer = new byte[480*854*3];
 	private final byte[] frameHeader = new byte[]{(byte)0xFE,
 		0, 0, 0, 0, // Display data
 		0,          // Rotation enabled
@@ -87,7 +88,11 @@ public class Libretro
 		// The painter here is only really used to check for frontend pauses
 		Mobile.getPlatform().setPainter(new Runnable()
 		{
-			public void run() { updatePauseTimer(); }
+			public void run()
+			{ 
+				updatePauseTimer();
+				hasRepainted = true;
+			}
 		});
 
 		lio = new LibretroIO();
@@ -395,14 +400,21 @@ public class Libretro
 									/* Send display data to libretro */
 									synchronized (Mobile.getPlatform().getLcdFrontbuffer())
 									{
-										for(int i=0; i<lcdWidth*lcdHeight; i++)
-										{
-											frameBuffer[3*i]   = (byte)((lcdData[i]>>16)&0xFF);
-											frameBuffer[3*i+1] = (byte)((lcdData[i]>>8)&0xFF);
-											frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
+										final int[] lcd = lcdData;
+										final byte[] fb = frameBuffer;
+										// Copy right away if there is no repaint. Framebuffer didn't change.
+										if(hasRepainted)
+										{ 
+											for(int i=0,j=0; i<lcd.length; i++,j+=3)
+											{
+												int px = lcd[i];
+												fb[j]   = (byte)(px>>16);
+												fb[j+1] = (byte)(px>>8);
+												fb[j+2] = (byte)px;
+											}
+											hasRepainted = false; // We must now wait for a new repaint.
 										}
-
-										System.out.write(frameBuffer, 0, lcdData.length*3);
+										System.out.write(fb, 0, lcd.length*3);
 										System.out.flush();
 									}
 								}
