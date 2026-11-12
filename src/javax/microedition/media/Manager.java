@@ -250,7 +250,8 @@ public class Manager
 
 			// And save the copy to the specified dir
 			OutputStream outStream;
-			String dumpPath = "." + File.separatorChar + "FreeJ2MEDumps" + File.separatorChar + "Audio" + File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar;
+			String dumpPath = javax.microedition.io.file.FileSystemRegistry.SYSTEM_ROOT +
+				"FreeJ2MEDumps" + File.separatorChar + "Audio" + File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar;
 			File dumpFile = new File(dumpPath);
 
 			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
@@ -259,7 +260,16 @@ public class Manager
 			if(type.toLowerCase().contains("mid") )     { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mid"); }
 			else if(type.toLowerCase().contains("wav")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".wav"); }
 			else if(type.toLowerCase().contains("mp"))  { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mp3"); }
-			else if(type.toLowerCase().contains("mld")) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mld"); }
+			else if(type.toLowerCase().contains("mld"))
+			{ 
+				stream.mark(4);
+				byte[] data = new byte[4];
+				stream.read(data);
+				stream.reset();
+				if((data[0] == 'M' && data[1] == 'T' && data[2] == 'h' && data[3] == 'd') ) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + "_Decoded.mid"); } // It's a sequence SMAF, converted to MIDI
+				else if((data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F') ) { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + "_Decoded.wav"); } // It's a PCM SMAF, converted to WAV
+				else { dumpFile = new File(dumpPath + "Stream_" + streamMD5 + ".mld"); } // Original i-Appli MLD file
+			}
 			else if(type.toLowerCase().contains("mmf"))
 			{
 				stream.mark(4);

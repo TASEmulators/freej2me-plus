@@ -58,6 +58,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		0,  0,  0,  0,  0, 0, 0
 	};
 
+	// Scale factor
+	private static final int GAUSSIAN_SCALE_FACTOR = 159;
+
 	public static final int BASELINE = 64;
 	public static final int BOTTOM   = 32;
 	public static final int DOTTED   = 1;
@@ -125,9 +128,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	private static int frameCount = 0;
 	private static volatile long lastFpsTime = System.nanoTime();
 	private static volatile int fps = 0;
-
-	// Scale factor
-	private static final int GAUSSIAN_SCALE_FACTOR = 159;
 
 	// Graphics context variables
 	protected BufferedImage canvas;
@@ -225,7 +225,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
 		int tmpcolor = color;
-		setColor(0xFF000000); // Clear to default background color
 		fillRect(x, y, width, height);
 		setColor(tmpcolor);
 	}
@@ -400,6 +399,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				if(!MobilePlatform.showFPS.equals("Off")) { showFPS(); }
 				return; // No need to copy anything, they're already the same
 			}
+			
 			if(fastBlit && x == 0 && y == 0 && width == canvasWidth && height == canvasHeight)
 			{
 				/*
@@ -467,7 +467,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		catch (Exception e)
 		{
 			// Games can try to render offscreen even at the correct resolution, so this makes more sense as a debug log
-			Mobile.log(Mobile.LOG_DEBUG, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "flushGraphics A:"+e.getMessage());
+			Mobile.log(Mobile.LOG_DEBUG, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "flushGraphics:"+e.getMessage());
 		}
 	}
 
@@ -3015,7 +3015,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		}
 		else
 		{
-			// Standard 3D world camera requiring, thus it requires DoJa to
+			// Standard 3D world camera, thus requiring DoJa to
 			// MascotCapsuleV3 coordinate inversion
 			mcv3layout.setAffineTrans(new AffineTrans(
 				 at.m00,  at.m01,  at.m02,  at.m03,
@@ -3247,7 +3247,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		drawRect(0, 0, scaledWidth, scaledHeight);
 		drawString(fpsText, 0, -1, TOP | LEFT);
 		setOrigin(0, 0);
-		setColor(0, 0, 0);
 	}
 
 	public final void drawFastForwardIndicator()

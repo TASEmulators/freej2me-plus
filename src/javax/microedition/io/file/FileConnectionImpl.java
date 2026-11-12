@@ -98,14 +98,7 @@ public class FileConnectionImpl implements FileConnection
 		return name;
 	}
 
-	public String getPath()
-	{
-		String fullPath = localFile.getPath().replace('\\', '/');
-		String relative = "/" + fullPath.replace("./appdb/filesystem/", "");
-
-		int lastSlash = relative.lastIndexOf('/');
-		return (lastSlash != -1) ? relative.substring(0, lastSlash + 1) : "/";
-	}
+	public String getPath() { return localFile.getParentFile().getPath(); }
 
 	public void create() throws IOException
 	{

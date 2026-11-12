@@ -16,6 +16,7 @@
 */
 package javax.microedition.io.file;
 
+import java.io.File;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -23,7 +24,7 @@ public class FileSystemRegistry extends Object
 {
 
 	private static final Vector<FileSystemListener> listeners = new Vector<FileSystemListener>();
-	public static final String SYSTEM_ROOT = "freej2me_system/";
+	public static final String SYSTEM_ROOT = "freej2me_system" + File.separatorChar;
 
 	// Static immutable Enumeration for the "freej2me_system/" path. If MIDlets
 	// are going to have any kind of access to files through here, it'll be on

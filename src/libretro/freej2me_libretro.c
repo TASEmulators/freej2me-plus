@@ -175,7 +175,7 @@ int numSynths = 4;
 int customFont; /* Also acts as a boolean */
 int fontOffset = 0; /* -4, -3, -2, -1, 0 (Default), 1, 2, 3, 4 */
 int dumpAudioStreams;
-int dumpGraphicsData; // Not really used yet
+int dumpGraphicsData;
 int deleteTemporaryKJXFiles;
 int loggingLevel;
 int m3gUntextured;

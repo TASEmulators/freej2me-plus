@@ -567,8 +567,8 @@ struct retro_core_option_v2_definition core_options[] =
 	},
 	{
 		"freej2me_dumpgraphicsdata",
-		"Advanced Settings > Dump Graphics Data (Stub)",
-		"Dump Graphics Data (Stub)",
+		"Advanced Settings > Dump Graphics Data",
+		"Dump Graphics Data",
 		"This option allows FreeJ2ME to dump incoming Graphics Data into $SYSTEM/FreeJ2MEDumps/Graphics/appname/*, mostly useful for debugging",
 		"This option allows FreeJ2ME to dump incoming Graphics Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
 		"advanced_settings",
@@ -1298,7 +1298,7 @@ struct retro_core_option_definition core_options_v1 [] =
 	},
 	{
 		"freej2me_dumpgraphicsdata",
-		"Dump Graphics Data (Stub)",
+		"Dump Graphics Data",
 		"This option allows FreeJ2ME to dump incoming Graphics Data into $SYSTEM/FreeJ2MEDumps/Audio/appname/*, mostly useful for debugging",
 		{
 			{ "off",  "Disable"            },
@@ -1695,7 +1695,7 @@ static const struct retro_variable vars[] =
 	},
 	{ /* Dump Graphics Streams */
 		"freej2me_dumpgraphicsdata",
-		"Dump Graphics Data (Stub); off|on"
+		"Dump Graphics Data; off|on"
 	},
 	{ /* Dump KJX files' temporary JAR/JAD */
 		"freej2me_deletetempkjxfiles",

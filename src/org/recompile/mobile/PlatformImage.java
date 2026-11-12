@@ -153,6 +153,8 @@ public class PlatformImage
 
 			dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		}
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	public PlatformImage(InputStream stream) throws IOException
@@ -181,6 +183,8 @@ public class PlatformImage
 		}
 
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	public PlatformImage(Image source)
@@ -194,6 +198,8 @@ public class PlatformImage
 		final int[] tempData = ((DataBufferInt) source.getCanvas().getRaster().getDataBuffer()).getData();
 
 		System.arraycopy(tempData, 0, dataBuffer, 0, tempData.length);
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	public PlatformImage(byte[] imageData, int imageOffset, int imageLength, boolean mutable) // DoJa also uses this one, creates mutable images like DirectGraphics
@@ -220,6 +226,8 @@ public class PlatformImage
 
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 		isMutable = mutable;
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	public PlatformImage(int[] rgb, int Width, int Height, boolean processAlpha)
@@ -235,6 +243,8 @@ public class PlatformImage
 				dataBuffer[j*Width + i] = (processAlpha ? rgb[j*Width + i] : rgb[j*Width + i] | 0xFF000000);
 			}
 		}
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
@@ -260,6 +270,8 @@ public class PlatformImage
 
 		canvas = transformImage(sub, transform);
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	// These constructors and methods are exclusive to DoJa's Image classes
@@ -274,6 +286,8 @@ public class PlatformImage
 		final int[] tempData = ((DataBufferInt) source.getCanvas().getRaster().getDataBuffer()).getData();
 
 		System.arraycopy(tempData, 0, dataBuffer, 0, tempData.length);
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	public PlatformImage(int Width, int Height, int[] data, int off)
@@ -285,12 +299,14 @@ public class PlatformImage
 		System.arraycopy(data, off, dataBuffer, 0, Width * Height);
 
 		isMutable = true;
+
+		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
 	}
 
 	// Siemens methods
 	public void set2Bpp(boolean bpp) { this.is2bpp = bpp; }
 
-    public boolean is2Bpp() { return is2bpp; }
+	public boolean is2Bpp() { return is2bpp; }
 
 	public void setMutable(boolean mutable) { isMutable = mutable; }
 
@@ -363,6 +379,7 @@ public class PlatformImage
 
 	public boolean isMutable() { return isMutable; }
 
+	// Only used by Siemens at this point.
 	public static final BufferedImage transformImage(final BufferedImage image, final int transform)
 	{
 		// Return early if no transform is specified.
@@ -371,12 +388,7 @@ public class PlatformImage
 		final int width = (int)image.getWidth();
 		final int height = (int)image.getHeight();
 
-		BufferedImage transimage = null;
-		if(transform == Sprite.TRANS_ROT90 || transform == Sprite.TRANS_ROT270 || transform == Sprite.TRANS_MIRROR_ROT90 || transform == Sprite.TRANS_MIRROR_ROT270)
-		{
-			transimage = new BufferedImage(height, width, image.getType()); // Non-Math.PI rotations require width and height to be swapped
-		}
-		else { transimage = new BufferedImage(width, height, image.getType()); }
+		BufferedImage transimage = new BufferedImage(width, height, image.getType());
 
 		// We know the data is of TYPE_INT_ARGB, so just get it directly instead of checking for its type
 		final int[] sourceData = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
@@ -384,53 +396,6 @@ public class PlatformImage
 
 		switch (transform)
 		{
-			case Sprite.TRANS_ROT90:
-				for (int y = 0; y < height; y++)
-				{
-					int targetPos = (height - 1 - y);
-					for (int x = 0; x < width; x++)
-					{
-						targetData[targetPos + x * height] = sourceData[y * width + x];
-					}
-				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_rot90");
-				break;
-
-			case Sprite.TRANS_ROT180:
-				/*
-				 * Since this one also has the effect of mirroring the image horizontally like TRANS_MIRROR alongside a
-				 * vertical transformation, we can optimize it by only going up to half of the image's width, making two
-				 * pixel assignments on each inner loop iteration from the image's edges to the center, then checking if
-				 * the width is odd, to just copy the pixel in the middle as it won't change on the transformed image.
-				 */
-				for (int y = 0; y < height; y++)
-				{
-					int targetPos = (height - 1 - y) * width;
-					for (int x = 0; x < width / 2; x++)
-					{
-						targetData[targetPos + (width - 1 - x)] = sourceData[y * width + x];
-						targetData[targetPos + x] = sourceData[y * width + (width - 1 - x)];
-					}
-					// If image width is odd, copy the middle pixel directly as there's no need to swap anything.
-					if (width % 2 != 0) { targetData[targetPos + (width / 2)] = sourceData[y * width + (width / 2)]; }
-				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_rot180");
-				break;
-
-			case Sprite.TRANS_ROT270:
-				for (int y = 0; y < height; y++)
-				{
-					for (int x = 0; x < width; x++)
-					{
-						targetData[y + (width - 1 - x) * height] = sourceData[y * width + x];
-					}
-				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_rot270");
-				break;
-
 			case Sprite.TRANS_MIRROR:
 				/*
 				* Even though sorting an entire column would be faster from a pure algorithmic perspective (like processing
@@ -454,21 +419,7 @@ public class PlatformImage
 					// If image width is odd, copy the middle pixel directly as there's no need to swap anything.
 					if (width % 2 != 0) { targetData[targetRow + (width/2)] = sourceData[targetRow + (width/2)]; }
 				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_mirror");
-				break;
-
-			case Sprite.TRANS_MIRROR_ROT90:
-				for (int y = 0; y < height; y++)
-				{
-					int targetRow = height - 1 - y;
-					for (int x = 0; x < width; x++)
-					{
-						targetData[x * height + targetRow] = sourceData[y * width + (width - 1 - x)];
-					}
-				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_mirror90");
+				if(Mobile.dumpGraphicsObjects) { dumpImage(transimage, null, "_mirror"); }
 				break;
 
 			case Sprite.TRANS_MIRROR_ROT180: // Basically mirror vertically (an arrow pointing up will then point down).
@@ -476,20 +427,7 @@ public class PlatformImage
 				{
 					System.arraycopy(sourceData, y * width, targetData, (height - 1 - y) * width, width);
 				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_mirror180");
-				break;
-
-			case Sprite.TRANS_MIRROR_ROT270:
-				for (int y = 0; y < height; y++)
-				{
-					for (int x = 0; x < width; x++)
-					{
-						targetData[(width - 1 - x) * height + y] = sourceData[y * width + (width - 1 - x)];
-					}
-				}
-				//dumpImage(image, null, "");
-				//dumpImage(transimage, null, "_mirror270");
+				if(Mobile.dumpGraphicsObjects) { dumpImage(transimage, null, "_mirror180"); }
 				break;
 		}
 
@@ -497,24 +435,25 @@ public class PlatformImage
 	}
 
 	public static BufferedImage scaleImage(BufferedImage originalImage, int desiredWidth, int desiredHeight)
-    {
+	{
+		// Create a new image to draw the scaled version to fit on screen
+		BufferedImage scaledImage = new BufferedImage(desiredWidth != 0 ? desiredWidth : originalImage.getWidth(), desiredHeight != 0 ? desiredHeight : originalImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics2D gc = scaledImage.createGraphics();
+		gc.drawImage(originalImage, 0, 0, desiredWidth != 0 ? desiredWidth : originalImage.getWidth(), desiredHeight != 0 ? desiredHeight : originalImage.getHeight(), null);
+		gc.dispose();
 
-        // Create a new image to draw the scaled version to fit on screen
-        BufferedImage scaledImage = new BufferedImage(desiredWidth != 0 ? desiredWidth : originalImage.getWidth(), desiredHeight != 0 ? desiredHeight : originalImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D gc = scaledImage.createGraphics();
-        gc.drawImage(originalImage, 0, 0, desiredWidth != 0 ? desiredWidth : originalImage.getWidth(), desiredHeight != 0 ? desiredHeight : originalImage.getHeight(), null);
-        gc.dispose();
+		if(Mobile.dumpGraphicsObjects) { dumpImage(scaledImage, null, "_scaled"); }
+		
+		return scaledImage;
+	}
 
-        return scaledImage;
-    }
-
-	// TODO: Turn this into a setting. Being able to dump image data would be nice.
 	public static void dumpImage(BufferedImage image, String path, String append)
 	{
-        try
+		try
 		{
 			String imageMD5 = generateMD5Hash(image);
-			String dumpPath = "." + File.separatorChar + "FreeJ2MEDumps" + File.separatorChar + "Image" + (path != null ? path : File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar);
+			String dumpPath = javax.microedition.io.file.FileSystemRegistry.SYSTEM_ROOT +
+				"FreeJ2MEDumps" + File.separatorChar + "Image" + (path != null ? path : File.separatorChar + Mobile.getPlatform().loader.suitename + File.separatorChar);
 			File dumpFile = new File(dumpPath);
 
 			if (!dumpFile.isDirectory()) { dumpFile.mkdirs(); }
@@ -523,32 +462,32 @@ public class PlatformImage
 
 			dumpFile = new File(dumpPath);
 			if(dumpFile.exists()) { return; } // Don't overwrite an image that already exists
-            ImageIO.write(image, "png", dumpFile);
-            System.out.println("Image saved successfully: " + dumpPath);
-        }
+			ImageIO.write(image, "png", dumpFile);
+			System.out.println("Image saved successfully: " + dumpPath);
+		}
 		catch (IOException e) { Mobile.log(Mobile.LOG_ERROR, PlatformImage.class.getPackage().getName() + "." + PlatformImage.class.getSimpleName() + ": " + "Failed to save image file: " + e.getMessage()); }
-    }
+	}
 
 	private static String generateMD5Hash(BufferedImage image)
 	{
-        try
+		try
 		{
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", baos);
-            byte[] imageBytes = baos.toByteArray();
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ImageIO.write(image, "png", baos);
+			byte[] imageBytes = baos.toByteArray();
 
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hashBytes = md.digest(imageBytes);
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			byte[] hashBytes = md.digest(imageBytes);
 
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) { sb.append(String.format("%02x", b)); }
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hashBytes) { sb.append(String.format("%02x", b)); }
 
-            return sb.toString();
-        }
+			return sb.toString();
+		}
 		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, PlatformImage.class.getPackage().getName() + "." + PlatformImage.class.getSimpleName() + ": " + "Could not generate MD5 Hash for data: " + e.getMessage());
-            return null;
-        }
-    }
+			return null;
+		}
+	}
 }
