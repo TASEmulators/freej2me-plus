@@ -127,6 +127,7 @@ int joymouseY = 0;
 long joymouseTime = 0; /* countdown to show/hide mouse cursor */
 long joymouseClickedTime = 0; /* Countdown to show/hide the cursor in the clicked state */
 bool joymouseAnalog = false; /* flag - using analog stick for mouse movement */
+bool joymouseDragging = false; /* flag - mouse is currently in a drag motion */
 int mouseLpre = 0; /* old mouse button state */
 int rumbleTime = 0; /* Rumble duration calculated based on data received from FreeJ2ME's app */
 unsigned short rumbleStrength = 0xFFFF; /* Rumble strength calculated based on data received from FreeJ2ME's app */
@@ -220,64 +221,6 @@ unsigned int compatMCV3HorFovFix           = 0; // Boolean
 
 /* First byte is the identifier, next four are width and height */
 unsigned char javaRequestFrame[5] = { 0xF, 0, 0, 0, 0 };
-
-/* mouse cursor image */
-unsigned int joymouseImage[408] =
-{
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,1,1,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,2,2,1,1,1,0,0,0,0,
-	0,0,0,0,1,2,2,1,2,2,1,2,2,1,1,0,0,
-	0,0,0,0,1,2,2,1,2,2,1,2,2,1,2,1,0,
-	1,1,1,0,1,2,2,1,2,2,1,2,2,1,2,2,1,
-	1,2,2,1,1,2,2,2,2,2,2,2,2,1,2,2,1,
-	1,2,2,2,1,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,1,0,
-	0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,
-	0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,
-	0,0,0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,
-	0,0,0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,
-	0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0
-};
-
-/* mouse cursor clicked image */
-unsigned int joymouseClickedImage[408] =
-{
-	0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-	0,1,3,1,0,0,0,0,1,3,1,0,0,0,0,0,0,
-	0,0,1,3,1,0,0,1,3,1,0,0,0,0,0,0,0,
-	0,0,0,1,3,1,1,3,1,0,0,0,0,0,0,0,0,
-	0,0,1,3,1,2,2,1,3,1,0,0,0,0,0,0,0,
-	0,1,3,1,1,2,2,1,1,3,1,0,0,0,0,0,0,
-	0,0,1,0,1,2,2,1,0,1,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,1,1,0,0,0,0,0,0,0,
-	0,0,0,0,1,2,2,1,2,2,1,1,1,0,0,0,0,
-	0,0,0,0,1,2,2,1,2,2,1,2,2,1,1,0,0,
-	0,0,0,0,1,2,2,1,2,2,1,2,2,1,2,1,0,
-	1,1,1,0,1,2,2,1,2,2,1,2,2,1,2,2,1,
-	1,2,2,1,1,2,2,2,2,2,2,2,2,1,2,2,1,
-	1,2,2,2,1,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,
-	0,0,0,1,2,2,2,2,2,2,2,2,2,2,2,1,0,
-	0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,
-	0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,
-	0,0,0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,
-	0,0,0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,
-	0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0
-};
 
 /*
  * Custom functions to read from, and write to, pipes.
@@ -1141,8 +1084,10 @@ void retro_run(void)
 				mouseChange = true;
 			}
 			/* mouse - drag */
-			if(mouseL>0 && mouseChange)
+			if(mouseL>0)
 			{
+				joymouseClickedTime = DEFAULT_FPS * 0.1;
+				if(mouseChange) { joymouseDragging = true; }
 				joyevent[0] = 6;
 				joyevent[1] = (joymouseX >> 8) & 0xFF;
 				joyevent[2] = (joymouseX) & 0xFF;
@@ -1155,6 +1100,8 @@ void retro_run(void)
 			if(mouseLpre != mouseL)
 			{
 				if(mouseL == 1) { joymouseClickedTime = DEFAULT_FPS * 0.1; }
+				else { joymouseClickedTime = 0; }
+				joymouseDragging = false;
 				joymouseTime = DEFAULT_FPS / 2;
 				joyevent[0] = 4 + mouseL;
 				joyevent[1] = (joymouseX >> 8) & 0xFF;
@@ -1371,8 +1318,8 @@ void retro_run(void)
 		}
 
 		/* draw pointer */
-		/* check if the clicked pointer needs to be shown */
-		if(joymouseClickedTime>0)
+		/* check if the clicked/dragged pointer needs to be shown */
+		if(joymouseClickedTime>0 || joymouseDragging)
 		{
 			joymouseClickedTime--;
 
@@ -1384,7 +1331,7 @@ void retro_run(void)
 					t = ((joymouseY + i - 3)*frameWidth)+(joymouseX + j - 6);
 					if(t>=0 && t<sizeof(frame))
 					{
-						switch (joymouseClickedImage[(i*17)+j])
+						switch (joymouseDragging ? joymouseDragImage[(i*17)+j] : joymouseClickedImage[(i*17)+j])
 						{
 							case 1: frame[t] = pointerOutlineColor; break;
 							case 2: frame[t] = pointerInnerColor; break;
