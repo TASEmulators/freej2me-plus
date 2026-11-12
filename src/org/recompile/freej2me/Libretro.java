@@ -32,8 +32,8 @@ public class Libretro
 	// Key press delay before becoming a key repeat
 	private final int REPEAT_START_DELAY = 350;
 	private long keyPressTime = 0;
-	// 1/3 of a second of pause delay to be extra safe, the core may stall a bit at boot.
-	private static final long PAUSE_DELAY_MS = 333;
+	// 1/10th of a second of pause delay to be extra safe, the core may stall a bit at boot.
+	private static final long PAUSE_DELAY_MS = 100;
 	private static volatile long lastCoreUpdateTime = 0; // Tracks last core update for pause checks
 
 	private byte[] frameBuffer = new byte[854*854*3];
