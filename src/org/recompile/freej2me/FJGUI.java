@@ -1018,7 +1018,7 @@ public final class FJGUI
 		// Per-App Radio Group Settings.
 		bindRadioGroup(dojaVersions, dojaVersionValues, "dojaversion", false, new Runnable()
 		{
-			public void run() { showRestartDialog(); }
+			public void run() { showRestartDialog(false); }
 		});
 		bindRadioGroup(rotations, rotationValues, "rotate");
 		bindRadioGroup(layoutOptions, layoutValues, "phone");
@@ -1083,14 +1083,14 @@ public final class FJGUI
 			{
 				config.updateSysSetting("textfont", useCustomFont.isSelected() ? "Custom" : "Default");
 				hasPendingChange = true;
-				showRestartDialog();
+				showRestartDialog(false);
 			}
 		});
 
 		// System toggleable settings.
 		bindRadioGroup(exclusiveSynths, excSynthValues, "numsynths", true, new Runnable()
 		{
-			public void run() { showRestartDialog(); }
+			public void run() { showRestartDialog(false); }
 		});
 		setSysToggle(enableAudio, "sound");
 		setSysToggle(deleteTemporaryKJXFiles, "deleteTempKJXFiles");
@@ -1124,7 +1124,7 @@ public final class FJGUI
 				boolean selected = checkbox.isSelected();
 				config.updateSetting(settingKey, selected ? "on" : "off");
 				hasPendingChange = true;
-				if (requiresRestart) { showRestartDialog(); }
+				if (requiresRestart) { showRestartDialog(false); }
 			}
 		});
 	}
@@ -1417,7 +1417,7 @@ public final class FJGUI
 							Integer.parseInt(res[1]));
 						hasPendingChange = true;
 
-						showRestartDialog();
+						showRestartDialog(false);
 					}
 				}
 			});
@@ -1554,7 +1554,7 @@ public final class FJGUI
 						loadJarFile(jarfile);
 					} else {
 						Mobile.getPlatform().fileName = jarfile;
-						showRestartDialog();
+						showRestartDialog(false);
 					}
 				}
 			}
@@ -1566,7 +1566,7 @@ public final class FJGUI
 					spfile = file.toURI().toString();
 					Mobile.getPlatform().spFileName = spfile;
 					if (hasLoadedFile()) {
-						showRestartDialog();
+						showRestartDialog(false);
 					}
 				}
 			}
@@ -1809,10 +1809,10 @@ public final class FJGUI
 
 	public boolean hasJustLoaded() { return firstLoad; }
 
-	public void showRestartDialog()
+	public void showRestartDialog(boolean force)
 	{
 		// If we're still in the init stage, ignore changes that call this up.
-		if(!this.allowRestartDialog) { return; }
+		if(!this.allowRestartDialog && !force) { return; }
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			public void run()

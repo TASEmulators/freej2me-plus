@@ -1077,7 +1077,7 @@ public class FreeJ2ME
 								{
 									MobilePlatform.fileName = droppedPath;
 									fjGUI.setJarPath(droppedPath);
-									fjGUI.showRestartDialog();
+									fjGUI.showRestartDialog(true);
 								}
 							}
 						});
