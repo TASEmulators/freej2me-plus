@@ -396,7 +396,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 			if(fastBlit && image.getDataBuffer() == canvasData)
 			{
-				if(!MobilePlatform.showFPS.equals("Off")) { showFPS(); }
 				return; // No need to copy anything, they're already the same
 			}
 			
@@ -411,7 +410,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				 * need to do any of the checks below.
 				 */
 				System.arraycopy(image.getDataBuffer(), 0, canvasData, 0, canvasWidth*canvasHeight);
-				if(!MobilePlatform.showFPS.equals("Off")) { showFPS(); }
 				return;
 			}
 
@@ -461,8 +459,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 					}
 				}
 			}
-
-			if(!MobilePlatform.showFPS.equals("Off")) { showFPS(); }
 		}
 		catch (Exception e)
 		{

@@ -930,9 +930,10 @@ public class MobilePlatform
 			synchronized (lcdFrontbuffer)
 			{
 				gcFrontbuffer.flushGraphics(img, x, y, width, height);
+				if(postDraw != null) { postDraw.run(); postDraw = null; }
+				if(!showFPS.equals("Off")) { gcFrontbuffer.showFPS(); }
 			}
-
-			if(postDraw != null) { postDraw.run(); postDraw = null; }
+			
 			painter.run();
 
 			if(focusCommandBar)
