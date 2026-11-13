@@ -19,6 +19,7 @@ package com.nttdocomo.ui;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 import org.recompile.mobile.PlatformImage;
+import org.recompile.mobile.PlatformGraphics;
 
 public abstract class Frame
 {
@@ -52,7 +53,7 @@ public abstract class Frame
         (Mobile.DoJaVersion >= 40 && (color < Integer.MIN_VALUE || color > Integer.MAX_VALUE)))
         { throw new IllegalArgumentException("Invalid color value."); }
 
-        graphics.setColor(color);
+        ((PlatformGraphics)graphics).setDoJaClearColor(color);
     }
 
     public void setSoftLabel(int key, String label) 

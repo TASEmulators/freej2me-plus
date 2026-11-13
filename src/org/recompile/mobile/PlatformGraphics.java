@@ -150,6 +150,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	private boolean firstReset = true;
 
 	protected int color = 0xFF000000;
+	// DoJa background color defaults to white, the spec requires it to contrast with the context's
+	protected int dojaClearColor = 0xFFFFFFFF;
 	protected Font font = Font.getDefaultFont();
 	protected com.nttdocomo.ui.Font dojaFont = com.nttdocomo.ui.Font.getDefaultFont();
 	protected int strokeStyle = SOLID;
@@ -224,9 +226,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if(contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		int tmpcolor = color;
+		setColor(dojaClearColor);
 		fillRect(x, y, width, height);
-		setColor(tmpcolor);
+		setColor(color);
 	}
 
 	public void copyArea(int x_src, int y_src, int width, int height, int x_dest, int y_dest, int anchor)
@@ -1196,6 +1198,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		color = (0xFF << 24) | (r<<16) | (g<<8) | b; // Alpha is ignored below, we set it just so the color variable is accurate
 		gc.setColor(new Color(color));
 	}
+
+	// Used by DoJa's Frame.setBackground, to set exclusively the "clearRect"/BG color
+	public void setDoJaClearColor(int rgb) { dojaClearColor = rgb; }
 
 	public void setGrayScale(int value) { setColor(value, value, value); }
 
