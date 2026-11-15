@@ -264,7 +264,7 @@ async function startFreeJ2ME()
     cheerpjCreateDisplay(-1, -1, document.body);
     document.getElementById('cheerpjDisplay').style.visibility = 'hidden';
     document.getElementById('cheerpjDisplay').style.opacity = '0';
-    await cheerpjRunJar("/app/freej2me-plus/_webplayer/freej2me.jar", "/str/app."+fileType, "1", cmdWidth, cmdHeight, "1", keyLayout, cmdFPS, cmdDoJaVer);
+    await cheerpjRunJar("/app/freej2me-plus/_webplayer/freej2me_plus.jar", "/str/app."+fileType, "1", cmdWidth, cmdHeight, "1", keyLayout, cmdFPS, cmdDoJaVer);
 }
 
 document.addEventListener("DOMContentLoaded", loadPage);
