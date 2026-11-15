@@ -14,6 +14,7 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeJ2ME.  If not, see http://www.gnu.org/licenses/
 */
+#include "libretro.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -28,7 +29,6 @@
 #include <io.h>
 #endif
 #include "freej2me_libretro.h"
-#include "bundled_jre.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -803,40 +803,66 @@ void retro_init(void)
 		Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &systemPath);
 	}
 
-	/* Check if freej2me's app actually exists and notify the user if it doesn't */
-	char *freej2mePath = malloc(sizeof(char) * PIPE_MAX_LEN);
-	snprintf(freej2mePath, sizeof(char) * PIPE_MAX_LEN, "%s/%s", systemPath, freej2meapp);
-
-	if (!freej2me_present(freej2mePath))
-	{
-		free(freej2mePath);
-		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[SYSTEM_NOT_FOUND_MSG]);
-		log_fn(RETRO_LOG_ERROR, "Error: %s does not exist in the system dir.\n", freej2meapp);
-		return;
-	}
-
-	free(freej2mePath);
-
 	/* Allocate memory for launch arguments */
 	params = (char**)malloc(sizeof(char*) * NUM_ARGUMENTS);
 	/* The runtime "ant build-runtime" makes, from the system directory
 	 * (bundled_jre.c); without one, the java on PATH */
+	
+	char bundledJava[PATH_MAX_LENGTH];
+	if (bundled_jre_find(systemPath, bundledJava, sizeof(bundledJava), Environ, log_fn))
 	{
-		char bundledJava[PATH_MAX_LENGTH];
-		if (bundled_jre_find(systemPath, bundledJava, sizeof(bundledJava), Environ, log_fn))
-			params[0] = strdup(bundledJava);
-		else
+		params[0] = strdup(bundledJava);
+
+		// concatenation of bundledJava (until the last separator) and
+		// the content of `freej2meapp`, because if the runtime is used, the
+		// bundled freej2me_plus-lr.jar won't be at the system root but
+		// alongside the runtime executable itself.
+		char *lastSlash = NULL;
+		for (char *s = bundledJava; *s != '\0'; s++)
 		{
-#if defined(__linux__) || defined(__APPLE__)
-			params[0] = strdup("java");
-#elif _WIN32
-			params[0] = strdup("javaw");
-#endif
+			if (*s == '/' || *s == '\\') { lastSlash = s; }
 		}
+
+		if (lastSlash)
+		{
+			size_t dir_len = (size_t)(lastSlash - bundledJava + 1);
+			size_t total_len = dir_len + strlen(freej2meapp) + 1;
+			char *full_path = malloc(total_len);
+			snprintf(full_path, total_len, "%.*s%s", (int)dir_len, bundledJava, freej2meapp);
+			params[3] = full_path;
+		}
+		else { params[3] = strdup(freej2meapp); } // Not there for some reason? Fallback to system root.
 	}
+	else
+	{
+		Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[RUNTIME_NOT_FOUND_MSG]);
+		log_fn(RETRO_LOG_WARN, "Runtime not found at %s. Looking for standalone jar...\n", bundledJava);
+
+		/* Check if freej2me's app actually exists and notify the user if it doesn't */
+		char *freej2mePath = malloc(sizeof(char) * PIPE_MAX_LEN);
+		snprintf(freej2mePath, sizeof(char) * PIPE_MAX_LEN, "%s/%s", systemPath, freej2meapp);
+	
+		if (!freej2me_present(freej2mePath))
+		{
+			free(freej2mePath);
+			Environ(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, (void*)&messages[SYSTEM_NOT_FOUND_MSG]);
+			log_fn(RETRO_LOG_ERROR, "Error: %s does not exist in the system dir.\n", freej2meapp);
+			return;
+		}
+		
+		free(freej2mePath);
+		
+#if defined(__linux__) || defined(__APPLE__)
+		params[0] = strdup("java");
+#elif _WIN32
+		params[0] = strdup("javaw");
+#endif
+		params[3] = strdup(freej2meapp);
+	}
+	
 	params[1] = strdup("-jar");
 	params[2] = strdup(supported_encodings[characterEncoding]);
-	params[3] = strdup(freej2meapp);
+	
 	params[4] = strdup(resArg[0]);
 	params[5] = strdup(resArg[1]);
 	params[6] = NULL; // Null-terminate the array
