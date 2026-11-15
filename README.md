@@ -19,7 +19,7 @@
 <div align="center">
 
 [![Nightly Releases](https://img.shields.io/github/v/release/TASEmulators/freej2me-plus?label=Bleeding%20Edge%20Builds:&style=for-the-badge)](https://github.com/TASEmulators/freej2me-plus/releases/tag/nightlies)
-[![Latest Stable Release](https://img.shields.io/badge/version-v1.52-blue?label=Latest%20Stable%20Release:&style=for-the-badge)](https://github.com/TASEmulators/freej2me-plus/releases/tag/1.52)
+[![Latest Stable Release](https://img.shields.io/badge/version-v1.53-blue?label=Latest%20Stable%20Release:&style=for-the-badge)](https://github.com/TASEmulators/freej2me-plus/releases/tag/1.53)
 
 </div>
 
@@ -51,28 +51,28 @@
 >```
 >**That command will create two different jar files inside `build/`:**
 >
->**`freej2me.jar` -> Standalone AWT jar executable, can be double-clicked right away to start**
+>**`freej2me_plus.jar` -> Standalone AWT jar executable, can be double-clicked right away to start**
 >
->**`freej2me-lr.jar` -> Libretro executable (has to be placed on the frontend's `system/` folder, since it acts as a BIOS for the libretro core and is what runs J2ME jars)**
+>**`freej2me_plus-lr.jar` -> Libretro executable (has to be placed on the frontend's `system/` folder, since it acts as a BIOS for the libretro core and is what runs J2ME jars)**
 >
 >### **NOTE: The Libretro jar file needs additional binaries to be compiled before use. Look at the additional steps below if you're going to use it.**
 >
->### **NOTE: FreeJ2ME-Plus and the original FreeJ2ME are not cross-compatible, as cores or standalone: settings and save data made by one do not work in the other. FreeJ2ME-Plus keeps saves in a more accurate format developed jointly with SquirrelJME, and those saves are meant to be compatible between the two (not tested extensively).**
+>### **NOTE: FreeJ2ME-Plus and the original FreeJ2ME are not cross-compatible, as cores or standalone: settings and save data made by one do not work in the other. FreeJ2ME-Plus keeps saves in a more accurate format developed jointly with SquirrelJME, and those saves are meant to be compatible between the two (not tested extensively). FreeJ2ME-Plus also has a much more mature libretro core and works quite differently.**
 
 # :gear: :video_game: Building the Libretro core
 
 ### Building for Linux:
->**To build the libretro core, be sure you can run the `make` command, then open a terminal in freej2me's folder run the following commands from there:**
+>**To build the libretro core, be sure you can run the `make` command, then open a terminal in FreeJ2ME-Plus's source folder and run the following commands from there:**
 >```
 ># libretro core compilation
 > > cd src/libretro
 > > make
 >```
->**This will build `freej2me_plus_libretro.so` on `src/libretro/`, which is the core libretro will use to interface with `freej2me-lr.jar`.**
+>**This will build `freej2me_plus_libretro.so` on `src/libretro/`, which is the core libretro will use to interface with `freej2me_plus-lr.jar`.**
 >
->**Move it to your libretro frontend's `cores/` folder, with freej2me-lr.jar on `system/` and the frontend should be able to load j2me files afterwards.**
+>**Move it to your libretro frontend's `cores/` folder, with freej2me_plus-lr.jar on `system/` and the frontend should be able to load j2me files afterwards.**
 >
-> ### **NOTE: The core DOES NOT WORK on containerized/sandboxed environments unless it can call a java runtime that also resides in the same sandbox or container, keep that in mind if you're running a libretro frontend through something like flatpak or snap for example.**
+> ### **NOTE: The core DOES NOT WORK on containerized/sandboxed environments unless you place the prebuilt runtime in the system folder as opposed to this single jar, keep that in mind if you're running a libretro frontend through something like flatpak or snap for example.**
 >
 
 <h1> </h1>
@@ -92,24 +92,24 @@
 > > cd freej2mefolder/src/libretro
 > > make
 >```
->**This will build `freej2me_plus_libretro.dll` on `freej2mefolder/src/libretro/`, which is the core libretro will use to interface with `freej2me-lr.jar`.**
+>**This will build `freej2me_plus_libretro.dll` on `freej2mefolder/src/libretro/`, which is the core libretro will use to interface with `freej2me_plus-lr.jar`.**
 >
->**Move it to your libretro frontend's `cores/` folder, with freej2me-lr.jar on `system/` and the frontend should be able to load j2me files afterwards.**
+>**Move it to your libretro frontend's `cores/` folder, with freej2me_plus-lr.jar on `system/` and the frontend should be able to load j2me files afterwards.**
 >
 > ### **NOTE: The windows core has been tested on Windows 7, 10 & 11 x64.**
 >
 ----
 # :memo: How to use the AWT frontend:
 
-Launching the AWT frontend (freej2me.jar) directly will bring up the standalone GUI, where you can load your application through the `File` menu, or by **dragging and dropping your JAR/JAD/KJX/MSD file onto it**. 
+Launching the AWT frontend (`freej2me_plus.jar`) directly will bring up the standalone GUI, where you can load your application through the `File` menu, or by **dragging and dropping your JAR/JAD/KJX/MSD file onto it**. 
 
 You can also configure many aspects of the runtime, including debug options:
 
-<img width="252" height="390" alt="image" src="https://github.com/user-attachments/assets/64737dd3-eea6-4437-b236-aeb163841f21" />
-<img width="252" height="390" alt="image" src="https://github.com/user-attachments/assets/5b105d46-d83b-4d1f-9913-687d281523d4" />
-<img width="254" height="390" alt="image" src="https://github.com/user-attachments/assets/95054a08-35fb-4e99-87f2-ba36a9a8629c" />
+<img width="237" height="366" alt="image" src="https://github.com/user-attachments/assets/b47c9b5d-a148-4994-8a86-a7499f1e2ae2" />
+<img width="243" height="373" alt="image" src="https://github.com/user-attachments/assets/06c91331-61ec-4a6b-98c5-8b6365425820" />
+<img width="252" height="411" alt="image" src="https://github.com/user-attachments/assets/792cbc3f-47c3-4f33-a9f1-8a99caa258ae" />
+<img width="840" height="400" alt="image" src="https://github.com/user-attachments/assets/6ae6cc90-5e88-42e5-a187-96521db5a7a2" />
 
-<img width="968" height="399" alt="image" src="https://github.com/user-attachments/assets/f28042c3-1d7f-47be-8942-0e5a5b2cf2b9" />
 
 <h1> </h1>
 
@@ -133,6 +133,7 @@ Alternatively it can be launched from the command line with the following argume
   - `8  -> Siemens`
   - `9 -> SKT`
   - `10 -> KDDI`
+  - `11 -> BlackBerry 8xxx/9xxx`
 - `framerate` :arrow_right: `sets the maximum FPS applications are allowed to run at.` 
   - Can be any value, although '10' to '60' is the expected ballpark
 - `dojaversion` :arrow_right: `sets the DoJa/Star profile for the I-Appli to use.` These can be:
@@ -153,7 +154,7 @@ Alternatively it can be launched from the command line with the following argume
 
 <h1> </h1>
 
-Those are organized and read internally in this manner: `java -jar freej2me.jar 'file:///path/to/midlet.jar' 'sp=path/to/scratchpad.[sp,sp0]' fullscreen width height scale keyLayout framerate dojaversion`
+Those are organized and read internally in this manner: `java -jar -Dfile.encoding=[ISO_8859_1, Shift_JIS, EUC_KR] freej2me_plus.jar 'file:///path/to/midlet.jar' 'sp=path/to/scratchpad.[sp,sp0]' fullscreen width height scale keyLayout framerate dojaversion`
 
 Although all arguments aside from the path are optional to launch FreeJ2ME-Plus with any given app. But if you want, to, say, set the scale, you need to pass the fullscreen and width/height arguments beforehand. Only the scratchpad argument is fully optional here.
 
