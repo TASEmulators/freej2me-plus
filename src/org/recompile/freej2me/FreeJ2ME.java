@@ -535,6 +535,7 @@ public class FreeJ2ME
 				if(Integer.parseInt(args[argLen-1]) == 8)  { Mobile.config.settings.put("phone",  "Siemens"); }
 				if(Integer.parseInt(args[argLen-1]) == 9)  { Mobile.config.settings.put("phone",  "SKT"); }
 				if(Integer.parseInt(args[argLen-1]) == 10) { Mobile.config.settings.put("phone",  "KDDI"); }
+				if(Integer.parseInt(args[argLen-1]) == 11) { Mobile.config.settings.put("phone",  "BlackBerry89"); }
 				argLen++;
 			}
 
