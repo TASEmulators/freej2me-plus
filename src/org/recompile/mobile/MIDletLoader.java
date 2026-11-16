@@ -48,6 +48,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import com.nttdocomo.ui.IApplication;
 
@@ -1137,7 +1138,7 @@ public class MIDletLoader extends URLClassLoader
 
 	private class ASMVisitor extends ClassAdapter
 	{
-		private String superName;
+		private String superName, className;
 
 		public ASMVisitor(ClassVisitor visitor)
 		{
@@ -1229,6 +1230,7 @@ public class MIDletLoader extends URLClassLoader
 		public void visit(final int version, final int access, final String name, final String signature, final String superName, final String[] interfaces)
 		{
 			this.superName = superName;
+			this.className = mapInternalName(name);
 
 			// Remap super class and interfaces if they point to vendor graphics
 			String mappedSuper = mapInternalName(superName);
@@ -1243,7 +1245,7 @@ public class MIDletLoader extends URLClassLoader
 				}
 			}
 
-			super.visit(version, access, mapInternalName(name), mappedSignature, mappedSuper, mappedInterfaces);
+			super.visit(version, access, this.className, mappedSignature, mappedSuper, mappedInterfaces);
 		}
 
 		public void visitInnerClass(String name, String outerName, String innerName, int access)
@@ -1357,9 +1359,12 @@ public class MIDletLoader extends URLClassLoader
 				{
 					mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "noGC", "()V");
 				}
-				else if (opcode == Opcodes.INVOKESTATIC && "java/lang/Class".equals(owner) && "forName".equals(name)) // Override Class.forName() calls. DRMs use this.
+				else if (opcode == Opcodes.INVOKESTATIC && "java/lang/Class".equals(owner) && "forName".equals(name) && "(Ljava/lang/String;)Ljava/lang/Class;".equals(desc)) // Override Class.forName() calls. DRMs use this.
 				{
-					mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "classForName", "(Ljava/lang/String;)Ljava/lang/Class;");
+					mv.visitInsn(Opcodes.DUP);
+					// Run a quick class check that throws ClassNotFoundException if it's one of the known DRM check classes.
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/recompile/mobile/MIDletEnhancements", "checkClassName", "(Ljava/lang/String;)V");
+					mv.visitMethodInsn(opcode, owner, name, desc);
 				}
 				else if (opcode == INVOKEVIRTUAL && name.equals("getResourceAsStream") && owner.equals("java/lang/Class"))
 				{

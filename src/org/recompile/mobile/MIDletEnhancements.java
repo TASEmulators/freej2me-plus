@@ -115,13 +115,12 @@ public class MIDletEnhancements
 	}
 
 	/* Bypass for some chinese DRMs that look for random class names as an emu indicator. */
-	public static Class<?> classForName(String name) throws ClassNotFoundException
+	public static void checkClassName(String name) throws ClassNotFoundException
 	{
-		if (name != null && (name.startsWith("com.sprintpcs.")))
+		if (name != null && name.startsWith("com.sprintpcs."))
 		{
 			Mobile.log(Mobile.LOG_WARNING, Mobile.class.getPackage().getName() + "." + Mobile.class.getSimpleName() + ": " + "Bypassing emulator check: " + name);
 			throw new ClassNotFoundException(name);
 		}
-		return Class.forName(name);
 	}
 }
