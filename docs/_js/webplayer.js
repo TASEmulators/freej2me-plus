@@ -1,6 +1,6 @@
 let binaryData = null, fileType = null, descriptorData = null, descriptorType = null, scratchpadData = null;
 
-let OSDVisible = false, screenRotated = false, fastForwarding = false, midletPaused = false;
+let OSDVisible = false, screenRotated = false, fastForwarding = false, midletPaused = false, cmdWidth = 240, cmdHeight = 320;
 
 const keyValues = {
     k0: 0, k1: 0, k2: 0, k3: 0, k4: 0,
@@ -23,6 +23,11 @@ function checkForKeyword(message)
         setTimeout(() => {
             document.getElementById('loadAnim').style.display = 'none';
             document.getElementById('cheerpjDisplay').style.visibility = 'visible';
+            // Fullscreen only works properly when width and height is set here instead of cheerpjCreateDisplay.
+            // FreeJ2ME-Plus scales the graphics to account for the whole cheerpJ window before going fullscreen
+            document.getElementById('cheerpjDisplay').style.width = cmdWidth + 'px';
+            document.getElementById('cheerpjDisplay').style.height = cmdHeight + 'px';
+            updateDisplayScale();
             document.getElementById('commandBar').style.display = 'block';
             setTimeout(() => 
             { 
@@ -31,6 +36,19 @@ function checkForKeyword(message)
             }, 500);
         }, 500);
     }
+}
+
+// Responsive display scaling. CheerpJ doesn't handle browser resizes at all after loading.
+function updateDisplayScale() {
+    const display = document.getElementById('cheerpjDisplay');
+    if (display === null || display.style.visibility === 'hidden' || display.style.display === 'none') return;
+    const scaleX = window.innerWidth / cmdWidth;
+    const scaleY = window.innerHeight / cmdHeight;
+    
+    const scale = Math.min(scaleX, scaleY);
+
+    display.style.transform = 'scale(' + scale + ')';
+    display.style.transformOrigin = 'center center';
 }
 
 console.log = function(...args) 
@@ -268,3 +286,4 @@ async function startFreeJ2ME()
 }
 
 document.addEventListener("DOMContentLoaded", loadPage);
+window.addEventListener('resize', updateDisplayScale);
