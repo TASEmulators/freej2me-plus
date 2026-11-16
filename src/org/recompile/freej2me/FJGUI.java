@@ -593,7 +593,7 @@ public final class FJGUI
 		// Restart Required Dialog
 		swingDialogs[3].setLayout(new FlowLayout(FlowLayout.CENTER, 5, 10));
 		swingDialogs[3].setUndecorated(true);
-		swingDialogs[3].setBackground(new Color(238, 238, 238, 160));
+		swingDialogs[3].setBackground(new Color(238, 238, 238));
 		swingDialogs[3].setSize(240, 80);
 		swingDialogs[3].add(new JLabel("This change requires a restart to apply!"));
 
