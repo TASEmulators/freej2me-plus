@@ -251,24 +251,17 @@ public class PlatformImage
 	{
 		if(transform < Sprite.TRANS_NONE || transform > Sprite.TRANS_MIRROR_ROT90) { throw new IllegalArgumentException("Invalid transform"); }
 
-		// Create a transformed copy of an image
-		BufferedImage sub = new BufferedImage(Width, Height, BufferedImage.TYPE_INT_ARGB);
+		boolean swap = (transform == Sprite.TRANS_ROT90 || 
+			transform == Sprite.TRANS_ROT270 || 
+			transform == Sprite.TRANS_MIRROR_ROT90 || 
+			transform == Sprite.TRANS_MIRROR_ROT270);
+		
+		canvas = new BufferedImage(swap ? Height : Width, swap ? Width : Height,
+			BufferedImage.TYPE_INT_ARGB);
 
-		// Get the raw pixel data from the source image, and the new sub image
-		final int[] sourceData = ((DataBufferInt) image.canvas.getRaster().getDataBuffer()).getData();
-		final int[] subData = ((DataBufferInt) sub.getRaster().getDataBuffer()).getData();
-
-		// Copy pixel data directly to the subimage's databuffer.
-		for (int j = 0; j < Height; j++)
-		{
-			int sourceRow = (y + j) * image.canvas.getWidth() + x;
-			int subRow = j * Width;
-
-			// Copy pixel rows from the source image to the new sub-image
-			System.arraycopy(sourceData, sourceRow, subData, subRow, Math.min(Width, image.canvas.getWidth() - x));
-		}
-
-		canvas = transformImage(sub, transform);
+		this.isMutable = true;
+		this.getMIDPGraphics().drawRegion(image, x, y, Width, Height, transform, 0, 0, 0);
+		this.isMutable = false;
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
@@ -378,61 +371,6 @@ public class PlatformImage
 	}
 
 	public boolean isMutable() { return isMutable; }
-
-	// Only used by Siemens at this point.
-	public static final BufferedImage transformImage(final BufferedImage image, final int transform)
-	{
-		// Return early if no transform is specified.
-		if(transform == Sprite.TRANS_NONE) { return image; }
-
-		final int width = (int)image.getWidth();
-		final int height = (int)image.getHeight();
-
-		BufferedImage transimage = new BufferedImage(width, height, image.getType());
-
-		// We know the data is of TYPE_INT_ARGB, so just get it directly instead of checking for its type
-		final int[] sourceData = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
-		final int[] targetData = ((DataBufferInt)transimage.getRaster().getDataBuffer()).getData();
-
-		switch (transform)
-		{
-			case Sprite.TRANS_MIRROR:
-				/*
-				* Even though sorting an entire column would be faster from a pure algorithmic perspective (like processing
-				* a whole row at once is on TRANS_MIRROR_ROT180), image data tends to be stored so that each row is contiguous
-				* in memory, which makes its access oftentimes MUCH faster than for columns, which could negate the performance
-				* benefits of column access entirely and then some.
-				*
-				* This transform is such a case. Making operations on columns, and eliminating that inner row loop actually
-				* results in far worse performance since columns would be accessed way more often. So the next best thing is
-				* only working on half of the image's width, just like TRANS_ROT180.
-				*/
-				for (int y = 0; y < height; y++)
-				{
-					int targetRow = y * width;
-					for (int x = 0; x < width / 2; x++)
-					{
-						targetData[targetRow + (width - 1 - x)] = sourceData[targetRow + x];
-						targetData[targetRow + x] = sourceData[targetRow + (width - 1 - x)];
-					}
-
-					// If image width is odd, copy the middle pixel directly as there's no need to swap anything.
-					if (width % 2 != 0) { targetData[targetRow + (width/2)] = sourceData[targetRow + (width/2)]; }
-				}
-				if(Mobile.dumpGraphicsObjects) { dumpImage(transimage, null, "_mirror"); }
-				break;
-
-			case Sprite.TRANS_MIRROR_ROT180: // Basically mirror vertically (an arrow pointing up will then point down).
-				for (int y = 0; y < height; y++) // Due to this, we copy entire rows at once instead of going pixel by pixel
-				{
-					System.arraycopy(sourceData, y * width, targetData, (height - 1 - y) * width, width);
-				}
-				if(Mobile.dumpGraphicsObjects) { dumpImage(transimage, null, "_mirror180"); }
-				break;
-		}
-
-		return transimage;
-	}
 
 	public static BufferedImage scaleImage(BufferedImage originalImage, int desiredWidth, int desiredHeight)
 	{
