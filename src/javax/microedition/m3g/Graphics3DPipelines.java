@@ -258,8 +258,8 @@ class Graphics3DPipelines
 			{
 				int outR = (((bg >> 16) & 0xFF) * ((fg >> 16) & 0xFF) + 128) >> 8;
 				int outG = (((bg >>  8) & 0xFF) * ((fg >>  8) & 0xFF) + 128) >> 8;
-				int outB = (( bg       & 0xFF)  * ( fg       & 0xFF) + 128) >> 8;
-				int outA = ((bg >>> 24)         * (fg >>> 24)        + 128) >> 8;
+				int outB = (( bg        & 0xFF) * ( fg        & 0xFF) + 128) >> 8;
+				int outA = ((bg >>> 24) * (fg >>> 24) + (bg >>> 24)) >> 8;
 
 				return (outA << 24) | (outR << 16) | (outG << 8) | outB;
 			}
