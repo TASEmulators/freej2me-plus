@@ -25,68 +25,66 @@ import javax.microedition.lcdui.game.Sprite;
 // NativeMem is a complete stub as is, so inherit javax Image directly, as it's what many games like as return value here
 public class Image extends javax.microedition.lcdui.Image 
 {
-	public static javax.microedition.lcdui.Image img;
 	public static final int COLOR_BMP_8BIT = 5;
 
 	protected Image() { }
 
 	Image(byte[] imageData) 
 	{
+		//TODO: Does it have to be mutable?
+		super(imageData, 0, imageData.length, true);
 		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(byte[]) untested");
-		// TODO: Does it have to be mutable?
-		img = javax.microedition.lcdui.Image.createImage(imageData, 0, imageData.length, true);
 	}
 
 	// The idea is to handle as much of this on lcdui.Image as possible
 	Image(byte[] bytes, int imageWidth, int imageHeight) throws IllegalArgumentException
 	{
-		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(byte[], width, height) untested");
 		//TODO: Might be incorrect
-		img = javax.microedition.lcdui.Image.createImage(bytes, canvas.getWidth(), canvas.getHeight());
+		super(bytes, 0, imageWidth * imageHeight, true);
+		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(byte[], width, height) untested");
 	}
 
 	Image(byte[] bytes, int imageWidth, int imageHeight, boolean transparent) 
 	{
+		// TODO: May be incorrect
+		super(imageWidth, imageHeight);
 		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(byte[], width, height, boolean transp) untested");
-		if(transparent) { img = createTransparentImageFromBitmap(bytes, imageWidth, imageHeight); }
-		else { img = createImageFromBitmap(bytes, imageWidth, imageHeight); }
+		if(transparent) { this.setCanvas(createTransparentImageFromBitmap(bytes, imageWidth, imageHeight).getCanvas()); }
+		else { this.setCanvas(createImageFromBitmap(bytes, imageWidth, imageHeight).getCanvas()); }
 	}
 
 	Image(byte[] rgb, int width, int height, int bitmapType) throws IOException
 	{
+		super(width, height);
 		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(byte[], width, height, int type) untested");
 		// TODO: We should verify whether or not Alpha Processing is required here
-		img = createRGBImage(rgb, width, height, bitmapType);
+		this.setCanvas(createRGBImage(rgb, width, height, bitmapType).getCanvas());
 	}
 
 	Image(javax.microedition.lcdui.Image image) 
 	{
+		super(image);
 		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(Image) untested");
-		img = javax.microedition.lcdui.Image.createImage(image);
 	}
 
 	Image(int imageWidth, int imageHeight)
 	{
+		super(imageWidth, imageHeight);
 		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(width, height) untested");
-		img = javax.microedition.lcdui.Image.createImage(imageWidth, imageHeight);
 	}
 
-	Image(String name, boolean doScale) 
+	Image(String name, boolean doScale) throws IOException
 	{
-		try 
+		super(name);
+		if(!doScale) 
+		{ 
+			Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(String, boolean) without scaling untested");
+		}
+		else 
 		{
-			if(!doScale) 
-			{ 
-				Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(String, boolean) without scaling untested");
-				img = createImageWithoutScaling(name); 
-			}
-			else 
-			{
-				Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(String, boolean) with scaling untested");
-				img = createImageWithoutScaling(name);
-				img.setCanvas(javax.microedition.lcdui.Image.scaleImage(img.getCanvas(), Mobile.getDisplay().getCurrent().getWidth(), Mobile.getDisplay().getCurrent().getHeight()));
-			}
-		} catch (IOException e) { }
+			Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "Image(String, boolean) with scaling untested");
+			this.setCanvas(javax.microedition.lcdui.Image.scaleImage(this.getCanvas(), Mobile.getDisplay().getCurrent().getWidth(), Mobile.getDisplay().getCurrent().getHeight()));
+		}
 	}
 
 	// AH-1 SeaBomber Siemens uses this, works.
@@ -179,12 +177,14 @@ public class Image extends javax.microedition.lcdui.Image
 
 	public static void mirrorImageHorizontally(javax.microedition.lcdui.Image image) 
 	{
-		img = Image.createImage(image, 0, 0, image.getWidth(), image.getHeight(), Sprite.TRANS_MIRROR);
+		image = javax.microedition.lcdui.Image.createImage(image, 0, 0,
+			image.getWidth(), image.getHeight(), Sprite.TRANS_MIRROR);
 	}
 
 	public static void mirrorImageVertically(javax.microedition.lcdui.Image image) 
 	{
-		img = Image.createImage(image, 0, 0, image.getWidth(), image.getHeight(), Sprite.TRANS_MIRROR_ROT180);
+		image = javax.microedition.lcdui.Image.createImage(image, 0, 0,
+			image.getWidth(), image.getHeight(), Sprite.TRANS_MIRROR_ROT180);
 		Mobile.log(Mobile.LOG_WARNING, Image.class.getPackage().getName() + "." + Image.class.getSimpleName() + ": " + "mirrorImageVertically(image) untested"); 
 	}
 }
