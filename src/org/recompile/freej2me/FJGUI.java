@@ -1911,7 +1911,18 @@ public final class FJGUI
 
 	public void bringDialogsToFront()
 	{
-		for (JDialog dialog : swingDialogs) { dialog.toFront(); }
+		boolean prevFocusable;
+		for (JDialog dialog : swingDialogs)
+		{
+			prevFocusable = dialog.getFocusableWindowState();
+			dialog.setFocusableWindowState(false);
+			dialog.toFront();
+			dialog.setFocusableWindowState(prevFocusable);
+		}
+		
+		prevFocusable = memViewDialog.getFocusableWindowState();
+		memViewDialog.setFocusableWindowState(false);
 		memViewDialog.toFront();
+		memViewDialog.setFocusableWindowState(prevFocusable);
 	}
 }

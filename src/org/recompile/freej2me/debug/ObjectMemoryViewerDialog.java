@@ -75,6 +75,8 @@ public class ObjectMemoryViewerDialog extends JDialog
 		});
 		imageBorder = BorderFactory.createTitledBorder("Images (0)");
 		JScrollPane imageScroll = new JScrollPane(imagePanel);
+		imageScroll.getVerticalScrollBar().setUnitIncrement(24);
+		imageScroll.getHorizontalScrollBar().setUnitIncrement(24);
 		imageScroll.setBorder(imageBorder);
 
 		imageInfoLabel = createInfoLabel();
