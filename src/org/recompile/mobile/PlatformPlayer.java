@@ -309,7 +309,19 @@ public class PlatformPlayer implements Player
 			controls = null;
 			player = null;
 			state = Player.CLOSED;
+			contentType = null;
 			notifyListeners(PlayerListener.CLOSED, null);
+			listeners = null;
+			siemensListeners = null;
+			kddiListeners = null;
+			kddiPlayerBox = null;
+			nokiaListener = null;
+			nokiaSound = null;
+			doJaListener = null;
+			doJaPresenter = null;
+			necClip = null;
+			necListener = null;
+			phraseListener = null;
 		}
 		catch (Exception e) { Mobile.log(Mobile.LOG_ERROR, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Could not close player: " + e.getMessage()); e.printStackTrace(); }
 	}

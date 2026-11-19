@@ -1311,7 +1311,7 @@ public class Mobile
 			for (int i = 0; i < memPlayers.size(); i++)
 			{
 				WeakReference<PlatformPlayer> ref = memPlayers.get(i);
-				if (ref == null || ref.get() == null)
+				if (ref == null || ref.get() == null || ref.get().getState() == javax.microedition.media.Player.CLOSED)
 				{
 					memPlayers.remove(i);
 					i--;
