@@ -28,6 +28,9 @@ public class Libretro
 	private volatile int[] lcdData;
 	private volatile boolean hasRepainted = false;
 
+	/* Whether the core's first options message (sent on app load) was already skipped */
+	private boolean receivedCoreOptions = false;
+
 	private static volatile boolean canPause = false;
 
 	// Key press delay before becoming a key repeat
@@ -218,6 +221,17 @@ public class Libretro
 							case 12: // Received settings from libretro core
 								buffer = new byte[code];
 								bytesRead = System.in.read(buffer);
+
+								/*
+								 * The core sends its options right after loading the app. Skip that first message so
+								 * game.conf isn't overwritten with the frontend's values on every launch (as up to v1.52).
+								 */
+								if (!receivedCoreOptions)
+								{
+									receivedCoreOptions = true;
+									settingsChanged();
+									break;
+								}
 
 								String cfgvars = new String(buffer, 0, bytesRead);
 								/* Tokens: [0]="FJ2ME_LR_OPTS:", [1]=width, [2]=height, [3]=rotate, [4]=phone, [5]=fps, ... */
