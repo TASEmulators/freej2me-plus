@@ -16,6 +16,8 @@
 */
 package org.recompile.mobile;
 
+import java.lang.ref.WeakReference;
+
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.File;
@@ -23,8 +25,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.WeakHashMap;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -52,6 +56,12 @@ public class Mobile
 	public static File logFile;
 	private static BufferedWriter logWriter;
 	private static final Queue<Runnable> pendingLogs = new LinkedList<Runnable>();
+
+	// MIDlet object memory viewer
+	public static final ArrayList<WeakReference<PlatformImage>> memImages = new ArrayList<WeakReference<PlatformImage>>();
+	public static final ArrayList<WeakReference<PlatformPlayer>> memPlayers = new ArrayList<WeakReference<PlatformPlayer>>();
+	public static final ArrayList<WeakReference<Class<?>>> memClasses = new ArrayList<WeakReference<Class<?>>>();
+	public static final WeakHashMap<Class<?>, Long> memClassSizes = new WeakHashMap<Class<?>, Long>();
 
 	public static final String[] supportedEncodings = new String[] {"ISO_8859_1", "Shift_JIS", "EUC_KR"};
 	public static final byte ISO_8859_1 = 0;
@@ -945,7 +955,6 @@ public class Mobile
 		{
 			pendingLogs.add(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					String logText = "";
@@ -995,7 +1004,6 @@ public class Mobile
 
 		new Thread(new Runnable()
 		{
-			@Override
 			public void run() { processLogs(); }
 		}, "Logging-Thread").start();
 	}
@@ -1272,4 +1280,89 @@ public class Mobile
         }
 		catch (Exception e) { return null; } // This normally shouldn't fail
     }
+
+	public static void addImageReference(PlatformImage img)
+	{
+		synchronized(memImages)
+		{
+			// Clean up any null/weak references
+			for (int i = 0; i < memImages.size(); i++)
+			{
+				WeakReference<PlatformImage> ref = memImages.get(i);
+				if (ref == null || ref.get() == null)
+				{
+					memImages.remove(i);
+					i--;
+				}
+			}
+		
+			if (img != null)
+			{
+				memImages.add(new WeakReference<PlatformImage>(img));
+			}
+		}
+	}
+
+	public static void addPlayerReference(PlatformPlayer player)
+	{
+		synchronized(memPlayers)
+		{
+			// Clean up any null/weak references
+			for (int i = 0; i < memPlayers.size(); i++)
+			{
+				WeakReference<PlatformPlayer> ref = memPlayers.get(i);
+				if (ref == null || ref.get() == null)
+				{
+					memPlayers.remove(i);
+					i--;
+				}
+			}
+		
+			if (player != null)
+			{
+				memPlayers.add(new WeakReference<PlatformPlayer>(player));
+			}
+		}
+	}
+
+	public static void addClassReference(Class<?> cls)
+	{
+		synchronized(memClasses)
+		{
+			// Clean up any null/weak references
+			for (int i = 0; i < memClasses.size(); i++)
+			{
+				WeakReference<Class<?>> ref = memClasses.get(i);
+				if (ref == null || ref.get() == null)
+				{
+					memClasses.remove(i);
+					i--;
+				}
+			}
+		
+			if (cls != null)
+			{
+				memClasses.add(new WeakReference<Class<?>>(cls));
+			}
+		}
+	}
+
+	public static void recordClassSize(Class<?> cls, long bytes)
+	{
+		if (cls == null) { return; }
+		synchronized (memClassSizes)
+		{
+			memClassSizes.put(cls, Long.valueOf(Math.max(0L, bytes)));
+		}
+	}
+
+	public static long getRecordedClassSize(Class<?> cls)
+	{
+		if (cls == null) { return 0L; }
+		synchronized (memClassSizes)
+		{
+			Long val = memClassSizes.get(cls);
+			return (val != null) ? val.longValue() : 0L;
+		}
+	}
 }

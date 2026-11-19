@@ -88,6 +88,7 @@ public class PlatformImage
 		Arrays.fill(dataBuffer, 0xFFFFFFFF);
 
 		isMutable = true;
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(int Width, int Height, int ARGBcolor)
@@ -99,6 +100,7 @@ public class PlatformImage
 		Arrays.fill(dataBuffer, ARGBcolor);
 
 		isMutable = true;
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(String name) throws IOException
@@ -155,6 +157,7 @@ public class PlatformImage
 		}
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(InputStream stream) throws IOException
@@ -185,6 +188,7 @@ public class PlatformImage
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(Image source)
@@ -200,6 +204,7 @@ public class PlatformImage
 		System.arraycopy(tempData, 0, dataBuffer, 0, tempData.length);
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(byte[] imageData, int imageOffset, int imageLength, boolean mutable) // DoJa also uses this one, creates mutable images like DirectGraphics
@@ -228,6 +233,7 @@ public class PlatformImage
 		isMutable = mutable;
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(int[] rgb, int Width, int Height, boolean processAlpha)
@@ -245,6 +251,7 @@ public class PlatformImage
 		}
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(Image image, int x, int y, int Width, int Height, int transform)
@@ -265,6 +272,7 @@ public class PlatformImage
 		dataBuffer = ((DataBufferInt) canvas.getRaster().getDataBuffer()).getData();
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	// These constructors and methods are exclusive to DoJa's Image classes
@@ -281,6 +289,7 @@ public class PlatformImage
 		System.arraycopy(tempData, 0, dataBuffer, 0, tempData.length);
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	public PlatformImage(int Width, int Height, int[] data, int off)
@@ -294,6 +303,7 @@ public class PlatformImage
 		isMutable = true;
 
 		if(Mobile.dumpGraphicsObjects) { dumpImage(this.getCanvas(), null, ""); }
+		Mobile.addImageReference(this);
 	}
 
 	// Siemens methods

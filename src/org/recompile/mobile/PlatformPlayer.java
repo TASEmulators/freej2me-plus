@@ -62,6 +62,7 @@ import org.recompile.mobile.players.*;
 
 public class PlatformPlayer implements Player
 {
+	private static final String[] stateString = {"CLOSED", "UNREALIZED", "REALIZED", "PREFETCHED", "STARTED"};
 	// DoJa REALLY stresses this out. Akumajou Densetsu keeps more than 64 MLD
 	// files in memory.
 	private static final BasicPlayer[] sequencePlayers = new BasicPlayer[128];
@@ -262,6 +263,9 @@ public class PlatformPlayer implements Player
 			// Tempo control is available for both midi and smaf players
 			controls[1] = new tempoControl(this.player);
 		}
+
+		// Controls being disabled also doubles as a flag indicating no real player was created
+		if(!disableControls) { Mobile.addPlayerReference(this); }
 
 		Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "media type: " + contentType);
 	}
@@ -670,6 +674,21 @@ public class PlatformPlayer implements Player
 	public void setTimeBase(TimeBase master)
 	{
 		Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "setTimeBase(TimeBase) not implemented.");
+	}
+
+	// For Memory Viewer
+	public int getDataSize() { return player != null ? player.getDataSize() : 0; }
+
+	public String getStateString() { return stateString[getState() / 100]; }
+
+	public String toString()
+	{ 
+		if(player != null)
+		{
+			String baseStr = player.toString();
+			return "PlatformPlayer" + baseStr.substring(baseStr.lastIndexOf('.'));
+		}
+		return "null";
 	}
 
 	// Controls //

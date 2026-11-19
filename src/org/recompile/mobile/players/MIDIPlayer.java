@@ -44,6 +44,7 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 	public Sequencer midi;
 	private Sequence midiSequence;
 	public Synthesizer synthesizer;
+	int dataSize = 0;
 
 	private int synthIdx = -1;
 	private boolean synthReserved = false;
@@ -73,7 +74,7 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 		{
 			midiData = new byte[stream.available()];
 			stream.read(midiData, 0, stream.available());
-
+			dataSize = midiData.length;
 			midiSequence = MidiSystem.getSequence(new ByteArrayInputStream(midiData));
 			PlatformPlayer.addPlayerToStack(this, null, null, null);
 		}
@@ -83,6 +84,7 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 			try
 			{
 				midiSequence = MidiSystem.getSequence(MIDIPatcher.patchMIDIFile(midiData));
+				dataSize = midiData.length;
 				Mobile.log(Mobile.LOG_INFO, MIDIPlayer.class.getPackage().getName() + "." + MIDIPlayer.class.getSimpleName() + ": " + "MIDI patching succeeded!");
 			}
 			catch(Exception ie) { Mobile.log(Mobile.LOG_ERROR, MIDIPlayer.class.getPackage().getName() + "." + MIDIPlayer.class.getSimpleName() + ": " + "Couldn't patch MIDI file: " + ie.getMessage() + ". Defaulting midi data to null"); e.printStackTrace(); }
@@ -330,4 +332,6 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 			});
 		}
 	}
+
+	public int getDataSize() { return dataSize; }
 }

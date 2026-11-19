@@ -231,4 +231,6 @@ public class WAVPlayer extends BasicPlayer implements LineListener
 			});
 		}
 	}
+
+	public int getDataSize() { return tmpStream != null ? tmpStream.length : 0; }
 }

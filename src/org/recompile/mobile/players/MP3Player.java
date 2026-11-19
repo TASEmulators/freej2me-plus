@@ -184,4 +184,6 @@ public class MP3Player extends BasicPlayer
 	public long getDuration() { return mp3Player.getDuration(); }
 
 	public boolean isRunning() { return mp3Player.isRunning(); }
+
+	public int getDataSize() { return tmpStream != null ? tmpStream.length : 0; }
 }

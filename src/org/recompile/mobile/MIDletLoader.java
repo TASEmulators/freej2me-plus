@@ -85,6 +85,11 @@ public class MIDletLoader extends URLClassLoader
 	private IApplication IAppliInst;
 	private StarApplication StarAppliInst;
 
+	// Recompute stack sizes when writing classes. Allows debugging of
+	// Exceptions caught by apps.
+	ClassWriter writer;
+	ClassVisitor visitor;
+
 	private static boolean isStar = false;
 
 	private Registry reg;
@@ -1066,8 +1071,18 @@ public class MIDletLoader extends URLClassLoader
 			Mobile.log(Mobile.LOG_DEBUG, MIDletLoader.class.getPackage().getName() + "." + MIDletLoader.class.getSimpleName() + ": " + "Instrumenting Class "+name);
 			resource = name.replace(".", "/") + ".class";
 			stream = super.getResourceAsStream(resource);
-			code = instrument(stream);
-			return defineClass(name.replace("/", "."), code, 0, code.length);
+			
+			ClassReader reader = new ClassReader(stream);
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+			ASMVisitor visitor = new ASMVisitor(writer);
+			reader.accept(visitor, ClassReader.SKIP_DEBUG);
+			code = writer.toByteArray();
+			
+			Class midletClass = defineClass(name.replace("/", "."), code, 0, code.length);
+			long classSize = (long) code.length + ((ASMVisitor)visitor).getStaticFieldBytes();
+			Mobile.recordClassSize(midletClass, classSize);
+			Mobile.addClassReference(midletClass);
+			return midletClass;
 		}
 		catch (Exception e)
 		{
@@ -1125,25 +1140,17 @@ public class MIDletLoader extends URLClassLoader
  * Instrumentation
  * ************************************************************** */
 
-	private byte[] instrument(InputStream stream) throws Exception
-	{
-		ClassReader reader = new ClassReader(stream);
-		// Recompute stack sizes when writing classes. Allows debugging of
-		// Exceptions caught by apps.
-		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-		ClassVisitor visitor = new ASMVisitor(writer);
-		reader.accept(visitor, ClassReader.SKIP_DEBUG);
-		return writer.toByteArray();
-	}
-
 	private class ASMVisitor extends ClassAdapter
 	{
 		private String superName, className;
+		private long staticFieldBytes = 0L;
 
 		public ASMVisitor(ClassVisitor visitor)
 		{
 			super(visitor);
 		}
+		
+		public long getStaticFieldBytes() { return staticFieldBytes; }
 
 		// Rewrites vendor package/class names to another's. Right now this is
 		// only used to rename Star packages to DoJa ones, and vendor
@@ -1260,6 +1267,37 @@ public class MIDletLoader extends URLClassLoader
 
 		public FieldVisitor visitField(int access, String name, String desc, String signature, Object value)
 		{
+			if ((access & Opcodes.ACC_STATIC) != 0 && desc != null && desc.length() > 0)
+			{
+				char first = desc.charAt(0);
+				switch (first)
+				{
+					case 'Z':
+					case 'B':
+						staticFieldBytes += 1L;
+						break;
+					case 'S':
+					case 'C':
+						staticFieldBytes += 2L;
+						break;
+					case 'I':
+					case 'F':
+						staticFieldBytes += 4L;
+						break;
+					case 'J':
+					case 'D':
+						staticFieldBytes += 8L;
+						break;
+					case 'L':
+					case '[':
+						staticFieldBytes += 4L; // reference slot estimate
+						break;
+					default:
+						staticFieldBytes += 4L;
+						break;
+				}
+			}
+			
 			return super.visitField(access, name, mapDesc(desc), mapDesc(signature), value);
 		}
 

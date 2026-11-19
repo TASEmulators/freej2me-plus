@@ -87,7 +87,7 @@
 		<echo message="Building JAR - Libretro" />
 		<jar destfile="build/freej2me_plus-lr.jar">
 			<!-- Exclude GUI classes (FreeJ2ME.class is only needed for GUI) -->
-			<fileset dir="build/classes" excludes="**/FJGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/gamepad/**, **/ScreenShot*.class"/>
+			<fileset dir="build/classes" excludes="**/FJGUI*.class, **/FreeJ2ME*.class, org/recompile/freej2me/gamepad/**, org/recompile/freej2me/debug/** **/ScreenShot*.class"/>
 			<fileset dir="resources" />
 			<metainf dir="META-INF" />
 			<manifest>

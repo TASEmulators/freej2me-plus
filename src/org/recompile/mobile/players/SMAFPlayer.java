@@ -50,6 +50,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	public Sequencer midi;
 	public Synthesizer synthesizer;
 	public CustomMIDIReceiver receiver;
+	int dataSize = 0;
 
 	private int synthIdx = -1;
 	private boolean synthReserved = false;
@@ -77,6 +78,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	{
 		try
 		{
+			dataSize += midiStream.available();
 			midiSequence = MidiSystem.getSequence(midiStream);
 			hasMidiPlaybackEvents = hasMidiPlaybackEvents(midiSequence);
 			if (wavStreams != null && wavStreams.length > 0)
@@ -84,6 +86,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				this.wavStreams = new AudioInputStream[wavStreams.length];
 				for (int i = 0; i < wavStreams.length; i++)
 				{
+					dataSize += wavStreams[i].available();
 					if (wavStreams[i] == null) { continue; }
 					this.wavStreams[i] = AudioSystem.getAudioInputStream(wavStreams[i]);
 				}
@@ -590,4 +593,6 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 			});
 		}
 	}
+
+	public int getDataSize() { return dataSize; }
 }

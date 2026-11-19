@@ -44,4 +44,7 @@ public class BasicPlayer
 
 	// For sequence players
 	public Sequence getSequence() { return null; }
+
+	// For Memory Viewer
+	public int getDataSize() { return 0; }
 }

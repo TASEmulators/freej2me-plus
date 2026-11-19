@@ -16,6 +16,7 @@
 */
 package org.recompile.mobile;
 
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -159,6 +160,19 @@ public class MobilePlatform
 			com.nttdocomo.ui.Display.getCurrent().graphics = lcd.getDoJaGraphics();
 		}
 
+		// FJ2ME+ Framebuffer images don't need to be tracked in the memory viewer.
+		synchronized (Mobile.memImages)
+		{
+			for (int i = Mobile.memImages.size() - 1; i >= 0; i--)
+			{
+				WeakReference<PlatformImage> ref = Mobile.memImages.get(i);
+				PlatformImage img = (ref != null) ? ref.get() : null;
+				if (img == null || img == lcd || img == lcdFrontbuffer)
+				{
+					Mobile.memImages.remove(i);
+				}
+			}
+		}
 	}
 
 	public static PlatformImage getLcdBackbuffer() { return lcd; }

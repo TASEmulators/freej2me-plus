@@ -76,6 +76,7 @@ import javax.swing.border.TitledBorder;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
+import org.recompile.freej2me.debug.ObjectMemoryViewerDialog;
 import org.recompile.freej2me.gamepad.GamepadReader;
 import org.recompile.freej2me.gamepad.MacGamepadReader;
 import org.recompile.freej2me.gamepad.LinuxGamepadReader;
@@ -139,6 +140,8 @@ public final class FJGUI
 		new JDialog(main, "Console Log", false),
 		new JDialog(main, "Compatibility Settings", false),
 	};
+
+	private ObjectMemoryViewerDialog memViewDialog = null;
 
 	final JButton[] swingButtons =
 	{
@@ -477,6 +480,7 @@ public final class FJGUI
 	final JCheckBoxMenuItem dumpAudioData = new JCheckBoxMenuItem("Dump Audio Streams", false);
 	final JCheckBoxMenuItem dumpGraphicsData = new JCheckBoxMenuItem("Dump Graphics Objects", false);
 	final JCheckBoxMenuItem showDebugWindows = new JCheckBoxMenuItem("Show Debug Windows", false);
+	final JCheckBoxMenuItem viewObjectsInMemory = new JCheckBoxMenuItem("View Objects in Memory", false);
 
 	// M3G Debugging
 	final JCheckBoxMenuItem M3GUntextured = new JCheckBoxMenuItem("Draw Only Vertex Colors", false);
@@ -696,6 +700,8 @@ public final class FJGUI
 		swingDialogs[6].add(scrollPane, BorderLayout.CENTER);
 		swingDialogs[6].add(closePanel, BorderLayout.SOUTH);
 
+		memViewDialog = new ObjectMemoryViewerDialog(main);
+
 		// Setup actions
 		openMenuItem.setActionCommand("Open");
 		openSpMenuItem.setActionCommand("OpenSp");
@@ -744,6 +750,9 @@ public final class FJGUI
 		buildMenuBar();
 
 		setActionListeners();
+
+		for(int i = 0; i < swingDialogs.length; i++) { swingDialogs[i].dispose(); }
+		memViewDialog.dispose();
 	}
 
 	public static void flattenButton(JButton button)
@@ -903,6 +912,7 @@ public final class FJGUI
 	{
 		swingDialogs[2].setLocation(mainFrame.getLocation().x+mainFrame.getSize().width, mainFrame.getLocation().y);
 		swingDialogs[5].setLocation(mainFrame.getLocation().x+mainFrame.getSize().width, mainFrame.getLocation().y+swingDialogs[2].getHeight());
+		memViewDialog.setLocation(main.getLocation().x-memViewDialog.getWidth(), main.getLocation().y);
 	}
 
 	private void addInputButtonListeners(final boolean isGamepad)
@@ -1107,9 +1117,34 @@ public final class FJGUI
 			public void itemStateChanged(ItemEvent e)
 			{
 				boolean show = showDebugWindows.isSelected();
-				if (show) { updateDialogLocations(main); }
-				swingDialogs[2].setVisible(show);
-				swingDialogs[5].setVisible(show);
+				if (show)
+				{ 
+					updateDialogLocations(main);
+					swingDialogs[2].setVisible(show);
+					swingDialogs[5].setVisible(show);
+				}
+				else
+				{ 
+					swingDialogs[2].dispose();
+					swingDialogs[5].dispose();
+				}
+			}
+		});
+
+		// Object Memory Viewer is also FJGUI-only
+		viewObjectsInMemory.addItemListener(new ItemListener()
+		{
+			public void itemStateChanged(ItemEvent e)
+			{
+				boolean show = viewObjectsInMemory.isSelected();
+				if (show)
+				{ 
+					memViewDialog.refreshData();
+
+					updateDialogLocations(main);
+					memViewDialog.setVisible(true);
+				}
+				else { memViewDialog.dispose(); }
 			}
 		});
 	}
@@ -1251,6 +1286,7 @@ public final class FJGUI
 		debugMenu.add(dumpAudioData);
 		debugMenu.add(dumpGraphicsData);
 		debugMenu.add(showDebugWindows);
+		debugMenu.add(viewObjectsInMemory);
 		debugMenu.add(logLevel);
 		debugMenu.add(M3GDebug);
 		debugMenu.add(MCV3Debug);
@@ -1576,8 +1612,8 @@ public final class FJGUI
 			else if(command.equals("MoveBGFG")) { MobilePlatform.hideRestoreApp(); }
 			else if(command.equals("Exit")) { System.exit(0); }
 			else if(command.equals("AboutMenu")) { swingDialogs[1].setLocationRelativeTo(main); swingDialogs[1].setVisible(true); }
-			else if(command.equals("CloseAboutMenu")) { swingDialogs[1].setVisible(false); }
-			else if(command.equals("CloseCompat")) { swingDialogs[6].setVisible(false); }
+			else if(command.equals("CloseAboutMenu")) { swingDialogs[1].dispose(); }
+			else if(command.equals("CloseCompat")) { swingDialogs[6].dispose(); }
 			else if(command.equals("ChangeResolution"))
 			{
 				// Highlight the resolution currently in use.
@@ -1617,7 +1653,7 @@ public final class FJGUI
 				swingDialogs[0].setVisible(true);
 			}
 			else if(command.equals("RestartNow")) { Mobile.restartApp(); }
-			else if(command.equals("RestartLater")) { swingDialogs[3].setVisible(false); }
+			else if(command.equals("RestartLater")) { swingDialogs[3].dispose();}
 			else if(command.equals("MapInputs")) { swingDialogs[4].setVisible(true); }
 			else if(command.equals("CompatSettings")) { swingDialogs[6].setLocationRelativeTo(main); swingDialogs[6].setVisible(true); }
 			else if(command.equals("ApplyInputs"))
@@ -1626,9 +1662,9 @@ public final class FJGUI
 				System.arraycopy(gamepadKeycodes, 0, Config.gamepadKeycodes, 0, gamepadKeycodes.length);
 				System.arraycopy(gamepadKeyNames, 0, Config.gamepadKeyNames, 0, gamepadKeyNames.length);
 				config.updateAWTInputs();
-				swingDialogs[4].setVisible(false);
+				swingDialogs[4].dispose();
 			}
-			else if(command.equals("CancelInputs")) { swingDialogs[4].setVisible(false); }
+			else if(command.equals("CancelInputs")) { swingDialogs[4].dispose(); }
 			else if(command.equals("ToggleInputLayout"))
 			{
 				if ("Keyboard".equals(swingButtons[6].getText()))
