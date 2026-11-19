@@ -824,7 +824,11 @@ public class FreeJ2ME
 			{
 				javax.swing.SwingUtilities.invokeLater(new Runnable()
 				{
-					public void run() { lcd.requestFocusInWindow(); }
+					public void run()
+					{ 
+						lcd.requestFocusInWindow();
+						fjGUI.bringDialogsToFront();
+					}
 				});
 			}
 		});

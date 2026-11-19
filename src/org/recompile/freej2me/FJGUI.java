@@ -1908,4 +1908,10 @@ public final class FJGUI
 			"Max Mem  : " + (Runtime.getRuntime().maxMemory() / 1024) + " KB"
 		);
 	}
+
+	public void bringDialogsToFront()
+	{
+		for (JDialog dialog : swingDialogs) { dialog.toFront(); }
+		memViewDialog.toFront();
+	}
 }
