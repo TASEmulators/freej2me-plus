@@ -82,6 +82,8 @@ public class Graphics3D
 
 	// Render target
 	private Object target;
+	public boolean wireframeDebugFlag = false, untexturedDebugFlag = false, drawHiddenNodesDebugFlag = false;
+	public boolean forceMipmappingDebugFlag = false;
 
 	private static Graphics3D instance = null;
 
@@ -246,7 +248,7 @@ public class Graphics3D
 	}
 
 
-	public int addLight(Light light, Transform transform)
+	public synchronized int addLight(Light light, Transform transform)
 	{
 		/* As per JSR-184, addLight() must throw a NullPointerException if no light is given */
 		if (light == null) { throw new NullPointerException("addLight() was called but no light object was provided."); }
@@ -261,13 +263,13 @@ public class Graphics3D
 		return this.currLights.size() - 1;
 	}
 
-	public void bindTarget(Object target)
+	public synchronized void bindTarget(Object target)
 	{
 		/* Calls the method below specifying the depth buffer as enabled, and no render hints, as per JSR-184. */
 		this.bindTarget(target, true, 0);
 	}
 
-	public void bindTarget(Object target, boolean depthBuffer, int hints)
+	public synchronized void bindTarget(Object target, boolean depthBuffer, int hints)
 	{
 		/*
 		 * As per JSR-184, this function returns:
@@ -276,7 +278,7 @@ public class Graphics3D
 		 */
 		if (target == null) { throw new NullPointerException("bindTarget() was called but no render target was provided."); }
 		if (this.target != null) { throw new IllegalStateException("This Graphics3D object already has a render target."); }
-
+		
 		/* The target can be an Image2D Object, or a Graphics Object. */
 		if (target instanceof Image2D)
 		{
@@ -369,7 +371,7 @@ public class Graphics3D
 		this.hints = hints;
 	}
 
-	public void clear(Background background)
+	public synchronized void clear(Background background)
 	{
 		/*
 		 * As per JSR-184, this should throw IllegalStateException if this Graphics3D object does not
@@ -450,7 +452,7 @@ public class Graphics3D
 		}
 	}
 
-	public Camera getCamera(Transform transform)
+	public synchronized Camera getCamera(Transform transform)
 	{
 		if (transform != null) { transform.set(this.currCamTrans); }
 		return this.currCam;
@@ -462,13 +464,13 @@ public class Graphics3D
 
 	public int getHints() { return hints; }
 
-	public static Graphics3D getInstance()
+	public static synchronized Graphics3D getInstance()
 	{
-		if( instance == null) { instance = new Graphics3D(); }
+		if(instance == null) { instance = new Graphics3D(); }
 		return instance;
 	}
 
-	public Light getLight(int index, Transform transform)
+	public synchronized Light getLight(int index, Transform transform)
 	{
 		/* As per JSR-184, throw IndexOutOfBoundsException if the requested light index is out of bounds. */
 		if (index < 0 || index > this.currLights.size()) { throw new IndexOutOfBoundsException("The received light index is out of bounds."); }
@@ -480,9 +482,9 @@ public class Graphics3D
 	}
 
 	/* This is supposed to include nulls, so just return the size */
-	public int getLightCount() { return this.currLights.size(); }
+	public synchronized int getLightCount() { return this.currLights.size(); }
 
-	public static Hashtable getProperties()
+	public synchronized static Hashtable getProperties()
 	{
 		if (Graphics3D.properties != null)
 			return Graphics3D.properties;
@@ -509,7 +511,7 @@ public class Graphics3D
 
 	public static int getTextureUnitCount() { return NUM_TEXTURE_UNITS; }
 
-	public Object getTarget() { return this.target; }
+	public synchronized Object getTarget() { return this.target; }
 
 	public int getViewportHeight() { return viewh; }
 
@@ -519,9 +521,11 @@ public class Graphics3D
 
 	public int getViewportY() { return viewy; }
 
+	public int getRenderHints() { return this.hints; }
+
 	public boolean isDepthBufferEnabled() { return this.depthEnabled; }
 
-	public void releaseTarget()
+	public synchronized void releaseTarget()
 	{
 		/* Ignore the call if no render target is bound. */
 		if(this.target != null)
@@ -531,7 +535,10 @@ public class Graphics3D
 		}
 	}
 
-	public void render(World world)
+	public synchronized void render(World world) { render(world, true); }
+
+	// We need this flag in order to properly render Worlds in the M3G Viewer
+	public synchronized void render(World world, boolean useWorldCam)
 	{
 		/* As per JSR-184, throw NullPointerException if the received world is null. */
 		if (world == null) { throw new NullPointerException("render(world) was called but no world was provided."); }
@@ -546,24 +553,28 @@ public class Graphics3D
 			return;
 		}
 
-		Camera worldCamera = world.getActiveCamera();
-
-		if(worldCamera == null) { throw new IllegalStateException("Cannot render a world that has no active camera."); }
-
-		camTr.setIdentity();
-		if(!worldCamera.getTransformTo(world, camTr)) { throw new IllegalStateException("Active camera is not in world."); }
-
-		/* Clear the background first */
-		clear(world.getBackground());
-
-		setCamera(worldCamera, camTr);
+		if(useWorldCam)
+		{
+			Camera worldCamera = world.getActiveCamera();
+	
+			if(worldCamera == null) { throw new IllegalStateException("Cannot render a world that has no active camera."); }
+	
+			camTr.setIdentity();
+			if(!worldCamera.getTransformTo(world, camTr)) { throw new IllegalStateException("Active camera is not in world."); }
+	
+			/* Clear the background first */
+			clear(world.getBackground());
+	
+			setCamera(worldCamera, camTr);
+		}
+		
 		resetLights();
 		positionLights(world, world);
 
 		render((Group) world, null);
 	}
 
-	public void render(Node node, Transform transform)
+	public synchronized void render(Node node, Transform transform)
 	{
 		/* As per JSR-184, throw NullPointerException if no node is received. */
 		if(node == null) { throw new NullPointerException("render() was called but no node was provided."); }
@@ -586,13 +597,13 @@ public class Graphics3D
 		flushRenderQueue();
 	}
 
-	public void render(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform)
+	public synchronized void render(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform)
 	{ this.render(vertices, triangles, appearance, transform, -1); }
 
-	public void render(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform, int scope)
+	public synchronized void render(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform, int scope)
 	{ renderSubmesh(vertices, triangles, appearance, transform, scope, 256); }
 
-	private void renderSubmesh(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform, int scope, int alphaFactor)
+	private synchronized void renderSubmesh(VertexBuffer vertices, IndexBuffer triangles, Appearance appearance, Transform transform, int scope, int alphaFactor)
 	{
 		this.currAlphaFactor = alphaFactor;
 
@@ -624,7 +635,7 @@ public class Graphics3D
 		final Material material = appearance.getMaterial();
 		final PolygonMode pmode = appearance.getPolygonMode();
 		final int shadingMode = (pmode != null) ? pmode.getShading() : PolygonMode.SHADE_SMOOTH;
-		final int cullingMode = (pmode != null) ? pmode.getCulling() : PolygonMode.CULL_BACK;
+		int cullingMode = (pmode != null) ? pmode.getCulling() : PolygonMode.CULL_BACK;
 		final int windingOrder = (pmode != null) ? pmode.getWinding() : PolygonMode.WINDING_CCW;
 		final boolean twoSidedLighting = (pmode != null) && pmode.isTwoSidedLightingEnabled();
 		final boolean localCameraLight = (pmode != null) && pmode.isLocalCameraLightingEnabled();
@@ -641,6 +652,8 @@ public class Graphics3D
 		perspectiveCorrection = (Mobile.m3gPerspectiveCorrectionMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
+		// Culling is disabled for wireframe mode.
+		if(Mobile.M3GRenderWireframe || this.wireframeDebugFlag) { cullingMode = PolygonMode.CULL_NONE; }
 
 		// We'll need the projection matrix for the next transformations
 		this.currCam.getProjection(projectionMatrix);
@@ -654,7 +667,7 @@ public class Graphics3D
 		boolean hasTexture = false;
 
 		ACTIVE_TEXTURE_UNITS = 0;
-		if(!Mobile.M3GRenderUntexturedPolygons && !Mobile.M3GRenderWireframe)
+		if(!Mobile.M3GRenderUntexturedPolygons && !this.untexturedDebugFlag && !Mobile.M3GRenderWireframe && !this.wireframeDebugFlag)
 		{
 			for (int i = 0; i < NUM_TEXTURE_UNITS; i++)
 			{
@@ -705,6 +718,8 @@ public class Graphics3D
 							mipModes[i] = getMipmapMode(Texture2D.FILTER_LINEAR);
 							break;
 					}
+
+					if(forceMipmappingDebugFlag) { mipModes[i] = getMipmapMode(Texture2D.FILTER_LINEAR); }
 
 					// Cache the texture blend and wrapping mode here as well.
 					texBlenders[i] = getTextureBlender(((textures[i].getBlending() & 7) << 3) |
@@ -937,7 +952,7 @@ public class Graphics3D
 			// Degenerate triangle? Skip it.
 			if (denominator > -1e-6f && denominator < 1e-6f) { continue; }
 
-			if (Mobile.M3GRenderWireframe)
+			if (Mobile.M3GRenderWireframe || this.wireframeDebugFlag)
 			{
 				final PlatformGraphics pgrp = (PlatformGraphics) this.target;
 				int tempcolor = pgrp.getColor();
@@ -1174,7 +1189,7 @@ public class Graphics3D
 		}
 	}
 
-	private void positionLights(World world, Group group)
+	private synchronized void positionLights(World world, Group group)
 	{
 		for (int i = 0; i < group.getChildCount(); ++i)
 		{
@@ -1212,13 +1227,13 @@ public class Graphics3D
 		}
 	}
 
-	public void resetLights()
+	public synchronized void resetLights()
 	{
 		this.currLights.clear();
 		this.currLightTrans.clear();
 	}
 
-	public void setCamera(Camera camera, Transform transform)
+	public synchronized void setCamera(Camera camera, Transform transform)
 	{
 		this.currCam = camera;
 
@@ -1236,7 +1251,7 @@ public class Graphics3D
 		this.currCamTransInv.invert(); /* This one will execute regardless of the given transform above. */
 	}
 
-	public void setDepthRange(float near, float far)
+	public synchronized void setDepthRange(float near, float far)
 	{
 		/* As per JSR-184, throw IllegalArgumentException if the received near and/or far planes have unsupported values. */
 		if (near < 0 || far < 0 || 1 < near || 1 < far) { throw new IllegalArgumentException("The requested Depth Range values are invalid."); }
@@ -1247,7 +1262,7 @@ public class Graphics3D
 		}
 	}
 
-	public void setLight(int index, Light light, Transform transform)
+	public synchronized void setLight(int index, Light light, Transform transform)
 	{
 		/* As per JSR-184, throw IndexOutOfBoundsException if index < 0 or index > CurrentAmountOfLights. */
 		if (index < 0 || index >= MAX_LIGHTS) { throw new IndexOutOfBoundsException("Tried to modify a Light on an out-of-bounds index."); }
@@ -1262,7 +1277,7 @@ public class Graphics3D
 		this.currLightTrans.set(index, transform);
 	}
 
-	public void setViewport(int x, int y, int width, int height)
+	public synchronized void setViewport(int x, int y, int width, int height)
 	{
 		/* As per JSR-184, throw IllegalArgumentException if the received width and height are < 0, or beyond the max allowed. */
 		if (width <= 0 || height <= 0 || width > MAX_VIEWPORT_WIDTH || height > MAX_VIEWPORT_HEIGHT)
@@ -1291,7 +1306,7 @@ public class Graphics3D
 	 * its loops to these bounds, which discards clipped pixels without altering the
 	 * viewport-to-screen mapping (and therefore the projection), as per JSR-184.
 	 */
-	private void updateViewportClip()
+	private synchronized void updateViewportClip()
 	{
 		final int viewOriginX = originX + viewx, viewOriginY = originY + viewy;
 		viewClipL = M3GMath.max(0, M3GMath.min(vieww, targetClipX - viewOriginX));
@@ -1307,7 +1322,7 @@ public class Graphics3D
 	 * to the screen axes, projected, and the resulting NDC quad is rasterized directly
 	 * with the sprite's crop as texture source.
 	 */
-	private void renderSprite(Sprite3D sprite, Transform transform, int alphaFactor)
+	private synchronized void renderSprite(Sprite3D sprite, Transform transform, int alphaFactor)
 	{
 		final Image2D spr = sprite.getImage();
 		final Appearance appearance = sprite.getAppearance();
@@ -1492,7 +1507,7 @@ public class Graphics3D
 		}
 	}
 
-	private void renderTriangleHalf(int defVertColor, int half, int yStart, int yEnd,
+	private synchronized void renderTriangleHalf(int defVertColor, int half, int yStart, int yEnd,
 		Triangle triScreen, boolean hasColors, boolean hasTexture, Fog fog, float invFogDiv,
 		int alphaThreshold, boolean usesDepth, boolean usesDepthWrite,
 		boolean colorEnabled, float depthOffset, boolean doPerspective, float invMidSpan)
@@ -1786,7 +1801,7 @@ public class Graphics3D
 		}
 	}
 
-	private void clearToTarget(Background background, Image2D bgImg, boolean isImageTarget)
+	private synchronized void clearToTarget(Background background, Image2D bgImg, boolean isImageTarget)
 	{
 		final int cropX = background.getCropX(), cropY = background.getCropY();
 		int cropW = background.getCropWidth(), cropH = background.getCropHeight();
@@ -2062,7 +2077,7 @@ public class Graphics3D
 	private void queueNode(Node node, Transform transform, int parentAlpha)
 	{
 		// Node not renderable? Skip it and its children.
-		if (!node.isRenderingEnabled()) { return; }
+		if (!node.isRenderingEnabled() && !drawHiddenNodesDebugFlag) { return; }
 
 		// Effective alpha factor: ancestors multiplied in, see renderAlphaData.
 		final int alphaFactor = (parentAlpha * (int) (node.getAlphaFactor() * 256.0f)) >> 8;

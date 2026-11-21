@@ -21,5 +21,5 @@ import org.recompile.mobile.PlatformImage;
 
 interface ImageSelectionListener
 {
-	void onImageSelected(WeakReference<PlatformImage> img);
+	void onImageSelected(WeakReference<?> img);
 }

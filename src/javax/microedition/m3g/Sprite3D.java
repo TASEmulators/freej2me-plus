@@ -40,6 +40,7 @@ public class Sprite3D extends Node
 		cropy = 0;
 		cropw = img.getWidth();
 		croph = img.getHeight();
+		Mobile.addM3GObjectReference(this);
 	}
 
 	protected Object3D duplicateImpl()

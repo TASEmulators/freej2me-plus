@@ -26,11 +26,14 @@ import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import javax.swing.JPanel;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
+
+import javax.microedition.m3g.Image2D;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
@@ -41,11 +44,15 @@ class ImagePanel extends JPanel
 	private static final int DRAG_THRESHOLD = 4;
 	private static final Color SELECTION_FILL = new Color(255, 255, 255, 64);
 
-	private ArrayList<WeakReference<PlatformImage>> images;
-	private ArrayList<WeakReference<PlatformImage>> entryImages = new ArrayList<WeakReference<PlatformImage>>();
+	private ArrayList<WeakReference<?>> sourceRefs = new ArrayList<WeakReference<?>>();
+	private ArrayList<BufferedImage> sourceCanvases = new ArrayList<BufferedImage>();
+
+	private ArrayList<WeakReference<?>> activeRefs = new ArrayList<WeakReference<?>>();
+	private ArrayList<BufferedImage> activeCanvases = new ArrayList<BufferedImage>();
 	private ArrayList<Rectangle> entryBounds = new ArrayList<Rectangle>();
+
 	private int lastWrapWidth = -1;
-	private WeakReference<PlatformImage> selectedImage;
+	private WeakReference<?> selectedImage;
 	private final ImageSelectionListener selectionListener;
 	private float scale = 1.0f;
 
@@ -130,7 +137,7 @@ class ImagePanel extends JPanel
 
 	private void handleImageClick(Point pt)
 	{
-		WeakReference<PlatformImage> hit = null;
+		WeakReference<?> hit = null;
 
 		for (int i = entryBounds.size() - 1; i >= 0; i--)
 		{
@@ -138,7 +145,7 @@ class ImagePanel extends JPanel
 			if (pt.x >= r.x - 1 && pt.x <= r.x + r.width + 1 &&
 				pt.y >= r.y - 1 && pt.y <= r.y + r.height + 1)
 			{
-				hit = entryImages.get(i);
+				hit = activeRefs.get(i);
 				break;
 			}
 		}
@@ -155,15 +162,77 @@ class ImagePanel extends JPanel
 		refreshLayout(true);
 	}
 
-	public WeakReference<PlatformImage> getSelectedImage() { return selectedImage; }
+	public WeakReference<?> getSelectedImage() { return selectedImage; }
 
 	public void setImages(ArrayList<WeakReference<PlatformImage>> images)
 	{
-		this.images = images;
-		if (selectedImage != null && (images == null || !images.contains(selectedImage)))
+		ArrayList<WeakReference<?>> nextRefs = new ArrayList<WeakReference<?>>();
+		ArrayList<BufferedImage> nextCanvases = new ArrayList<BufferedImage>();
+
+		if (images != null)
+		{
+			for (WeakReference<PlatformImage> ref : images)
+			{
+				PlatformImage img = ObjectMemoryViewerDialog.getReference(ref);
+				if (img == null) { continue; }
+				BufferedImage canvas = img.getCanvas();
+				if (canvas != null)
+				{
+					nextRefs.add(ref);
+					nextCanvases.add(canvas);
+				}
+			}
+		}
+
+		applySources(nextRefs, nextCanvases);
+	}
+
+	public void setImage2Ds(ArrayList<WeakReference<Image2D>> images)
+	{
+		ArrayList<WeakReference<?>> nextRefs = new ArrayList<WeakReference<?>>();
+		ArrayList<BufferedImage> nextCanvases = new ArrayList<BufferedImage>();
+
+		if (images != null)
+		{
+			for (WeakReference<Image2D> ref : images)
+			{
+				Image2D img = ObjectMemoryViewerDialog.getReference(ref);
+				if (img == null) { continue; }
+				BufferedImage canvas = createBufferedImage(img);
+				if (canvas != null)
+				{
+					nextRefs.add(ref);
+					nextCanvases.add(canvas);
+				}
+			}
+		}
+
+		applySources(nextRefs, nextCanvases);
+	}
+
+	private BufferedImage createBufferedImage(Image2D img)
+	{
+		int width = img.getWidth();
+		int height = img.getHeight();
+		int[] pixels = img.getPixels(); // replace with your actual pixel-array getter
+		if (width <= 0 || height <= 0 || pixels == null) { return null; }
+
+		BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		int[] dst = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
+		System.arraycopy(pixels, 0, dst, 0, Math.min(pixels.length, dst.length));
+		return bi;
+	}
+
+	private void applySources(ArrayList<WeakReference<?>> nextRefs, ArrayList<BufferedImage> nextCanvases)
+	{
+		this.sourceRefs = nextRefs;
+		this.sourceCanvases = nextCanvases;
+
+		if (selectedImage != null && !nextRefs.contains(selectedImage))
 		{
 			selectedImage = null;
 		}
+
 		refreshLayout(true);
 	}
 
@@ -186,7 +255,8 @@ class ImagePanel extends JPanel
 		if (!force && wrapWidth == lastWrapWidth) { return; }
 		lastWrapWidth = wrapWidth;
 
-		ArrayList<WeakReference<PlatformImage>> nextImages = new ArrayList<WeakReference<PlatformImage>>();
+		ArrayList<WeakReference<?>> nextActiveRefs = new ArrayList<WeakReference<?>>();
+		ArrayList<BufferedImage> nextActiveCanvases = new ArrayList<BufferedImage>();
 		ArrayList<Rectangle> nextBounds = new ArrayList<Rectangle>();
 
 		int x = ITEM_SPACE;
@@ -194,34 +264,33 @@ class ImagePanel extends JPanel
 		int rowHeight = 0;
 		int contentRight = 100;
 
-		if (images != null)
+		for (int i = 0; i < sourceRefs.size(); i++)
 		{
-			for (WeakReference<PlatformImage> imgRef : images)
+			WeakReference<?> ref = sourceRefs.get(i);
+			if (ref.get() == null) { continue; }
+
+			BufferedImage canvas = sourceCanvases.get(i);
+			int w = scaleDimension(canvas.getWidth());
+			int h = scaleDimension(canvas.getHeight());
+
+			if (x > ITEM_SPACE && (x + w + ITEM_SPACE) > wrapWidth)
 			{
-				PlatformImage img = ObjectMemoryViewerDialog.getReference(imgRef);
-				if (img == null) { continue; }
-				BufferedImage canvas = img.getCanvas();
-
-				int w = scaleDimension(canvas.getWidth());
-				int h = scaleDimension(canvas.getHeight());
-
-				if (x > ITEM_SPACE && (x + w + ITEM_SPACE) > wrapWidth)
-				{
-					y += rowHeight + ITEM_SPACE;
-					x = ITEM_SPACE;
-					rowHeight = 0;
-				}
-
-				nextImages.add(imgRef);
-				nextBounds.add(new Rectangle(x, y, w, h));
-
-				x += w + ITEM_SPACE;
-				rowHeight = Math.max(rowHeight, h);
-				contentRight = Math.max(contentRight, x);
+				y += rowHeight + ITEM_SPACE;
+				x = ITEM_SPACE;
+				rowHeight = 0;
 			}
+
+			nextActiveRefs.add(ref);
+			nextActiveCanvases.add(canvas);
+			nextBounds.add(new Rectangle(x, y, w, h));
+
+			x += w + ITEM_SPACE;
+			rowHeight = Math.max(rowHeight, h);
+			contentRight = Math.max(contentRight, x);
 		}
 
-		entryImages = nextImages;
+		activeRefs = nextActiveRefs;
+		activeCanvases = nextActiveCanvases;
 		entryBounds = nextBounds;
 		setPreferredSize(new Dimension(contentRight, Math.max(y + rowHeight + ITEM_SPACE, 300)));
 		revalidate();
@@ -240,14 +309,12 @@ class ImagePanel extends JPanel
 			Rectangle r = entryBounds.get(i);
 			if (clip != null && !r.intersects(clip.x - 2, clip.y - 2, clip.width + 4, clip.height + 4)) { continue; }
 
-			WeakReference<PlatformImage> imgRef = entryImages.get(i);
-			PlatformImage img = ObjectMemoryViewerDialog.getReference(imgRef);
-			if (img == null) { continue; }
-			BufferedImage canvas = img.getCanvas();
+			WeakReference<?> ref = activeRefs.get(i);
+			if (ref.get() == null) { continue; }
 
-			g.drawImage(canvas, r.x, r.y, r.width, r.height, null);
+			g.drawImage(activeCanvases.get(i), r.x, r.y, r.width, r.height, null);
 
-			boolean isSelected = (imgRef == selectedImage);
+			boolean isSelected = (ref == selectedImage);
 			g.setColor(isSelected ? Color.CYAN : Color.ORANGE);
 			g.drawRect(r.x - 1, r.y - 1, r.width + 1, r.height + 1);
 			if (isSelected)

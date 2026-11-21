@@ -35,6 +35,8 @@ import java.util.jar.Manifest;
 
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Canvas;
+import javax.microedition.m3g.Image2D;
+import javax.microedition.m3g.Object3D;
 import javax.microedition.media.Manager;
 import javax.microedition.midlet.MIDlet;
 
@@ -59,6 +61,8 @@ public class Mobile
 
 	// MIDlet object memory viewer
 	public static final ArrayList<WeakReference<PlatformImage>> memImages = new ArrayList<WeakReference<PlatformImage>>();
+	public static final ArrayList<WeakReference<Image2D>> memM3GImages = new ArrayList<WeakReference<Image2D>>();
+	public static final ArrayList<WeakReference<Object3D>> memM3GObjects = new ArrayList<WeakReference<Object3D>>();
 	public static final ArrayList<WeakReference<PlatformPlayer>> memPlayers = new ArrayList<WeakReference<PlatformPlayer>>();
 	public static final ArrayList<WeakReference<Class<?>>> memClasses = new ArrayList<WeakReference<Class<?>>>();
 	public static final WeakHashMap<Class<?>, Long> memClassSizes = new WeakHashMap<Class<?>, Long>();
@@ -1300,6 +1304,53 @@ public class Mobile
 			{
 				memImages.add(new WeakReference<PlatformImage>(img));
 			}
+		}
+	}
+
+	public static void addM3GImageReference(Image2D img)
+	{
+		synchronized(memM3GImages)
+		{
+			// Clean up any null/weak references
+			for (int i = 0; i < memM3GImages.size(); i++)
+			{
+				WeakReference<Image2D> ref = memM3GImages.get(i);
+				if (ref == null || ref.get() == null)
+				{
+					memM3GImages.remove(i);
+					i--;
+				}
+			}
+		
+			if (img != null)
+			{
+				memM3GImages.add(new WeakReference<Image2D>(img));
+			}
+		}
+	}
+
+	public static void addM3GObjectReference(Object3D obj)
+	{
+		if (obj == null) { return; }
+		
+		synchronized(memM3GObjects)
+		{
+			boolean duplicatedRef = false;
+			
+			// Clean up any null/cleared weak references and check for an existing live reference to obj
+			for (int i = 0; i < memM3GObjects.size(); i++)
+			{
+				WeakReference<Object3D> ref = memM3GObjects.get(i);
+				Object3D objRef = (ref != null) ? ref.get() : null;
+				if (objRef == null)
+				{
+					memM3GObjects.remove(i);
+					i--;
+				}
+				else if (objRef == obj) { duplicatedRef = true; }
+			}
+	
+			if (!duplicatedRef) { memM3GObjects.add(new WeakReference<Object3D>(obj)); }
 		}
 	}
 

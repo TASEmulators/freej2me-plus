@@ -50,7 +50,7 @@ public class Image2D extends Object3D
 		this.isPOT = isPowerOfTwo(w) && isPowerOfTwo(h);
 		this.widthShift = Integer.numberOfTrailingZeros(w);
 		this.image = new int[w * h];
-
+		Mobile.addM3GImageReference(this);
 	}
 
 	public Image2D(int format, int w, int h, byte[] image)
@@ -80,6 +80,7 @@ public class Image2D extends Object3D
 
 		this.image = new int[w * h];
 		toARGB(image, format, bpp, this.image);
+		Mobile.addM3GImageReference(this);
 	}
 
 	public Image2D(int format, int w, int h, byte[] image, byte[] palette)
@@ -134,6 +135,7 @@ public class Image2D extends Object3D
 		this.image = new int[w * h];
 
 		palettedToARGB(image, palette, format, bpp, forceOpaque, this.image);
+		Mobile.addM3GImageReference(this);
 	}
 
 	public Image2D(int format, Object image)
@@ -192,6 +194,7 @@ public class Image2D extends Object3D
 					break;
 			}
 		}
+		Mobile.addM3GImageReference(this);
 	}
 
 	protected Object3D duplicateImpl()
@@ -253,6 +256,8 @@ public class Image2D extends Object3D
 		return this.image[this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x];
 	}
 
+	public final int[] getPixels() { return this.image; }
+
 	private static final void validateFormat(int format)
 	{
 		if (format < ALPHA || format > RGBA)
@@ -277,7 +282,7 @@ public class Image2D extends Object3D
 		this.image[this.isPOT ? (y << this.widthShift) + x : (y * this.width) + x] = argb;
 	}
 
-	private final byte getBpp()
+	public final byte getBpp()
 	{
 		switch (this.format)
 		{
@@ -341,4 +346,6 @@ public class Image2D extends Object3D
 				return 0;
 		}
 	}
+
+	public String getFormatString() { return formatNames[format-96]; }
 }

@@ -16,6 +16,8 @@
 */
 package javax.microedition.m3g;
 
+import org.recompile.mobile.Mobile;
+
 public class Mesh extends Node
 {
 	private VertexBuffer vertices;
@@ -36,6 +38,7 @@ public class Mesh extends Node
 		if (this.appearances[0] != null) { addReference(this.appearances[0]); }
 		addReference(this.vertices);
 		addReference(this.submeshes[0]);
+		Mobile.addM3GObjectReference(this);
 	}
 
 	public Mesh(VertexBuffer vertices, IndexBuffer[] submeshes, Appearance[] appearances)
@@ -74,6 +77,7 @@ public class Mesh extends Node
 				addReference(this.appearances[i]);
 			}
 		}
+		Mobile.addM3GObjectReference(this);
 	}
 
 	protected Object3D duplicateImpl()

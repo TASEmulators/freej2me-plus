@@ -939,6 +939,9 @@ public class Loader
 		Object3D[] rootObjs = new Object3D[roots.size()];
 		for(int i = 0; i < rootObjs.length; i++) { rootObjs[i] = objs.get(Integer.parseInt(roots.get(i))); }
 
+		// For Memory Viewer
+		for(int i = 0; i < objs.size(); i ++) { Mobile.addM3GObjectReference(objs.get(i)); }
+		
 		return rootObjs;
 	}
 

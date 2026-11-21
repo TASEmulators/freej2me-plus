@@ -16,8 +16,12 @@
 */
 package org.recompile.freej2me.debug;
 
-import java.awt.Frame;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Insets;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -34,11 +38,21 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
 import javax.swing.ListSelectionModel;
+import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+
+import javax.microedition.m3g.Image2D;
+import javax.microedition.m3g.Mesh;
+import javax.microedition.m3g.SkinnedMesh;
+import javax.microedition.m3g.Sprite3D;
+import javax.microedition.m3g.Object3D;
+import javax.microedition.m3g.World;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
@@ -46,16 +60,33 @@ import org.recompile.mobile.PlatformPlayer;
 
 public class ObjectMemoryViewerDialog extends JDialog
 {
+	// TODO: Sorting doesn't really do anything yet.
+	private static final int SORT_DEFAULT = 0;
+	private static final int SORT_SIZE_INCR = 1;
+	private static final int SORT_SIZE_DECR = 2;
+	private static final int SORT_NAME_INCR = 3;
+	private static final int SORT_NAME_DECR = 4;
+	private static final String[] SORT_OPTIONS_LESS = {"Default", "Size ^", "Size v"};
+	private static final String[] SORT_OPTIONS_ALL = {"Default", "Size ^", "Size v", "Name ^", "Name v"};
+	
 	private static final String[] SCALE_OPTIONS = {"25%", "50%", "75%", "100%", "200%", "300%", "400%"};
 	private static final float[] SCALE_FACTORS = {0.25f, 0.50f, 0.75f, 1.00f, 2.00f, 3.00f, 4.00f};
+	private static final String[] BG_OPTIONS = {"Black", "DarkGray", "Gray", "Blue", "Green", "Orange"};
+	private static final int[] BG_VALUES = {0x000000, 0x444444, 0x888888, 0x8BADFF, 0x90D090, 0xFF9A67};
+	private static final Color BUTTON_BGCOLOR = new Color(220, 220, 220);
+	private static final Font DEBUG_TOGGLE_FONT = new Font("Dialog", Font.BOLD, 10);
 
-	private final ImagePanel imagePanel;
-	private final JLabel imageInfoLabel, playerInfoLabel, classInfoLabel, totalHeapLabel;
-	private final JComboBox imgScaleBox;
-	private final DefaultListModel playerListModel, classListModel;
-	private final JList playerList, classList;
+	private final ImagePanel imagePanel, m3gImagePanel;
+	private final JLabel imageInfoLabel, playerInfoLabel, classInfoLabel, m3gInfoLabel, totalHeapLabel;
+	private final JComboBox imgScaleBox, m3gScaleBox, m3gBGBox;
+	private final JComboBox imgSortBox, playerSortBox, classSortBox;
+	private final DefaultListModel playerListModel, classListModel, m3gObjListModel;
+	private final JList playerList, classList, m3gObjList;
 	private final JTabbedPane tabbedPane;
-	private final TitledBorder imageBorder, playerBorder, classBorder;
+	private final TitledBorder imageBorder, playerBorder, classBorder, m3gImageBorder, m3gObjBorder;
+	private static boolean RenderableM3GFlag = false;
+	private JToggleButton m3gShowOnlyRenderables, m3gDrawWireframe, m3gDrawUntextured, m3gDrawHiddenNodes, m3gMipmapping;
+	private final M3G3DPreviewPanel m3gPreviewPanel;
 
 	@SuppressWarnings("unchecked")
 	public ObjectMemoryViewerDialog(Frame main)
@@ -65,98 +96,199 @@ public class ObjectMemoryViewerDialog extends JDialog
 		setUndecorated(true);
 		setLayout(new BorderLayout());
 
-		// Created images (aside from FreeJ2ME-Plus' framebuffers and the like)
+		// Created images (aside from emulator framebuffers and the like)
 		imagePanel = new ImagePanel(new ImageSelectionListener()
 		{
-			public void onImageSelected(WeakReference<PlatformImage> img)
-			{
-				updateSelectedImageInfo(img);
-			}
+			public void onImageSelected(WeakReference<?> img) { updateSelectedImageInfo(img); }
 		});
 		imageBorder = BorderFactory.createTitledBorder("Images (0)");
-		JScrollPane imageScroll = new JScrollPane(imagePanel);
-		imageScroll.getVerticalScrollBar().setUnitIncrement(24);
-		imageScroll.getHorizontalScrollBar().setUnitIncrement(24);
-		imageScroll.setBorder(imageBorder);
-
+		JScrollPane imageScroll = createScrollPane(imagePanel, imageBorder, 24);
 		imageInfoLabel = createInfoLabel();
-		imgScaleBox = new JComboBox(SCALE_OPTIONS);
-		imgScaleBox.setSelectedItem("100%");
-		imgScaleBox.addActionListener(new ActionListener()
-		{
-			public void actionPerformed(ActionEvent e)
-			{
-				int idx = imgScaleBox.getSelectedIndex();
-				if (idx >= 0 && idx < SCALE_FACTORS.length) { imagePanel.setScale(SCALE_FACTORS[idx]); }
-			}
-		});
+		imgScaleBox = createScaleBox(imagePanel);
+		imgSortBox = createSortBox(true);
 
 		JPanel imageControlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-		imageControlsPanel.add(new JLabel("Scale:"));
+		//imageControlsPanel.add(new JLabel("Sort by:"));
+		//imageControlsPanel.add(imgSortBox);
+		imageControlsPanel.add(new JLabel("Image Scale:"));
 		imageControlsPanel.add(imgScaleBox);
 
 		JPanel imageBottomPanel = new JPanel(new BorderLayout());
 		imageBottomPanel.add(imageInfoLabel, BorderLayout.WEST);
 		imageBottomPanel.add(imageControlsPanel, BorderLayout.EAST);
-
 		JPanel imagesTabPanel = createTabPanel(imageScroll, imageBottomPanel);
 
-		// FreeJ2ME-Plus Players
+		// Media Players
 		playerListModel = new DefaultListModel();
-		playerList = new JList(playerListModel);
-		playerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		playerBorder = BorderFactory.createTitledBorder("Players (0)");
-		JScrollPane playerScroll = new JScrollPane(playerList);
-		playerScroll.setBorder(playerBorder);
-
-		playerInfoLabel = createInfoLabel();
-		playerList.addListSelectionListener(new javax.swing.event.ListSelectionListener()
+		playerList = createSelectionList(playerListModel, new Runnable()
 		{
-			public void valueChanged(javax.swing.event.ListSelectionEvent e)
-			{
-				if (!e.getValueIsAdjusting())
-				{
-					updateSelectedPlayerInfo(Mobile.memPlayers);
-				}
-			}
+			public void run() { updateSelectedPlayerInfo(Mobile.memPlayers); }
 		});
+		JScrollPane playerScroll = createScrollPane(playerList, playerBorder, 0);
+		playerInfoLabel = createInfoLabel();
+		playerSortBox = createSortBox(true);
+		
+		JPanel playerControlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+		//playerControlsPanel.add(new JLabel("Sort by:"));
+		//playerControlsPanel.add(playerSortBox);
 
-		JPanel playerTabPanel = createTabPanel(playerScroll, playerInfoLabel);
+		JPanel playerBottomPanel = new JPanel(new BorderLayout());
+		playerBottomPanel.add(playerInfoLabel, BorderLayout.WEST);
+		playerBottomPanel.add(playerControlsPanel, BorderLayout.EAST);
+		JPanel playerTabPanel = createTabPanel(playerScroll, playerBottomPanel);
 
 		// Loaded MIDlet classes
 		classListModel = new DefaultListModel();
-		classList = new JList(classListModel);
-		classList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		classBorder = BorderFactory.createTitledBorder("Loaded MIDlet Classes (0)");
-		JScrollPane classScroll = new JScrollPane(classList);
-		classScroll.setBorder(classBorder);
-
-		classInfoLabel = createInfoLabel();
-		classList.addListSelectionListener(new javax.swing.event.ListSelectionListener()
+		classList = createSelectionList(classListModel, new Runnable()
 		{
-			public void valueChanged(javax.swing.event.ListSelectionEvent e)
+			public void run() { updateSelectedClassInfo(Mobile.memClasses); }
+		});
+		JScrollPane classScroll = createScrollPane(classList, classBorder, 0);
+		classInfoLabel = createInfoLabel();
+		classSortBox = createSortBox(false);
+		
+		JPanel classControlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+		//classControlsPanel.add(new JLabel("Sort by:"));
+		//classControlsPanel.add(classSortBox);
+
+		JPanel classBottomPanel = new JPanel(new BorderLayout());
+		classBottomPanel.add(classInfoLabel, BorderLayout.WEST);
+		classBottomPanel.add(classControlsPanel, BorderLayout.EAST);
+		JPanel classesTabPanel = createTabPanel(classScroll, classBottomPanel);
+
+		// M3G Panel
+		m3gImagePanel = new ImagePanel(new ImageSelectionListener()
+		{
+			public void onImageSelected(WeakReference<?> img) { updateSelectedImageInfo(img); }
+		});
+		m3gImageBorder = BorderFactory.createTitledBorder("Image2Ds (0)");
+		JScrollPane m3gImageScroll = createScrollPane(m3gImagePanel, m3gImageBorder, 24);
+
+		m3gObjListModel = new DefaultListModel();
+		m3gObjBorder = BorderFactory.createTitledBorder("Object3Ds (0)");
+		m3gObjList = createSelectionList(m3gObjListModel, new Runnable()
+		{
+			public void run() { updateSelectedM3GObj(Mobile.memM3GObjects); }
+		});
+		JScrollPane m3gSceneObjectsScroll = createScrollPane(m3gObjList, m3gObjBorder, 0);
+
+		JSplitPane m3gTopSplit = createFixedSplitPane(JSplitPane.HORIZONTAL_SPLIT, m3gImageScroll, m3gSceneObjectsScroll, 0.7);
+
+		// Bottom area gets the 3D Preview
+		m3gPreviewPanel = new M3G3DPreviewPanel();
+		m3gPreviewPanel.setLayout(new BorderLayout());
+		TitledBorder m3gPreviewTitle = BorderFactory.createTitledBorder("3D Preview");
+		m3gPreviewTitle.setTitleColor(Color.WHITE);
+		m3gPreviewPanel.setBorder(m3gPreviewTitle);
+
+		m3gBGBox = new JComboBox(BG_OPTIONS);
+		m3gBGBox.setSelectedItem("Black");
+		m3gBGBox.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
 			{
-				if (!e.getValueIsAdjusting())
-				{
-					updateSelectedClassInfo(Mobile.memClasses);
+				int idx = m3gBGBox.getSelectedIndex();
+				if (idx >= 0 && idx < BG_VALUES.length)
+				{ 
+					m3gPreviewPanel.setPreviewBackground(BG_VALUES[idx]);
+					renderLastM3GObj();
 				}
 			}
 		});
 
-		JPanel classesTabPanel = createTabPanel(classScroll, classInfoLabel);
+		m3gDrawWireframe = createJToggleButton("Wireframe Mode", new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				m3gPreviewPanel.setWireframe(m3gDrawWireframe.isSelected());
+				renderLastM3GObj();
+			}
+		});
 
+		m3gDrawUntextured = createJToggleButton("Disable Textures", new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				m3gPreviewPanel.setUntextured(m3gDrawUntextured.isSelected());
+				renderLastM3GObj();
+			}
+		});
+
+		m3gDrawHiddenNodes = createJToggleButton("Draw Hidden Nodes", new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				m3gPreviewPanel.setDrawHidden(m3gDrawHiddenNodes.isSelected());
+				renderLastM3GObj();
+			}
+		});
+		m3gDrawHiddenNodes.setSelected(true);
+
+		m3gMipmapping = createJToggleButton("Mipmapping", new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				m3gPreviewPanel.setMipmapping(m3gMipmapping.isSelected());
+				renderLastM3GObj();
+			}
+		});
+
+		JPanel previewBottomOverlay = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
+		previewBottomOverlay.setOpaque(false);
+		previewBottomOverlay.add(m3gBGBox);
+		previewBottomOverlay.add(m3gDrawWireframe);
+		previewBottomOverlay.add(m3gDrawUntextured);
+		previewBottomOverlay.add(m3gDrawHiddenNodes);
+		previewBottomOverlay.add(m3gMipmapping);
+		m3gPreviewPanel.add(previewBottomOverlay, BorderLayout.SOUTH);
+
+		JSplitPane m3gMainSplit = createFixedSplitPane(JSplitPane.VERTICAL_SPLIT, m3gTopSplit, m3gPreviewPanel, 0.4);
+
+		m3gInfoLabel = createInfoLabel();
+		m3gScaleBox = createScaleBox(m3gImagePanel);
+		m3gPreviewPanel.setPreviewBackground(BG_VALUES[m3gBGBox.getSelectedIndex()]);
+
+		m3gShowOnlyRenderables = createJToggleButton("Show Renderables", new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				RenderableM3GFlag = m3gShowOnlyRenderables.isSelected();
+				refreshData();
+			}
+		});
+
+		JPanel m3gControlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+		m3gControlsPanel.add(new JLabel("Image Scale:"));
+		m3gControlsPanel.add(m3gScaleBox);
+		m3gControlsPanel.add(m3gShowOnlyRenderables);
+
+		JPanel m3gBottomPanel = new JPanel(new BorderLayout());
+		m3gBottomPanel.add(m3gInfoLabel, BorderLayout.WEST);
+		m3gBottomPanel.add(m3gControlsPanel, BorderLayout.EAST);
+
+		JPanel m3gTabPanel = createTabPanel(m3gMainSplit, m3gBottomPanel);
+
+		// Add everyone to the tabbed pane
 		tabbedPane = new JTabbedPane();
 		tabbedPane.addTab("Images (0)", imagesTabPanel);
 		tabbedPane.addTab("Players (0)", playerTabPanel);
 		tabbedPane.addTab("Classes (0)", classesTabPanel);
+		tabbedPane.addTab("M3G Data", m3gTabPanel);
 		add(tabbedPane, BorderLayout.CENTER);
 
-		// --- Bottom Bar ---
+		// Bottom bar, visible on all tabs.
 		JPanel bottomBar = new JPanel(new BorderLayout());
 		bottomBar.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
 		totalHeapLabel = new JLabel("WAITING DATA...");
 		JButton refreshButton = new JButton("Refresh");
+		refreshButton.setMargin(new Insets(4, 4, 4, 4));
+		refreshButton.setFont(new Font("Dialog", Font.BOLD, 12));
+		refreshButton.setContentAreaFilled(false);
+		refreshButton.setOpaque(true);
+		refreshButton.setBackground(BUTTON_BGCOLOR);
 		refreshButton.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e) { refreshData(); }
@@ -165,6 +297,96 @@ public class ObjectMemoryViewerDialog extends JDialog
 		bottomBar.add(totalHeapLabel, BorderLayout.WEST);
 		bottomBar.add(refreshButton, BorderLayout.EAST);
 		add(bottomBar, BorderLayout.SOUTH);
+	}
+
+	private static JToggleButton createJToggleButton(String text, ActionListener listener)
+	{
+		JToggleButton btn = new JToggleButton(text);
+		btn.setMargin(new Insets(4, 0, 4, 0));
+		btn.setFont(DEBUG_TOGGLE_FONT);
+		btn.setOpaque(true);
+		btn.setBackground(BUTTON_BGCOLOR);
+		btn.addActionListener(listener);
+		return btn;
+	}
+
+	private static JScrollPane createScrollPane(JComponent view, Border border, int wheelIncrement)
+	{
+		JScrollPane scroll = new JScrollPane(view);
+		if (wheelIncrement > 0)
+		{
+			scroll.getVerticalScrollBar().setUnitIncrement(wheelIncrement);
+			scroll.getHorizontalScrollBar().setUnitIncrement(wheelIncrement);
+		}
+		if (border != null) { scroll.setBorder(border); }
+		return scroll;
+	}
+
+	private static JSplitPane createFixedSplitPane(int orientation, Component first, Component second, double resizeWeight)
+	{
+		JSplitPane split = new JSplitPane(orientation, first, second);
+		split.setResizeWeight(resizeWeight);
+		split.setContinuousLayout(true);
+		split.setDividerSize(2);
+		split.setEnabled(false);
+		split.setDividerLocation(0.5);
+		return split;
+	}
+
+	@SuppressWarnings("unchecked")
+	private JComboBox createScaleBox(final ImagePanel targetPanel)
+	{
+		final JComboBox box = new JComboBox(SCALE_OPTIONS);
+		box.setSelectedItem("100%");
+		box.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				int idx = box.getSelectedIndex();
+				if (idx >= 0 && idx < SCALE_FACTORS.length) { targetPanel.setScale(SCALE_FACTORS[idx]); }
+			}
+		});
+		return box;
+	}
+
+	@SuppressWarnings("unchecked")
+	private JComboBox createSortBox(final boolean noNameSort)
+	{
+		final JComboBox box = new JComboBox(noNameSort ? SORT_OPTIONS_LESS : SORT_OPTIONS_ALL);
+		box.setSelectedItem("Default");
+		box.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				int idx = box.getSelectedIndex();
+				// TODO: Apply sort type here later?
+			}
+		});
+		return box;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static JList createSelectionList(DefaultListModel model, final Runnable onSelectionChanged)
+	{
+		JList list = new JList(model);
+		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		list.addListSelectionListener(new javax.swing.event.ListSelectionListener()
+		{
+			public void valueChanged(javax.swing.event.ListSelectionEvent e)
+			{
+				if (!e.getValueIsAdjusting()) { onSelectionChanged.run(); }
+			}
+		});
+		return list;
+	}
+
+	private void renderLastM3GObj()
+	{
+		synchronized (Mobile.memM3GObjects)
+		{
+			WeakReference<Object3D> objRef = getLiveRef(Mobile.memM3GObjects, m3gObjList.getSelectedIndex());
+			m3gPreviewPanel.renderObject(getReference(objRef));
+		}
 	}
 
 	private static JLabel createInfoLabel()
@@ -188,10 +410,14 @@ public class ObjectMemoryViewerDialog extends JDialog
 		ArrayList<WeakReference<PlatformImage>> images = Mobile.memImages;
 		ArrayList<WeakReference<PlatformPlayer>> players = Mobile.memPlayers;
 		ArrayList<WeakReference<Class<?>>> classes = Mobile.memClasses;
+		ArrayList<WeakReference<Image2D>> m3gImages = Mobile.memM3GImages;
+		ArrayList<WeakReference<Object3D>> m3gObjects = Mobile.memM3GObjects;
 
 		int imageNum = 0;
 		int playerNum = 0;
 		int classNum = 0;
+		int m3gImageNum = 0;
+		int m3gObjNum = 0;
 
 		synchronized (images)
 		{
@@ -212,11 +438,26 @@ public class ObjectMemoryViewerDialog extends JDialog
 				}
 			}
 		}
+		synchronized (m3gImages)
+		{
+			m3gImageNum = countRefs(m3gImages);
+			m3gImagePanel.setImage2Ds(m3gImages);
+			updateSelectedImageInfo(m3gImagePanel.getSelectedImage());
+		}
+
+		synchronized (m3gObjects)
+		{
+			m3gObjNum = countRefs(m3gObjects);
+			updateM3GObjs(m3gObjects);
+		}
 
 		updateTab(0, imageBorder, "Images", imageNum);
 		updateTab(1, playerBorder, "Players", playerNum);
 		updateTab(2, classBorder, "Classes", classNum);
 		classBorder.setTitle("Loaded MIDlet Classes (" + classNum + ")");
+
+		m3gImageBorder.setTitle("Image2Ds (" + m3gImageNum + ")");
+		m3gObjBorder.setTitle("Object3Ds (" + m3gObjNum + ")");
 	}
 
 	private void updateTab(int tabIndex, TitledBorder border, String label, int count)
@@ -231,7 +472,7 @@ public class ObjectMemoryViewerDialog extends JDialog
 	private static <T> int countRefs(ArrayList<WeakReference<T>> refs)
 	{
 		if (refs == null) { return 0; }
-		
+
 		int count = 0;
 		for (WeakReference<T> ref : refs)
 		{
@@ -243,12 +484,17 @@ public class ObjectMemoryViewerDialog extends JDialog
 	private static <T> WeakReference<T> getLiveRef(ArrayList<WeakReference<T>> refs, int targetIndex)
 	{
 		if (refs == null || targetIndex < 0) { return null; }
-		
+	
 		int liveIdx = 0;
 		for (WeakReference<T> ref : refs)
 		{
-			if (getReference(ref) != null)
+			T obj = getReference(ref);
+			if (obj != null)
 			{
+				if (RenderableM3GFlag && obj instanceof Object3D && !isRenderableM3G((Object3D) obj))
+				{
+					continue;
+				}
 				if (liveIdx == targetIndex) { return ref; }
 				liveIdx++;
 			}
@@ -256,20 +502,34 @@ public class ObjectMemoryViewerDialog extends JDialog
 		return null;
 	}
 
-	private void updateSelectedImageInfo(WeakReference<PlatformImage> imgRef)
+	private void updateSelectedImageInfo(WeakReference<?> imgRef)
 	{
-		PlatformImage img = getReference(imgRef);
-		if (img == null)
+		Object ref = getReference(imgRef);
+		if (ref == null)
 		{
 			imageInfoLabel.setText("Selected: None");
+			m3gInfoLabel.setText("Selected: None");
 			return;
 		}
-		BufferedImage canvas = img.getCanvas();
 
 		double heapKb = estimateImageHeapBytes(imgRef) / 1024.0;
-		imageInfoLabel.setText("Selected: " + canvas.getWidth() + "x" + canvas.getHeight() +
-			" | Format: " + getImageTypeName(canvas.getType()) +
-			" | Heap: " + String.format("%.2f", heapKb) + " KB");
+
+		if (ref instanceof PlatformImage)
+		{
+			PlatformImage img = (PlatformImage) ref;
+			BufferedImage canvas = img.getCanvas();
+
+			imageInfoLabel.setText("Size: " + canvas.getWidth() + "x" + canvas.getHeight() +
+				" | Format: " + getImageTypeName(canvas.getType()) +
+				" | Heap: " + String.format("%.2f", heapKb) + " KB");
+		}
+		else if (ref instanceof Image2D)
+		{
+			Image2D img2d = (Image2D) ref;
+			m3gInfoLabel.setText("Size: " + img2d.getWidth() + "x" + img2d.getHeight() +
+				" | Format: " + img2d.getFormatString() +
+				" | Heap: " + String.format("%.2f", heapKb) + " KB");
+		}
 	}
 
 	private void updateTotalHeapInfo(
@@ -294,7 +554,8 @@ public class ObjectMemoryViewerDialog extends JDialog
 		{
 			classKb += estimateClassHeapBytes(classRef) / 1024.0;
 		}
-		
+		// TODO: M3G and MascotCapsule
+
 		double totalKb = imageKb + playerKb + classKb;
 		totalHeapLabel.setText("Total Usage: " + String.format("%.2f", totalKb) + "KB [" +
 			String.format("%.2f", imageKb) + "KB Image | " +
@@ -302,10 +563,21 @@ public class ObjectMemoryViewerDialog extends JDialog
 			String.format("%.2f", classKb) + "KB Class]");
 	}
 
-	private long estimateImageHeapBytes(WeakReference<PlatformImage> imgRef)
+	private long estimateImageHeapBytes(WeakReference<?> imgRef)
 	{
-		PlatformImage img = getReference(imgRef);
-		return (img != null) ? (long) img.getCanvas().getWidth() * img.getCanvas().getHeight() * 4L : 0L;
+		Object ref = getReference(imgRef);
+		if (ref instanceof PlatformImage)
+		{
+			PlatformImage img = (PlatformImage) ref;
+			BufferedImage canvas = img.getCanvas();
+			return (canvas != null) ? (long) canvas.getWidth() * canvas.getHeight() * 4L : 0L;
+		}
+		if (ref instanceof Image2D)
+		{
+			Image2D img2d = (Image2D) ref;
+			return (long) img2d.getWidth() * img2d.getHeight() * img2d.getBpp();
+		}
+		return 0L;
 	}
 
 	private long estimatePlayerHeapBytes(WeakReference<PlatformPlayer> playerRef)
@@ -393,13 +665,12 @@ public class ObjectMemoryViewerDialog extends JDialog
 			PlatformPlayer.volumeControl vc = (PlatformPlayer.volumeControl) player.getControl("VolumeControl");
 			PlatformPlayer.tempoControl tc = (PlatformPlayer.tempoControl) player.getControl("TempoControl");
 
-			String volumeStr = (vc != null) ? (vc.getLevel() + "%") : "N/A";
-			String speedStr = (tc != null) ? ((tc.getRate() / 1000) + "%") : "N/A";
-			String tempoStr = (tc != null) ? ((tc.getTempo() / 1000) + " BPM") : "N/A";
+			String volStr = (vc != null) ? (vc.getLevel() + "%") : "N/A";
+			String rateStr = (tc != null) ? ((tc.getRate() / 1000) + "%") : "N/A";
+			String bpmStr = (tc != null) ? ((tc.getTempo() / 1000) + "") : "N/A";
 
 			playerInfoLabel.setText("Type: " + contentType + " | State: " + state +
-				" | Volume: " + volumeStr + " | Speed: " + speedStr +
-				" | Tempo: " + tempoStr + " | Heap: " + String.format("%.2f", heapKb) + " KB");
+				" | Vol.: " + volStr + " | Rate: " + rateStr + " | BPM: " + bpmStr);
 		}
 		catch (IllegalStateException e)
 		{
@@ -455,8 +726,63 @@ public class ObjectMemoryViewerDialog extends JDialog
 		String superName = (sup != null) ? sup.getName() : "none";
 		double heapKb = estimateClassHeapBytes(classRef) / 1024.0;
 
-		classInfoLabel.setText("Class: " + cls.getName() + " | Package: " + pkgName +
-			" | Super: " + superName + " | Heap: " + String.format("%.2f", heapKb) + " KB");
+		classInfoLabel.setText("Package: " + pkgName + " | Super: " + superName);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void updateM3GObjs(ArrayList<WeakReference<Object3D>> objects)
+	{
+		WeakReference<Object3D> prevRef = getLiveRef(objects, m3gObjList.getSelectedIndex());
+		Object3D previouslySelected = getReference(prevRef);
+	
+		m3gObjListModel.clear();
+		if (objects == null)
+		{
+			updateSelectedM3GObj(null);
+			return;
+		}
+	
+		int newSelectedIndex = -1;
+		for (WeakReference<Object3D> objRef : objects)
+		{
+			Object3D obj = getReference(objRef);
+			if (obj != null && (!RenderableM3GFlag || isRenderableM3G(obj)))
+			{
+				String objName = obj.toString();
+				// TODO: Expand on this?
+				m3gObjListModel.addElement(objName.substring(objName.lastIndexOf('.') + 1));
+	
+				if (previouslySelected != null && obj == previouslySelected && newSelectedIndex < 0)
+				{
+					newSelectedIndex = m3gObjListModel.getSize() - 1;
+				}
+			}
+		}
+	
+		if (newSelectedIndex >= 0) { m3gObjList.setSelectedIndex(newSelectedIndex); }
+		else { m3gObjList.clearSelection(); }
+		updateSelectedM3GObj(objects);
+	}
+
+	private static boolean isRenderableM3G(Object3D obj)
+	{
+		return (obj instanceof Mesh) || (obj instanceof SkinnedMesh)
+			|| (obj instanceof Sprite3D) || (obj instanceof World);
+	}
+
+	private void updateSelectedM3GObj(ArrayList<WeakReference<Object3D>> objects)
+	{
+		WeakReference<Object3D> objRef = getLiveRef(objects, m3gObjList.getSelectedIndex());
+		Object3D obj = getReference(objRef);
+		if (obj == null)
+		{
+			m3gInfoLabel.setText("Selected: None");
+			return;
+		}
+
+		// TODO: Expand on this?
+		m3gInfoLabel.setText(obj.toString());
+		m3gPreviewPanel.renderObject(obj);
 	}
 
 	private static String formatTime(long microseconds)
