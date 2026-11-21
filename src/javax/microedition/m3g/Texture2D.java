@@ -258,6 +258,18 @@ public class Texture2D extends Transformable
 				dst.setPixel(x, y, (a << 24) | (r << 16) | (g << 8) | b);
 			}
 		}
+
+		// Mipmaps don't need to show up in the M3G Viewer.
+		synchronized (Mobile.memM3GImages)
+		{
+			for (int i = Mobile.memM3GImages.size() - 1; i >= 0; i--)
+			{
+				java.lang.ref.WeakReference<Image2D> ref = Mobile.memM3GImages.get(i);
+				Image2D img = (ref != null) ? ref.get() : null;
+				if (img == dst) { Mobile.memM3GImages.remove(i); }
+			}
+		}
+		
 		return dst;
 	}
 

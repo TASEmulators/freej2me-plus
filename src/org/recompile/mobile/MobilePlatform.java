@@ -167,10 +167,7 @@ public class MobilePlatform
 			{
 				WeakReference<PlatformImage> ref = Mobile.memImages.get(i);
 				PlatformImage img = (ref != null) ? ref.get() : null;
-				if (img == null || img == lcd || img == lcdFrontbuffer)
-				{
-					Mobile.memImages.remove(i);
-				}
+				if (img == lcd || img == lcdFrontbuffer) { Mobile.memImages.remove(i); }
 			}
 		}
 	}

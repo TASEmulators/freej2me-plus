@@ -60,6 +60,7 @@ public class Mobile
 	private static final Queue<Runnable> pendingLogs = new LinkedList<Runnable>();
 
 	// MIDlet object memory viewer
+	public static final int DBG_REF_LIMIT = 512;
 	public static final ArrayList<WeakReference<PlatformImage>> memImages = new ArrayList<WeakReference<PlatformImage>>();
 	public static final ArrayList<WeakReference<Image2D>> memM3GImages = new ArrayList<WeakReference<Image2D>>();
 	public static final ArrayList<WeakReference<Object3D>> memM3GObjects = new ArrayList<WeakReference<Object3D>>();
@@ -1290,15 +1291,7 @@ public class Mobile
 		synchronized(memImages)
 		{
 			// Clean up any null/weak references
-			for (int i = 0; i < memImages.size(); i++)
-			{
-				WeakReference<PlatformImage> ref = memImages.get(i);
-				if (ref == null || ref.get() == null)
-				{
-					memImages.remove(i);
-					i--;
-				}
-			}
+			if(memImages.size() > DBG_REF_LIMIT) { cleanNullRefs(memImages); }
 		
 			if (img != null)
 			{
@@ -1312,15 +1305,7 @@ public class Mobile
 		synchronized(memM3GImages)
 		{
 			// Clean up any null/weak references
-			for (int i = 0; i < memM3GImages.size(); i++)
-			{
-				WeakReference<Image2D> ref = memM3GImages.get(i);
-				if (ref == null || ref.get() == null)
-				{
-					memM3GImages.remove(i);
-					i--;
-				}
-			}
+			if(memM3GImages.size() > DBG_REF_LIMIT) { cleanNullRefs(memM3GImages); }
 		
 			if (img != null)
 			{
@@ -1359,20 +1344,9 @@ public class Mobile
 		synchronized(memPlayers)
 		{
 			// Clean up any null/weak references
-			for (int i = 0; i < memPlayers.size(); i++)
-			{
-				WeakReference<PlatformPlayer> ref = memPlayers.get(i);
-				if (ref == null || ref.get() == null || ref.get().getState() == javax.microedition.media.Player.CLOSED)
-				{
-					memPlayers.remove(i);
-					i--;
-				}
-			}
+			if(memPlayers.size() > DBG_REF_LIMIT) { cleanNullRefs(memPlayers); }
 		
-			if (player != null)
-			{
-				memPlayers.add(new WeakReference<PlatformPlayer>(player));
-			}
+			if (player != null) { memPlayers.add(new WeakReference<PlatformPlayer>(player)); }
 		}
 	}
 
@@ -1381,20 +1355,9 @@ public class Mobile
 		synchronized(memClasses)
 		{
 			// Clean up any null/weak references
-			for (int i = 0; i < memClasses.size(); i++)
-			{
-				WeakReference<Class<?>> ref = memClasses.get(i);
-				if (ref == null || ref.get() == null)
-				{
-					memClasses.remove(i);
-					i--;
-				}
-			}
+			if(memClasses.size() > DBG_REF_LIMIT) { cleanNullRefs(memClasses); }
 		
-			if (cls != null)
-			{
-				memClasses.add(new WeakReference<Class<?>>(cls));
-			}
+			if (cls != null) { memClasses.add(new WeakReference<Class<?>>(cls)); }
 		}
 	}
 
@@ -1414,6 +1377,27 @@ public class Mobile
 		{
 			Long val = memClassSizes.get(cls);
 			return (val != null) ? val.longValue() : 0L;
+		}
+	}
+
+	public static void cleanNullRefs(ArrayList<? extends WeakReference<?>> memList)
+	{
+		// If this is going beyond the limit, and largely so, just nuke the list
+		// and start again as the app is churning references out without a care for
+		// proper J2ME object lifecycle. Having the debug window go out of sync
+		// with what the app currently has loaded is better than stalling emulation. 
+		if(memList.size() > DBG_REF_LIMIT * 2) { memList.clear(); return; }
+		
+		for (int i = 0; i < memList.size(); i++)
+		{
+			WeakReference<?> ref = memList.get(i);
+			Object obj = (ref != null) ? ref.get() : null;
+			if ((obj == null) || (obj instanceof PlatformPlayer
+				&& ((PlatformPlayer) obj).getState() == javax.microedition.media.Player.CLOSED))
+			{
+				memList.remove(i);
+				i--;
+			}
 		}
 	}
 }
