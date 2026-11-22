@@ -208,8 +208,8 @@ public class Mobile
 	 * While on Libretro, it's:                      [Up, Down, Left, Right, 9, 7, 0, Fire, RightSoft, LeftSoft, 1,  3,  *,  #,  2,  4,  6,  8,  5, CLR] // Fast-Forward, pause/resume, and screenshot are frontend-governed. BG/FG is not supported because we are out of gamepad keys
 	 * private static final int[] libretroKeycodes = {0,  1,    2,     3,    4, 5, 6,  7,     8,          9,     10, 11, 12, 13, 14, 15, 16, 17, 18, 19}; // Doesn't need to be explicitly defined, it's the default array
 	 */
-	private static final int[] awtguiKeycodes      = {9,  8,    0,     2,    7, 3, 1, 10,    14,         11,     15, 18, 16,  5, 17,  4, 12,  6, 13, 19, 20, 21, 22, 23};
-	private static final String[] keyArray = {"Up", "Down", "Left", "Right", "9", "7", "0", "Fire", "RightSoft", "LeftSoft", "1", "3", "*", "#", "2", "4", "6", "8", "5", "CLR", "Fast Forward", "Screenshot", "MIDlet Pause/Resume", "MIDlet FG/BG"};
+	private static final int[] awtguiKeycodes      = {9,  8,    0,     2,    7, 3, 1, 10,    14,         11,     15, 18, 16,  5, 17,  4, 12,  6, 13, 19, 20, 21, 22, 23, 24};
+	private static final String[] keyArray = {"Up", "Down", "Left", "Right", "9", "7", "0", "Fire", "RightSoft", "LeftSoft", "1", "3", "*", "#", "2", "4", "6", "8", "5", "CLR", "Fast Forward", "Screenshot", "MIDlet Pause/Resume", "MIDlet FG/BG", "Next Frame"};
 
 	// Set whether audio should be enabled or not. Can work around jars that crash FreeJ2ME due to audio
 	public static boolean sound = true;
@@ -227,6 +227,7 @@ public class Mobile
 	// Libretro flags
 	public static boolean isFastForwarding = false;
 	public static boolean isPaused = false;
+	public static boolean advanceFrame = false;
 	public static boolean isHidden = false;
 	public static volatile float fastForwardMultiplier = 20.0f;
 	public static byte libretroRestartRequested = 0; // Set when FreeJ2ME has to be restarted in some way (often to change character encoding)

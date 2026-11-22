@@ -200,11 +200,13 @@ public final class FJGUI
 		new JButton("Space"),
 		new JButton("C"),
 		new JButton("X"),
-		new JButton("Z")
+		new JButton("Z"),
+		new JButton("N")
 	};
 
 	final JButton gamepadButtons[] = new JButton[]
 	{
+		new JButton(""),
 		new JButton(""),
 		new JButton(""),
 		new JButton(""),
@@ -240,20 +242,20 @@ public final class FJGUI
 		KeyEvent.VK_NUMPAD4, KeyEvent.VK_NUMPAD5, KeyEvent.VK_NUMPAD6,
 		KeyEvent.VK_NUMPAD1, KeyEvent.VK_NUMPAD2, KeyEvent.VK_NUMPAD3,
 		KeyEvent.VK_E, KeyEvent.VK_NUMPAD0, KeyEvent.VK_R, KeyEvent.VK_A,
-		KeyEvent.VK_SPACE, KeyEvent.VK_C, KeyEvent.VK_X, KeyEvent.VK_Z
+		KeyEvent.VK_SPACE, KeyEvent.VK_C, KeyEvent.VK_X, KeyEvent.VK_Z, KeyEvent.VK_N
 	};
 
 	/* Gamepad inputs. Zeroed by default as these vary per joystick. */
 	public static int gamepadKeycodes[] = new int[]
 	{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
 
 	public static String gamepadKeyNames[] = new String[]
 	{
 		"", "", "", "", "", "", "", "", "", "", "", "", "", "",
-		"", "", "", "", "", "", "", "", "", ""
+		"", "", "", "", "", "", "", "", "", "", ""
 	};
 
 	// Container for input mappings that allows swapping between keyboard and gamepad
@@ -892,10 +894,11 @@ public final class FJGUI
 		hotkeyGrid.add(buttons[22]);
 
 		hotkeyGrid.add(new JLabel("MIDP FG/BG", SwingConstants.CENTER));
-		hotkeyGrid.add(new JLabel(" ", SwingConstants.CENTER));
+		hotkeyGrid.add(new JLabel("Next Frame", SwingConstants.CENTER));
 		hotkeyGrid.add(new JLabel(" ", SwingConstants.CENTER));
 
 		hotkeyGrid.add(buttons[23]);
+		hotkeyGrid.add(buttons[24]);
 
 		// Stack sub-panels
 		container.add(phonePanel);

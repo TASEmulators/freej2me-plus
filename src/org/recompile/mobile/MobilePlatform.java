@@ -47,7 +47,6 @@ import org.recompile.mobile.players.BasicPlayer;
 
 public class MobilePlatform
 {
-
 	private static PlatformImage lcdFrontbuffer;
 	private PlatformGraphics gcFrontbuffer;
 
@@ -85,7 +84,7 @@ public class MobilePlatform
 	public volatile static int doJaKeyState = 0;
 
 	// MobilePlatform will handle the input repeats as well
-	public static boolean[] pressedKeys = new boolean[24];
+	public static boolean[] pressedKeys = new boolean[25];
 
 	public static Runnable painter, postDraw;
 
@@ -180,6 +179,14 @@ public class MobilePlatform
 
 	public void setPainter(Runnable r) { painter = r; }
 
+	public static final void advanceFrame()
+	{
+		if(Mobile.isPaused) { Mobile.advanceFrame = true; }
+		// Call the pause function irrespective of the current pause state.
+		// If it's paused, it'll unpause until the next frame is processed, and
+		// if it's unpaused, it'll kick in after the next frame is processed anyway.
+		pauseResumeApp();
+	}
 	public static final void pauseResumeApp()
 	{
 		if(!Mobile.isPaused)
@@ -955,6 +962,13 @@ public class MobilePlatform
 
 			if(!hasLimited) { limitFps(); }
 			hasLimited = false;
+
+			// Are we in Frame Advance? If so, we did just that, so pause again.
+			if(Mobile.advanceFrame) 
+			{
+				Mobile.advanceFrame = false;
+				pauseResumeApp();
+			}
 		}
 	}
 

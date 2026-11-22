@@ -686,6 +686,7 @@ public class FreeJ2ME
 				if(mobikey == 21) { ScreenShot.takeScreenshot(false); }
 				else if(mobikey == 22) { MobilePlatform.pauseResumeApp(); }
 				else if(mobikey == 23) { MobilePlatform.hideRestoreApp(); }
+				else if(mobikey == 24) { MobilePlatform.advanceFrame(); }
 
 				for(int i = 0; i < MobilePlatform.pressedKeys.length; i++)
 				{
