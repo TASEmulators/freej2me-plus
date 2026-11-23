@@ -72,7 +72,7 @@ class ImagePanel extends JPanel
 			public void mousePressed(MouseEvent e)
 			{
 				if (!SwingUtilities.isLeftMouseButton(e)) { return; }
-				JViewport viewport = getViewport();
+				JViewport viewport = (JViewport) getParent();
 				if (viewport == null) { return; }
 
 				dragStartScreen = e.getLocationOnScreen();
@@ -83,7 +83,7 @@ class ImagePanel extends JPanel
 			public void mouseDragged(MouseEvent e)
 			{
 				if (dragStartScreen == null || dragStartViewPos == null) { return; }
-				JViewport viewport = getViewport();
+				JViewport viewport = (JViewport) getParent();
 				if (viewport == null) { return; }
 
 				Point currentScreen = e.getLocationOnScreen();
@@ -127,12 +127,6 @@ class ImagePanel extends JPanel
 
 		addMouseListener(panelPanner);
 		addMouseMotionListener(panelPanner);
-	}
-
-	private JViewport getViewport()
-	{
-		Container parent = getParent();
-		return (parent instanceof JViewport) ? (JViewport) parent : null;
 	}
 
 	private void handleImageClick(Point pt)
@@ -184,7 +178,7 @@ class ImagePanel extends JPanel
 			}
 		}
 
-		applySources(nextRefs, nextCanvases);
+		applyImgs(nextRefs, nextCanvases);
 	}
 
 	public void setImage2Ds(ArrayList<WeakReference<Image2D>> images)
@@ -207,7 +201,7 @@ class ImagePanel extends JPanel
 			}
 		}
 
-		applySources(nextRefs, nextCanvases);
+		applyImgs(nextRefs, nextCanvases);
 	}
 
 	private BufferedImage createBufferedImage(Image2D img)
@@ -223,28 +217,25 @@ class ImagePanel extends JPanel
 		return bi;
 	}
 
-	private void applySources(ArrayList<WeakReference<?>> nextRefs, ArrayList<BufferedImage> nextCanvases)
+	private void applyImgs(ArrayList<WeakReference<?>> nextRefs, ArrayList<BufferedImage> nextCanvases)
 	{
 		this.sourceRefs = nextRefs;
 		this.sourceCanvases = nextCanvases;
 
-		if (selectedImage != null && !nextRefs.contains(selectedImage))
-		{
-			selectedImage = null;
-		}
+		if (selectedImage != null && !nextRefs.contains(selectedImage)) { selectedImage = null; }
 
 		refreshLayout(true);
 	}
 
 	private int getWrapWidth()
 	{
-		JViewport viewport = getViewport();
+		JViewport viewport = (JViewport) getParent();
 		if (viewport != null)
 		{
 			int vw = viewport.getExtentSize().width;
-			if (vw > 0) { return Math.max(vw, 120); }
+			if (vw > 0) { return (int) (vw * 1.33f); }
 		}
-		return Math.max(getWidth(), 220);
+		return getWidth();
 	}
 
 	private int scaleDimension(int base) { return Math.max(1, (int) Math.round(base * scale)); }
