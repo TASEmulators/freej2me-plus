@@ -437,7 +437,9 @@ public class MIDletLoader extends URLClassLoader
 		StringBuilder currentValue = new StringBuilder();
 		try
 		{
-			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			// EUC_KR is the only one so far that really requires a matching encoding here
+			BufferedReader br = new BufferedReader(new InputStreamReader(is, System.getProperty("file.encoding").equals(
+				Mobile.supportedEncodings[Mobile.EUC_KR]) ? Mobile.textEncoding : "UTF-8"));
 			try
 			{
 				String line;
