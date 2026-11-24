@@ -305,48 +305,7 @@ public class Graphics3D {
 		}
 	}
 
-	public final void bind(Graphics graphics) {
-		if (disposed) return;
-		if (graphics == null) throw new NullPointerException();
-		if (boundGraphics != null) throw new IllegalStateException();
-		
-		long startTime = System.currentTimeMillis();
-
-		boundGraphics = graphics;
-		
-		// Get framebuffer resolution
-		int clipX = graphics.getClipX();
-		int clipY = graphics.getClipY();
-		int clipW = graphics.getClipWidth();
-		int clipH = graphics.getClipHeight();
-
-		fbWidth = ((PlatformGraphics)graphics).getCanvas().getWidth();
-		fbHeight = ((PlatformGraphics)graphics).getCanvas().getHeight();
-		
-		frameBuffer = ((PlatformGraphics)graphics).getFrameBuffer();
-		
-		if (Mobile.halfResMCV3Raster) fbHeight /= 2;
-		
-		setClip(clipX, clipY, clipW, clipH);
-		
-		allowedClippingStages = 
-				(/*Mobile.MCV3NoNearClipping ? 0 :*/ NEAR_CLIP) |
-				(/*Mobile.MCV3NoFarClipping ? 0 :*/ FAR_CLIP) |
-				(/*Mobile.MCV3NoToonSplitting ? 0 :*/ TOON_SPLIT);
-		
-		fbDrawCounter = 0;
-		
-		//if (!MascotME.doNotClear) {
-		//	int color = MascotME.fbClearColor;
-		//	if (color == MascotME.CLEAR_WITH_LAST_USED_COLOR) {
-		//		color = graphics.getColor() & 0xffffff;
-		//	}
-		//	
-		//	clearFB(color);
-		//}
-		
-		bindAccum += (int) (System.currentTimeMillis() - startTime);
-	}
+	public final void bind(Graphics graphics) { bind((PlatformGraphics) graphics); }
 
 	public final void bind(PlatformGraphics graphics) {
 		if (disposed) return;

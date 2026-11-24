@@ -178,7 +178,7 @@ public class M3G3DPreviewPanel extends JPanel
 	public void setPreviewBackground(int bgColor)
 	{
 		this.bgColor = bgColor;
-		clearBackground();
+		rerenderLast();
 	}
 
 	public void setWireframe(boolean wireframe) { this.wireframe = wireframe; }
