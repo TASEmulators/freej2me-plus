@@ -36,7 +36,7 @@ public class Graphics3D
 	 * 3dConstructioCombat). Per JSR-184, clear() always resets to max
 	 * depth 1.0 regardless of the current depth range.
 	 */
-	private static final short DEPTH_CLEAR_VALUE = (short) 32767;
+	static final short DEPTH_CLEAR_VALUE = (short) 32767;
 
 	// Flag values for FJ2ME+ rendering overrides (bilinear, AA, dithering, etc)
 	public static final int MODE_FORCE_DISABLE = 0;
@@ -45,11 +45,11 @@ public class Graphics3D
 
 	// Pre-computed 1/(1<<N) lookup table for sizes 1 to 2048 in POT. Used by
 	// mipmapping.
-	private static final float[] INV_MIP_TABLE = new float[12];
+	static final float[] INV_MIP_TABLE = new float[12];
 
 	// Pre-computed 1/N lookup table for span sizes 1 to 32 in POT, for
 	// configurable span sizes in piecewise linear perspective correction.
-	private static final float[] INV_SPAN_TABLE = new float[33];
+	static final float[] INV_SPAN_TABLE = new float[33];
 
 	static
 	{
@@ -403,7 +403,7 @@ public class Graphics3D
 
 		if (clearColor)
 		{
-			final Image2D bgImg = (background != null) ? background.getImage() : null;
+			final Image2D bgImg = (background != null) ? background.image : null;
 
 			if (this.target instanceof Graphics)
 			{
@@ -691,9 +691,9 @@ public class Graphics3D
 					texRepeatT[i] = (t.getWrappingT() == Texture2D.WRAP_REPEAT);
 
 					textr[i].setIdentity();
-					if (t.getImage() != null)
+					if (t.texImage != null)
 					{
-						textr[i].postScale(t.getImage().getWidth(), t.getImage().getHeight(), 1.0f);
+						textr[i].postScale(t.texImage.getWidth(), t.texImage.getHeight(), 1.0f);
 					}
 
 					texcomptr.setIdentity();
@@ -729,9 +729,9 @@ public class Graphics3D
 
 					// Cache the texture blend and wrapping mode here as well.
 					texBlenders[i] = getTextureBlender(((textures[i].getBlending() & 7) << 3) |
-						(textures[i].getImage().getFormat() & 7));
+						(textures[i].texImage.getFormat() & 7));
 
-					texWrappers[i] = getCoordWrapper(t.getImage().getWidth(), t.getImage().getHeight(),
+					texWrappers[i] = getCoordWrapper(t.texImage.getWidth(), t.texImage.getHeight(),
 						texRepeatS[i], texRepeatT[i], t.isNPOT());
 				}
 				else
@@ -1330,7 +1330,7 @@ public class Graphics3D
 	 */
 	private synchronized void renderSprite(Sprite3D sprite, Transform transform, int alphaFactor)
 	{
-		final Image2D spr = sprite.getImage();
+		final Image2D spr = sprite.image;
 		final Appearance appearance = sprite.getAppearance();
 
 		// As per JSR-184, a Sprite3D with no appearance (or no image) is not rendered.
@@ -1506,7 +1506,7 @@ public class Graphics3D
 					paintPixel = (paintPixel & 0xFF000000) | outRB | (outG << 8);
 				}
 
-				rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx], paintPixel, alpha);
+				rasterData[rasterIdx] = compBlender.blend(rasterData[rasterIdx], paintPixel, alpha);
 
 				if (depthWrite) { this.depthBuffer[rasterIdx] = ndcZ; }
 			}
@@ -1519,8 +1519,10 @@ public class Graphics3D
 		boolean colorEnabled, float depthOffset, boolean doPerspective, float invMidSpan)
 	{
 		// Prepare the flags that can be overridden by the UI.
-		boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
+		final boolean doDither = (Mobile.m3gDitheringMode == MODE_FORCE_ENABLE)
 			|| (Mobile.m3gDitheringMode == MODE_APP_CONTROLLED && (this.hints & DITHER) != 0);
+
+		final int pCorrSpanLen = (Mobile.m3gPerspCorrSubFactor + 1);
 
 		final boolean hasFog = fog != null;
 
@@ -1662,16 +1664,11 @@ public class Graphics3D
 				// for the whole triangle Y scanline due to large precision loss.
 				if (x == perspX)
 				{
-					int maxSpan = (Mobile.m3gPerspCorrSubFactor + 1) -
-						(x & Mobile.m3gPerspCorrSubFactor);
-					int spanLen = (ixR - x < maxSpan) ? ixR - x : maxSpan;
-					float invSpanLen = INV_SPAN_TABLE[spanLen];
-
 					// Calling M3GMath.fastReciprocal() in here was deemed
 					// too expensive by the profiler, so we'll be inlining an
 					// even simpler alternative in here instead
 					// (single Newton-Raphson step)).
-					float denom = pw * (pw + pwStep * spanLen);
+					float denom = pw * (pw + pwStep * pCorrSpanLen);
 					float invDenom = Float.intBitsToFloat(0x7EF127EA - Float.floatToRawIntBits(denom));
 					invDenom = invDenom * (2.0f - denom * invDenom);
 
@@ -1681,7 +1678,7 @@ public class Graphics3D
 					if (hasFog)
 					{
 						float zEyeStart = invPw;
-						float zEyeEnd = invPw + stepInvPw * spanLen;
+						float zEyeEnd = invPw + stepInvPw * pCorrSpanLen;
 
 						float fStart, fEnd;
 						if (fogMode == Fog.LINEAR)
@@ -1700,11 +1697,11 @@ public class Graphics3D
 						// by 256 to use fixed point:
 						// The stepping factor is calculated by unscaling the start factor (0.00390625f is 1/256), then
 						// scaling by delta (invSpanLen * 256).
-						stepFogFactor = (int) (((fEnd < 0.0f ? 0.0f : (fEnd > 255.0f ? 255.0f : fEnd)) - (fogFactor * 0.00390625f)) * invSpanLen * 256.0f);
+						stepFogFactor = (int) (((fEnd < 0.0f ? 0.0f : (fEnd > 255.0f ? 255.0f : fEnd)) - (fogFactor * 0.00390625f)) * INV_SPAN_TABLE[pCorrSpanLen] * 256.0f);
 					}
 
 					// perspX now moves to the next span.
-					perspX += spanLen;
+					perspX += pCorrSpanLen;
 				}
 
 				// Only depth test if the compositingMode has the feature enabled. If
@@ -1801,8 +1798,7 @@ public class Graphics3D
 					paintPixel = (paintPixel & 0xFF000000) | (r << 16) | (g << 8) | b;
 				}
 
-				rasterData[rasterIdx] = compBlender == null ? paintPixel : compBlender.blend(rasterData[rasterIdx],
-					paintPixel, alpha);
+				rasterData[rasterIdx] = compBlender.blend(rasterData[rasterIdx], paintPixel, alpha);
 			}
 		}
 	}
@@ -2307,8 +2303,7 @@ public class Graphics3D
 		switch (blendMode)
 		{
 			case CompositingMode.REPLACE:
-				return null; // Fast path, set pixel directly in render methods.
-				//return Graphics3DPipelines.CompositingBlenders.REPLACE;
+				return Graphics3DPipelines.CompositingBlenders.REPLACE;
 			case CompositingMode.ALPHA:
 				return Graphics3DPipelines.CompositingBlenders.ALPHA;
 			case CompositingMode.ALPHA_ADD:
@@ -2337,8 +2332,7 @@ public class Graphics3D
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE & 7):
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.RGBA & 7):
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.LUMINANCE_ALPHA & 7):
-				return null; // Fast path, set pixel directly in render methods.
-				//return TextureBlenders.REPLACE_FG;
+				return Graphics3DPipelines.TextureBlenders.REPLACE_FG;
 
 			case ((Texture2D.FUNC_REPLACE & 7) << 3) | (Image2D.ALPHA & 7):
 				return Graphics3DPipelines.TextureBlenders.REPLACE_ALPHA;
@@ -2399,13 +2393,24 @@ public class Graphics3D
 	public TexturingMode getTexturingMode()
 	{
 		if (ACTIVE_TEXTURE_UNITS == 0) { return TexturingModes.NO_UNIT; }
-		if (ACTIVE_TEXTURE_UNITS == 1) { return TexturingModes.SINGLE_UNIT; }
-		return TexturingModes.MULTI_UNIT;
+		if (ACTIVE_TEXTURE_UNITS == 1 && mipModes[0] != null) { return TexturingModes.SINGLE_UNIT; }
+		if (ACTIVE_TEXTURE_UNITS == 1 && mipModes[0] == null) { return TexturingModes.SINGLE_UNIT_NOMIP; }
+		else
+		{
+			// If any of them has mipmapping, we get the slowest path
+			for(int i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+			{
+				if(mipModes[i] != null) { return TexturingModes.MULTI_UNIT; }
+			}
+			return TexturingModes.MULTI_UNIT_NOMIP;
+		}
+		
 	}
 
 	public TextureFilter getTextureFilter(boolean bilinear)
 	{
-		if (!bilinear) { return TextureFilters.NEAREST; }
+		if (!bilinear && textures[0].texImage.isPOT) { return TextureFilters.NEAREST_POT; }
+		else if (!bilinear) { return TextureFilters.NEAREST; }
 		return TextureFilters.BILINEAR;
 	}
 
@@ -2424,6 +2429,33 @@ public class Graphics3D
 			public void applyTexture(float invPw, int x, int y) { /* NO-OP */ }
 		};
 
+		static final TexturingMode SINGLE_UNIT_NOMIP = new TexturingMode()
+		{
+			@Override
+			public void applyTexture(float invPw, int x, int y)
+			{
+				texFilter[0].filterTexture(curS[0] * invPw, curT[0] * invPw, 0, textures[0].texImage);
+
+				curS[0] += stepS[0];
+				curT[0] += stepT[0];
+			}
+		};
+
+		static final TexturingMode MULTI_UNIT_NOMIP = new TexturingMode()
+		{
+			@Override
+			public void applyTexture(float invPw, int x, int y)
+			{
+				for(byte i = 0; i < ACTIVE_TEXTURE_UNITS; i++)
+				{
+					texFilter[i].filterTexture(curS[i] * invPw, curT[i] * invPw, i, textures[i].texImage);
+
+					curS[i] += stepS[i];
+					curT[i] += stepT[i];
+				}
+			}
+		};
+
 		static final TexturingMode SINGLE_UNIT = new TexturingMode()
 		{
 			@Override
@@ -2432,22 +2464,19 @@ public class Graphics3D
 				float s = curS[0] * invPw;
 				float t = curT[0] * invPw;
 
-				Image2D targetImage = textures[0].getImage();
+				Image2D targetImage = textures[0].texImage;
 
 				// Mipmapping support was requested.
-				if(mipModes[0] != null)
-				{
-					targetImage = mipModes[0].selectLevel(textures[0], s, t,
-						sStepX[0], tStepX[0], sStepY[0], tStepY[0],
-						dwdx, dwdy, invPw, x, y);
+				targetImage = mipModes[0].selectLevel(textures[0], s, t,
+					sStepX[0], tStepX[0], sStepY[0], tStepY[0],
+					dwdx, dwdy, invPw, x, y);
 
-					// POT textures coming in with another fast path: Just use
-					// the difference in width between base level and target
-					// one as the reciprocal step!
-					float targetLevel = INV_MIP_TABLE[textures[0].getImage().widthShift - targetImage.widthShift];
-					s *= targetLevel;
-					t *= targetLevel;
-				}
+				// POT textures coming in with another fast path: Just use
+				// the difference in width between base level and target
+				// one as the reciprocal step!
+				float targetLevel = INV_MIP_TABLE[textures[0].texImage.widthShift - targetImage.widthShift];
+				s *= targetLevel;
+				t *= targetLevel;
 
 				texFilter[0].filterTexture(s, t, 0, targetImage);
 
@@ -2466,7 +2495,7 @@ public class Graphics3D
 					float s = curS[i] * invPw;
 					float t = curT[i] * invPw;
 
-					Image2D targetImage = textures[i].getImage();
+					Image2D targetImage = textures[i].texImage;
 
 					// Mipmapping support was requested.
 					if(mipModes[i] != null)
@@ -2478,7 +2507,7 @@ public class Graphics3D
 						// POT textures coming in with another fast path: Just use
 						// the difference in width between base level and target
 						// one as the reciprocal step!
-						float targetLevel = INV_MIP_TABLE[textures[0].getImage().widthShift - targetImage.widthShift];
+						float targetLevel = INV_MIP_TABLE[textures[i].texImage.widthShift - targetImage.widthShift];
 						s *= targetLevel;
 						t *= targetLevel;
 					}
@@ -2506,12 +2535,23 @@ public class Graphics3D
 				final int texCoord = texWrappers[unitIdx].wrap((int) (s + 32768.0f) - 32768,
 					(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
 
-				final int pixel = targetImage.image[targetImage.isPOT ?
-					((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF) :
-					((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)];
+				paintPixel = texBlenders[unitIdx].blend(paintPixel,
+					targetImage.image[((texCoord >>> 16) * targetImage.width) + (texCoord & 0xFFFF)],
+					textures[unitIdx].getBlendColor());
+			}
+		};
 
-				paintPixel = texBlenders[unitIdx] == null ? pixel :
-					texBlenders[unitIdx].blend(paintPixel, pixel, textures[unitIdx].getBlendColor());
+		static final TextureFilter NEAREST_POT = new TextureFilter()
+		{
+			@Override
+			public void filterTexture(float s, float t, int unitIdx, Image2D targetImage)
+			{
+				final int texCoord = texWrappers[unitIdx].wrap((int) (s + 32768.0f) - 32768,
+					(int) (t + 32768.0f) - 32768, targetImage.getWidth(), targetImage.getHeight());
+
+				paintPixel = texBlenders[unitIdx].blend(paintPixel,
+					targetImage.image[((texCoord >>> 16) << targetImage.widthShift) + (texCoord & 0xFFFF)],
+					textures[unitIdx].getBlendColor());
 			}
 		};
 
@@ -2558,8 +2598,7 @@ public class Graphics3D
 				final int rb = ((rbTop * invFy + rbBot * fy) >>> 8) & 0x00FF00FF;
 				final int ag = ((agTop * invFy + agBot * fy) >>> 8) & 0x00FF00FF;
 				
-				paintPixel = texBlenders[unitIdx] == null ? (ag << 8) | rb 
-					: texBlenders[unitIdx].blend(paintPixel, (ag << 8) | rb, textures[unitIdx].getBlendColor());
+				paintPixel = texBlenders[unitIdx].blend(paintPixel, (ag << 8) | rb, textures[unitIdx].getBlendColor());
 			}
 		};
 	}

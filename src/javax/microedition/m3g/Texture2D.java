@@ -41,8 +41,8 @@ public class Texture2D extends Transformable
 
 	private boolean isNPOT;
 
-	private Image2D texImage;
-	private Image2D[] mipmaps;
+	Image2D texImage;
+	Image2D[] mipmaps;
 
 	public Texture2D(Image2D image)
 	{

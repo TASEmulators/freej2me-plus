@@ -20,7 +20,7 @@ import org.recompile.mobile.Mobile;
 
 public class Sprite3D extends Node
 {
-	private Image2D image;
+	Image2D image;
 	private Appearance appearance;
 	private boolean scaled;
 

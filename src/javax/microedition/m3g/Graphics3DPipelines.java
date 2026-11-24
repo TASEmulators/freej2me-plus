@@ -20,19 +20,16 @@ package javax.microedition.m3g;
 // texture coordinate wrapping. With this, we can set the blend logic and wrap
 // modes to use only once per render call, and execute them without any sort of
 // branching when drawing each pixel.
-class Graphics3DPipelines
+final class Graphics3DPipelines
 {
 	interface CompositingBlender { int blend(int bg, int fg, int alpha); }
 
-	static class CompositingBlenders
+	static final class CompositingBlenders
 	{
-		// This one was turned into a faster path where we don't even allocate
-		// this in memory and just apply the source pixel directly in the method
-		// itself, also saving a method call in the process.
-		//static final CompositingBlender REPLACE = new CompositingBlender()
-		//{
-		//	public int blend(int bg, int fg, int alpha) { return fg; }
-		//};
+		static final CompositingBlender REPLACE = new CompositingBlender()
+		{
+			public int blend(int bg, int fg, int alpha) { return fg; }
+		};
 
 		static final CompositingBlender ALPHA = new CompositingBlender()
 		{
@@ -137,19 +134,17 @@ class Graphics3DPipelines
 
 	interface TextureBlender { int blend(int bg, int fg, int texBlendColor); }
 
-	static class TextureBlenders
+	static final class TextureBlenders
 	{
 		static final TextureBlender PASSTHROUGH = new TextureBlender()
 		{
 			public int blend(int bg, int fg, int texBlendColor) { return bg; }
 		};
 
-		// This one was turned into a faster path where we don't even allocate
-		// this in memory and just apply the texture pixel directly in the method
-		// itself, saving a method call in the process.
-		//static final TextureBlender REPLACE_FG = new TextureBlender() {
-		//    public int blend(int bg, int fg, int texBlendColor) { return fg; }
-		//};
+		static final TextureBlender REPLACE_FG = new TextureBlender()
+		{
+		    public int blend(int bg, int fg, int texBlendColor) { return fg; }
+		};
 
 		static final TextureBlender REPLACE_ALPHA = new TextureBlender()
 		{
@@ -289,7 +284,7 @@ class Graphics3DPipelines
 	// This method assumes that no texture larger than 32Kx32K will be used,
 	// and with this, it processes both S and T coordinates in one go and returns
 	// them packed in an integer as follows: ST = (T << 16) | (S & 0xFFFF).
-	static class TextureWrappers
+	static final class TextureWrappers
 	{
 		// If the texture is Power-Of-Two, repeat wrapping can be done
 		// quickly as just an AND of the coordinate with the the edge
@@ -352,7 +347,7 @@ class Graphics3DPipelines
 			float dwdx, float dwdy, float invPw, int x, int y);
 	}
 
-	static class MipmapModes
+	static final class MipmapModes
 	{
 		// Turned into a fast path where this isn't even allocated and the
 		// texturing code assigns the base level right away.
@@ -386,7 +381,9 @@ class Graphics3DPipelines
 				int rawBits = Float.floatToRawIntBits(maxSq) - 0x3F800000;
 				int targetLevel = (rawBits & ~(rawBits >> 31)) >> 24;
 
-				return texture.getImageForLOD(targetLevel);
+				final int mipNum = texture.mipmaps.length;
+
+				return texture.mipmaps[targetLevel >= mipNum ? mipNum - 1 : targetLevel];
 			}
 		};
 
@@ -415,7 +412,9 @@ class Graphics3DPipelines
 				int targetLevel = ((rawBits & ~(rawBits >> 31)) >> 24) -
 					((ditherThreshold - lodFract) >> 31);
 
-				return texture.getImageForLOD(targetLevel);
+				final int mipNum = texture.mipmaps.length;
+
+				return texture.mipmaps[targetLevel >= mipNum ? mipNum - 1 : targetLevel];
 			}
 		};
 	}

@@ -32,7 +32,7 @@ public class Background extends Object3D
 	private int cropx = 0;
 	private int cropy = 0;
 
-	private Image2D image = null;
+	Image2D image = null;
 	private boolean depthclear = true;
 	private boolean colorclear = true;
 	private Texture2D texture = null;
