@@ -43,15 +43,21 @@ public class Graphics3D
 	public static final int MODE_APP_CONTROLLED = 1;
 	public static final int MODE_FORCE_ENABLE  = 2;
 
-	// Pre-computed 1/N lookup table for span sizes 1 to 32. FreeJ2ME+ will
-	// allow configurable span sizes for piecewise linear perspective correction
-	// from 8 to 32 pixels in the future, so by precalculating these here at
-	// the start, we don't need to keep throwing fastReciprocals on the inner
-	// render loop.
+	// Pre-computed 1/(1<<N) lookup table for sizes 1 to 2048 in POT. Used by
+	// mipmapping.
+	private static final float[] INV_MIP_TABLE = new float[12];
+
+	// Pre-computed 1/N lookup table for span sizes 1 to 32 in POT, for
+	// configurable span sizes in piecewise linear perspective correction.
 	private static final float[] INV_SPAN_TABLE = new float[33];
 
 	static
 	{
+		for (int i = 1; i <= 12; i++)
+		{
+			INV_MIP_TABLE[i-1] = M3GMath.fastReciprocal((float) (1 << (i-1)));
+		}
+
 		INV_SPAN_TABLE[0] = 0.0f;
 		for (int i = 1; i <= 32; i++)
 		{
@@ -2435,13 +2441,12 @@ public class Graphics3D
 						sStepX[0], tStepX[0], sStepY[0], tStepY[0],
 						dwdx, dwdy, invPw, x, y);
 
-					// POT textures coming in with another fast path: Just shift
-					// right by the difference in width between base level and
-					// target one!
-					int targetLevel = textures[0].getImage().widthShift - targetImage.widthShift;
-
-					s = (float) ((int) s >> targetLevel);
-					t = (float) ((int) t >> targetLevel);
+					// POT textures coming in with another fast path: Just use
+					// the difference in width between base level and target
+					// one as the reciprocal step!
+					float targetLevel = INV_MIP_TABLE[textures[0].getImage().widthShift - targetImage.widthShift];
+					s *= targetLevel;
+					t *= targetLevel;
 				}
 
 				texFilter[0].filterTexture(s, t, 0, targetImage);
@@ -2470,13 +2475,12 @@ public class Graphics3D
 							sStepX[i], tStepX[i], sStepY[i], tStepY[i],
 							dwdx, dwdy, invPw, x, y);
 
-						// POT textures coming in with another fast path: Just shift
-						// right by the difference in width between base level and
-						// target one!
-						int targetLevel = textures[i].getImage().widthShift - targetImage.widthShift;
-
-						s = (float) ((int) s >> targetLevel);
-						t = (float) ((int) t >> targetLevel);
+						// POT textures coming in with another fast path: Just use
+						// the difference in width between base level and target
+						// one as the reciprocal step!
+						float targetLevel = INV_MIP_TABLE[textures[0].getImage().widthShift - targetImage.widthShift];
+						s *= targetLevel;
+						t *= targetLevel;
 					}
 
 					texFilter[i].filterTexture(s, t, i, targetImage);
