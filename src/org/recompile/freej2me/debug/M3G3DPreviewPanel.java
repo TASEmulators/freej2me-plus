@@ -38,11 +38,10 @@ import org.recompile.mobile.PlatformImage;
 
 public class M3G3DPreviewPanel extends JPanel
 {
-	private BufferedImage previewBuffer;
 	private PlatformImage img;
 	private javax.microedition.lcdui.Graphics gfx;
 
-	private boolean wireframe = false, untextured = false, drawHidden = true, mipmapping = false;
+	private boolean wireframe = false, untextured = false, drawHidden = true, mipmapping = false, noCulling = false;
 	private int bgColor = 0x000000;
 	private final Graphics3D renderer = Graphics3D.getInstance();
 
@@ -64,7 +63,11 @@ public class M3G3DPreviewPanel extends JPanel
 	private int lastMouseX = -1, lastMouseY = -1;
 	private Object3D lastTargetObj = null;
 
-	public M3G3DPreviewPanel() { initMouse(); }
+	public M3G3DPreviewPanel()
+	{
+		setBackground(java.awt.Color.BLACK);
+		initMouse();
+	}
 
 	// Base camera setup looks slightly down, and is a 25 units away from the
 	// origin, so that most geometry is visible right away.
@@ -186,36 +189,26 @@ public class M3G3DPreviewPanel extends JPanel
 
 	public void setMipmapping(boolean mipmapping) { this.mipmapping = mipmapping; }
 
+	public void setCulling(boolean culling) { this.noCulling = culling; }
+
 	private void clearM3GTarget()
 	{
 		int w = Math.max(1, getWidth()), h = Math.max(1, getHeight());
 
-		if (previewBuffer == null || previewBuffer.getWidth() != w || previewBuffer.getHeight() != h)
+		if (img == null || img.getWidth() != w || img.getHeight() != h)
 		{
-			previewBuffer = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 			img = new PlatformImage(w, h);
+			gfx = img.getMIDPGraphics();
 		}
 
-		gfx = img.getMIDPGraphics();
 		gfx.setColor(bgColor);
 		gfx.fillRect(0, 0, img.getWidth(), img.getHeight());
-	}
-
-	private void paintToScreen()
-	{
-		if (previewBuffer != null && img != null && img.getCanvas() != null)
-		{
-			Graphics2D g2d = previewBuffer.createGraphics();
-			g2d.drawImage(img.getCanvas(), 0, 0, null);
-			g2d.dispose();
-		}
-		repaint();
 	}
 
 	public void clearBackground()
 	{
 		clearM3GTarget();
-		paintToScreen();
+		repaint();
 	}
 
 	public void renderObject(Object3D targetObj)
@@ -224,7 +217,7 @@ public class M3G3DPreviewPanel extends JPanel
 		lastTargetObj = targetObj;
 		if (targetObj == null)
 		{
-			paintToScreen();
+			repaint();
 			return;
 		}
 
@@ -252,6 +245,7 @@ public class M3G3DPreviewPanel extends JPanel
 			renderer.untexturedDebugFlag = this.untextured;
 			renderer.drawHiddenNodesDebugFlag = this.drawHidden;
 			renderer.forceMipmappingDebugFlag = this.mipmapping;
+			renderer.disableCullingDebugFlag = this.noCulling;
 			try
 			{
 				if (targetObj instanceof World)
@@ -273,18 +267,18 @@ public class M3G3DPreviewPanel extends JPanel
 				renderer.untexturedDebugFlag = false;
 				renderer.drawHiddenNodesDebugFlag = false;
 				renderer.forceMipmappingDebugFlag = false;
+				renderer.disableCullingDebugFlag = false;
 				renderer.releaseTarget();
 				renderer.setCamera(prevCamera, prevCamTrans);
 				if (prevTarget != null) { renderer.bindTarget(prevTarget, prevDepthBuffer, prevRenderHints); }
 			}
 		}
-
-		paintToScreen();
+		repaint();
 	}
 
 	protected void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
-		g.drawImage(previewBuffer, 0, 0, getWidth(), getHeight(), null);
+		g.drawImage(img.getCanvas(), 0, 0, null);
 	}
 }

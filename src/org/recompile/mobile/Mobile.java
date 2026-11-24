@@ -40,6 +40,9 @@ import javax.microedition.m3g.Object3D;
 import javax.microedition.media.Manager;
 import javax.microedition.midlet.MIDlet;
 
+import com.mascotcapsule.micro3d.v3.Figure;
+import com.mascotcapsule.micro3d.v3.Texture;
+
 import org.recompile.freej2me.Config;
 
 /*
@@ -63,7 +66,9 @@ public class Mobile
 	public static final int DBG_REF_LIMIT = 512;
 	public static final ArrayList<WeakReference<PlatformImage>> memImages = new ArrayList<WeakReference<PlatformImage>>();
 	public static final ArrayList<WeakReference<Image2D>> memM3GImages = new ArrayList<WeakReference<Image2D>>();
+	public static final ArrayList<WeakReference<Texture>> memMCv3Images = new ArrayList<WeakReference<Texture>>();
 	public static final ArrayList<WeakReference<Object3D>> memM3GObjects = new ArrayList<WeakReference<Object3D>>();
+	public static final ArrayList<WeakReference<Figure>> memMCv3Objects = new ArrayList<WeakReference<Figure>>();
 	public static final ArrayList<WeakReference<PlatformPlayer>> memPlayers = new ArrayList<WeakReference<PlatformPlayer>>();
 	public static final ArrayList<WeakReference<Class<?>>> memClasses = new ArrayList<WeakReference<Class<?>>>();
 	public static final WeakHashMap<Class<?>, Long> memClassSizes = new WeakHashMap<Class<?>, Long>();
@@ -1315,6 +1320,20 @@ public class Mobile
 		}
 	}
 
+	public static void addMCv3ImageReference(Texture img)
+	{
+		synchronized(memMCv3Images)
+		{
+			// Clean up any null/weak references
+			if(memMCv3Images.size() > DBG_REF_LIMIT) { cleanNullRefs(memMCv3Images); }
+		
+			if (img != null)
+			{
+				memMCv3Images.add(new WeakReference<Texture>(img));
+			}
+		}
+	}
+
 	public static void addM3GObjectReference(Object3D obj)
 	{
 		if (obj == null) { return; }
@@ -1337,6 +1356,31 @@ public class Mobile
 			}
 	
 			if (!duplicatedRef) { memM3GObjects.add(new WeakReference<Object3D>(obj)); }
+		}
+	}
+
+	public static void addMCv3ObjectReference(Figure obj)
+	{
+		if (obj == null) { return; }
+		
+		synchronized(memMCv3Objects)
+		{
+			boolean duplicatedRef = false;
+			
+			// Clean up any null/cleared weak references and check for an existing live reference to obj
+			for (int i = 0; i < memMCv3Objects.size(); i++)
+			{
+				WeakReference<Figure> ref = memMCv3Objects.get(i);
+				Figure objRef = (ref != null) ? ref.get() : null;
+				if (objRef == null)
+				{
+					memMCv3Objects.remove(i);
+					i--;
+				}
+				else if (objRef == obj) { duplicatedRef = true; }
+			}
+	
+			if (!duplicatedRef) { memMCv3Objects.add(new WeakReference<Figure>(obj)); }
 		}
 	}
 

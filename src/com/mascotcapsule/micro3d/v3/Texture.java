@@ -42,12 +42,14 @@ public class Texture {
 		width = 1;
 		height = 1;
 		isForModel = true;
+		Mobile.addMCv3ImageReference(this);
 	}
 
 	public Texture(byte[] b, boolean isForModel) {
 		if (b == null) throw new NullPointerException();
 		this.isForModel = isForModel;
 		loadBMP(b);
+		Mobile.addMCv3ImageReference(this);
 	}
 
 	public Texture(String name, boolean isForModel) throws IOException {
@@ -68,6 +70,7 @@ public class Texture {
 		is.close();
 
 		loadBMP(baos.toByteArray());
+		Mobile.addMCv3ImageReference(this);
 	}
 
 	public Texture(InputStream is, boolean isForModel) throws IOException
@@ -84,6 +87,7 @@ public class Texture {
 		is.close();
 
 		loadBMP(baos.toByteArray());
+		Mobile.addMCv3ImageReference(this);
 	}
 
 	private static final int BMP_FILE_HEADER_SIZE = 14;
@@ -277,4 +281,17 @@ public class Texture {
 	}
 
 	public final com.mascotcapsule.micro3d.v3.Effect3D getShading() { return shading; }
+
+	// For Memory Viewer
+	public int getWidth() { return width; }
+
+	public int getHeight() { return height; }
+
+	public javax.microedition.lcdui.Image getDebugImage()
+	{
+		int[] rgbData = new int[bitmapData.length];
+		for (int i = 0; i < rgbData.length; i++) { rgbData[i] = palette[bitmapData[i] & 0xff]; }
+
+		return javax.microedition.lcdui.Image.createRGBImage(rgbData, paddedWidth, paddedHeight, false);
+	}
 }

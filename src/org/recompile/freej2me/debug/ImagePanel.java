@@ -34,6 +34,7 @@ import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 
 import javax.microedition.m3g.Image2D;
+import com.mascotcapsule.micro3d.v3.Texture;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
@@ -192,7 +193,7 @@ class ImagePanel extends JPanel
 			{
 				Image2D img = ObjectMemoryViewerDialog.getReference(ref);
 				if (img == null) { continue; }
-				BufferedImage canvas = createBufferedImage(img);
+				BufferedImage canvas = createCanvasFromM3GImg(img);
 				if (canvas != null)
 				{
 					nextRefs.add(ref);
@@ -204,7 +205,30 @@ class ImagePanel extends JPanel
 		applyImgs(nextRefs, nextCanvases);
 	}
 
-	private BufferedImage createBufferedImage(Image2D img)
+	public void setTextures(ArrayList<WeakReference<Texture>> images)
+	{
+		ArrayList<WeakReference<?>> nextRefs = new ArrayList<WeakReference<?>>();
+		ArrayList<BufferedImage> nextCanvases = new ArrayList<BufferedImage>();
+
+		if (images != null)
+		{
+			for (WeakReference<Texture> ref : images)
+			{
+				Texture img = ObjectMemoryViewerDialog.getReference(ref);
+				if (img == null) { continue; }
+				BufferedImage canvas = ((PlatformImage)img.getDebugImage()).getCanvas();
+				if (canvas != null)
+				{
+					nextRefs.add(ref);
+					nextCanvases.add(canvas);
+				}
+			}
+		}
+
+		applyImgs(nextRefs, nextCanvases);
+	}
+
+	private BufferedImage createCanvasFromM3GImg(Image2D img)
 	{
 		int width = img.getWidth();
 		int height = img.getHeight();

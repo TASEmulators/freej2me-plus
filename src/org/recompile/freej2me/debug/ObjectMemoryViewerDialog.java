@@ -54,6 +54,9 @@ import javax.microedition.m3g.Sprite3D;
 import javax.microedition.m3g.Object3D;
 import javax.microedition.m3g.World;
 
+import com.mascotcapsule.micro3d.v3.Figure;
+import com.mascotcapsule.micro3d.v3.Texture;
+
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.PlatformImage;
 import org.recompile.mobile.PlatformPlayer;
@@ -76,17 +79,18 @@ public class ObjectMemoryViewerDialog extends JDialog
 	private static final Color BUTTON_BGCOLOR = new Color(220, 220, 220);
 	private static final Font DEBUG_TOGGLE_FONT = new Font("Dialog", Font.BOLD, 10);
 
-	private final ImagePanel imagePanel, m3gImagePanel;
-	private final JLabel imageInfoLabel, playerInfoLabel, classInfoLabel, m3gInfoLabel, totalHeapLabel;
-	private final JComboBox imgScaleBox, m3gScaleBox, m3gBGBox;
+	private final ImagePanel imagePanel, m3gImagePanel, mcv3ImagePanel;
+	private final JLabel imageInfoLabel, playerInfoLabel, classInfoLabel, m3gInfoLabel, mcv3InfoLabel, totalHeapLabel;
+	private final JComboBox imgScaleBox, m3gScaleBox, m3gBGBox, mcv3ScaleBox, mcv3BGBox;
 	private final JComboBox imgSortBox, playerSortBox, classSortBox;
-	private final DefaultListModel playerListModel, classListModel, m3gObjListModel;
-	private final JList playerList, classList, m3gObjList;
+	private final DefaultListModel playerListModel, classListModel, m3gObjListModel, mcv3ObjListModel;
+	private final JList playerList, classList, m3gObjList, mcv3ObjList;
 	private final JTabbedPane tabbedPane;
-	private final TitledBorder imageBorder, playerBorder, classBorder, m3gImageBorder, m3gObjBorder;
+	private final TitledBorder imageBorder, playerBorder, classBorder, m3gImageBorder, m3gObjBorder, mcv3ImageBorder, mcv3ObjBorder;
 	private static boolean RenderableM3GFlag = false;
-	private JToggleButton m3gShowOnlyRenderables, m3gDrawWireframe, m3gDrawUntextured, m3gDrawHiddenNodes, m3gMipmapping;
+	private JToggleButton m3gShowOnlyRenderables, m3gDrawWireframe, m3gDrawUntextured, m3gDrawHiddenNodes, m3gMipmapping, m3gDisableCulling;
 	private final M3G3DPreviewPanel m3gPreviewPanel;
+	private final MCv33DPreviewPanel mcv3PreviewPanel;
 
 	@SuppressWarnings("unchecked")
 	public ObjectMemoryViewerDialog(Frame main)
@@ -235,14 +239,24 @@ public class ObjectMemoryViewerDialog extends JDialog
 			}
 		});
 
-		JPanel previewBottomOverlay = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
-		previewBottomOverlay.setOpaque(false);
-		previewBottomOverlay.add(m3gBGBox);
-		previewBottomOverlay.add(m3gDrawWireframe);
-		previewBottomOverlay.add(m3gDrawUntextured);
-		previewBottomOverlay.add(m3gDrawHiddenNodes);
-		previewBottomOverlay.add(m3gMipmapping);
-		m3gPreviewPanel.add(previewBottomOverlay, BorderLayout.SOUTH);
+		m3gDisableCulling = createJToggleButton("Disable Culling", new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				m3gPreviewPanel.setCulling(m3gDisableCulling.isSelected());
+				renderLastM3GObj();
+			}
+		});
+
+		JPanel m3gPreviewBottomOverlay = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
+		m3gPreviewBottomOverlay.setOpaque(false);
+		m3gPreviewBottomOverlay.add(m3gBGBox);
+		m3gPreviewBottomOverlay.add(m3gDrawWireframe);
+		m3gPreviewBottomOverlay.add(m3gDrawUntextured);
+		m3gPreviewBottomOverlay.add(m3gDrawHiddenNodes);
+		m3gPreviewBottomOverlay.add(m3gMipmapping);
+		m3gPreviewBottomOverlay.add(m3gDisableCulling);
+		m3gPreviewPanel.add(m3gPreviewBottomOverlay, BorderLayout.SOUTH);
 
 		JSplitPane m3gMainSplit = createFixedSplitPane(JSplitPane.VERTICAL_SPLIT, m3gTopSplit, m3gPreviewPanel, 0.4);
 
@@ -270,12 +284,73 @@ public class ObjectMemoryViewerDialog extends JDialog
 
 		JPanel m3gTabPanel = createTabPanel(m3gMainSplit, m3gBottomPanel);
 
+		// MascotCapsuleV3 panel
+		mcv3ImagePanel = new ImagePanel(new ImageSelectionListener()
+		{
+			public void onImageSelected(WeakReference<?> img) { updateSelectedImageInfo(img); }
+		});
+		mcv3ImageBorder = BorderFactory.createTitledBorder("Textures (0)");
+		JScrollPane mcv3ImageScroll = createScrollPane(mcv3ImagePanel, mcv3ImageBorder, 24);
+
+		mcv3ObjListModel = new DefaultListModel();
+		mcv3ObjBorder = BorderFactory.createTitledBorder("Figures (0)");
+		mcv3ObjList = createSelectionList(mcv3ObjListModel, new Runnable()
+		{
+			public void run() { updateSelectedMCv3Obj(Mobile.memMCv3Objects); }
+		});
+		JScrollPane mcv3SceneObjectsScroll = createScrollPane(mcv3ObjList, mcv3ObjBorder, 0);
+
+		JSplitPane mcv3TopSplit = createFixedSplitPane(JSplitPane.HORIZONTAL_SPLIT, mcv3ImageScroll, mcv3SceneObjectsScroll, 0.7);
+		
+		mcv3PreviewPanel = new MCv33DPreviewPanel();
+		mcv3PreviewPanel.setLayout(new BorderLayout());
+		TitledBorder mcv3PreviewTitle = BorderFactory.createTitledBorder("3D Preview");
+		mcv3PreviewTitle.setTitleColor(Color.WHITE);
+		mcv3PreviewPanel.setBorder(mcv3PreviewTitle);
+
+		mcv3BGBox = new JComboBox(BG_OPTIONS);
+		mcv3BGBox.setSelectedItem("Black");
+		mcv3BGBox.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				int idx = mcv3BGBox.getSelectedIndex();
+				if (idx >= 0 && idx < BG_VALUES.length)
+				{ 
+					mcv3PreviewPanel.setPreviewBackground(BG_VALUES[idx]);
+					renderLastM3GObj();
+				}
+			}
+		});
+
+		JPanel mcv3PreviewBottomOverlay = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
+		mcv3PreviewBottomOverlay.setOpaque(false);
+		mcv3PreviewBottomOverlay.add(mcv3BGBox);
+		mcv3PreviewPanel.add(mcv3PreviewBottomOverlay, BorderLayout.SOUTH);
+
+		JSplitPane mcv3MainSplit = createFixedSplitPane(JSplitPane.VERTICAL_SPLIT, mcv3TopSplit, mcv3PreviewPanel, 0.4);
+
+		mcv3InfoLabel = createInfoLabel();
+		mcv3ScaleBox = createScaleBox(mcv3ImagePanel);
+		mcv3PreviewPanel.setPreviewBackground(BG_VALUES[mcv3BGBox.getSelectedIndex()]);
+
+		JPanel mcv3ControlsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+		mcv3ControlsPanel.add(new JLabel("Image Scale:"));
+		mcv3ControlsPanel.add(mcv3ScaleBox);
+
+		JPanel mcv3BottomPanel = new JPanel(new BorderLayout());
+		mcv3BottomPanel.add(mcv3InfoLabel, BorderLayout.WEST);
+		mcv3BottomPanel.add(mcv3ControlsPanel, BorderLayout.EAST);
+
+		JPanel mcv3TabPanel = createTabPanel(mcv3MainSplit, mcv3BottomPanel);
+
 		// Add everyone to the tabbed pane
 		tabbedPane = new JTabbedPane();
 		tabbedPane.addTab("Images (0)", imagesTabPanel);
 		tabbedPane.addTab("Players (0)", playerTabPanel);
 		tabbedPane.addTab("Classes (0)", classesTabPanel);
 		tabbedPane.addTab("M3G Data", m3gTabPanel);
+		tabbedPane.addTab("MascotCapsuleV3 Data", mcv3TabPanel);
 		add(tabbedPane, BorderLayout.CENTER);
 
 		// Bottom bar, visible on all tabs.
@@ -389,6 +464,15 @@ public class ObjectMemoryViewerDialog extends JDialog
 		}
 	}
 
+	private void renderLastMCv3Obj()
+	{
+		synchronized (Mobile.memMCv3Objects)
+		{
+			WeakReference<Figure> objRef = getLiveRef(Mobile.memMCv3Objects, mcv3ObjList.getSelectedIndex());
+			mcv3PreviewPanel.renderObject(getReference(objRef));
+		}
+	}
+
 	private static JLabel createInfoLabel()
 	{
 		JLabel label = new JLabel("Selected: None");
@@ -412,12 +496,16 @@ public class ObjectMemoryViewerDialog extends JDialog
 		ArrayList<WeakReference<Class<?>>> classes = Mobile.memClasses;
 		ArrayList<WeakReference<Image2D>> m3gImages = Mobile.memM3GImages;
 		ArrayList<WeakReference<Object3D>> m3gObjects = Mobile.memM3GObjects;
+		ArrayList<WeakReference<Texture>> mcv3Images = Mobile.memMCv3Images;
+		ArrayList<WeakReference<Figure>> mcv3Objects = Mobile.memMCv3Objects;
 
 		int imageNum = 0;
 		int playerNum = 0;
 		int classNum = 0;
 		int m3gImageNum = 0;
 		int m3gObjNum = 0;
+		int mcv3ImageNum = 0;
+		int mcv3ObjNum = 0;
 
 		synchronized (images)
 		{
@@ -438,6 +526,7 @@ public class ObjectMemoryViewerDialog extends JDialog
 				}
 			}
 		}
+		
 		synchronized (m3gImages)
 		{
 			m3gImageNum = countRefs(m3gImages);
@@ -451,6 +540,19 @@ public class ObjectMemoryViewerDialog extends JDialog
 			updateM3GObjs(m3gObjects);
 		}
 
+		synchronized (mcv3Images)
+		{
+			mcv3ImageNum = countRefs(mcv3Images);
+			mcv3ImagePanel.setTextures(mcv3Images);
+			updateSelectedImageInfo(mcv3ImagePanel.getSelectedImage());
+		}
+
+		synchronized (mcv3Objects)
+		{
+			mcv3ObjNum = countRefs(mcv3Objects);
+			updateMCv3Objs(mcv3Objects);
+		}
+
 		updateTab(0, imageBorder, "Images", imageNum);
 		updateTab(1, playerBorder, "Players", playerNum);
 		updateTab(2, classBorder, "Classes", classNum);
@@ -458,6 +560,9 @@ public class ObjectMemoryViewerDialog extends JDialog
 
 		m3gImageBorder.setTitle("Image2Ds (" + m3gImageNum + ")");
 		m3gObjBorder.setTitle("Object3Ds (" + m3gObjNum + ")");
+
+		mcv3ImageBorder.setTitle("Textures (" + mcv3ImageNum + ")");
+		mcv3ObjBorder.setTitle("Figures (" + mcv3ObjNum + ")");
 	}
 
 	private void updateTab(int tabIndex, TitledBorder border, String label, int count)
@@ -509,6 +614,7 @@ public class ObjectMemoryViewerDialog extends JDialog
 		{
 			imageInfoLabel.setText("Selected: None");
 			m3gInfoLabel.setText("Selected: None");
+			mcv3InfoLabel.setText("Selected: None");
 			return;
 		}
 
@@ -529,6 +635,11 @@ public class ObjectMemoryViewerDialog extends JDialog
 			m3gInfoLabel.setText("Size: " + img2d.getWidth() + "x" + img2d.getHeight() +
 				" | Format: " + img2d.getFormatString() +
 				" | Heap: " + String.format("%.2f", heapKb) + " KB");
+		}
+		else if (ref instanceof Texture)
+		{
+			Texture tex = (Texture) ref;
+			mcv3InfoLabel.setText("Size: " + tex.getWidth() + "x" + tex.getHeight() + " | Heap: " + String.format("%.2f", heapKb) + " KB");
 		}
 	}
 
@@ -576,6 +687,11 @@ public class ObjectMemoryViewerDialog extends JDialog
 		{
 			Image2D img2d = (Image2D) ref;
 			return (long) img2d.getWidth() * img2d.getHeight() * img2d.getBpp();
+		}
+		if (ref instanceof Texture)
+		{
+			Texture tex = (Texture) ref;
+			return (long) tex.getWidth() * tex.getHeight() * 4;
 		}
 		return 0L;
 	}
@@ -764,6 +880,41 @@ public class ObjectMemoryViewerDialog extends JDialog
 		updateSelectedM3GObj(objects);
 	}
 
+	@SuppressWarnings("unchecked")
+	private void updateMCv3Objs(ArrayList<WeakReference<Figure>> objects)
+	{
+		WeakReference<Figure> prevRef = getLiveRef(objects, mcv3ObjList.getSelectedIndex());
+		Figure previouslySelected = getReference(prevRef);
+	
+		mcv3ObjListModel.clear();
+		if (objects == null)
+		{
+			updateSelectedMCv3Obj(null);
+			return;
+		}
+	
+		int newSelectedIndex = -1;
+		for (WeakReference<Figure> objRef : objects)
+		{
+			Figure obj = getReference(objRef);
+			if (obj != null)
+			{
+				String objName = obj.toString();
+				// TODO: Expand on this?
+				mcv3ObjListModel.addElement(objName.substring(objName.lastIndexOf('.') + 1));
+	
+				if (previouslySelected != null && obj == previouslySelected && newSelectedIndex < 0)
+				{
+					newSelectedIndex = mcv3ObjListModel.getSize() - 1;
+				}
+			}
+		}
+	
+		if (newSelectedIndex >= 0) { mcv3ObjList.setSelectedIndex(newSelectedIndex); }
+		else { mcv3ObjList.clearSelection(); }
+		updateSelectedMCv3Obj(objects);
+	}
+
 	private static boolean isRenderableM3G(Object3D obj)
 	{
 		return (obj instanceof Mesh) || (obj instanceof SkinnedMesh)
@@ -783,6 +934,21 @@ public class ObjectMemoryViewerDialog extends JDialog
 		// TODO: Expand on this?
 		m3gInfoLabel.setText(obj.toString());
 		m3gPreviewPanel.renderObject(obj);
+	}
+
+	private void updateSelectedMCv3Obj(ArrayList<WeakReference<Figure>> objects)
+	{
+		WeakReference<Figure> objRef = getLiveRef(objects, mcv3ObjList.getSelectedIndex());
+		Figure obj = getReference(objRef);
+		if (obj == null)
+		{
+			mcv3InfoLabel.setText("Selected: None");
+			return;
+		}
+
+		// TODO: Expand on this?
+		mcv3InfoLabel.setText(obj.toString());
+		mcv3PreviewPanel.renderObject(obj);
 	}
 
 	private static String formatTime(long microseconds)

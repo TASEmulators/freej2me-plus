@@ -82,7 +82,7 @@ public class Graphics3D
 
 	// Render target
 	private Object target;
-	public boolean wireframeDebugFlag = false, untexturedDebugFlag = false, drawHiddenNodesDebugFlag = false;
+	public boolean wireframeDebugFlag = false, untexturedDebugFlag = false, drawHiddenNodesDebugFlag = false, disableCullingDebugFlag = false;
 	public boolean forceMipmappingDebugFlag = false;
 
 	private static Graphics3D instance = null;
@@ -653,7 +653,7 @@ public class Graphics3D
 			|| (Mobile.m3gPerspectiveCorrectionMode == MODE_APP_CONTROLLED && perspectiveCorrection);
 
 		// Culling is disabled for wireframe mode.
-		if(Mobile.M3GRenderWireframe || this.wireframeDebugFlag) { cullingMode = PolygonMode.CULL_NONE; }
+		if(Mobile.M3GRenderWireframe || this.wireframeDebugFlag || this.disableCullingDebugFlag) { cullingMode = PolygonMode.CULL_NONE; }
 
 		// We'll need the projection matrix for the next transformations
 		this.currCam.getProjection(projectionMatrix);

@@ -77,6 +77,7 @@ public class Figure {
 	public Figure(byte[] b) {
 		if (b == null) throw new NullPointerException();
 		loadMBAC(b);
+		Mobile.addMCv3ObjectReference(this);
 	}
 
 	public Figure(String name) throws IOException {
@@ -96,6 +97,7 @@ public class Figure {
 		is.close();
 
 		loadMBAC(baos.toByteArray());
+		Mobile.addMCv3ObjectReference(this);
 	}
 
 	private final void loadMBAC(byte[] data) {
