@@ -161,6 +161,9 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	protected boolean usePictoColor = false;
 	protected boolean contextDisposed = false;
 
+	// TODO: What is the chance of a fillPolygon call being issued for a polygon with more than 32 points?
+	private final int[] intersections = new int[33];
+
 	private static final String ffIndicator = "▶▶";
 	private static final String pauseIndicator = "PAUSED!";
 
@@ -391,7 +394,6 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	public void flushGraphics(PlatformImage image, int x, int y, int width, int height)
 	{
 		// called by MobilePlatform.flushGraphics/repaint
-
 		try
 		{
 			fastBlit = (/*!Mobile.renderLCDMask || */ Mobile.maskIndex == 0) && !Mobile.funLightsEnabled;
@@ -411,7 +413,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				 * The canvas is always positive-sized and positioned at (0,0), so we don't even
 				 * need to do any of the checks below.
 				 */
-				System.arraycopy(image.getDataBuffer(), 0, canvasData, 0, canvasWidth*canvasHeight);
+				System.arraycopy(image.getDataBuffer(), 0, canvasData, 0, canvasData.length);
 				return;
 			}
 
@@ -579,43 +581,51 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		// If the starting position has been made to start beyond the clip area,
 		// we have nothing to draw.
-		if (icache >= width || jcache >= height) { return; }
+		final int spanWidth = width - icache;
+		if (spanWidth <= 0 || jcache >= height) { return; }
 
-		int rowOffset, destRow;
-
+		int rowStart = offset + (jcache * scanlength);
+		int destRowStart = ((y + jcache) * canvasWidth) + x;
+		
 		// If we don't need to process alpha, copy opaque masked colors directly
 		// into the framebuffer. Saves having to do if checks for every pixel.
 		if (!processAlpha)
 		{
 			for (int j = jcache; j < height; j++)
 			{
-				rowOffset = offset + (j * scanlength);
-				destRow = (y + j) * canvasWidth;
-
-				int srcIdx = rowOffset + icache;
-				int destIdx = destRow + x + icache;
-				int endIdx = rowOffset + width;
-
-				for (; srcIdx < endIdx; srcIdx++, destIdx++)
-					{ canvasData[destIdx] = rgbData[srcIdx] | 0xFF000000; }
+				int sIdx = rowStart + icache;
+				int dIdx = destRowStart + icache;
+				final int endIdx = sIdx + spanWidth;
+				
+				while (sIdx < endIdx) {canvasData[dIdx++] = rgbData[sIdx++] | 0xFF000000; }
+				
+				rowStart += scanlength;
+				destRowStart += canvasWidth;
 			}
 		}
 		else
 		{
 			for (int j = jcache; j < height; j++)
 			{
-				rowOffset = offset + (j * scanlength);
-				destRow = (y + j) * canvasWidth;
-
-				for (int i = icache; i < width; i++)
+				int sIdx = rowStart + icache;
+				int dIdx = destRowStart + icache;
+				final int endIdx = sIdx + spanWidth;
+				
+				while (sIdx < endIdx)
 				{
-					int srcPixel = rgbData[rowOffset + i];
-					int destIdx = destRow + x + i;
-
-					if ((srcPixel >>> 24) == 255) { canvasData[destIdx] = srcPixel | 0xFF000000; }
-					else
-						{ canvasData[destIdx] = blendPixels(srcPixel, canvasData[destIdx]); }
+					final int srcPixel = rgbData[sIdx++];
+					final int alpha = srcPixel >>> 24;
+				
+					if (alpha != 0)
+					{
+						if (alpha == 255) { canvasData[dIdx] = srcPixel; }
+						else { canvasData[dIdx] = blendPixels(srcPixel, canvasData[dIdx]); }
+					}
+					dIdx++;
 				}
+				
+				rowStart += scanlength;
+				destRowStart += canvasWidth;
 			}
 		}
 	}
@@ -1649,7 +1659,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 	{
 		if (contextDisposed) { throw new UIException(UIException.ILLEGAL_STATE, "This graphics context has been disposed"); }
 
-		if (nPoints < 3) { return; }
+		if (nPoints < 3 || ((argbColor >>> 24) == 0)) { return; }
 
 		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
 		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
@@ -1674,72 +1684,72 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		if (ymin >= ymax) { return; }
 
-		final int[] intersections = new int[nPoints + 1];
 		final boolean isOpaque = ((argbColor >>> 24) == 255);
+		int rowOffset = (ymin + translateY) * canvasWidth;
 
 		for (int y = ymin; y < ymax; y++)
 		{
 			int intersectionCount = 0;
+			int j = nPoints - 1;
+			
 			for (int i = 0; i < nPoints; i++)
 			{
-				int j = (i + 1) % nPoints;
-
-				if ((yPoints[i + yOffset] <= y && yPoints[j + yOffset] > y) ||
-					(yPoints[j + yOffset] <= y && yPoints[i + yOffset] > y))
+				final int yi = yPoints[i + yOffset];
+				final int yj = yPoints[j + yOffset];
+		
+				if ((yi <= y && yj > y) || (yj <= y && yi > y))
 				{
-					int dy = yPoints[j + yOffset] - yPoints[i + yOffset];
-					if (dy != 0)
-					{
-						int rem = (y - yPoints[i + yOffset]) * (xPoints[j + xOffset] - xPoints[i + xOffset]);
-
-						int div;
-						if ((rem ^ dy) < 0 && (rem % dy) != 0) { div = (rem - (dy - 1)) / dy; }
-						else { div = rem / dy; }
-
-						intersections[intersectionCount++] = xPoints[i + xOffset] + div;
-					}
+					final int xi = xPoints[i + xOffset];
+					final int xj = xPoints[j + xOffset];
+					final int dy = yj - yi;
+					final int rem = (y - yi) * (xj - xi);
+		
+					final int div;
+					if ((rem ^ dy) < 0 && (rem % dy) != 0) { div = (rem - (dy - 1)) / dy; }
+					else { div = rem / dy; }
+		
+					intersections[intersectionCount++] = xi + div + translateX;
 				}
+				j = i;
 			}
 
 			for (int i = 1; i < intersectionCount; i++)
 			{
 				int key = intersections[i];
-				int j = i - 1;
-				while (j >= 0 && intersections[j] > key)
+				int k = i - 1;
+				while (k >= 0 && intersections[k] > key)
 				{
-					intersections[j + 1] = intersections[j];
-					j--;
+					intersections[k + 1] = intersections[k];
+					k--;
 				}
-				intersections[j + 1] = key;
+				intersections[k + 1] = key;
 			}
 
-			int rowOffset = (y + translateY) * canvasWidth;
+			intersectionCount--; // Drop maxCount by 1, since we check pairs.
 			for (int i = 0; i < intersectionCount; i += 2)
 			{
-				if (i + 1 < intersectionCount)
+				int xStart = intersections[i];
+				int xEnd = intersections[i + 1];
+
+				if (xStart < clipX) { xStart = clipX; }
+				if (xEnd >= clipWidth) { xEnd = clipWidth - 1; }
+				if (xStart > xEnd) { continue; }
+
+				int pixelIdx = rowOffset + xStart;
+				if (isOpaque)
 				{
-					int xStart = intersections[i] + translateX;
-					int xEnd = intersections[i + 1] + translateX;
-
-					if (xStart < clipX) { xStart = clipX; }
-					if (xEnd >= clipWidth) { xEnd = clipWidth - 1; }
-					if (xStart > xEnd) { continue; }
-
-					int pixelIdx = rowOffset + xStart;
-					if (isOpaque)
+					java.util.Arrays.fill(canvasData, pixelIdx, pixelIdx + (xEnd - xStart + 1), argbColor);
+				}
+				else
+				{
+					for (int x = xStart; x <= xEnd; x++)
 					{
-						java.util.Arrays.fill(canvasData, pixelIdx, pixelIdx + (xEnd - xStart + 1), argbColor);
-					}
-					else
-					{
-						for (int x = xStart; x <= xEnd; x++)
-						{
-							canvasData[pixelIdx] = blendPixels(argbColor, canvasData[pixelIdx]);
-							pixelIdx++;
-						}
+						canvasData[pixelIdx] = blendPixels(argbColor, canvasData[pixelIdx]);
+						pixelIdx++;
 					}
 				}
 			}
+			rowOffset += canvasWidth;
 		}
 	}
 
@@ -3090,79 +3100,90 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				sheight = tmp;
 			}
 
-			int imgWidth = image.getWidth();
-			int[] imgData = image.getDataBuffer();
-
-			long stepX = ((long) swidth << 16) / width;
-			long stepY = ((long) sheight << 16) / height;
-
-			long startX = (long) (drawX - dx) * stepX + (stepX >> 1);
-			long startY = (long) (drawY - dy) * stepY + (stepY >> 1);
-
-			int imgX, imgY, destRow;
-
+			final int imgWidth = image.getWidth();
+			final int[] imgData = image.getDataBuffer();
+			
+			final int stepX = (int) (((long) swidth << 16) / width);
+			final int stepY = (int) (((long) sheight << 16) / height);
+			
+			int curY = (drawY - dy) * stepY + (stepY >> 1);
+			int startX = (drawX - dx) * stepX + (stepX >> 1);
+			
 			for (int y = drawY; y < drawHeight; y++)
 			{
-				int baseY = (int) ((startY + (long) (y - drawY) * stepY) >> 16);
-
+				int baseY = curY >> 16;
 				if (baseY >= sheight) { baseY = sheight - 1; }
-				if (baseY < 0) { baseY = 0; }
-
-				destRow = y * canvasWidth;
-
+				else if (baseY < 0) { baseY = 0; }
+			
+				int curX = startX;
+				int dIdx = (y * canvasWidth) + drawX;
+			
 				for (int x = drawX; x < drawWidth; x++)
 				{
-					int baseX = (int) ((startX + (long) (x - drawX) * stepX) >> 16);
-
+					int baseX = curX >> 16;
 					if (baseX >= swidth) { baseX = swidth - 1; }
-					if (baseX < 0) { baseX = 0; }
-
+					else if (baseX < 0) { baseX = 0; }
+			
+					final int imgX;
+					final int imgY;
+			
 					switch (transform)
 					{
 						case FLIP_HORIZONTAL:
 							imgX = sx + (origSwidth - 1 - baseX);
 							imgY = sy + baseY;
 							break;
-
+			
 						case FLIP_VERTICAL:
 							imgX = sx + baseX;
 							imgY = sy + (origSheight - 1 - baseY);
 							break;
-
+			
 						case FLIP_ROTATE: // 180 degrees
 							imgX = sx + (origSwidth - 1 - baseX);
 							imgY = sy + (origSheight - 1 - baseY);
 							break;
-
+			
 						case FLIP_ROTATE_RIGHT: // ROT90
 							imgX = sx + baseY;
 							imgY = sy + (origSheight - 1 - baseX);
 							break;
-
+			
 						case FLIP_ROTATE_LEFT: // ROT270
 							imgX = sx + (origSwidth - 1 - baseY);
 							imgY = sy + baseX;
 							break;
-
+			
 						case FLIP_ROTATE_RIGHT_VERTICAL:
 							imgX = sx + (origSwidth - 1 - baseY);
 							imgY = sy + (origSheight - 1 - baseX);
-
 							break;
-
+			
 						case FLIP_ROTATE_RIGHT_HORIZONTAL:
 							imgX = sx + baseY;
 							imgY = sy + baseX;
 							break;
-
+			
 						default:
 							imgX = sx + baseX;
 							imgY = sy + baseY;
 							break;
 					}
-
-					canvasData[destRow + x] = blendPixels(imgData[imgY * imgWidth + imgX], canvasData[destRow + x]);
+			
+					final int srcPixel = imgData[(imgY * imgWidth) + imgX];
+					final int alpha = srcPixel >>> 24;
+			
+					if (alpha != 0)
+					{
+						if (alpha == 255) { canvasData[dIdx] = srcPixel; }
+						else { canvasData[dIdx] = blendPixels(srcPixel, canvasData[dIdx]); }
+					}
+			
+					dIdx++;
+					curX += stepX;
 				}
+			
+				curY += stepY;
 			}
 		}
 		catch (Exception e)
