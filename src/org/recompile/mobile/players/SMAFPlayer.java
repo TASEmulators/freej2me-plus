@@ -86,8 +86,8 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				this.wavStreams = new AudioInputStream[wavStreams.length];
 				for (int i = 0; i < wavStreams.length; i++)
 				{
-					dataSize += wavStreams[i].available();
 					if (wavStreams[i] == null) { continue; }
+					dataSize += wavStreams[i].available();
 					this.wavStreams[i] = AudioSystem.getAudioInputStream(wavStreams[i]);
 				}
 			}
@@ -96,6 +96,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 		catch (Exception e)
 		{
 			Mobile.log(Mobile.LOG_ERROR, SMAFPlayer.class.getPackage().getName() + "." + SMAFPlayer.class.getSimpleName() + ": " + ": Couldn't load SMAF data: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 
@@ -184,6 +185,9 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	public void stop()
 	{
 		isExplicitStop = true;
+		
+		stopPcmClips();
+		
 		if (this.midi != null)
 		{
 			synchronized (this.midi)
@@ -193,7 +197,6 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 			}
 		}
 
-		stopPcmClips();
 		curTime = getMediaTime();
 
 		// Same idea as on start()
@@ -212,23 +215,27 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 	{
 		stop();
 
-		synchronized (pcmClipLock)
+		// Do this on a thread, otherwise we risk deadlocking on the Java
+		// Sound EDT.
+		platform.ASYNC_DISPATCHER.submit(new Runnable()
 		{
-			if (wavClips != null)
+			@Override
+			public void run()
 			{
-				for (int i = 0; i < wavClips.length; i++)
+				if (wavClips != null)
 				{
-					if (wavClips[i] != null)
+					for (int i = 0; i < wavClips.length; i++)
 					{
-						wavClips[i].stop();
-						wavClips[i].removeLineListener(this);
-						wavClips[i].close();
-						wavClips[i] = null;
+						if (wavClips[i] != null)
+						{
+							wavClips[i].close();
+							wavClips[i] = null;
+						}
 					}
+					wavClips = null;
 				}
-				wavClips = null;
 			}
-		}
+		});
 	}
 
 	@Override
@@ -237,11 +244,11 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 		deallocate();
 		midiSequence = null;
 
-		if (wavStreams != null)
+		synchronized (pcmClipLock)
 		{
-			for (int i = 0; i < wavStreams.length; i++)
+			if (wavStreams != null)
 			{
-				wavStreams[i] = null;
+				for (int i = 0; i < wavStreams.length; i++) { wavStreams[i] = null; }
 			}
 		}
 	}
@@ -292,39 +299,69 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 
 	protected void playPcmStream(int pcmIndex, int velocity)
 	{
+		if (isExplicitStop || Mobile.isPaused) { return; }
+
+		Clip target = null;
+		AudioInputStream stream = null;
+		boolean open = false;
+
 		synchronized (pcmClipLock)
 		{
-			if (wavStreams == null || pcmIndex < 0 || pcmIndex >= wavClips.length || wavStreams[pcmIndex] == null) { return; }
-
-			try
+			if (wavStreams == null || wavClips == null || pcmIndex < 0 || pcmIndex >= wavClips.length || wavStreams[pcmIndex] == null) { return; }
+			target = wavClips[pcmIndex];
+			if (target == null || !target.isOpen())
 			{
-				Clip target = wavClips[pcmIndex];
+				stream = wavStreams[pcmIndex];
+				open = true;
+			}
+		}
 
-				if (target == null)
+		try
+		{
+			if (open)
+			{
+				Clip newClip = AudioSystem.getClip();
+				newClip.addLineListener(this);
+				stream.reset();
+				newClip.open(stream);
+
+				Clip prevClip = null;
+				synchronized (pcmClipLock)
 				{
-					wavStreams[pcmIndex].reset();
-					target = AudioSystem.getClip();
-					target.addLineListener(this);
-					target.open(wavStreams[pcmIndex]);
+					if (wavClips == null || pcmIndex < 0 || pcmIndex >= wavClips.length || isExplicitStop)
+					{
+						prevClip = newClip;
+						target = null;
+					}
+					else
+					{
+						prevClip = wavClips[pcmIndex];
+						wavClips[pcmIndex] = newClip;
+						target = newClip;
+					}
 				}
 
-				// Target ONLY the requested clip rather than iterating and flushing all active clips
+				if (prevClip != null && prevClip != newClip) { prevClip.close(); }
+			}
+
+			if (target != null)
+			{
 				if (target.isRunning()) { target.stop(); }
+				
 				target.setFramePosition(0);
 
-				wavClips[pcmIndex] = target;
-
 				FloatControl volumeControl = (FloatControl) target.getControl(FloatControl.Type.MASTER_GAIN);
-				float dB = -30.0f + ((velocity / 127.0f) * (30.0f));
-				if (dB > 6.0f) { dB = 6.0f; }
+				float dB = -30.0f + ((velocity / 127.0f) * 30.0f);
+				if (dB > volumeControl.getMaximum()) { dB = volumeControl.getMaximum(); }
+				if (dB < volumeControl.getMinimum()) { dB = volumeControl.getMinimum(); }
 				volumeControl.setValue(dB);
 
 				target.start();
-			 }
-			catch (Exception e)
-			{
-				Mobile.log(Mobile.LOG_ERROR, SMAFPlayer.class.getPackage().getName() + "." + SMAFPlayer.class.getSimpleName() + ": Failed playing PCM stream: " + e.getMessage());
 			}
+		}
+		catch (Exception e)
+		{
+			Mobile.log(Mobile.LOG_ERROR, SMAFPlayer.class.getPackage().getName() + "." + SMAFPlayer.class.getSimpleName() + ": Failed playing PCM stream: " + e.getMessage());
 		}
 	}
 
@@ -435,12 +472,15 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 
 	private boolean hasPcmStreams()
 	{
-		if (wavStreams == null) { return false; }
-		for (int i = 0; i < wavStreams.length; i++)
+		synchronized (pcmClipLock)
 		{
-			if (wavStreams[i] != null) { return true; }
+			if (wavStreams == null) { return false; }
+			for (int i = 0; i < wavStreams.length; i++)
+			{
+				if (wavStreams[i] != null) { return true; }
+			}
+			return false;
 		}
-		return false;
 	}
 
 	private boolean hasMidiPlaybackEvents(Sequence sequence)
@@ -519,8 +559,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 		onMeta(meta);
 		if (meta.getType() == 0x2F) // END_OF_MEDIA
 		{
-			// Do this on a thread, otherwise we risk deadlocking on the Java
-			// Sound EDT.
+			// Same as above, don't risk deadlocking on the Sound EDT.
 			platform.ASYNC_DISPATCHER.submit(new Runnable()
 			{
 				@Override
@@ -571,6 +610,10 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				@Override
 				public void run()
 				{
+					if (isExplicitStop) { return; }
+
+					boolean closeClip = false;
+					
 					synchronized (pcmClipLock)
 					{
 						if (clip.isOpen() && !clip.isRunning() && clip.getFramePosition() >= clip.getFrameLength())
@@ -582,12 +625,14 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 									if (wavClips[i] == clip)
 									{
 										wavClips[i] = null;
+										closeClip = true;
 										break;
 									}
 								}
 							}
-							clip.close();
 						}
+
+						if (closeClip) { clip.close(); }
 					}
 				}
 			});

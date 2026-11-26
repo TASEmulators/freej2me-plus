@@ -233,6 +233,20 @@ public final class SMAFDecoder
 		// Start parsing the file.
 		decodeHeader(); // MMMD (file chunk header)
 
+		// Check for presence of 'Awa' chunks in the file, we need to know if PCM is in use beforehand
+		int tDecodePos = decodePos;
+		while(tDecodePos < input.length-4)
+		{
+			String chunkID = "" + (char) input[tDecodePos] + (char) input[tDecodePos+1] + (char) input[tDecodePos+2] + (char) input[tDecodePos+3];
+
+			if(chunkID.startsWith("ATR")) // We have ATR, we'll have other ancillary chunks like 'Awa'
+			{
+				pcmData.add(null); // Awa Chunk number starts from 1, so we need to add a null position.
+				break;
+			}
+			tDecodePos++;
+		}
+
 		while(decodePos < input.length-CRCSize) // -2, because CRC at the end uses 2 bytes
 		{
 			if(decodePos >= input.length-4) { break; } // We can't read the chunkID below
@@ -666,7 +680,6 @@ public final class SMAFDecoder
 		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "chunkNumber: " + chunkNumber);
 		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "mwaChunkSize: " + awaChunkSize);
 
-		pcmData.add(null); // Awa Chunk number starts from 1, so we need to add a null position.
 		byte[] waveData = new byte[awaChunkSize];
 
 		for(int i = 0; i < awaChunkSize; i++) { waveData[i] = input[decodePos++]; }
@@ -972,8 +985,8 @@ public final class SMAFDecoder
 								break;
 
 							case 0x1: // Bank Select
-								byte bankType = (byte) ((valueField & 0x80) >> 7); // Check if it's normal or drum bank
-								byte bankNumber = (byte) (valueField & 0x7F); // Use the lower 7 bits for the bank number
+								int bankType = (valueField & 0x80) >> 7; // Check if it's normal or drum bank
+								int bankNumber = valueField & 0x7F; // Use the lower 7 bits for the bank number
 
 								// Log the bank type and number
 								Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding bank change value 0x" + String.format("%02X", bankNumber) + "(" + bankNumber + ") of Type: (" + (bankType == 0 ? "Normal" : "Drum") + ") to channel " + channel);
@@ -1153,13 +1166,13 @@ public final class SMAFDecoder
 					midiNoteNumber += 12 * channelData[channel].octaveShift;
 
 					// IF this note represents a PCM index within our stream boundary, inject a MetaMessage trigger
-					if (midiNoteNumber < PCM_RANGE_VAL)
+					if (pcmData.size() > 0 && noteNumber < PCM_RANGE_VAL)
 					{
 						try
 						{
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding PCM event " + "(" + noteNumber + ")" + " to channel " + channel);
 							MetaMessage pcmMeta = new MetaMessage();
-							byte[] metaData = new byte[] { (byte) midiNoteNumber, (byte) channelData[channel].velocity };
+							byte[] metaData = new byte[] { (byte) noteNumber, (byte) channelData[channel].velocity };
 							pcmMeta.setMessage(0x7F, metaData, metaData.length);
 
 							track.add(new MidiEvent(pcmMeta, totalDuration));
@@ -1659,16 +1672,17 @@ public final class SMAFDecoder
 						return;
 					}
 
+					int midiNoteNumber = 0;
 					switch (octave)
 					{
-						case 0x00: noteValue = (byte) (36 + noteValue); break; // Low
-						case 0x01: noteValue = (byte) (48 + noteValue); break; // Mid Low
-						case 0x02: noteValue = (byte) (60 + noteValue); break; // Mid High
-						case 0x03: noteValue = (byte) (72 + noteValue); break; // High
+						case 0x00: midiNoteNumber = (byte) (36 + noteValue); break; // Low
+						case 0x01: midiNoteNumber = (byte) (48 + noteValue); break; // Mid Low
+						case 0x02: midiNoteNumber = (byte) (60 + noteValue); break; // Mid High
+						case 0x03: midiNoteNumber = (byte) (72 + noteValue); break; // High
 					}
-					noteValue += 12 * channelData[channel].octaveShift;
+					midiNoteNumber += 12 * channelData[channel].octaveShift;
 
-					if (noteValue < PCM_RANGE_VAL)
+					if (pcmData.size() > 0 && noteValue < PCM_RANGE_VAL)
 					{
 						try
 						{
@@ -1686,15 +1700,15 @@ public final class SMAFDecoder
 					}
 					else
 					{
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note value " + noteValue + " to channel " + channel);
+						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note event " + noteTypes[noteValue] + (4+octave+channelData[channel].octaveShift) + "(" + noteValue + ")" + " to channel " + channel);
 
 						ShortMessage noteOn = new ShortMessage();
-						noteOn.setMessage(ShortMessage.NOTE_ON, channelData[channel].usingDrumBank ? 9 : channel, noteValue, channelData[channel].velocity); // This will always use the default velocity
+						noteOn.setMessage(ShortMessage.NOTE_ON, channelData[channel].usingDrumBank ? 9 : channel, midiNoteNumber, channelData[channel].velocity); // This will always use the default velocity
 						midiEvent = new MidiEvent(noteOn, totalDuration);
 						track.add(midiEvent);
 
 						ShortMessage noteOff = new ShortMessage();
-						noteOff.setMessage(ShortMessage.NOTE_OFF, channelData[channel].usingDrumBank ? 9 : channel, noteValue, 0);
+						noteOff.setMessage(ShortMessage.NOTE_OFF, channelData[channel].usingDrumBank ? 9 : channel, midiNoteNumber, 0);
 						midiEvent = new MidiEvent(noteOff, totalDuration+(gateTime * timeBasetoMs(TimeBase_G)));
 						track.add(midiEvent);
 					}

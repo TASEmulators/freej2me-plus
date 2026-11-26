@@ -1565,7 +1565,6 @@ public class MIDletLoader extends URLClassLoader
 	* ************************************************************** */
 	public static void keyPress(int key)
 	{
-
 		if (key == Canvas.UP || key == Canvas.KEY_NUM2)
 		{
 			selectedMidlet--;
@@ -1599,13 +1598,13 @@ public class MIDletLoader extends URLClassLoader
 		String currentTitle = "Select the MIDlet to run";
 		int titlePadding = Font.fontPadding[Font.screenType];
 		int titleHeight = Font.getDefaultFont().getHeight() + titlePadding;
-		graphics.drawString(currentTitle, Mobile.lcdWidth / 2, 0, Graphics.HCENTER);
+		graphics.drawString(currentTitle, Mobile.lcdWidth / 2, 0, Graphics.TOP | Graphics.HCENTER);
 		graphics.drawLine(0, titleHeight, Mobile.lcdWidth, titleHeight);
 
 		// Render bottom bar with the function hint
 		int bottomBarHeight = titleHeight - titlePadding;
 		graphics.drawLine(0, Mobile.lcdHeight - bottomBarHeight + titlePadding, Mobile.lcdWidth, Mobile.lcdHeight - bottomBarHeight + titlePadding);
-		graphics.drawString("5/OK = Sel.|v^ = Move", Mobile.lcdWidth / 2, Mobile.lcdHeight + (2 * titlePadding) - titleHeight, Graphics.HCENTER);
+		graphics.drawString("5/OK = Sel.|v^ = Move", Mobile.lcdWidth / 2, Mobile.lcdHeight + (2 * titlePadding) - titleHeight, Graphics.TOP | Graphics.HCENTER);
 
 		// Render items in the middle
 		int currentY = titleHeight + (2 * titlePadding);
@@ -1630,7 +1629,7 @@ public class MIDletLoader extends URLClassLoader
 				}
 				else { graphics.setColor(Mobile.lcduiTextColor); }
 
-				graphics.drawString(name[i], Mobile.lcdWidth / 2, currentY, Graphics.HCENTER);
+				graphics.drawString(name[i], Mobile.lcdWidth / 2, currentY, Graphics.TOP | Graphics.HCENTER);
 				currentY += itemHeight;
 			}
 		}

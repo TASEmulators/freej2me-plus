@@ -499,6 +499,30 @@ public class FreeJ2ME
 			}
 		});
 
+		// Keyboard inputs are now allowed, so set the event dispatcher for it.
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher()
+		{
+			public boolean dispatchKeyEvent(KeyEvent e)
+			{
+				if (main.isFocused())
+				{ 
+					int id = e.getID();
+					
+					if (id == KeyEvent.KEY_PRESSED)
+					{
+						pressKey(e, false);
+						return true;
+					} 
+					else if (id == KeyEvent.KEY_RELEASED)
+					{
+						releaseKey(e);
+						return true;
+					}
+				}
+				return false;
+			}
+		});
+
 		if(args.length == 0)
 		{
 			displayGUI(); // We need the GUI visible to select JAR and SP files
@@ -569,30 +593,6 @@ public class FreeJ2ME
 		}
 		// Go fullscreen as soon as the jar is loaded from the commandline path above
 		if(fullscreenAtStartup) { toggleFullscreen(); }
-
-		// Keyboard inputs are now allowed, so set the event dispatcher for it.
-		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher()
-		{
-			public boolean dispatchKeyEvent(KeyEvent e)
-			{
-				if (main.isFocused())
-				{ 
-					int id = e.getID();
-					
-					if (id == KeyEvent.KEY_PRESSED)
-					{
-						pressKey(e, false);
-						return true;
-					} 
-					else if (id == KeyEvent.KEY_RELEASED)
-					{
-						releaseKey(e);
-						return true;
-					}
-				}
-				return false;
-			}
-		});
 	}
 
 	protected void pressKey(KeyEvent e, boolean ignoreModifiers)
