@@ -70,6 +70,8 @@ public class MP3Player extends BasicPlayer
 				@Override
 				public void run()
 				{
+					if (mp3Player == null) { return; }
+					
 					try
 					{
 						mp3PlayerRunning = true;
@@ -179,11 +181,11 @@ public class MP3Player extends BasicPlayer
 		return getMediaTime();
 	}
 
-	public long getMediaTime() { return mp3Player.getMicrosecondPosition(); }
+	public long getMediaTime() { return mp3Player != null ? mp3Player.getMicrosecondPosition() : Player.TIME_UNKNOWN; }
 
-	public long getDuration() { return mp3Player.getDuration(); }
+	public long getDuration() { return mp3Player != null ? mp3Player.getDuration() : Player.TIME_UNKNOWN; }
 
-	public boolean isRunning() { return mp3Player.isRunning(); }
+	public boolean isRunning() { return mp3Player != null ? mp3Player.isRunning() : false; }
 
 	public int getDataSize() { return tmpStream != null ? tmpStream.length : 0; }
 }

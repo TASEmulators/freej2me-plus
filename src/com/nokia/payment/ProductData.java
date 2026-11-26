@@ -18,23 +18,22 @@ package com.nokia.payment;
 
 public class ProductData 
 {
+	private String productId = "0";
+	private String localizedPrice = "0.00";
+	private String localCurrency = "USD";
 
-    private String productId = "";
-    private String localizedPrice = "";
-    private String localCurrency = "";
-
-    public ProductData(String productId, String localizedPrice, String localCurrency) 
+	public ProductData(String productId, String localizedPrice, String localCurrency) 
 	{ 
 		this.productId = productId;
 		this.localizedPrice = localizedPrice;
 		this.localCurrency = localCurrency;
 	}
 
-    public String getCurrency() { return localCurrency; }
+	public String getCurrency() { return localCurrency; }
 
-    public String getLocalizedPrice() { return localizedPrice; }
+	public String getLocalizedPrice() { return localizedPrice; }
 
-    public String getProductId() { return productId; }
+	public String getProductId() { return productId; }
 
-    public boolean isValid() { return false; }
+	public boolean isValid() { return false; }
 }

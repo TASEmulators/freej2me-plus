@@ -256,7 +256,9 @@
 				try {
 					this.bitstream.close();
 					this.data = null;
-				} catch (BitstreamException ignored) {}
+				}
+				catch (BitstreamException ignored) { }
+				catch (NullPointerException ignored2) { }
 			}
 		}
 

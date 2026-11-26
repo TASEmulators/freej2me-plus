@@ -18,8 +18,7 @@ package com.nokia.payment;
 
 public interface NPayListener 
 {
+	public void	productDataReceived(ProductData[] productData);
 
-    public void	productDataReceived(ProductData[] productData);
-
-    public void	purchaseCompleted(PurchaseData response);
+	public void	purchaseCompleted(PurchaseData response);
 }

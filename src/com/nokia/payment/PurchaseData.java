@@ -18,29 +18,29 @@ package com.nokia.payment;
 
 public class PurchaseData 
 {
-    public static final int PURCHASE_FAILED = 1;
-    public static final int PURCHASE_RESTORE_SUCCESS = 2;
-    public static final int PURCHASE_SUCCESS = 0;
+	public static final int PURCHASE_FAILED = 1;
+	public static final int PURCHASE_RESTORE_SUCCESS = 2;
+	public static final int PURCHASE_SUCCESS = 0;
 
-    int status;
-    String contentId, productId, requestMessage, purchaseTicket;
-    
-    public PurchaseData(String contentId, String productId, int status, String requestMessage, String purchaseTicketInformation) 
-    {
-        this.contentId = contentId;
-        this.productId = productId;
-        this.status = status;
-        this.requestMessage = requestMessage;
-        this.purchaseTicket = purchaseTicketInformation;
-    }
+	int status;
+	String contentId, productId, requestMessage, purchaseTicket;
+	
+	public PurchaseData(String contentId, String productId, int status, String requestMessage, String purchaseTicketInformation) 
+	{
+		this.contentId = contentId;
+		this.productId = productId;
+		this.status = status;
+		this.requestMessage = requestMessage;
+		this.purchaseTicket = purchaseTicketInformation;
+	}
 
-    public String getContentId() { return contentId; }
+	public String getContentId() { return contentId; }
 
-    public String getMessage() { return requestMessage; }
+	public String getMessage() { return requestMessage; }
 
-    public String getProductId() { return productId; }
+	public String getProductId() { return productId; }
 
-    public String getPurchaseTicket() { return purchaseTicket; }
+	public String getPurchaseTicket() { return purchaseTicket; }
 
-    public int getStatus() { return status; }
+	public int getStatus() { return status; }
 }

@@ -25,28 +25,31 @@ public class NPayManager
 
 	NPayListener listener;
 
-    public NPayManager(MIDlet midlet) throws NPayException 
+	public NPayManager(MIDlet midlet) throws NPayException 
 	{ 
 		if(midlet == null) { throw new NPayException("NPayManager received null MIDlet"); }
 		Mobile.log(Mobile.LOG_INFO, NPayManager.class.getPackage().getName() + "." + NPayManager.class.getSimpleName() + ": " + "NPayManager init."); 
 	}
 
-    public void getProductData(String[] productIdList) throws NPayException
+	public void getProductData(String[] productIdList) throws NPayException
 	{ 
-		listener.productDataReceived(new ProductData[] { new ProductData("0", "0.00", "$") } );
+		for(int i = 0; i < productIdList.length; i++)
+		{
+			listener.productDataReceived(new ProductData[] { new ProductData("0", "0.00", "$") } );
+		}
 	}
 
-    public boolean isNPayAvailable() { return true; }
+	public boolean isNPayAvailable() { return true; }
 
-    public void launchNPaySetup() { }
+	public void launchNPaySetup() { }
 
-    public void purchaseProduct(String productId) throws NPayException { purchaseProduct("0", productId);}
+	public void purchaseProduct(String productId) throws NPayException { purchaseProduct("0", productId);}
 
-    public void purchaseProduct(String contentId, String productId) throws NPayException 
+	public void purchaseProduct(String contentId, String productId) throws NPayException 
 	{ 
 		PurchaseData data = new PurchaseData(contentId, productId, PurchaseData.PURCHASE_SUCCESS, "RequestPurchase", "AllowStub");
 		listener.purchaseCompleted(data);
 	}
 
-    public void setNPayListener(NPayListener listener) { this.listener = listener; }
+	public void setNPayListener(NPayListener listener) { this.listener = listener; }
 }
