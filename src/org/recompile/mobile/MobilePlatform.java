@@ -271,17 +271,9 @@ public class MobilePlatform
 					@Override
 					public void run()
 					{
-						int canvasKey = Mobile.getCanvasAction(keycode);
-						if(!handleCommands(canvasKey))
+						if(!handleCommands(Mobile.getCanvasAction(keycode)))
 						{
-							if(displayable instanceof Canvas)
-							{ 
-								if(!((Canvas) displayable).areKeysSuppressed() ||
-									(canvasKey == Canvas.KEY_SOFT_LEFT || canvasKey == Canvas.KEY_SOFT_RIGHT))
-								{
-									displayable.keyPressed(keycode);
-								}
-							}
+							if(displayable instanceof Canvas && !((Canvas) displayable).areKeysSuppressed()) { displayable.keyPressed(keycode); }
 						}
 					}
 				});
