@@ -243,8 +243,9 @@ public final class SMAFDecoder
 			else if(chunkID.startsWith("MspI") || chunkID.startsWith("AspI")) { decodeSeekAndPhraseChunk(); }
 			else if(chunkID.startsWith("Mtsu") || chunkID.startsWith("Atsu")) { decodeSetupDataChunk(); }
 			else if(chunkID.startsWith("Mtsq") || chunkID.startsWith("Atsq") || chunkID.startsWith("SEQU"))
-			{
+			{ 
 				scoreTrackSequenceData();
+
 				// Handy Phone format states that more than 4 channels can be used by having multiple Score Track Sequences (each track has 4). Softbank also needs this
 				if(formatType == (byte) 0x00 || formatType == (byte) 0x04) { handyChannelIdx += 4; }
 			}
@@ -903,7 +904,7 @@ public final class SMAFDecoder
 		byte noteNumber = 0;
 		MidiEvent midiEvent = null;
 
-		// Set default velocity to 127 for Handy Phone and Softbank formats, the default of 64 makes the convertion of these much quieter than Mobile Standard
+		// Set default velocity to 127 for Handy Phone and Softbank formats, the default of 64 makes the conversion of these much quieter than Mobile Standard
 		if(formatType == (byte) 0x00 || formatType == (byte) 0x04)
 		{
 			for(int i = 0; i < channelData.length; i++) { channelData[i].velocity = 127; }
@@ -911,7 +912,6 @@ public final class SMAFDecoder
 
 		while (offset < data.length)
 		{
-
 			if(formatType == (byte) 0x00) // Handy Phone format
 			{
 				firstDurByte = (byte) (data[offset++] & 0xFF);
@@ -937,7 +937,7 @@ public final class SMAFDecoder
 				{
 					byte eventData = (byte) (data[offset++] & 0xFF); // Read the next byte to determine the event type
 
-					channel = (byte) ((eventData >> 6) & 0x03); // Extract channel value from bits 6-7
+					channel = (byte) ((eventData & 0xc0) >> 6); // Extract channel value from bits 6-7
 					channel += handyChannelIdx;
 					// bits 4 and 5 are additional event classification bits (used to discern between long type and short type events)
 					int b5 = (eventData >> 5) & 0x01;
@@ -986,7 +986,7 @@ public final class SMAFDecoder
 								if (bankType == 1)
 								{
 									Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Channel Drum Bank requested. Altering MIDI mapping for channel " + channel + " until a non-drum bank is requested");
-									channelData[channel].usingDrumBank = true; // TODO: Something with this, right now it's basically ignored
+									channelData[channel].usingDrumBank = true;
 								}
 								else
 								{
@@ -1021,9 +1021,10 @@ public final class SMAFDecoder
 								break;
 
 							case 0x4: // Pitch Bend (Long Type)
-								short pitchBend = (short) ((valueField - 128) * 64);
-								byte pitchBendLSB = (byte) (pitchBend & 0x7F);
-								byte pitchBendMSB = (byte) ((pitchBend >> 7) & 0x7F);
+								int pitchBend = valueField << 7;
+														
+								int pitchBendLSB = pitchBend & 0x7F;
+								int pitchBendMSB = (pitchBend >> 7) & 0x7F;
 
 								Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding pitch bend value 0x" + String.format("%02X", valueField) + "(" + valueField + ") to channel " + channel);
 								event.setMessage(ShortMessage.PITCH_BEND, channel, pitchBendLSB, pitchBendMSB);
@@ -1071,9 +1072,10 @@ public final class SMAFDecoder
 
 						if (b5 == 0 && b4 == 1) // Pitch Bend (Short Type)
 						{
-							short pitchBend = (short) ((shortPitchBendValues[shortEventValue] - 64) * 128);
-							int pitchBendLSB = (byte) (pitchBend & 0x7F);
-							int pitchBendMSB = (byte) ((pitchBend >> 7) & 0x7F);
+							int pitchBend = (shortPitchBendValues[shortEventValue] & 0x7F) << 7;
+							
+							int pitchBendLSB = pitchBend & 0x7F;
+							int pitchBendMSB = (pitchBend >> 7) & 0x7F;
 
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding pitch bend value 0x" + String.format("%02X", shortPitchBendValues[shortEventValue]) + "(" + shortPitchBendValues[shortEventValue] + ") to channel " + channel);
 							event.setMessage(ShortMessage.PITCH_BEND, channel, pitchBendLSB, pitchBendMSB);
@@ -1113,9 +1115,9 @@ public final class SMAFDecoder
 				else // Any other value for event type is a note message (which contains channel, octave and note in the eventType byte itself)
 				{
 					// Extract channel, octave, and note number from the eventType
-					channel = (byte) ((eventType >> 6) & 0x03); // Bits 6-7 for channel
+					channel = (byte) ((eventType & 0xC0) >> 6); // Bits 6-7 for channel
 					channel += handyChannelIdx;
-					byte octave = (byte) ((eventType >> 4) & 0x03); // Bits 4-5 for octave
+					byte octave = (byte) ((eventType & 0x30) >> 4); // Bits 4-5 for octave
 					noteNumber = (byte) (eventType & 0x0F); // Bits 0-3 for note number
 
 					// Read gate time
@@ -1173,12 +1175,12 @@ public final class SMAFDecoder
 						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note event " + noteTypes[noteNumber] + (4+octave+channelData[channel].octaveShift) + "(" + noteNumber + ")" + " to channel " + channel);
 
 						ShortMessage noteOn = new ShortMessage();
-						noteOn.setMessage(ShortMessage.NOTE_ON, channel, midiNoteNumber, channelData[channel].velocity);
+						noteOn.setMessage(ShortMessage.NOTE_ON, channelData[channel].usingDrumBank ? 9 : channel, midiNoteNumber, channelData[channel].velocity);
 						midiEvent = new MidiEvent(noteOn, totalDuration);
 						track.add(midiEvent); // Add the note event to the corresponding channel
 
 						ShortMessage noteOff = new ShortMessage();
-						noteOff.setMessage(ShortMessage.NOTE_OFF, channel, midiNoteNumber, 0);
+						noteOff.setMessage(ShortMessage.NOTE_OFF, channelData[channel].usingDrumBank ? 9 : channel, midiNoteNumber, 0);
 						midiEvent = new MidiEvent(noteOff, totalDuration+(gateTime * timeBasetoMs(TimeBase_G)));
 						track.add(midiEvent);
 					}
@@ -1437,161 +1439,170 @@ public final class SMAFDecoder
 
 				if(status == 0x00) // Control event
 				{
-					ShortMessage event = new ShortMessage();
-
 					byte controlEvent = (byte) (data[offset++] & 0xFF);
-					channel = (byte) ((controlEvent >> 6) & 0x03);
-					channel += handyChannelIdx;
-					byte eventType = (byte) (controlEvent & 0x3f);
 
-					if(eventType == (byte) 0x00) // Fine tune event (fine pitch bend)
+					if(controlEvent == 0x00)
 					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-						Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Fine Tune event not implemented. Value:" + String.format("%02X", eventValue));
-					}
-					else if (eventType >= (byte) 0x01 && eventType <= (byte) 0x0E) // Short Expression event
-					{
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding expression value 0x" + String.format("%02X", shortExpressionValues[eventType]) + "(" + shortExpressionValues[eventType] + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, shortExpressionValues[eventType]);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType >= (byte) 0x11 && eventType <= (byte) 0x1E) // Short Pitch Bend event
-					{
-						short pitchBend = (short) ((shortPitchBendValues[eventType-0x10] - 64) * 128);
-						byte pitchBendLSB = (byte) (pitchBend & 0x7F);
-						byte pitchBendMSB = (byte) ((pitchBend >> 7) & 0x7F);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding pitch bend value 0x" + String.format("%02X", shortPitchBendValues[eventType-0x10]) + "(" + shortPitchBendValues[eventType-0x10] + ") to channel " + channel);
-
-						event.setMessage(ShortMessage.PITCH_BEND, channel, pitchBendLSB, pitchBendMSB);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType >= (byte) 0x21 && eventType <= (byte) 0x2E) // Short Modulation event
-					{
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding modulation value 0x" + String.format("%02X", shortModValues[eventType-0x20]) + "(" + shortModValues[eventType-0x20] + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 1, shortModValues[eventType-0x20]);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType == (byte) 0x30) // Program Change event
-					{
-						byte eventValue = (byte) (data[offset++] & 0x7F);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding program change number " + eventValue + " to channel " + channel);
-						event.setMessage(ShortMessage.PROGRAM_CHANGE, channel, eventValue, 0);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType == (byte) 0x31) // Bank Select event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-						int bankType = (eventValue & 0x80) >> 7; // Check if it's normal or drum bank
-						int bankNumber = eventValue & 0x7F; // Use the lower 7 bits for the bank number
-
-						// Log the bank type and number
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding bank change value 0x" + String.format("%02X", bankNumber) + "(" + bankNumber + ") of Type: (" + (bankType == 0 ? "Normal" : "Drum") + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 0, bankNumber);
-						// Send the bank select message
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-
-						// If it's a drum bank, we'll need to change to a drum instrument by altering the midi instrument mapping
-						if (bankType == 1)
+						byte nextByte = (byte) (data[offset++] & 0xFF);
+						if (nextByte == 0x00)
 						{
-							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Channel Drum Bank requested. Altering MIDI mapping for channel " + channel + " until a non-drum bank is requested");
-							channelData[channel].usingDrumBank = true;
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "End of Sequence reached. " + nextByte);
+							return;
 						}
 						else
 						{
-							channelData[channel].usingDrumBank = false;
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Unknown message event:" + nextByte);
 						}
-					}
-					else if (eventType == (byte) 0x32) // Octave Shift event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-						byte octaveShift = 0;
-
-						if (eventValue >= (byte) 0x00 && eventValue <= (byte) 0x04) { octaveShift = eventValue; } /* Octave shifts 0 to +4 */
-						else if (eventValue >= (byte) 0x81 && eventValue <= (byte) 0x84)
-						{
-							octaveShift = (byte) (eventValue - (byte) 0x80); // Map to -1 to -4
-							octaveShift = (byte) -octaveShift; // Convert to negative value
-						}
-						else
-						{
-							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Reserved octave shift value: 0x" + String.format("%02X", eventValue));
-							continue;
-						}
-
-						channelData[channel].octaveShift = octaveShift;
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding Octave Shift value 0x" + String.format("%02X", eventValue) + "(" + channelData[channel].octaveShift + " octave) to channel " + channel);
-					}
-					else if (eventType == (byte) 0x33) // Modulation event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding modulation value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 1, eventValue);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType == (byte) 0x34) // Pitch Bend event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-						short pitchBend = (short) ((eventValue - 128) * 64);
-
-						byte pitchBendLSB = (byte) (pitchBend & 0x7F);
-						byte pitchBendMSB = (byte) ((pitchBend >> 7) & 0x7F);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding pitch bend value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
-						event.setMessage(ShortMessage.PITCH_BEND, channel, pitchBendLSB, pitchBendMSB);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					// TODO: Maybe something's missing? This gap doesn't seem normal
-					else if (eventType == (byte) 0x36) // Expression event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding expression value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, eventValue);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType == (byte) 0x37) // Volume event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding volume value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 7, eventValue);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					// TODO: Same as above, and this gap is even bigger
-					else if (eventType == (byte) 0x3A) // Panpot event
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding panning value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 10, eventValue);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
-					}
-					else if (eventType == (byte) 0x3B) // TODO: Expression event again?
-					{
-						byte eventValue = (byte) (data[offset++] & 0xFF);
-
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding expression value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
-						event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, eventValue);
-						midiEvent = new MidiEvent(event, totalDuration);
-						track.add(midiEvent);
 					}
 					else
 					{
-						Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "unknown control event received:" + String.format("%02X", eventType));
-						offset++; // Assume it's a long type
+						ShortMessage event = new ShortMessage();
+						
+						channel = (byte) ((controlEvent & 0xc0) >> 6);
+						channel += handyChannelIdx;
+						byte eventType = (byte) (controlEvent & 0x3f);
+	
+						if(eventType == (byte) 0x00) // Fine tune event (fine pitch bend)
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+							Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Fine Tune event not implemented. Value:" + String.format("%02X", eventValue));
+						}
+						else if (eventType >= (byte) 0x01 && eventType <= (byte) 0x0E) // Short Expression event
+						{
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding expression value 0x" + String.format("%02X", shortExpressionValues[eventType]) + "(" + shortExpressionValues[eventType] + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, shortExpressionValues[eventType]);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else if (eventType >= (byte) 0x11 && eventType <= (byte) 0x1E) // Short Pitch Bend event
+						{
+							int pitchBend = (shortPitchBendValues[eventType-0x10] & 0x7F) << 7;
+							
+							int pitchBendLSB = pitchBend & 0x7F;
+							int pitchBendMSB = (pitchBend >> 7) & 0x7F;
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding pitch bend value 0x" + String.format("%02X", shortPitchBendValues[eventType-0x10]) + "(" + shortPitchBendValues[eventType-0x10] + ") to channel " + channel);
+	
+							event.setMessage(ShortMessage.PITCH_BEND, channel, pitchBendLSB, pitchBendMSB);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else if (eventType >= (byte) 0x21 && eventType <= (byte) 0x2E) // Short Modulation event
+						{
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding modulation value 0x" + String.format("%02X", shortModValues[eventType-0x20]) + "(" + shortModValues[eventType-0x20] + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 1, shortModValues[eventType-0x20]);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else if (eventType == (byte) 0x30) // Program Change event
+						{
+							byte eventValue = (byte) (data[offset++] & 0x7F);
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding program change number " + eventValue + " to channel " + channel);
+							event.setMessage(ShortMessage.PROGRAM_CHANGE, channel, eventValue, 0);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else if (eventType == (byte) 0x31) // Bank Select event
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+							int bankType = (eventValue & 0x80) >> 7; // Check if it's normal or drum bank
+							int bankNumber = eventValue & 0x7F; // Use the lower 7 bits for the bank number
+	
+							// Log the bank type and number
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding bank change value 0x" + String.format("%02X", bankNumber) + "(" + bankNumber + ") of Type: (" + (bankType == 0 ? "Normal" : "Drum") + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 0, bankNumber);
+							// Send the bank select message
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+	
+							// If it's a drum bank, we'll need to change to a drum instrument by altering the midi instrument mapping
+							if (bankType == 1)
+							{
+								Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Channel Drum Bank requested. Altering MIDI mapping for channel " + channel + " until a non-drum bank is requested");
+								channelData[channel].usingDrumBank = true;
+							}
+							else
+							{
+								channelData[channel].usingDrumBank = false;
+							}
+						}
+						else if (eventType == (byte) 0x32) // Octave Shift event
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+							byte octaveShift = 0;
+	
+							if (eventValue >= (byte) 0x00 && eventValue <= (byte) 0x04) { octaveShift = eventValue; } /* Octave shifts 0 to +4 */
+							else if (eventValue >= (byte) 0x81 && eventValue <= (byte) 0x84)
+							{
+								octaveShift = (byte) (eventValue - (byte) 0x80); // Map to -1 to -4
+								octaveShift = (byte) -octaveShift; // Convert to negative value
+							}
+							else
+							{
+								Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Reserved octave shift value: 0x" + String.format("%02X", eventValue));
+								continue;
+							}
+	
+							channelData[channel].octaveShift = octaveShift;
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding Octave Shift value 0x" + String.format("%02X", eventValue) + "(" + channelData[channel].octaveShift + " octave) to channel " + channel);
+						}
+						else if (eventType == (byte) 0x33) // Modulation event
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding modulation value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 1, eventValue);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else if (eventType == (byte) 0x34) // Pitch Bend event
+						{
+							int eventValue = data[offset++] & 0x7F;
+							int pitchBend = eventValue << 7;
+
+							int pitchBendLSB = pitchBend & 0x7F;
+							int pitchBendMSB = (pitchBend >> 7) & 0x7F;
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding pitch bend value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+							event.setMessage(ShortMessage.PITCH_BEND, channel, pitchBendLSB, pitchBendMSB);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						// TODO: Maybe something's missing? This gap doesn't seem normal
+						else if (eventType == (byte) 0x37) // Volume event
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding volume value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 7, eventValue);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						// TODO: Same as above, and this gap is even bigger
+						else if (eventType == (byte) 0x3A) // Panpot event
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding panning value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 10, eventValue);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else if (eventType == (byte) 0x3B) // Expression event
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding expression value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, eventValue);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
+						else
+						{
+							Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "unknown control event received:" + String.format("%02X", eventType));
+							offset++; // Assume it's a long type
+						}
 					}
 				}
 				else if(status == (byte) 0xFF) // SysEx Message (works similarly to the Handy Phone format)
@@ -1623,9 +1634,10 @@ public final class SMAFDecoder
 				}
 				else // Note event
 				{
-					channel = (byte) ((status >> 6) & 0x03);
+					channel = (byte) ((status & 0xc0) >> 6);
 					channel += handyChannelIdx;
-					byte noteValue = (byte) ((status & 15) + ((status >> 4 & 3) + 3) * 12);
+					byte octave = (byte) ((status & 0x30) >> 4);
+					byte noteValue = (byte) (status & 0x0F);
 
 					firstGateByte = (byte) (data[offset++] & 0xFF);
 					// gateTime works pretty much like duration in how it's read
@@ -1646,6 +1658,15 @@ public final class SMAFDecoder
 						Mobile.log(Mobile.LOG_ERROR, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "note gateTime value cannot be zero. ");
 						return;
 					}
+
+					switch (octave)
+					{
+						case 0x00: noteValue = (byte) (36 + noteValue); break; // Low
+						case 0x01: noteValue = (byte) (48 + noteValue); break; // Mid Low
+						case 0x02: noteValue = (byte) (60 + noteValue); break; // Mid High
+						case 0x03: noteValue = (byte) (72 + noteValue); break; // High
+					}
+					noteValue += 12 * channelData[channel].octaveShift;
 
 					if (noteValue < PCM_RANGE_VAL)
 					{
@@ -1668,12 +1689,12 @@ public final class SMAFDecoder
 						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note value " + noteValue + " to channel " + channel);
 
 						ShortMessage noteOn = new ShortMessage();
-						noteOn.setMessage(ShortMessage.NOTE_ON, channel, noteValue, channelData[channel].velocity); // This will always use the default velocity
+						noteOn.setMessage(ShortMessage.NOTE_ON, channelData[channel].usingDrumBank ? 9 : channel, noteValue, channelData[channel].velocity); // This will always use the default velocity
 						midiEvent = new MidiEvent(noteOn, totalDuration);
 						track.add(midiEvent);
 
 						ShortMessage noteOff = new ShortMessage();
-						noteOff.setMessage(ShortMessage.NOTE_OFF, channel, noteValue, 0);
+						noteOff.setMessage(ShortMessage.NOTE_OFF, channelData[channel].usingDrumBank ? 9 : channel, noteValue, 0);
 						midiEvent = new MidiEvent(noteOff, totalDuration+(gateTime * timeBasetoMs(TimeBase_G)));
 						track.add(midiEvent);
 					}
