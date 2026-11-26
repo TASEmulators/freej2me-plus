@@ -154,7 +154,7 @@ public class PlatformPlayer implements Player
 							(data.length >= 6 && data[2] == 'M' && data[3] == 'M' && data[4] == 'M' && data[5] == 'D') // SMAF files go so insanely off-spec it isn't even funny
 					)
 					{
-						Mobile.log(Mobile.LOG_WARNING, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is SMAF/MMF! (not fully supported yet)");
+						Mobile.log(Mobile.LOG_DEBUG, PlatformPlayer.class.getPackage().getName() + "." + PlatformPlayer.class.getSimpleName() + ": " + "Format is SMAF/MMF! (not fully supported yet)");
 						contentType = "audio/mmf";
 						SMAFDecoder.decodeSMAF(data);
 						if(SMAFDecoder.SequenceData != null || SMAFDecoder.pcmData != null)

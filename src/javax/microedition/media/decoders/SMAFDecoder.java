@@ -693,7 +693,7 @@ public final class SMAFDecoder
 		}
 		else if(ATRDataFormat == (byte) 0x01) // YAMAHA ADPCM
 		{
-			Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"PCM data uses YAMAHA ADPCM. Decoding for this is not fully tested!");
+			Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"PCM data uses YAMAHA ADPCM.");
 
 			if(ATRBaseBit == (byte) 0x02)
 			{
