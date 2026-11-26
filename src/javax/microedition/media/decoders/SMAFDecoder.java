@@ -1621,7 +1621,12 @@ public final class SMAFDecoder
 					{
 						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "NOP event received");
 					}
-					else if(SysEx == (byte) 0xF0)
+					else if (SysEx == (byte) 0x2F) // EOS
+					{
+						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "End of Sequence reached. " + status);
+						return;
+					}
+					else if(SysEx == (byte) 0xF0) // SysEx
 					{
 						byte size = (byte) (data[offset++] & 0xFF);
 						List<Byte> exclusiveMessage = new ArrayList<Byte>(); // Seems to relate to SysEx messages, maybe we don't need these?
