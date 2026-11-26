@@ -477,7 +477,6 @@ public final class FJGUI
 	final JCheckBox siemensFriendlyDrawing = new JCheckBox("Siemens-friendly drawing methods", false);
 	final JCheckBox ignoreVolumeChanges = new JCheckBox("Ignore volume changes", false);
 	final JCheckBox MCV3HorFovFix = new JCheckBox("MascotCapsuleV3 Horizontal FOV Fix", false);
-	final JCheckBox jphonequirks = new JCheckBox("J-Phone/JBlend Quicks", false);
 
 	final JCheckBoxMenuItem deleteTemporaryKJXFiles = new JCheckBoxMenuItem("Delete KJX files' temporary JAR/JAD", true);
 	final JCheckBoxMenuItem dumpAudioData = new JCheckBoxMenuItem("Dump Audio Streams", false);
@@ -686,8 +685,6 @@ public final class FJGUI
 			"Media playback is probably the J2ME subsystem whose implementation and utilization varies the most by vendor. Some applications go as far as setting volume changes to streams they already stopped beforehand, which can cause playback issues. Enabling this option helps work around this."));
 		gridPanel.add(createSettingCard(MCV3HorFovFix, "MascotCapsuleV3 Horizontal FOV Fix",
 			"Might help games meant for portrait resolutions work better in landscape resolutions. Usually not needed unless you're running a game that uses this 3D engine, and is forcing a different resolution than the app's expected one."));
-		gridPanel.add(createSettingCard(jphonequirks, "J-Phone/Jblend quirks","allows vcenter on strings, may fix some J-Phone games"));
-
 
 		// Wrap grid in container so it doesn't stretch items infinitely
 		JPanel containerPanel = new JPanel(new BorderLayout());
@@ -1081,7 +1078,6 @@ public final class FJGUI
 		setToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing", true);
 		setToggle(ignoreVolumeChanges, "compatignorevolumechanges", false);
 		setToggle(MCV3HorFovFix, "compatmcv3horizfovfix", false);
-		setToggle(jphonequirks, "compatjphonequirks", false);
 
 		// Special System Toggleable Settings. No use trying to commonize those
 		// in a "setSysToggle" since they are only two.
@@ -1532,7 +1528,6 @@ public final class FJGUI
 		updateToggle(siemensFriendlyDrawing, "compatsiemensfriendlydrawing");
 		updateToggle(ignoreVolumeChanges, "compatignorevolumechanges");
 		updateToggle(MCV3HorFovFix, "compatmcv3horizfovfix");
-		updateToggle(jphonequirks, "compatjphonequirks");
 
 		// Sys Settings
 		updateRadioGroup(logLevels, logLevelValues, "logLevel", true);
