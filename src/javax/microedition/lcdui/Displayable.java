@@ -193,13 +193,13 @@ public abstract class Displayable
 				// Down Indicator (if there are items hidden above)
 				if (hasUp)
 				{
-					LCDUIRenderer.drawScrollIndicator(graphics, width / 2 - 2, currentY + 1, true);
+					LCDUIRenderer.drawScrollIndicator(graphics, (width >> 1) - 2, currentY + 1, true);
 				}
 
 				// Down Indicator (if there are items hidden below)
 				if (hasDown)
 				{
-					LCDUIRenderer.drawScrollIndicator(graphics, width / 2 - 2, currentY + contentHeight + 1, false);
+					LCDUIRenderer.drawScrollIndicator(graphics, (width >> 1) - 2, currentY + contentHeight + 1, false);
 				}
 			}
 		}
@@ -247,13 +247,13 @@ public abstract class Displayable
 
 			int startY = height - commandsBarHeight;
 
-			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))/2;
-			graphics.drawString("Okay", (width / 4) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Okay"))>>1;
+			graphics.drawString("Okay", (width >> 2) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
 
 			if(hasBackCommand())
 			{
-				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back"))/2;
-				graphics.drawString("Back", (3 * width / 4) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
+				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back"))>>1;
+				graphics.drawString("Back", (3 * (width >> 2)) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
 			}
 		}
 

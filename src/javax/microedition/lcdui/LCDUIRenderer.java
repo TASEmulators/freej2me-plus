@@ -108,7 +108,7 @@ public class LCDUIRenderer
 			graphics.drawLine(topX1, startY, topX1 + slant, totalHeight);
 			graphics.drawLine(topX2, startY, topX2 - slant, totalHeight);
 		}
-		else { graphics.drawLine(width / 2, startY, width / 2, totalHeight); }
+		else { graphics.drawLine(width >> 1, startY, width >> 1, totalHeight); }
 
 		// Command text drawing
 		graphics.setAlphaRGB((baseAlpha << 24) | Mobile.lcduiTextColor);
@@ -117,50 +117,50 @@ public class LCDUIRenderer
 		int size = commands.size();
 		if (size == 1)
 		{
-			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(0).getLabel())) / 2;
+			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(0).getLabel())) >> 1;
 			graphics.drawString(commands.get(0).getLabel(),
-				(threeItems ? (width / 6) : (width / 4)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+				(threeItems ? (width / 6) : (width >> 2)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
 			if (status != null)
 			{
-				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(status)) / 2;
-				graphics.drawString(status != null ? status : "", (3 * width / 4) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+				textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(status)) >> 1;
+				graphics.drawString(status != null ? status : "", (3 * (width >> 2)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
 			}
 		}
 		else if (size == 2)
 		{
-			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(0).getLabel())) / 2;
+			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(0).getLabel())) >> 1;
 			graphics.drawString(commands.get(0).getLabel(),
-				(threeItems ? (width / 6) : (width / 4)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+				(threeItems ? (width / 6) : (width >> 2)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
 
-			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(1).getLabel())) / 2;
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth(commands.get(1).getLabel())) >> 1;
 			graphics.drawString(commands.get(1).getLabel(),
-				(threeItems ? (5 * width / 6) : (3 * width / 4)) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
+				(threeItems ? (5 * width / 6) : (3 * width >> 2)) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
 
 			if (status != null && itemCommand == null)
 			{
-				graphics.drawString(status != null ? status : "", width / 2, startY, Graphics.TOP | Graphics.HCENTER);
+				graphics.drawString(status != null ? status : "", width >> 1, startY, Graphics.TOP | Graphics.HCENTER);
 			}
 		}
 		else
 		{
 			// Options view, opens the command list.
-			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Options")) / 2;
+			int textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Options")) >> 1;
 			graphics.drawString("Options",
-				(threeItems ? (width / 6) : (width / 4)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
+				(threeItems ? (width / 6) : (width >> 2)) - textCenter, startY, Graphics.TOP | Graphics.LEFT);
 
-			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back")) / 2;
+			textCenter = (graphics.getGraphics2D().getFontMetrics().stringWidth("Back")) >> 1;
 			graphics.drawString("Back",
-				(threeItems ? (5 * width / 6) : (3 * width / 4)) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
+				(threeItems ? (5 * width / 6) : (3 * (width >> 2))) + textCenter, startY, Graphics.TOP | Graphics.RIGHT);
 
 			if (status != null && itemCommand == null)
 			{
-				graphics.drawString(status != null ? status : "", width / 2, startY, Graphics.TOP | Graphics.HCENTER);
+				graphics.drawString(status != null ? status : "", width >> 1, startY, Graphics.TOP | Graphics.HCENTER);
 			}
 		}
 
 		if (itemCommand != null)
 		{
-			graphics.drawString(itemCommand.getLabel(), width / 2, startY, Graphics.TOP | Graphics.HCENTER);
+			graphics.drawString(itemCommand.getLabel(), width >> 1, startY, Graphics.TOP | Graphics.HCENTER);
 		}
 
 		graphics.setFont(tmpFont);
@@ -178,10 +178,10 @@ public class LCDUIRenderer
 
 		int horizontalInset = 4; // 2px margin on each side so items don't kiss the screen edges
 		int drawX = x + horizontalInset;
-		int drawWidth = width - (horizontalInset * 2);
+		int drawWidth = width - (horizontalInset << 1);
 		int lineHeight = Font.getDefaultFont().getHeight();
 
-		int halfH = height / 2;
+		int halfH = height >> 1;
 		if (halfH < 1) { halfH = 1; }
 
 		if (selected)
@@ -215,14 +215,14 @@ public class LCDUIRenderer
 		else if(choiceType == Choice.EXCLUSIVE) { drawTick(graphics, index, lineHeight, checked, true); }
 		else if (choiceType == Choice.POPUP)
 		{
-			final int arrowWidth = Font.getDefaultFont().getHeight() / 2;
+			final int arrowWidth = Font.getDefaultFont().getHeight() >> 1;
 			final int arrowMargin = Font.getDefaultFont().getHeight() / 15;
-			final int arrowPadding = Font.getDefaultFont().getHeight() / 2;
+			final int arrowPadding = Font.getDefaultFont().getHeight() >> 1;
 			final int arrowSpacing = arrowWidth + arrowMargin + arrowPadding;
 
 			graphics.drawString("<", x + arrowSpacing - 1, y, Graphics.TOP | Graphics.RIGHT);
 			graphics.drawString(">", x + arrowSpacing + (width - 2 * arrowSpacing) + 2, y, Graphics.TOP | Graphics.LEFT);
-			graphics.drawString(label != null ? label : "", width / 2, y, Graphics.TOP | Graphics.HCENTER);
+			graphics.drawString(label != null ? label : "", width >> 1, y, Graphics.TOP | Graphics.HCENTER);
 			return;
 		}
 
@@ -230,7 +230,7 @@ public class LCDUIRenderer
 		if(selected) { graphics.setColor(Mobile.lcduiTextColor); }
 		else { graphics.setColor(DARKER_GRAY, DARKER_GRAY, DARKER_GRAY); }
 
-		int tickOffset = (choiceType == Choice.IMPLICIT ? 0 : (lineHeight * 4 / 3));
+		int tickOffset = (choiceType == Choice.IMPLICIT ? 0 : ((lineHeight << 2) / 3));
 		int contentX = (choiceType == Choice.IMPLICIT) ? drawX : (x + tickOffset);
 
 		int hAlign = layoutFlag & 0x3;  // LAYOUT_LEFT (1), LAYOUT_RIGHT (2), LAYOUT_CENTER (3)
@@ -248,7 +248,7 @@ public class LCDUIRenderer
 		int contentHeight = Math.max(imgHeight, lineHeight);
 
 		if (vAlign == Item.LAYOUT_BOTTOM) { y += height - contentHeight; }
-		else if (vAlign == Item.LAYOUT_VCENTER) { y += (height - contentHeight) / 2; }
+		else if (vAlign == Item.LAYOUT_VCENTER) { y += (height - contentHeight) >> 1; }
 
 		if (image != null)
 		{
@@ -256,12 +256,12 @@ public class LCDUIRenderer
 
 			// Images don't care about the Item's Choice type.
 			if (hAlign == Item.LAYOUT_RIGHT) { imgX = drawX + drawWidth - imgWidth; }
-			else if (hAlign == Item.LAYOUT_CENTER) { imgX = drawX + (drawWidth - imgWidth) / 2; }
+			else if (hAlign == Item.LAYOUT_CENTER) { imgX = drawX + ((drawWidth - imgWidth) >> 1); }
 			else { imgX = drawX; }
 
 			// Centering images vertically had issues, so we align it within
 			// its defined vertical bounds.
-			int imgY = y + (contentHeight - imgHeight) / 2;
+			int imgY = y + ((contentHeight - imgHeight) >> 1);
 
 			// This means that the image should be last on its line or row, any
 			// other item is placed in a new row.
@@ -282,7 +282,7 @@ public class LCDUIRenderer
 		}
 		else if (hAlign == Item.LAYOUT_CENTER)
 		{
-			contentX = x + (width / 2);
+			contentX = x + (width >> 1);
 			anchor = Graphics.TOP | Graphics.HCENTER;
 		}
 		else { contentX += 3; }
@@ -337,8 +337,8 @@ public class LCDUIRenderer
 	public static void drawTick(Graphics graphics, int index, int height, boolean filled, boolean isCircle)
 	{
 		int tickWidth = Math.max(10, (height * 3) / 5);
-		int tickX = height / 4 + 3;
-		int tickY = index * height + (height - tickWidth) / 2;
+		int tickX = (height >> 2) + 3;
+		int tickY = index * height + ((height - tickWidth) >> 1);
 
 		if (isCircle)
 		{
@@ -347,9 +347,9 @@ public class LCDUIRenderer
 
 			if (filled)
 			{
-				int radius = tickWidth / 2 - 1;
-				int centerX = tickX + tickWidth / 2;
-				int centerY = tickY + tickWidth / 2;
+				int radius = (tickWidth >> 1) - 1;
+				int centerX = tickX + (tickWidth >> 1);
+				int centerY = tickY + (tickWidth >> 1);
 
 				// Render a smooth 3D shaded sphere using concentric filled arcs from edge to center
 				for (int r = radius; r >= 1; r--)
@@ -357,7 +357,7 @@ public class LCDUIRenderer
 					float ratio = (float) r / radius; // 1 at edge, 0 at center
 					int val = (int)(DARKER_GRAY + (WHITE - DARKER_GRAY) * (1.0f - ratio));
 					graphics.setColor(val, val, val);
-					graphics.fillArc(centerX - r, centerY - r, r * 2, r * 2, 0, 360);
+					graphics.fillArc(centerX - r, centerY - r, r << 1, r << 1, 0, 360);
 				}
 
 				// Crisp outer ring for the inner selected indicator
@@ -374,7 +374,7 @@ public class LCDUIRenderer
 				int innerSize = tickWidth - 4;
 				int innerX = tickX + 2;
 				int innerY = tickY + 2;
-				int halfH = innerSize / 2;
+				int halfH = innerSize >> 1;
 				if (halfH < 1) { halfH = 1; }
 
 				for (int py = 0; py <= innerSize; py++)
@@ -397,20 +397,20 @@ public class LCDUIRenderer
 	{
 		graphics.translate(x, y);
 
-		final int arrowWidth = Font.getDefaultFont().getHeight() / 2;
+		final int arrowWidth = Font.getDefaultFont().getHeight() >> 1;
 		final int arrowMargin = Font.getDefaultFont().getHeight() / 15;
-		final int arrowPadding = Font.getDefaultFont().getHeight() / 2;
+		final int arrowPadding = Font.getDefaultFont().getHeight() >> 1;
 		final int arrowSpacing = arrowWidth + arrowMargin + arrowPadding;
 
 		int barWidthTotal = width - (interactive ? 2 * arrowSpacing : arrowSpacing);
-		int barX = interactive ? arrowSpacing : arrowSpacing / 2;
+		int barX = interactive ? arrowSpacing : arrowSpacing >> 1;
 		int barHeight = Font.getDefaultFont().getHeight();
 
 		if (interactive)
 		{
 			graphics.setColor(DARKER_GRAY, DARKER_GRAY, DARKER_GRAY);
-			graphics.drawString("<", arrowSpacing - 3, (barHeight - Font.getDefaultFont().getHeight()) / 2, Graphics.TOP | Graphics.RIGHT);
-			graphics.drawString(">", arrowSpacing + barWidthTotal + 3, (barHeight - Font.getDefaultFont().getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
+			graphics.drawString("<", arrowSpacing - 3, (barHeight - Font.getDefaultFont().getHeight()) >> 1, Graphics.TOP | Graphics.RIGHT);
+			graphics.drawString(">", arrowSpacing + barWidthTotal + 3, (barHeight - Font.getDefaultFont().getHeight()) >> 1, Graphics.TOP | Graphics.LEFT);
 			graphics.setColor(Mobile.lcduiTextColor);
 		}
 
@@ -435,7 +435,7 @@ public class LCDUIRenderer
 
 			if (fillW > 0)
 			{
-				int halfH = (barHeight - 4) / 2;
+				int halfH = (barHeight - 4) >> 1;
 				if (halfH < 1) { halfH = 1; }
 				for (int py = 3; py < barHeight - 2; py++)
 				{
@@ -453,7 +453,7 @@ public class LCDUIRenderer
 		else if (maxValue == Gauge.INDEFINITE) // INDEFINITE type is animated.
 		{
 			// Sliding block takes up 25% of the track
-			int blockW = barWidthTotal / 4;
+			int blockW = barWidthTotal >> 2;
 			int startX = barX + 2 + animationOffset;
 			int fillW = blockW;
 
@@ -463,7 +463,7 @@ public class LCDUIRenderer
 
 			if (fillW > 0)
 			{
-				int halfH = (barHeight - 4) / 2;
+				int halfH = (barHeight - 4) >> 1;
 				if (halfH < 1) { halfH = 1; }
 				for (int py = 3; py < barHeight - 2; py++)
 				{
@@ -490,7 +490,7 @@ public class LCDUIRenderer
 		if(selected) { graphics.setColor(Mobile.lcduiTextColor); }
 		else { graphics.setColor(DARKER_GRAY, DARKER_GRAY, DARKER_GRAY); }
 		int textWidth = graphics.getGraphics2D().getFontMetrics().stringWidth(text);
-		graphics.drawString(text, barX + (barWidthTotal - textWidth) / 2, (barHeight - Font.getDefaultFont().getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
+		graphics.drawString(text, barX + ((barWidthTotal - textWidth) >> 1), (barHeight - Font.getDefaultFont().getHeight()) >> 1, Graphics.TOP | Graphics.LEFT);
 
 		graphics.translate(-x, -y);
 	}
@@ -522,7 +522,7 @@ public class LCDUIRenderer
 		graphics.setColor(Mobile.lcduiTextColor);
 		Font tmpFont = graphics.getFont();
 		graphics.setFont(tickerFont);
-		graphics.drawString(text != null ? text : "", tickerX, y + (tickerHeight - Font.getDefaultFont().getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
+		graphics.drawString(text != null ? text : "", tickerX, y + ((tickerHeight - Font.getDefaultFont().getHeight()) >> 1), Graphics.TOP | Graphics.LEFT);
 		graphics.setFont(tmpFont);
 	}
 
@@ -537,8 +537,8 @@ public class LCDUIRenderer
 
 		int fontH = Font.getDefaultFont().getHeight();
 		int fieldHeight = fontH + (padding * 3);
-		int fieldWidth = width - 1 - (margin * 2);
-		int halfH = fieldHeight / 2;
+		int fieldWidth = width - 1 - (margin << 1);
+		int halfH = fieldHeight >> 1;
 		if (halfH < 1) { halfH = 1; }
 
 		// Punched-in / Recessed gradient background
@@ -606,8 +606,8 @@ public class LCDUIRenderer
 
 		// Draw navigation arrows using original margin-based spacing so they clear the text
 		graphics.setColor(textColor);
-		graphics.drawString("^", margin + padding + caretWidth + caretCharWidth / 2 - 3, margin - fontH / 3, 0);
-		graphics.drawString("v", margin + padding + caretWidth + caretCharWidth / 2 - 3, margin + fontH, 0);
+		graphics.drawString("^", margin + padding + caretWidth + (caretCharWidth >> 1) - 3, margin - fontH / 3, 0);
+		graphics.drawString("v", margin + padding + caretWidth + (caretCharWidth >> 1) - 3, margin + fontH, 0);
 
 		// Render the characterSet hint inside the right side of the text field box
 		if(hasHint && charSetHint != null && charSetHint.length > 0)

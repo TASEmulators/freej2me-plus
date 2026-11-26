@@ -648,7 +648,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 			if (x1 == x2 && y1 == y2) { break; } // Line is now fully drawn, so jump out
 
-			int err2 = err * 2;
+			int err2 = err << 1;
 			if (err2 > -dy)
 			{
 				err -= dy;
@@ -1326,7 +1326,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		int lastRow = offset + (height - 1) * scanlength;
 		int reqLen = lastRow + width;
 		
-		if (offset < 0 || reqLen > pixels.length * nokiaPixPerByte(format)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length * 8) + "| offset:" + offset); }
+		if (offset < 0 || reqLen > pixels.length * nokiaPixPerByte(format)) { throw new ArrayIndexOutOfBoundsException("drawPixels(byte) index out of bounds:" + width + " * " + height + "| pixels len:" + (pixels.length << 3) + "| offset:" + offset); }
 
 		if(width == 0 || height == 0) { return; }
 
@@ -1343,11 +1343,11 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			// why (n - c) is used in color scaling. Alpha is scaled normally.
 			case DirectGraphics.TYPE_BYTE_1_GRAY_VERTICAL:
 				// Bit offset, GRAY_VERTICAL packs 8 vertical pixels in a byte.
-				bit = (offset / scanlength) % 8;
+				bit = (offset / scanlength) & 7;
 				for (int yj = 0; yj < height; yj++)
 				{
 					int ypos = yj * width;
-					int tmp = ((offset / scanlength) + yj) / 8 *
+					int tmp = (((offset / scanlength) + yj) >> 3) *
 						scanlength + (offset % scanlength);
 					for (int xj = 0; xj < width; xj++)
 					{
@@ -1373,21 +1373,21 @@ public abstract class PlatformGraphics implements DirectGraphics,
 				break;
 
 			case DirectGraphics.TYPE_BYTE_1_GRAY:
-				bit = 7 - offset % 8;
+				bit = 7 - (offset & 7);
 				for (int yj = 0; yj < height; yj++)
 				{
 					int line = offset + yj * scanlength;
 					int ypos = yj * width;
 					for (int xj = 0; xj < width; xj++)
 					{
-						if((line + xj) / 8 >= pixels.length)
+						if((line + xj) >> 3 >= pixels.length)
 							continue;
 
-						c = ((pixels[(line + xj) / 8] >> bit) & 1);
+						c = ((pixels[(line + xj) >> 3] >> bit) & 1);
 
 						if (transparencyMask != null)
 						{
-							a = ((transparencyMask[(line + xj) / 8] >> bit) & 1) * 255;
+							a = ((transparencyMask[(line + xj) >> 3] >> bit) & 1) * 255;
 						}
 
 						c = (1 - c) * 255;
@@ -1426,15 +1426,15 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 					for (int xj = 0; xj < width; xj++)
 					{
-						if ((line + xj / 4) >= pixels.length)
+						if ((line + (xj >> 2)) >= pixels.length)
 							continue;
 
-						c = (pixels[line + xj / 4] >> (6 - (2 * (xj % 4)))
+						c = (pixels[line + xj >> 2] >> (6 - (2 * (xj & 3)))
 							& 0x03);
 						if (transparencyMask != null)
 						{
-							a = (transparencyMask[line + xj / 4] >> (6 -
-								(2 * (xj % 4))) & 0x03);
+							a = (transparencyMask[line + xj >> 2] >> (6 -
+								(2 * (xj & 3))) & 0x03);
 
 							a *= 85;
 						}
@@ -1497,15 +1497,15 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 					for (int xj = 0; xj < width; xj++)
 					{
-						if ((line + xj / 2) >= pixels.length)
+						if ((line + (xj >> 1)) >= pixels.length)
 							continue;
 
-						c = (pixels[line + xj / 2] >> (4 * (1 - (xj % 2)))
+						c = (pixels[line + xj >> 1] >> (4 * (1 - (xj & 1)))
 							& 0x0F);
 						if (transparencyMask != null)
 						{
-							a = (transparencyMask[line + xj / 2] >> (4 * (1 -
-								(xj % 2))) & 0x0F);
+							a = (transparencyMask[line + xj >> 1] >> (4 * (1 -
+								(xj & 1))) & 0x0F);
 
 							a *= 17;
 						}
@@ -1780,8 +1780,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 						// Store pixel value as a bit in the pixels array
 						int rowOffset = (offset / scanlength) + row;
-						int byteIndex = (rowOffset / 8) * scanlength + (offset % scanlength) + col;
-						int bitShift = 7 - (rowOffset % 8);
+						int byteIndex = (rowOffset >> 3) * scanlength + (offset % scanlength) + col;
+						int bitShift = 7 - (rowOffset & 7);
 						
 						// Set the bit in the retrieved byte to the expected value.
 						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 1 : 0) << bitShift;
@@ -1799,8 +1799,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						int pixelValue = canvasData[pixelIndex];
 						
 						int packedIndex = offset + (row * scanlength) + col;
-						int byteIndex = packedIndex / 8;
-						int bitIndex = packedIndex % 8;
+						int byteIndex = packedIndex >> 3;
+						int bitIndex = packedIndex & 7;
 
 						pixels[byteIndex] |= ((pixelValue & 0xFF) != 0 ? 1 : 0) << (7 - bitIndex);
 						if(transparencyMask != null) { transparencyMask[byteIndex] |= ((pixelValue & 0xFF000000) != 0 ? 1 : 0) << (7 - bitIndex); }
@@ -1816,8 +1816,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						int pixelIndex = (y + row) * canvasWidth + (x + col);
 						int pixelValue = canvasData[pixelIndex];
 
-						int byteIndex = (offset + row) * scanlength + (col / 4);
-						int pixelPos = col % 4;
+						int byteIndex = (offset + row) * scanlength + (col >> 2);
+						int pixelPos = col & 3;
 
 						int grayValue = (pixelValue & 0xFF);
 						int c = grayValue / 85;
@@ -1866,8 +1866,8 @@ public abstract class PlatformGraphics implements DirectGraphics,
 						int pixelIndex = (y + row) * canvasWidth + (x + col);
 						int pixelValue = canvasData[pixelIndex];
 
-						int byteIndex = (offset + row) * scanlength + (col / 2);
-						int pixelPos = col % 2;
+						int byteIndex = (offset + row) * scanlength + (col >> 1);
+						int pixelPos = col & 1;
 
 						int grayValue = (pixelValue & 0xFF);
 						int c = grayValue / 17;
@@ -2162,19 +2162,19 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		{
 			for (int x = 0; x < width; x++)
 			{
-				if (x < width / 2 && y >= height - Mobile.funLightRegionSize / 2) // Navigation Keypad Region (Bottom-Left)
+				if (x < (width >> 1) && y >= height - (Mobile.funLightRegionSize >> 1)) // Navigation Keypad Region (Bottom-Left)
 				{
 					if (y < height) pixelData[y * width + x] = Mobile.funLightRegionColor[2]; // funLightColorNav
 				}
-				else if (x >= width / 2 && y >= height - Mobile.funLightRegionSize / 2) // Numeric Keypad Region (Bottom-Right)
+				else if (x >= (width >> 1) && y >= height - (Mobile.funLightRegionSize >> 1)) // Numeric Keypad Region (Bottom-Right)
 				{
 					if (y < height) pixelData[y * width + x] = Mobile.funLightRegionColor[3];
 				}
-				else if (x < (Mobile.funLightRegionSize / 2) -2) // Left Sideband Region
+				else if (x < (Mobile.funLightRegionSize >> 1) -2) // Left Sideband Region
 				{
 					pixelData[y * width + x] = Mobile.funLightRegionColor[4];
 				}
-				else if (x >= width - Mobile.funLightRegionSize / 2) // Right Sideband Region
+				else if (x >= width - (Mobile.funLightRegionSize >> 1)) // Right Sideband Region
 				{
 					pixelData[y * width + x] = Mobile.funLightRegionColor[4];
 				}
@@ -2190,7 +2190,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		final int[] result = new int[pixels.length];
 
 		final int kernelSize = 7;
-		final int kernelRadius = kernelSize / 2;
+		final int kernelRadius = kernelSize >> 1;
 
 		// Horizontal blur
 		for (int y = 0; y < height; y++)
@@ -3254,7 +3254,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			gc.fillRect(0, 0, canvasWidth, canvasHeight);
 			setFont(HUDFont);
 			setColor(0xFFFFAF00);
-			int x = (canvasWidth - HUDFont.stringWidth(ffIndicator)) / 2;
+			int x = (canvasWidth - HUDFont.stringWidth(ffIndicator)) >> 1;
 			gc.drawString(ffIndicator, x, HUDFont.getHeight());
 			setColor(tmpColor);
 			setFont(tmpFont);
@@ -3270,7 +3270,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		gc.fillRect(0, 0, canvasWidth, canvasHeight);
 		setFont(HUDFont);
 		setColor(0xFFFFAF00);
-		int x = (canvasWidth - HUDFont.stringWidth(pauseIndicator)) / 2;
+		int x = (canvasWidth - HUDFont.stringWidth(pauseIndicator)) >> 1;
 		gc.drawString(pauseIndicator, x, HUDFont.getHeight());
 		setColor(tmpColor);
 		setFont(tmpFont);
