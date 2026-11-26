@@ -371,17 +371,10 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			}
 		}
 
-		try
-		{
-			x = AnchorX(x, image.getWidth(), anchor);
-			y = AnchorY(y, image.getHeight(), anchor);
+		x = AnchorX(x, image.getWidth(), anchor);
+		y = AnchorY(y, image.getHeight(), anchor);
 
-			drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawImage :"+e.getMessage());
-		}
+		drawRGB(image.getDataBuffer(), 0, image.getWidth(), x, y, image.getWidth(), image.getHeight(), true);
 	}
 
 	public void drawImage(Image image, int x, int y)
@@ -488,35 +481,28 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			if(getTranslateY() < 0) { y -= getTranslateY(); }
 		}
 
-		try
+		if(transform == 0)
 		{
-			if(transform == 0)
-			{
-				x = AnchorX(x, subw, anchor);
-				y = AnchorY(y, subh, anchor);
-				drawRGB(image.getDataBuffer(), subx + (suby * image.getWidth()), image.getWidth(), x, y, subw, subh, true);
-			}
-			else
-			{
-				transform = mapTransToDoJa(transform);
-
-				boolean rotate90 = (transform == FLIP_ROTATE_RIGHT ||
-					transform == FLIP_ROTATE_LEFT ||
-					transform == FLIP_ROTATE_RIGHT_VERTICAL ||
-					transform == FLIP_ROTATE_RIGHT_HORIZONTAL);
-
-				int destw = rotate90 ? subh : subw;
-				int desth = rotate90 ? subw : subh;
-
-				x = AnchorX(x, destw, anchor);
-				y = AnchorY(y, desth, anchor);
-
-				drawTransformedImage(image, x, y, destw, desth, subx, suby, subw, subh, transform);
-			}
+			x = AnchorX(x, subw, anchor);
+			y = AnchorY(y, subh, anchor);
+			drawRGB(image.getDataBuffer(), subx + (suby * image.getWidth()), image.getWidth(), x, y, subw, subh, true);
 		}
-		catch (Exception e)
+		else
 		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawRegion A (x:"+x+" y:"+y+" w:"+subw+" h:"+subh+"):"+e.getMessage());
+			transform = mapTransToDoJa(transform);
+
+			boolean rotate90 = (transform == FLIP_ROTATE_RIGHT ||
+				transform == FLIP_ROTATE_LEFT ||
+				transform == FLIP_ROTATE_RIGHT_VERTICAL ||
+				transform == FLIP_ROTATE_RIGHT_HORIZONTAL);
+
+			int destw = rotate90 ? subh : subw;
+			int desth = rotate90 ? subw : subh;
+
+			x = AnchorX(x, destw, anchor);
+			y = AnchorY(y, desth, anchor);
+
+			drawTransformedImage(image, x, y, destw, desth, subx, suby, subw, subh, transform);
 		}
 	}
 
@@ -525,29 +511,22 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		if(subw == 0 || subh == 0) { return; }
 
 		Mobile.log(Mobile.LOG_WARNING, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawRegion B is untested!");
+		
+		// drawTransformedImage should calculate the proper anchoring here, as there may
+		// be scaling involved.
+		transform = mapTransToDoJa(transform);
+		boolean rotate90 = (transform == FLIP_ROTATE_RIGHT ||
+				transform == FLIP_ROTATE_LEFT ||
+				transform == FLIP_ROTATE_RIGHT_VERTICAL ||
+				transform == FLIP_ROTATE_RIGHT_HORIZONTAL);
 
-		try
-		{
-			// drawTransformedImage should calculate the proper anchoring here, as there may
-			// be scaling involved.
-			transform = mapTransToDoJa(transform);
-			boolean rotate90 = (transform == FLIP_ROTATE_RIGHT ||
-					transform == FLIP_ROTATE_LEFT ||
-					transform == FLIP_ROTATE_RIGHT_VERTICAL ||
-					transform == FLIP_ROTATE_RIGHT_HORIZONTAL);
+		int destw = rotate90 ? height_dest : width_dest;
+		int desth = rotate90 ? width_dest : height_dest;
 
-			int destw = rotate90 ? height_dest : width_dest;
-			int desth = rotate90 ? width_dest : height_dest;
+		int drawX = AnchorX(x, destw, anchor);
+		int drawY = AnchorY(y, desth, anchor);
 
-			int drawX = AnchorX(x, destw, anchor);
-			int drawY = AnchorY(y, desth, anchor);
-
-			drawTransformedImage(image, drawX, drawY, destw, desth, subx, suby, subw, subh, transform);
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "drawRegion B failed:"+e.getMessage());
-		}
+		drawTransformedImage(image, drawX, drawY, destw, desth, subx, suby, subw, subh, transform);
 	}
 
 	public void drawRGB(int[] rgbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha)
@@ -1281,22 +1260,24 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		gc.translate(x, y);
 	}
 
-	private int AnchorX(int x, int width, int anchor)
+	private static final int AnchorX(int x, int width, int anchor)
 	{
+		if (anchor == 0) { return x; }
 		int xout = x;
-		if((anchor & HCENTER)>0) { xout = x-(width/2); }
-		if((anchor & RIGHT)>0) { xout = x-width; }
-		if((anchor & LEFT)>0) { xout = x; }
+		if ((anchor & HCENTER) != 0) { xout = x - (width >> 1); }
+		if ((anchor & RIGHT) != 0)   { xout = x - width; }
+		if ((anchor & LEFT) != 0)    { xout = x; }
 		return xout;
 	}
-
-	private int AnchorY(int y, int height, int anchor)
+	
+	private static final int AnchorY(int y, int height, int anchor)
 	{
+		if (anchor == 0) { return y; }
 		int yout = y;
-		if((anchor & VCENTER)>0) { yout = y-(height/2); }
-		if((anchor & TOP)>0) { yout = y; }
-		if((anchor & BOTTOM)>0) { yout = y-height; }
-		if((anchor & BASELINE)>0) { yout = y+height; }
+		if ((anchor & VCENTER) != 0)  { yout = y - (height >> 1); }
+		if ((anchor & TOP) != 0)      { yout = y; }
+		if ((anchor & BOTTOM) != 0)   { yout = y - height; }
+		if ((anchor & BASELINE) != 0) { yout = y + height; }
 		return yout;
 	}
 
@@ -2356,100 +2337,93 @@ public abstract class PlatformGraphics implements DirectGraphics,
 
 		// Because of course DoJa has a drawing method with AffineTransforms.
 
-		try
+		// DoJa is Fixed-point here (everything pre-multiplied by 4096)
+
+		// I'm being conservative here with liberal long usage, maybe we
+		// don't need it at all.
+		long m00 = matrix[0], m01 = matrix[1];
+		long m02 = (matrix[2]) + (translateX << 12); // translateX * 4096.
+
+		long m10 = matrix[3], m11 = matrix[4];
+		long m12 = (matrix[5]) + (translateY << 12);
+
+		// Inverse matrix to map the canvas destination pixels (x', y') into
+		// the sub-image's local space (x, y). Using the inverse of the
+		// determinant here lets us drop divisions entirely, swapping to
+		// only mults and a shift back to Q12, both faster than dividing.
+		long invDet = (1L << 24) / ((m00 * m11 - m01 * m10) >> 12);
+		int inv00 = (int) (( m11 * invDet) >> 12);
+		int inv01 = (int) ((-m01 * invDet) >> 12);
+		int inv02 = (int) ((((m01 * m12 - m11 * m02) >> 12) * invDet) >> 12);
+
+		int inv10 = (int) ((-m10 * invDet) >> 12);
+		int inv11 = (int) (( m00 * invDet) >> 12);
+		int inv12 = (int) ((((m10 * m02 - m00 * m12) >> 12) * invDet) >> 12);
+
+		int x0 = (int) (m02 >> 12);
+		int y0 = (int) (m12 >> 12);
+		int x1 = (int) ((m00 * width + m02) >> 12);
+		int y1 = (int) ((m10 * width + m12) >> 12);
+		int x2 = (int) ((m01 * height + m02) >> 12);
+		int y2 = (int) ((m11 * height + m12) >> 12);
+		int x3 = (int) ((m00 * width + m01 * height + m02) >> 12);
+		int y3 = (int) ((m10 * width + m11 * height + m12) >> 12);
+
+		int minX = Math.min(Math.min(x0, x1), Math.min(x2, x3));
+		int maxX = Math.max(Math.max(x0, x1), Math.max(x2, x3));
+		int minY = Math.min(Math.min(y0, y1), Math.min(y2, y3));
+		int maxY = Math.max(Math.max(y0, y1), Math.max(y2, y3));
+
+		final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
+		final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
+		final int clipW = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
+		final int clipH = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
+
+		minX = Math.max(minX, clipX);
+		maxX = Math.min(maxX, clipW);
+		minY = Math.max(minY, clipY);
+		maxY = Math.min(maxY, clipH);
+
+		if (minX >= maxX || minY >= maxY) { return; }
+
+		int imgWidth = image.getWidth();
+		int imgHeight = image.getHeight();
+		int[] imgData = image.getDataBuffer();
+
+		// Compute incremental step vectors across the screen to remove
+		// multiplications inside the loop (DDA work from M3G paying off!)
+		int stepXx = inv00;
+		int stepXy = inv10;
+
+		for (int y = minY; y < maxY; y++)
 		{
-			// DoJa is Fixed-point here (everything pre-multiplied by 4096)
+			int destRow = y * canvasWidth;
+			int srcX = inv00 * minX + inv01 * y + inv02;
+			int srcY = inv10 * minX + inv11 * y + inv12;
 
-			// I'm being conservative here with liberal long usage, maybe we
-			// don't need it at all.
-			long m00 = matrix[0], m01 = matrix[1];
-			long m02 = (matrix[2]) + (translateX << 12); // translateX * 4096.
-
-			long m10 = matrix[3], m11 = matrix[4];
-			long m12 = (matrix[5]) + (translateY << 12);
-
-			// Inverse matrix to map the canvas destination pixels (x', y') into
-			// the sub-image's local space (x, y). Using the inverse of the
-			// determinant here lets us drop divisions entirely, swapping to
-			// only mults and a shift back to Q12, both faster than dividing.
-			long invDet = (1L << 24) / ((m00 * m11 - m01 * m10) >> 12);
-			int inv00 = (int) (( m11 * invDet) >> 12);
-			int inv01 = (int) ((-m01 * invDet) >> 12);
-			int inv02 = (int) ((((m01 * m12 - m11 * m02) >> 12) * invDet) >> 12);
-
-			int inv10 = (int) ((-m10 * invDet) >> 12);
-			int inv11 = (int) (( m00 * invDet) >> 12);
-			int inv12 = (int) ((((m10 * m02 - m00 * m12) >> 12) * invDet) >> 12);
-
-			int x0 = (int) (m02 >> 12);
-			int y0 = (int) (m12 >> 12);
-			int x1 = (int) ((m00 * width + m02) >> 12);
-			int y1 = (int) ((m10 * width + m12) >> 12);
-			int x2 = (int) ((m01 * height + m02) >> 12);
-			int y2 = (int) ((m11 * height + m12) >> 12);
-			int x3 = (int) ((m00 * width + m01 * height + m02) >> 12);
-			int y3 = (int) ((m10 * width + m11 * height + m12) >> 12);
-
-			int minX = Math.min(Math.min(x0, x1), Math.min(x2, x3));
-			int maxX = Math.max(Math.max(x0, x1), Math.max(x2, x3));
-			int minY = Math.min(Math.min(y0, y1), Math.min(y2, y3));
-			int maxY = Math.max(Math.max(y0, y1), Math.max(y2, y3));
-
-			final int clipX = (getClipX() + translateX < 0) ? 0 : (getClipX() + translateX);
-			final int clipY = (getClipY() + translateY < 0) ? 0 : (getClipY() + translateY);
-			final int clipW = (getClipWidth() + getClipX() + translateX > canvasWidth) ? canvasWidth : (getClipWidth() + getClipX() + translateX);
-			final int clipH = (getClipHeight() + getClipY() + translateY > canvasHeight) ? canvasHeight : (getClipHeight() + getClipY() + translateY);
-
-			minX = Math.max(minX, clipX);
-			maxX = Math.min(maxX, clipW);
-			minY = Math.max(minY, clipY);
-			maxY = Math.min(maxY, clipH);
-
-			if (minX >= maxX || minY >= maxY) { return; }
-
-			int imgWidth = image.getWidth();
-			int imgHeight = image.getHeight();
-			int[] imgData = image.getDataBuffer();
-
-			// Compute incremental step vectors across the screen to remove
-			// multiplications inside the loop (DDA work from M3G paying off!)
-			int stepXx = inv00;
-			int stepXy = inv10;
-
-			for (int y = minY; y < maxY; y++)
+			for (int x = minX; x < maxX; x++)
 			{
-				int destRow = y * canvasWidth;
-				int srcX = inv00 * minX + inv01 * y + inv02;
-				int srcY = inv10 * minX + inv11 * y + inv12;
+				// Map screen pixel (x, y) back to sub-image coordinates (fixed-point of course)
+				int localX = (srcX >> 12);
+				int localY = (srcY >> 12);
 
-				for (int x = minX; x < maxX; x++)
+				// Don't like those if checks in here, but can't think of a
+				// better way to do this right now...
+				if (localX >= 0 && localX < width && localY >= 0 && localY < height)
 				{
-					// Map screen pixel (x, y) back to sub-image coordinates (fixed-point of course)
-					int localX = (srcX >> 12);
-					int localY = (srcY >> 12);
+					int imgX = sx + localX;
+					int imgY = sy + localY;
 
-					// Don't like those if checks in here, but can't think of a
-					// better way to do this right now...
-					if (localX >= 0 && localX < width && localY >= 0 && localY < height)
+					if (imgX >= 0 && imgX < imgWidth && imgY >= 0 && imgY < imgHeight)
 					{
-						int imgX = sx + localX;
-						int imgY = sy + localY;
-
-						if (imgX >= 0 && imgX < imgWidth && imgY >= 0 && imgY < imgHeight)
-						{
-							int srcPixel = imgData[imgY * imgWidth + imgX];
-							canvasData[destRow + x] = blendPixels(srcPixel, canvasData[destRow + x]);
-						}
+						int srcPixel = imgData[imgY * imgWidth + imgX];
+						canvasData[destRow + x] = blendPixels(srcPixel, canvasData[destRow + x]);
 					}
-
-					srcX += stepXx;
-					srcY += stepXy;
 				}
+
+				srcX += stepXx;
+				srcY += stepXy;
 			}
-		}
-		catch (Exception e)
-		{
-			Mobile.log(Mobile.LOG_ERROR, PlatformGraphics.class.getPackage().getName() + "." + PlatformGraphics.class.getSimpleName() + ": " + "DoJa drawImage Matrix: " + e.getMessage());
 		}
 	}
 
@@ -2900,8 +2874,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 		renderPrimitives(primitives, 0, primitives.size(), command);
 	}
 
-	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray primitives, int offset, int length,
-		int command)
+	public void renderPrimitives(com.nttdocomo.opt.ui.j3d.PrimitiveArray primitives, int offset, int length, int command)
 	{
 		if(mcv3gc == null)
 		{

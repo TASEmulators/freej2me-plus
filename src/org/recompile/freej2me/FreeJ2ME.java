@@ -489,9 +489,6 @@ public class FreeJ2ME
 		{
 			public void run()
 			{
-				/* Set menuBar option states based on loaded config */
-				if(fjGUI.hasJustLoaded()) { fjGUI.updateOptions(); fjGUI.clearChanged(); }
-
 				/* Whenever the GUI notifies that its menu options were changed, update settings */
 				if(fjGUI.hasChanged()) { settingsChanged(true); fjGUI.clearChanged(); }
 
@@ -591,6 +588,10 @@ public class FreeJ2ME
 		{
 			Mobile.log(Mobile.LOG_ERROR, FreeJ2ME.class.getPackage().getName() + "." + FreeJ2ME.class.getSimpleName() + ": " + "Couldn't load jar...");
 		}
+
+		/* Set menuBar option states based on loaded config */
+		if(fjGUI.hasJustLoaded()) { fjGUI.updateOptions(); fjGUI.clearChanged(); }
+		
 		// Go fullscreen as soon as the jar is loaded from the commandline path above
 		if(fullscreenAtStartup) { toggleFullscreen(); }
 	}
@@ -887,8 +888,8 @@ public class FreeJ2ME
 
 		public void updateScale(int vw, int vh)
 		{
-			cx = (this.getWidth()-vw)/2;
-			cy = (this.getHeight()-vh)/2;
+			cx = (this.getWidth()-vw) >> 1;
+			cy = (this.getHeight()-vh) >> 1;
 			cw = vw;
 			ch = vh;
 			scalex = (double)lcdWidth/(double)vw;
@@ -917,8 +918,8 @@ public class FreeJ2ME
 						int h = appIcon.getHeight(null);
 
 						g.drawImage(appIcon,
-							(getWidth() - w) / 2,
-							(getHeight() - h) / 2,
+							(getWidth() - w) >> 1,
+							(getHeight() - h) >> 1,
 							w, h, null);
 					}
 
@@ -932,24 +933,24 @@ public class FreeJ2ME
 					g.setFont(new Font("Dialog", Font.BOLD | Font.ITALIC, 21));
 					String text = "FreeJ2ME-Plus V1.53";
 					FontMetrics metrics = g.getFontMetrics();
-					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
-						(getHeight() / 2) - metrics.getHeight());
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) >> 1,
+						(getHeight() >> 1) - metrics.getHeight());
 
 					g.setFont(new Font("Dialog", Font.BOLD, 15));
 					text = "Please use the 'File' menu";
 					metrics = g.getFontMetrics();
-					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
-						(getHeight() / 2));
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) >> 1,
+						(getHeight() >> 1));
 
 					text = "or drop a valid J2ME app";
 					metrics = g.getFontMetrics();
-					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
-						(getHeight() / 2) + metrics.getHeight());
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) >> 1,
+						(getHeight() >> 1) + metrics.getHeight());
 
 					text = "inside this window.";
 					metrics = g.getFontMetrics();
-					g.drawString(text, (getWidth() - metrics.stringWidth(text)) / 2,
-						(getHeight() / 2) + metrics.getHeight() * 2);
+					g.drawString(text, (getWidth() - metrics.stringWidth(text)) >> 1,
+						(getHeight() >> 1) + metrics.getHeight() << 1);
 
 					return;
 				}
@@ -968,17 +969,17 @@ public class FreeJ2ME
 				{
 					if(Mobile.rotateDisplay == 90)
 					{
-						((Graphics2D) g).rotate(Math.toRadians(90), cw/2, cw/2);
+						((Graphics2D) g).rotate(Math.toRadians(90), cw >> 1, cw >> 1);
 						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), 0, cx, ch, cw, null);
 					}
 					else if(Mobile.rotateDisplay == 180)
 					{
-						((Graphics2D) g).rotate(Math.toRadians(180), cw/2, ch/2);
+						((Graphics2D) g).rotate(Math.toRadians(180), cw >> 1, ch >> 1);
 						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), -cx, cy, cw, ch, null);
 					}
 					else if(Mobile.rotateDisplay == 270)
 					{
-						((Graphics2D) g).rotate(Math.toRadians(270), ch/2, ch/2);
+						((Graphics2D) g).rotate(Math.toRadians(270), ch >> 1, ch >> 1);
 						g.drawImage(Mobile.getPlatform().getLcdFrontbuffer().getCanvas(), 0, cx, ch, cw, null);
 					}
 				}
@@ -991,8 +992,8 @@ public class FreeJ2ME
 				g.setColor(fileSupported ? Color.BLACK : Color.RED);
 				String message = fileSupported ? ">> DROP HERE <<" : "INVALID FILE TYPE!!!";
 				FontMetrics metrics = g.getFontMetrics();
-				int x = (getWidth() - metrics.stringWidth(message)) / 2;
-				int y = (getHeight() / 2);
+				int x = (getWidth() - metrics.stringWidth(message)) >> 1;
+				int y = (getHeight() >> 1);
 				g.drawString(message, x, y);
 			}
 		}
