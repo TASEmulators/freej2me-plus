@@ -186,6 +186,7 @@ public class Mobile
 	public static boolean compatIgnoreVolumeChanges      = false;
 	public static boolean compatMCV3HorizontalFovFix     = false;
 	public static boolean compatDoNotTranslateDrawRGB    = false;
+	public static boolean compatJphoneQuirks             = false;
 
 	// M3G Debug Rendering settings
 	public static boolean M3GRenderUntexturedPolygons = false;
@@ -1207,6 +1208,10 @@ public class Mobile
 		if(noTranslateDrawRGB.equals("on"))        { compatDoNotTranslateDrawRGB = true; }
 		else if (noTranslateDrawRGB.equals("off")) { compatDoNotTranslateDrawRGB = false; }
 
+		String jphonequirks = config.settings.get("compatjphonequirks");
+		if(jphonequirks.equals("on"))        { compatJphoneQuirks = true; }
+		else if (jphonequirks.equals("off")) { compatJphoneQuirks = false; }
+		
 		// Other settings
 		String fontOffset = config.settings.get("fontoffset");
 		fontSizeOffset = (byte) Integer.parseInt(fontOffset);
