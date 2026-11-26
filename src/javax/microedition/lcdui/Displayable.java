@@ -16,7 +16,7 @@
 */
 package javax.microedition.lcdui;
 
-import java.util.ArrayList;
+import java.util.Vector;
 
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
@@ -34,12 +34,12 @@ public abstract class Displayable
 
 	protected String title = "";
 
-	public ArrayList<Command> commands = new ArrayList<Command>();
+	public Vector<Command> commands = new Vector<Command>();
 
 	// Array of 2 commands that forces select types on the left soft key, and cancel on the right.
-	private ArrayList<Command> swapped = new ArrayList<Command>(2);
+	private Vector<Command> swapped = new Vector<Command>(2);
 
-	protected ArrayList<Item> items = new ArrayList<Item>();
+	protected Vector<Item> items = new Vector<Item>();
 
 	protected CommandListener commandlistener;
 
@@ -61,20 +61,32 @@ public abstract class Displayable
 
 	public void addCommand(Command cmd)
 	{
-		MobilePlatform.showCommandBar();
-
 		if(cmd == null) { throw new NullPointerException("Cannot insert a null command"); }
 		if(commands.contains(cmd)) { return; }
-		synchronized(commands) { commands.add(cmd); }
+	
+		int insertIndex = commands.size();
+		int cmdPriority = cmd.getPriority();
+		for(int i = 0; i < commands.size(); i++)
+		{
+			Command existing = (Command) commands.elementAt(i);
+			if(cmdPriority < existing.getPriority())
+			{
+				insertIndex = i;
+				break;
+			}
+		}
+	
+		commands.insertElementAt(cmd, insertIndex);
 		_invalidate();
+		MobilePlatform.showCommandBar();
 	}
 
 	public void removeCommand(Command cmd)
 	{
-		MobilePlatform.showCommandBar();
 		if(cmd == null || !commands.contains(cmd)) { return; }
-		synchronized(commands) { commands.remove(cmd); }
+		commands.remove(cmd);
 		_invalidate();
+		MobilePlatform.showCommandBar();
 	}
 
 	public int getWidth() { return width; }
@@ -99,7 +111,7 @@ public abstract class Displayable
 
 	public Display getDisplay() { return Mobile.getDisplay(); }
 
-	public ArrayList<Command> getCommands() { return commands; }
+	public Vector<Command> getCommands() { return commands; }
 
 
 	public void keyPressed(int key) { }
@@ -172,18 +184,7 @@ public abstract class Displayable
 				int y = currentY + titlePadding + 3;
 				for(int i = first; i <= last; i++)
 				{
-					if(commands.get(i).getCommandType() == Command.BACK)
-					{
-						// If the user navigated onto the hidden back command, move it
-						// forward or wrap safely if already at the end of the command
-						// list so it doesn't get stuck on an invisible slot.
-						if(currentCommand == i)
-						{
-							currentCommand = (i + 1 < commands.size()) ? i + 1 : i - 1;
-							if(currentCommand < 0) { currentCommand = 0; }
-						}
-						continue;
-					}
+					if(commands.get(i).getCommandType() == Command.BACK) { continue; }
 					boolean isSelected = (currentCommand == i);
 					LCDUIRenderer.drawItem(graphics, i, commands.get(i).getLabel(), null, 0, y, width, itemHeight - vGap, isSelected, false, Choice.IMPLICIT, false, Item.LAYOUT_CENTER);
 					y += itemHeight;
@@ -220,7 +221,7 @@ public abstract class Displayable
 		// Standardize OK/SELECT/etc commands on the left soft key, and
 		// CANCEL/EXIT/STOP/etc ones on the right soft key whenever we have two
 		// commands.
-		ArrayList<Command> displayCommands = commands;
+		Vector<Command> displayCommands = commands;
 		if (!listCommands && commands.size() == 2)
 		{
 			Command c0 = commands.get(0);
@@ -349,7 +350,7 @@ public abstract class Displayable
 		});
 	}
 
-	private boolean isBackCommand(Command cmd)
+	public boolean isBackCommand(Command cmd)
 	{
 		if (cmd == null) { return false; }
 		int type = cmd.getCommandType();

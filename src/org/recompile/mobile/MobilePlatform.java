@@ -602,13 +602,27 @@ public class MobilePlatform
 			{
 				if(key == Canvas.KEY_NUM2 || key == Canvas.UP)
 				{
-					if(displayable.currentCommand > 0) { displayable.currentCommand--; }
+					if(displayable.currentCommand > 0)
+					{ 
+						displayable.currentCommand--;
+						if(displayable.isBackCommand(displayable.getCommands().get(displayable.currentCommand)))
+						{
+							displayable.currentCommand--;
+						}
+					}
 					displayable._invalidate();
 					return true;
 				}
 				else if(key == Canvas.KEY_NUM8 || key == Canvas.DOWN)
 				{
-					if(displayable.currentCommand < displayable.commands.size()-1) { displayable.currentCommand++; }
+					if(displayable.currentCommand < displayable.commands.size()-1)
+					{ 
+						displayable.currentCommand++;
+						if(displayable.isBackCommand(displayable.getCommands().get(displayable.currentCommand)))
+						{
+							displayable.currentCommand++;
+						}
+					}
 					displayable._invalidate();
 					return true;
 				}
@@ -634,13 +648,13 @@ public class MobilePlatform
 					{
 						showCommandBar();
 						displayable.doLeftCommand();
-						return true;
+						return false;
 					}
 					else if (key == Canvas.KEY_SOFT_RIGHT)
 					{
 						showCommandBar();
 						displayable.doRightCommand();
-						return true;
+						return false;
 					}
 				}
 			}

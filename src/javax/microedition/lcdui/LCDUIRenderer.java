@@ -16,7 +16,7 @@
 */
 package javax.microedition.lcdui;
 
-import java.util.ArrayList;
+import java.util.Vector;
 
 import org.recompile.mobile.Mobile;
 
@@ -60,7 +60,7 @@ public class LCDUIRenderer
 		graphics.drawString(title != null ? title : "", width/2, -2, Graphics.TOP | Graphics.HCENTER);
 	}
 
-	public static void drawCommandBar(Graphics graphics, String status, ArrayList<Command> commands, Command itemCommand,
+	public static void drawCommandBar(Graphics graphics, String status, Vector<Command> commands, Command itemCommand,
 		int width, int totalHeight, int barHeight, float alphaFactor, int bgColor, boolean threeItems)
 	{
 		Font tmpFont = graphics.getFont();
