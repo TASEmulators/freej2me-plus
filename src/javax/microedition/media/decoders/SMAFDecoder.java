@@ -1475,12 +1475,7 @@ public final class SMAFDecoder
 						channel += handyChannelIdx;
 						byte eventType = (byte) (controlEvent & 0x3f);
 	
-						if(eventType == (byte) 0x00) // Fine tune event (fine pitch bend)
-						{
-							byte eventValue = (byte) (data[offset++] & 0xFF);
-							Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Fine Tune event not implemented. Value:" + String.format("%02X", eventValue));
-						}
-						else if (eventType >= (byte) 0x01 && eventType <= (byte) 0x0E) // Short Expression event
+						if (eventType >= (byte) 0x01 && eventType <= (byte) 0x0E) // Short Expression event
 						{
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "(short) Adding expression value 0x" + String.format("%02X", shortExpressionValues[eventType]) + "(" + shortExpressionValues[eventType] + ") to channel " + channel);
 							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, shortExpressionValues[eventType]);
