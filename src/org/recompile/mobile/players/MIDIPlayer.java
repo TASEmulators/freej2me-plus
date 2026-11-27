@@ -261,6 +261,7 @@ public class MIDIPlayer extends BasicPlayer implements MetaEventListener
 			this.synthesizer = Manager.exclusiveSynths[synthIdx];
 			this.receiver = Manager.exclusiveReceivers[synthIdx];
 			this.midi = Manager.exclusiveSequencers[synthIdx];
+			this.midi.setMicrosecondPosition(0);
 			synthReserved = true;
 		}
 	}

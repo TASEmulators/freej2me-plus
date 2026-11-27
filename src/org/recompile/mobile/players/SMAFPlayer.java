@@ -261,6 +261,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 			this.synthesizer = Manager.exclusiveSynths[synthIdx];
 			this.receiver = Manager.exclusiveReceivers[synthIdx];
 			this.midi = Manager.exclusiveSequencers[synthIdx];
+			this.midi.setMicrosecondPosition(0);
 			this.synthReserved = true;
 		}
 	}

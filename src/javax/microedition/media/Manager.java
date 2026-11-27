@@ -425,12 +425,11 @@ public class Manager
 		return Mobile.numExclusiveSynths-1; // We have no option but to reuse a synth here, as the four exclusive ones are all in use
 	}
 
-	public static synchronized void releaseSynthIndex(int index)
+	public static void releaseSynthIndex(int index)
 	{
 		if (index >= 0 && index < Mobile.numExclusiveSynths)
 		{
 			synthIdxInUse &= (byte) ~(1 << index);
-			exclusiveSequencers[index].setMicrosecondPosition(0);
 		}
 	}
 
