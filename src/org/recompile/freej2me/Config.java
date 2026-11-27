@@ -171,6 +171,7 @@ public class Config
 				settings.put("compatignorevolumechanges", "off");
 				settings.put("compatnotranslatedrawrgb", "off");
 				settings.put("compatmcv3horizfovfix", "off");
+				settings.put("compatjphonequirks", "off");
 				settings.put("fpshack", "Disabled");
 				settings.put("spdhackm3ghalfres", "off");
 				settings.put("m3gantialiasmode", "app");
@@ -254,6 +255,7 @@ public class Config
 		if (!settings.containsKey("compatignorevolumechanges")) { settings.put("compatignorevolumechanges", "off"); }
 		if (!settings.containsKey("compatnotranslatedrawrgb")) { settings.put("compatnotranslatedrawrgb", "off"); }
 		if (!settings.containsKey("compatmcv3horizfovfix")) { settings.put("compatmcv3horizfovfix", "off"); }
+		if (!settings.containsKey("compatjphonequirks")) { settings.put("compatjphonequirks", "off"); }
 		if (!settings.containsKey("fpshack")) { settings.put("fpshack", "Disabled"); }
 		if (!settings.containsKey("spdhackm3ghalfres")) { settings.put("spdhackm3ghalfres", "off"); }
 		if (!settings.containsKey("m3gantialiasmode")) { settings.put("m3gantialiasmode", "app"); }

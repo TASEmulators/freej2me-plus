@@ -850,7 +850,7 @@ public abstract class PlatformGraphics implements DirectGraphics,
 			{
 				throw new IllegalArgumentException("Invalid horizontal anchor: " + hAlign);
 			}
-			if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE)
+			if (vAlign != TOP && vAlign != BOTTOM && vAlign != BASELINE && !Mobile.compatJphoneQuirks)
 			{
 				throw new IllegalArgumentException("Invalid vertical anchor for text (VCENTER is not allowed): " + vAlign);
 			}
