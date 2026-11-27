@@ -21,6 +21,8 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.midlet.MIDlet;
 
 import javax.microedition.lcdui.Image;
+import javax.microedition.media.Control;
+import javax.microedition.media.Controllable;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.LinkedList;
@@ -29,7 +31,15 @@ import java.util.Queue;
 import org.recompile.mobile.Mobile;
 import org.recompile.mobile.MobilePlatform;
 
-public class Display
+import net.rim.device.api.lcdui.control.DirectionControl;
+import net.rim.device.api.lcdui.control.MediaBehaviourControl;
+import net.rim.device.api.lcdui.control.VirtualKeyboardControl;
+import net.rim.device.api.lcdui.game.BlackBerryGameCanvas.directionControl;
+import net.rim.device.api.lcdui.game.BlackBerryGameCanvas.mediaBehaviourControl;
+import net.rim.device.api.lcdui.game.BlackBerryGameCanvas.virtualKeyboardControl;
+import net.rim.device.api.ui.TouchEvent;
+
+public class Display implements Controllable
 {
 	public static final int LIST_ELEMENT = 1;
 	public static final int CHOICE_GROUP_ELEMENT = 2;
@@ -40,6 +50,7 @@ public class Display
 	public static final int COLOR_HIGHLIGHTED_FOREGROUND = 3;
 	public static final int COLOR_BORDER = 4;
 	public static final int COLOR_HIGHLIGHTED_BORDER = 5;
+	protected Control[] controls;
 
 	private Displayable current;
 
@@ -64,7 +75,10 @@ public class Display
 			@Override
 			public void run() { processEvents(); }
 		}, "EventProcessing-Thread");
-
+		controls = new Control[3];
+		controls[0] = new directionControl();
+		controls[1] = new mediaBehaviourControl();
+		controls[2] = new virtualKeyboardControl();
 		eventThread.start();
 	}
 
@@ -291,7 +305,6 @@ public class Display
 	public static Display getDisplay(MIDlet m)
 	{
 		if(m == null) { throw new NullPointerException("Cannot get a unique Display for a null MIDlet"); }
-
 		return Mobile.getDisplay();
 	}
 
@@ -443,5 +456,57 @@ public class Display
 		Mobile.vibrationDuration = duration;
 		Mobile.log(Mobile.LOG_DEBUG, Display.class.getPackage().getName() + "." + Display.class.getSimpleName() + ": " + "Vibrate");
 		return true;
+	}
+	
+	public Control getControl(String controlType)
+	{
+		if(controlType.contains("DirectionControl"))       { return this.controls[0]; }
+		if(controlType.contains("MediaBehaviourControl"))  { return this.controls[1]; }
+		if(controlType.contains("VirtualKeyboardControl")) { return this.controls[2]; }
+
+		return null;
+	}
+
+	public Control[] getControls()
+	{
+		return this.controls;
+	}
+
+	public void touchEvent(TouchEvent message)
+	{
+		// TODO
+	}
+
+	public class directionControl implements DirectionControl
+	{
+		private int directions = 0;
+		
+		public int getOrientation()
+		{
+			if(Mobile.getPlatform().lcdWidth == Mobile.getPlatform().lcdHeight) { return DirectionControl.ORIENTATION_SQUARE; }
+			else if(Mobile.getPlatform().lcdWidth > Mobile.getPlatform().lcdHeight) { return DirectionControl.ORIENTATION_LANDSCAPE; }
+
+			return DirectionControl.ORIENTATION_PORTRAIT;
+		}
+    
+		public void setAcceptableScreenDirections(int directions) { this.directions = directions; }
+	}
+
+	public class mediaBehaviourControl implements MediaBehaviourControl
+	{
+		private boolean mediaEnabled = true;
+		
+		public void setMediaPlayerModeEnabled(boolean enabled) { this.mediaEnabled = enabled; }
+		
+		public boolean isMediaPlayerModeEnabled() { return this.mediaEnabled; }
+	}
+
+	public class virtualKeyboardControl implements VirtualKeyboardControl
+	{
+		private int kbVisibility = VirtualKeyboardControl.KEYBOARD_HIDE;
+		
+		public void setKeyboardVisibility(int visibility) { this.kbVisibility = visibility; }
+		
+		public int getKeyboardVisibility() { return this.kbVisibility; }
 	}
 }
