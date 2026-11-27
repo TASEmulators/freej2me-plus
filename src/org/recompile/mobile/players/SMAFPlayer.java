@@ -283,7 +283,7 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 						channels[i].allSoundOff();         // Cut off lingering audio instantly (CC 120)
 						channels[i].allNotesOff();         // Stop any still lingering notes (CC 123)
 						channels[i].resetAllControllers(); // Reset Pitch Bend, Expression, Pan (CC 121)
-						channels[i].controlChange(7, 127); // Reset Channel Volume back to full (CC 127)
+						channels[i].controlChange(7, 127); // Reset Channel Volume back to full (CC 7)
 					}
 				}
 

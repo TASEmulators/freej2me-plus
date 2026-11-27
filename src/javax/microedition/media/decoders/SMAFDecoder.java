@@ -206,6 +206,10 @@ public final class SMAFDecoder
 	private static final String[] pcmBaseBits = {"4 bits", "8 bits", "12 bits", "16 bits", "Reserved", "Reserved", "Reserved", "Reserved"};
 	private static final String[] pcmSamplingFreqs = {"4000", "8000", "11025", "22050", "44100", "Reserved", "Reserved", "Reserved"};
 
+	// Exclusive SMAF data (EXVW, EXVO, etc)
+	private static byte[] exvwWaveData;
+	private static List<Byte> exvoWavIDs = null, exvoWavBank = null, exvoWavProgram = null;
+	
 	// Structures that hold decoded SMAF data
 
 	public static List<InputStream> pcmData = null;
@@ -216,6 +220,10 @@ public final class SMAFDecoder
 		// Reset any and all static variables to their defaults
 		isPCM = false;
 		handyChannelIdx = 0;
+		exvwWaveData = null;
+		exvoWavIDs = new ArrayList<Byte>();
+		exvoWavBank = new ArrayList<Byte>();
+		exvoWavProgram = new ArrayList<Byte>();
 		decodePos = 0;
 		startPoint = 0;
 		stopPoint = 0;
@@ -233,13 +241,13 @@ public final class SMAFDecoder
 		// Start parsing the file.
 		decodeHeader(); // MMMD (file chunk header)
 
-		// Check for presence of 'Awa' chunks in the file, we need to know if PCM is in use beforehand
+		// Check for presence of 'pcm' chunks in the file, we need to know if PCM is in use beforehand
 		int tDecodePos = decodePos;
 		while(tDecodePos < input.length-4)
 		{
 			String chunkID = "" + (char) input[tDecodePos] + (char) input[tDecodePos+1] + (char) input[tDecodePos+2] + (char) input[tDecodePos+3];
 
-			if(chunkID.startsWith("ATR")) // We have ATR, we'll have other ancillary chunks like 'Awa'
+			if(chunkID.startsWith("Awa"))
 			{
 				pcmData.add(null); // Awa Chunk number starts from 1, so we need to add a null position.
 				break;
@@ -268,6 +276,7 @@ public final class SMAFDecoder
 			else if(chunkID.startsWith("MMMG")) { decodeMMMGChunk(); }
 			else if(chunkID.startsWith("VOIC")) { decodeVoiceChunk(); }
 			else if(chunkID.startsWith("EXVO")) { decodeExclusiveVoiceChunk(); }
+			else if(chunkID.startsWith("EXWV")) { decodeExclusiveWaveChunk(); }
 			else if(chunkID.startsWith("DEVO")) { decodeDEVoiceChunk(); }
 			else if(chunkID.startsWith("ATR"))  { decodePCMScoreTrackChunk(); }
 			else if(chunkID.startsWith("Awa"))  { decodeAudioTrackWaveDataChunk(); }
@@ -489,9 +498,9 @@ public final class SMAFDecoder
 
 		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"-------------------------- " + MMMG + " HEADER --------------------------");
 		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"MMMGChunkSize: " + MMMGChunkSize);
-		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"MMMGChunkData: " + data);
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"MMMGChunkData: ");
 
-		// MMMG, EXVO, SEQU are all a big TODO
+		// MMMG parsing is not complete yet
 		formatType = (byte) 0x04; // SMAF with MMMG chunk uses a different format for notes and events
 		TimeBase_D = (byte) 0x11; // TODO: This should be somewhere in one of the chunks following MMMG,
 		TimeBase_G = (byte) 0x11; // TODO: Same as above.
@@ -522,21 +531,92 @@ public final class SMAFDecoder
 	{
 		String exvo = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++]; // "EXVO"
 		int exvoChunkSize = (input[decodePos++] & 0xFF) << 24 | (input[decodePos++] & 0xFF) << 16 | (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
-		byte[] exclusiveVoice = new byte[exvoChunkSize];
+		byte status = (byte) input[decodePos++];
+		byte status2 = (byte) input[decodePos++];
+		byte len = (byte) input[decodePos++];
+		int manufacturerID = (byte) input[decodePos++];
+		byte deviceID = (byte) input[decodePos++];
+		byte voiceType = (byte) input[decodePos++];
+		byte wavBank = (byte) input[decodePos++];
+		byte wavProgram = (byte) input[decodePos++];
 
-		for(int i = 0; i < exvoChunkSize; i++)
-		{
-			exclusiveVoice[i] = (byte) (input[decodePos++] & 0xFF);
-		}
+		int samplingFrequency = (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
+
+		// These 9 bytes are:
+		// 1   -> Panpot
+		// 2-7 -> chip-specific commands (lfo, eam, dvb)
+		// 8-9 -> unknown
+		decodePos += 9;
+		
+		int loopPoint = (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
+		int endPoint = (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
+		byte wavID = (byte) (input[decodePos++] & 0x7F);
+		boolean isRomWave = ((wavID & 0x80) != 0);
+		byte exvoWavID = (byte) (wavID & 0x7F);
+		
+		byte eox = (byte) input[decodePos++];
 
 		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"-------------------------- " + exvo + " HEADER --------------------------");
 		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"EXVOChunkSize: " + exvoChunkSize);
-		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"data: " + Arrays.toString(exclusiveVoice));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Status: " + (status == (byte) 0xFF ? "Valid" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Status2: " + (status2 == (byte) 0xF0 ? "Valid" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Length: " + (len == (byte) 0x16 ? "Valid" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Manufacturer: " + (manufacturerID == (byte) 0x43 ? "YAMAHA" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Device: " + (deviceID == (byte) 0x05 ? "SMAF Phrase Exclusive" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Voice Type: " + (voiceType == (byte) 0x02 ? "VM35 Voice" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Bank: 0x" + String.format("%02X", wavBank));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Program: 0x" + String.format("%02X", wavProgram));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"samplingFrequency: " + samplingFrequency + "Hz");
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"LoopPoint: " + loopPoint);
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"EndPoint: " + endPoint);
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Is Rom WAV? " + (isRomWave ? "Yes" : "No"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"wavID: " + exvoWavID);
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Ends with EOX? " + (eox == (byte) 0xF7 ? "Yes" : "No"));
+
+		if (exvwWaveData != null)
+		{ 
+			pcmData.add(new ByteArrayInputStream(WAVYamahaADPCMDecoder.ADPCMBDecode(exvwWaveData, samplingFrequency, 1)));
+			exvoWavBank.add(wavBank);
+			exvoWavProgram.add(wavProgram);
+			exvoWavIDs.add(exvoWavID);
+		}
+	}
+
+	public static void decodeExclusiveWaveChunk()
+	{
+		String exvw = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++];
+		int exvwChunkSize = (input[decodePos++] & 0xFF) << 24 | (input[decodePos++] & 0xFF) << 16 | (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
+
+		byte status = (byte) input[decodePos++];
+		byte type = (byte) input[decodePos++];
+		int len =  (input[decodePos++] & 0xFF) | ((input[decodePos++] & 0xFF) << 8);
+		int manufacturerID = (byte) input[decodePos++];
+		byte deviceID = (byte) input[decodePos++];
+		byte subID = (byte) input[decodePos++];
+		byte wavID = (byte) input[decodePos++];
+
+		// Len - 5 because length includes itself, status, type, and the final eox byte
+		exvwWaveData = new byte[len - 5];
+      
+		for(int i = 0; i < (len - 5); i++) { exvwWaveData[i] = input[decodePos++]; }
+
+        byte eox = (byte) input[decodePos++];
+        
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"-------------------------- " + exvw + " HEADER --------------------------");
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"EXVWChunkSize: " + exvwChunkSize);
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Status: " + (status == (byte) 0xFF ? "Valid" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Type: " + (type == (byte) 0xF1 ? "Long Exclusive" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Manufacturer: " + (manufacturerID == (byte) 0x43 ? "YAMAHA" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Device: " + (deviceID == (byte) 0x05 ? "SMAF Phrase Exclusive" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Sub ID: " + (subID == (byte) 0x00 ? "Valid" : "Unknown"));
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Wave ID: " + wavID);
+		Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " +"Ends with EOX? " + (eox == (byte) 0xF7 ? "Yes" : "No"));
+		// Wave data is decoded in the EXVO chunk, which this chunk always precedes
 	}
 
 	public static void decodeDEVoiceChunk()
 	{
-		String devo = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++]; // "EXVO"
+		String devo = "" + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++] + (char) input[decodePos++]; // "DEVO"
 		int devoChunkSize = (input[decodePos++] & 0xFF) << 24 | (input[decodePos++] & 0xFF) << 16 | (input[decodePos++] & 0xFF) << 8 | (input[decodePos++] & 0xFF);
 		byte[] DEVoice = new byte[devoChunkSize];
 
@@ -1185,7 +1265,7 @@ public final class SMAFDecoder
 					else
 					{
 						// Create MIDI note event
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note event " + noteTypes[noteNumber] + (4+octave+channelData[channel].octaveShift) + "(" + noteNumber + ")" + " to channel " + channel);
+						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note event " + noteTypes[noteNumber] + (4+octave+channelData[channel].octaveShift) + "(" + noteNumber + "/" + midiNoteNumber + ")" + " to channel " + channel);
 
 						ShortMessage noteOn = new ShortMessage();
 						noteOn.setMessage(ShortMessage.NOTE_ON, channelData[channel].usingDrumBank ? 9 : channel, midiNoteNumber, channelData[channel].velocity);
@@ -1505,11 +1585,13 @@ public final class SMAFDecoder
 						else if (eventType == (byte) 0x30) // Program Change event
 						{
 							byte eventValue = (byte) (data[offset++] & 0x7F);
-	
+							
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding program change number " + eventValue + " to channel " + channel);
 							event.setMessage(ShortMessage.PROGRAM_CHANGE, channel, eventValue, 0);
 							midiEvent = new MidiEvent(event, totalDuration);
 							track.add(midiEvent);
+
+							channelData[channel].curProgram = eventValue;
 						}
 						else if (eventType == (byte) 0x31) // Bank Select event
 						{
@@ -1523,6 +1605,8 @@ public final class SMAFDecoder
 							// Send the bank select message
 							midiEvent = new MidiEvent(event, totalDuration);
 							track.add(midiEvent);
+
+							channelData[channel].curBank = eventValue;
 	
 							// If it's a drum bank, we'll need to change to a drum instrument by altering the midi instrument mapping
 							if (bankType == 1)
@@ -1577,7 +1661,33 @@ public final class SMAFDecoder
 							midiEvent = new MidiEvent(event, totalDuration);
 							track.add(midiEvent);
 						}
-						// TODO: Maybe something's missing? This gap doesn't seem normal
+						else if (eventType == (byte) 0x35) // Pitch Bend Range? Seems to be in Rockman X3.
+						{
+							int eventValue = data[offset++] & 0x7F;
+												
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Setting pitch bend range to " + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+												
+							ShortMessage rpnMsb = new ShortMessage();
+							rpnMsb.setMessage(ShortMessage.CONTROL_CHANGE, channel, 101, 0);
+							track.add(new MidiEvent(rpnMsb, totalDuration));
+												
+							ShortMessage rpnLsb = new ShortMessage();
+							rpnLsb.setMessage(ShortMessage.CONTROL_CHANGE, channel, 100, 0);
+							track.add(new MidiEvent(rpnLsb, totalDuration));
+												
+							ShortMessage dataEntryMsb = new ShortMessage();
+							dataEntryMsb.setMessage(ShortMessage.CONTROL_CHANGE, channel, 6, eventValue);
+							track.add(new MidiEvent(dataEntryMsb, totalDuration));
+						}
+						else if (eventType == (byte) 0x36) // Decay Time event? Seems to be in Rockman X3
+						{
+							byte eventValue = (byte) (data[offset++] & 0xFF);
+	
+							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding decay value 0x" + String.format("%02X", eventValue) + "(" + eventValue + ") to channel " + channel);
+							event.setMessage(ShortMessage.CONTROL_CHANGE, channel, 11, eventValue);
+							midiEvent = new MidiEvent(event, totalDuration);
+							track.add(midiEvent);
+						}
 						else if (eventType == (byte) 0x37) // Volume event
 						{
 							byte eventValue = (byte) (data[offset++] & 0xFF);
@@ -1587,7 +1697,7 @@ public final class SMAFDecoder
 							midiEvent = new MidiEvent(event, totalDuration);
 							track.add(midiEvent);
 						}
-						// TODO: Same as above, and this gap is even bigger
+						// TODO: Maybe something's missing? This gap doesn't seem normal
 						else if (eventType == (byte) 0x3A) // Panpot event
 						{
 							byte eventValue = (byte) (data[offset++] & 0xFF);
@@ -1608,8 +1718,8 @@ public final class SMAFDecoder
 						}
 						else
 						{
-							Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "unknown control event received:" + String.format("%02X", eventType));
-							offset++; // Assume it's a long type
+							byte eventValue = (byte) (data[offset++] & 0xFF); // Assume it's a long type
+							Mobile.log(Mobile.LOG_WARNING, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "unknown control event received:" + String.format("%02X", eventType) + " val:" + eventValue + " channel:" + channel);
 						}
 					}
 				}
@@ -1682,13 +1792,15 @@ public final class SMAFDecoder
 					}
 					midiNoteNumber += 12 * channelData[channel].octaveShift;
 
-					if (pcmData.size() > 0 && noteValue < PCM_RANGE_VAL)
+					if (exvoWavBank.contains(channelData[channel].curBank) &&
+						exvoWavProgram.contains(channelData[channel].curProgram) &&
+						exvoWavIDs.contains(noteValue))
 					{
 						try
 						{
 							Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding PCM event " + "(" + noteValue + ")" + " to channel " + channel);
 							MetaMessage pcmMeta = new MetaMessage();
-							byte[] metaData = new byte[] { (byte) noteValue, (byte) channelData[channel].velocity };
+							byte[] metaData = new byte[] { (byte) exvoWavIDs.indexOf(noteValue), (byte) channelData[channel].velocity };
 							pcmMeta.setMessage(0x7F, metaData, metaData.length);
 
 							track.add(new MidiEvent(pcmMeta, totalDuration));
@@ -1700,7 +1812,7 @@ public final class SMAFDecoder
 					}
 					else
 					{
-						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note event " + noteTypes[noteValue] + (4+octave+channelData[channel].octaveShift) + "(" + noteValue + ")" + " to channel " + channel);
+						Mobile.log(Mobile.LOG_DEBUG, SMAFDecoder.class.getPackage().getName() + "." + SMAFDecoder.class.getSimpleName() + ": " + "Adding note event " + noteTypes[noteValue] + (4+octave+channelData[channel].octaveShift) + "(" + noteNumber + "/" + midiNoteNumber + ")" + " to channel " + channel);
 
 						ShortMessage noteOn = new ShortMessage();
 						noteOn.setMessage(ShortMessage.NOTE_ON, channelData[channel].usingDrumBank ? 9 : channel, midiNoteNumber, channelData[channel].velocity); // This will always use the default velocity
@@ -1773,9 +1885,12 @@ class ChannelData
 {
 	public boolean keyControlBasic, led, vibStatus, usingDrumBank;
 	public byte keyControl, channelType, octaveShift, velocity;
+	public byte curBank, curProgram;
 
 	ChannelData()
 	{
+		curBank = -1;
+		curProgram = -1;
 		keyControl = 0x1;
 		channelType = 0x0;
 		led = false;
