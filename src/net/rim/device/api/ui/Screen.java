@@ -37,4 +37,9 @@ public abstract class Screen
 	{
 		Mobile.log(Mobile.LOG_WARNING, Screen.class.getPackage().getName() + "." + Screen.class.getSimpleName() + ": " + "setTrackballSensitivityYOffset not implemented. Val:" + trackballSensitivityYOffset);
 	}
+	
+	public boolean isFocus() {
+	    return true;
+	}
+
 }

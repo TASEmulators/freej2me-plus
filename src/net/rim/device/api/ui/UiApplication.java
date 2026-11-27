@@ -63,7 +63,7 @@ public class UiApplication extends Application implements UiEngine
 	{
 		synchronized (getEventLock())
 		{
-			if (screens.isEmpty()) { return null; }
+			if (screens.isEmpty()) { return new Screen() {}; }
 
 			return (Screen) screens.lastElement();
 		}
