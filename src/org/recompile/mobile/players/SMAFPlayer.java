@@ -278,15 +278,11 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 				for (int i = 0; i < channels.length; i++)
 				{
 					// To do that, we just emit the respective Control Changes.
-					if (channels[i] != null)
-					{
-						channels[i].allSoundOff();         // Cut off lingering audio instantly (CC 120)
-						channels[i].allNotesOff();         // Stop any still lingering notes (CC 123)
-						channels[i].resetAllControllers(); // Reset Pitch Bend, Expression, Pan (CC 121)
-						channels[i].controlChange(7, 127); // Reset Channel Volume back to full (CC 7)
-					}
+					channels[i].allSoundOff();         // Cut off lingering audio instantly (CC 120)
+					channels[i].resetAllControllers(); // Reset Pitch Bend, Expression, Pan (CC 121)
+					channels[i].controlChange(7, 127); // Reset Channel Volume back to full (CC 7)
 				}
-
+				
 				Manager.releaseSynthIndex(synthIdx);
 				synthReserved = false;
 				this.midi.removeMetaEventListener(this);
@@ -541,14 +537,10 @@ public class SMAFPlayer extends BasicPlayer implements MetaEventListener, LineLi
 		if (meta.getType() == 0x7F) // Special PCM Trigger Event (0x7F)
 		{
 			byte[] data = meta.getData();
-			if (data != null && data.length >= 2)
-			{
+			int pcmIndex = data[0] & 0xFF;
+			int velocity = data[1] & 0xFF;
 
-				int pcmIndex = data[0] & 0xFF;
-				int velocity = data[1] & 0xFF;
-
-				playPcmStream(pcmIndex, velocity);
-			}
+			playPcmStream(pcmIndex, velocity);
 		}
 	}
 
